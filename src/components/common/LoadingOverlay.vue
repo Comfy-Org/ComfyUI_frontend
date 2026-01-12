@@ -5,8 +5,13 @@
       class="absolute inset-0 z-50 flex items-center justify-center bg-backdrop/50"
     >
       <div class="flex flex-col items-center">
-        <div class="spinner" />
-        <div class="mt-4 text-lg text-base-foreground">
+        <div class="relative flex items-center justify-center">
+          <div class="animate-spin spinner" />
+          <div class="absolute">
+            <slot />
+          </div>
+        </div>
+        <div v-if="loadingMessage" class="mt-4 text-lg text-base-foreground">
           {{ loadingMessage }}
         </div>
       </div>
@@ -17,7 +22,7 @@
 <script setup lang="ts">
 defineProps<{
   loading: boolean
-  loadingMessage: string
+  loadingMessage?: string
 }>()
 </script>
 
@@ -25,18 +30,8 @@ defineProps<{
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
+  border: 4px solid var(--muted-foreground);
+  border-top-color: var(--base-foreground);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
 }
 </style>

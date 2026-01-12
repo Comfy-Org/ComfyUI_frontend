@@ -46,17 +46,9 @@
         @image-loaded="handleImageLoaded"
       />
 
-      <div v-if="isDeleting" class="absolute inset-0 bg-black/50 z-10">
-        <div class="flex items-center justify-center h-full relative">
-          <div
-            class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          ></div>
-          <i
-            class="icon-[lucide--trash-2] size-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-          >
-          </i>
-        </div>
-      </div>
+      <LoadingOverlay :loading="isDeleting">
+        <i class="icon-[lucide--trash-2] size-5" />
+      </LoadingOverlay>
 
       <!-- Action buttons overlay (top-left) -->
       <div
@@ -142,10 +134,8 @@
     :selected-assets="selectedAssets"
     :is-bulk-mode="hasSelection && (selectedAssets?.length ?? 0) > 1"
     @zoom="handleZoomClick"
-    @asset-deleted="emit('asset-deleted')"
-    @asset-deleting="emit('asset-deleting', $event)"
     @bulk-download="emit('bulk-download', $event)"
-    @bulk-delete="emit('bulk-delete', $event)"
+    @delete-assets="emit('delete-assets', $event)"
   />
 </template>
 
@@ -154,6 +144,7 @@ import { useElementHover, whenever } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import {
   formatDuration,
@@ -212,11 +203,9 @@ const emit = defineEmits<{
   click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
-  'asset-deleted': []
-  'asset-deleting': [isDeleting: boolean]
   'context-menu-opened': []
   'bulk-download': [assets: AssetItem[]]
-  'bulk-delete': [assets: AssetItem[]]
+  'delete-assets': [assets: AssetItem[]]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()

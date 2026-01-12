@@ -62,10 +62,8 @@ const {
 
 const emit = defineEmits<{
   zoom: []
-  'asset-deleted': []
-  'asset-deleting': [boolean]
   'bulk-download': [assets: AssetItem[]]
-  'bulk-delete': [assets: AssetItem[]]
+  'delete-assets': [assets: AssetItem[]]
 }>()
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
@@ -153,7 +151,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       items.push({
         label: t('mediaAsset.selection.deleteSelectedAll'),
         icon: 'icon-[lucide--trash-2]',
-        command: () => emit('bulk-delete', selectedAssets)
+        command: () => emit('delete-assets', selectedAssets)
       })
     }
 
@@ -220,16 +218,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     items.push({
       label: t('mediaAsset.actions.delete'),
       icon: 'icon-[lucide--trash-2]',
-      command: async () => {
-        if (asset) {
-          const success = await actions.confirmDelete(asset, (deleting) => {
-            emit('asset-deleting', deleting)
-          })
-          if (success) {
-            emit('asset-deleted')
-          }
-        }
-      }
+      command: () => emit('delete-assets', [asset])
     })
   }
 

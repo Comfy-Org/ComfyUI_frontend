@@ -120,11 +120,9 @@
               @click="handleAssetSelect(item)"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
-              @asset-deleted="refreshAssets"
-              @asset-deleting="handleAssetDeleting(item.id, $event)"
               @context-menu-opened="openContextMenuId = item.id"
               @bulk-download="handleBulkDownload"
-              @bulk-delete="handleBulkDelete"
+              @delete-assets="handleDeleteAssets"
             />
           </template>
         </VirtualGrid>
@@ -544,26 +542,15 @@ const setAssetsDeletingState = (assetIds: string[], isDeleting: boolean) => {
   )
 }
 
-const handleDeleteSelected = async () => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  const assetIds = selectedAssets.map((a) => a.id)
-
-  await deleteMultipleAssets(selectedAssets, (isDeleting) =>
-    setAssetsDeletingState(assetIds, isDeleting)
-  )
-  clearSelection()
-}
-
 const handleBulkDownload = (assets: AssetItem[]) => {
   downloadMultipleAssets(assets)
   clearSelection()
 }
 
-const handleAssetDeleting = (assetId: string, isDeleting: boolean) => {
-  setAssetsDeletingState([assetId], isDeleting)
-}
+const handleDeleteSelected = () =>
+  handleDeleteAssets(getSelectedAssets(displayAssets.value))
 
-const handleBulkDelete = async (assets: AssetItem[]) => {
+const handleDeleteAssets = async (assets: AssetItem[]) => {
   const assetIds = assets.map((a) => a.id)
 
   await deleteMultipleAssets(assets, (isDeleting) =>

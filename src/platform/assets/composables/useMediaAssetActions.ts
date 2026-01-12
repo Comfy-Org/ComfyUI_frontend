@@ -137,74 +137,27 @@ export function useMediaAssetActions() {
   /**
    * Show confirmation dialog and delete asset if confirmed
    * @param asset The asset to delete
+   * @param onDeleting Optional callback called with true when deletion starts and false when complete
    * @returns true if the asset was deleted, false otherwise
    */
   const confirmDelete = async (
     asset: AssetItem,
     onDeleting?: (deleting: boolean) => void
   ): Promise<boolean> => {
-    const assetType = getAssetType(asset)
-
-    return new Promise((resolve) => {
-      dialogStore.showDialog({
-        key: 'delete-asset-confirmation',
-        title: t('mediaAsset.deleteAssetTitle'),
-        component: ConfirmationDialogContent,
-        props: {
-          message: t('mediaAsset.deleteAssetDescription'),
-          type: 'delete',
-          itemList: [asset.name],
-          onConfirm: async () => {
-            onDeleting?.(true)
-            try {
-              const success = await deleteAsset(asset, assetType)
-              resolve(success)
-            } finally {
-              onDeleting?.(false)
-            }
-          },
-          onCancel: () => {
-            resolve(false)
-          }
-        }
-      })
-    })
+    return deleteMultipleAssets([asset], onDeleting)
   }
 
-  const deleteAsset = async (asset: AssetItem, assetType: string) => {
-    const assetsStore = useAssetsStore()
-
-    try {
-      // Perform the deletion
-      await deleteAssetApi(asset, assetType)
-
-      // Update the appropriate store based on asset type
-      if (assetType === 'output') {
-        await assetsStore.updateHistory()
-      } else {
-        await assetsStore.updateInputs()
-      }
-
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.assetDeletedSuccessfully'),
-        life: 2000
-      })
-      return true
-    } catch (error) {
-      console.error('Failed to delete asset:', error)
-      const errorMessage = error instanceof Error ? error.message : ''
-      const isCloudWarning = errorMessage.includes('Cloud')
-
-      toast.add({
-        severity: isCloudWarning ? 'warn' : 'error',
-        summary: isCloudWarning ? t('g.warning') : t('g.error'),
-        detail: errorMessage || t('mediaAsset.failedToDeleteAsset'),
-        life: 3000
-      })
-      return false
-    }
+  /**
+   * Delete a single asset with confirmation
+   * @param asset The asset to delete
+   * @param onDeleting Optional callback called with true when deletion starts and false when complete
+   * @returns true if the asset was deleted, false otherwise
+   */
+  const deleteAsset = async (
+    asset: AssetItem,
+    onDeleting?: (deleting: boolean) => void
+  ): Promise<boolean> => {
+    return deleteMultipleAssets([asset], onDeleting)
   }
 
   const copyJobId = async (asset?: AssetItem) => {
@@ -374,27 +327,33 @@ export function useMediaAssetActions() {
   }
 
   /**
-   * Delete multiple assets with confirmation dialog
+   * Delete one or more assets with confirmation dialog
    * @param assets Array of assets to delete
    * @param onDeleting Optional callback called with true when deletion starts (after confirmation) and false when complete
+   * @returns true if all assets were deleted successfully, false otherwise
    */
   const deleteMultipleAssets = async (
     assets: AssetItem[],
     onDeleting?: (deleting: boolean) => void
-  ) => {
-    if (!assets || assets.length === 0) return
+  ): Promise<boolean> => {
+    if (!assets || assets.length === 0) return false
 
     const assetsStore = useAssetsStore()
+    const isSingleAsset = assets.length === 1
 
-    return new Promise<void>((resolve) => {
+    return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
-        key: 'delete-multiple-assets-confirmation',
-        title: t('mediaAsset.deleteSelectedTitle'),
+        key: 'delete-assets-confirmation',
+        title: isSingleAsset
+          ? t('mediaAsset.deleteAssetTitle')
+          : t('mediaAsset.deleteSelectedTitle'),
         component: ConfirmationDialogContent,
         props: {
-          message: t('mediaAsset.deleteSelectedDescription', {
-            count: assets.length
-          }),
+          message: isSingleAsset
+            ? t('mediaAsset.deleteAssetDescription')
+            : t('mediaAsset.deleteSelectedDescription', {
+                count: assets.length
+              }),
           type: 'delete',
           itemList: assets.map((asset) => asset.name),
           onConfirm: async () => {
@@ -406,6 +365,8 @@ export function useMediaAssetActions() {
                   deleteAssetApi(asset, getAssetType(asset))
                 )
               )
+
+              await new Promise((resolve) => setTimeout(resolve, 2000))
 
               // Count successes and failures
               const succeeded = results.filter(
@@ -442,17 +403,29 @@ export function useMediaAssetActions() {
                 toast.add({
                   severity: 'success',
                   summary: t('g.success'),
-                  detail: t('mediaAsset.selection.assetsDeletedSuccessfully', {
-                    count: succeeded
-                  }),
+                  detail: isSingleAsset
+                    ? t('mediaAsset.assetDeletedSuccessfully')
+                    : t('mediaAsset.selection.assetsDeletedSuccessfully', {
+                        count: succeeded
+                      }),
                   life: 2000
                 })
               } else if (succeeded === 0) {
                 // All failed
+                const errorMessage =
+                  failed[0].status === 'rejected'
+                    ? (failed[0].reason as Error)?.message
+                    : ''
+                const isCloudWarning = errorMessage?.includes('Cloud')
+
                 toast.add({
-                  severity: 'error',
-                  summary: t('g.error'),
-                  detail: t('mediaAsset.selection.failedToDeleteAssets'),
+                  severity: isCloudWarning ? 'warn' : 'error',
+                  summary: isCloudWarning ? t('g.warning') : t('g.error'),
+                  detail:
+                    errorMessage ||
+                    (isSingleAsset
+                      ? t('mediaAsset.failedToDeleteAsset')
+                      : t('mediaAsset.selection.failedToDeleteAssets')),
                   life: 3000
                 })
               } else {
@@ -467,22 +440,26 @@ export function useMediaAssetActions() {
                   life: 3000
                 })
               }
+
+              resolve(failed.length === 0)
             } catch (error) {
               console.error('Failed to delete assets:', error)
               toast.add({
                 severity: 'error',
                 summary: t('g.error'),
-                detail: t('mediaAsset.selection.failedToDeleteAssets'),
+                detail: isSingleAsset
+                  ? t('mediaAsset.failedToDeleteAsset')
+                  : t('mediaAsset.selection.failedToDeleteAssets'),
                 life: 3000
               })
+
+              resolve(false)
             } finally {
               onDeleting?.(false)
             }
-
-            resolve()
           },
           onCancel: () => {
-            resolve()
+            resolve(false)
           }
         }
       })
