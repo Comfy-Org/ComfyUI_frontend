@@ -122,7 +122,7 @@ const buttonClasses = cn([
 <template>
   <MoreButton
     is-vertical
-    button-class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover active:scale-95 transition-all"
+    class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover active:scale-95 transition-all"
   >
     <template #default="{ close }">
       <button

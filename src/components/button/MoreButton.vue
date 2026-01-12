@@ -3,7 +3,7 @@
     <Button
       size="icon"
       variant="secondary"
-      :class="buttonClass"
+      v-bind="$attrs"
       @click="popover?.toggle"
     >
       <i
@@ -61,17 +61,19 @@
 <script setup lang="ts">
 import Popover from 'primevue/popover'
 import { ref } from 'vue'
-import type { HTMLAttributes } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
+defineOptions({
+  inheritAttrs: false
+})
+
 interface MoreButtonProps {
   isVertical?: boolean
-  buttonClass?: HTMLAttributes['class']
 }
 
-const { isVertical = false, buttonClass } = defineProps<MoreButtonProps>()
+const { isVertical = false } = defineProps<MoreButtonProps>()
 
 defineEmits<{
   menuOpened: []
