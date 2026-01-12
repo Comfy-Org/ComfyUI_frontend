@@ -2311,7 +2311,7 @@
     "filterBy": "Filter by",
     "findInLibrary": "Find it in the {type} section of the models library.",
     "finish": "Finish",
-    "uploadAnother": "Upload Another",
+    "importAnother": "Import Another",
     "genericLinkPlaceholder": "Paste link here",
     "jobId": "Job ID",
     "loadingModels": "Loading {type}...",

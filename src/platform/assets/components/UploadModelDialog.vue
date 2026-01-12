@@ -48,7 +48,7 @@
       @fetch-metadata="handleFetchMetadata"
       @upload="handleUploadModel"
       @close="handleClose"
-      @upload-another="resetWizard"
+      @import-another="resetWizard"
     />
   </div>
 </template>

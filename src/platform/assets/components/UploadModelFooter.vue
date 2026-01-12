@@ -89,10 +89,10 @@
       <Button
         variant="muted-textonly"
         size="lg"
-        data-attr="upload-model-step3-upload-another-button"
-        @click="emit('uploadAnother')"
+        data-attr="upload-model-step3-import-another-button"
+        @click="emit('importAnother')"
       >
-        {{ $t('assetBrowser.uploadAnother') }}
+        {{ $t('assetBrowser.importAnother') }}
       </Button>
       <Button
         variant="secondary"
@@ -146,6 +146,6 @@ const emit = defineEmits<{
   (e: 'fetchMetadata'): void
   (e: 'upload'): void
   (e: 'close'): void
-  (e: 'uploadAnother'): void
+  (e: 'importAnother'): void
 }>()
 </script>
