@@ -37,15 +37,13 @@ describe('validateNodeDef', () => {
     'validateComfyNodeDef with various input spec formats',
     (inputSpec, expected) => {
       it(`should accept input spec format: ${JSON.stringify(inputSpec)}`, async () => {
-        expect(
-          // @ts-expect-error fixme ts strict error
-          validateComfyNodeDef({
-            ...EXAMPLE_NODE_DEF,
-            input: {
-              required: inputSpec
-            }
-          }).input.required.ckpt_name
-        ).toEqual(expected)
+        const result = validateComfyNodeDef({
+          ...EXAMPLE_NODE_DEF,
+          input: {
+            required: inputSpec
+          }
+        })
+        expect(result?.input?.required?.ckpt_name).toEqual(expected)
       })
     }
   )

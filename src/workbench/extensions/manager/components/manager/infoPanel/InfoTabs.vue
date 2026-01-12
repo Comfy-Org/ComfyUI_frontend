@@ -67,9 +67,10 @@ const importFailedContext = inject(ImportFailedKey)
 const importFailed = importFailedContext?.importFailed
 
 const nodeNames = computed(() => {
-  // @ts-expect-error comfy_nodes is an Algolia-specific field
-  const { comfy_nodes } = nodePack
-  return comfy_nodes ?? []
+  const packWithAlgolia = nodePack as typeof nodePack & {
+    comfy_nodes?: string[]
+  }
+  return packWithAlgolia.comfy_nodes ?? []
 })
 
 const activeTab = ref('description')

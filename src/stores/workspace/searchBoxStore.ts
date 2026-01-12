@@ -31,14 +31,11 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
       return
     }
     if (!popoverRef.value) return
-    popoverRef.value.showSearchBox(
-      new MouseEvent('click', {
-        clientX: x.value,
-        clientY: y.value,
-        // @ts-expect-error layerY is a nonstandard property
-        layerY: y.value
-      }) as unknown as CanvasPointerEvent
+    const event = Object.assign(
+      new MouseEvent('click', { clientX: x.value, clientY: y.value }),
+      { layerY: y.value }
     )
+    popoverRef.value.showSearchBox(event as unknown as CanvasPointerEvent)
   }
 
   return {

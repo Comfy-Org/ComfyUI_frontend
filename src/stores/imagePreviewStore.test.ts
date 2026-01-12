@@ -37,8 +37,7 @@ describe('imagePreviewStore getPreviewParam', () => {
 
   it('should return empty string if node.animatedImages is true', () => {
     const store = useNodeOutputStore()
-    // @ts-expect-error `animatedImages` property is not typed
-    const node = createMockNode({ animatedImages: true })
+    const node = Object.assign(createMockNode(), { animatedImages: true })
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
     expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
