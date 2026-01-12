@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
+
 type Severity = 'default' | 'secondary' | 'warn' | 'danger' | 'contrast'
 
 const { label, severity = 'default' } = defineProps<{
@@ -6,25 +10,20 @@ const { label, severity = 'default' } = defineProps<{
   severity?: Severity
 }>()
 
-function badgeClasses(sev: Severity): string {
-  const baseClasses =
-    'inline-flex h-3.5 items-center justify-center rounded-full px-1 text-xxxs font-semibold uppercase'
+const baseClasses =
+  'inline-flex h-3.5 items-center justify-center rounded-full px-1 text-xxxs font-semibold uppercase'
 
-  switch (sev) {
-    case 'danger':
-      return `${baseClasses} bg-destructive-background text-white`
-    case 'contrast':
-      return `${baseClasses} bg-base-foreground text-base-background`
-    case 'warn':
-      return `${baseClasses} bg-warning-background text-base-background`
-    case 'secondary':
-      return `${baseClasses} bg-secondary-background text-base-foreground`
-    default:
-      return `${baseClasses} bg-primary-background text-base-foreground`
-  }
+const severityClasses: Record<Severity, string> = {
+  default: 'bg-primary-background text-base-foreground',
+  secondary: 'bg-secondary-background text-base-foreground',
+  warn: 'bg-warning-background text-base-background',
+  danger: 'bg-destructive-background text-white',
+  contrast: 'bg-base-foreground text-base-background'
 }
+
+const badgeClasses = computed(() => cn(baseClasses, severityClasses[severity]))
 </script>
 
 <template>
-  <span :class="badgeClasses(severity)">{{ label }}</span>
+  <span :class="badgeClasses">{{ label }}</span>
 </template>

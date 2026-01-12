@@ -120,7 +120,7 @@ describe('useLoad3dViewer', () => {
       forceRender: vi.fn()
     }
 
-    vi.mocked(Load3d).mockImplementation(function () {
+    vi.mocked(Load3d).mockImplementation(function (this: Load3d) {
       Object.assign(this, mockLoad3d)
     })
 
