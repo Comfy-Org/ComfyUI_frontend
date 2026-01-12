@@ -1,7 +1,7 @@
 <template>
   <div class="flex items-center gap-2">
     <div
-      v-if="hasConflict"
+      v-if="packageConflict?.has_conflict"
       v-tooltip="{
         value: $t('manager.conflicts.warningTooltip'),
         showDelay: 300
@@ -9,7 +9,9 @@
       class="flex h-6 w-6 cursor-pointer items-center justify-center"
       @click="showConflictModal(true)"
     >
-      <i class="pi pi-exclamation-triangle text-xl text-yellow-500"></i>
+      <i
+        class="icon-[lucide--triangle-alert] text-xl text-warning-background"
+      />
     </div>
     <ToggleSwitch
       v-if="!canToggleDirectly"
@@ -37,15 +39,15 @@ import { useI18n } from 'vue-i18n'
 import { useDialogService } from '@/services/dialogService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
 const TOGGLE_DEBOUNCE_MS = 256
 
-const { nodePack, hasConflict } = defineProps<{
+const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
-  hasConflict?: boolean
 }>()
 
 const { t } = useI18n()
@@ -54,6 +56,7 @@ const { isPackEnabled, enablePack, disablePack, installedPacks } =
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 const { showNodeConflictDialog } = useDialogService()
 const { acknowledgmentState, markConflictsAsSeen } = useConflictAcknowledgment()
+const { showImportFailedDialog } = useImportFailedDetection(nodePack.id || '')
 
 const isLoading = ref(false)
 
@@ -68,37 +71,50 @@ const version = computed(() => {
   )
 })
 
-const packageConflict = computed(() =>
-  getConflictsForPackageByID(nodePack.id || '')
-)
+const packageConflict = computed(() => {
+  if (!nodePack.id) return undefined
+  return getConflictsForPackageByID(nodePack.id)
+})
 const canToggleDirectly = computed(() => {
   return !(
-    hasConflict &&
-    !acknowledgmentState.value.modal_dismissed &&
-    packageConflict.value
+    packageConflict.value?.has_conflict &&
+    !acknowledgmentState.value.modal_dismissed
   )
 })
 
 const showConflictModal = (skipModalDismissed: boolean) => {
   let modal_dismissed = acknowledgmentState.value.modal_dismissed
   if (skipModalDismissed) modal_dismissed = false
+
   if (packageConflict.value && !modal_dismissed) {
-    showNodeConflictDialog({
-      conflictedPackages: [packageConflict.value],
-      buttonText: !isEnabled.value
-        ? t('manager.conflicts.enableAnyway')
-        : t('manager.conflicts.understood'),
-      onButtonClick: async () => {
-        if (!isEnabled.value) {
-          await handleEnable()
+    // Check if there's an import failed conflict first
+    const hasImportFailed = packageConflict.value.conflicts.some(
+      (conflict) => conflict.type === 'import_failed'
+    )
+    if (hasImportFailed) {
+      // Show import failed dialog instead of general conflict dialog
+      showImportFailedDialog(() => {
+        markConflictsAsSeen()
+      })
+    } else {
+      // Show general conflict dialog for other types of conflicts
+      showNodeConflictDialog({
+        conflictedPackages: [packageConflict.value],
+        buttonText: !isEnabled.value
+          ? t('manager.conflicts.enableAnyway')
+          : t('manager.conflicts.understood'),
+        onButtonClick: async () => {
+          if (!isEnabled.value) {
+            await handleEnable()
+          }
+        },
+        dialogComponentProps: {
+          onClose: () => {
+            markConflictsAsSeen()
+          }
         }
-      },
-      dialogComponentProps: {
-        onClose: () => {
-          markConflictsAsSeen()
-        }
-      }
-    })
+      })
+    }
   }
 }
 

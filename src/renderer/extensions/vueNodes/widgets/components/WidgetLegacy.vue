@@ -17,6 +17,7 @@ const props = defineProps<{
 }>()
 
 const canvasEl = ref()
+const containerHeight = ref(20)
 
 const canvas: LGraphCanvas = useCanvasStore().canvas as LGraphCanvas
 let node: LGraphNode | undefined
@@ -52,9 +53,19 @@ onBeforeUnmount(() => {
 function draw() {
   if (!widgetInstance || !node) return
   const width = canvasEl.value.parentElement.clientWidth
-  const height = widgetInstance.computeSize
-    ? widgetInstance.computeSize(width)[1]
-    : 20
+  // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
+  let height = 20
+  if (widgetInstance.computedHeight) {
+    height = widgetInstance.computedHeight
+  } else if (widgetInstance.computeLayoutSize) {
+    height = widgetInstance.computeLayoutSize(node).minHeight
+  } else if (widgetInstance.computeSize) {
+    height = widgetInstance.computeSize(width)[1]
+  }
+  containerHeight.value = height
+  // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
+  // @ts-expect-error canvasHeight is a custom property used by some extensions
+  node.canvasHeight = height
   widgetInstance.y = 0
   canvasEl.value.height = (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
@@ -87,13 +98,16 @@ function handleMove(e: PointerEvent) {
 }
 </script>
 <template>
-  <div class="relative mx-[-12px] min-w-0 basis-0">
+  <div
+    class="relative mx-[-12px] min-w-0 basis-0"
+    :style="{ minHeight: `${containerHeight}px` }"
+  >
     <canvas
       ref="canvasEl"
-      class="absolute mt-[-13px] w-full cursor-crosshair"
-      @pointerdown="handleDown"
-      @pointerup="handleUp"
-      @pointermove="handleMove"
+      class="absolute w-full cursor-crosshair"
+      @pointerdown.stop="handleDown"
+      @pointerup.stop="handleUp"
+      @pointermove.stop="handleMove"
     />
   </div>
 </template>

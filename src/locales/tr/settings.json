@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "İş akışlarında tuval konumunu ve yakınlaştırma seviyesini kaydet ve geri yükle"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Canlı önizleme yöntemi",
+    "options": {
+      "auto": "otomatik",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "hiçbiri",
+      "taesd": "taesd"
+    },
+    "tooltip": "Görüntü oluşturma sırasında canlı önizleme yöntemi. \"default\" sunucu CLI ayarını kullanır."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Ondalık sayı widget yuvarlama ondalık basamakları [0 = otomatik].",
     "tooltip": "(sayfanın yeniden yüklenmesini gerektirir)"
@@ -99,6 +110,10 @@
       "Circle": "Daire",
       "None": "Yok"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Canlı seçim",
+    "tooltip": "Etkinleştirildiğinde, seçim dikdörtgenini sürüklerken düğümler gerçek zamanlı olarak seçilir/seçimi kaldırılır; diğer tasarım araçlarına benzer şekilde çalışır."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Tuval yakınlaştırma hızı"
@@ -166,6 +181,15 @@
     "name": "Minimum Işık Yoğunluğu",
     "tooltip": "3D sahneler için izin verilen minimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D widget'ta aydınlatma ayarlanırken ayarlanabilecek alt parlaklık sınırını tanımlar."
   },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY Motoru",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLY dosyalarını yüklemek için motoru seçin. \"threejs\" yerel Three.js PLYLoader'ı kullanır (mesh PLY dosyaları için en iyisi). \"fastply\" ASCII nokta bulutu PLY dosyaları için optimize edilmiş bir yükleyici kullanır. \"sparkjs\" ise 3D Gaussian Splatting PLY dosyaları için Spark.js kullanır."
+  },
   "Comfy_Load3D_ShowGrid": {
     "name": "Başlangıç Izgara Görünürlüğü",
     "tooltip": "Yeni bir 3D widget oluşturulduğunda ızgaranın varsayılan olarak görünür olup olmadığını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
@@ -180,10 +204,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "Fırça ayarını baskın eksene kilitle",
     "tooltip": "Etkinleştirildiğinde, fırça ayarları yalnızca daha fazla hareket ettiğiniz yöne bağlı olarak boyutu VEYA sertliği etkileyecektir"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Yeni maske düzenleyiciyi kullan",
-    "tooltip": "Yeni maske düzenleyici arayüzüne geç"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Tüm model klasörlerini otomatik olarak yükle",
@@ -348,6 +368,14 @@
   },
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Ağaç gezgini öğe dolgusu"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Sekme Çubuğu Düzeni",
+    "options": {
+      "Default": "Varsayılan",
+      "Integrated": "Entegre"
+    },
+    "tooltip": "Sekme çubuğu düzenini kontrol eder. \"Entegre\" seçeneği, Yardım ve Kullanıcı kontrollerini sekme çubuğu alanına taşır."
   },
   "Comfy_UseNewMenu": {
     "name": "Yeni menüyü kullan",

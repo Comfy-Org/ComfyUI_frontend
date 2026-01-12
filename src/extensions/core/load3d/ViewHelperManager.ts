@@ -14,16 +14,13 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
   private getActiveCamera: () => THREE.Camera
   private getControls: () => OrbitControls
   private eventManager: EventManagerInterface
-  // @ts-expect-error unused variable
-  private renderer: THREE.WebGLRenderer
 
   constructor(
-    renderer: THREE.WebGLRenderer,
+    _renderer: THREE.WebGLRenderer,
     getActiveCamera: () => THREE.Camera,
     getControls: () => OrbitControls,
     eventManager: EventManagerInterface
   ) {
-    this.renderer = renderer
     this.getActiveCamera = getActiveCamera
     this.getControls = getControls
     this.eventManager = eventManager

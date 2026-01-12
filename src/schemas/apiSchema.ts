@@ -135,6 +135,17 @@ const zLogRawResponse = z.object({
 
 const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
 
+const zAssetDownloadWsMessage = z.object({
+  task_id: z.string(),
+  asset_name: z.string(),
+  bytes_total: z.number(),
+  bytes_downloaded: z.number(),
+  progress: z.number(),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
+  asset_id: z.string().optional(),
+  error: z.string().optional()
+})
+
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
 export type ProgressWsMessage = z.infer<typeof zProgressWsMessage>
@@ -154,6 +165,7 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
+export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
 // End of ws messages
 
 export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
@@ -387,6 +399,7 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
+  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Integrated']),
   'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
@@ -455,6 +468,7 @@ const zSettings = z.object({
   'Comfy.Notification.ShowVersionUpdates': z.boolean(),
   'Comfy.QueueButton.BatchCountLimit': z.number(),
   'Comfy.Queue.MaxHistoryItems': z.number(),
+  'Comfy.Queue.History.Expanded': z.boolean(),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
   'Comfy.Extension.Disabled': z.array(z.string()),
@@ -491,13 +505,13 @@ const zSettings = z.object({
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
+  'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
   'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
   'Comfy-Desktop.UV.PypiInstallMirror': z.string(),
   'Comfy-Desktop.UV.TorchInstallMirror': z.string(),
-  'Comfy.MaskEditor.UseNewEditor': z.boolean(),
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
@@ -527,6 +541,8 @@ const zSettings = z.object({
   'Comfy.Templates.SelectedRunsOn': z.array(z.string()),
   'Comfy.Templates.SortBy': z.enum([
     'default',
+    'recommended',
+    'popular',
     'alphabetical',
     'newest',
     'vram-low-to-high',

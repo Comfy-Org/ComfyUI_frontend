@@ -37,6 +37,8 @@ interface ModelTypeOption {
   value: string // Actual tag value
 }
 
+const DISALLOWED_MODEL_TYPES = ['nlf'] as const
+
 /**
  * Composable for fetching and managing model types from the API
  * Uses shared state to ensure data is only fetched once
@@ -50,10 +52,18 @@ export const useModelTypes = createSharedComposable(() => {
   } = useAsyncState(
     async (): Promise<ModelTypeOption[]> => {
       const response = await api.getModelFolders()
-      return response.map((folder) => ({
-        name: formatDisplayName(folder.name),
-        value: folder.name
-      }))
+      return response
+        .filter(
+          (folder) =>
+            !DISALLOWED_MODEL_TYPES.includes(
+              folder.name as (typeof DISALLOWED_MODEL_TYPES)[number]
+            )
+        )
+        .map((folder) => ({
+          name: formatDisplayName(folder.name),
+          value: folder.name
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name))
     },
     [] as ModelTypeOption[],
     {

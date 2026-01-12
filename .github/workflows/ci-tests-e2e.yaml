@@ -1,5 +1,5 @@
 # Description: End-to-end testing with Playwright across multiple browsers, deploys test reports to Cloudflare Pages
-name: "CI: Tests E2E"
+name: 'CI: Tests E2E'
 
 on:
   push:
@@ -15,66 +15,56 @@ concurrency:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-
-      # Setup Test Environment, build frontend but do not start server yet
-      - name: Setup ComfyUI server
-        uses: ./.github/actions/setup-comfyui-server
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright  # Setup Playwright and cache browsers
 
-      # Save the entire workspace as cache for later test jobs to restore
-      - name: Generate cache key
-        id: cache-key
-        run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
-      - name: Save cache
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
+      # Upload only built dist/ (containerized test jobs will pnpm install without cache)
+      - name: Upload built frontend
+        uses: actions/upload-artifact@v4
         with:
-          path: .
-          key: comfyui-setup-${{ steps.cache-key.outputs.key }}
+          name: frontend-dist
+          path: dist/
+          retention-days: 1
 
   # Sharded chromium tests
   playwright-tests-chromium-sharded:
     needs: setup
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.10
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4, 5, 6, 7, 8]
         shardTotal: [8]
     steps:
-      # download built frontend repo from setup job
-      - name: Wait for cache propagation
-        run: sleep 10
-      - name: Restore cached setup
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Download built frontend
+        uses: actions/download-artifact@v4
         with:
-          fail-on-cache-miss: true
-          path: .
-          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+          name: frontend-dist
+          path: dist/
 
-      # Setup Test Environment for this runner, start server, use cached built frontend ./dist from 'setup' job
-      - name: Setup ComfyUI server
-        uses: ./.github/actions/setup-comfyui-server
-        with:
-          launch_server: true
-      - name: Setup nodejs, pnpm, reuse built frontend
-        uses: ./.github/actions/setup-frontend
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
 
-      # Run sharded tests and upload sharded reports
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
         run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --reporter=blob
@@ -94,39 +84,37 @@ jobs:
     timeout-minutes: 15
     needs: setup
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.10
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
         browser: [chromium-2x, chromium-0.5x, mobile-chrome]
     steps:
-      # download built frontend repo from setup job
-      - name: Wait for cache propagation
-        run: sleep 10
-      - name: Restore cached setup
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      - name: Download built frontend
+        uses: actions/download-artifact@v4
         with:
-          fail-on-cache-miss: true
-          path: .
-          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+          name: frontend-dist
+          path: dist/
 
-      # Setup Test Environment for this runner, start server, use cached built frontend ./dist from 'setup' job
-      - name: Setup ComfyUI server
-        uses: ./.github/actions/setup-comfyui-server
-        with:
-          launch_server: true
-      - name: Setup nodejs, pnpm, reuse built frontend
-        uses: ./.github/actions/setup-frontend
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
 
-      # Run tests and upload reports
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
+
+      # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: |
-          # Run tests with blob reporter first
-          pnpm exec playwright test --project=${{ matrix.browser }} --reporter=blob
+        run: pnpm exec playwright test --project=${{ matrix.browser }} --reporter=blob
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
@@ -147,7 +135,7 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
-  # Merge sharded test reports
+  # Merge sharded test reports (no container needed - only runs CLI)
   merge-reports:
     needs: [playwright-tests-chromium-sharded]
     runs-on: ubuntu-latest
@@ -156,11 +144,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # Setup Test Environment, we only need playwright to merge reports
+      # Setup pnpm/node to run playwright merge-reports (no browsers needed)
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
 
       - name: Download blob reports
         uses: actions/download-artifact@v4
@@ -236,6 +222,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ github.event.pull_request.number }}" \

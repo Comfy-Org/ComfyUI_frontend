@@ -217,6 +217,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/verify-api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a ComfyUI API key and return customer details
+         * @description Validates a ComfyUI API key and returns the associated customer information.
+         *     This endpoint is used by cloud.comfy.org to authenticate users via API keys
+         *     instead of Firebase tokens.
+         */
+        post: operations["VerifyApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/customers/{customer_id}/cloud-subscription-status": {
         parameters: {
             query?: never;
@@ -3931,6 +3953,11 @@ export interface components {
          * @enum {string}
          */
         SubscriptionTier: "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION";
+        /**
+         * @description The subscription billing duration
+         * @enum {string}
+         */
+        SubscriptionDuration: "MONTHLY" | "ANNUAL";
         FeaturesResponse: {
             /**
              * @description The conversion rate for partner nodes
@@ -11883,6 +11910,8 @@ export interface operations {
                 "application/json": {
                     /** @description Optional URL to redirect the customer after they're done with the billing portal */
                     return_url?: string;
+                    /** @description Optional target subscription tier. When provided, creates a deep link directly to the subscription update confirmation screen with this tier pre-selected. */
+                    target_tier?: "standard" | "creator" | "pro" | "standard-yearly" | "creator-yearly" | "pro-yearly";
                 };
             };
         };
@@ -12046,6 +12075,7 @@ export interface operations {
                         /** @description The active subscription ID if one exists */
                         subscription_id?: string | null;
                         subscription_tier?: components["schemas"]["SubscriptionTier"] | null;
+                        subscription_duration?: components["schemas"]["SubscriptionDuration"] | null;
                         /** @description Whether the customer has funds/credits available */
                         has_fund?: boolean;
                         /**
@@ -12067,6 +12097,72 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    VerifyApiKey: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Admin API secret used to authorize this request */
+                "X-Comfy-Admin-Secret": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The ComfyUI API key to verify (e.g., comfy_xxx...) */
+                    api_key: string;
+                };
+            };
+        };
+        responses: {
+            /** @description API key is valid */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Whether the API key is valid */
+                        valid: boolean;
+                        /** @description The Firebase UID of the user */
+                        firebase_uid: string;
+                        /** @description The customer's email address */
+                        email?: string;
+                        /** @description The customer's name */
+                        name?: string;
+                        /** @description Whether the customer is an admin */
+                        is_admin?: boolean;
+                    };
+                };
+            };
+            /** @description Unauthorized or missing admin API secret */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key not found or invalid */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
             };
             /** @description Internal server error */
             500: {
@@ -12106,6 +12202,7 @@ export interface operations {
                         /** @description The active subscription ID if one exists */
                         subscription_id?: string | null;
                         subscription_tier?: components["schemas"]["SubscriptionTier"] | null;
+                        subscription_duration?: components["schemas"]["SubscriptionDuration"] | null;
                         /** @description Whether the customer has funds/credits available */
                         has_fund?: boolean;
                         /**

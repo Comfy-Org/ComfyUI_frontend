@@ -127,53 +127,6 @@ export async function getSurveyCompletedStatus(): Promise<boolean> {
   }
 }
 
-// @ts-expect-error - Unused function kept for future use
-async function postSurveyStatus(): Promise<void> {
-  try {
-    const response = await api.fetchApi(`/settings/${ONBOARDING_SURVEY_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ [ONBOARDING_SURVEY_KEY]: undefined })
-    })
-
-    if (!response.ok) {
-      const error = new Error(
-        `Failed to post survey status: ${response.statusText}`
-      )
-      captureApiError(
-        error,
-        '/settings/{key}',
-        'http_error',
-        response.status,
-        'post_survey_status',
-        {
-          route_template: '/settings/{key}',
-          route_actual: `/settings/${ONBOARDING_SURVEY_KEY}`
-        }
-      )
-      throw error
-    }
-  } catch (error) {
-    // Only capture network errors (not HTTP errors we already captured)
-    if (!isHttpError(error, 'Failed to post survey status:')) {
-      captureApiError(
-        error as Error,
-        '/settings/{key}',
-        'network_error',
-        undefined,
-        'post_survey_status',
-        {
-          route_template: '/settings/{key}',
-          route_actual: `/settings/${ONBOARDING_SURVEY_KEY}`
-        }
-      )
-    }
-    throw error
-  }
-}
-
 export async function submitSurvey(
   survey: Record<string, unknown>
 ): Promise<void> {

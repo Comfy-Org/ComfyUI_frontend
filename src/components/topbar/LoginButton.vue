@@ -1,17 +1,19 @@
 <template>
   <Button
     v-if="!isLoggedIn"
-    outlined
-    rounded
-    severity="secondary"
-    class="size-8 bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
+    variant="textonly"
+    size="icon"
+    :class="cn('group rounded-full text-base-foreground p-0', className)"
+    :aria-label="t('g.login')"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"
   >
-    <template #icon>
+    <span
+      class="flex size-full items-center justify-center rounded-full bg-secondary-background transition-colors group-hover:bg-transparent"
+    >
       <i class="icon-[lucide--user] size-4" />
-    </template>
+    </span>
   </Button>
   <Popover
     ref="popoverRef"
@@ -32,13 +34,19 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
+import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { t } from '@/i18n'
+import { cn } from '@/utils/tailwindUtil'
+
+const { class: className } = defineProps<{
+  class?: HTMLAttributes['class']
+}>()
 
 const { isLoggedIn, handleSignIn } = useCurrentUser()
 const { buildDocsUrl } = useExternalLink()

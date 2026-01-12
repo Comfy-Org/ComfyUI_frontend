@@ -15,7 +15,7 @@ import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
 import type { NodeId } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkId } from './LLink'
+import type { LinkId, SerialisedLLinkArray } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -98,8 +98,20 @@ type ParamsArray<
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
   /** @deprecated Legacy config - unused */
-  align_to_grid?: any
-  links_ontop?: any
+  align_to_grid?: boolean
+  links_ontop?: boolean
+}
+
+export interface GroupNodeWorkflowData {
+  external: (number | string)[][]
+  links: SerialisedLLinkArray[]
+  nodes: {
+    index?: number
+    type?: string
+    inputs?: unknown[]
+    outputs?: unknown[]
+  }[]
+  config?: Record<number, unknown>
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -107,6 +119,7 @@ export interface LGraphExtra extends Dictionary<unknown> {
   linkExtensions?: { id: number; parentId: number | undefined }[]
   ds?: DragAndScaleState
   workflowRendererVersion?: RendererType
+  groupNodes?: Record<string, GroupNodeWorkflowData>
 }
 
 export interface BaseLGraph {
@@ -1217,7 +1230,7 @@ export class LGraph
   }
 
   /** @todo Clean up - never implemented. */
-  triggerInput(name: string, value: any): void {
+  triggerInput(name: string, value: unknown): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
       // @ts-expect-error - onTrigger method may not exist on all node types
@@ -1226,7 +1239,7 @@ export class LGraph
   }
 
   /** @todo Clean up - never implemented. */
-  setCallback(name: string, func: any): void {
+  setCallback(name: string, func?: () => void): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
       // @ts-expect-error - setTrigger method may not exist on all node types
@@ -1509,6 +1522,22 @@ export class LGraph
   } {
     if (items.size === 0)
       throw new Error('Cannot convert to subgraph: nothing to convert')
+
+    // Record state before conversion for proper undo support
+    this.beforeChange()
+
+    try {
+      return this._convertToSubgraphImpl(items)
+    } finally {
+      // Mark state change complete for proper undo support
+      this.afterChange()
+    }
+  }
+
+  private _convertToSubgraphImpl(items: Set<Positionable>): {
+    subgraph: Subgraph
+    node: SubgraphNode
+  } {
     const { state, revision, config } = this
     const firstChild = [...items][0]
     if (items.size === 1 && firstChild instanceof LGraphGroup) {
@@ -1715,6 +1744,7 @@ export class LGraph
 
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
+
     this.canvasAction((c) =>
       c.canvas.dispatchEvent(
         new CustomEvent('subgraph-converted', {
@@ -1733,9 +1763,23 @@ export class LGraph
     if (!(subgraphNode instanceof SubgraphNode))
       throw new Error('Can only unpack Subgraph Nodes')
 
+    // Record state before unpacking for proper undo support
+    this.beforeChange()
+
+    try {
+      this._unpackSubgraphImpl(subgraphNode, options)
+    } finally {
+      // Mark state change complete for proper undo support
+      this.afterChange()
+    }
+  }
+
+  private _unpackSubgraphImpl(
+    subgraphNode: SubgraphNode,
+    options?: { skipMissingNodes?: boolean }
+  ) {
     const skipMissingNodes = options?.skipMissingNodes ?? false
 
-    this.beforeChange()
     //NOTE: Create bounds can not be called on positionables directly as the subgraph is not being displayed and boundingRect is not initialized.
     //NOTE: NODE_TITLE_HEIGHT is explicitly excluded here
     const positionables = [
@@ -2006,7 +2050,6 @@ export class LGraph
     }
 
     this.canvasAction((c) => c.selectItems(toSelect))
-    this.afterChange()
   }
 
   /**

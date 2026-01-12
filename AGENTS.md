@@ -63,6 +63,9 @@ The project uses **Nx** for build orchestration and task management
 - Imports:
   - sorted/grouped by plugin
   - run `pnpm format` before committing
+  - use separate `import type` statements, not inline `type` in mixed imports
+    - ✅ `import type { Foo } from './foo'` + `import { bar } from './foo'`
+    - ❌ `import { bar, type Foo } from './foo'`
 - ESLint:
   - Vue + TS rules
   - no floating promises
@@ -119,7 +122,10 @@ The project uses **Nx** for build orchestration and task management
   - Prefer reactive props destructuring to `const props = defineProps<...>`
   - Do not use `withDefaults` or runtime props declaration
   - Do not import Vue macros unnecessarily
-  - Prefer `useModel` to separately defining a prop and emit
+  - Prefer `defineModel` to separately defining a prop and emit for v-model bindings
+  - Define slots via template usage, not `defineSlots`
+  - Use same-name shorthand for slot prop bindings: `:isExpanded` instead of `:is-expanded="isExpanded"`
+  - Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`) instead of separate type files
   - Be judicious with addition of new refs or other state
     - If it's possible to accomplish the design goals with just a prop, don't add a `ref`
     - If it's possible to use the `ref` or prop directly, don't add a `computed`
@@ -137,7 +143,7 @@ The project uses **Nx** for build orchestration and task management
 8. Implement proper error handling
 9. Follow Vue 3 style guide and naming conventions
 10. Use Vite for fast development and building
-11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json
+11. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
 12. Avoid new usage of PrimeVue components
 13. Write tests for all changes, especially bug fixes to catch future regressions
 14. Write code that is expressive and self-documenting to the furthest degree possible. This reduces the need for code comments which can get out of sync with the code itself. Try to avoid comments unless absolutely necessary
@@ -154,6 +160,8 @@ The project uses **Nx** for build orchestration and task management
 25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
 
 ## Testing Guidelines
+
+See @docs/testing/*.md for detailed patterns.
 
 - Frameworks:
   - Vitest (unit/component, happy-dom)
@@ -266,3 +274,18 @@ When referencing Comfy-Org repos:
   - Always use `import { cn } from '@/utils/tailwindUtil'`
     - e.g. `<div :class="cn('text-node-component-header-icon', hasError && 'text-danger')" />`
   - Use `cn()` inline in the template when feasible instead of creating a `computed` to hold the value
+- NEVER use `!important` or the `!` important prefix for tailwind classes
+  - Find existing `!important` classes that are interfering with the styling and propose corrections of those instead.
+- NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
+  - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
+
+## Agent-only rules
+
+Rules for agent-based coding tasks.
+
+### Temporary Files
+
+- Put planning documents under `/temp/plans/`
+- Put scripts used under `/temp/scripts/`
+- Put summaries of work performed under `/temp/summaries/`
+- Put TODOs and status updates under `/temp/in_progress/`

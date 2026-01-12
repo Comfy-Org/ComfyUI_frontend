@@ -12,17 +12,26 @@ interface Props extends PrimitiveProps {
   variant?: ButtonVariants['variant']
   size?: ButtonVariants['size']
   class?: HTMLAttributes['class']
+  loading?: boolean
+  disabled?: boolean
 }
 
-const { as = 'button', class: customClass = '' } = defineProps<Props>()
+const {
+  as = 'button',
+  class: customClass = '',
+  loading = false,
+  disabled = false
+} = defineProps<Props>()
 </script>
 
 <template>
   <Primitive
     :as
     :as-child
+    :disabled="disabled || loading"
     :class="cn(buttonVariants({ variant, size }), customClass)"
   >
-    <slot />
+    <i v-if="loading" class="pi pi-spin pi-spinner" />
+    <slot v-if="!loading" />
   </Primitive>
 </template>

@@ -9,11 +9,7 @@ interface ShimResult {
 const SKIP_WARNING_FILES = new Set(['scripts/app', 'scripts/api'])
 
 /** Files that will be removed in v1.34 */
-const DEPRECATED_FILES = [
-  'scripts/ui',
-  'extensions/core/maskEditorOld',
-  'extensions/core/groupNode'
-] as const
+const DEPRECATED_FILES = ['scripts/ui', 'extensions/core/groupNode'] as const
 
 function getWarningMessage(
   fileKey: string,

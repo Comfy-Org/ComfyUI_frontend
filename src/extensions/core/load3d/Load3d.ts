@@ -392,7 +392,8 @@ class Load3d {
       this.STATUS_MOUSE_ON_SCENE ||
       this.STATUS_MOUSE_ON_VIEWER ||
       this.isRecording() ||
-      !this.INITIAL_RENDER_DONE
+      !this.INITIAL_RENDER_DONE ||
+      this.animationManager.isAnimationPlaying
     )
   }
 
@@ -724,6 +725,32 @@ class Load3d {
 
   public hasAnimations(): boolean {
     return this.animationManager.animationClips.length > 0
+  }
+
+  public hasSkeleton(): boolean {
+    return this.modelManager.hasSkeleton()
+  }
+
+  public setShowSkeleton(show: boolean): void {
+    this.modelManager.setShowSkeleton(show)
+    this.forceRender()
+  }
+
+  public getShowSkeleton(): boolean {
+    return this.modelManager.showSkeleton
+  }
+
+  public getAnimationTime(): number {
+    return this.animationManager.getAnimationTime()
+  }
+
+  public getAnimationDuration(): number {
+    return this.animationManager.getAnimationDuration()
+  }
+
+  public setAnimationTime(time: number): void {
+    this.animationManager.setAnimationTime(time)
+    this.forceRender()
   }
 
   public remove(): void {

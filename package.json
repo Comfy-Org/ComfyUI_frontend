@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.36.7",
+  "version": "1.37.10",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -42,6 +42,7 @@
     "prepare": "husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "nx preview",
     "storybook": "nx storybook",
+    "storybook:desktop": "nx run @comfyorg/desktop-ui:storybook",
     "stylelint:fix": "stylelint --cache --fix '{apps,packages,src}/**/*.{css,vue}'",
     "stylelint": "stylelint --cache '{apps,packages,src}/**/*.{css,vue}'",
     "test:browser": "pnpm exec nx e2e",
@@ -65,6 +66,7 @@
     "@prettier/plugin-oxc": "catalog:",
     "@sentry/vite-plugin": "catalog:",
     "@storybook/addon-docs": "catalog:",
+    "@storybook/addon-mcp": "catalog:",
     "@storybook/vue3": "catalog:",
     "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
@@ -186,6 +188,7 @@
     "vue-i18n": "catalog:",
     "vue-router": "catalog:",
     "vuefire": "catalog:",
+    "wwobjloader2": "catalog:",
     "yjs": "catalog:",
     "zod": "catalog:",
     "zod-validation-error": "catalog:"

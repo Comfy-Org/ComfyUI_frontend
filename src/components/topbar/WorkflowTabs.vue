@@ -6,13 +6,15 @@
   >
     <Button
       v-if="showOverflowArrows"
-      icon="pi pi-chevron-left"
-      text
-      severity="secondary"
-      class="overflow-arrow overflow-arrow-left"
+      variant="muted-textonly"
+      size="icon"
+      class="overflow-arrow overflow-arrow-left h-full w-auto aspect-square"
+      :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
-    />
+    >
+      <i class="icon-[lucide--chevron-left] size-full" />
+    </Button>
     <ScrollPanel
       class="no-drag overflow-hidden"
       :pt:content="{
@@ -41,13 +43,15 @@
     </ScrollPanel>
     <Button
       v-if="showOverflowArrows"
-      icon="pi pi-chevron-right"
-      text
-      severity="secondary"
-      class="overflow-arrow overflow-arrow-right"
+      variant="muted-textonly"
+      size="icon"
+      class="overflow-arrow overflow-arrow-right h-full w-auto aspect-square"
+      :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
-    />
+    >
+      <i class="icon-[lucide--chevron-right] size-full" />
+    </Button>
     <WorkflowOverflowMenu
       v-if="showOverflowArrows"
       :workflows="workflowStore.openWorkflows"
@@ -55,13 +59,27 @@
     />
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button no-drag shrink-0 rounded-none"
-      icon="pi pi-plus"
-      text
-      severity="secondary"
+      class="new-blank-workflow-button no-drag shrink-0 rounded-none h-full w-auto aspect-square"
+      variant="muted-textonly"
+      size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
       @click="() => commandStore.execute('Comfy.NewBlankWorkflow')"
-    />
+    >
+      <i class="pi pi-plus" />
+    </Button>
+    <div
+      v-if="isIntegratedTabBar"
+      class="ml-auto flex shrink-0 items-center gap-2 px-2"
+    >
+      <TopMenuHelpButton />
+      <CurrentUserButton
+        v-if="isLoggedIn"
+        :show-arrow="false"
+        compact
+        class="shrink-0 p-1"
+      />
+      <LoginButton v-else-if="isDesktop" class="p-1" />
+    </div>
     <ContextMenu ref="menu" :model="contextMenuItems" />
     <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
   </div>
@@ -69,7 +87,6 @@
 
 <script setup lang="ts">
 import { useScroll } from '@vueuse/core'
-import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import ScrollPanel from 'primevue/scrollpanel'
 import SelectButton from 'primevue/selectbutton'
@@ -77,8 +94,14 @@ import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 import type { WatchStopHandle } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import LoginButton from '@/components/topbar/LoginButton.vue'
+import TopMenuHelpButton from '@/components/topbar/TopMenuHelpButton.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -102,10 +125,16 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowBookmarkStore = useWorkflowBookmarkStore()
 const workflowService = useWorkflowService()
+const { isLoggedIn } = useCurrentUser()
+
+const isIntegratedTabBar = computed(
+  () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+)
 
 const rightClickedTab = ref<WorkflowOption | undefined>()
 const menu = ref()
