@@ -843,7 +843,7 @@ export class LGraph
 
     for (const c of list_of_graphcanvas) {
       const method = c[action]
-       
+
       if (typeof method === 'function') {
         const args =
           params == null ? [] : Array.isArray(params) ? params : [params]
