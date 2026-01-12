@@ -13,13 +13,6 @@ export const GetNodeParentGroupKey: InjectionKey<
   (node: LGraphNode) => LGraphGroup | null
 > = Symbol('getNodeParentGroup')
 
-export type WidgetUpdateType =
-  | 'rename'
-  | 'favorite'
-  | 'unfavorite'
-  | 'hideOnSubgraph'
-  | 'showOnSubgraph'
-
 export type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>
 export type NodeWidgetsListList = Array<{
   node: LGraphNode
@@ -84,7 +77,7 @@ export function searchWidgetsAndNodes(
     .filter((item) => item.keep || item.widgets.length > 0)
 }
 
-export type MixedSelectionItem = LGraphGroup | LGraphNode
+type MixedSelectionItem = LGraphGroup | LGraphNode
 type FlatAndCategorizeSelectedItemsResult = {
   all: MixedSelectionItem[]
   nodes: LGraphNode[]
