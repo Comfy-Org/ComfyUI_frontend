@@ -4,6 +4,7 @@ import Select from 'primevue/select'
 export default {
   name: 'SelectPlus',
   extends: Select,
+  emits: ['hide'],
   methods: {
     onOverlayLeave() {
       this.unbindOutsideClickListener()
