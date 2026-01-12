@@ -24,5 +24,13 @@ onMounted(() => {
 })
 </script>
 <template>
-  <div ref="domEl" />
+  <div
+    ref="domEl"
+    @pointerdown.stop
+    @pointermove.stop
+    @pointerup.stop
+    @mousedown.stop
+    @mousemove.stop
+    @mouseup.stop
+  />
 </template>

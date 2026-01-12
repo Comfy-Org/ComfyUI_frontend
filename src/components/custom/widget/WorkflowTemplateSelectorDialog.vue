@@ -563,7 +563,8 @@ const {
   availableRunsOn,
   filteredCount,
   totalCount,
-  resetFilters
+  resetFilters,
+  loadFuseOptions
 } = useTemplateFiltering(navigationFilteredTemplates)
 
 /**
@@ -815,10 +816,10 @@ const pageTitle = computed(() => {
 // Initialize templates loading with useAsyncState
 const { isLoading } = useAsyncState(
   async () => {
-    // Run all operations in parallel for better performance
     await Promise.all([
       loadTemplates(),
-      workflowTemplatesStore.loadWorkflowTemplates()
+      workflowTemplatesStore.loadWorkflowTemplates(),
+      loadFuseOptions()
     ])
     return true
   },

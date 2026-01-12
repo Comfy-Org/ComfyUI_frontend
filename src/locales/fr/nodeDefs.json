@@ -39,6 +39,87 @@
       "sigmas": {
         "name": "sigmas"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "AddTextPrefix": {
+    "display_name": "Ajouter un préfixe au texte",
+    "inputs": {
+      "prefix": {
+        "name": "préfixe",
+        "tooltip": "Préfixe à ajouter."
+      },
+      "texts": {
+        "name": "textes",
+        "tooltip": "Texte à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textes",
+        "tooltip": "Textes traités"
+      }
+    }
+  },
+  "AddTextSuffix": {
+    "display_name": "Ajouter un suffixe au texte",
+    "inputs": {
+      "suffix": {
+        "name": "suffixe",
+        "tooltip": "Suffixe à ajouter."
+      },
+      "texts": {
+        "name": "textes",
+        "tooltip": "Texte à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textes",
+        "tooltip": "Textes traités"
+      }
+    }
+  },
+  "AdjustBrightness": {
+    "display_name": "Ajuster la luminosité",
+    "inputs": {
+      "factor": {
+        "name": "facteur",
+        "tooltip": "Facteur de luminosité. 1.0 = aucun changement, <1.0 = plus sombre, >1.0 = plus clair."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
+    }
+  },
+  "AdjustContrast": {
+    "display_name": "Ajuster le contraste",
+    "inputs": {
+      "factor": {
+        "name": "facteur",
+        "tooltip": "Facteur de contraste. 1.0 = aucun changement, <1.0 = moins de contraste, >1.0 = plus de contraste."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
     }
   },
   "AlignYourStepsScheduler": {
@@ -70,6 +151,11 @@
         "name": "volume",
         "tooltip": "Ajustement du volume en décibels (dB). 0 = pas de changement, +6 = double, -6 = moitié, etc."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "AudioConcat": {
@@ -85,6 +171,11 @@
       "direction": {
         "name": "direction",
         "tooltip": "Indique s'il faut ajouter audio2 après ou avant audio1."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -131,6 +222,11 @@
         "name": "méthode_fusion",
         "tooltip": "La méthode utilisée pour combiner les formes d'onde audio."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BasicGuider": {
@@ -141,6 +237,11 @@
       },
       "model": {
         "name": "modèle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -159,6 +260,50 @@
       "steps": {
         "name": "étapes"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchImagesNode": {
+    "display_name": "Images par lot",
+    "inputs": {
+      "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchLatentsNode": {
+    "display_name": "Latents par lot",
+    "inputs": {
+      "latents": {
+        "name": "latents"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchMasksNode": {
+    "display_name": "Masques par lot",
+    "inputs": {
+      "masks": {
+        "name": "masques"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BetaSamplingScheduler": {
@@ -175,6 +320,11 @@
       },
       "steps": {
         "name": "étapes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -525,6 +675,11 @@
       "positive": {
         "name": "positive"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CFGNorm": {
@@ -763,6 +918,25 @@
       }
     }
   },
+  "CLIPTextEncodeKandinsky5": {
+    "display_name": "CLIPTextEncodeKandinsky5",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "qwen25_7b": {
+        "name": "qwen25_7b"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CLIPTextEncodeLumina2": {
     "description": "Encode une invite système et une invite utilisateur à l'aide d'un modèle CLIP en une intégration qui peut être utilisée pour guider le modèle de diffusion vers la génération d'images spécifiques.",
     "display_name": "CLIP Text Encode pour Lumina2",
@@ -953,6 +1127,29 @@
       }
     }
   },
+  "CenterCropImages": {
+    "display_name": "Rogner les images au centre",
+    "inputs": {
+      "height": {
+        "name": "hauteur",
+        "tooltip": "Hauteur du rognage."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image à traiter."
+      },
+      "width": {
+        "name": "largeur",
+        "tooltip": "Largeur du rognage."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
+    }
+  },
   "CheckpointLoader": {
     "display_name": "Charger Point de Contrôle Avec Config (OBSOLÈTE)",
     "inputs": {
@@ -1086,6 +1283,26 @@
       },
       "hooks_H": {
         "name": "hooks_H"
+      }
+    }
+  },
+  "ComfySwitchNode": {
+    "display_name": "Commutateur",
+    "inputs": {
+      "on_false": {
+        "name": "faux"
+      },
+      "on_true": {
+        "name": "vrai"
+      },
+      "switch": {
+        "name": "interrupteur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sortie",
+        "tooltip": null
       }
     }
   },
@@ -1321,14 +1538,14 @@
         "name": "secondes_total"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "positive"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "négative"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "ConditioningTimestepsRange": {
     "display_name": "Plage de pas de temps",
@@ -1384,6 +1601,10 @@
       "dim": {
         "name": "dimension",
         "tooltip": "La dimension à laquelle appliquer les fenêtres de contexte."
+      },
+      "freenoise": {
+        "name": "bruit_libre",
+        "tooltip": "Indique s'il faut appliquer le mélange de bruit FreeNoise, améliore la fusion des fenêtres."
       },
       "fuse_method": {
         "name": "méthode_fusion",
@@ -1785,6 +2006,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CustomCombo": {
+    "display_name": "Combo personnalisé",
+    "inputs": {
+      "choice": {
+        "name": "choix"
+      },
+      "option0": {
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "DiffControlNetLoader": {
@@ -1823,7 +2064,12 @@
     }
   },
   "DisableNoise": {
-    "display_name": "DésactiverBruit"
+    "display_name": "DésactiverBruit",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "DualCFGGuider": {
     "display_name": "GuideurDualCFG",
@@ -1848,6 +2094,11 @@
       },
       "style": {
         "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1932,6 +2183,11 @@
         "name": "fréquence_d'échantillonnage",
         "tooltip": "Fréquence d'échantillonnage du clip audio vide."
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyChromaRadianceLatentImage": {
@@ -1975,6 +2231,25 @@
       }
     }
   },
+  "EmptyFlux2LatentImage": {
+    "display_name": "Flux vide vers latent",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -1999,6 +2274,28 @@
     "inputs": {
       "batch_size": {
         "name": "taille_du_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHunyuanVideo15Latent": {
+    "display_name": "HunyuanVideo 1.5 latent vide",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_lot"
       },
       "height": {
         "name": "hauteur"
@@ -2065,6 +2362,11 @@
       "seconds": {
         "name": "secondes"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyLatentHunyuan3Dv2": {
@@ -2076,6 +2378,11 @@
       },
       "resolution": {
         "name": "résolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2113,6 +2420,28 @@
       },
       "length": {
         "name": "longueur"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyQwenImageLayeredLatentImage": {
+    "display_name": "Qwen Image Layered latent vide",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "layers": {
+        "name": "couches"
       },
       "width": {
         "name": "largeur"
@@ -2171,6 +2500,11 @@
       "steps": {
         "name": "étapes"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ExtendIntermediateSigmas": {
@@ -2190,6 +2524,11 @@
       },
       "steps": {
         "name": "étapes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2211,6 +2550,11 @@
       "top": {
         "name": "haut"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FlipSigmas": {
@@ -2218,6 +2562,102 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2MaxImageNode": {
+    "description": "Génère des images de manière synchrone à partir d'une invite et d'une résolution.",
+    "display_name": "Flux.2 [max] Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Jusqu’à 9 images à utiliser comme références."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite pour la génération ou l’édition d’image"
+      },
+      "prompt_upsampling": {
+        "name": "suréchantillonnage de l'invite",
+        "tooltip": "Indique s’il faut effectuer un suréchantillonnage sur l’invite. Si activé, modifie automatiquement l’invite pour une génération plus créative."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ProImageNode": {
+    "description": "Génère des images de manière synchrone à partir d'une invite et d'une résolution.",
+    "display_name": "Flux.2 [pro] Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Jusqu’à 9 images à utiliser comme références."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite pour la génération ou l’édition d’image"
+      },
+      "prompt_upsampling": {
+        "name": "suréchantillonnage de l'invite",
+        "tooltip": "Indique s’il faut effectuer un suréchantillonnage sur l’invite. Si activé, modifie automatiquement l’invite pour une génération plus créative."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2Scheduler": {
+    "display_name": "Flux2Scheduler",
+    "inputs": {
+      "height": {
+        "name": "hauteur"
+      },
+      "steps": {
+        "name": "étapes"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2541,6 +2981,11 @@
       "s2": {
         "name": "s2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FreeU_V2": {
@@ -2560,6 +3005,11 @@
       },
       "s2": {
         "name": "s2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2619,6 +3069,58 @@
       }
     }
   },
+  "GeminiImage2Node": {
+    "description": "Générez ou modifiez des images de manière synchrone via l'API Google Vertex.",
+    "display_name": "Nano Banana Pro (Google Gemini Image)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Si défini sur 'auto', correspond au format d'image de votre entrée ; si aucune image n'est fournie, un carré 16:9 est généralement généré."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "files": {
+        "name": "files",
+        "tooltip": "Fichier(s) optionnel(s) à utiliser comme contexte pour le modèle. Accepte les entrées du nœud Gemini Generate Content Input Files."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image(s) de référence optionnelle(s). Pour inclure plusieurs images, utilisez le nœud Batch Images (jusqu'à 14)."
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle décrivant l'image à générer ou les modifications à appliquer. Incluez toutes contraintes, styles ou détails que le modèle doit suivre."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Résolution de sortie cible. Pour 2K/4K, l'upscaler natif Gemini est utilisé."
+      },
+      "response_modalities": {
+        "name": "response_modalities",
+        "tooltip": "Choisissez 'IMAGE' pour une sortie image uniquement, ou 'IMAGE+TEXT' pour retourner à la fois l'image générée et une réponse textuelle."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Lorsque la graine est fixée à une valeur spécifique, le modèle s'efforce de fournir la même réponse pour des requêtes répétées. Un résultat déterministe n'est pas garanti. De plus, changer le modèle ou les paramètres, comme la température, peut entraîner des variations de la réponse même avec la même valeur de graine. Par défaut, une graine aléatoire est utilisée."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instructions fondamentales qui dictent le comportement de l'IA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImageNode": {
     "description": "Modifier les images de manière synchrone via l'API Google.",
     "display_name": "Image Google Gemini",
@@ -2646,9 +3148,17 @@
         "name": "prompt",
         "tooltip": "Prompt texte pour la génération"
       },
+      "response_modalities": {
+        "name": "response_modalities",
+        "tooltip": "Choisissez 'IMAGE' pour une sortie image uniquement, ou 'IMAGE+TEXT' pour retourner à la fois l'image générée et une réponse textuelle."
+      },
       "seed": {
         "name": "graine",
         "tooltip": "Lorsque la graine est fixée à une valeur spécifique, le modèle fait de son mieux pour fournir la même réponse pour des requêtes répétées. La sortie déterministe n'est pas garantie. De plus, changer le modèle ou les paramètres, comme la température, peut entraîner des variations dans la réponse même en utilisant la même valeur de graine. Par défaut, une valeur de graine aléatoire est utilisée."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instructions fondamentales qui dictent le comportement de l'IA."
       }
     },
     "outputs": {
@@ -2710,6 +3220,10 @@
         "name": "graine",
         "tooltip": "Lorsque la graine est fixée à une valeur spécifique, le modèle fait de son mieux pour fournir la même réponse pour des requêtes répétées. La sortie déterministe n'est pas garantie. De plus, changer le modèle ou les paramètres, comme la température, peut entraîner des variations dans la réponse même en utilisant la même valeur de graine. Par défaut, une valeur de graine aléatoire est utilisée."
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Instructions fondamentales qui dictent le comportement de l'IA."
+      },
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo optionnelle à utiliser comme contexte pour le modèle."
@@ -2717,6 +3231,72 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GenerateTracks": {
+    "display_name": "GenerateTracks",
+    "inputs": {
+      "bezier": {
+        "name": "bezier",
+        "tooltip": "Activer le chemin en courbe de Bézier en utilisant le point central comme point de contrôle."
+      },
+      "end_x": {
+        "name": "fin_x",
+        "tooltip": "Coordonnée X normalisée (0-1) pour la position d'arrivée."
+      },
+      "end_y": {
+        "name": "fin_y",
+        "tooltip": "Coordonnée Y normalisée (0-1) pour la position d'arrivée."
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "interpolation": {
+        "name": "interpolation",
+        "tooltip": "Contrôle le timing/la vitesse du mouvement le long du chemin."
+      },
+      "mid_x": {
+        "name": "milieu_x",
+        "tooltip": "Point de contrôle X normalisé pour la courbe de Bézier. Utilisé uniquement lorsque 'bezier' est activé."
+      },
+      "mid_y": {
+        "name": "milieu_y",
+        "tooltip": "Point de contrôle Y normalisé pour la courbe de Bézier. Utilisé uniquement lorsque 'bezier' est activé."
+      },
+      "num_frames": {
+        "name": "nombre_d_images"
+      },
+      "num_tracks": {
+        "name": "nombre_de_pistes"
+      },
+      "start_x": {
+        "name": "départ_x",
+        "tooltip": "Coordonnée X normalisée (0-1) pour la position de départ."
+      },
+      "start_y": {
+        "name": "départ_y",
+        "tooltip": "Coordonnée Y normalisée (0-1) pour la position de départ."
+      },
+      "track_mask": {
+        "name": "masque_de_piste",
+        "tooltip": "Masque optionnel pour indiquer les images visibles."
+      },
+      "track_spread": {
+        "name": "écartement_des_pistes",
+        "tooltip": "Distance normalisée entre les pistes. Les pistes sont réparties perpendiculairement à la direction du mouvement."
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "longueur_de_piste",
         "tooltip": null
       }
     }
@@ -2729,17 +3309,17 @@
         "name": "image"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "largeur"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "hauteur"
+      {
+        "tooltip": null
       },
-      "2": {
-        "name": "taille_du_lot"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "GetVideoComponents": {
     "description": "Extrait tous les composants d'une vidéo : images, audio et fréquence d’images.",
@@ -2777,6 +3357,11 @@
       "tapered_corners": {
         "name": "coins_évasés"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Hunyuan3Dv2Conditioning": {
@@ -2786,14 +3371,14 @@
         "name": "sortie_vision_clip"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "positif"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "négatif"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -2811,14 +3396,14 @@
         "name": "droite"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "positif"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "négatif"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -2873,6 +3458,120 @@
       },
       "positive": {
         "name": "positif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15ImageToVideo": {
+    "display_name": "HunyuanVideo15ImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15LatentUpscaleWithModel": {
+    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "inputs": {
+      "crop": {
+        "name": "rogner"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "samples": {
+        "name": "échantillons"
+      },
+      "upscale_method": {
+        "name": "méthode_d_agrandissement"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15SuperResolution": {
+    "display_name": "HunyuanVideo15SuperResolution",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "noise_augmentation": {
+        "name": "augmentation_du_bruit"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -3094,6 +3793,11 @@
       "strength": {
         "name": "intensité"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageBatch": {
@@ -3157,6 +3861,26 @@
       "image": {
         "name": "image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCompare": {
+    "description": "Compare deux images côte à côte avec un curseur.",
+    "display_name": "Comparaison d’images",
+    "inputs": {
+      "compare_view": {
+        "name": "vue de comparaison"
+      },
+      "image_a": {
+        "name": "image A"
+      },
+      "image_b": {
+        "name": "image B"
+      }
     }
   },
   "ImageCompositeMasked": {
@@ -3180,6 +3904,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageCrop": {
@@ -3200,6 +3929,30 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageDeduplication": {
+    "display_name": "Déduplication d'image",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Liste des images à traiter."
+      },
+      "similarity_threshold": {
+        "name": "seuil_de_similarité",
+        "tooltip": "Seuil de similarité (0-1). Plus la valeur est élevée, plus les images sont similaires. Les images au-dessus de ce seuil sont considérées comme des doublons."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
     }
   },
   "ImageFlip": {
@@ -3210,6 +3963,11 @@
       },
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3224,6 +3982,42 @@
       },
       "length": {
         "name": "longueur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageGrid": {
+    "display_name": "Grille d'images",
+    "inputs": {
+      "cell_height": {
+        "name": "hauteur_de_cellule",
+        "tooltip": "Hauteur de chaque cellule dans la grille."
+      },
+      "cell_width": {
+        "name": "largeur_de_cellule",
+        "tooltip": "Largeur de chaque cellule dans la grille."
+      },
+      "columns": {
+        "name": "colonnes",
+        "tooltip": "Nombre de colonnes dans la grille."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Liste des images à traiter."
+      },
+      "padding": {
+        "name": "marge",
+        "tooltip": "Marge entre les images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
       }
     }
   },
@@ -3333,6 +4127,11 @@
       "rotation": {
         "name": "rotation"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageScale": {
@@ -3381,6 +4180,11 @@
       "upscale_method": {
         "name": "méthode_d'agrandissement"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageScaleToTotalPixels": {
@@ -3391,6 +4195,9 @@
       },
       "megapixels": {
         "name": "mégapixels"
+      },
+      "resolution_steps": {
+        "name": "étapes_de_résolution"
       },
       "upscale_method": {
         "name": "méthode_d'agrandissement"
@@ -3446,6 +4253,11 @@
       "spacing_width": {
         "name": "espacement_largeur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageToMask": {
@@ -3456,6 +4268,11 @@
       },
       "image": {
         "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3565,6 +4382,29 @@
     "inputs": {
       "mask": {
         "name": "masque"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "Fusionne les canaux audio mono gauche et droit en un audio stéréo.",
+    "display_name": "Fusionner les canaux audio",
+    "inputs": {
+      "audio_left": {
+        "name": "audio gauche"
+      },
+      "audio_right": {
+        "name": "audio droit"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -3691,6 +4531,58 @@
       "sampler_name": {
         "name": "sampler_name"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kandinsky5ImageToVideo": {
+    "display_name": "Kandinsky5ImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Latent vidéo vide"
+      },
+      "3": {
+        "name": "cond_latent",
+        "tooltip": "Images de départ encodées propres, utilisées pour remplacer le début bruité des latents de sortie du modèle"
+      }
     }
   },
   "KarrasScheduler": {
@@ -3707,6 +4599,11 @@
       },
       "steps": {
         "name": "étapes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3950,6 +4847,35 @@
       }
     }
   },
+  "KlingImageToVideoWithAudio": {
+    "display_name": "Kling Image (première image) vers vidéo avec audio",
+    "inputs": {
+      "duration": {
+        "name": "durée"
+      },
+      "generate_audio": {
+        "name": "générer_audio"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Invite textuelle positive."
+      },
+      "start_frame": {
+        "name": "image_de_départ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingLipSyncAudioToVideoNode": {
     "description": "Nœud de synchronisation labiale Kling. Synchronise les mouvements de la bouche dans un fichier vidéo avec le contenu audio d’un fichier audio.",
     "display_name": "Synchronisation labiale Kling : Vidéo avec audio",
@@ -4007,6 +4933,227 @@
       },
       "2": {
         "name": "durée",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingMotionControl": {
+    "display_name": "Kling Contrôle du Mouvement",
+    "inputs": {
+      "character_orientation": {
+        "name": "orientation_du_personnage",
+        "tooltip": "Contrôle l'origine de l'orientation/position du personnage.\nvidéo : les mouvements, expressions, mouvements de caméra et orientation suivent la vidéo de référence de mouvement (autres détails via l'invite).\nimage : les mouvements et expressions suivent toujours la vidéo de référence de mouvement, mais l'orientation du personnage correspond à l'image de référence (caméra/autres détails via l'invite)."
+      },
+      "keep_original_sound": {
+        "name": "garder_son_original"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "reference_image": {
+        "name": "image_de_référence"
+      },
+      "reference_video": {
+        "name": "vidéo_de_référence",
+        "tooltip": "Vidéo de référence de mouvement utilisée pour piloter le mouvement/l'expression.\nLes limites de durée dépendent de l'orientation_du_personnage :\n - image : 3–10s (max 10s)\n - vidéo : 3–30s (max 30s)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProEditVideoNode": {
+    "description": "Éditez une vidéo existante avec le dernier modèle de Kling.",
+    "display_name": "Kling Omni Édition Vidéo (Pro)",
+    "inputs": {
+      "keep_original_sound": {
+        "name": "garder_son_original"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une invite textuelle décrivant le contenu de la vidéo. Cela peut inclure des descriptions positives et négatives."
+      },
+      "reference_images": {
+        "name": "images_de_référence",
+        "tooltip": "Jusqu'à 4 images de référence supplémentaires."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo à éditer. La longueur de la vidéo de sortie sera la même."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProFirstLastFrameNode": {
+    "description": "Utilisez une image de départ, une image de fin optionnelle ou des images de référence avec le dernier modèle Kling.",
+    "display_name": "Kling Omni Première-Dernière-Image vers Vidéo (Pro)",
+    "inputs": {
+      "duration": {
+        "name": "duration"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "Une image de fin optionnelle pour la vidéo. Cela ne peut pas être utilisé en même temps que 'reference_images'."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Une invite textuelle décrivant le contenu de la vidéo. Cela peut inclure des descriptions positives et négatives."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Jusqu'à 6 images de référence supplémentaires."
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProImageNode": {
+    "description": "Créez ou modifiez des images avec le dernier modèle de Kling.",
+    "display_name": "Kling Omni Image (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Une invite textuelle décrivant le contenu de l'image. Cela peut inclure des descriptions positives et négatives."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Jusqu'à 10 images de référence supplémentaires."
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProImageToVideoNode": {
+    "description": "Utilisez jusqu'à 7 images de référence pour générer une vidéo avec le dernier modèle Kling.",
+    "display_name": "Kling Omni Image vers Vidéo (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Une invite textuelle décrivant le contenu de la vidéo. Cela peut inclure des descriptions positives et négatives."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Jusqu'à 7 images de référence."
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProTextToVideoNode": {
+    "description": "Utilisez des invites textuelles pour générer des vidéos avec le dernier modèle Kling.",
+    "display_name": "Kling Omni Texte vers Vidéo (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Une invite textuelle décrivant le contenu de la vidéo. Cela peut inclure des descriptions positives et négatives."
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProVideoToVideoNode": {
+    "description": "Utilisez une vidéo et jusqu'à 4 images de référence pour générer une vidéo avec le dernier modèle Kling.",
+    "display_name": "Kling Omni Vidéo à Vidéo (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "keep_original_sound": {
+        "name": "keep_original_sound"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Une invite textuelle décrivant le contenu de la vidéo. Cela peut inclure des descriptions positives et négatives."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Jusqu'à 4 images de référence supplémentaires."
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "Vidéo à utiliser comme référence."
+      },
+      "resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -4125,6 +5272,35 @@
       }
     }
   },
+  "KlingTextToVideoWithAudio": {
+    "display_name": "Kling Texte en Vidéo avec Audio",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "generate_audio": {
+        "name": "generate_audio"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Invite textuelle positive."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoExtendNode": {
     "description": "Nœud Kling Video Extend. Étend les vidéos créées par d'autres nœuds Kling. Le video_id est créé en utilisant d'autres nœuds Kling.",
     "display_name": "Kling Video Extend",
@@ -4179,6 +5355,26 @@
       }
     }
   },
+  "LTXAVTextEncoderLoader": {
+    "description": "[Recettes]\n\nltxav : gemma 3 12B",
+    "display_name": "Chargeur d'encodeur texte audio LTXV",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      },
+      "device": {
+        "name": "device"
+      },
+      "text_encoder": {
+        "name": "text_encoder"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -4216,6 +5412,76 @@
         "tooltip": null
       },
       "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEDecode": {
+    "display_name": "Décodage Audio VAE LTXV",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Le modèle Audio VAE utilisé pour décoder le latent."
+      },
+      "samples": {
+        "name": "samples",
+        "tooltip": "Le latent à décoder."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEEncode": {
+    "display_name": "Encodage Audio VAE LTXV",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "L'audio à encoder."
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Le modèle Audio VAE à utiliser pour l'encodage."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio Latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAELoader": {
+    "display_name": "Chargeur Audio VAE LTXV",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name",
+        "tooltip": "Point de contrôle Audio VAE à charger."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio VAE",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVConcatAVLatent": {
+    "display_name": "Concaténation AV Latent LTXV",
+    "inputs": {
+      "audio_latent": {
+        "name": "audio_latent"
+      },
+      "video_latent": {
+        "name": "video_latent"
+      }
+    },
+    "outputs": {
+      "0": {
         "name": "latent",
         "tooltip": null
       }
@@ -4273,6 +5539,33 @@
       }
     }
   },
+  "LTXVEmptyLatentAudio": {
+    "display_name": "Audio latent vide LTXV",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "Le modèle Audio VAE dont obtenir la configuration."
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "Le nombre d'échantillons audio latents dans le lot."
+      },
+      "frame_rate": {
+        "name": "frame_rate",
+        "tooltip": "Nombre d'images par seconde."
+      },
+      "frames_number": {
+        "name": "frames_number",
+        "tooltip": "Nombre d'images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXVImgToVideo",
     "inputs": {
@@ -4316,6 +5609,47 @@
       "2": {
         "name": "latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVImgToVideoInplace": {
+    "display_name": "LTXVImgToVideoInplace",
+    "inputs": {
+      "bypass": {
+        "name": "contournement",
+        "tooltip": "Ignorer le conditionnement."
+      },
+      "image": {
+        "name": "image"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "strength": {
+        "name": "force"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVLatentUpsampler": {
+    "display_name": "LTXVLatentUpsampler",
+    "inputs": {
+      "samples": {
+        "name": "échantillons"
+      },
+      "upscale_model": {
+        "name": "modèle_d’agrandissement"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },
@@ -4367,6 +5701,25 @@
       }
     }
   },
+  "LTXVSeparateAVLatent": {
+    "description": "LTXV Séparer AV Latent",
+    "display_name": "LTXVSeparateAVLatent",
+    "inputs": {
+      "av_latent": {
+        "name": "av_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent_vidéo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent_audio",
+        "tooltip": null
+      }
+    }
+  },
   "LaplaceScheduler": {
     "display_name": "LaplaceScheduler",
     "inputs": {
@@ -4384,6 +5737,11 @@
       },
       "steps": {
         "name": "steps"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4522,6 +5880,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentConcat": {
@@ -4577,6 +5940,25 @@
       },
       "samples": {
         "name": "échantillons"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentCutToBatch": {
+    "display_name": "LatentCutToBatch",
+    "inputs": {
+      "dim": {
+        "name": "dim"
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "slice_size": {
+        "name": "slice_size"
       }
     },
     "outputs": {
@@ -4738,6 +6120,19 @@
       }
     }
   },
+  "LatentUpscaleModelLoader": {
+    "display_name": "Charger le Modèle d'Agrandissement Latent",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LazyCache": {
     "description": "Une version maison d'EasyCache - une version encore 'plus facile' d'EasyCache à implémenter. Fonctionne globalement moins bien qu'EasyCache, mais mieux dans certains cas rares ET une compatibilité universelle avec tout dans ComfyUI.",
     "display_name": "CacheParesseux",
@@ -4785,30 +6180,32 @@
       },
       "upload 3d model": {
       },
+      "upload extra resources": {
+      },
       "width": {
         "name": "largeur"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "image"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "masque"
+      {
+        "tooltip": null
       },
-      "2": {
-        "name": "chemin_maillage"
+      {
+        "tooltip": null
       },
-      "3": {
-        "name": "normale"
+      {
+        "tooltip": null
       },
-      "4": {
-        "name": "lineart"
+      {
+        "tooltip": null
       },
-      "5": {
-        "name": "info_caméra"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "ChargerAudio",
@@ -4822,6 +6219,11 @@
       "upload": {
         "name": "choisissez le fichier à télécharger"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LoadImage": {
@@ -4832,6 +6234,21 @@
       },
       "upload": {
         "name": "choisissez le fichier à télécharger"
+      }
+    }
+  },
+  "LoadImageDataSetFromFolder": {
+    "display_name": "Charger un Jeu de Données d'Images depuis un Dossier",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "Le dossier depuis lequel charger les images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Liste des images chargées"
       }
     }
   },
@@ -4853,6 +6270,8 @@
     "description": "Chargez une image à partir du dossier de sortie. Lorsque le bouton de rafraîchissement est cliqué, le nœud mettra à jour la liste des images et sélectionnera automatiquement la première image, permettant une itération facile.",
     "display_name": "Charger l'image (à partir des sorties)",
     "inputs": {
+      "Auto-refresh after generation": {
+      },
       "image": {
         "name": "image"
       },
@@ -4863,11 +6282,49 @@
       }
     }
   },
+  "LoadImageTextDataSetFromFolder": {
+    "display_name": "Charger un Jeu de Données Images et Textes depuis un Dossier",
+    "inputs": {
+      "folder": {
+        "name": "folder",
+        "tooltip": "Le dossier depuis lequel charger les images."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Liste des images chargées"
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "Liste des légendes textuelles"
+      }
+    }
+  },
   "LoadLatent": {
     "display_name": "ChargerLatent",
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadTrainingDataset": {
+    "display_name": "Charger le jeu de données d'entraînement",
+    "inputs": {
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "Nom du dossier contenant le jeu de données sauvegardé (dans le répertoire de sortie)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Liste de dictionnaires latents"
+      },
+      "1": {
+        "name": "conditioning",
+        "tooltip": "Liste de listes de conditionnement"
       }
     }
   },
@@ -4957,11 +6414,11 @@
         "tooltip": "Intensité de modification du modèle de diffusion. Cette valeur peut être négative."
       }
     },
-    "outputs": {
-      "0": {
-        "tooltip": "Le modèle de diffusion modifié."
+    "outputs": [
+      {
+        "name": "model"
       }
-    }
+    ]
   },
   "LoraSave": {
     "display_name": "Extraire et Sauvegarder Lora",
@@ -4992,10 +6449,12 @@
     "display_name": "Tracer le graphique de perte",
     "inputs": {
       "filename_prefix": {
-        "name": "préfixe_nom_fichier"
+        "name": "préfixe_nom_fichier",
+        "tooltip": "Préfixe pour l'image du graphique de perte sauvegardée."
       },
       "loss": {
-        "name": "perte"
+        "name": "perte",
+        "tooltip": "Carte de perte provenant du nœud d'entraînement."
       }
     }
   },
@@ -5301,6 +6760,50 @@
       }
     }
   },
+  "MakeTrainingDataset": {
+    "display_name": "Créer un jeu de données d’entraînement",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Modèle CLIP pour encoder le texte en conditionnement."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Liste d’images à encoder."
+      },
+      "texts": {
+        "name": "textes",
+        "tooltip": "Liste de légendes textuelles. Peut être de longueur n (correspondant aux images), 1 (répété pour tous), ou omis (utilise une chaîne vide)."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Modèle VAE pour encoder les images en latents."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Liste de dictionnaires latents"
+      },
+      "1": {
+        "name": "conditionnement",
+        "tooltip": "Liste de listes de conditionnement"
+      }
+    }
+  },
+  "ManualSigmas": {
+    "display_name": "Sigmas manuels",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "MaskComposite",
     "inputs": {
@@ -5319,6 +6822,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "MaskPreview": {
@@ -5335,6 +6843,41 @@
     "inputs": {
       "mask": {
         "name": "masque"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MergeImageLists": {
+    "display_name": "Fusionner les listes d’images",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Liste d’images à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
+    }
+  },
+  "MergeTextLists": {
+    "display_name": "Fusionner les listes de textes",
+    "inputs": {
+      "texts": {
+        "name": "textes",
+        "tooltip": "Liste de textes à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textes",
+        "tooltip": "Textes traités"
       }
     }
   },
@@ -7779,6 +9322,52 @@
       }
     }
   },
+  "NormalizeImages": {
+    "display_name": "Normaliser les images",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image à traiter."
+      },
+      "mean": {
+        "name": "moyenne",
+        "tooltip": "Valeur moyenne pour la normalisation."
+      },
+      "std": {
+        "name": "écart_type",
+        "tooltip": "Écart type pour la normalisation."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
+    }
+  },
+  "NormalizeVideoLatentStart": {
+    "description": "Normalise les images initiales d’un latent vidéo pour faire correspondre leur moyenne et leur écart type à ceux des images de référence suivantes. Permet de réduire les différences entre les premières images et le reste de la vidéo.",
+    "display_name": "NormalizeVideoLatentStart",
+    "inputs": {
+      "latent": {
+        "name": "latent"
+      },
+      "reference_frame_count": {
+        "name": "reference_frame_count",
+        "tooltip": "Nombre d’images latentes après les images de départ à utiliser comme référence"
+      },
+      "start_frame_count": {
+        "name": "start_frame_count",
+        "tooltip": "Nombre d’images latentes à normaliser, à partir du début"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIChatConfig": {
     "description": "Permet de spécifier des options de configuration avancées pour les nœuds de chat OpenAI.",
     "display_name": "Options avancées OpenAI ChatGPT",
@@ -7927,6 +9516,9 @@
       "mask": {
         "name": "mask",
         "tooltip": "Masque optionnel pour l'inpainting (les zones blanches seront remplacées)"
+      },
+      "model": {
+        "name": "model"
       },
       "n": {
         "name": "n",
@@ -8440,6 +10032,11 @@
       "steps": {
         "name": "étapes"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PorterDuffImageComposite": {
@@ -8473,6 +10070,9 @@
   "Preview3D": {
     "display_name": "Aperçu 3D",
     "inputs": {
+      "bg_image": {
+        "name": "bg_image"
+      },
       "camera_info": {
         "name": "informations_de_camera"
       },
@@ -8488,6 +10088,8 @@
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
       "preview": {
+      },
+      "previewMode": {
       },
       "source": {
         "name": "source"
@@ -8628,6 +10230,36 @@
       }
     }
   },
+  "RandomCropImages": {
+    "display_name": "Rogner aléatoirement des images",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "Hauteur du rognage."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Image à traiter."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine aléatoire."
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "Largeur du rognage."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
+    }
+  },
   "RandomNoise": {
     "display_name": "BruitAléatoire",
     "inputs": {
@@ -8636,6 +10268,11 @@
       },
       "noise_seed": {
         "name": "graine_de_bruit"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8676,6 +10313,11 @@
     "inputs": {
       "audio": {
         "name": "audio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9181,6 +10823,11 @@
       "image": {
         "name": "image"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RepeatLatentBatch": {
@@ -9191,6 +10838,51 @@
       },
       "samples": {
         "name": "échantillons"
+      }
+    }
+  },
+  "ReplaceText": {
+    "display_name": "Remplacer le texte",
+    "inputs": {
+      "find": {
+        "name": "find",
+        "tooltip": "Texte à rechercher."
+      },
+      "replace": {
+        "name": "replace",
+        "tooltip": "Texte de remplacement."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "Texte à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "Textes traités"
+      }
+    }
+  },
+  "ReplaceVideoLatentFrames": {
+    "display_name": "Remplacer les images latentes vidéo",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "Le latent de destination où les images seront remplacées."
+      },
+      "index": {
+        "name": "index",
+        "tooltip": "L’index de la première image latente dans le latent de destination où les images du latent source seront placées. Les valeurs négatives comptent à partir de la fin."
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "Le latent source fournissant les images à insérer dans le latent de destination. Si non fourni, le latent de destination est retourné inchangé."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9222,6 +10914,95 @@
       },
       "target_width": {
         "name": "largeur_cible"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ResizeImageMaskNode": {
+    "display_name": "Redimensionner image/masque",
+    "inputs": {
+      "input": {
+        "name": "input"
+      },
+      "resize_type": {
+        "name": "resize_type"
+      },
+      "resize_type_multiplier": {
+        "name": "multiplier"
+      },
+      "scale_method": {
+        "name": "scale_method"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resized",
+        "tooltip": null
+      }
+    }
+  },
+  "ResizeImagesByLongerEdge": {
+    "display_name": "Redimensionner les images par le bord le plus long",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image à traiter."
+      },
+      "longer_edge": {
+        "name": "longer_edge",
+        "tooltip": "Longueur cible pour le bord le plus long."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
+    }
+  },
+  "ResizeImagesByShorterEdge": {
+    "display_name": "Redimensionner les images par le bord le plus court",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Image à traiter."
+      },
+      "shorter_edge": {
+        "name": "shorter_edge",
+        "tooltip": "Longueur cible pour le bord le plus court."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
+    }
+  },
+  "ResolutionBucket": {
+    "display_name": "Regroupement par résolution",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "Liste de listes de conditionnement (doit correspondre à la longueur des latents)."
+      },
+      "latents": {
+        "name": "latents",
+        "tooltip": "Liste de dictionnaires de latent à regrouper par résolution."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "Liste de dictionnaires de latent groupés, un par regroupement de résolution."
+      },
+      "1": {
+        "name": "conditioning",
+        "tooltip": "Liste de listes de conditions, une par regroupement de résolution."
       }
     }
   },
@@ -9476,6 +11257,11 @@
       "steps": {
         "name": "étapes"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SD_4XUpscale_Conditioning": {
@@ -9629,14 +11415,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "sortie"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "sortie_débruitée"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SamplerCustomAdvanced": {
     "display_name": "ÉchantillonneurPersonnaliséAvancé",
@@ -9657,14 +11443,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "sortie"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "sortie_débruitée"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SamplerDPMAdaptative": {
     "display_name": "SamplerDPMAdaptative",
@@ -9699,6 +11485,11 @@
       "s_noise": {
         "name": "s_bruit"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerDPMPP_2M_SDE": {
@@ -9716,6 +11507,11 @@
       "solver_type": {
         "name": "type_solveur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerDPMPP_2S_Ancestral": {
@@ -9726,6 +11522,11 @@
       },
       "s_noise": {
         "name": "s_bruit"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9740,6 +11541,11 @@
       },
       "s_noise": {
         "name": "s_bruit"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9757,6 +11563,11 @@
       },
       "s_noise": {
         "name": "s_bruit"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9776,6 +11587,11 @@
       "solver_type": {
         "name": "type_solveur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerEulerAncestral": {
@@ -9787,6 +11603,11 @@
       "s_noise": {
         "name": "s_bruit"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerEulerAncestralCFGPP": {
@@ -9797,6 +11618,11 @@
       },
       "s_noise": {
         "name": "s_bruit"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9838,6 +11664,11 @@
       "order": {
         "name": "ordre"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerSASolver": {
@@ -9870,6 +11701,37 @@
       "use_pece": {
         "name": "utiliser_pece"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerSEEDS2": {
+    "description": "Ce nœud d'échantillonnage peut représenter plusieurs échantillonneurs :\n\nseeds_2\n- paramètre par défaut\n\nexp_heun_2_x0\n- solver_type=phi_2, r=1.0, eta=0.0\n\nexp_heun_2_x0_sde\n- solver_type=phi_2, r=1.0, eta=1.0, s_noise=1.0",
+    "display_name": "SamplerSEEDS2",
+    "inputs": {
+      "eta": {
+        "name": "eta",
+        "tooltip": "Intensité stochastique"
+      },
+      "r": {
+        "name": "r",
+        "tooltip": "Taille relative de l'étape pour l'étape intermédiaire (nœud c2)"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "Multiplicateur de bruit SDE"
+      },
+      "solver_type": {
+        "name": "solver_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplingPercentToSigma": {
@@ -9886,11 +11748,11 @@
         "name": "pourcent_échantillonnage"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "valeur_sigma"
+    "outputs": [
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SaveAnimatedPNG": {
     "display_name": "EnregistrerPNGAnimé",
@@ -10008,6 +11870,44 @@
       }
     }
   },
+  "SaveImageDataSetToFolder": {
+    "display_name": "Enregistrer l'ensemble d'images dans un dossier",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "Préfixe pour les noms de fichiers des images enregistrées."
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "Nom du dossier dans lequel enregistrer les images (dans le répertoire de sortie)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Liste des images à enregistrer."
+      }
+    }
+  },
+  "SaveImageTextDataSetToFolder": {
+    "display_name": "Enregistrer l'ensemble d'images et de textes dans un dossier",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "Préfixe pour les noms de fichiers des images enregistrées."
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "Nom du dossier dans lequel enregistrer les images (dans le répertoire de sortie)."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Liste des images à enregistrer."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "Liste des légendes textuelles à enregistrer."
+      }
+    }
+  },
   "SaveImageWebsocket": {
     "display_name": "EnregistrerImageWebsocket",
     "inputs": {
@@ -10027,6 +11927,23 @@
       }
     }
   },
+  "SaveLoRA": {
+    "display_name": "Enregistrer les poids LoRA",
+    "inputs": {
+      "lora": {
+        "name": "lora",
+        "tooltip": "Le modèle LoRA à enregistrer. N'utilisez pas le modèle avec des couches LoRA."
+      },
+      "prefix": {
+        "name": "prefix",
+        "tooltip": "Le préfixe à utiliser pour le fichier LoRA enregistré."
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "Optionnel : Le nombre d'étapes pour lesquelles LoRA a été entraîné, utilisé pour nommer le fichier enregistré."
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "Enregistrer les fichiers SVG sur le disque.",
     "display_name": "NoeudEnregistrerSVG",
@@ -10037,6 +11954,27 @@
       },
       "svg": {
         "name": "svg"
+      }
+    }
+  },
+  "SaveTrainingDataset": {
+    "display_name": "Enregistrer l'ensemble d'entraînement",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "Liste de listes de conditionnement provenant de MakeTrainingDataset."
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "Nom du dossier dans lequel enregistrer l'ensemble de données (dans le répertoire de sortie)."
+      },
+      "latents": {
+        "name": "latents",
+        "tooltip": "Liste de dictionnaires latents provenant de MakeTrainingDataset."
+      },
+      "shard_size": {
+        "name": "shard_size",
+        "tooltip": "Nombre d'échantillons par fichier fragment."
       }
     }
   },
@@ -10160,6 +12098,11 @@
       "sigmas": {
         "name": "sigmas"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SetHookKeyframes": {
@@ -10197,6 +12140,58 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ShuffleDataset": {
+    "display_name": "Mélanger l'ensemble d'images",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Liste des images à traiter."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine aléatoire."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images traitées"
+      }
+    }
+  },
+  "ShuffleImageTextDataset": {
+    "display_name": "Mélanger l'ensemble image-texte",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Liste des images à mélanger."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine aléatoire."
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "Liste des textes à mélanger."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "Images mélangées"
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "Textes mélangés"
       }
     }
   },
@@ -10296,6 +12291,11 @@
       "width": {
         "name": "largeur"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SplitAudioChannels": {
@@ -10306,14 +12306,14 @@
         "name": "audio"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "gauche"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "droite"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SplitImageWithAlpha": {
     "display_name": "Diviser l'image avec Alpha",
@@ -10341,14 +12341,14 @@
         "name": "étape"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "high_sigmas"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "low_sigmas"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SplitSigmasDenoise": {
     "display_name": "SplitSigmasDenoise",
@@ -10360,14 +12360,14 @@
         "name": "sigmas"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "high_sigmas"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "low_sigmas"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "StabilityAudioInpaint": {
     "description": "Transforme une partie d'un échantillon audio existant en utilisant des instructions textuelles.",
@@ -10969,6 +12969,21 @@
       }
     }
   },
+  "StripWhitespace": {
+    "display_name": "Supprimer les espaces",
+    "inputs": {
+      "texts": {
+        "name": "textes",
+        "tooltip": "Texte à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textes",
+        "tooltip": "Textes traités"
+      }
+    }
+  },
   "StyleModelApply": {
     "display_name": "Appliquer le modèle de style",
     "inputs": {
@@ -11149,6 +13164,36 @@
       }
     }
   },
+  "TextToLowercase": {
+    "display_name": "Texte en minuscules",
+    "inputs": {
+      "texts": {
+        "name": "textes",
+        "tooltip": "Texte à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textes",
+        "tooltip": "Textes traités"
+      }
+    }
+  },
+  "TextToUppercase": {
+    "display_name": "Texte en majuscules",
+    "inputs": {
+      "texts": {
+        "name": "textes",
+        "tooltip": "Texte à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textes",
+        "tooltip": "Textes traités"
+      }
+    }
+  },
   "ThresholdMask": {
     "display_name": "SeuilMasque",
     "inputs": {
@@ -11157,6 +13202,11 @@
       },
       "value": {
         "name": "valeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11168,6 +13218,118 @@
       },
       "ratio": {
         "name": "ratio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazImageEnhance": {
+    "description": "Agrandissement et amélioration d'image de référence dans l'industrie.",
+    "display_name": "Topaz Amélioration d'image",
+    "inputs": {
+      "color_preservation": {
+        "name": "préservation des couleurs",
+        "tooltip": "Préserver les couleurs d'origine."
+      },
+      "creativity": {
+        "name": "créativité"
+      },
+      "crop_to_fill": {
+        "name": "rogner pour remplir",
+        "tooltip": "Par défaut, l'image est encadrée si le format de sortie diffère. Activez pour rogner l'image afin de remplir les dimensions de sortie."
+      },
+      "face_enhancement": {
+        "name": "amélioration du visage",
+        "tooltip": "Améliorer les visages (si présents) lors du traitement."
+      },
+      "face_enhancement_creativity": {
+        "name": "créativité de l'amélioration du visage",
+        "tooltip": "Définir le niveau de créativité pour l'amélioration du visage."
+      },
+      "face_enhancement_strength": {
+        "name": "intensité de l'amélioration du visage",
+        "tooltip": "Contrôle la netteté des visages améliorés par rapport à l'arrière-plan."
+      },
+      "face_preservation": {
+        "name": "préservation du visage",
+        "tooltip": "Préserver l'identité faciale des sujets."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "output_height": {
+        "name": "hauteur de sortie",
+        "tooltip": "Une valeur de zéro signifie conserver la hauteur d'origine ou la largeur de sortie."
+      },
+      "output_width": {
+        "name": "largeur de sortie",
+        "tooltip": "Une valeur de zéro signifie calcul automatique (généralement la taille d'origine ou la hauteur de sortie si spécifiée)."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Invite textuelle optionnelle pour guider l'agrandissement créatif."
+      },
+      "subject_detection": {
+        "name": "détection du sujet"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhance": {
+    "description": "Redonnez vie à vos vidéos grâce à une technologie puissante d’upscaling et de restauration.",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "dynamic_compression_level",
+        "tooltip": "Niveau CQP."
+      },
+      "interpolation_duplicate": {
+        "name": "interpolation_duplicate",
+        "tooltip": "Analyse la vidéo d’entrée pour détecter et supprimer les images dupliquées."
+      },
+      "interpolation_duplicate_threshold": {
+        "name": "interpolation_duplicate_threshold",
+        "tooltip": "Sensibilité de détection des images dupliquées."
+      },
+      "interpolation_enabled": {
+        "name": "interpolation_enabled"
+      },
+      "interpolation_frame_rate": {
+        "name": "interpolation_frame_rate",
+        "tooltip": "Fréquence d’images de sortie."
+      },
+      "interpolation_model": {
+        "name": "interpolation_model"
+      },
+      "interpolation_slowmo": {
+        "name": "interpolation_slowmo",
+        "tooltip": "Facteur de ralenti appliqué à la vidéo d’entrée. Par exemple, 2 rend la sortie deux fois plus lente et double la durée."
+      },
+      "upscaler_creativity": {
+        "name": "upscaler_creativity",
+        "tooltip": "Niveau de créativité (s’applique uniquement à Starlight (Astra) Creative)."
+      },
+      "upscaler_enabled": {
+        "name": "upscaler_enabled"
+      },
+      "upscaler_model": {
+        "name": "upscaler_model"
+      },
+      "upscaler_resolution": {
+        "name": "upscaler_resolution"
+      },
+      "video": {
+        "name": "vidéo"
       }
     },
     "outputs": {
@@ -11202,6 +13364,10 @@
       "batch_size": {
         "name": "taille_du_lot",
         "tooltip": "La taille du lot à utiliser pour l'entraînement."
+      },
+      "bucket_mode": {
+        "name": "bucket_mode",
+        "tooltip": "Activer le mode de résolution par compartiments. Lorsqu’il est activé, attend des latents pré-triés depuis le nœud ResolutionBucket."
       },
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -11263,20 +13429,20 @@
         "tooltip": "Le type de données à utiliser pour l'entraînement."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "modèle_avec_lora"
+    "outputs": [
+      {
+        "tooltip": "Modèle avec LoRA appliqué"
       },
-      "1": {
-        "name": "lora"
+      {
+        "tooltip": "Poids LoRA"
       },
-      "2": {
-        "name": "perte"
+      {
+        "tooltip": "Historique de la perte"
       },
-      "3": {
-        "name": "étapes"
+      {
+        "tooltip": "Nombre total d’étapes d’entraînement"
       }
-    }
+    ]
   },
   "TrimAudioDuration": {
     "description": "Tronquer le tenseur audio dans la plage de temps choisie.",
@@ -11292,6 +13458,11 @@
       "start_index": {
         "name": "index_début",
         "tooltip": "Heure de début en secondes, peut être négative pour compter depuis la fin (prend en charge les sous-secondes)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11334,8 +13505,32 @@
   "TripoConversionNode": {
     "display_name": "Tripo : Convertir le modèle",
     "inputs": {
+      "animate_in_place": {
+        "name": "animate_in_place"
+      },
+      "bake": {
+        "name": "bake"
+      },
+      "export_orientation": {
+        "name": "export_orientation"
+      },
+      "export_vertex_colors": {
+        "name": "export_vertex_colors"
+      },
       "face_limit": {
         "name": "limite_faces"
+      },
+      "fbx_preset": {
+        "name": "fbx_preset"
+      },
+      "flatten_bottom": {
+        "name": "flatten_bottom"
+      },
+      "flatten_bottom_threshold": {
+        "name": "flatten_bottom_threshold"
+      },
+      "force_symmetry": {
+        "name": "force_symmetry"
       },
       "format": {
         "name": "format"
@@ -11343,14 +13538,29 @@
       "original_model_task_id": {
         "name": "id_tâche_modèle_original"
       },
+      "pack_uv": {
+        "name": "pack_uv"
+      },
+      "part_names": {
+        "name": "part_names"
+      },
+      "pivot_to_center_bottom": {
+        "name": "pivot_to_center_bottom"
+      },
       "quad": {
         "name": "quad"
+      },
+      "scale_factor": {
+        "name": "scale_factor"
       },
       "texture_format": {
         "name": "format_texture"
       },
       "texture_size": {
         "name": "taille_texture"
+      },
+      "with_animation": {
+        "name": "with_animation"
       }
     }
   },
@@ -11359,6 +13569,9 @@
     "inputs": {
       "face_limit": {
         "name": "limite_faces"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
       },
       "image": {
         "name": "image"
@@ -11411,6 +13624,9 @@
     "inputs": {
       "face_limit": {
         "name": "limite_visage"
+      },
+      "geometry_quality": {
+        "name": "geometry_quality"
       },
       "image": {
         "name": "image"
@@ -11529,6 +13745,9 @@
       "face_limit": {
         "name": "limite_visage"
       },
+      "geometry_quality": {
+        "name": "geometry_quality"
+      },
       "image_seed": {
         "name": "graine_image"
       },
@@ -11604,6 +13823,25 @@
       "1": {
         "name": "modèle id_tâche",
         "tooltip": null
+      }
+    }
+  },
+  "TruncateText": {
+    "display_name": "Tronquer le texte",
+    "inputs": {
+      "max_length": {
+        "name": "longueur_maximale",
+        "tooltip": "Longueur maximale du texte."
+      },
+      "texts": {
+        "name": "textes",
+        "tooltip": "Texte à traiter."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "textes",
+        "tooltip": "Textes traités"
       }
     }
   },
@@ -11748,6 +13986,11 @@
       "vae": {
         "name": "vae"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VAEDecodeHunyuan3D": {
@@ -11764,6 +14007,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11811,6 +14059,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11889,6 +14142,63 @@
       },
       "steps": {
         "name": "étapes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Veo3FirstLastFrameNode": {
+    "description": "Générer une vidéo à l'aide d'un prompt et des images de début et de fin.",
+    "display_name": "Google Veo 3 Première-Dernière-Image vers Vidéo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect",
+        "tooltip": "Rapport d'aspect de la vidéo générée"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée",
+        "tooltip": "Durée de la vidéo générée en secondes"
+      },
+      "first_frame": {
+        "name": "première image",
+        "tooltip": "Image de début"
+      },
+      "generate_audio": {
+        "name": "générer audio",
+        "tooltip": "Générer l'audio pour la vidéo."
+      },
+      "last_frame": {
+        "name": "dernière image",
+        "tooltip": "Image de fin"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt",
+        "tooltip": "Prompt négatif pour guider ce qu'il faut éviter dans la vidéo"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Description textuelle de la vidéo"
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed pour la génération de la vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12015,6 +14325,166 @@
       },
       "model": {
         "name": "modèle"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "Génère une vidéo à partir d’une image et d’une invite optionnelle.",
+    "display_name": "Génération d’image vers vidéo Vidu2",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Une image à utiliser comme première image de la vidéo générée."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "movement_amplitude": {
+        "name": "amplitude du mouvement",
+        "tooltip": "L’amplitude du mouvement des objets dans l’image."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une invite textuelle optionnelle pour la génération vidéo (max 2000 caractères)."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "Génère une vidéo à partir de plusieurs images de référence et d’une invite.",
+    "display_name": "Génération de vidéo à partir de références Vidu2",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "Si activé, la vidéo contiendra une voix générée et une musique de fond basée sur l’invite."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "movement_amplitude": {
+        "name": "amplitude du mouvement",
+        "tooltip": "L’amplitude du mouvement des objets dans l’image."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Si activé, la vidéo inclura une voix générée et une musique de fond basée sur l’invite."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "subjects": {
+        "name": "sujets",
+        "tooltip": "Pour chaque sujet, fournissez jusqu’à 3 images de référence (7 images au total pour tous les sujets). Référencez-les dans les invites via @subject{subject_id}."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "Générez une vidéo à partir d'une image de départ, d'une image de fin et d'une invite.",
+    "display_name": "Génération vidéo Vidu2 à partir d'une image de début/fin",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "end_frame": {
+        "name": "image de fin"
+      },
+      "first_frame": {
+        "name": "image de début"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "movement_amplitude": {
+        "name": "amplitude du mouvement",
+        "tooltip": "L'amplitude du mouvement des objets dans l'image."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description de l'invite (2000 caractères maximum)."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "Générez une vidéo à partir d'une invite textuelle",
+    "display_name": "Génération vidéo Vidu2 à partir d'un texte",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect"
+      },
+      "background_music": {
+        "name": "musique de fond",
+        "tooltip": "Ajouter ou non une musique de fond à la vidéo générée."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une description textuelle pour la génération vidéo, longueur maximale de 2000 caractères."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12206,6 +14676,11 @@
       "voxel": {
         "name": "voxel"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VoxelToMeshBasic": {
@@ -12216,6 +14691,11 @@
       },
       "voxel": {
         "name": "voxel"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12495,6 +14975,10 @@
       "context_stride": {
         "name": "pas de contexte",
         "tooltip": "La progression de la fenêtre contextuelle ; applicable uniquement aux échéanciers uniformes."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "Appliquer ou non le mélange de bruit FreeNoise, améliore la fusion des fenêtres."
       },
       "fuse_method": {
         "name": "méthode_de_fusion",
@@ -12836,9 +15320,130 @@
         "name": "graine",
         "tooltip": "Graine à utiliser pour la génération."
       },
+      "shot_type": {
+        "name": "type de plan",
+        "tooltip": "Spécifie le type de plan pour la vidéo générée, c'est-à-dire si la vidéo est un plan continu unique ou plusieurs plans avec coupures. Ce paramètre n'est effectif que lorsque prompt_extend est True."
+      },
       "watermark": {
         "name": "filigrane",
         "tooltip": "S'il faut ajouter un filigrane \"Généré par IA\" au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveConcatTrack": {
+    "display_name": "WanMoveConcatTrack",
+    "inputs": {
+      "tracks_1": {
+        "name": "pistes_1"
+      },
+      "tracks_2": {
+        "name": "pistes_2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveTrackToVideo": {
+    "display_name": "WanMoveTrackToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_du_lot"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "start_image": {
+        "name": "image_de_départ"
+      },
+      "strength": {
+        "name": "force",
+        "tooltip": "Intensité du conditionnement de la piste."
+      },
+      "tracks": {
+        "name": "pistes"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveTracksFromCoords": {
+    "display_name": "WanMoveTracksFromCoords",
+    "inputs": {
+      "track_coords": {
+        "name": "coordonnées_piste"
+      },
+      "track_mask": {
+        "name": "masque_piste"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "longueur_piste",
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveVisualizeTracks": {
+    "display_name": "WanMoveVisualizeTracks",
+    "inputs": {
+      "circle_size": {
+        "name": "taille_du_cercle"
+      },
+      "images": {
+        "name": "images"
+      },
+      "line_resolution": {
+        "name": "résolution_de_ligne"
+      },
+      "line_width": {
+        "name": "largeur_de_ligne"
+      },
+      "opacity": {
+        "name": "opacité"
+      },
+      "tracks": {
+        "name": "pistes"
       }
     },
     "outputs": {
@@ -12890,6 +15495,51 @@
       },
       "3": {
         "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WanReferenceVideoApi": {
+    "description": "Utilisez le personnage et la voix des vidéos d'entrée, combinés à une invite, pour générer une nouvelle vidéo qui maintient la cohérence du personnage.",
+    "display_name": "Wan Reference to Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle_après_génération"
+      },
+      "duration": {
+        "name": "durée"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "negative_prompt": {
+        "name": "invite_négative",
+        "tooltip": "Invite négative décrivant ce qu'il faut éviter."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Invite décrivant les éléments et les caractéristiques visuelles. Prend en charge l'anglais et le chinois. Utilisez des identifiants tels que `character1` et `character2` pour faire référence aux personnages de référence."
+      },
+      "reference_videos": {
+        "name": "vidéos_de_référence"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "shot_type": {
+        "name": "type_de_plan",
+        "tooltip": "Spécifie le type de plan pour la vidéo générée, c'est-à-dire si la vidéo est un plan continu unique ou plusieurs plans avec coupures."
+      },
+      "size": {
+        "name": "taille"
+      },
+      "watermark": {
+        "name": "filigrane",
+        "tooltip": "Indique s'il faut ajouter un filigrane généré par l'IA au résultat."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13072,6 +15722,10 @@
         "name": "seed",
         "tooltip": "Graine à utiliser pour la génération."
       },
+      "shot_type": {
+        "name": "type_de_plan",
+        "tooltip": "Spécifie le type de plan pour la vidéo générée, c'est-à-dire si la vidéo est un plan continu unique ou plusieurs plans avec coupures. Ce paramètre prend effet uniquement lorsque prompt_extend est True."
+      },
       "size": {
         "name": "taille"
       },
@@ -13216,6 +15870,32 @@
       }
     }
   },
+  "ZImageFunControlnet": {
+    "display_name": "ZImageFunControlnet",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "inpaint_image": {
+        "name": "image_de_repeinture"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_patch": {
+        "name": "modèle_patch"
+      },
+      "strength": {
+        "name": "force"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
   "unCLIPCheckpointLoader": {
     "display_name": "ChargeurPointContrôleunCLIP",
     "inputs": {
@@ -13238,6 +15918,20 @@
       },
       "strength": {
         "name": "force"
+      }
+    }
+  },
+  "wanBlockSwap": {
+    "description": "NOP",
+    "display_name": "wanBlockSwap",
+    "inputs": {
+      "model": {
+        "name": "modèle"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   }

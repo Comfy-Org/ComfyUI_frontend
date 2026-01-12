@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "업데이트 확인"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "커스텀 노드 폴더 열기"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "입력 폴더 열기"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "로그 폴더 열기"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "extra_model_paths.yaml 열기"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "모델 폴더 열기"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "출력 폴더 열기"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "개발자 도구 열기"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "데스크톱 사용자 가이드"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "종료"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "재설치"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "재시작"
+  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "선택한 노드에 대해 3D 뷰어(베타) 열기"
   },
@@ -155,17 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "업데이트 확인"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "진행 상황 대화 상자 전환"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "마스크 편집기에서 브러시 크기 줄이기"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "마스크 편집기에서 브러시 크기 늘리기"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditor에서 색상 선택기 열기"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "마스크 에디터에서 수평 반전"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "마스크 에디터에서 수직 반전"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "선택한 노드 마스크 편집기 열기"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "마스크 에디터에서 왼쪽으로 회전"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "마스크 에디터에서 오른쪽으로 회전"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "모델 언로드"
@@ -197,6 +245,9 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "선택한 출력 노드 대기열에 추가"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "작업 기록 토글"
+  },
   "Comfy_Redo": {
     "label": "다시 실행"
   },
@@ -220,6 +271,12 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "도움말 센터"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "선형 모드 토글"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Queue Panel V2 토글"
   },
   "Comfy_ToggleTheme": {
     "label": "밝기 테마 전환 (어두운/밝은)"

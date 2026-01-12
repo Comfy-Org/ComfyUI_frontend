@@ -5,15 +5,15 @@
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
       </p>
       <div
-        class="flex items-center gap-3 bg-secondary-background p-3 rounded-lg"
+        class="flex items-center gap-3 rounded-lg bg-secondary-background p-3"
       >
         <img
           v-if="previewImage"
           :src="previewImage"
           :alt="metadata?.filename || metadata?.name || 'Model preview'"
-          class="w-14 h-14 rounded object-cover flex-shrink-0"
+          class="size-14 flex-shrink-0 rounded object-cover"
         />
-        <p class="m-0 text-base-foreground">
+        <p class="m-0 min-w-0 flex-1 truncate text-base-foreground">
           {{ metadata?.filename || metadata?.name }}
         </p>
       </div>

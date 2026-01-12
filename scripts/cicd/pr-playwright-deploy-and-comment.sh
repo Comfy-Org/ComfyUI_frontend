@@ -134,23 +134,22 @@ post_comment() {
 
 # Main execution
 if [ "$STATUS" = "starting" ]; then
-    # Post starting comment
+    # Post concise starting comment
     comment=$(cat <<EOF
 $COMMENT_MARKER
-## 🎭 Playwright Test Results
+## 🎭 Playwright Tests: ⏳ Running...
 
-<img alt='loading' src='https://github.com/user-attachments/assets/755c86ee-e445-4ea8-bc2c-cca85df48686' width='14px' height='14px'/> **Tests are starting...**
+Tests started at $START_TIME UTC
 
-⏰ Started at: $START_TIME UTC
+<details>
+<summary>📊 Browser Tests</summary>
 
-### 🚀 Running Tests
-- 🧪 **chromium**: Running tests...
-- 🧪 **chromium-0.5x**: Running tests...
-- 🧪 **chromium-2x**: Running tests...
-- 🧪 **mobile-chrome**: Running tests...
+- **chromium**: Running...
+- **chromium-0.5x**: Running...
+- **chromium-2x**: Running...
+- **mobile-chrome**: Running...
 
----
-⏱️ Please wait while tests are running...
+</details>
 EOF
 )
     post_comment "$comment"
@@ -189,7 +188,8 @@ else
                 
                 if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
                     echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
-                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" 2>&1 || echo '{}')
+                    # Pass the base URL so we can generate trace links
+                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" 2>&1 || echo '{}')
                     echo "Extracted counts for $browser: $counts" >&2
                     echo "$counts" > "$temp_dir/$i.counts"
                 else
@@ -286,43 +286,74 @@ else
     # Determine overall status
     if [ $total_failed -gt 0 ]; then
         status_icon="❌"
-        status_text="Some tests failed"
+        status_text="Failed"
     elif [ $total_flaky -gt 0 ]; then
         status_icon="⚠️"
-        status_text="Tests passed with flaky tests"
+        status_text="Passed with flaky tests"
     elif [ $total_tests -gt 0 ]; then
         status_icon="✅"
-        status_text="All tests passed!"
+        status_text="Passed"
     else
         status_icon="🕵🏻"
-        status_text="No test results found"
+        status_text="No test results"
     fi
     
-    # Generate completion comment
+    # Generate concise completion comment
     comment="$COMMENT_MARKER
-## 🎭 Playwright Test Results
-
-$status_icon **$status_text**
-
-⏰ Completed at: $(date -u '+%m/%d/%Y, %I:%M:%S %p') UTC"
+## 🎭 Playwright Tests: $status_icon **$status_text**"
 
     # Add summary counts if we have test data
     if [ $total_tests -gt 0 ]; then
         comment="$comment
 
-### 📈 Summary
-- **Total Tests:** $total_tests
-- **Passed:** $total_passed ✅
-- **Failed:** $total_failed $([ $total_failed -gt 0 ] && echo '❌' || echo '')
-- **Flaky:** $total_flaky $([ $total_flaky -gt 0 ] && echo '⚠️' || echo '')
-- **Skipped:** $total_skipped $([ $total_skipped -gt 0 ] && echo '⏭️' || echo '')"
+**Results:** $total_passed passed, $total_failed failed, $total_flaky flaky, $total_skipped skipped (Total: $total_tests)"
+    fi
+
+    # Extract and display failed tests from all browsers
+    if [ $total_failed -gt 0 ] || [ $total_flaky -gt 0 ]; then
+        comment="$comment
+
+### ❌ Failed Tests"
+        
+        # Process each browser's failures
+        for counts_json in "${counts_array[@]}"; do
+            [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
+            
+            if command -v jq > /dev/null 2>&1; then
+                # Extract failures array from JSON
+                failures=$(echo "$counts_json" | jq -r '.failures // [] | .[]? | "\(.name)|\(.file)|\(.traceUrl // "")"')
+                
+                if [ -n "$failures" ]; then
+                    while IFS='|' read -r test_name test_file trace_url; do
+                        [ -z "$test_name" ] && continue
+                        
+                        # Convert file path to GitHub URL (relative to repo root)
+                        github_file_url="https://github.com/$GITHUB_REPOSITORY/blob/$GITHUB_SHA/$test_file"
+                        
+                        # Build the failed test line
+                        test_line="- [$test_name]($github_file_url)"
+                        
+                        if [ -n "$trace_url" ] && [ "$trace_url" != "null" ]; then
+                            test_line="$test_line: [View trace]($trace_url)"
+                        fi
+                        
+                        comment="$comment
+$test_line"
+                    done <<< "$failures"
+                fi
+            fi
+        done
     fi
     
+    # Add browser reports in collapsible section
     comment="$comment
 
-### 📊 Test Reports by Browser"
+<details>
+<summary>📊 Browser Reports</summary>
+
+"
     
-    # Add browser results with individual counts
+    # Add browser results
     i=0
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
     IFS=' ' read -r -a url_array <<< "$urls"
@@ -349,7 +380,7 @@ $status_icon **$status_text**
                 fi
                 
                 if [ -n "$b_total" ] && [ "$b_total" != "0" ]; then
-                    counts_str=" • ✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky / ⏭️ $b_skipped"
+                    counts_str=" (✅ $b_passed / ❌ $b_failed / ⚠️ $b_flaky / ⏭️ $b_skipped)"
                 else
                     counts_str=""
                 fi
@@ -358,10 +389,10 @@ $status_icon **$status_text**
             fi
             
             comment="$comment
-- ✅ **${browser}**: [View Report](${url})${counts_str}"
+- **${browser}**: [View Report](${url})${counts_str}"
         else
             comment="$comment
-- ❌ **${browser}**: Deployment failed"
+- **${browser}**: ❌ Deployment failed"
         fi
         i=$((i + 1))
     done
@@ -369,8 +400,7 @@ $status_icon **$status_text**
     
     comment="$comment
 
----
-🎉 Click on the links above to view detailed test results for each browser configuration."
+</details>"
     
     post_comment "$comment"
 fi

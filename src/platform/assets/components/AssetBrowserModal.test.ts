@@ -4,20 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-
-const mockAssetService = vi.hoisted(() => ({
-  getAssetsForNodeType: vi.fn(),
-  getAssetsByTag: vi.fn(),
-  getAssetDetails: vi.fn((id: string) =>
-    Promise.resolve({
-      id,
-      name: 'Test Model',
-      user_metadata: {
-        filename: 'Test Model'
-      }
-    })
-  )
-}))
+import { useAssetsStore } from '@/stores/assetsStore'
 
 vi.mock('@/i18n', () => ({
   t: (key: string, params?: Record<string, string>) =>
@@ -25,9 +12,15 @@ vi.mock('@/i18n', () => ({
   d: (date: Date) => date.toLocaleDateString()
 }))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: mockAssetService
-}))
+vi.mock('@/stores/assetsStore', () => {
+  const store = {
+    modelAssetsByNodeType: new Map<string, AssetItem[]>(),
+    modelLoadingByNodeType: new Map<string, boolean>(),
+    updateModelsForNodeType: vi.fn(),
+    updateModelsForTag: vi.fn()
+  }
+  return { useAssetsStore: () => store }
+})
 
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({
@@ -190,9 +183,12 @@ describe('AssetBrowserModal', () => {
     })
   }
 
+  const mockStore = useAssetsStore()
+
   beforeEach(() => {
-    mockAssetService.getAssetsForNodeType.mockReset()
-    mockAssetService.getAssetsByTag.mockReset()
+    vi.resetAllMocks()
+    mockStore.modelAssetsByNodeType.clear()
+    mockStore.modelLoadingByNodeType.clear()
   })
 
   describe('Integration with useAssetBrowser', () => {
@@ -201,7 +197,7 @@ describe('AssetBrowserModal', () => {
         createTestAsset('asset1', 'Model A', 'checkpoints'),
         createTestAsset('asset2', 'Model B', 'loras')
       ]
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
+      mockStore.modelAssetsByNodeType.set('CheckpointLoaderSimple', assets)
 
       const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
@@ -218,7 +214,7 @@ describe('AssetBrowserModal', () => {
         createTestAsset('c1', 'model.safetensors', 'checkpoints'),
         createTestAsset('l1', 'lora.pt', 'loras')
       ]
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
+      mockStore.modelAssetsByNodeType.set('CheckpointLoaderSimple', assets)
 
       const wrapper = createWrapper({
         nodeType: 'CheckpointLoaderSimple',
@@ -234,31 +230,54 @@ describe('AssetBrowserModal', () => {
   })
 
   describe('Data fetching', () => {
-    it('fetches assets for node type', async () => {
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce([])
-
+    it('triggers store refresh for node type on mount', async () => {
       createWrapper({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
 
-      expect(mockAssetService.getAssetsForNodeType).toHaveBeenCalledWith(
+      expect(mockStore.updateModelsForNodeType).toHaveBeenCalledWith(
         'CheckpointLoaderSimple'
       )
     })
 
-    it('fetches assets for tag when node type not provided', async () => {
-      mockAssetService.getAssetsByTag.mockResolvedValueOnce([])
+    it('displays cached assets immediately from store', async () => {
+      const assets = [createTestAsset('asset1', 'Cached Model', 'checkpoints')]
+      mockStore.modelAssetsByNodeType.set('CheckpointLoaderSimple', assets)
 
-      createWrapper({ assetType: 'loras' })
+      const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
+
+      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
+      const gridAssets = assetGrid.props('assets') as AssetItem[]
+
+      expect(gridAssets).toHaveLength(1)
+      expect(gridAssets[0].name).toBe('Cached Model')
+    })
+
+    it('triggers store refresh for asset type (tag) on mount', async () => {
+      createWrapper({ assetType: 'models' })
       await flushPromises()
 
-      expect(mockAssetService.getAssetsByTag).toHaveBeenCalledWith('loras')
+      expect(mockStore.updateModelsForTag).toHaveBeenCalledWith('models')
+    })
+
+    it('uses tag: prefix for cache key when assetType is provided', async () => {
+      const assets = [createTestAsset('asset1', 'Tagged Model', 'models')]
+      mockStore.modelAssetsByNodeType.set('tag:models', assets)
+
+      const wrapper = createWrapper({ assetType: 'models' })
+      await flushPromises()
+
+      const assetGrid = wrapper.findComponent({ name: 'AssetGrid' })
+      const gridAssets = assetGrid.props('assets') as AssetItem[]
+
+      expect(gridAssets).toHaveLength(1)
+      expect(gridAssets[0].name).toBe('Tagged Model')
     })
   })
 
   describe('Asset Selection', () => {
     it('emits asset-select event when asset is selected', async () => {
       const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
+      mockStore.modelAssetsByNodeType.set('CheckpointLoaderSimple', assets)
 
       const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
@@ -271,7 +290,7 @@ describe('AssetBrowserModal', () => {
 
     it('executes onSelect callback when provided', async () => {
       const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
+      mockStore.modelAssetsByNodeType.set('CheckpointLoaderSimple', assets)
 
       const onSelect = vi.fn()
       const wrapper = createWrapper({
@@ -289,8 +308,6 @@ describe('AssetBrowserModal', () => {
 
   describe('Left Panel Conditional Logic', () => {
     it('hides left panel by default when showLeftPanel is undefined', async () => {
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce([])
-
       const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
 
@@ -299,8 +316,6 @@ describe('AssetBrowserModal', () => {
     })
 
     it('shows left panel when showLeftPanel prop is explicitly true', async () => {
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce([])
-
       const wrapper = createWrapper({
         nodeType: 'CheckpointLoaderSimple',
         showLeftPanel: true
@@ -318,7 +333,7 @@ describe('AssetBrowserModal', () => {
         createTestAsset('asset1', 'Model A', 'checkpoints'),
         createTestAsset('asset2', 'Model B', 'loras')
       ]
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
+      mockStore.modelAssetsByNodeType.set('CheckpointLoaderSimple', assets)
 
       const wrapper = createWrapper({
         nodeType: 'CheckpointLoaderSimple',
@@ -339,8 +354,6 @@ describe('AssetBrowserModal', () => {
 
   describe('Title Management', () => {
     it('passes custom title to BaseModalLayout when title prop provided', async () => {
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce([])
-
       const wrapper = createWrapper({
         nodeType: 'CheckpointLoaderSimple',
         title: 'Custom Title'
@@ -353,7 +366,7 @@ describe('AssetBrowserModal', () => {
 
     it('passes computed contentTitle to BaseModalLayout when no title prop', async () => {
       const assets = [createTestAsset('asset1', 'Model A', 'checkpoints')]
-      mockAssetService.getAssetsForNodeType.mockResolvedValueOnce(assets)
+      mockStore.modelAssetsByNodeType.set('CheckpointLoaderSimple', assets)
 
       const wrapper = createWrapper({ nodeType: 'CheckpointLoaderSimple' })
       await flushPromises()
