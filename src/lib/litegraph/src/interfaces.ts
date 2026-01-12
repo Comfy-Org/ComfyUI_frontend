@@ -1,5 +1,6 @@
 import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeId } from './LGraphNode'
@@ -492,4 +493,70 @@ export interface Hoverable extends HasBoundingRect {
   onPointerMove(e: CanvasPointerEvent): void
   onPointerEnter?(e?: CanvasPointerEvent): void
   onPointerLeave?(e?: CanvasPointerEvent): void
+}
+
+/**
+ * Callback for panel widget value changes.
+ */
+export type PanelWidgetCallback = (
+  name: string | undefined,
+  value: TWidgetValue,
+  options: PanelWidgetOptions
+) => void
+
+/**
+ * Options for panel widgets.
+ */
+export interface PanelWidgetOptions {
+  label?: string
+  type?: string
+  widget?: string
+  values?: unknown[]
+  callback?: PanelWidgetCallback
+  [key: string]: unknown
+}
+
+/**
+ * A button element with optional options property.
+ */
+export interface PanelButton extends HTMLButtonElement {
+  options?: unknown
+}
+
+/**
+ * A widget element with options and value properties.
+ */
+export interface PanelWidget extends HTMLDivElement {
+  options?: PanelWidgetOptions
+  value?: TWidgetValue
+}
+
+/**
+ * A dialog panel created by LGraphCanvas.createPanel().
+ * Extends HTMLDivElement with additional properties and methods for panel management.
+ */
+export interface Panel extends HTMLDivElement {
+  header: HTMLElement
+  title_element: HTMLSpanElement
+  content: HTMLDivElement
+  alt_content: HTMLDivElement
+  footer: HTMLDivElement
+  node?: LGraphNode
+  onOpen?: () => void
+  onClose?: () => void
+  close(): void
+  toggleAltContent(force?: boolean): void
+  toggleFooterVisibility(force?: boolean): void
+  clear(): void
+  addHTML(code: string, classname?: string, on_footer?: boolean): HTMLDivElement
+  addButton(name: string, callback: () => void, options?: unknown): PanelButton
+  addSeparator(): void
+  addWidget(
+    type: string,
+    name: string,
+    value: TWidgetValue,
+    options?: PanelWidgetOptions,
+    callback?: PanelWidgetCallback
+  ): PanelWidget
+  inner_showCodePad?(property: string): void
 }
