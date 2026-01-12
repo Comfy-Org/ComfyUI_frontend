@@ -195,7 +195,15 @@ import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import {
+  computed,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+  triggerRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -240,7 +248,7 @@ const isQueuePanelV2Enabled = computed(() =>
 const openContextMenuId = ref<string | null>(null)
 
 // Track which assets are currently being deleted (for showing loading state)
-const deletingAssetIds = ref(new Set<string>())
+const deletingAssetIds = shallowRef(new Set<string>())
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
@@ -540,6 +548,7 @@ const setAssetsDeletingState = (assetIds: string[], isDeleting: boolean) => {
       ? deletingAssetIds.value.add(id)
       : deletingAssetIds.value.delete(id)
   )
+  triggerRef(deletingAssetIds)
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
