@@ -1,42 +1,42 @@
 import { $el } from '../ui'
 
-/**
- * @typedef { { text: string, value?: string, tooltip?: string } } ToggleSwitchItem
- */
+interface ToggleSwitchItem {
+  text: string
+  value?: string
+  tooltip?: string
+  selected?: boolean
+}
+
 /**
  * Creates a toggle switch element
- * @param { string } name
- * @param { Array<string> | ToggleSwitchItem } items
- * @param { Object } [opts]
- * @param { (e: { item: ToggleSwitchItem, prev?: ToggleSwitchItem }) => void } [opts.onChange]
  */
-// @ts-expect-error fixme ts strict error
-export function toggleSwitch(name, items, e?) {
+export function toggleSwitch(
+  name: string,
+  items: (string | ToggleSwitchItem)[],
+  e?: {
+    onChange?: (e: { item: ToggleSwitchItem; prev?: ToggleSwitchItem }) => void
+  }
+) {
   const onChange = e?.onChange
 
-  // @ts-expect-error fixme ts strict error
-  let selectedIndex
-  // @ts-expect-error fixme ts strict error
-  let elements
+  let selectedIndex: number | null = null
+  let elements: HTMLLabelElement[]
 
-  // @ts-expect-error fixme ts strict error
-  function updateSelected(index) {
-    // @ts-expect-error fixme ts strict error
+  function updateSelected(index: number) {
     if (selectedIndex != null) {
-      // @ts-expect-error fixme ts strict error
       elements[selectedIndex].classList.remove('comfy-toggle-selected')
     }
     onChange?.({
-      item: items[index],
-      // @ts-expect-error fixme ts strict error
-      prev: selectedIndex == null ? undefined : items[selectedIndex]
+      item: items[index] as ToggleSwitchItem,
+      prev:
+        selectedIndex == null
+          ? undefined
+          : (items[selectedIndex] as ToggleSwitchItem)
     })
     selectedIndex = index
-    // @ts-expect-error fixme ts strict error
     elements[selectedIndex].classList.add('comfy-toggle-selected')
   }
 
-  // @ts-expect-error fixme ts strict error
   elements = items.map((item, i) => {
     if (typeof item === 'string') item = { text: item }
     if (!item.value) item.value = item.text
@@ -66,7 +66,10 @@ export function toggleSwitch(name, items, e?) {
   const container = $el('div.comfy-toggle-switch', elements)
 
   if (selectedIndex == null) {
-    elements[0].children[0].checked = true
+    const firstInput = elements[0].children[0]
+    if (firstInput instanceof HTMLInputElement) {
+      firstInput.checked = true
+    }
     updateSelected(0)
   }
 

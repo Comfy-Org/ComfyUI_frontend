@@ -15,7 +15,7 @@ import router from './router'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-expect-error fixme ts strict error
+    // @ts-expect-error PrimeVue type issue
     primary: Aura['primitive'].blue
   }
 })

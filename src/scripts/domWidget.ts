@@ -198,13 +198,15 @@ abstract class BaseDOMWidgetImpl<V extends object | string>
   }
 
   override createCopyForNode(node: LGraphNode): this {
-    // @ts-expect-error
-    const cloned: this = new (this.constructor as typeof this)({
+    const constructorArg = {
       node: node,
       name: this.name,
       type: this.type,
       options: this.options
-    })
+    }
+    const cloned: this = new (this.constructor as new (
+      obj: typeof constructorArg
+    ) => this)(constructorArg)
     cloned.value = this.value
     // Preserve the Y position from the original widget to maintain proper positioning
     // when widgets are promoted through subgraph nesting
@@ -231,14 +233,16 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
   }
 
   override createCopyForNode(node: LGraphNode): this {
-    // @ts-expect-error
-    const cloned: this = new (this.constructor as typeof this)({
+    const constructorArg = {
       node: node,
       name: this.name,
       type: this.type,
-      element: this.element, // Include the element!
+      element: this.element,
       options: this.options
-    })
+    }
+    const cloned: this = new (this.constructor as new (
+      obj: typeof constructorArg
+    ) => this)(constructorArg)
     cloned.value = this.value
     // Preserve the Y position from the original widget to maintain proper positioning
     // when widgets are promoted through subgraph nesting

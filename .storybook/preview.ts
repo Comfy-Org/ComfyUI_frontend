@@ -15,7 +15,7 @@ import '@/assets/css/style.css'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-expect-error fix me
+    // @ts-expect-error PrimeVue type issue
     primary: Aura['primitive'].blue
   }
 })

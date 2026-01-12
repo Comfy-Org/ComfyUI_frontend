@@ -94,17 +94,19 @@ export function $el<TTag extends string>(
   return element as ElementType<TTag>
 }
 
-// @ts-expect-error fixme ts strict error
-function dragElement(dragEl): () => void {
+function dragElement(dragEl: HTMLElement): () => void {
   var posDiffX = 0,
     posDiffY = 0,
     posStartX = 0,
     posStartY = 0,
     newPosX = 0,
     newPosY = 0
-  if (dragEl.getElementsByClassName('drag-handle')[0]) {
+  const handle = dragEl.getElementsByClassName('drag-handle')[0] as
+    | HTMLElement
+    | undefined
+  if (handle) {
     // if present, the handle is where you move the DIV from:
-    dragEl.getElementsByClassName('drag-handle')[0].onmousedown = dragMouseDown
+    handle.onmousedown = dragMouseDown
   } else {
     // otherwise, move the DIV from anywhere inside the DIV:
     dragEl.onmousedown = dragMouseDown
@@ -151,7 +153,6 @@ function dragElement(dragEl): () => void {
     dragEl.style.top = newPosY + 'px'
     dragEl.style.bottom = 'unset'
 
-    // @ts-expect-error fixme ts strict error
     if (savePos) {
       localStorage.setItem(
         'Comfy.MenuPosition',
@@ -174,13 +175,11 @@ function dragElement(dragEl): () => void {
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  let savePos = undefined
+  let savePos: boolean | undefined = undefined
   restorePos()
   savePos = true
 
-  // @ts-expect-error fixme ts strict error
-  function dragMouseDown(e) {
+  function dragMouseDown(e: MouseEvent) {
     e = e || window.event
     e.preventDefault()
     // get the mouse cursor position at startup:
@@ -191,8 +190,7 @@ function dragElement(dragEl): () => void {
     document.onmousemove = elementDrag
   }
 
-  // @ts-expect-error fixme ts strict error
-  function elementDrag(e) {
+  function elementDrag(e: MouseEvent) {
     e = e || window.event
     e.preventDefault()
 
@@ -230,16 +228,15 @@ function dragElement(dragEl): () => void {
 }
 
 class ComfyList {
-  #type
-  #text
-  #reverse
+  #type: 'queue' | 'history'
+  #text: string
+  #reverse: boolean
   element: HTMLDivElement
   button?: HTMLButtonElement
 
-  // @ts-expect-error fixme ts strict error
-  constructor(text, type?, reverse?) {
+  constructor(text: string, type?: 'queue' | 'history', reverse?: boolean) {
     this.#text = text
-    this.#type = type || text.toLowerCase()
+    this.#type = type || (text.toLowerCase() as 'queue' | 'history')
     this.#reverse = reverse || false
     this.element = $el('div.comfy-list') as HTMLDivElement
     this.element.style.display = 'none'
@@ -257,46 +254,45 @@ class ComfyList {
           textContent: section
         }),
         $el('div.comfy-list-items', [
-          // @ts-expect-error fixme ts strict error
-          ...(this.#reverse ? items[section].reverse() : items[section]).map(
-            (item: TaskItem) => {
-              // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
-              const removeAction =
-                'remove' in item
-                  ? item.remove
-                  : {
-                      name: 'Delete',
-                      cb: () => api.deleteItem(this.#type, item.prompt[1])
-                    }
-              return $el('div', { textContent: item.prompt[0] + ': ' }, [
-                $el('button', {
-                  textContent: 'Load',
-                  onclick: async () => {
-                    await app.loadGraphData(
-                      // @ts-expect-error fixme ts strict error
-                      item.prompt[3].extra_pnginfo.workflow,
-                      true,
-                      false
-                    )
-                    if ('outputs' in item) {
-                      app.nodeOutputs = {}
-                      for (const [key, value] of Object.entries(item.outputs)) {
-                        const realKey = item['meta']?.[key]?.display_node ?? key
-                        app.nodeOutputs[realKey] = value
-                      }
+          ...(this.#reverse
+            ? (items[section as keyof typeof items] as TaskItem[]).reverse()
+            : (items[section as keyof typeof items] as TaskItem[])
+          ).map((item: TaskItem) => {
+            // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
+            const removeAction =
+              'remove' in item
+                ? item.remove
+                : {
+                    name: 'Delete',
+                    cb: () => api.deleteItem(this.#type, item.prompt[1])
+                  }
+            return $el('div', { textContent: item.prompt[0] + ': ' }, [
+              $el('button', {
+                textContent: 'Load',
+                onclick: async () => {
+                  await app.loadGraphData(
+                    item.prompt[3].extra_pnginfo?.workflow,
+                    true,
+                    false
+                  )
+                  if ('outputs' in item) {
+                    app.nodeOutputs = {}
+                    for (const [key, value] of Object.entries(item.outputs)) {
+                      const realKey = item['meta']?.[key]?.display_node ?? key
+                      app.nodeOutputs[realKey] = value
                     }
                   }
-                }),
-                $el('button', {
-                  textContent: removeAction.name,
-                  onclick: async () => {
-                    await removeAction.cb()
-                    await this.update()
-                  }
-                })
-              ])
-            }
-          )
+                }
+              }),
+              $el('button', {
+                textContent: removeAction.name,
+                onclick: async () => {
+                  await removeAction.cb()
+                  await this.update()
+                }
+              })
+            ])
+          })
         ])
       ]),
       $el('div.comfy-list-actions', [
@@ -320,16 +316,14 @@ class ComfyList {
 
   async show() {
     this.element.style.display = 'block'
-    // @ts-expect-error fixme ts strict error
-    this.button.textContent = 'Close'
+    if (this.button) this.button.textContent = 'Close'
 
     await this.load()
   }
 
   hide() {
     this.element.style.display = 'none'
-    // @ts-expect-error fixme ts strict error
-    this.button.textContent = 'View ' + this.#text
+    if (this.button) this.button.textContent = 'View ' + this.#text
   }
 
   toggle() {
@@ -351,23 +345,15 @@ export class ComfyUI {
   lastQueueSize: number
   queue: ComfyList
   history: ComfyList
-  // @ts-expect-error fixme ts strict error
-  autoQueueMode: string
-  // @ts-expect-error fixme ts strict error
-  graphHasChanged: boolean
-  // @ts-expect-error fixme ts strict error
-  autoQueueEnabled: boolean
-  // @ts-expect-error fixme ts strict error
-  menuContainer: HTMLDivElement
-  // @ts-expect-error fixme ts strict error
-  queueSize: Element
-  // @ts-expect-error fixme ts strict error
-  restoreMenuPosition: () => void
-  // @ts-expect-error fixme ts strict error
-  loadFile: () => void
+  autoQueueMode!: string
+  graphHasChanged!: boolean
+  autoQueueEnabled!: boolean
+  menuContainer!: HTMLDivElement
+  queueSize!: Element
+  restoreMenuPosition!: () => void
+  loadFile!: () => void
 
-  // @ts-expect-error fixme ts strict error
-  constructor(app) {
+  constructor(app: ComfyApp) {
     this.app = app
     this.dialog = new ComfyDialog()
     this.settings = new ComfySettingsDialog(app)
@@ -417,9 +403,8 @@ export class ComfyUI {
         }
       ],
       {
-        // @ts-expect-error fixme ts strict error
         onChange: (value) => {
-          this.autoQueueMode = value.item.value
+          this.autoQueueMode = value.item.value ?? value.item.text
         }
       }
     )
@@ -486,14 +471,13 @@ export class ComfyUI {
           $el('label', { innerHTML: 'Extra options' }, [
             $el('input', {
               type: 'checkbox',
-              // @ts-expect-error fixme ts strict error
-              onchange: (i) => {
-                // @ts-expect-error fixme ts strict error
-                document.getElementById('extraOptions').style.display = i
-                  .srcElement.checked
-                  ? 'block'
-                  : 'none'
-                this.batchCount = i.srcElement.checked
+              onchange: (e: Event) => {
+                const extraOptions = document.getElementById('extraOptions')
+                const target = e.target
+                if (!(target instanceof HTMLInputElement) || !extraOptions)
+                  return
+                extraOptions.style.display = target.checked ? 'block' : 'none'
+                this.batchCount = target.checked
                   ? Number.parseInt(
                       (
                         document.getElementById(
@@ -524,18 +508,15 @@ export class ComfyUI {
                 value: this.batchCount,
                 min: '1',
                 style: { width: '35%', marginLeft: '0.4em' },
-                // @ts-expect-error fixme ts strict error
-                oninput: (i) => {
-                  this.batchCount = i.target.value
-                  /* Even though an <input> element with a type of range logically represents a number (since
-              it's used for numeric input), the value it holds is still treated as a string in HTML and
-              JavaScript. This behavior is consistent across all <input> elements regardless of their type
-              (like text, number, or range), where the .value property is always a string. */
-                  ;(
-                    document.getElementById(
-                      'batchCountInputRange'
-                    ) as HTMLInputElement
-                  ).value = this.batchCount.toString()
+                oninput: (e: Event) => {
+                  if (!(e.target instanceof HTMLInputElement)) return
+                  this.batchCount = Number.parseInt(e.target.value) || 1
+                  const rangeInput = document.getElementById(
+                    'batchCountInputRange'
+                  )
+                  if (rangeInput instanceof HTMLInputElement) {
+                    rangeInput.value = this.batchCount.toString()
+                  }
                 }
               }),
               $el('input', {
@@ -544,15 +525,15 @@ export class ComfyUI {
                 min: '1',
                 max: '100',
                 value: this.batchCount,
-                // @ts-expect-error fixme ts strict error
-                oninput: (i) => {
-                  this.batchCount = i.srcElement.value
-                  // Note
-                  ;(
-                    document.getElementById(
-                      'batchCountInputNumber'
-                    ) as HTMLInputElement
-                  ).value = i.srcElement.value
+                oninput: (e: Event) => {
+                  if (!(e.target instanceof HTMLInputElement)) return
+                  this.batchCount = Number.parseInt(e.target.value) || 1
+                  const numberInput = document.getElementById(
+                    'batchCountInputNumber'
+                  )
+                  if (numberInput instanceof HTMLInputElement) {
+                    numberInput.value = e.target.value
+                  }
                 }
               })
             ]),
@@ -566,8 +547,8 @@ export class ComfyUI {
                 type: 'checkbox',
                 checked: false,
                 title: 'Automatically queue prompt when the queue size hits 0',
-                // @ts-expect-error fixme ts strict error
-                onchange: (e) => {
+                onchange: (e: Event) => {
+                  if (!(e.target instanceof HTMLInputElement)) return
                   this.autoQueueEnabled = e.target.checked
                   autoQueueModeEl.style.display = this.autoQueueEnabled
                     ? ''
@@ -682,8 +663,8 @@ export class ComfyUI {
 
     this.restoreMenuPosition = dragElement(this.menuContainer)
 
-    // @ts-expect-error
-    this.setStatus({ exec_info: { queue_remaining: 'X' } })
+    // Initialize with placeholder text before first status update
+    this.queueSize.textContent = 'Queue size: X'
   }
 
   setStatus(status: StatusWsMessageStatus | null) {

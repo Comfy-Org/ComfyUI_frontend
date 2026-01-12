@@ -162,8 +162,8 @@ export class ComfyApp {
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
-  get graph(): unknown {
-    return this.rootGraphInternal!
+  get graph(): LGraph | undefined {
+    return this.rootGraphInternal
   }
 
   get rootGraph(): LGraph {
@@ -1194,8 +1194,12 @@ export class ComfyApp {
     }
 
     try {
-      // @ts-expect-error Discrepancies between zod and litegraph - in progress
-      this.rootGraph.configure(graphData)
+      // TODO: Align ComfyWorkflowJSON (Zod schema) with ISerialisedGraph (litegraph types)
+      // The schemas are structurally compatible at runtime but TypeScript can't verify this.
+      // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/XXXX
+      this.rootGraph.configure(
+        graphData as Parameters<typeof this.rootGraph.configure>[0]
+      )
 
       // Save original renderer version before scaling (it gets modified during scaling)
       const originalMainGraphRenderer =

@@ -26,21 +26,19 @@ export function applyClasses(
   }
 }
 
-export function toggleElement(
+export function toggleElement<T = unknown>(
   element: HTMLElement,
   {
     onHide,
     onShow
   }: {
     onHide?: (el: HTMLElement) => void
-    // @ts-expect-error fixme ts strict error
-    onShow?: (el: HTMLElement, value) => void
+    onShow?: (el: HTMLElement, value: T) => void
   } = {}
 ) {
   let placeholder: HTMLElement | Comment
   let hidden: boolean
-  // @ts-expect-error fixme ts strict error
-  return (value) => {
+  return (value: T) => {
     if (value) {
       if (hidden) {
         hidden = false

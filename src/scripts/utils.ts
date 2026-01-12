@@ -76,15 +76,12 @@ export function prop<T>(
     name: string
   ) => void
 ): T {
-  // @ts-expect-error fixme ts strict error
-  let currentValue
+  let currentValue: T = defaultValue
   Object.defineProperty(target, name, {
     get() {
-      // @ts-expect-error fixme ts strict error
       return currentValue
     },
     set(newValue) {
-      // @ts-expect-error fixme ts strict error
       const prevValue = currentValue
       currentValue = newValue
       onChanged?.(currentValue, prevValue, target, name)

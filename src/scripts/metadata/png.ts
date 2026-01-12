@@ -46,8 +46,9 @@ export function getFromPngFile(file: File) {
   return new Promise<Record<string, string>>((r) => {
     const reader = new FileReader()
     reader.onload = (event) => {
-      // @ts-expect-error fixme ts strict error
-      r(getFromPngBuffer(event.target.result as ArrayBuffer))
+      if (event.target?.result instanceof ArrayBuffer) {
+        r(getFromPngBuffer(event.target.result))
+      }
     }
 
     reader.readAsArrayBuffer(file)

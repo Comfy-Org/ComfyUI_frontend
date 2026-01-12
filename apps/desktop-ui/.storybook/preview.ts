@@ -14,7 +14,7 @@ import { i18n } from '@/i18n'
 
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
-    // @ts-expect-error prime type quirk
+    // @ts-expect-error PrimeVue type issue
     primary: Aura['primitive'].blue
   }
 })

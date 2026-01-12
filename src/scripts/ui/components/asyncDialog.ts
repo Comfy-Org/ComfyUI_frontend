@@ -2,21 +2,17 @@ import { $el } from '../../ui'
 import { ComfyDialog } from '../dialog'
 
 export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
-  // @ts-expect-error fixme ts strict error
-  #resolve: (value: any) => void
+  #resolve!: (value: any) => void
 
   constructor(actions?: Array<string | { value?: any; text: string }>) {
     super(
       'dialog.comfy-dialog.comfyui-dialog',
-      // @ts-expect-error fixme ts strict error
       actions?.map((opt) => {
-        if (typeof opt === 'string') {
-          opt = { text: opt }
-        }
+        const option = typeof opt === 'string' ? { text: opt } : opt
         return $el('button.comfyui-button', {
           type: 'button',
-          textContent: opt.text,
-          onclick: () => this.close(opt.value ?? opt.text)
+          textContent: option.text,
+          onclick: () => this.close(option.value ?? option.text)
         })
       })
     )

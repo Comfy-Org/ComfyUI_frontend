@@ -40,87 +40,94 @@ styleElement.textContent = `
 document.head.append(styleElement)
 
 export class DraggableList extends EventTarget {
-  listContainer
-  // @ts-expect-error fixme ts strict error
-  draggableItem
-  // @ts-expect-error fixme ts strict error
-  pointerStartX
-  // @ts-expect-error fixme ts strict error
-  pointerStartY
-  // @ts-expect-error fixme ts strict error
-  scrollYMax
+  listContainer: HTMLElement
+  draggableItem: HTMLElement | null = null
+  pointerStartX: number = 0
+  pointerStartY: number = 0
+  scrollYMax: number = 0
   itemsGap = 0
-  items = []
-  itemSelector
+  items: HTMLElement[] = []
+  itemSelector: string
   handleClass = 'drag-handle'
-  off = []
-  offDrag = []
+  off: (() => void)[] = []
+  offDrag: (() => void)[] = []
 
-  // @ts-expect-error fixme ts strict error
-  constructor(element, itemSelector) {
+  constructor(element: HTMLElement, itemSelector: string) {
     super()
     this.listContainer = element
     this.itemSelector = itemSelector
 
     if (!this.listContainer) return
 
-    // @ts-expect-error fixme ts strict error
     this.off.push(this.on(this.listContainer, 'mousedown', this.dragStart))
-    // @ts-expect-error fixme ts strict error
     this.off.push(this.on(this.listContainer, 'touchstart', this.dragStart))
-    // @ts-expect-error fixme ts strict error
     this.off.push(this.on(document, 'mouseup', this.dragEnd))
-    // @ts-expect-error fixme ts strict error
     this.off.push(this.on(document, 'touchend', this.dragEnd))
   }
 
-  getAllItems() {
+  getAllItems(): HTMLElement[] {
     if (!this.items?.length) {
       this.items = Array.from(
-        this.listContainer.querySelectorAll(this.itemSelector)
+        this.listContainer.querySelectorAll<HTMLElement>(this.itemSelector)
       )
       this.items.forEach((element) => {
-        // @ts-expect-error fixme ts strict error
         element.classList.add('is-idle')
       })
     }
     return this.items
   }
 
-  getIdleItems() {
+  getIdleItems(): HTMLElement[] {
     return this.getAllItems().filter((item) =>
-      // @ts-expect-error fixme ts strict error
       item.classList.contains('is-idle')
     )
   }
 
-  // @ts-expect-error fixme ts strict error
-  isItemAbove(item) {
+  isItemAbove(item: HTMLElement): boolean {
     return item.hasAttribute('data-is-above')
   }
 
-  // @ts-expect-error fixme ts strict error
-  isItemToggled(item) {
+  isItemToggled(item: HTMLElement): boolean {
     return item.hasAttribute('data-is-toggled')
   }
 
-  // @ts-expect-error fixme ts strict error
-  on(source, event, listener, options?) {
-    listener = listener.bind(this)
-    source.addEventListener(event, listener, options)
-    return () => source.removeEventListener(event, listener)
+  on<K extends keyof DocumentEventMap>(
+    source: Document,
+    event: K,
+    listener: (e: DocumentEventMap[K]) => void,
+    options?: AddEventListenerOptions
+  ): () => void
+  on<K extends keyof HTMLElementEventMap>(
+    source: HTMLElement,
+    event: K,
+    listener: (e: HTMLElementEventMap[K]) => void,
+    options?: AddEventListenerOptions
+  ): () => void
+  on(
+    source: Document | HTMLElement,
+    event: string,
+    listener: (e: Event) => void,
+    options?: AddEventListenerOptions
+  ): () => void {
+    const boundListener = listener.bind(this)
+    source.addEventListener(event, boundListener, options)
+    return () => source.removeEventListener(event, boundListener)
   }
 
-  // @ts-expect-error fixme ts strict error
-  dragStart(e) {
-    if (e.target.classList.contains(this.handleClass)) {
-      this.draggableItem = e.target.closest(this.itemSelector)
-    }
+  dragStart(e: MouseEvent | TouchEvent) {
+    const target = e.target
+    if (!(target instanceof HTMLElement)) return
+    if (!target.classList.contains(this.handleClass)) return
+
+    this.draggableItem = target.closest<HTMLElement>(this.itemSelector)
 
     if (!this.draggableItem) return
 
-    this.pointerStartX = e.clientX || e.touches[0].clientX
-    this.pointerStartY = e.clientY || e.touches[0].clientY
+    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX
+    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY
+
+    this.pointerStartX = clientX
+    this.pointerStartY = clientY
     this.scrollYMax =
       this.listContainer.scrollHeight - this.listContainer.clientHeight
 
@@ -128,10 +135,8 @@ export class DraggableList extends EventTarget {
     this.initDraggableItem()
     this.initItemsState()
 
-    // @ts-expect-error fixme ts strict error
     this.offDrag.push(this.on(document, 'mousemove', this.drag))
     this.offDrag.push(
-      // @ts-expect-error fixme ts strict error
       this.on(document, 'touchmove', this.drag, { passive: false })
     )
 
@@ -139,7 +144,6 @@ export class DraggableList extends EventTarget {
       new CustomEvent('dragstart', {
         detail: {
           element: this.draggableItem,
-          // @ts-expect-error fixme ts strict error
           position: this.getAllItems().indexOf(this.draggableItem)
         }
       })
@@ -155,9 +159,7 @@ export class DraggableList extends EventTarget {
     const item1 = this.getIdleItems()[0]
     const item2 = this.getIdleItems()[1]
 
-    // @ts-expect-error fixme ts strict error
     const item1Rect = item1.getBoundingClientRect()
-    // @ts-expect-error fixme ts strict error
     const item2Rect = item2.getBoundingClientRect()
 
     this.itemsGap = Math.abs(item1Rect.bottom - item2Rect.top)
@@ -165,27 +167,25 @@ export class DraggableList extends EventTarget {
 
   initItemsState() {
     this.getIdleItems().forEach((item, i) => {
-      // @ts-expect-error fixme ts strict error
-      if (this.getAllItems().indexOf(this.draggableItem) > i) {
-        // @ts-expect-error fixme ts strict error
+      if (this.getAllItems().indexOf(this.draggableItem!) > i) {
         item.dataset.isAbove = ''
       }
     })
   }
 
   initDraggableItem() {
+    if (!this.draggableItem) return
     this.draggableItem.classList.remove('is-idle')
     this.draggableItem.classList.add('is-draggable')
   }
 
-  // @ts-expect-error fixme ts strict error
-  drag(e) {
+  drag(e: MouseEvent | TouchEvent) {
     if (!this.draggableItem) return
 
     e.preventDefault()
 
-    const clientX = e.clientX || e.touches[0].clientX
-    const clientY = e.clientY || e.touches[0].clientY
+    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX
+    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY
 
     const listRect = this.listContainer.getBoundingClientRect()
 
@@ -207,28 +207,24 @@ export class DraggableList extends EventTarget {
   }
 
   updateIdleItemsStateAndPosition() {
+    if (!this.draggableItem) return
     const draggableItemRect = this.draggableItem.getBoundingClientRect()
     const draggableItemY = draggableItemRect.top + draggableItemRect.height / 2
 
     // Update state
     this.getIdleItems().forEach((item) => {
-      // @ts-expect-error fixme ts strict error
       const itemRect = item.getBoundingClientRect()
       const itemY = itemRect.top + itemRect.height / 2
       if (this.isItemAbove(item)) {
         if (draggableItemY <= itemY) {
-          // @ts-expect-error fixme ts strict error
           item.dataset.isToggled = ''
         } else {
-          // @ts-expect-error fixme ts strict error
           delete item.dataset.isToggled
         }
       } else {
         if (draggableItemY >= itemY) {
-          // @ts-expect-error fixme ts strict error
           item.dataset.isToggled = ''
         } else {
-          // @ts-expect-error fixme ts strict error
           delete item.dataset.isToggled
         }
       }
@@ -238,10 +234,8 @@ export class DraggableList extends EventTarget {
     this.getIdleItems().forEach((item) => {
       if (this.isItemToggled(item)) {
         const direction = this.isItemAbove(item) ? 1 : -1
-        // @ts-expect-error fixme ts strict error
         item.style.transform = `translateY(${direction * (draggableItemRect.height + this.itemsGap)}px)`
       } else {
-        // @ts-expect-error fixme ts strict error
         item.style.transform = ''
       }
     })
@@ -255,7 +249,8 @@ export class DraggableList extends EventTarget {
   }
 
   applyNewItemsOrder() {
-    const reorderedItems = []
+    if (!this.draggableItem) return
+    const reorderedItems: HTMLElement[] = []
 
     let oldPosition = -1
     this.getAllItems().forEach((item, index) => {
@@ -282,7 +277,6 @@ export class DraggableList extends EventTarget {
       this.listContainer.appendChild(item)
     })
 
-    // @ts-expect-error fixme ts strict error
     this.items = reorderedItems
 
     this.dispatchEvent(
@@ -302,13 +296,13 @@ export class DraggableList extends EventTarget {
     this.unsetDraggableItem()
     this.unsetItemState()
 
-    // @ts-expect-error fixme ts strict error
     this.offDrag.forEach((f) => f())
     this.offDrag = []
   }
 
   unsetDraggableItem() {
-    this.draggableItem.style = null
+    if (!this.draggableItem) return
+    this.draggableItem.style.transform = ''
     this.draggableItem.classList.remove('is-draggable')
     this.draggableItem.classList.add('is-idle')
     this.draggableItem = null
@@ -316,17 +310,13 @@ export class DraggableList extends EventTarget {
 
   unsetItemState() {
     this.getIdleItems().forEach((item) => {
-      // @ts-expect-error fixme ts strict error
       delete item.dataset.isAbove
-      // @ts-expect-error fixme ts strict error
       delete item.dataset.isToggled
-      // @ts-expect-error fixme ts strict error
       item.style.transform = ''
     })
   }
 
   dispose() {
-    // @ts-expect-error fixme ts strict error
     this.off.forEach((f) => f())
   }
 }

@@ -4,11 +4,10 @@ export class ComfyDialog<
   T extends HTMLElement = HTMLElement
 > extends EventTarget {
   element: T
-  // @ts-expect-error fixme ts strict error
-  textElement: HTMLElement
-  #buttons: HTMLButtonElement[] | null
+  textElement!: HTMLElement
+  #buttons: HTMLElement[] | null
 
-  constructor(type = 'div', buttons = null) {
+  constructor(type = 'div', buttons: HTMLElement[] | null = null) {
     super()
     this.#buttons = buttons
     this.element = $el(type + '.comfy-modal', { parent: document.body }, [
@@ -35,11 +34,10 @@ export class ComfyDialog<
     this.element.style.display = 'none'
   }
 
-  // @ts-expect-error fixme ts strict error
-  show(html) {
+  show(html?: string | HTMLElement | HTMLElement[]) {
     if (typeof html === 'string') {
       this.textElement.innerHTML = html
-    } else {
+    } else if (html) {
       this.textElement.replaceChildren(
         ...(html instanceof Array ? html : [html])
       )

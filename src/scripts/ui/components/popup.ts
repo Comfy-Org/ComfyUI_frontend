@@ -89,8 +89,7 @@ export class ComfyPopup extends EventTarget {
     this.dispatchEvent(new CustomEvent('change'))
   }
 
-  // @ts-expect-error fixme ts strict error
-  #escHandler = (e) => {
+  #escHandler = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       this.open = false
       e.preventDefault()
@@ -98,9 +97,8 @@ export class ComfyPopup extends EventTarget {
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  #clickHandler = (e) => {
-    /** @type {any} */
+  #clickHandler = (e: MouseEvent) => {
+    if (!(e.target instanceof Node)) return
     const target = e.target
     if (
       !this.element.contains(target) &&
