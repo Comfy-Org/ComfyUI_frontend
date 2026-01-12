@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useProtovisCoordinate } from '@/renderer/extensions/vueNodes/widgets/composables/useProtovisCoordinate'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -21,16 +22,11 @@ onMounted(() => {
   const widget = node.widgets?.find((w) => w.name === props.widget.name)
   if (!widget || !isDOMWidget(widget)) return
   domEl.value.replaceChildren(widget.element)
+
+  // Apply protovis coordinate fix if this widget uses protovis
+  useProtovisCoordinate(domEl.value)
 })
 </script>
 <template>
-  <div
-    ref="domEl"
-    @pointerdown.stop
-    @pointermove.stop
-    @pointerup.stop
-    @mousedown.stop
-    @mousemove.stop
-    @mouseup.stop
-  />
+  <div ref="domEl" @pointerdown.stop @pointermove.stop @pointerup.stop />
 </template>
