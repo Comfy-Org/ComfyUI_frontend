@@ -366,8 +366,6 @@ export function useMediaAssetActions() {
                 )
               )
 
-              await new Promise((resolve) => setTimeout(resolve, 2000))
-
               // Count successes and failures
               const succeeded = results.filter(
                 (r) => r.status === 'fulfilled'
