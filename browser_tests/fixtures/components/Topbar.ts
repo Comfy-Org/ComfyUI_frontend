@@ -86,7 +86,14 @@ export class Topbar {
 
     // Wait for workflow service to finish saving
     await this.page.waitForFunction(
-      () => !window['app'].extensionManager.workflow.isBusy,
+      () => {
+        const app = window.app
+        if (!app) return true
+        const extMgr = app.extensionManager as {
+          workflow?: { isBusy?: boolean }
+        }
+        return !extMgr.workflow?.isBusy
+      },
       undefined,
       { timeout: 3000 }
     )

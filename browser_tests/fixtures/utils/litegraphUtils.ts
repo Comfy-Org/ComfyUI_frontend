@@ -22,7 +22,10 @@ export class SubgraphSlotReference {
   async getPosition(): Promise<Position> {
     const pos: [number, number] = await this.comfyPage.page.evaluate(
       ([type, slotName]) => {
-        const currentGraph = window['app'].canvas.graph
+        const app = window.app
+        if (!app) throw new Error('App not initialized')
+        const currentGraph = app.canvas.graph
+        if (!currentGraph) throw new Error('No graph available')
 
         // Check if we're in a subgraph
         if (currentGraph.constructor.name !== 'Subgraph') {
@@ -31,15 +34,18 @@ export class SubgraphSlotReference {
           )
         }
 
-        const slots =
-          type === 'input' ? currentGraph.inputs : currentGraph.outputs
+        const subgraph = currentGraph as {
+          inputs?: Array<{ name: string; pos?: number[] }>
+          outputs?: Array<{ name: string; pos?: number[] }>
+        }
+        const slots = type === 'input' ? subgraph.inputs : subgraph.outputs
         if (!slots || slots.length === 0) {
           throw new Error(`No ${type} slots found in subgraph`)
         }
 
         // Find the specific slot or use the first one if no name specified
         const slot = slotName
-          ? slots.find((s) => s.name === slotName)
+          ? slots.find((s: { name: string }) => s.name === slotName)
           : slots[0]
 
         if (!slot) {
@@ -51,7 +57,7 @@ export class SubgraphSlotReference {
         }
 
         // Convert from offset to canvas coordinates
-        const canvasPos = window['app'].canvas.ds.convertOffsetToCanvas([
+        const canvasPos = app.canvas.ds.convertOffsetToCanvas([
           slot.pos[0],
           slot.pos[1]
         ])
@@ -69,7 +75,10 @@ export class SubgraphSlotReference {
   async getOpenSlotPosition(): Promise<Position> {
     const pos: [number, number] = await this.comfyPage.page.evaluate(
       ([type]) => {
-        const currentGraph = window['app'].canvas.graph
+        const app = window.app
+        if (!app) throw new Error('App not initialized')
+        const currentGraph = app.canvas.graph
+        if (!currentGraph) throw new Error('No graph available')
 
         if (currentGraph.constructor.name !== 'Subgraph') {
           throw new Error(
@@ -77,35 +86,35 @@ export class SubgraphSlotReference {
           )
         }
 
-        const node =
-          type === 'input' ? currentGraph.inputNode : currentGraph.outputNode
-        const slots =
-          type === 'input' ? currentGraph.inputs : currentGraph.outputs
+        const subgraph = currentGraph as {
+          inputNode?: { pos: number[]; size: number[] }
+          outputNode?: { pos: number[]; size: number[] }
+          inputs?: Array<{ pos?: number[] }>
+          outputs?: Array<{ pos?: number[] }>
+          slotAnchorX?: number
+        }
+        const node = type === 'input' ? subgraph.inputNode : subgraph.outputNode
+        const slots = type === 'input' ? subgraph.inputs : subgraph.outputs
 
         if (!node) {
           throw new Error(`No ${type} node found in subgraph`)
         }
 
-        // Calculate position for next available slot
-        // const nextSlotIndex = slots?.length || 0
-        // const slotHeight = 20
-        // const slotY = node.pos[1] + 30 + nextSlotIndex * slotHeight
-
         // Find last slot position
-        const lastSlot = slots.at(-1)
+        const lastSlot = slots?.at(-1)
         let slotX: number
         let slotY: number
 
-        if (lastSlot) {
+        if (lastSlot?.pos) {
           // If there are existing slots, position the new one below the last one
           const gapHeight = 20
           slotX = lastSlot.pos[0]
           slotY = lastSlot.pos[1] + gapHeight
         } else {
           // No existing slots - use slotAnchorX if available, otherwise calculate from node position
-          if (currentGraph.slotAnchorX !== undefined) {
+          if (subgraph.slotAnchorX !== undefined) {
             // The actual slot X position seems to be slotAnchorX - 10
-            slotX = currentGraph.slotAnchorX - 10
+            slotX = subgraph.slotAnchorX - 10
           } else {
             // Fallback: calculate from node edge
             slotX =
@@ -118,10 +127,7 @@ export class SubgraphSlotReference {
         }
 
         // Convert from offset to canvas coordinates
-        const canvasPos = window['app'].canvas.ds.convertOffsetToCanvas([
-          slotX,
-          slotY
-        ])
+        const canvasPos = app.canvas.ds.convertOffsetToCanvas([slotX, slotY])
         return canvasPos
       },
       [this.type] as const
@@ -143,16 +149,18 @@ class NodeSlotReference {
   async getPosition() {
     const pos: [number, number] = await this.node.comfyPage.page.evaluate(
       ([type, id, index]) => {
+        const app = window.app
+        if (!app?.canvas?.graph) throw new Error('App not initialized')
+        const graph = app.canvas.graph
         // Use canvas.graph to get the current graph (works in both main graph and subgraphs)
-        const node = window['app'].canvas.graph.getNodeById(id)
+        const node = graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
 
         const rawPos = node.getConnectionPos(type === 'input', index)
-        const convertedPos =
-          window['app'].canvas.ds.convertOffsetToCanvas(rawPos)
+        const convertedPos = app.canvas.ds.convertOffsetToCanvas(rawPos)
 
         // Debug logging - convert Float64Arrays to regular arrays for visibility
-        // eslint-disable-next-line no-console
+         
         console.log(
           `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
           {
@@ -160,7 +168,7 @@ class NodeSlotReference {
             nodeSize: [node.size[0], node.size[1]],
             rawConnectionPos: [rawPos[0], rawPos[1]],
             convertedPos: [convertedPos[0], convertedPos[1]],
-            currentGraphType: window['app'].canvas.graph.constructor.name
+            currentGraphType: graph.constructor.name
           }
         )
 
@@ -176,7 +184,9 @@ class NodeSlotReference {
   async getLinkCount() {
     return await this.node.comfyPage.page.evaluate(
       ([type, id, index]) => {
-        const node = window['app'].canvas.graph.getNodeById(id)
+        const app = window.app
+        if (!app?.canvas?.graph) throw new Error('App not initialized')
+        const node = app.canvas.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
         if (type === 'input') {
           return node.inputs[index].link == null ? 0 : 1
@@ -189,7 +199,9 @@ class NodeSlotReference {
   async removeLinks() {
     await this.node.comfyPage.page.evaluate(
       ([type, id, index]) => {
-        const node = window['app'].canvas.graph.getNodeById(id)
+        const app = window.app
+        if (!app?.canvas?.graph) throw new Error('App not initialized')
+        const node = app.canvas.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
         if (type === 'input') {
           node.disconnectInput(index)
@@ -214,15 +226,19 @@ class NodeWidgetReference {
   async getPosition(): Promise<Position> {
     const pos: [number, number] = await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
-        const node = window['app'].canvas.graph.getNodeById(id)
+        const app = window.app
+        if (!app?.canvas?.graph) throw new Error('App not initialized')
+        const node = app.canvas.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
+        if (!node.widgets) throw new Error(`Node ${id} has no widgets.`)
         const widget = node.widgets[index]
         if (!widget) throw new Error(`Widget ${index} not found.`)
 
-        const [x, y, w, h] = node.getBounding()
-        return window['app'].canvasPosToClientPos([
+        const [x, y, w] = node.getBounding()
+        const titleHeight = window.LiteGraph?.NODE_TITLE_HEIGHT ?? 20
+        return app.canvasPosToClientPos([
           x + w / 2,
-          y + window['LiteGraph']['NODE_TITLE_HEIGHT'] + widget.last_y + 1
+          y + titleHeight + (widget.last_y ?? 0) + 1
         ])
       },
       [this.node.id, this.index] as const
@@ -239,8 +255,11 @@ class NodeWidgetReference {
   async getSocketPosition(): Promise<Position> {
     const pos: [number, number] = await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
-        const node = window['app'].graph.getNodeById(id)
+        const app = window.app
+        if (!app?.graph) throw new Error('App not initialized')
+        const node = app.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
+        if (!node.widgets) throw new Error(`Node ${id} has no widgets.`)
         const widget = node.widgets[index]
         if (!widget) throw new Error(`Widget ${index} not found.`)
 
@@ -248,11 +267,13 @@ class NodeWidgetReference {
           (slot) => slot.widget?.name === widget.name
         )
         if (!slot) throw new Error(`Socket ${widget.name} not found.`)
+        if (!slot.pos) throw new Error(`Socket ${widget.name} has no position.`)
 
         const [x, y] = node.getBounding()
-        return window['app'].canvasPosToClientPos([
+        const titleHeight = window.LiteGraph?.NODE_TITLE_HEIGHT ?? 20
+        return app.canvasPosToClientPos([
           x + slot.pos[0],
-          y + slot.pos[1] + window['LiteGraph']['NODE_TITLE_HEIGHT']
+          y + slot.pos[1] + titleHeight
         ])
       },
       [this.node.id, this.index] as const
@@ -288,8 +309,11 @@ class NodeWidgetReference {
   async getValue() {
     return await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
-        const node = window['app'].graph.getNodeById(id)
+        const app = window.app
+        if (!app?.graph) throw new Error('App not initialized')
+        const node = app.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
+        if (!node.widgets) throw new Error(`Node ${id} has no widgets.`)
         const widget = node.widgets[index]
         if (!widget) throw new Error(`Widget ${index} not found.`)
         return widget.value
@@ -305,7 +329,9 @@ export class NodeReference {
   ) {}
   async exists(): Promise<boolean> {
     return await this.comfyPage.page.evaluate((id) => {
-      const node = window['app'].canvas.graph.getNodeById(id)
+      const app = window.app
+      if (!app?.canvas?.graph) return false
+      const node = app.canvas.graph.getNodeById(id)
       return !!node
     }, this.id)
   }
@@ -322,17 +348,19 @@ export class NodeReference {
     }
   }
   async getBounding(): Promise<Position & Size> {
-    const [x, y, width, height]: [number, number, number, number] =
-      await this.comfyPage.page.evaluate((id) => {
-        const node = window['app'].canvas.graph.getNodeById(id)
-        if (!node) throw new Error('Node not found')
-        return node.getBounding()
-      }, this.id)
+    const bounding = await this.comfyPage.page.evaluate((id) => {
+      const app = window.app
+      if (!app?.canvas?.graph) throw new Error('App not initialized')
+      const node = app.canvas.graph.getNodeById(id)
+      if (!node) throw new Error('Node not found')
+      const b = node.getBounding()
+      return [b[0], b[1], b[2], b[3]] as [number, number, number, number]
+    }, this.id)
     return {
-      x,
-      y,
-      width,
-      height
+      x: bounding[0],
+      y: bounding[1],
+      width: bounding[2],
+      height: bounding[3]
     }
   }
   async getSize(): Promise<Size> {
@@ -355,14 +383,16 @@ export class NodeReference {
     return (await this.getProperty<number | null | undefined>('mode')) === 4
   }
   async getProperty<T>(prop: string): Promise<T> {
-    return await this.comfyPage.page.evaluate(
+    return (await this.comfyPage.page.evaluate(
       ([id, prop]) => {
-        const node = window['app'].canvas.graph.getNodeById(id)
+        const app = window.app
+        if (!app?.canvas?.graph) throw new Error('App not initialized')
+        const node = app.canvas.graph.getNodeById(id)
         if (!node) throw new Error('Node not found')
-        return node[prop]
+        return (node as unknown as Record<string, unknown>)[prop]
       },
       [this.id, prop] as const
-    )
+    )) as T
   }
   async getOutput(index: number) {
     return new NodeSlotReference('output', index, this)
@@ -480,7 +510,7 @@ export class NodeReference {
   }
   async navigateIntoSubgraph() {
     const titleHeight = await this.comfyPage.page.evaluate(() => {
-      return window['LiteGraph']['NODE_TITLE_HEIGHT']
+      return window.LiteGraph?.NODE_TITLE_HEIGHT ?? 20
     })
     const nodePos = await this.getPosition()
     const nodeSize = await this.getSize()
@@ -513,7 +543,9 @@ export class NodeReference {
 
         // Check if we successfully entered the subgraph
         isInSubgraph = await this.comfyPage.page.evaluate(() => {
-          const graph = window['app'].canvas.graph
+          const app = window.app
+          if (!app) return false
+          const graph = app.canvas.graph
           return graph?.constructor?.name === 'Subgraph'
         })
 

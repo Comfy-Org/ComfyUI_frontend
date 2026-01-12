@@ -81,11 +81,14 @@ class ComfyMenu {
     await this.themeToggleButton.click()
     await this.page.evaluate(() => {
       return new Promise((resolve) => {
-        window['app'].ui.settings.addEventListener(
-          'Comfy.ColorPalette.change',
-          resolve,
-          { once: true }
-        )
+        const app = window.app
+        if (!app) {
+          resolve(undefined)
+          return
+        }
+        app.ui.settings.addEventListener('Comfy.ColorPalette.change', resolve, {
+          once: true
+        })
 
         setTimeout(resolve, 5000)
       })
@@ -94,9 +97,9 @@ class ComfyMenu {
 
   async getThemeId() {
     return await this.page.evaluate(async () => {
-      return await window['app'].ui.settings.getSettingValue(
-        'Comfy.ColorPalette'
-      )
+      const app = window.app
+      if (!app) return undefined
+      return await app.ui.settings.getSettingValue('Comfy.ColorPalette')
     })
   }
 }
@@ -138,7 +141,14 @@ class ConfirmDialog {
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
-      () => window['app']?.extensionManager?.workflow?.isBusy === false,
+      () => {
+        const app = window.app
+        if (!app) return true
+        const extMgr = app.extensionManager as {
+          workflow?: { isBusy?: boolean }
+        }
+        return extMgr.workflow?.isBusy === false
+      },
       undefined,
       { timeout: 3000 }
     )
@@ -256,7 +266,12 @@ export class ComfyPage {
     }
 
     await this.page.evaluate(async () => {
-      await window['app'].extensionManager.workflow.syncWorkflows()
+      const app = window.app
+      if (!app) return
+      const extMgr = app.extensionManager as {
+        workflow?: { syncWorkflows: () => Promise<void> }
+      }
+      if (extMgr.workflow) await extMgr.workflow.syncWorkflows()
     })
 
     // Wait for Vue to re-render the workflow list
@@ -360,7 +375,9 @@ export class ComfyPage {
 
   async executeCommand(commandId: string) {
     await this.page.evaluate((id: string) => {
-      return window['app'].extensionManager.command.execute(id)
+      const app = window.app
+      if (!app) return
+      return app.extensionManager.command.execute(id)
     }, commandId)
   }
 
@@ -370,7 +387,8 @@ export class ComfyPage {
   ) {
     await this.page.evaluate(
       ({ commandId, commandStr }) => {
-        const app = window['app']
+        const app = window.app
+        if (!app) return
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const extensionName = `TestExtension_${randomSuffix}`
 
@@ -391,7 +409,8 @@ export class ComfyPage {
   async registerKeybinding(keyCombo: KeyCombo, command: () => void) {
     await this.page.evaluate(
       ({ keyCombo, commandStr }) => {
-        const app = window['app']
+        const app = window.app
+        if (!app) return
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const extensionName = `TestExtension_${randomSuffix}`
         const commandId = `TestCommand_${randomSuffix}`
@@ -419,7 +438,9 @@ export class ComfyPage {
   async setSetting(settingId: string, settingValue: any) {
     return await this.page.evaluate(
       async ({ id, value }) => {
-        await window['app'].extensionManager.setting.set(id, value)
+        const app = window.app
+        if (!app) return
+        await app.extensionManager.setting.set(id, value)
       },
       { id: settingId, value: settingValue }
     )
@@ -427,7 +448,9 @@ export class ComfyPage {
 
   async getSetting(settingId: string) {
     return await this.page.evaluate(async (id) => {
-      return await window['app'].extensionManager.setting.get(id)
+      const app = window.app
+      if (!app) return undefined
+      return await app.extensionManager.setting.get(id)
     }, settingId)
   }
 
@@ -873,8 +896,10 @@ export class ComfyPage {
     const foundSlot = await this.page.evaluate(
       async (params) => {
         const { slotType, action, targetSlotName } = params
-        const app = window['app']
+        const app = window.app
+        if (!app) throw new Error('App not initialized')
         const currentGraph = app.canvas.graph
+        if (!currentGraph) throw new Error('No graph available')
 
         // Check if we're in a subgraph
         if (currentGraph.constructor.name !== 'Subgraph') {
@@ -883,13 +908,24 @@ export class ComfyPage {
           )
         }
 
-        // Get the appropriate node and slots
+        // Get the appropriate node and slots (these are Subgraph-specific properties)
+        const subgraph = currentGraph as {
+          inputNode?: { onPointerDown?: (...args: unknown[]) => void }
+          outputNode?: { onPointerDown?: (...args: unknown[]) => void }
+          inputs?: Array<{
+            name: string
+            pos?: number[]
+            boundingRect?: number[]
+          }>
+          outputs?: Array<{
+            name: string
+            pos?: number[]
+            boundingRect?: number[]
+          }>
+        }
         const node =
-          slotType === 'input'
-            ? currentGraph.inputNode
-            : currentGraph.outputNode
-        const slots =
-          slotType === 'input' ? currentGraph.inputs : currentGraph.outputs
+          slotType === 'input' ? subgraph.inputNode : subgraph.outputNode
+        const slots = slotType === 'input' ? subgraph.inputs : subgraph.outputs
 
         if (!node) {
           throw new Error(`No ${slotType} node found in subgraph`)
@@ -970,6 +1006,7 @@ export class ComfyPage {
           }
 
           if (node.onPointerDown) {
+            // Call onPointerDown for test simulation
             node.onPointerDown(
               event,
               app.canvas.pointer,
@@ -977,8 +1014,11 @@ export class ComfyPage {
             )
 
             // Trigger double-click
-            if (app.canvas.pointer.onDoubleClick) {
-              app.canvas.pointer.onDoubleClick(event)
+            const onDoubleClick = app.canvas.pointer.onDoubleClick as
+              | ((e: unknown) => void)
+              | undefined
+            if (onDoubleClick) {
+              onDoubleClick(event)
             }
           }
 
@@ -1574,7 +1614,9 @@ export class ComfyPage {
 
   async convertOffsetToCanvas(pos: [number, number]) {
     return this.page.evaluate((pos) => {
-      return window['app'].canvas.ds.convertOffsetToCanvas(pos)
+      const app = window.app
+      if (!app) return pos
+      return app.canvas.ds.convertOffsetToCanvas(pos)
     }, pos)
   }
 
@@ -1588,14 +1630,18 @@ export class ComfyPage {
   }
   async getNodes(): Promise<LGraphNode[]> {
     return await this.page.evaluate(() => {
-      return window['app'].graph.nodes
+      const app = window.app
+      if (!app?.graph?.nodes) return []
+      return app.graph.nodes
     })
   }
   async getNodeRefsByType(type: string): Promise<NodeReference[]> {
     return Promise.all(
       (
         await this.page.evaluate((type) => {
-          return window['app'].graph.nodes
+          const app = window.app
+          if (!app?.graph?.nodes) return []
+          return app.graph.nodes
             .filter((n: LGraphNode) => n.type === type)
             .map((n: LGraphNode) => n.id)
         }, type)
@@ -1606,7 +1652,9 @@ export class ComfyPage {
     return Promise.all(
       (
         await this.page.evaluate((title) => {
-          return window['app'].graph.nodes
+          const app = window.app
+          if (!app?.graph?.nodes) return []
+          return app.graph.nodes
             .filter((n: LGraphNode) => n.title === title)
             .map((n: LGraphNode) => n.id)
         }, title)
@@ -1616,7 +1664,9 @@ export class ComfyPage {
 
   async getFirstNodeRef(): Promise<NodeReference | null> {
     const id = await this.page.evaluate(() => {
-      return window['app'].graph.nodes[0]?.id
+      const app = window.app
+      if (!app?.graph?.nodes) return undefined
+      return app.graph.nodes[0]?.id
     })
     if (!id) return null
     return this.getNodeRefById(id)
@@ -1626,32 +1676,41 @@ export class ComfyPage {
   }
   async getUndoQueueSize() {
     return this.page.evaluate(() => {
-      const workflow = (window['app'].extensionManager as WorkspaceStore)
-        .workflow.activeWorkflow
-      return workflow?.changeTracker.undoQueue.length
+      const app = window.app
+      if (!app) return 0
+      const extMgr = app.extensionManager as WorkspaceStore
+      return extMgr.workflow.activeWorkflow?.changeTracker.undoQueue.length ?? 0
     })
   }
   async getRedoQueueSize() {
     return this.page.evaluate(() => {
-      const workflow = (window['app'].extensionManager as WorkspaceStore)
-        .workflow.activeWorkflow
-      return workflow?.changeTracker.redoQueue.length
+      const app = window.app
+      if (!app) return 0
+      const extMgr = app.extensionManager as WorkspaceStore
+      return extMgr.workflow.activeWorkflow?.changeTracker.redoQueue.length ?? 0
     })
   }
   async isCurrentWorkflowModified() {
     return this.page.evaluate(() => {
-      return (window['app'].extensionManager as WorkspaceStore).workflow
-        .activeWorkflow?.isModified
+      const app = window.app
+      if (!app) return false
+      const extMgr = app.extensionManager as WorkspaceStore
+      return extMgr.workflow.activeWorkflow?.isModified ?? false
     })
   }
   async getExportedWorkflow({ api = false }: { api?: boolean } = {}) {
     return this.page.evaluate(async (api) => {
-      return (await window['app'].graphToPrompt())[api ? 'output' : 'workflow']
+      const app = window.app
+      if (!app) return undefined
+      return (await app.graphToPrompt())[api ? 'output' : 'workflow']
     }, api)
   }
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      window['app'].extensionManager.focusMode = focusMode
+      const app = window.app
+      if (!app) return
+      const extMgr = app.extensionManager as { focusMode?: boolean }
+      extMgr.focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
   }
@@ -1664,7 +1723,9 @@ export class ComfyPage {
    */
   async getGroupPosition(title: string): Promise<Position> {
     const pos = await this.page.evaluate((title) => {
-      const groups = window['app'].graph.groups
+      const app = window.app
+      if (!app?.graph?.groups) return null
+      const groups = app.graph.groups
       const group = groups.find((g: { title: string }) => g.title === title)
       if (!group) return null
       return { x: group.pos[0], y: group.pos[1] }
@@ -1686,7 +1747,8 @@ export class ComfyPage {
   }): Promise<void> {
     const { name, deltaX, deltaY } = options
     const screenPos = await this.page.evaluate((title) => {
-      const app = window['app']
+      const app = window.app
+      if (!app?.graph?.groups) return null
       const groups = app.graph.groups
       const group = groups.find((g: { title: string }) => g.title === title)
       if (!group) return null
@@ -1754,11 +1816,16 @@ export const comfyPageFixture = base.extend<{
   }
 })
 
+interface MatcherContext {
+  isNot: boolean
+}
+
 const makeMatcher = function <T>(
   getValue: (node: NodeReference) => Promise<T> | T,
   type: string
 ) {
   return async function (
+    this: MatcherContext,
     node: NodeReference,
     options?: { timeout?: number; intervals?: number[] }
   ) {
@@ -1784,7 +1851,11 @@ export const comfyExpect = expect.extend({
   toBePinned: makeMatcher((n) => n.isPinned(), 'pinned'),
   toBeBypassed: makeMatcher((n) => n.isBypassed(), 'bypassed'),
   toBeCollapsed: makeMatcher((n) => n.isCollapsed(), 'collapsed'),
-  async toHaveFocus(locator: Locator, options = { timeout: 256 }) {
+  async toHaveFocus(
+    this: MatcherContext,
+    locator: Locator,
+    options = { timeout: 256 }
+  ) {
     const isFocused = await locator.evaluate(
       (el) => el === document.activeElement
     )

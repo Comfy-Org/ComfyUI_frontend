@@ -31,7 +31,7 @@ class SidebarTab {
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'node-library')
   }
 
@@ -55,12 +55,12 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     return this.tabContainer.locator('.new-folder-button')
   }
 
-  async open() {
+  override async open() {
     await super.open()
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
-  async close() {
+  override async close() {
     if (!this.tabButton.isVisible()) {
       return
     }
@@ -87,7 +87,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'workflows')
   }
 
@@ -140,7 +140,14 @@ export class WorkflowsSidebarTab extends SidebarTab {
 
     // Wait for workflow service to finish renaming
     await this.page.waitForFunction(
-      () => !window['app']?.extensionManager?.workflow?.isBusy,
+      () => {
+        const app = window.app
+        if (!app) return true
+        const extMgr = app.extensionManager as {
+          workflow?: { isBusy?: boolean }
+        }
+        return !extMgr.workflow?.isBusy
+      },
       undefined,
       { timeout: 3000 }
     )
