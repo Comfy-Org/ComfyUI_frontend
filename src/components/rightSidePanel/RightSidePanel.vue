@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import {
-  computed,
-  provide,
-  ref,
-  shallowRef,
-  triggerRef,
-  watch,
-  watchEffect
-} from 'vue'
+import { computed, provide, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
@@ -17,9 +9,8 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
@@ -32,14 +23,15 @@ import TabNormalInputs from './parameters/TabNormalInputs.vue'
 import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
-import { GetNodeParentGroupKey, flatAndCategorizeSelectedItems } from './shared'
-import type { MixedSelectionItem } from './shared'
+import {
+  GetNodeParentGroupKey,
+  useFlatAndCategorizeSelectedItems
+} from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const settingStore = useSettingStore()
-const workflowStore = useWorkflowStore()
 const { t } = useI18n()
 const { findParentGroup } = useGraphHierarchy()
 
@@ -57,35 +49,8 @@ const panelIcon = computed(() =>
     : 'icon-[lucide--panel-right]'
 )
 
-// Use shallowRef to avoid deep reactivity overhead
-const flattedItems = shallowRef<MixedSelectionItem[]>([])
-const selectedNodes = shallowRef<LGraphNode[]>([])
-const selectedGroups = shallowRef<LGraphGroup[]>([])
-const nodeToParentGroup = shallowRef<Map<LGraphNode, LGraphGroup>>(new Map())
-
-function triggerItems() {
-  triggerRef(flattedItems)
-  triggerRef(selectedNodes)
-  triggerRef(selectedGroups)
-  triggerRef(nodeToParentGroup)
-}
-
-watch(
-  directlySelectedItems,
-  (items) => {
-    const {
-      all,
-      nodes,
-      groups,
-      nodeToParentGroup: parentMap
-    } = flatAndCategorizeSelectedItems(items)
-    flattedItems.value = all
-    selectedNodes.value = nodes
-    selectedGroups.value = groups
-    nodeToParentGroup.value = parentMap
-  },
-  { immediate: true }
-)
+const { flattedItems, selectedNodes, selectedGroups, nodeToParentGroup } =
+  useFlatAndCategorizeSelectedItems(directlySelectedItems)
 
 const shouldShowGroupNames = computed(() => {
   return !(
@@ -101,45 +66,14 @@ provide(GetNodeParentGroupKey, (node: LGraphNode) => {
 
 const hasSelection = computed(() => flattedItems.value.length > 0)
 
-const isSingleNodeSelected = computed(
-  () => selectedNodes.value.length === 1 && flattedItems.value.length === 1
-)
-
 const selectedSingleNode = computed(() => {
-  return isSingleNodeSelected.value ? selectedNodes.value[0] : null
+  return selectedNodes.value.length === 1 && flattedItems.value.length === 1
+    ? selectedNodes.value[0]
+    : null
 })
 
 const isSingleSubgraphNode = computed(() => {
   return selectedSingleNode.value instanceof SubgraphNode
-})
-
-const selectionCount = computed(() => flattedItems.value.length)
-
-const rootLevelNodes = computed((): LGraphNode[] => {
-  // Depend on activeWorkflow to trigger recomputation when workflow changes
-  void workflowStore.activeWorkflow?.path
-  return (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
-})
-
-const panelTitle = computed(() => {
-  const items = flattedItems.value
-  const nodes = selectedNodes.value
-  const groups = selectedGroups.value
-
-  if (items.length === 0) {
-    return t('rightSidePanel.workflowOverview')
-  }
-  if (directlySelectedItems.value.length === 1) {
-    if (groups.length === 1) {
-      return groups[0].title || t('rightSidePanel.fallbackGroupTitle')
-    }
-    if (nodes.length === 1) {
-      return (
-        nodes[0].title || nodes[0].type || t('rightSidePanel.fallbackNodeTitle')
-      )
-    }
-  }
-  return t('rightSidePanel.title', { count: items.length })
 })
 
 function closePanel() {
@@ -156,7 +90,7 @@ const tabs = computed<RightSidePanelTabList>(() => {
 
   list.push({
     label: () =>
-      selectionCount.value > 1
+      flattedItems.value.length > 1
         ? t('rightSidePanel.nodes')
         : t('rightSidePanel.parameters'),
     value: 'parameters'
@@ -170,7 +104,7 @@ const tabs = computed<RightSidePanelTabList>(() => {
   }
 
   if (hasSelection.value) {
-    if (isSingleNodeSelected.value && !isSingleSubgraphNode.value) {
+    if (selectedSingleNode.value && !isSingleSubgraphNode.value) {
       list.push({
         label: () => t('rightSidePanel.info'),
         value: 'info'
@@ -199,6 +133,30 @@ watchEffect(() => {
   }
 })
 
+function resolveTitle() {
+  const items = flattedItems.value
+  const nodes = selectedNodes.value
+  const groups = selectedGroups.value
+
+  if (items.length === 0) {
+    return t('rightSidePanel.workflowOverview')
+  }
+  if (directlySelectedItems.value.length === 1) {
+    if (groups.length === 1) {
+      return groups[0].title || t('rightSidePanel.fallbackGroupTitle')
+    }
+    if (nodes.length === 1) {
+      return (
+        nodes[0].title || nodes[0].type || t('rightSidePanel.fallbackNodeTitle')
+      )
+    }
+  }
+  return t('rightSidePanel.title', { count: items.length })
+}
+
+const panelTitle = ref(resolveTitle())
+watchEffect(() => (panelTitle.value = resolveTitle()))
+
 const isEditing = ref(false)
 
 const allowTitleEdit = computed(() => {
@@ -220,8 +178,8 @@ function handleTitleEdit(newTitle: string) {
   if (trimmedTitle === node.title) return
 
   node.title = trimmedTitle
+  panelTitle.value = trimmedTitle
   canvasStore.canvas?.setDirty(true, true)
-  triggerItems()
 }
 
 function handleTitleCancel() {
@@ -309,7 +267,7 @@ function handleTitleCancel() {
     <div class="scrollbar-thin flex-1 overflow-y-auto">
       <template v-if="!hasSelection">
         <TabGlobalParameters v-if="activeTab === 'parameters'" />
-        <TabNodes v-else-if="activeTab === 'nodes'" :nodes="rootLevelNodes" />
+        <TabNodes v-else-if="activeTab === 'nodes'" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
       </template>
       <SubgraphEditor

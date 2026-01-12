@@ -1,4 +1,5 @@
-import type { InjectionKey } from 'vue'
+import type { InjectionKey, MaybeRefOrGetter } from 'vue'
+import { computed, toValue } from 'vue'
 
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
@@ -123,6 +124,20 @@ export function flatAndCategorizeSelectedItems(
     groups: repeatItems(groups),
     others: repeatItems(others),
     nodeToParentGroup: ctx.nodeToParentGroup
+  }
+}
+
+export function useFlatAndCategorizeSelectedItems(
+  items: MaybeRefOrGetter<Positionable[]>
+) {
+  const result = computed(() => flatAndCategorizeSelectedItems(toValue(items)))
+
+  return {
+    flattedItems: computed(() => result.value.all),
+    selectedNodes: computed(() => result.value.nodes),
+    selectedGroups: computed(() => result.value.groups),
+    selectedOthers: computed(() => result.value.others),
+    nodeToParentGroup: computed(() => result.value.nodeToParentGroup)
   }
 }
 

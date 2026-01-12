@@ -9,16 +9,23 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-const { nodes } = defineProps<{
-  nodes: LGraphNode[]
-}>()
+const canvasStore = useCanvasStore()
+const workflowStore = useWorkflowStore()
+
+const nodes = computed((): LGraphNode[] => {
+  // Depend on activeWorkflow to trigger recomputation when workflow changes
+  void workflowStore.activeWorkflow?.path
+  return (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
+})
 
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
 const widgetsSectionDataList = computed((): NodeWidgetsListList => {
-  return nodes.map((node) => {
+  return nodes.value.map((node) => {
     const { widgets = [] } = node
     const shownWidgets = widgets
       .filter((w) => !(w.options?.canvasOnly || w.options?.hidden))

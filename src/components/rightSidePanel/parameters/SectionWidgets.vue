@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  computed,
-  inject,
-  provide,
-  ref,
-  shallowRef,
-  triggerRef,
-  watchEffect
-} from 'vue'
+import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -88,19 +80,6 @@ function isWidgetShownOnParents(
     ([nodeId, widgetName]) =>
       widgetNode.id == nodeId && widget.name === widgetName
   )
-}
-
-function onWidgetValueChange(
-  widget: IBaseWidget,
-  value: string | number | boolean | object
-) {
-  widget.value = value
-  widget.callback?.(value)
-  canvasStore.canvas?.setDirty(true, true)
-}
-
-function onWidgetUpdate() {
-  triggerRef(widgets)
 }
 
 const isEmpty = computed(() => widgets.value.length === 0)
@@ -198,8 +177,6 @@ defineExpose({
             :show-node-name="showNodeName"
             :parents="parents"
             :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-            @value-change="onWidgetValueChange"
-            @widget-update="onWidgetUpdate"
           />
         </TransitionGroup>
       </div>

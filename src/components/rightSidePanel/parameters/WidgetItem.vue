@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef, triggerRef, watchEffect } from 'vue'
+import { computed, customRef, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
@@ -18,11 +18,10 @@ import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { renameWidget } from '../shared'
-import type { WidgetUpdateType } from '../shared'
 import WidgetActions from './WidgetActions.vue'
 
 const {
-  widget: theWidget,
+  widget,
   node,
   isDraggable = false,
   hiddenFavoriteIndicator = false,
@@ -39,34 +38,25 @@ const {
   isShownOnParents?: boolean
 }>()
 
-const widget = shallowRef(theWidget)
-watchEffect(() => (widget.value = theWidget))
-
-const emit = defineEmits<{
-  valueChange: [widget: IBaseWidget, value: string | number | boolean | object]
-  widgetUpdate: [event: WidgetUpdateType]
-}>()
-
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
-  const component = getComponent(widget.value.type, widget.value.name)
+  const component = getComponent(widget.type, widget.name)
   return component || WidgetLegacy
 })
 
 const enhancedWidget = computed(() => {
-  const theWidget = widget.value
   // Get shared enhancements (reactive value, controlWidget, spec, nodeType, etc.)
-  const enhancements = getSharedWidgetEnhancements(node, theWidget)
-  return { ...theWidget, ...enhancements }
+  const enhancements = getSharedWidgetEnhancements(node, widget)
+  return { ...widget, ...enhancements }
 })
 
 const sourceNodeName = computed((): string | null => {
   let sourceNode: LGraphNode | null = node
-  if (isProxyWidget(widget.value)) {
-    const { graph, nodeId } = widget.value._overlay
+  if (isProxyWidget(widget)) {
+    const { graph, nodeId } = widget._overlay
     sourceNode = getNodeByExecutionId(graph, nodeId)
   }
   return sourceNode ? sourceNode.title || sourceNode.type : null
@@ -77,32 +67,39 @@ const favoriteNode = computed(() =>
   isShownOnParents && hasParents.value ? parents[0] : node
 )
 
-function handleValueChange(value: string | number | boolean | object) {
-  emit('valueChange', widget.value, value)
-}
-
-function handleWidgetUpdate(event: WidgetUpdateType) {
-  triggerRef(widget)
-  emit('widgetUpdate', event)
-}
-
-function handleLabelEdit(newLabel: string) {
-  isEditing.value = false
-
-  const trimmedLabel = newLabel.trim()
-
-  const success = renameWidget(widget.value, node, trimmedLabel, parents)
-
-  if (success) {
-    canvasStore.canvas?.setDirty(true)
-    triggerRef(widget)
-    emit('widgetUpdate', 'rename')
+const widgetValue = computed({
+  get: () => {
+    widget.vueTrack?.()
+    return widget.value
+  },
+  set: (newValue: string | number | boolean | object) => {
+    // eslint-disable-next-line vue/no-mutating-props
+    widget.value = newValue
+    widget.callback?.(newValue)
+    canvasStore.canvas?.setDirty(true, true)
   }
-}
+})
 
-function handleLabelCancel() {
-  isEditing.value = false
-}
+const displayLabel = customRef((track, trigger) => {
+  return {
+    get() {
+      track()
+      return widget.label || widget.name
+    },
+    set(newValue: string) {
+      isEditing.value = false
+
+      const trimmedLabel = newValue.trim()
+
+      const success = renameWidget(widget, node, trimmedLabel, parents)
+
+      if (success) {
+        canvasStore.canvas?.setDirty(true)
+        trigger()
+      }
+    }
+  }
+})
 </script>
 
 <template>
@@ -126,12 +123,12 @@ function handleLabelCancel() {
     >
       <EditableText
         v-if="widget.name"
-        :model-value="widget.label || widget.name"
+        :model-value="displayLabel"
         :is-editing="isEditing"
         :input-attrs="{ placeholder: widget.name }"
         class="text-sm leading-8 p-0 m-0 truncate pointer-events-auto cursor-text"
-        @edit="handleLabelEdit"
-        @cancel="handleLabelCancel"
+        @edit="displayLabel = $event"
+        @cancel="isEditing = false"
         @click="isEditing = true"
       />
 
@@ -143,11 +140,11 @@ function handleLabelCancel() {
       </span>
       <div class="flex items-center gap-1 shrink-0 pointer-events-auto">
         <WidgetActions
+          v-model:label="displayLabel"
           :widget="widget"
           :node="node"
           :parents="parents"
           :is-shown-on-parents="isShownOnParents"
-          @widget-update="handleWidgetUpdate"
         />
       </div>
     </div>
@@ -166,12 +163,11 @@ function handleLabelCancel() {
     <!-- widget content -->
     <component
       :is="widgetComponent"
+      v-model="widgetValue"
       :widget="enhancedWidget"
-      :model-value="widget.value"
       :node-id="String(node.id)"
       :node-type="node.type"
       :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
-      @update:model-value="handleValueChange"
     />
     <!-- Drag handle -->
     <div

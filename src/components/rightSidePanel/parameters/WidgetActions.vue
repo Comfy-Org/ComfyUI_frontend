@@ -16,9 +16,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 
-import { renameWidget } from '../shared'
-import type { WidgetUpdateType } from '../shared'
-
 const {
   widget,
   node,
@@ -31,9 +28,7 @@ const {
   isShownOnParents?: boolean
 }>()
 
-const emit = defineEmits<{
-  widgetUpdate: [event: WidgetUpdateType]
-}>()
+const label = defineModel<string>('label', { required: true })
 
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
@@ -57,13 +52,7 @@ async function handleRename() {
   })
 
   if (newLabel === null) return
-
-  const success = renameWidget(widget, node, newLabel, parents)
-
-  if (success) {
-    canvasStore.canvas?.setDirty(true)
-    emit('widgetUpdate', 'rename')
-  }
+  label.value = newLabel
 }
 
 function handleHideInput() {
@@ -95,7 +84,6 @@ function handleHideInput() {
   }
 
   canvasStore.canvas?.setDirty(true, true)
-  emit('widgetUpdate', 'hideOnSubgraph')
 }
 
 function handleShowInput() {
@@ -103,13 +91,10 @@ function handleShowInput() {
 
   promoteWidget(node, widget, parents)
   canvasStore.canvas?.setDirty(true, true)
-  emit('widgetUpdate', 'showOnSubgraph')
 }
 
 function handleToggleFavorite() {
-  const isFavoritedBefore = isFavorited.value
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
-  emit('widgetUpdate', isFavoritedBefore ? 'unfavorite' : 'favorite')
 }
 
 const buttonClasses = cn([
