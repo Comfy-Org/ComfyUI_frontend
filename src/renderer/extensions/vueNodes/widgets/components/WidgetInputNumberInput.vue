@@ -125,7 +125,7 @@ function handleMouseMove(e: PointerEvent) {
 }
 function handleMouseUp() {
   const newValue = dragValue.value
-  if (!newValue) return
+  if (newValue === undefined) return
   modelValue.value = newValue
   dragValue.value = undefined
 }
@@ -156,7 +156,7 @@ const buttonTooltip = computed(() => {
         @click="modelValue -= stepValue"
       />
       <input
-        :aria-valuenow="formattedValue"
+        :aria-valuenow="dragValue ?? modelValue"
         :aria-valuemin="filteredProps.min"
         :aria-valuemax="filteredProps.max"
         class="bg-transparent border-0 focus:outline-0 p-1 flex-1 min-w-[4ch] truncate py-1.5 my-0.25 text-sm"
