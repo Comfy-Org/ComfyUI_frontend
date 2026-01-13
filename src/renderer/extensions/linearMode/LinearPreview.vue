@@ -10,6 +10,7 @@ import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAsse
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import {
@@ -70,8 +71,9 @@ function downloadAsset(item?: AssetItem) {
     downloadFile(output.url, output.filename)
 }
 
-function loadWorkflow(item: AssetItem | undefined) {
-  const workflow = getOutputAssetMetadata(item?.user_metadata)?.workflow
+async function loadWorkflow(item: AssetItem | undefined) {
+  if (!item) return
+  const { workflow } = await extractWorkflowFromAsset(item)
   if (!workflow) return
 
   if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
@@ -84,7 +86,7 @@ function loadWorkflow(item: AssetItem | undefined) {
 
 async function rerun(e: Event) {
   if (!runButtonClick) return
-  loadWorkflow(selectedItem)
+  await loadWorkflow(selectedItem)
   //FIXME don't use timeouts here
   //Currently seeds fail to properly update even with timeouts?
   await new Promise((r) => setTimeout(r, 500))
