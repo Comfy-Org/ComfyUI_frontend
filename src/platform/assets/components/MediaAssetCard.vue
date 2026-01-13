@@ -17,7 +17,7 @@
         'gap-2 select-none group',
         selected
           ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
-          : 'hover:bg-modal-card-background-hovered'
+          : 'hover:bg-modal-card-background-hovered/20'
       )
     "
     :data-selected="selected"
