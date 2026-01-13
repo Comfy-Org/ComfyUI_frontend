@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { refDebounced } from '@vueuse/core'
+import type { HintedString } from '@primevue/core'
+import { onClickOutside, refDebounced } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
@@ -42,6 +43,15 @@ interface Props {
     items: DropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<DropdownItem[]>
+  /**
+   * Where to append the dropdown overlay. 'self' keeps it within component
+   * for transform inheritance (scales with canvas), 'body' keeps fixed size.
+   *
+   * When Popover handles appendTo set to 'self', it still tries to
+   * apply offset to the component. Therefore, if in 'self' mode,
+   * render the dropdown directly inside the component.
+   */
+  appendTo?: HintedString<'body' | 'self'> | HTMLElement
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -52,7 +62,8 @@ const props = withDefaults(defineProps<Props>(), {
   filterOptions: () => [],
   sortOptions: () => getDefaultSortOptions(),
   isSelected: (selected, item, _index) => selected.has(item.id),
-  searcher: defaultSearcher
+  searcher: defaultSearcher,
+  appendTo: 'body'
 })
 
 const selected = defineModel<Set<SelectedKey>>('selected', {
@@ -75,6 +86,7 @@ const isQuerying = ref(false)
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerRef = useTemplateRef('triggerRef')
+const dropdownContainerRef = useTemplateRef('dropdownContainerRef')
 const isOpen = ref(false)
 
 const maxSelectable = computed(() => {
@@ -132,23 +144,38 @@ const sortedItems = computed(() => {
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
 
+// Close dropdown when clicking outside (only for appendTo === 'self' mode)
+onClickOutside(
+  dropdownContainerRef,
+  () => {
+    if (props.appendTo === 'self' && isOpen.value) {
+      closeDropdown()
+    }
+  },
+  { ignore: [triggerRef] }
+)
+
 function internalIsSelected(item: DropdownItem, index: number): boolean {
   return props.isSelected?.(selected.value, item, index) ?? false
 }
 
 const toggleDropdown = (event: Event) => {
   if (props.disabled) return
+  // In 'appendTo === "self"' mode, the Popover component is not used.
+  // Therefore, set isOpen directly.
   if (popoverRef.value && triggerRef.value) {
     popoverRef.value.toggle(event, triggerRef.value)
-    isOpen.value = !isOpen.value
   }
+  isOpen.value = !isOpen.value
 }
 
 const closeDropdown = () => {
+  // In 'appendTo === "self"' mode, the Popover component is not used.
+  // Therefore, set isOpen directly.
   if (popoverRef.value) {
     popoverRef.value.hide()
-    isOpen.value = false
   }
+  isOpen.value = false
 }
 
 function handleFileChange(event: Event) {
@@ -200,10 +227,41 @@ function handleSelection(item: DropdownItem, index: number) {
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
+
+    <template v-if="appendTo === 'self'">
+      <!--
+        When Popover handles appendTo set to 'self', it still tries to
+        apply offset to the component. Therefore, if in 'self' mode,
+        render the dropdown directly inside the div element.
+      -->
+      <div
+        v-if="isOpen"
+        ref="dropdownContainerRef"
+        class="absolute z-1001 top-8 left-0"
+      >
+        <FormDropdownMenu
+          v-model:filter-selected="filterSelected"
+          v-model:layout-mode="layoutMode"
+          v-model:sort-selected="sortSelected"
+          v-model:search-query="searchQuery"
+          :filter-options="filterOptions"
+          :sort-options="sortOptions"
+          :disabled="disabled"
+          :is-querying="isQuerying"
+          :items="sortedItems"
+          :is-selected="internalIsSelected"
+          :max-selectable="maxSelectable"
+          @close="closeDropdown"
+          @item-click="handleSelection"
+        />
+      </div>
+    </template>
     <Popover
+      v-else
       ref="popoverRef"
       :dismissable="true"
       :close-on-escape="true"
+      :append-to="appendTo"
       unstyled
       :pt="{
         root: {
