@@ -1,7 +1,7 @@
-import { useAsyncState } from '@vueuse/core'
+import { useAsyncState, whenever } from '@vueuse/core'
 import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, shallowReactive, ref, watch } from 'vue'
+import { computed, shallowReactive, ref } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -376,23 +376,31 @@ export const useAssetsStore = defineStore('assets', () => {
   } = getModelState()
 
   // Watch for completed downloads and refresh model caches
-  watch(
-    () => assetDownloadStore.completedDownloads.at(-1),
+  whenever(
+    () => assetDownloadStore.lastCompletedDownload,
     async (latestDownload) => {
-      if (!latestDownload) return
-
       const { modelType } = latestDownload
 
       const providers = modelToNodeStore
         .getAllNodeProviders(modelType)
         .filter((provider) => provider.nodeDef?.name)
-      const results = await Promise.allSettled(
-        providers.map((provider) =>
-          updateModelsForNodeType(provider.nodeDef.name).then(
-            () => provider.nodeDef.name
-          )
+
+      const nodeTypeUpdates = providers.map((provider) =>
+        updateModelsForNodeType(provider.nodeDef.name).then(
+          () => provider.nodeDef.name
         )
       )
+
+      // Also update by tag in case modal was opened with assetType
+      const tagUpdates = [
+        updateModelsForTag(modelType),
+        updateModelsForTag('models')
+      ]
+
+      const results = await Promise.allSettled([
+        ...nodeTypeUpdates,
+        ...tagUpdates
+      ])
 
       for (const result of results) {
         if (result.status === 'rejected') {

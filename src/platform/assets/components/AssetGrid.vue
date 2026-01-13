@@ -35,6 +35,7 @@
           :asset="item"
           :interactive="true"
           @select="$emit('assetSelect', $event)"
+          @deleted="$emit('assetDeleted', $event)"
         />
       </template>
     </VirtualGrid>
@@ -56,6 +57,7 @@ const { assets } = defineProps<{
 
 defineEmits<{
   assetSelect: [asset: AssetDisplayItem]
+  assetDeleted: [asset: AssetDisplayItem]
 }>()
 
 const assetsWithKey = computed(() =>
