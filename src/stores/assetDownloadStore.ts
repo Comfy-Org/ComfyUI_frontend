@@ -27,6 +27,22 @@ interface CompletedDownload {
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
 
+function generateDownloadTrackingPlaceholder(
+  taskId: string,
+  modelType: string
+): AssetDownload {
+  return {
+    taskId,
+    modelType,
+    assetName: '',
+    bytesTotal: 0,
+    bytesDownloaded: 0,
+    progress: 0,
+    status: 'created',
+    lastUpdate: Date.now()
+  }
+}
+
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
   const lastCompletedDownload = ref<CompletedDownload | null>(null)
@@ -46,16 +62,12 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const hasDownloads = computed(() => downloads.value.size > 0)
 
   function trackDownload(taskId: string, modelType: string) {
-    downloads.value.set(taskId, {
+    if (downloads.value.has(taskId)) return
+
+    downloads.value.set(
       taskId,
-      modelType,
-      assetName: '',
-      bytesTotal: 0,
-      bytesDownloaded: 0,
-      progress: 0,
-      status: 'created',
-      lastUpdate: Date.now()
-    })
+      generateDownloadTrackingPlaceholder(taskId, modelType)
+    )
   }
 
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
