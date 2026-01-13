@@ -1,6 +1,6 @@
 import { $el } from '../ui'
 
-export interface ToggleSwitchItem {
+interface ToggleSwitchItem {
   text: string
   value?: string
   tooltip?: string
