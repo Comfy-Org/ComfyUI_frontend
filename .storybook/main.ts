@@ -7,7 +7,7 @@ import type { InlineConfig } from 'vite'
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
-  addons: ['@storybook/addon-docs'],
+  addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
   framework: {
     name: '@storybook/vue3-vite',
     options: {}
@@ -64,18 +64,47 @@ const config: StorybookConfig = {
           deep: true,
           extensions: ['vue']
         })
-        // Note: Explicitly NOT including generateImportMapPlugin to avoid externalization
       ],
       server: {
         allowedHosts: true
       },
       resolve: {
-        alias: {
-          '@': process.cwd() + '/src'
-        }
+        alias: [
+          {
+            find: '@/composables/queue/useJobList',
+            replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
+          },
+          {
+            find: '@/composables/queue/useJobActions',
+            replacement: process.cwd() + '/src/storybook/mocks/useJobActions.ts'
+          },
+          {
+            find: '@/utils/formatUtil',
+            replacement:
+              process.cwd() +
+              '/packages/shared-frontend-utils/src/formatUtil.ts'
+          },
+          {
+            find: '@/utils/networkUtil',
+            replacement:
+              process.cwd() +
+              '/packages/shared-frontend-utils/src/networkUtil.ts'
+          },
+          {
+            find: '@',
+            replacement: process.cwd() + '/src'
+          }
+        ]
+      },
+      esbuild: {
+        // Prevent minification of identifiers to preserve _sfc_main
+        minifyIdentifiers: false,
+        keepNames: true
       },
       build: {
         rollupOptions: {
+          // Disable tree-shaking for Storybook to prevent Vue SFC exports from being removed
+          treeshake: false,
           onwarn: (warning, warn) => {
             // Suppress specific warnings
             if (

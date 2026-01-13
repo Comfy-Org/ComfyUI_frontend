@@ -1,12 +1,17 @@
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
+import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { getWorkflowFromHistory } from '@/platform/workflow/cloud'
 import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  HistoryTaskItem,
   ResultItem,
   StatusWsMessageStatus,
   TaskItem,
@@ -19,11 +24,13 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'
 
-export enum TaskItemDisplayStatus {
+enum TaskItemDisplayStatus {
   Running = 'Running',
   Pending = 'Pending',
   Completed = 'Completed',
@@ -198,8 +205,12 @@ export class ResultItemImpl {
     )
   }
 
+  get is3D(): boolean {
+    return getMediaTypeFromFilename(this.filename) === '3D'
+  }
+
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo || this.isAudio
+    return this.isImage || this.isVideo || this.isAudio || this.is3D
   }
 }
 
@@ -309,6 +320,22 @@ export class TaskItemImpl {
     return this.status?.messages || []
   }
 
+  /**
+   * Server-provided creation time in milliseconds, when available.
+   *
+   * Sources:
+   * - Queue: 5th tuple element may be a metadata object with { create_time }.
+   * - History (Cloud V2): Adapter injects create_time into prompt[3].extra_data.
+   */
+  get createTime(): number | undefined {
+    const extra = (this.extraData as any) || {}
+    const fromExtra =
+      typeof extra.create_time === 'number' ? extra.create_time : undefined
+    if (typeof fromExtra === 'number') return fromExtra
+
+    return undefined
+  }
+
   get interrupted() {
     return _.some(
       this.messages,
@@ -377,24 +404,37 @@ export class TaskItemImpl {
   }
 
   public async loadWorkflow(app: ComfyApp) {
-    if (!this.workflow) {
-      return
-    }
-    await app.loadGraphData(toRaw(this.workflow))
-    if (this.outputs) {
-      const nodeOutputsStore = useNodeOutputStore()
-      const rawOutputs = toRaw(this.outputs)
-      for (const nodeExecutionId in rawOutputs) {
-        nodeOutputsStore.setNodeOutputsByExecutionId(
-          nodeExecutionId,
-          rawOutputs[nodeExecutionId]
-        )
-      }
-      useExtensionService().invokeExtensions(
-        'onNodeOutputsUpdated',
-        app.nodeOutputs
+    let workflowData = this.workflow
+
+    if (isCloud && !workflowData && this.isHistory) {
+      workflowData = await getWorkflowFromHistory(
+        (url) => app.api.fetchApi(url),
+        this.promptId
       )
     }
+
+    if (!workflowData) {
+      return
+    }
+
+    await app.loadGraphData(toRaw(workflowData))
+
+    if (!this.outputs) {
+      return
+    }
+
+    const nodeOutputsStore = useNodeOutputStore()
+    const rawOutputs = toRaw(this.outputs)
+    for (const nodeExecutionId in rawOutputs) {
+      nodeOutputsStore.setNodeOutputsByExecutionId(
+        nodeExecutionId,
+        rawOutputs[nodeExecutionId]
+      )
+    }
+    useExtensionService().invokeExtensions(
+      'onNodeOutputsUpdated',
+      app.nodeOutputs
+    )
   }
 
   public flatten(): TaskItemImpl[] {
@@ -423,12 +463,38 @@ export class TaskItemImpl {
         )
     )
   }
+
+  public toTaskItem(): TaskItem {
+    const item: HistoryTaskItem = {
+      taskType: 'History',
+      prompt: this.prompt,
+      status: this.status!,
+      outputs: this.outputs
+    }
+    return item
+  }
 }
 
+const sortNewestFirst = (a: TaskItemImpl, b: TaskItemImpl) =>
+  b.queueIndex - a.queueIndex
+
+const toTaskItemImpls = (tasks: TaskItem[]): TaskItemImpl[] =>
+  tasks.map(
+    (task) =>
+      new TaskItemImpl(
+        task.taskType,
+        task.prompt,
+        'status' in task ? task.status : undefined,
+        'outputs' in task ? task.outputs : undefined
+      )
+  )
+
 export const useQueueStore = defineStore('queue', () => {
-  const runningTasks = ref<TaskItemImpl[]>([])
-  const pendingTasks = ref<TaskItemImpl[]>([])
-  const historyTasks = ref<TaskItemImpl[]>([])
+  // Use shallowRef because TaskItemImpl instances are immutable and arrays are
+  // replaced entirely (not mutated), so deep reactivity would waste performance
+  const runningTasks = shallowRef<TaskItemImpl[]>([])
+  const pendingTasks = shallowRef<TaskItemImpl[]>([])
+  const historyTasks = shallowRef<TaskItemImpl[]>([])
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
@@ -459,37 +525,40 @@ export const useQueueStore = defineStore('queue', () => {
         api.getHistory(maxHistoryItems.value)
       ])
 
-      const toClassAll = (tasks: TaskItem[]): TaskItemImpl[] =>
-        tasks
-          .map(
-            (task: TaskItem) =>
-              new TaskItemImpl(
-                task.taskType,
-                task.prompt,
-                // status and outputs only exist on history tasks
-                'status' in task ? task.status : undefined,
-                'outputs' in task ? task.outputs : undefined
-              )
+      runningTasks.value = toTaskItemImpls(queue.Running).sort(sortNewestFirst)
+      pendingTasks.value = toTaskItemImpls(queue.Pending).sort(sortNewestFirst)
+
+      const currentHistory = toValue(historyTasks)
+
+      const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+      const executionStore = useExecutionStore()
+      appearedTasks.forEach((task) => {
+        const promptIdString = String(task.promptId)
+        const workflowId = task.workflow?.id
+        if (workflowId && promptIdString) {
+          executionStore.registerPromptWorkflowIdMapping(
+            promptIdString,
+            workflowId
           )
-          .sort((a, b) => b.queueIndex - a.queueIndex)
+        }
+      })
 
-      runningTasks.value = toClassAll(queue.Running)
-      pendingTasks.value = toClassAll(queue.Pending)
+      const items = reconcileHistory(
+        history.History,
+        currentHistory.map((impl) => impl.toTaskItem()),
+        toValue(maxHistoryItems),
+        toValue(lastHistoryQueueIndex)
+      )
 
-      const allIndex = new Set<number>(
-        history.History.map((item: TaskItem) => item.prompt[0])
+      // Reuse existing TaskItemImpl instances or create new
+      const existingByPromptId = new Map(
+        currentHistory.map((impl) => [impl.promptId, impl])
       )
-      const newHistoryItems = toClassAll(
-        history.History.filter(
-          (item) => item.prompt[0] > lastHistoryQueueIndex.value
-        )
+
+      historyTasks.value = items.map(
+        (item) =>
+          existingByPromptId.get(item.prompt[1]) ?? toTaskItemImpls([item])[0]
       )
-      const existingHistoryItems = historyTasks.value.filter((item) =>
-        allIndex.has(item.queueIndex)
-      )
-      historyTasks.value = [...newHistoryItems, ...existingHistoryItems]
-        .slice(0, maxHistoryItems.value)
-        .sort((a, b) => b.queueIndex - a.queueIndex)
     } finally {
       isLoading.value = false
     }
@@ -549,4 +618,19 @@ export const useQueueSettingsStore = defineStore('queueSettingsStore', {
     mode: 'disabled' as AutoQueueMode,
     batchCount: 1
   })
+})
+
+export const useQueueUIStore = defineStore('queueUIStore', () => {
+  const settingStore = useSettingStore()
+
+  const isOverlayExpanded = computed({
+    get: () => settingStore.get('Comfy.Queue.History.Expanded'),
+    set: (value) => settingStore.set('Comfy.Queue.History.Expanded', value)
+  })
+
+  function toggleOverlay() {
+    isOverlayExpanded.value = !isOverlayExpanded.value
+  }
+
+  return { isOverlayExpanded, toggleOverlay }
 })

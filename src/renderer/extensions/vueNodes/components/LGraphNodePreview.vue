@@ -1,33 +1,29 @@
 <template>
-  <div class="scale-75">
+  <div
+    :data-node-id="nodeData.id"
+    :class="
+      cn(
+        'bg-component-node-background lg-node pb-1 contain-style contain-layout w-[350px] rounded-2xl touch-none flex flex-col border-1 border-solid outline-transparent outline-2 border-node-stroke',
+        position
+      )
+    "
+  >
     <div
-      class="lg-node pointer-events-none absolute rounded-2xl border border-solid border-node-component-border bg-node-component-surface outline-2 -outline-offset-2 outline-transparent"
+      class="flex flex-col justify-center items-center relative pointer-events-none"
     >
-      <NodeHeader :node-data="nodeData" :readonly="readonly" />
+      <NodeHeader :node-data="nodeData" />
+    </div>
+    <div
+      class="flex flex-1 flex-col gap-1 pb-2 pointer-events-none"
+      :data-testid="`node-body-${nodeData.id}`"
+    >
+      <NodeSlots :node-data="nodeData" />
 
-      <div class="mx-0 mb-4 h-px w-full bg-node-component-border" />
-
-      <div class="flex flex-col gap-4 pb-4">
-        <NodeSlots
-          v-memo="[nodeData.inputs?.length, nodeData.outputs?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
-
-        <NodeWidgets
-          v-if="nodeData.widgets?.length"
-          v-memo="[nodeData.widgets?.length]"
-          :node-data="nodeData"
-          :readonly="readonly"
-        />
-
-        <NodeContent
-          v-if="hasCustomContent"
-          :node-data="nodeData"
-          :readonly="readonly"
-          :image-urls="nodeImageUrls"
-        />
-      </div>
+      <NodeWidgets
+        v-if="nodeData.widgets?.length"
+        :node-data="nodeData"
+        class="pointer-events-none"
+      />
     </div>
   </div>
 </template>
@@ -41,15 +37,16 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
-import NodeContent from '@/renderer/extensions/vueNodes/components/NodeContent.vue'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { cn } from '@/utils/tailwindUtil'
 
-const { nodeDef } = defineProps<{
+const { nodeDef, position = 'absolute' } = defineProps<{
   nodeDef: ComfyNodeDefV2
+  position?: 'absolute' | 'relative'
 }>()
 
 const widgetStore = useWidgetStore()
@@ -68,9 +65,8 @@ const nodeData = computed<VueNodeData>(() => {
               Array.isArray(input.options) &&
               input.options.length > 0
             ? input.options[0]
-            : undefined,
+            : '',
       options: {
-        ...input,
         hidden: input.hidden,
         advanced: input.advanced,
         values: input.type === 'COMBO' ? input.options : undefined // For combo widgets
@@ -113,13 +109,10 @@ const nodeData = computed<VueNodeData>(() => {
     widgets,
     inputs,
     outputs,
+
     flags: {
       collapsed: false
     }
   }
 })
-
-const readonly = true
-const hasCustomContent = false
-const nodeImageUrls = ['']
 </script>

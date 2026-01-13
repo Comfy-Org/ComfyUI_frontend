@@ -5,18 +5,28 @@
       showDelay: 1000
     }"
     data-testid="info-button"
-    text
-    severity="secondary"
-    @click="toggleHelp"
+    variant="muted-textonly"
+    :aria-label="$t('g.info')"
+    @click="onInfoClick"
   >
-    <i class="icon-[lucide--info] h-4 w-4" />
+    <i class="icon-[lucide--info]" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import { useSelectionState } from '@/composables/graph/useSelectionState'
+const rightSidePanelStore = useRightSidePanelStore()
 
-const { showNodeHelp: toggleHelp } = useSelectionState()
+/**
+ * Track node info button click and toggle node help.
+ */
+const onInfoClick = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'selection_toolbox_node_info_opened'
+  })
+  rightSidePanelStore.openPanel('info')
+}
 </script>

@@ -1,45 +1,64 @@
-import { refDebounced } from '@vueuse/core'
+import { refDebounced, watchDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
-import { computed, ref } from 'vue'
+import type { IFuseOptions } from 'fuse.js'
+import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useTemplateRankingStore } from '@/stores/templateRankingStore'
+import { debounce } from 'es-toolkit/compat'
+import { api } from '@/scripts/api'
+
+// Fuse.js configuration for fuzzy search
+const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
+  keys: [
+    { name: 'name', weight: 0.3 },
+    { name: 'title', weight: 0.3 },
+    { name: 'description', weight: 0.1 },
+    { name: 'tags', weight: 0.2 },
+    { name: 'models', weight: 0.3 }
+  ],
+  threshold: 0.33,
+  includeScore: true,
+  includeMatches: true
+}
 
 export function useTemplateFiltering(
   templates: Ref<TemplateInfo[]> | TemplateInfo[]
 ) {
+  const settingStore = useSettingStore()
+  const rankingStore = useTemplateRankingStore()
+
   const searchQuery = ref('')
-  const selectedModels = ref<string[]>([])
-  const selectedUseCases = ref<string[]>([])
-  const selectedLicenses = ref<string[]>([])
+  const selectedModels = ref<string[]>(
+    settingStore.get('Comfy.Templates.SelectedModels')
+  )
+  const selectedUseCases = ref<string[]>(
+    settingStore.get('Comfy.Templates.SelectedUseCases')
+  )
+  const selectedRunsOn = ref<string[]>(
+    settingStore.get('Comfy.Templates.SelectedRunsOn')
+  )
   const sortBy = ref<
     | 'default'
+    | 'recommended'
+    | 'popular'
     | 'alphabetical'
     | 'newest'
     | 'vram-low-to-high'
     | 'model-size-low-to-high'
-  >('newest')
+  >(settingStore.get('Comfy.Templates.SortBy'))
+
+  const fuseOptions = ref<IFuseOptions<TemplateInfo>>(defaultFuseOptions)
 
   const templatesArray = computed(() => {
     const templateData = 'value' in templates ? templates.value : templates
     return Array.isArray(templateData) ? templateData : []
   })
 
-  // Fuse.js configuration for fuzzy search
-  const fuseOptions = {
-    keys: [
-      { name: 'name', weight: 0.3 },
-      { name: 'title', weight: 0.3 },
-      { name: 'description', weight: 0.2 },
-      { name: 'tags', weight: 0.1 },
-      { name: 'models', weight: 0.1 }
-    ],
-    threshold: 0.4,
-    includeScore: true,
-    includeMatches: true
-  }
-
-  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions))
+  const fuse = computed(() => new Fuse(templatesArray.value, fuseOptions.value))
 
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
@@ -61,8 +80,8 @@ export function useTemplateFiltering(
     return Array.from(tagSet).sort()
   })
 
-  const availableLicenses = computed(() => {
-    return ['Open Source', 'Closed Source (API Nodes)']
+  const availableRunsOn = computed(() => {
+    return ['ComfyUI', 'External or Remote API']
   })
 
   const debouncedSearchQuery = refDebounced(searchQuery, 50)
@@ -106,32 +125,76 @@ export function useTemplateFiltering(
     })
   })
 
-  const filteredByLicenses = computed(() => {
-    if (selectedLicenses.value.length === 0) {
+  const filteredByRunsOn = computed(() => {
+    if (selectedRunsOn.value.length === 0) {
       return filteredByUseCases.value
     }
 
     return filteredByUseCases.value.filter((template) => {
-      // Check if template has API in its tags or name (indicating it's a closed source API node)
-      const isApiTemplate =
-        template.tags?.includes('API') ||
-        template.name?.toLowerCase().includes('api_')
+      // Use openSource field to determine where template runs
+      // openSource === false -> External/Remote API
+      // openSource !== false -> ComfyUI (includes true and undefined)
+      const isExternalAPI = template.openSource === false
+      const isComfyUI = template.openSource !== false
 
-      return selectedLicenses.value.some((selectedLicense) => {
-        if (selectedLicense === 'Closed Source (API Nodes)') {
-          return isApiTemplate
-        } else if (selectedLicense === 'Open Source') {
-          return !isApiTemplate
+      return selectedRunsOn.value.some((selectedRunsOn) => {
+        if (selectedRunsOn === 'External or Remote API') {
+          return isExternalAPI
+        } else if (selectedRunsOn === 'ComfyUI') {
+          return isComfyUI
         }
         return false
       })
     })
   })
 
+  const getVramMetric = (template: TemplateInfo) => {
+    if (
+      typeof template.vram === 'number' &&
+      Number.isFinite(template.vram) &&
+      template.vram > 0
+    ) {
+      return template.vram
+    }
+    return Number.POSITIVE_INFINITY
+  }
+
+  watch(
+    filteredByRunsOn,
+    (templates) => {
+      rankingStore.largestUsageScore = Math.max(
+        ...templates.map((t) => t.usage || 0)
+      )
+    },
+    { immediate: true }
+  )
+
   const sortedTemplates = computed(() => {
-    const templates = [...filteredByLicenses.value]
+    const templates = [...filteredByRunsOn.value]
 
     switch (sortBy.value) {
+      case 'recommended':
+        // Curated: usage × 0.5 + internal × 0.3 + freshness × 0.2
+        return templates.sort((a, b) => {
+          const scoreA = rankingStore.computeDefaultScore(
+            a.date,
+            a.searchRank,
+            a.usage
+          )
+          const scoreB = rankingStore.computeDefaultScore(
+            b.date,
+            b.searchRank,
+            b.usage
+          )
+          return scoreB - scoreA
+        })
+      case 'popular':
+        // User-driven: usage × 0.9 + freshness × 0.1
+        return templates.sort((a, b) => {
+          const scoreA = rankingStore.computePopularScore(a.date, a.usage)
+          const scoreB = rankingStore.computePopularScore(b.date, b.usage)
+          return scoreB - scoreA
+        })
       case 'alphabetical':
         return templates.sort((a, b) => {
           const nameA = a.title || a.name || ''
@@ -145,11 +208,23 @@ export function useTemplateFiltering(
           return dateB.getTime() - dateA.getTime()
         })
       case 'vram-low-to-high':
-        // TODO: Implement VRAM sorting when VRAM data is available
-        // For now, keep original order
-        return templates
+        return templates.sort((a, b) => {
+          const vramA = getVramMetric(a)
+          const vramB = getVramMetric(b)
+
+          if (vramA === vramB) {
+            const nameA = a.title || a.name || ''
+            const nameB = b.title || b.name || ''
+            return nameA.localeCompare(nameB)
+          }
+
+          if (vramA === Number.POSITIVE_INFINITY) return 1
+          if (vramB === Number.POSITIVE_INFINITY) return -1
+
+          return vramA - vramB
+        })
       case 'model-size-low-to-high':
-        return templates.sort((a: any, b: any) => {
+        return templates.sort((a, b) => {
           const sizeA =
             typeof a.size === 'number' ? a.size : Number.POSITIVE_INFINITY
           const sizeB =
@@ -159,7 +234,6 @@ export function useTemplateFiltering(
         })
       case 'default':
       default:
-        // Keep original order (default order)
         return templates
     }
   })
@@ -170,7 +244,7 @@ export function useTemplateFiltering(
     searchQuery.value = ''
     selectedModels.value = []
     selectedUseCases.value = []
-    selectedLicenses.value = []
+    selectedRunsOn.value = []
     sortBy.value = 'default'
   }
 
@@ -182,26 +256,98 @@ export function useTemplateFiltering(
     selectedUseCases.value = selectedUseCases.value.filter((t) => t !== tag)
   }
 
-  const removeLicenseFilter = (license: string) => {
-    selectedLicenses.value = selectedLicenses.value.filter((l) => l !== license)
+  const removeRunsOnFilter = (runsOn: string) => {
+    selectedRunsOn.value = selectedRunsOn.value.filter((r) => r !== runsOn)
   }
 
   const filteredCount = computed(() => filteredTemplates.value.length)
   const totalCount = computed(() => templatesArray.value.length)
+
+  // Template filter tracking (debounced to avoid excessive events)
+  const debouncedTrackFilterChange = debounce(() => {
+    useTelemetry()?.trackTemplateFilterChanged({
+      search_query: searchQuery.value || undefined,
+      selected_models: selectedModels.value,
+      selected_use_cases: selectedUseCases.value,
+      selected_runs_on: selectedRunsOn.value,
+      sort_by: sortBy.value,
+      filtered_count: filteredCount.value,
+      total_count: totalCount.value
+    })
+  }, 500)
+
+  const loadFuseOptions = async () => {
+    const fetchedOptions = await api.getFuseOptions()
+    if (fetchedOptions) {
+      fuseOptions.value = fetchedOptions
+    }
+  }
+
+  // Watch for filter changes and track them
+  watch(
+    [searchQuery, selectedModels, selectedUseCases, selectedRunsOn, sortBy],
+    () => {
+      // Only track if at least one filter is active (to avoid tracking initial state)
+      const hasActiveFilters =
+        searchQuery.value.trim() !== '' ||
+        selectedModels.value.length > 0 ||
+        selectedUseCases.value.length > 0 ||
+        selectedRunsOn.value.length > 0 ||
+        sortBy.value !== 'default'
+
+      if (hasActiveFilters) {
+        debouncedTrackFilterChange()
+      }
+    },
+    { deep: true }
+  )
+
+  // Persist filter changes to settings (debounced to avoid excessive saves)
+  watchDebounced(
+    selectedModels,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.SelectedModels', newValue)
+    },
+    { debounce: 500, deep: true }
+  )
+
+  watchDebounced(
+    selectedUseCases,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.SelectedUseCases', newValue)
+    },
+    { debounce: 500, deep: true }
+  )
+
+  watchDebounced(
+    selectedRunsOn,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.SelectedRunsOn', newValue)
+    },
+    { debounce: 500, deep: true }
+  )
+
+  watchDebounced(
+    sortBy,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.SortBy', newValue)
+    },
+    { debounce: 500 }
+  )
 
   return {
     // State
     searchQuery,
     selectedModels,
     selectedUseCases,
-    selectedLicenses,
+    selectedRunsOn,
     sortBy,
 
     // Computed
     filteredTemplates,
     availableModels,
     availableUseCases,
-    availableLicenses,
+    availableRunsOn,
     filteredCount,
     totalCount,
 
@@ -209,6 +355,7 @@ export function useTemplateFiltering(
     resetFilters,
     removeModelFilter,
     removeUseCaseFilter,
-    removeLicenseFilter
+    removeRunsOnFilter,
+    loadFuseOptions
   }
 }

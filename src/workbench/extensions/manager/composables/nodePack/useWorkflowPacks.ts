@@ -7,7 +7,7 @@ import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { collectAllNodes } from '@/utils/graphTraversalUtil'
+import { mapAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodePacks } from '@/workbench/extensions/manager/composables/nodePack/useNodePacks'
 import type { UseNodePacksOptions } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
@@ -112,10 +112,9 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
    * Get the node packs for all nodes in the workflow (including subgraphs).
    */
   const getWorkflowPacks = async () => {
-    if (!app.graph) return []
-    const allNodes = collectAllNodes(app.graph)
-    if (!allNodes.length) return []
-    const packs = await Promise.all(allNodes.map(workflowNodeToPack))
+    if (!app.rootGraph) return []
+    const packPromises = mapAllNodes(app.rootGraph, workflowNodeToPack)
+    const packs = await Promise.all(packPromises)
     workflowPacks.value = packs.filter((pack) => pack !== undefined)
   }
 

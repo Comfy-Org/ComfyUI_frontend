@@ -3,6 +3,7 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
@@ -198,7 +199,10 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     name: 'Note',
     display_name: 'Note',
     category: 'utils',
-    input: { required: {}, optional: {} },
+    input: {
+      required: { text: ['STRING', { multiline: true }] },
+      optional: {}
+    },
     output: [],
     output_name: [],
     output_is_list: [],
@@ -210,7 +214,10 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     name: 'MarkdownNote',
     display_name: 'Markdown Note',
     category: 'utils',
-    input: { required: {}, optional: {} },
+    input: {
+      required: { text: ['STRING', { multiline: true }] },
+      optional: {}
+    },
     output: [],
     output_name: [],
     output_is_list: [],
@@ -342,8 +349,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
-    // Frontend-only nodes don't have nodeDef
-    const nodeTypeName = node.constructor?.nodeData?.name
+    const nodeTypeName = node.constructor?.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
     const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
     return nodeDef
@@ -353,10 +359,21 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     node: LGraphNode,
     widgetName: string
   ): InputSpecV2 | undefined {
-    const nodeDef = fromLGraphNode(node)
-    if (!nodeDef) return undefined
+    if (!node.isSubgraphNode()) {
+      const nodeDef = fromLGraphNode(node)
+      if (!nodeDef) return undefined
 
-    return nodeDef.inputs[widgetName]
+      return nodeDef.inputs[widgetName]
+    }
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    //TODO: resolve spec for linked
+    if (!widget || !isProxyWidget(widget)) return undefined
+
+    const { nodeId, widgetName: subWidgetName } = widget._overlay
+    const subNode = node.subgraph.getNodeById(nodeId)
+    if (!subNode) return undefined
+
+    return getInputSpecForWidget(subNode, subWidgetName)
   }
 
   /**

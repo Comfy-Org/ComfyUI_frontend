@@ -1,9 +1,16 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
+import {
+  hydratePreservedQuery,
+  mergePreservedQueryIntoQuery
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
@@ -12,6 +19,24 @@ import { useCommandStore } from '@/stores/commandStore'
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
+  const route = useRoute()
+  const router = useRouter()
+  const templateUrlLoader = useTemplateUrlLoader()
+  const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
+
+  const ensureTemplateQueryFromIntent = async () => {
+    hydratePreservedQuery(TEMPLATE_NAMESPACE)
+    const mergedQuery = mergePreservedQueryIntoQuery(
+      TEMPLATE_NAMESPACE,
+      route.query
+    )
+
+    if (mergedQuery) {
+      await router.replace({ query: mergedQuery })
+    }
+
+    return mergedQuery ?? route.query
+  }
 
   const workflowPersistenceEnabled = computed(() =>
     settingStore.get('Comfy.Workflow.Persist')
@@ -19,10 +44,29 @@ export function useWorkflowPersistence() {
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
-    const workflow = JSON.stringify(comfyApp.graph.serialize())
-    localStorage.setItem('workflow', workflow)
-    if (api.clientId) {
-      sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
+    const workflow = JSON.stringify(comfyApp.rootGraph.serialize())
+
+    try {
+      localStorage.setItem('workflow', workflow)
+      if (api.clientId) {
+        sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
+      }
+    } catch (error) {
+      // Only log our own keys and aggregate stats
+      const ourKeys = Object.keys(sessionStorage).filter(
+        (key) => key.startsWith('workflow:') || key === 'workflow'
+      )
+      console.error('QuotaExceededError details:', {
+        workflowSizeKB: Math.round(workflow.length / 1024),
+        totalStorageItems: Object.keys(sessionStorage).length,
+        ourWorkflowKeys: ourKeys.length,
+        ourWorkflowSizes: ourKeys.map((key) => ({
+          key,
+          sizeKB: Math.round(sessionStorage[key].length / 1024)
+        })),
+        error: error instanceof Error ? error.message : String(error)
+      })
+      throw error
     }
   }
 
@@ -63,8 +107,9 @@ export function useWorkflowPersistence() {
     }
   }
 
-  const restorePreviousWorkflow = async () => {
+  const initializeWorkflow = async () => {
     if (!workflowPersistenceEnabled.value) return
+
     try {
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
@@ -73,6 +118,15 @@ export function useWorkflowPersistence() {
     } catch (err) {
       console.error('Error loading previous workflow', err)
       await loadDefaultWorkflow()
+    }
+  }
+
+  const loadTemplateFromUrlIfPresent = async () => {
+    const query = await ensureTemplateQueryFromIntent()
+    const hasTemplateUrl = query.template && typeof query.template === 'string'
+
+    if (hasTemplateUrl) {
+      await templateUrlLoader.loadTemplateFromUrl()
     }
   }
 
@@ -141,7 +195,8 @@ export function useWorkflowPersistence() {
   }
 
   return {
-    restorePreviousWorkflow,
+    initializeWorkflow,
+    loadTemplateFromUrlIfPresent,
     restoreWorkflowTabsState
   }
 }

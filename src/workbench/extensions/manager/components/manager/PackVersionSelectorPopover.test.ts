@@ -1,7 +1,7 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
 import { createPinia } from 'pinia'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
@@ -411,7 +411,7 @@ describe('PackVersionSelectorPopover', () => {
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
       // The warning icon should be shown for incompatible versions
-      const warningIcons = wrapper.findAll('.pi-exclamation-triangle')
+      const warningIcons = wrapper.findAll('.icon-\\[lucide--triangle-alert\\]')
       expect(warningIcons.length).toBeGreaterThan(0)
     })
 
@@ -536,7 +536,7 @@ describe('PackVersionSelectorPopover', () => {
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
       // The warning icon should be shown for version incompatible packages
-      const warningIcons = wrapper.findAll('.pi-exclamation-triangle')
+      const warningIcons = wrapper.findAll('.icon-\\[lucide--triangle-alert\\]')
       expect(warningIcons.length).toBeGreaterThan(0)
     })
 
@@ -662,7 +662,7 @@ describe('PackVersionSelectorPopover', () => {
       await wrapper.vm.$nextTick()
 
       // The warning icon should be shown for banned packages in the dropdown options
-      const warningIcons = wrapper.findAll('.pi-exclamation-triangle')
+      const warningIcons = wrapper.findAll('.icon-\\[lucide--triangle-alert\\]')
       expect(warningIcons.length).toBeGreaterThan(0)
     })
 
@@ -705,7 +705,7 @@ describe('PackVersionSelectorPopover', () => {
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
       // The warning icon should be shown for security pending packages
-      const warningIcons = wrapper.findAll('.pi-exclamation-triangle')
+      const warningIcons = wrapper.findAll('.icon-\\[lucide--triangle-alert\\]')
       expect(warningIcons.length).toBeGreaterThan(0)
     })
   })

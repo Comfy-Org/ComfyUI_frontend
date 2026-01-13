@@ -116,9 +116,10 @@ test.describe('Actionbar', () => {
   test('Can dock actionbar into top menu', async ({ comfyPage }) => {
     await comfyPage.page.dragAndDrop(
       '.actionbar .drag-handle',
-      '.comfyui-menu',
+      '.actionbar-container',
       {
-        targetPosition: { x: 0, y: 0 }
+        targetPosition: { x: 50, y: 20 },
+        force: true
       }
     )
     expect(await comfyPage.actionbar.isDocked()).toBe(true)

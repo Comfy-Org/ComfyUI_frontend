@@ -21,13 +21,38 @@ import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
 const props = defineProps<{
-  widget?: object
   nodeId: NodeId
 }>()
 
 const executionStore = useExecutionStore()
 const isParentNodeExecuting = ref(true)
-const formattedText = computed(() => nl2br(linkifyHtml(modelValue.value)))
+const formattedText = computed(() => {
+  const src = modelValue.value
+  // Turn [[label|url]] into placeholders to avoid interfering with linkifyHtml
+  const tokens: { label: string; url: string }[] = []
+  const holed = src.replace(
+    /\[\[([^|\]]+)\|([^\]]+)\]\]/g,
+    (_m, label, url) => {
+      tokens.push({ label: String(label), url: String(url) })
+      return `__LNK${tokens.length - 1}__`
+    }
+  )
+
+  // Keep current behavior (auto-link bare URLs + \n -> <br>)
+  let html = nl2br(linkifyHtml(holed))
+
+  // Restore placeholders as <a>...</a> (minimal escaping + http default)
+  html = html.replace(/__LNK(\d+)__/g, (_m, i) => {
+    const { label, url } = tokens[+i]
+    const safeHref = url.replace(/"/g, '&quot;')
+    const safeLabel = label.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return /^https?:\/\//i.test(url)
+      ? `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`
+      : safeLabel
+  })
+
+  return html
+})
 
 let parentNodeId: NodeId | null = null
 onMounted(() => {

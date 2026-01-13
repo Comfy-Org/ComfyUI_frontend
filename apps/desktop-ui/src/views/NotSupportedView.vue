@@ -5,7 +5,7 @@
       <img
         class="sad-girl"
         src="/assets/images/sad_girl.png"
-        alt="Sad girl illustration"
+        :alt="$t('notSupported.illustrationAlt')"
       />
 
       <div class="no-drag sad-text flex items-center">

@@ -56,7 +56,7 @@ describe('UserAvatar', () => {
     const avatar = wrapper.findComponent(Avatar)
     expect(avatar.exists()).toBe(true)
     expect(avatar.props('image')).toBeNull()
-    expect(avatar.props('icon')).toBe('pi pi-user')
+    expect(avatar.props('icon')).toBe('icon-[lucide--user]')
   })
 
   it('renders with default icon when provided photo Url is null', () => {
@@ -67,7 +67,7 @@ describe('UserAvatar', () => {
     const avatar = wrapper.findComponent(Avatar)
     expect(avatar.exists()).toBe(true)
     expect(avatar.props('image')).toBeNull()
-    expect(avatar.props('icon')).toBe('pi pi-user')
+    expect(avatar.props('icon')).toBe('icon-[lucide--user]')
   })
 
   it('falls back to icon when image fails to load', async () => {
@@ -82,7 +82,7 @@ describe('UserAvatar', () => {
     avatar.vm.$emit('error')
     await nextTick()
 
-    expect(avatar.props('icon')).toBe('pi pi-user')
+    expect(avatar.props('icon')).toBe('icon-[lucide--user]')
   })
 
   it('uses provided ariaLabel', () => {

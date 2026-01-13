@@ -36,13 +36,10 @@ test.describe('Execute to selected output nodes', () => {
     await output1.click('title')
 
     await comfyPage.executeCommand('Comfy.QueueSelectedOutputNodes')
-    // @note: Wait for the execution to finish. We might want to move to a more
-    // reliable way to wait for the execution to finish. Workflow in this test
-    // is simple enough that this is fine for now.
-    await comfyPage.page.waitForTimeout(200)
-
-    expect(await (await input.getWidget(0)).getValue()).toBe('foo')
-    expect(await (await output1.getWidget(0)).getValue()).toBe('foo')
-    expect(await (await output2.getWidget(0)).getValue()).toBe('')
+    await expect(async () => {
+      expect(await (await input.getWidget(0)).getValue()).toBe('foo')
+      expect(await (await output1.getWidget(0)).getValue()).toBe('foo')
+      expect(await (await output2.getWidget(0)).getValue()).toBe('')
+    }).toPass({ timeout: 2_000 })
   })
 })

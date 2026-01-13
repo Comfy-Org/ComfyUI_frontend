@@ -62,10 +62,12 @@ export class FuseFilter<T, O = string> {
       return true
     }
     const options = this.getItemOptions(item)
-    return (
-      options.includes(value) ||
-      (!!wildcard && options.some((option) => option === wildcard))
-    )
+    if (wildcard) return options.some((option) => option === wildcard)
+    if (typeof value !== 'string' || !value.includes(','))
+      return options.includes(value)
+    const values = value.split(',')
+    //Alas, typescript doesn't understand string satisfies O
+    return values.some((v) => options.includes(v as O))
   }
 }
 

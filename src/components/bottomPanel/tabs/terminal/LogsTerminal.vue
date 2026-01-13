@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full w-full bg-black">
+  <div class="h-full w-full bg-transparent">
     <p v-if="errorMessage" class="p-4 text-center">
       {{ errorMessage }}
     </p>
@@ -19,7 +19,7 @@ import type { Ref } from 'vue'
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import type { LogEntry, LogsWsMessage, TerminalSize } from '@/schemas/apiSchema'
+import type { LogEntry, LogsWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 
@@ -32,27 +32,22 @@ const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement | undefined>
 ) => {
-  // `autoCols` is false because we don't want the progress bar in the terminal
-  // to render incorrectly as the progress bar is rendered based on the
-  // server's terminal size.
-  // Apply a min cols of 80 for colab environments
+  // Auto-size terminal to fill container width.
+  // minCols: 80 ensures minimum width for colab environments.
   // See https://github.com/comfyanonymous/ComfyUI/issues/6396
-  useAutoSize({ root, autoRows: true, autoCols: false, minCols: 80 })
+  useAutoSize({ root, autoRows: true, autoCols: true, minCols: 80 })
 
-  const update = (entries: Array<LogEntry>, size?: TerminalSize) => {
-    if (size) {
-      terminal.resize(size.cols, terminal.rows)
-    }
+  const update = (entries: Array<LogEntry>) => {
     terminal.write(entries.map((e) => e.m).join(''))
   }
 
   const logReceived = (e: CustomEvent<LogsWsMessage>) => {
-    update(e.detail.entries, e.detail.size)
+    update(e.detail.entries)
   }
 
   const loadLogEntries = async () => {
     const logs = await api.getRawLogs()
-    update(logs.entries, logs.size)
+    update(logs.entries)
   }
 
   const watchLogs = async () => {
@@ -94,7 +89,6 @@ const terminalCreated = (
 }
 
 :deep(.p-terminal) .xterm-screen {
-  background-color: black;
   overflow-y: hidden;
 }
 </style>

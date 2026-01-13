@@ -1,30 +1,30 @@
 <template>
-  <div class="relative rounded-lg bg-gray-700/30">
+  <div class="relative rounded-lg bg-backdrop/30">
     <div class="flex flex-col gap-2">
-      <Button class="p-button-rounded p-button-text" @click="openIn3DViewer">
-        <i
-          v-tooltip.right="{
-            value: t('load3d.openIn3DViewer'),
-            showDelay: 300
-          }"
-          class="pi pi-expand text-lg text-white"
-        />
+      <Button
+        v-tooltip.right="{
+          value: t('load3d.openIn3DViewer'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="t('load3d.openIn3DViewer')"
+        @click="openIn3DViewer"
+      >
+        <i class="pi pi-expand text-lg text-base-foreground" />
       </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
-import Button from 'primevue/button'
-
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
-
-const vTooltip = Tooltip
 
 const { node } = defineProps<{
   node: LGraphNode

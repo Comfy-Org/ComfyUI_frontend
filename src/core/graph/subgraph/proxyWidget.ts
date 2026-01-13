@@ -1,4 +1,7 @@
-import { demoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
+import {
+  demoteWidget,
+  promoteRecommendedWidgets
+} from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -45,8 +48,11 @@ type Overlay = Partial<IBaseWidget> & {
  * on the linked widget
  */
 type ProxyWidget = IBaseWidget & { _overlay: Overlay }
-function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
+export function isProxyWidget(w: IBaseWidget): w is ProxyWidget {
   return (w as { _overlay?: Overlay })?._overlay?.isProxyWidget ?? false
+}
+export function isDisconnectedWidget(w: ProxyWidget) {
+  return w instanceof disconnectedWidget.constructor
 }
 
 export function registerProxyWidgets(canvas: LGraphCanvas) {
@@ -62,6 +68,10 @@ export function registerProxyWidgets(canvas: LGraphCanvas) {
       }
     }
   })
+  canvas.canvas.addEventListener<'subgraph-converted'>(
+    'subgraph-converted',
+    (e) => promoteRecommendedWidgets(e.detail.subgraphNode)
+  )
   SubgraphNode.prototype.onConfigure = onConfigure
 }
 
@@ -119,6 +129,7 @@ const onConfigure = function (
     this.properties.proxyWidgets = serialisedNode.properties.proxyWidgets
     const parsed = parseProxyWidgets(serialisedNode.properties.proxyWidgets)
     serialisedNode.widgets_values?.forEach((v, index) => {
+      if (parsed[index]?.[0] !== '-1') return
       const widget = this.widgets.find((w) => w.name == parsed[index][1])
       if (v !== null && widget) widget.value = v
     })
@@ -157,7 +168,11 @@ function resolveLinkedWidget(
   const { graph, nodeId, widgetName } = overlay
   const n = getNodeByExecutionId(graph, nodeId)
   if (!n) return [undefined, undefined]
-  return [n, n.widgets?.find((w: IBaseWidget) => w.name === widgetName)]
+  const widget = n.widgets?.find((w: IBaseWidget) => w.name === widgetName)
+  //Slightly hacky. Force recursive resolution of nested widgets
+  if (widget && isProxyWidget(widget) && isDisconnectedWidget(widget))
+    widget.computedHeight = 20
+  return [n, widget]
 }
 
 function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
@@ -196,11 +211,9 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       }
       return Reflect.get(redirectedTarget, property, redirectedReceiver)
     },
-    set(_t: IBaseWidget, property: string, value: unknown, receiver: object) {
+    set(_t: IBaseWidget, property: string, value: unknown) {
       let redirectedTarget: object = backingWidget
-      let redirectedReceiver = receiver
-      if (property == 'value') redirectedReceiver = backingWidget
-      else if (property == 'computedHeight') {
+      if (property == 'computedHeight') {
         if (overlay.widgetName.startsWith('$$') && linkedNode) {
           updatePreviews(linkedNode)
         }
@@ -213,9 +226,8 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       }
       if (Object.prototype.hasOwnProperty.call(overlay, property)) {
         redirectedTarget = overlay
-        redirectedReceiver = overlay
       }
-      return Reflect.set(redirectedTarget, property, value, redirectedReceiver)
+      return Reflect.set(redirectedTarget, property, value, redirectedTarget)
     },
     getPrototypeOf() {
       return Reflect.getPrototypeOf(backingWidget)

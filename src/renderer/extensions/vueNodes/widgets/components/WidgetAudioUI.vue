@@ -1,14 +1,15 @@
 <template>
-  <div class="w-full">
-    <WidgetSelect v-model="modelValue" :widget />
-    <div class="my-4">
-      <AudioPreviewPlayer
-        :audio-url="audioUrlFromWidget"
-        :readonly="readonly"
-        :hide-when-empty="isOutputNodeRef"
-        :show-options-button="true"
-      />
-    </div>
+  <div
+    class="w-full col-span-2 widget-expands grid grid-cols-[minmax(80px,max-content)_minmax(125px,auto)] gap-y-3 p-3"
+  >
+    <WidgetSelect v-model="modelValue" :widget class="col-span-2" />
+    <AudioPreviewPlayer
+      class="col-span-2"
+      :audio-url="audioUrlFromWidget"
+      :readonly="readonly"
+      :hide-when-empty="isOutputNodeRef"
+      :show-options-button="true"
+    />
   </div>
 </template>
 
@@ -25,7 +26,7 @@ import WidgetSelect from './WidgetSelect.vue'
 import AudioPreviewPlayer from './audio/AudioPreviewPlayer.vue'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
+  widget: SimplifiedWidget<string | undefined>
   readonly?: boolean
   nodeId: string
 }>()
@@ -38,8 +39,8 @@ defineEmits<{
 
 // Get litegraph node
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!props.nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
 // Check if this is an output node (PreviewAudio, SaveAudio, etc)

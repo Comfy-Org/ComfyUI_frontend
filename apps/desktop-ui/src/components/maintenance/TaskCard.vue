@@ -1,23 +1,23 @@
 <template>
   <div
-    class="task-div max-w-48 min-h-52 grid relative"
+    class="task-div relative grid min-h-52 max-w-48"
     :class="{ 'opacity-75': isLoading }"
   >
     <Card
-      class="max-w-48 relative h-full overflow-hidden"
+      class="relative h-full max-w-48 overflow-hidden"
       :class="{ 'opacity-65': runner.state !== 'error' }"
       v-bind="(({ onClick, ...rest }) => rest)($attrs)"
     >
       <template #header>
         <i
           v-if="runner.state === 'error'"
-          class="pi pi-exclamation-triangle text-red-500 absolute m-2 top-0 -right-14 opacity-15"
+          class="pi pi-exclamation-triangle absolute top-0 -right-14 m-2 text-red-500 opacity-15"
           style="font-size: 10rem"
         />
         <img
           v-if="task.headerImg"
           :src="task.headerImg"
-          class="object-contain w-full h-full opacity-25 pt-4 px-4"
+          class="h-full w-full object-contain px-4 pt-4 opacity-25"
         />
       </template>
       <template #title>
@@ -27,7 +27,7 @@
         {{ description }}
       </template>
       <template #footer>
-        <div class="flex gap-4 mt-1">
+        <div class="mt-1 flex gap-4">
           <Button
             :icon="task.button?.icon"
             :label="task.button?.text"
@@ -73,7 +73,7 @@ defineEmits<{
 // Bindings
 const description = computed(() =>
   runner.value.state === 'error'
-    ? props.task.errorDescription ?? props.task.shortDescription
+    ? (props.task.errorDescription ?? props.task.shortDescription)
     : props.task.shortDescription
 )
 

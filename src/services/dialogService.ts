@@ -2,9 +2,11 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
+import MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
+import MissingNodesFooter from '@/components/dialog/content/MissingNodesFooter.vue'
+import MissingNodesHeader from '@/components/dialog/content/MissingNodesHeader.vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import LoadWorkflowWarning from '@/components/dialog/content/LoadWorkflowWarning.vue'
 import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import SignInContent from '@/components/dialog/content/SignInContent.vue'
@@ -13,6 +15,9 @@ import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordCon
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
 import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import { t } from '@/i18n'
+import { useTelemetry } from '@/platform/telemetry'
+import { isCloud } from '@/platform/distribution/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -20,15 +25,17 @@ import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
-import ManagerProgressDialogContent from '@/workbench/extensions/manager/components/ManagerProgressDialogContent.vue'
-import ManagerProgressFooter from '@/workbench/extensions/manager/components/ManagerProgressFooter.vue'
-import ManagerProgressHeader from '@/workbench/extensions/manager/components/ManagerProgressHeader.vue'
+
 import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
 import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
+import ImportFailedNodeContent from '@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue'
+import ImportFailedNodeFooter from '@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue'
+import ImportFailedNodeHeader from '@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue'
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
 import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
 import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 export type ConfirmationDialogType =
   | 'default'
@@ -40,18 +47,35 @@ export type ConfirmationDialogType =
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
+
   function showLoadWorkflowWarning(
-    props: InstanceType<typeof LoadWorkflowWarning>['$props']
+    props: ComponentAttrs<typeof MissingNodesContent>
   ) {
     dialogStore.showDialog({
-      key: 'global-load-workflow-warning',
-      component: LoadWorkflowWarning,
+      key: 'global-missing-nodes',
+      headerComponent: MissingNodesHeader,
+      footerComponent: MissingNodesFooter,
+      component: MissingNodesContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          root: { class: 'bg-base-background border-border-default' },
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
+            }
+          }
+        }
+      },
       props
     })
   }
 
   function showMissingModelsWarning(
-    props: InstanceType<typeof MissingModelsWarning>['$props']
+    props: ComponentAttrs<typeof MissingModelsWarning>
   ) {
     dialogStore.showDialog({
       key: 'global-missing-models-warning',
@@ -68,6 +92,7 @@ export const useDialogService = () => {
       | 'server-config'
       | 'user'
       | 'credits'
+      | 'subscription'
   ) {
     const props = panel ? { props: { defaultPanel: panel } } : undefined
 
@@ -91,7 +116,7 @@ export const useDialogService = () => {
   }
 
   function showExecutionErrorDialog(executionError: ExecutionErrorWsMessage) {
-    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
+    const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: executionError.exception_type,
         exceptionMessage: executionError.exception_message,
@@ -105,12 +130,19 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-execution-error',
       component: ErrorDialogContent,
-      props
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_closed'
+          })
+        }
+      }
     })
   }
 
   function showManagerDialog(
-    props: InstanceType<typeof ManagerDialogContent>['$props'] = {}
+    props: ComponentAttrs<typeof ManagerDialogContent> = {}
   ) {
     dialogStore.showDialog({
       key: 'global-manager',
@@ -175,7 +207,7 @@ export const useDialogService = () => {
             errorMessage: String(error)
           }
 
-    const props: InstanceType<typeof ErrorDialogContent>['$props'] = {
+    const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: options.title ?? 'Unknown Error',
         exceptionMessage: errorProps.errorMessage,
@@ -187,29 +219,12 @@ export const useDialogService = () => {
     dialogStore.showDialog({
       key: 'global-error',
       component: ErrorDialogContent,
-      props
-    })
-  }
-
-  function showManagerProgressDialog(options?: {
-    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
-  }) {
-    return dialogStore.showDialog({
-      key: 'global-manager-progress-dialog',
-      component: ManagerProgressDialogContent,
-      headerComponent: ManagerProgressHeader,
-      footerComponent: ManagerProgressFooter,
-      props: options?.props,
-      priority: 2,
+      props,
       dialogComponentProps: {
-        closable: false,
-        modal: false,
-        position: 'bottom',
-        pt: {
-          root: { class: 'w-[80%] max-w-2xl mx-auto border-none' },
-          content: { class: 'p-0!' },
-          header: { class: 'p-0! border-none' },
-          footer: { class: 'p-0! border-none' }
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_closed'
+          })
         }
       }
     })
@@ -266,11 +281,13 @@ export const useDialogService = () => {
   async function prompt({
     title,
     message,
-    defaultValue = ''
+    defaultValue = '',
+    placeholder
   }: {
     title: string
     message: string
     defaultValue?: string
+    placeholder?: string
   }): Promise<string | null> {
     return new Promise((resolve) => {
       dialogStore.showDialog({
@@ -282,7 +299,8 @@ export const useDialogService = () => {
           defaultValue,
           onConfirm: (value: string) => {
             resolve(value)
-          }
+          },
+          placeholder
         },
         dialogComponentProps: {
           onClose: () => {
@@ -339,14 +357,19 @@ export const useDialogService = () => {
   function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
+    const { isActiveSubscription } = useSubscription()
+    if (!isActiveSubscription.value) return
+
     return dialogStore.showDialog({
       key: 'top-up-credits',
       component: TopUpCreditsDialogContent,
-      headerComponent: ComfyOrgHeader,
       props: options,
       dialogComponentProps: {
+        headless: true,
         pt: {
-          header: { class: 'p-3!' }
+          header: { class: 'p-0! hidden' },
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl' }
         }
       }
     })
@@ -386,22 +409,12 @@ export const useDialogService = () => {
   }
 
   function toggleManagerDialog(
-    props?: InstanceType<typeof ManagerDialogContent>['$props']
+    props?: ComponentAttrs<typeof ManagerDialogContent>
   ) {
     if (dialogStore.isDialogOpen('global-manager')) {
       dialogStore.closeDialog({ key: 'global-manager' })
     } else {
       showManagerDialog(props)
-    }
-  }
-
-  function toggleManagerProgressDialog(
-    props?: InstanceType<typeof ManagerProgressDialogContent>['$props']
-  ) {
-    if (dialogStore.isDialogOpen('global-manager-progress-dialog')) {
-      dialogStore.closeDialog({ key: 'global-manager-progress-dialog' })
-    } else {
-      showManagerProgressDialog({ props })
     }
   }
 
@@ -434,6 +447,43 @@ export const useDialogService = () => {
         layoutDefaultProps,
         options.dialogComponentProps || {}
       )
+    })
+  }
+
+  function showImportFailedNodeDialog(
+    options: {
+      conflictedPackages?: ConflictDetectionResult[]
+      dialogComponentProps?: DialogComponentProps
+    } = {}
+  ) {
+    const { dialogComponentProps, conflictedPackages } = options
+
+    return dialogStore.showDialog({
+      key: 'global-import-failed',
+      headerComponent: ImportFailedNodeHeader,
+      footerComponent: ImportFailedNodeFooter,
+      component: ImportFailedNodeContent,
+      dialogComponentProps: {
+        closable: true,
+        pt: {
+          root: { class: 'bg-base-background border-border-default' },
+          header: { class: '!p-0 !m-0' },
+          content: { class: '!p-0 overflow-y-hidden' },
+          footer: { class: '!p-0' },
+          pcCloseButton: {
+            root: {
+              class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
+            }
+          }
+        },
+        ...dialogComponentProps
+      },
+      props: {
+        conflictedPackages: conflictedPackages ?? []
+      },
+      footerProps: {
+        conflictedPackages: conflictedPackages ?? []
+      }
     })
   }
 
@@ -485,6 +535,17 @@ export const useDialogService = () => {
     })
   }
 
+  async function showSubscriptionRequiredDialog() {
+    if (!isCloud || !window.__CONFIG__?.subscription_required) {
+      return
+    }
+
+    const { useSubscriptionDialog } =
+      await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+    const { show } = useSubscriptionDialog()
+    show()
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -492,9 +553,9 @@ export const useDialogService = () => {
     showAboutDialog,
     showExecutionErrorDialog,
     showManagerDialog,
-    showManagerProgressDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
+    showSubscriptionRequiredDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
     showExtensionDialog,
@@ -502,8 +563,8 @@ export const useDialogService = () => {
     showErrorDialog,
     confirm,
     toggleManagerDialog,
-    toggleManagerProgressDialog,
     showLayoutDialog,
+    showImportFailedNodeDialog,
     showNodeConflictDialog
   }
 }

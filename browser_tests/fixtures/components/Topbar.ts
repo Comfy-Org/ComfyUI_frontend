@@ -7,7 +7,7 @@ export class Topbar {
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
-    this.menuTrigger = page.locator('.comfyui-logo-wrapper')
+    this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
   }
 
   async getTabNames(): Promise<string[]> {
@@ -92,10 +92,26 @@ export class Topbar {
     )
     // Wait for the dialog to close.
     await this.getSaveDialog().waitFor({ state: 'hidden', timeout: 500 })
+
+    // Check if a confirmation dialog appeared (e.g., "Overwrite existing file?")
+    // If so, return early to let the test handle the confirmation
+    const confirmationDialog = this.page.locator(
+      '.p-dialog:has-text("Overwrite")'
+    )
+    if (await confirmationDialog.isVisible()) {
+      return
+    }
   }
 
   async openTopbarMenu() {
-    await this.page.waitForTimeout(1000)
+    // If menu is already open, close it first to reset state
+    const isAlreadyOpen = await this.menuLocator.isVisible()
+    if (isAlreadyOpen) {
+      // Click outside the menu to close it properly
+      await this.page.locator('body').click({ position: { x: 500, y: 300 } })
+      await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
+    }
+
     await this.menuTrigger.click()
     await this.menuLocator.waitFor({ state: 'visible' })
     return this.menuLocator
@@ -105,7 +121,7 @@ export class Topbar {
    * Close the topbar menu by clicking outside
    */
   async closeTopbarMenu() {
-    await this.page.locator('body').click({ position: { x: 10, y: 10 } })
+    await this.page.locator('body').click({ position: { x: 300, y: 10 } })
     await expect(this.menuLocator).not.toBeVisible()
   }
 
@@ -163,15 +179,36 @@ export class Topbar {
 
     await topLevelMenu.hover()
 
+    // Hover over top-level menu with retry logic for flaky submenu appearance
+    const submenu = this.getVisibleSubmenu()
+    try {
+      await submenu.waitFor({ state: 'visible', timeout: 1000 })
+    } catch {
+      // Click outside to reset, then reopen menu
+      await this.page.locator('body').click({ position: { x: 500, y: 300 } })
+      await this.menuLocator.waitFor({ state: 'hidden', timeout: 1000 })
+      await this.menuTrigger.click()
+      await this.menuLocator.waitFor({ state: 'visible' })
+      // Re-hover on top-level menu to trigger submenu
+      await topLevelMenu.hover()
+      await submenu.waitFor({ state: 'visible', timeout: 1000 })
+    }
+
     let currentMenu = topLevelMenu
     for (let i = 1; i < path.length; i++) {
       const commandName = path[i]
-      const menuItem = currentMenu
-        .locator(
-          `.p-tieredmenu-submenu .p-tieredmenu-item:has-text("${commandName}")`
-        )
+      const menuItem = submenu
+        .locator(`.p-tieredmenu-item:has-text("${commandName}")`)
         .first()
       await menuItem.waitFor({ state: 'visible' })
+
+      // For the last item, click it
+      if (i === path.length - 1) {
+        await menuItem.click()
+        return
+      }
+
+      // Otherwise, hover to open nested submenu
       await menuItem.hover()
       currentMenu = menuItem
     }

@@ -1,4 +1,5 @@
 import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -12,7 +13,9 @@ export const useWorkflowTemplateSelectorDialog = () => {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  function show() {
+  function show(source: 'sidebar' | 'menu' | 'command' = 'command') {
+    useTelemetry()?.trackTemplateLibraryOpened({ source })
+
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: WorkflowTemplateSelectorDialog,

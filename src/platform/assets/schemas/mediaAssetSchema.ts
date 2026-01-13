@@ -19,9 +19,7 @@ const zMediaAssetDisplayItemSchema = assetItemSchema.extend({
 
   // New optional fields
   duration: z.number().nonnegative().optional(),
-  dimensions: zDimensionsSchema.optional(),
-  jobId: z.string().optional(),
-  isMulti: z.boolean().optional()
+  dimensions: zDimensionsSchema.optional()
 })
 
 // Asset context schema

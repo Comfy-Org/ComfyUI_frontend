@@ -1,23 +1,28 @@
 <template>
-  <Select
-    v-model="exportFormat"
-    :options="exportFormats"
-    option-label="label"
-    option-value="value"
-  >
-  </Select>
+  <div class="space-y-4">
+    <Select
+      v-model="exportFormat"
+      :options="exportFormats"
+      option-label="label"
+      option-value="value"
+    >
+    </Select>
 
-  <Button severity="secondary" text rounded @click="exportModel(exportFormat)">
-    {{ t('load3d.export') }}
-  </Button>
+    <Button
+      variant="muted-textonly"
+      class="rounded-full"
+      @click="exportModel(exportFormat)"
+    >
+      {{ $t('load3d.export') }}
+    </Button>
+  </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Select from 'primevue/select'
 import { ref } from 'vue'
 
-import { t } from '@/i18n'
+import Button from '@/components/ui/button/Button.vue'
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void

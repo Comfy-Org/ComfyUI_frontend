@@ -15,7 +15,9 @@ test.describe('Vue Integer Widget', () => {
     await comfyPage.loadWorkflow('vueNodes/linked-int-widget')
     await comfyPage.vueNodes.waitForNodes()
 
-    const seedWidget = comfyPage.vueNodes.getWidgetByName('KSampler', 'seed')
+    const seedWidget = comfyPage.vueNodes
+      .getWidgetByName('KSampler', 'seed')
+      .first()
     const controls = comfyPage.vueNodes.getInputNumberControls(seedWidget)
     const initialValue = Number(await controls.input.inputValue())
 

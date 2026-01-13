@@ -1,9 +1,10 @@
+---
 name: Publish Desktop UI on PR Merge
 
 on:
   pull_request:
-    types: [ closed ]
-    branches: [ main, core/* ]
+    types: ['closed']
+    branches: [main, core/*]
     paths:
       - 'apps/desktop-ui/package.json'
 
@@ -57,3 +58,26 @@ jobs:
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+  comment_desktop_publish:
+    name: Comment Desktop Publish Summary
+    needs:
+      - resolve
+      - publish
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+
+      - name: Post desktop release summary comment
+        uses: ./.github/actions/comment-release-links
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          version_file: apps/desktop-ui/package.json

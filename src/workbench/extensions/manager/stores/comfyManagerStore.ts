@@ -8,7 +8,7 @@ import { useCachedRequest } from '@/composables/useCachedRequest'
 import { useServerLogs } from '@/composables/useServerLogs'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useDialogService } from '@/services/dialogService'
+
 import { normalizePackKeys } from '@/utils/packUtils'
 import { useManagerQueue } from '@/workbench/extensions/manager/composables/useManagerQueue'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
@@ -32,7 +32,6 @@ type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
 export const useComfyManagerStore = defineStore('comfyManager', () => {
   const { t } = useI18n()
   const managerService = useComfyManagerService()
-  const { showManagerProgressDialog } = useDialogService()
 
   const installedPacks = ref<InstalledPacksResponse>({})
   const enabledPacksIds = ref<Set<string>>(new Set())
@@ -204,8 +203,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     })
 
     try {
-      // Show progress dialog immediately when task is queued
-      showManagerProgressDialog()
       managerQueue.isProcessing.value = true
 
       // Prepare logging hook
@@ -317,6 +314,15 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     await enqueueTaskWithLogs(task, t('g.disabling', { id: params.id }))
   }
 
+  const enablePack = async (params: ManagerPackInfo, signal?: AbortSignal) => {
+    const enableParams: components['schemas']['EnablePackParams'] = {
+      cnr_id: params.id
+    }
+    const task = (taskId: string) =>
+      managerService.enablePack(enableParams, taskId, signal)
+    await enqueueTaskWithLogs(task, t('g.enabling', { id: params.id }))
+  }
+
   const getInstalledPackVersion = (packId: string) => {
     const pack = installedPacks.value[packId]
     return pack?.ver
@@ -380,47 +386,6 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     updatePack,
     updateAllPacks,
     disablePack,
-    enablePack: installPack // Enable is done via install endpoint with a disabled pack
+    enablePack
   }
 })
-
-/**
- * Store for state of the manager progress dialog content.
- * The dialog itself is managed by the dialog store. This store is used to
- * manage the visibility of the dialog's content, header, footer.
- */
-export const useManagerProgressDialogStore = defineStore(
-  'managerProgressDialog',
-  () => {
-    const isExpanded = ref(false)
-    const activeTabIndex = ref(0)
-
-    const setActiveTabIndex = (index: number) => {
-      activeTabIndex.value = index
-    }
-
-    const getActiveTabIndex = () => {
-      return activeTabIndex.value
-    }
-
-    const toggle = () => {
-      isExpanded.value = !isExpanded.value
-    }
-
-    const collapse = () => {
-      isExpanded.value = false
-    }
-
-    const expand = () => {
-      isExpanded.value = true
-    }
-    return {
-      isExpanded,
-      toggle,
-      collapse,
-      expand,
-      setActiveTabIndex,
-      getActiveTabIndex
-    }
-  }
-)

@@ -287,32 +287,24 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     if (node.isSubgraphNode())
       return this.#resolveSubgraphOutput(slot, type, visited)
 
-    // Upstreamed: Other virtual nodes are bypassed using the same input/output index (slots must match)
     if (node.isVirtualNode) {
-      if (this.inputs.at(slot)) return this.resolveInput(slot, visited, type)
-
-      // Fallback check for nodes performing link redirection
       const virtualLink = this.node.getInputLink(slot)
       if (virtualLink) {
-        const outputNode = this.graph.getNodeById(virtualLink.origin_id)
-        if (!outputNode)
+        const { inputNode } = virtualLink.resolve(this.graph)
+        if (!inputNode)
           throw new InvalidLinkError(
             `Virtual node failed to resolve parent [${this.id}] slot [${slot}]`
           )
 
-        const outputNodeExecutionId = [
+        const inputNodeExecutionId = [
           ...this.subgraphNodePath,
-          outputNode.id
+          inputNode.id
         ].join(':')
-        const outputNodeDto = this.nodesByExecutionId.get(outputNodeExecutionId)
-        if (!outputNodeDto)
-          throw new Error(`No output node DTO found for id [${outputNode.id}]`)
+        const inputNodeDto = this.nodesByExecutionId.get(inputNodeExecutionId)
+        if (!inputNodeDto)
+          throw new Error(`No input node DTO found for id [${inputNode.id}]`)
 
-        return outputNodeDto.resolveOutput(
-          virtualLink.origin_slot,
-          type,
-          visited
-        )
+        return inputNodeDto.resolveInput(virtualLink.target_slot, visited, type)
       }
 
       // Virtual nodes without a matching input should be discarded.

@@ -12,19 +12,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useTelemetry } from '@/platform/telemetry'
 
 import SidebarIcon from './SidebarIcon.vue'
 
 const settingStore = useSettingStore()
-const commandStore = useCommandStore()
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
 )
 
+/**
+ * Open templates dialog from sidebar and track UI button click.
+ */
 const openTemplates = () => {
-  void commandStore.execute('Comfy.BrowseTemplates')
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'sidebar_templates_dialog_opened'
+  })
+  useWorkflowTemplateSelectorDialog().show('sidebar')
 }
 </script>

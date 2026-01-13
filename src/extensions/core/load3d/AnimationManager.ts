@@ -15,14 +15,9 @@ export class AnimationManager implements AnimationManagerInterface {
   animationSpeed: number = 1.0
 
   private eventManager: EventManagerInterface
-  private getCurrentModel: () => THREE.Object3D | null
 
-  constructor(
-    eventManager: EventManagerInterface,
-    getCurrentModel: () => THREE.Object3D | null
-  ) {
+  constructor(eventManager: EventManagerInterface) {
     this.eventManager = eventManager
-    this.getCurrentModel = getCurrentModel
   }
 
   init(): void {}
@@ -52,23 +47,24 @@ export class AnimationManager implements AnimationManagerInterface {
     let animations: THREE.AnimationClip[] = []
     if (model.animations?.length > 0) {
       animations = model.animations
-    } else if (originalModel && 'animations' in originalModel) {
+    } else if (
+      originalModel &&
+      'animations' in originalModel &&
+      Array.isArray(originalModel.animations)
+    ) {
       animations = originalModel.animations
     }
 
     if (animations.length > 0) {
       this.animationClips = animations
-      if (model.type === 'Scene') {
-        this.currentAnimation = new THREE.AnimationMixer(model)
-      } else {
-        this.currentAnimation = new THREE.AnimationMixer(
-          this.getCurrentModel()!
-        )
-      }
+
+      this.currentAnimation = new THREE.AnimationMixer(model)
 
       if (this.animationClips.length > 0) {
         this.updateSelectedAnimation(0)
       }
+    } else {
+      this.animationClips = []
     }
 
     this.updateAnimationList()
@@ -129,6 +125,13 @@ export class AnimationManager implements AnimationManagerInterface {
     }
 
     this.animationActions = [action]
+
+    // Emit initial progress to set duration
+    this.eventManager.emitEvent('animationProgressChange', {
+      progress: 0,
+      currentTime: 0,
+      duration: clip.duration
+    })
   }
 
   toggleAnimation(play?: boolean): void {
@@ -154,7 +157,57 @@ export class AnimationManager implements AnimationManagerInterface {
   update(delta: number): void {
     if (this.currentAnimation && this.isAnimationPlaying) {
       this.currentAnimation.update(delta)
+
+      if (this.animationActions.length > 0) {
+        const action = this.animationActions[0]
+        const clip = action.getClip()
+        const progress = (action.time / clip.duration) * 100
+        this.eventManager.emitEvent('animationProgressChange', {
+          progress,
+          currentTime: action.time,
+          duration: clip.duration
+        })
+      }
     }
+  }
+
+  getAnimationTime(): number {
+    if (this.animationActions.length === 0) return 0
+    return this.animationActions[0].time
+  }
+
+  getAnimationDuration(): number {
+    if (this.animationActions.length === 0) return 0
+    return this.animationActions[0].getClip().duration
+  }
+
+  setAnimationTime(time: number): void {
+    if (this.animationActions.length === 0) return
+    const duration = this.getAnimationDuration()
+    const clampedTime = Math.max(0, Math.min(time, duration))
+
+    // Temporarily unpause to allow time update, then restore
+    const wasPaused = this.animationActions.map((action) => action.paused)
+    this.animationActions.forEach((action) => {
+      action.paused = false
+      action.time = clampedTime
+    })
+
+    if (this.currentAnimation) {
+      this.currentAnimation.setTime(clampedTime)
+      this.currentAnimation.update(0)
+    }
+
+    // Restore paused state
+    this.animationActions.forEach((action, i) => {
+      action.paused = wasPaused[i]
+    })
+
+    this.eventManager.emitEvent('animationProgressChange', {
+      progress: (clampedTime / duration) * 100,
+      currentTime: clampedTime,
+      duration
+    })
   }
 
   reset(): void {}

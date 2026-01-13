@@ -5,7 +5,7 @@ import { i18n } from '@/i18n'
 import { nodeHelpService } from '@/services/nodeHelpService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { getNodeHelpBaseUrl } from '@/utils/nodeHelpUtil'
+import { getNodeHelpBaseUrl } from '@/workbench/utils/nodeHelpUtil'
 
 export const useNodeHelpStore = defineStore('nodeHelp', () => {
   const currentHelpNode = ref<ComfyNodeDefImpl | null>(null)

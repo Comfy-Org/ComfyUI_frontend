@@ -15,13 +15,14 @@ const layoutMode = defineModel<LayoutMode>('layoutMode')
 const searchQuery = defineModel<string>('searchQuery')
 const sortSelected = defineModel<OptionId>('sortSelected')
 
-const actionButtonStyle =
-  'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-sand-100 dark-theme:outline-neutral-700 transition-all duration-150'
+const actionButtonStyle = cn(
+  'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-node-component-border transition-all duration-150'
+)
 
 const resetInputStyle = 'bg-transparent border-0 outline-0 ring-0 text-left'
 
 const layoutSwitchItemStyle =
-  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-black hover:dark-theme:text-white active:scale-95'
+  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-base-foreground active:scale-95'
 
 const sortPopoverRef = useTemplateRef('sortPopoverRef')
 const sortTriggerRef = useTemplateRef('sortTriggerRef')
@@ -44,15 +45,16 @@ function handleSortSelected(item: SortOption) {
 </script>
 
 <template>
-  <div class="flex gap-2 px-4 text-zinc-400">
+  <div class="text-secondary flex gap-2 px-4">
+    <!-- TODO: Replace with a common Search input -->
     <label
       :class="
         cn(
           actionButtonStyle,
           'flex-1 flex px-2 items-center text-base leading-none cursor-text',
-          searchQuery?.trim() !== '' ? 'text-black dark-theme:text-white' : '',
-          'hover:!outline-blue-500/80',
-          'focus-within:!outline-blue-500/80'
+          searchQuery?.trim() !== '' ? 'text-base-foreground' : '',
+          'hover:outline-component-node-widget-background-highlighted/80',
+          'focus-within:outline-component-node-widget-background-highlighted/80'
         )
       "
     >
@@ -64,8 +66,9 @@ function handleSortSelected(item: SortOption) {
       <input
         v-model="searchQuery"
         type="text"
+        autofocus
         :class="resetInputStyle"
-        placeholder="Search"
+        :placeholder="$t('g.search')"
       />
     </label>
 
@@ -77,7 +80,7 @@ function handleSortSelected(item: SortOption) {
           resetInputStyle,
           actionButtonStyle,
           'relative w-8 flex justify-center items-center cursor-pointer',
-          'hover:!outline-blue-500/80',
+          'hover:outline-component-node-widget-background-highlighted',
           'active:!scale-95'
         )
       "
@@ -85,7 +88,7 @@ function handleSortSelected(item: SortOption) {
     >
       <div
         v-if="sortSelected !== 'default'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-blue-500"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
       />
       <i class="icon-[lucide--arrow-up-down] size-4" />
     </button>
@@ -109,8 +112,8 @@ function handleSortSelected(item: SortOption) {
         :class="
           cn(
             'flex flex-col gap-2 p-2 min-w-32',
-            'bg-zinc-200 dark-theme:bg-charcoal-700',
-            'rounded-lg outline outline-offset-[-1px] outline-sand-200 dark-theme:outline-zinc-700'
+            'bg-component-node-background',
+            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
           )
         "
       >
@@ -140,7 +143,7 @@ function handleSortSelected(item: SortOption) {
       :class="
         cn(
           actionButtonStyle,
-          'flex justify-center items-center p-1 gap-1 hover:!outline-blue-500/80'
+          'flex justify-center items-center p-1 gap-1 hover:outline-component-node-widget-background-highlighted'
         )
       "
     >
@@ -150,7 +153,7 @@ function handleSortSelected(item: SortOption) {
             resetInputStyle,
             layoutSwitchItemStyle,
             layoutMode === 'list'
-              ? 'bg-neutral-500/50 text-black dark-theme:text-white'
+              ? 'bg-neutral-500/50 text-base-foreground'
               : ''
           )
         "
@@ -164,7 +167,7 @@ function handleSortSelected(item: SortOption) {
             resetInputStyle,
             layoutSwitchItemStyle,
             layoutMode === 'grid'
-              ? 'bg-neutral-500/50 text-black dark-theme:text-white'
+              ? 'bg-neutral-500/50 text-base-foreground'
               : ''
           )
         "

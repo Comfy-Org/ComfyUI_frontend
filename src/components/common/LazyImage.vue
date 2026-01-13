@@ -12,7 +12,6 @@
     />
     <img
       v-if="cachedSrc"
-      ref="imageRef"
       :src="cachedSrc"
       :alt="alt"
       draggable="false"
@@ -23,7 +22,7 @@
     />
     <div
       v-if="hasError"
-      class="absolute inset-0 flex items-center justify-center bg-surface-50 text-muted dark-theme:bg-surface-800"
+      class="absolute inset-0 flex items-center justify-center"
     >
       <img
         src="/assets/images/default-template.png"
@@ -61,7 +60,6 @@ const {
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
-const imageRef = ref<HTMLImageElement | null>(null)
 const isIntersecting = ref(false)
 const isImageLoaded = ref(false)
 const hasError = ref(false)

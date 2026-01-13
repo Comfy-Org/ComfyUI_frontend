@@ -84,8 +84,8 @@ function isIPv6Loopback(h: string): boolean {
 
   // Count explicit zero groups on each side of '::' to ensure at least one group is compressed.
   // (leftCount + rightCount) must be ≤ 6 so that the total expanded groups = 8.
-  const leftCount = m[1] ? m[1].match(/0{1,4}:/gi)?.length ?? 0 : 0
-  const rightCount = m[2] ? m[2].match(/0{1,4}:/gi)?.length ?? 0 : 0
+  const leftCount = m[1] ? (m[1].match(/0{1,4}:/gi)?.length ?? 0) : 0
+  const rightCount = m[2] ? (m[2].match(/0{1,4}:/gi)?.length ?? 0) : 0
 
   // Require that at least one group was actually compressed: i.e., leftCount + rightCount ≤ 6.
   return leftCount + rightCount <= 6

@@ -2,13 +2,10 @@ import { cn } from '@/utils/tailwindUtil'
 
 export const WidgetInputBaseClass = cn([
   // Background
-  'bg-node-component-widget-input-surface',
-  'text-node-component-widget-input',
+  'not-disabled:bg-component-node-widget-background',
+  'not-disabled:text-component-node-foreground',
   // Outline
   'border-none',
-  'outline outline-offset-[-1px] outline-node-stroke',
   // Rounded
-  'rounded-lg',
-  // Hover
-  'hover:outline-blue-500/80'
+  'rounded-lg'
 ])

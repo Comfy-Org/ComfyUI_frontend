@@ -1,4 +1,7 @@
 import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
+import { useFuse } from '@vueuse/integrations/useFuse'
+import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 
 import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
@@ -7,24 +10,23 @@ import {
   getAssetBaseModel,
   getAssetDescription
 } from '@/platform/assets/utils/assetMetadataUtils'
-import { formatSize } from '@/utils/formatUtil'
+
+export type OwnershipOption = 'all' | 'my-models' | 'public-models'
 
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
-    return category === 'all' || asset.tags.includes(category)
-  }
-}
+    if (category === 'all') return true
 
-function filterByQuery(query: string) {
-  return (asset: AssetItem) => {
-    if (!query) return true
-    const lowerQuery = query.toLowerCase()
-    const description = getAssetDescription(asset)
-    return (
-      asset.name.toLowerCase().includes(lowerQuery) ||
-      (description && description.toLowerCase().includes(lowerQuery)) ||
-      asset.tags.some((tag) => tag.toLowerCase().includes(lowerQuery))
-    )
+    // Check if any tag matches the category (for exact matches)
+    if (asset.tags.includes(category)) return true
+
+    // Check if any tag's top-level folder matches the category
+    return asset.tags.some((tag) => {
+      if (typeof tag === 'string' && tag.includes('/')) {
+        return tag.split('/')[0] === category
+      }
+      return false
+    })
   }
 }
 
@@ -46,6 +48,15 @@ function filterByBaseModels(models: string[]) {
   }
 }
 
+function filterByOwnership(ownership: OwnershipOption) {
+  return (asset: AssetItem) => {
+    if (ownership === 'all') return true
+    if (ownership === 'my-models') return asset.is_immutable === false
+    if (ownership === 'public-models') return asset.is_immutable === true
+    return true
+  }
+}
+
 type AssetBadge = {
   label: string
   type: 'type' | 'base' | 'size'
@@ -54,7 +65,6 @@ type AssetBadge = {
 // Display properties for transformed assets
 export interface AssetDisplayItem extends AssetItem {
   description: string
-  formattedSize: string
   badges: AssetBadge[]
   stats: {
     formattedDate?: string
@@ -67,14 +77,18 @@ export interface AssetDisplayItem extends AssetItem {
  * Asset Browser composable
  * Manages search, filtering, asset transformation and selection logic
  */
-export function useAssetBrowser(assets: AssetItem[] = []) {
+export function useAssetBrowser(
+  assetsSource: Ref<AssetItem[] | undefined> = ref<AssetItem[] | undefined>([])
+) {
+  const assets = computed<AssetItem[]>(() => assetsSource.value ?? [])
   // State
   const searchQuery = ref('')
   const selectedCategory = ref('all')
   const filters = ref<FilterState>({
-    sortBy: 'name-asc',
+    sortBy: 'recent',
     fileFormats: [],
-    baseModels: []
+    baseModels: [],
+    ownership: 'all'
   })
 
   // Transform API asset to display asset
@@ -85,15 +99,17 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       getAssetDescription(asset) ||
       `${typeTag || t('assetBrowser.unknown')} model`
 
-    // Format file size
-    const formattedSize = formatSize(asset.size)
-
     // Create badges from tags and metadata
     const badges: AssetBadge[] = []
 
     // Type badge from non-root tag
     if (typeTag) {
-      badges.push({ label: typeTag, type: 'type' })
+      // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
+      const badgeLabel = typeTag.includes('/')
+        ? typeTag.substring(typeTag.indexOf('/') + 1)
+        : typeTag
+
+      badges.push({ label: badgeLabel, type: 'type' })
     }
 
     // Base model badge from metadata
@@ -105,9 +121,6 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
       })
     }
 
-    // Size badge
-    badges.push({ label: formattedSize, type: 'size' })
-
     // Create display stats from API data
     const stats = {
       formattedDate: d(new Date(asset.created_at), { dateStyle: 'short' }),
@@ -118,16 +131,17 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     return {
       ...asset,
       description,
-      formattedSize,
       badges,
       stats
     }
   }
 
   const availableCategories = computed(() => {
-    const categories = assets
-      .filter((asset) => asset.tags[0] === 'models' && asset.tags[1])
+    const categories = assets.value
+      .filter((asset) => asset.tags[0] === 'models')
       .map((asset) => asset.tags[1])
+      .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
+      .map((tag) => tag.split('/')[0]) // Extract top-level folder name
 
     const uniqueCategories = Array.from(new Set(categories))
       .sort()
@@ -161,17 +175,40 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
 
   // Category-filtered assets for filter options (before search/format/base model filters)
   const categoryFilteredAssets = computed(() => {
-    return assets.filter(filterByCategory(selectedCategory.value))
+    return assets.value.filter(filterByCategory(selectedCategory.value))
   })
 
+  const fuseOptions: UseFuseOptions<AssetItem> = {
+    fuseOptions: {
+      keys: [
+        { name: 'name', weight: 0.4 },
+        { name: 'tags', weight: 0.3 }
+      ],
+      threshold: 0.4, // Higher threshold for typo tolerance (0.0 = exact, 1.0 = match all)
+      ignoreLocation: true, // Search anywhere in the string, not just at the beginning
+      includeScore: true
+    },
+    matchAllWhenSearchEmpty: true
+  }
+
+  const { results: fuseResults } = useFuse(
+    searchQuery,
+    categoryFilteredAssets,
+    fuseOptions
+  )
+
+  const searchFiltered = computed(() =>
+    fuseResults.value.map((result) => result.item)
+  )
+
   const filteredAssets = computed(() => {
-    const filtered = categoryFilteredAssets.value
-      .filter(filterByQuery(searchQuery.value))
+    const filtered = searchFiltered.value
       .filter(filterByFileFormats(filters.value.fileFormats))
       .filter(filterByBaseModels(filters.value.baseModels))
+      .filter(filterByOwnership(filters.value.ownership))
 
-    // Sort assets
-    filtered.sort((a, b) => {
+    const sortedAssets = [...filtered]
+    sortedAssets.sort((a, b) => {
       switch (filters.value.sortBy) {
         case 'name-desc':
           return b.name.localeCompare(a.name)
@@ -188,7 +225,7 @@ export function useAssetBrowser(assets: AssetItem[] = []) {
     })
 
     // Transform to display format
-    return filtered.map(transformAssetForDisplay)
+    return sortedAssets.map(transformAssetForDisplay)
   })
 
   function updateFilters(newFilters: FilterState) {

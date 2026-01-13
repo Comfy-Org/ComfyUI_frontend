@@ -66,17 +66,6 @@
               @click="troubleshoot"
             />
           </div>
-
-          <div class="text-center">
-            <button
-              v-if="!terminalVisible"
-              class="text-sm text-neutral-500 hover:text-neutral-300 transition-colors flex items-center gap-2 mx-auto"
-              @click="terminalVisible = true"
-            >
-              <i class="pi pi-search"></i>
-              {{ $t('serverStart.showTerminal') }}
-            </button>
-          </div>
         </div>
 
         <!-- Terminal Output (positioned at bottom when manually toggled in error state) -->
@@ -96,11 +85,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  InstallStage,
-  type InstallStageInfo,
-  type InstallStageName,
-  ProgressStatus
+import { InstallStage, ProgressStatus } from '@comfyorg/comfyui-electron-types'
+import type {
+  InstallStageInfo,
+  InstallStageName
 } from '@comfyorg/comfyui-electron-types'
 import type { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'

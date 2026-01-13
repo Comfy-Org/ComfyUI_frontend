@@ -1,8 +1,10 @@
 import { groupBy } from 'es-toolkit/compat'
-import { computed, onMounted } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -14,10 +16,12 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
  * Composable to find missing NodePacks from workflow
  * Uses the same filtering approach as ManagerDialogContent.vue
  * Automatically fetches workflow pack data when initialized
+ * This is a shared singleton composable - all components use the same instance
  */
-export const useMissingNodes = () => {
+export const useMissingNodes = createSharedComposable(() => {
   const nodeDefStore = useNodeDefStore()
   const comfyManagerStore = useComfyManagerStore()
+  const workflowStore = useWorkflowStore()
   const { workflowPacks, isLoading, error, startFetchWorkflowPacks } =
     useWorkflowPacks()
 
@@ -57,21 +61,32 @@ export const useMissingNodes = () => {
   }
 
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
-    const missingNodes = collectAllNodes(app.graph, isMissingCoreNode)
+    const missingNodes = collectAllNodes(app.rootGraph, isMissingCoreNode)
     return groupBy(missingNodes, (node) => String(node.properties?.ver || ''))
   })
 
-  // Automatically fetch workflow pack data when composable is used
-  onMounted(async () => {
-    if (!workflowPacks.value.length && !isLoading.value) {
-      await startFetchWorkflowPacks()
-    }
+  // Check if workflow has any missing nodes
+  const hasMissingNodes = computed(() => {
+    return (
+      missingNodePacks.value.length > 0 ||
+      Object.keys(missingCoreNodes.value).length > 0
+    )
   })
+
+  // Re-fetch workflow packs when active workflow changes
+  watch(
+    () => workflowStore.activeWorkflow,
+    async () => {
+      await startFetchWorkflowPacks()
+    },
+    { immediate: true }
+  )
 
   return {
     missingNodePacks,
     missingCoreNodes,
+    hasMissingNodes,
     isLoading,
     error
   }
-}
+})

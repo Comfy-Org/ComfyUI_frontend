@@ -458,15 +458,15 @@ echo "Workflow triggered. Waiting for PR creation..."
 3. **IMMEDIATELY CHECK**: Did release workflow trigger?
    ```bash
    sleep 10
-   gh run list --workflow=release.yaml --limit=1
+   gh run list --workflow=release-draft-create.yaml --limit=1
    ```
-4. **For Minor/Major Version Releases**: The create-release-candidate-branch workflow will automatically:
+4. **For Minor/Major Version Releases**: The release-branch-create workflow will automatically:
    - Create a `core/x.yy` branch for the PREVIOUS minor version
    - Apply branch protection rules
    - Document the feature freeze policy
    ```bash
    # Monitor branch creation (for minor/major releases)
-   gh run list --workflow=create-release-candidate-branch.yaml --limit=1
+   gh run list --workflow=release-branch-create.yaml --limit=1
    ```
 4. If workflow didn't trigger due to [skip ci]:
    ```bash
@@ -477,7 +477,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    ```
 5. If workflow triggered, monitor execution:
    ```bash
-   WORKFLOW_RUN_ID=$(gh run list --workflow=release.yaml --limit=1 --json databaseId --jq '.[0].databaseId')
+   WORKFLOW_RUN_ID=$(gh run list --workflow=release-draft-create.yaml --limit=1 --json databaseId --jq '.[0].databaseId')
    gh run watch ${WORKFLOW_RUN_ID}
    ```
 

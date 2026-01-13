@@ -1,39 +1,42 @@
 <template>
   <div
-    class="grid grid-rows-[1fr_auto_auto_1fr] w-full max-w-3xl mx-auto h-[40rem] select-none"
+    class="mx-auto grid h-[40rem] w-full max-w-3xl grid-rows-[1fr_auto_auto_1fr] select-none"
   >
-    <h2 class="font-inter font-bold text-3xl text-neutral-100 text-center">
+    <h2 class="text-center font-inter text-3xl font-bold text-neutral-100">
       {{ $t('install.gpuPicker.title') }}
     </h2>
 
     <!-- GPU Selection buttons - takes up remaining space and centers content -->
-    <div class="flex-1 flex gap-8 justify-center items-center">
+    <div class="flex flex-1 items-center justify-center gap-8">
       <!-- Apple Metal / NVIDIA -->
       <HardwareOption
         v-if="platform === 'darwin'"
-        :image-path="'/assets/images/apple-mps-logo.png'"
+        image-path="./assets/images/apple-mps-logo.png"
         placeholder-text="Apple Metal"
         subtitle="Apple Metal"
-        :value="'mps'"
         :selected="selected === 'mps'"
-        :recommended="true"
         @click="pickGpu('mps')"
       />
-      <HardwareOption
-        v-else
-        :image-path="'/assets/images/nvidia-logo-square.jpg'"
-        placeholder-text="NVIDIA"
-        :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
-        :value="'nvidia'"
-        :selected="selected === 'nvidia'"
-        :recommended="true"
-        @click="pickGpu('nvidia')"
-      />
+      <template v-else>
+        <HardwareOption
+          image-path="./assets/images/nvidia-logo-square.jpg"
+          placeholder-text="NVIDIA"
+          :subtitle="$t('install.gpuPicker.nvidiaSubtitle')"
+          :selected="selected === 'nvidia'"
+          @click="pickGpu('nvidia')"
+        />
+        <HardwareOption
+          image-path="./assets/images/amd-rocm-logo.png"
+          placeholder-text="AMD"
+          :subtitle="$t('install.gpuPicker.amdSubtitle')"
+          :selected="selected === 'amd'"
+          @click="pickGpu('amd')"
+        />
+      </template>
       <!-- CPU -->
       <HardwareOption
         placeholder-text="CPU"
         :subtitle="$t('install.gpuPicker.cpuSubtitle')"
-        :value="'cpu'"
         :selected="selected === 'cpu'"
         @click="pickGpu('cpu')"
       />
@@ -41,23 +44,22 @@
       <HardwareOption
         placeholder-text="Manual Install"
         :subtitle="$t('install.gpuPicker.manualSubtitle')"
-        :value="'unsupported'"
         :selected="selected === 'unsupported'"
         @click="pickGpu('unsupported')"
       />
     </div>
 
-    <div class="pt-12 px-24 h-16">
+    <div class="h-16 px-24 pt-12">
       <div v-show="showRecommendedBadge" class="flex items-center gap-2">
         <Tag
           :value="$t('install.gpuPicker.recommended')"
-          class="bg-neutral-300 text-neutral-900 rounded-full text-sm font-bold px-2 py-[1px]"
+          class="rounded-full bg-neutral-300 px-2 py-[1px] text-sm font-bold text-neutral-900"
         />
-        <i class="icon-[lucide--badge-check] text-neutral-300 text-lg" />
+        <i class="icon-[lucide--badge-check] text-lg text-neutral-300" />
       </div>
     </div>
 
-    <div class="text-neutral-300 px-24">
+    <div class="px-24 text-neutral-300">
       <p v-show="descriptionText" class="leading-relaxed">
         {{ descriptionText }}
       </p>
@@ -81,13 +83,15 @@ const selected = defineModel<TorchDeviceType | null>('device', {
 const electron = electronAPI()
 const platform = electron.getPlatform()
 
-const showRecommendedBadge = computed(
-  () => selected.value === 'mps' || selected.value === 'nvidia'
+const recommendedDevices: TorchDeviceType[] = ['mps', 'nvidia', 'amd']
+const showRecommendedBadge = computed(() =>
+  selected.value ? recommendedDevices.includes(selected.value) : false
 )
 
 const descriptionKeys = {
   mps: 'appleMetal',
   nvidia: 'nvidia',
+  amd: 'amd',
   cpu: 'cpu',
   unsupported: 'manual'
 } as const
@@ -97,7 +101,7 @@ const descriptionText = computed(() => {
   return st(`install.gpuPicker.${key}Description`, '')
 })
 
-const pickGpu = (value: TorchDeviceType) => {
+function pickGpu(value: TorchDeviceType) {
   selected.value = value
 }
 </script>

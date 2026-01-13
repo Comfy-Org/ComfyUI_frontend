@@ -2,28 +2,52 @@
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
-  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady && betaMenuEnabled">
-    <template v-if="!workspaceStore.focusMode" #side-bar-panel>
+  <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
+    <template v-if="showUI" #workflow-tabs>
+      <div
+        v-if="workflowTabsPosition === 'Topbar'"
+        class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
+      >
+        <!-- Native drag area for Electron -->
+        <div
+          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
+          class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
+        />
+        <div
+          class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
+        >
+          <WorkflowTabs />
+          <TopbarBadges />
+        </div>
+      </div>
+    </template>
+    <template v-if="showUI" #side-toolbar>
       <SideToolbar />
     </template>
-    <template v-if="!workspaceStore.focusMode" #bottom-panel>
+    <template v-if="showUI" #side-bar-panel>
+      <div
+        class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
+      >
+        <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
+      </div>
+    </template>
+    <template v-if="showUI" #topmenu>
+      <TopMenuSection />
+    </template>
+    <template v-if="showUI" #bottom-panel>
       <BottomPanel />
     </template>
+    <template v-if="showUI" #right-side-panel>
+      <NodePropertiesPanel />
+    </template>
     <template #graph-canvas-panel>
-      <div class="pointer-events-auto absolute top-0 left-0 w-auto max-w-full">
-        <SecondRowWorkflowTabs
-          v-if="workflowTabsPosition === 'Topbar (2nd-row)'"
-        />
-      </div>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
-
       <MiniMap
-        v-if="comfyAppReady && minimapEnabled"
+        v-if="comfyAppReady && minimapEnabled && betaMenuEnabled"
         class="pointer-events-auto"
       />
     </template>
   </LiteGraphCanvasSplitterOverlay>
-  <GraphCanvasMenu v-if="!betaMenuEnabled && canvasMenuEnabled" />
   <canvas
     id="graph-canvas"
     ref="canvasRef"
@@ -35,7 +59,6 @@
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
-    @transform-update="handleTransformUpdate"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
   >
     <!-- Vue nodes rendered based on graph nodes -->
@@ -53,6 +76,9 @@
     />
   </TransformPane>
 
+  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
+  <SelectionRectangle v-if="comfyAppReady" />
+
   <NodeTooltip v-if="tooltipEnabled" />
   <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
 
@@ -61,7 +87,6 @@
   <template v-if="comfyAppReady">
     <TitleEditor />
     <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <NodeOptions />
     <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
     <DomWidgets v-if="!shouldRenderVueNodes" />
   </template>
@@ -81,19 +106,21 @@ import {
 } from 'vue'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
+import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
+import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import NodeTooltip from '@/components/graph/NodeTooltip.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
-import NodeOptions from '@/components/graph/selectionToolbox/NodeOptions.vue'
+import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
-import SecondRowWorkflowTabs from '@/components/topbar/SecondRowWorkflowTabs.vue'
+import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
+import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useViewportCulling } from '@/composables/graph/useViewportCulling'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
@@ -102,7 +129,7 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { i18n, t } from '@/i18n'
+import { mergeCustomNodesI18n, t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -129,6 +156,10 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { isNativeWindow } from '@/utils/envUtil'
+import { forEachNode } from '@/utils/graphTraversalUtil'
+
+import SelectionRectangle from './SelectionRectangle.vue'
 
 const emit = defineEmits<{
   ready: []
@@ -160,6 +191,12 @@ const tooltipEnabled = computed(() => settingStore.get('Comfy.EnableTooltips'))
 const selectionToolboxEnabled = computed(() =>
   settingStore.get('Comfy.Canvas.SelectionToolbox')
 )
+const activeSidebarTab = computed(() => {
+  return workspaceStore.sidebarTab.activeSidebarTab
+})
+const showUI = computed(
+  () => !workspaceStore.focusMode && betaMenuEnabled.value
+)
 
 const minimapEnabled = computed(() => settingStore.get('Comfy.Minimap.Visible'))
 
@@ -168,7 +205,6 @@ const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 // Vue node system
 const vueNodeLifecycle = useVueNodeLifecycle()
-const { handleTransformUpdate } = useViewportCulling()
 
 const handleVueNodeLifecycleReset = async () => {
   if (shouldRenderVueNodes.value) {
@@ -232,20 +268,18 @@ watch(
   () => {
     if (!canvasStore.canvas) return
 
-    for (const n of comfyApp.graph.nodes) {
-      if (!n.widgets) continue
+    forEachNode(comfyApp.rootGraph, (n) => {
+      if (!n.widgets) return
       for (const w of n.widgets) {
-        if (w[IS_CONTROL_WIDGET]) {
-          updateControlWidgetLabel(w)
-          if (w.linkedWidgets) {
-            for (const l of w.linkedWidgets) {
-              updateControlWidgetLabel(l)
-            }
-          }
+        if (!w[IS_CONTROL_WIDGET]) continue
+        updateControlWidgetLabel(w)
+        if (!w.linkedWidgets) continue
+        for (const l of w.linkedWidgets) {
+          updateControlWidgetLabel(l)
         }
       }
-    }
-    comfyApp.graph.setDirtyCanvas(true)
+    })
+    canvasStore.canvas.setDirty(true)
   }
 )
 
@@ -295,7 +329,7 @@ watch(
     }
 
     // Force canvas redraw to ensure progress updates are visible
-    canvas.graph.setDirtyCanvas(true, false)
+    canvas.setDirty(true, false)
   },
   { deep: true }
 )
@@ -307,7 +341,7 @@ watch(
   (lastNodeErrors) => {
     if (!comfyApp.graph) return
 
-    for (const node of comfyApp.graph.nodes) {
+    forEachNode(comfyApp.rootGraph, (node) => {
       // Clear existing errors
       for (const slot of node.inputs) {
         delete slot.hasErrors
@@ -317,7 +351,7 @@ watch(
       }
 
       const nodeErrors = lastNodeErrors?.[node.id]
-      if (!nodeErrors) continue
+      if (!nodeErrors) return
 
       const validErrors = nodeErrors.errors.filter(
         (error) => error.extra_info?.input_name !== undefined
@@ -330,9 +364,9 @@ watch(
           node.inputs[inputIndex].hasErrors = true
         }
       })
-    }
+    })
 
-    comfyApp.canvas.draw(true, true)
+    comfyApp.canvas.setDirty(true, true)
   }
 )
 
@@ -352,9 +386,7 @@ useEventListener(
 const loadCustomNodesI18n = async () => {
   try {
     const i18nData = await api.getCustomNodesI18n()
-    Object.entries(i18nData).forEach(([locale, message]) => {
-      i18n.global.mergeLocaleMessage(locale, message)
-    })
+    mergeCustomNodesI18n(i18nData)
   } catch (error) {
     console.error('Failed to load custom nodes i18n', error)
   }
@@ -392,9 +424,7 @@ onMounted(async () => {
       throw error
     }
   }
-  CORE_SETTINGS.forEach((setting) => {
-    settingStore.addSetting(setting)
-  })
+  CORE_SETTINGS.forEach(settingStore.addSetting)
 
   await newUserService().initializeIfNewUser(settingStore)
 
@@ -422,14 +452,16 @@ onMounted(async () => {
     'Comfy.CustomColorPalettes'
   )
 
-  // Restore workflow and workflow tabs state from storage
-  await workflowPersistence.restorePreviousWorkflow()
+  // Restore saved workflow and workflow tabs state
+  await workflowPersistence.initializeWorkflow()
   workflowPersistence.restoreWorkflowTabsState()
 
+  // Load template from URL if present
+  await workflowPersistence.loadTemplateFromUrlIfPresent()
+
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
-  const { useReleaseStore } = await import(
-    '@/platform/updates/common/releaseStore'
-  )
+  const { useReleaseStore } =
+    await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
   void releaseStore.initialize()
 

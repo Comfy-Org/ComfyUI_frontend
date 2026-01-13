@@ -3,12 +3,15 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isCloud } from '@/platform/distribution/types'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
 interface SettingPanelItem {
   node: SettingTreeNode
@@ -23,16 +26,22 @@ export function useSettingUI(
     | 'server-config'
     | 'user'
     | 'credits'
+    | 'subscription'
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
+  const { shouldRenderVueNodes } = useVueFeatureFlags()
+  const { isActiveSubscription } = useSubscription()
+
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
       Object.values(settingStore.settingsById).filter(
-        (setting: SettingParams) => setting.type !== 'hidden'
+        (setting: SettingParams) =>
+          setting.type !== 'hidden' &&
+          !(shouldRenderVueNodes.value && setting.hideInVueNodes)
       ),
       (setting: SettingParams) => setting.category || setting.id.split('.')
     )
@@ -74,9 +83,29 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/CreditsPanel.vue')
+      () => import('@/components/dialog/content/setting/LegacyCreditsPanel.vue')
     )
   }
+
+  const subscriptionPanel: SettingPanelItem | null =
+    !isCloud || !window.__CONFIG__?.subscription_required
+      ? null
+      : {
+          node: {
+            key: 'subscription',
+            label: 'PlanCredits',
+            children: []
+          },
+          component: defineAsyncComponent(
+            () =>
+              import('@/platform/cloud/subscription/components/SubscriptionPanel.vue')
+          )
+        }
+
+  const shouldShowPlanCreditsPanel = computed(() => {
+    if (!subscriptionPanel) return false
+    return isActiveSubscription.value
+  })
 
   const userPanel: SettingPanelItem = {
     node: {
@@ -129,7 +158,10 @@ export function useSettingUI(
       userPanel,
       keybindingPanel,
       extensionPanel,
-      ...(isElectron() ? [serverConfigPanel] : [])
+      ...(isElectron() ? [serverConfigPanel] : []),
+      ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
+        ? [subscriptionPanel]
+        : [])
     ].filter((panel) => panel.component)
   )
 
@@ -155,13 +187,21 @@ export function useSettingUI(
   })
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Account settings - only show credits when user is authenticated
+    // Account settings - show different panels based on distribution and auth state
     {
       key: 'account',
       label: 'Account',
       children: [
         userPanel.node,
-        ...(isLoggedIn.value ? [creditsPanel.node] : [])
+        ...(isLoggedIn.value &&
+        shouldShowPlanCreditsPanel.value &&
+        subscriptionPanel
+          ? [subscriptionPanel.node]
+          : []),
+        ...(isLoggedIn.value &&
+        !(isCloud && window.__CONFIG__?.subscription_required)
+          ? [creditsPanel.node]
+          : [])
       ].map(translateCategory)
     },
     // Normal settings stored in the settingStore

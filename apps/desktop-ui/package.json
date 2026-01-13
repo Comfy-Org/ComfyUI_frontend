@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/desktop-ui",
-  "version": "0.0.1",
+  "version": "0.0.6",
   "type": "module",
   "nx": {
     "tags": [
@@ -87,11 +87,13 @@
     }
   },
   "scripts": {
+    "lint": "nx run @comfyorg/desktop-ui:lint",
+    "typecheck": "nx run @comfyorg/desktop-ui:typecheck",
     "storybook": "storybook dev -p 6007",
     "build-storybook": "storybook build -o dist/storybook"
   },
   "dependencies": {
-    "@comfyorg/comfyui-electron-types": "0.4.73-0",
+    "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@primevue/core": "catalog:",
     "@primevue/themes": "catalog:",

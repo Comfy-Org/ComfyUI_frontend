@@ -254,7 +254,13 @@ type KeysOfType<T, Match> = Exclude<
 
 /** The names of all (optional) methods and functions in T */
 export type MethodNames<T> = KeysOfType<T, ((...args: any) => any) | undefined>
-
+export interface NewNodePosition {
+  node: LGraphNode
+  newPos: {
+    x: number
+    y: number
+  }
+}
 export interface IBoundaryNodes {
   top: LGraphNode
   right: LGraphNode
@@ -332,11 +338,13 @@ export interface INodeFlags {
  */
 export interface IWidgetLocator {
   name: string
+  type?: string
 }
 
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
   widget?: IWidgetLocator
+  alwaysVisible?: boolean
 
   /**
    * Internal use only; API is not finalised and may change at any time.
@@ -373,8 +381,10 @@ interface IContextMenuBase {
 }
 
 /** ContextMenu */
-export interface IContextMenuOptions<TValue = unknown, TExtra = unknown>
-  extends IContextMenuBase {
+export interface IContextMenuOptions<
+  TValue = unknown,
+  TExtra = unknown
+> extends IContextMenuBase {
   ignore_item_callbacks?: boolean
   parentMenu?: ContextMenu<TValue>
   event?: MouseEvent
@@ -393,7 +403,7 @@ export interface IContextMenuOptions<TValue = unknown, TExtra = unknown>
     event?: MouseEvent,
     previous_menu?: ContextMenu<TValue>,
     extra?: unknown
-  ): void | boolean
+  ): void | boolean | Promise<void | boolean>
 }
 
 export interface IContextMenuValue<
@@ -416,16 +426,18 @@ export interface IContextMenuValue<
     event?: MouseEvent,
     previous_menu?: ContextMenu<TValue>,
     extra?: TExtra
-  ): void | boolean
+  ): void | boolean | Promise<void | boolean>
 }
 
-interface IContextMenuSubmenu<TValue = unknown>
-  extends IContextMenuOptions<TValue> {
+interface IContextMenuSubmenu<
+  TValue = unknown
+> extends IContextMenuOptions<TValue> {
   options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
 }
 
-export interface ContextMenuDivElement<TValue = unknown>
-  extends HTMLDivElement {
+export interface ContextMenuDivElement<
+  TValue = unknown
+> extends HTMLDivElement {
   value?: string | IContextMenuValue<TValue>
   onclick_callback?: never
 }

@@ -51,31 +51,31 @@ export class Reroute
   }
 
   /** The network this reroute belongs to.  Contains all valid links and reroutes. */
-  #network: WeakRef<LinkNetwork>
+  private readonly network: WeakRef<LinkNetwork>
 
-  #parentId?: RerouteId
+  private parentIdInternal?: RerouteId
   public get parentId(): RerouteId | undefined {
-    return this.#parentId
+    return this.parentIdInternal
   }
 
   /** Ignores attempts to create an infinite loop. @inheritdoc */
   public set parentId(value) {
     if (value === this.id) return
     if (this.getReroutes() === null) return
-    this.#parentId = value
+    this.parentIdInternal = value
   }
 
   public get parent(): Reroute | undefined {
-    return this.#network.deref()?.getReroute(this.#parentId)
+    return this.network.deref()?.getReroute(this.parentIdInternal)
   }
 
   /** This property is only defined on the last reroute of a floating reroute chain (closest to input end). */
   floating?: FloatingRerouteSlot
 
-  #pos: Point = [0, 0]
+  private readonly posInternal: Point = [0, 0]
   /** @inheritdoc */
   get pos(): Point {
-    return this.#pos
+    return this.posInternal
   }
 
   set pos(value: Point) {
@@ -83,14 +83,14 @@ export class Reroute
       throw new TypeError(
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
-    this.#pos[0] = value[0]
-    this.#pos[1] = value[1]
+    this.posInternal[0] = value[0]
+    this.posInternal[1] = value[1]
   }
 
   /** @inheritdoc */
   get boundingRect(): ReadOnlyRect {
     const { radius } = Reroute
-    const [x, y] = this.#pos
+    const [x, y] = this.posInternal
     return [x - radius, y - radius, 2 * radius, 2 * radius]
   }
 
@@ -98,11 +98,11 @@ export class Reroute
    * Slightly over-sized rectangle, guaranteed to contain the entire surface area for hover detection.
    * Eliminates most hover positions using an extremely cheap check.
    */
-  get #hoverArea(): ReadOnlyRect {
+  private get hoverArea(): ReadOnlyRect {
     const xOffset = 2 * Reroute.slotOffset
     const yOffset = 2 * Math.max(Reroute.radius, Reroute.slotRadius)
 
-    const [x, y] = this.#pos
+    const [x, y] = this.posInternal
     return [x - xOffset, y - yOffset, 2 * xOffset, 2 * yOffset]
   }
 
@@ -149,35 +149,35 @@ export class Reroute
    * Used to ensure reroute angles are only executed once per frame.
    * @todo Calculate on change instead.
    */
-  #lastRenderTime: number = -Infinity
+  private lastRenderTime: number = -Infinity
 
-  #inputSlot = new RerouteSlot(this, true)
-  #outputSlot = new RerouteSlot(this, false)
+  private readonly inputSlot = new RerouteSlot(this, true)
+  private readonly outputSlot = new RerouteSlot(this, false)
 
   get isSlotHovered(): boolean {
     return this.isInputHovered || this.isOutputHovered
   }
 
   get isInputHovered(): boolean {
-    return this.#inputSlot.hovering
+    return this.inputSlot.hovering
   }
 
   get isOutputHovered(): boolean {
-    return this.#outputSlot.hovering
+    return this.outputSlot.hovering
   }
 
   get firstLink(): LLink | undefined {
     const linkId = this.linkIds.values().next().value
     return linkId === undefined
       ? undefined
-      : this.#network.deref()?.links.get(linkId)
+      : this.network.deref()?.links.get(linkId)
   }
 
   get firstFloatingLink(): LLink | undefined {
     const linkId = this.floatingLinkIds.values().next().value
     return linkId === undefined
       ? undefined
-      : this.#network.deref()?.floatingLinks.get(linkId)
+      : this.network.deref()?.floatingLinks.get(linkId)
   }
 
   /** @inheritdoc */
@@ -205,7 +205,7 @@ export class Reroute
     linkIds?: Iterable<LinkId>,
     floatingLinkIds?: Iterable<LinkId>
   ) {
-    this.#network = new WeakRef(network)
+    this.network = new WeakRef(network)
     this.parentId = parentId
     if (pos) this.pos = pos
     this.linkIds = new Set(linkIds)
@@ -261,15 +261,15 @@ export class Reroute
    */
   getReroutes(visited = new Set<Reroute>()): Reroute[] | null {
     // No parentId - last in the chain
-    if (this.#parentId === undefined) return [this]
+    if (this.parentIdInternal === undefined) return [this]
     // Invalid chain - looped
     if (visited.has(this)) return null
     visited.add(this)
 
-    const parent = this.#network.deref()?.reroutes.get(this.#parentId)
+    const parent = this.network.deref()?.reroutes.get(this.parentIdInternal)
     // Invalid parent (or network) - drop silently to recover
     if (!parent) {
-      this.#parentId = undefined
+      this.parentIdInternal = undefined
       return [this]
     }
 
@@ -288,14 +288,14 @@ export class Reroute
     withParentId: RerouteId,
     visited = new Set<Reroute>()
   ): Reroute | null | undefined {
-    if (this.#parentId === withParentId) return this
+    if (this.parentIdInternal === withParentId) return this
     if (visited.has(this)) return null
     visited.add(this)
-    if (this.#parentId === undefined) return
+    if (this.parentIdInternal === undefined) return
 
-    return this.#network
+    return this.network
       .deref()
-      ?.reroutes.get(this.#parentId)
+      ?.reroutes.get(this.parentIdInternal)
       ?.findNextReroute(withParentId, visited)
   }
 
@@ -309,7 +309,7 @@ export class Reroute
     const link = this.firstLink ?? this.firstFloatingLink
     if (!link) return
 
-    const node = this.#network.deref()?.getNodeById(link.origin_id)
+    const node = this.network.deref()?.getNodeById(link.origin_id)
     if (!node) return
 
     return {
@@ -325,7 +325,7 @@ export class Reroute
   findTargetInputs():
     | { node: LGraphNode; input: INodeInputSlot; link: LLink }[]
     | undefined {
-    const network = this.#network.deref()
+    const network = this.network.deref()
     if (!network) return
 
     const results: {
@@ -363,7 +363,7 @@ export class Reroute
    * @returns An array of floating links
    */
   getFloatingLinks(from: 'input' | 'output'): LLink[] | undefined {
-    const floatingLinks = this.#network.deref()?.floatingLinks
+    const floatingLinks = this.network.deref()?.floatingLinks
     if (!floatingLinks) return
 
     const idProp = from === 'input' ? 'origin_id' : 'target_id'
@@ -387,7 +387,7 @@ export class Reroute
     output: INodeOutputSlot,
     index: number
   ) {
-    const network = this.#network.deref()
+    const network = this.network.deref()
     const floatingOutLinks = this.getFloatingLinks('output')
     if (!floatingOutLinks)
       throw new Error('[setFloatingLinkOrigin]: Invalid network.')
@@ -411,15 +411,15 @@ export class Reroute
 
   /** @inheritdoc */
   move(deltaX: number, deltaY: number) {
-    const previousPos = { x: this.#pos[0], y: this.#pos[1] }
-    this.#pos[0] += deltaX
-    this.#pos[1] += deltaY
+    const previousPos = { x: this.posInternal[0], y: this.posInternal[1] }
+    this.posInternal[0] += deltaX
+    this.posInternal[1] += deltaY
 
     // Update Layout Store with new position
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.moveReroute(
       this.id,
-      { x: this.#pos[0], y: this.#pos[1] },
+      { x: this.posInternal[0], y: this.posInternal[1] },
       previousPos
     )
   }
@@ -441,7 +441,7 @@ export class Reroute
   }
 
   removeFloatingLink(linkId: LinkId) {
-    const network = this.#network.deref()
+    const network = this.network.deref()
     if (!network) return
 
     const floatingLink = network.floatingLinks.get(linkId)
@@ -462,7 +462,7 @@ export class Reroute
    * @remarks Does not remove the link from the network.
    */
   removeLink(link: LLink) {
-    const network = this.#network.deref()
+    const network = this.network.deref()
     if (!network) return
 
     const floatingLink = network.floatingLinks.get(link.id)
@@ -474,7 +474,7 @@ export class Reroute
   }
 
   remove() {
-    const network = this.#network.deref()
+    const network = this.network.deref()
     if (!network) return
 
     network.removeReroute(this.id)
@@ -486,8 +486,8 @@ export class Reroute
     linkStart: Point
   ): void {
     // Ensure we run once per render
-    if (!(lastRenderTime > this.#lastRenderTime)) return
-    this.#lastRenderTime = lastRenderTime
+    if (!(lastRenderTime > this.lastRenderTime)) return
+    this.lastRenderTime = lastRenderTime
 
     const { id, pos: thisPos } = this
 
@@ -509,14 +509,14 @@ export class Reroute
     sum /= angles.length
 
     const originToReroute = Math.atan2(
-      this.#pos[1] - linkStart[1],
-      this.#pos[0] - linkStart[0]
+      this.posInternal[1] - linkStart[1],
+      this.posInternal[0] - linkStart[0]
     )
     let diff = (originToReroute - sum) * 0.5
     if (Math.abs(diff) > Math.PI * 0.5) diff += Math.PI
     const dist = Math.min(
       Reroute.maxSplineOffset,
-      distance(linkStart, this.#pos) * 0.25
+      distance(linkStart, this.posInternal) * 0.25
     )
 
     // Store results
@@ -604,8 +604,8 @@ export class Reroute
    * @param ctx The canvas context to draw on.
    */
   drawSlots(ctx: CanvasRenderingContext2D): void {
-    this.#inputSlot.draw(ctx)
-    this.#outputSlot.draw(ctx)
+    this.inputSlot.draw(ctx)
+    this.outputSlot.draw(ctx)
   }
 
   drawHighlight(ctx: CanvasRenderingContext2D, colour: CanvasColour): void {
@@ -629,8 +629,8 @@ export class Reroute
    * @returns `true` if any changes require a redraw.
    */
   updateVisibility(pos: Point): boolean {
-    const input = this.#inputSlot
-    const output = this.#outputSlot
+    const input = this.inputSlot
+    const output = this.outputSlot
     input.dirty = false
     output.dirty = false
 
@@ -642,8 +642,8 @@ export class Reroute
     const showEither = showInput || showOutput
 
     // Check if even in the vicinity
-    if (showEither && isPointInRect(pos, this.#hoverArea)) {
-      const outlineOnly = this.#contains(pos)
+    if (showEither && isPointInRect(pos, this.hoverArea)) {
+      const outlineOnly = this.contains(pos)
 
       if (showInput) input.update(pos, outlineOnly)
       if (showOutput) output.update(pos, outlineOnly)
@@ -656,8 +656,8 @@ export class Reroute
 
   /** Prevents rendering of the input and output slots. */
   hideSlots() {
-    this.#inputSlot.hide()
-    this.#outputSlot.hide()
+    this.inputSlot.hide()
+    this.outputSlot.hide()
   }
 
   /**
@@ -666,10 +666,10 @@ export class Reroute
    * @returns `true` if {@link pos} is within the reroute's radius.
    */
   containsPoint(pos: Point): boolean {
-    return isPointInRect(pos, this.#hoverArea) && this.#contains(pos)
+    return isPointInRect(pos, this.hoverArea) && this.contains(pos)
   }
 
-  #contains(pos: Point): boolean {
+  private contains(pos: Point): boolean {
     return distance(this.pos, pos) <= Reroute.radius
   }
 
@@ -692,47 +692,47 @@ export class Reroute
  */
 class RerouteSlot {
   /** The reroute that the slot belongs to. */
-  readonly #reroute: Reroute
+  private readonly reroute: Reroute
 
-  readonly #offsetMultiplier: 1 | -1
+  private readonly offsetMultiplier: 1 | -1
   /** Centre point of this slot. */
   get pos(): Point {
-    const [x, y] = this.#reroute.pos
-    return [x + Reroute.slotOffset * this.#offsetMultiplier, y]
+    const [x, y] = this.reroute.pos
+    return [x + Reroute.slotOffset * this.offsetMultiplier, y]
   }
 
   /** Whether any changes require a redraw. */
   dirty: boolean = false
 
-  #hovering = false
+  private hoveringInternal = false
   /** Whether the pointer is hovering over the slot itself. */
   get hovering() {
-    return this.#hovering
+    return this.hoveringInternal
   }
 
   set hovering(value) {
-    if (!Object.is(this.#hovering, value)) {
-      this.#hovering = value
+    if (!Object.is(this.hoveringInternal, value)) {
+      this.hoveringInternal = value
       this.dirty = true
     }
   }
 
-  #showOutline = false
+  private showOutlineInternal = false
   /** Whether the slot outline / faint background is visible. */
   get showOutline() {
-    return this.#showOutline
+    return this.showOutlineInternal
   }
 
   set showOutline(value) {
-    if (!Object.is(this.#showOutline, value)) {
-      this.#showOutline = value
+    if (!Object.is(this.showOutlineInternal, value)) {
+      this.showOutlineInternal = value
       this.dirty = true
     }
   }
 
   constructor(reroute: Reroute, isInput: boolean) {
-    this.#reroute = reroute
-    this.#offsetMultiplier = isInput ? -1 : 1
+    this.reroute = reroute
+    this.offsetMultiplier = isInput ? -1 : 1
   }
 
   /**
@@ -771,7 +771,7 @@ class RerouteSlot {
     if (!showOutline) return
 
     try {
-      ctx.fillStyle = hovering ? this.#reroute.colour : 'rgba(127,127,127,0.3)'
+      ctx.fillStyle = hovering ? this.reroute.colour : 'rgba(127,127,127,0.3)'
       ctx.strokeStyle = 'rgb(0,0,0,0.5)'
       ctx.lineWidth = 1
 

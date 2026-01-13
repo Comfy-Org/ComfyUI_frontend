@@ -45,7 +45,7 @@
                   value: slotProps.option.conflictMessage,
                   showDelay: 300
                 }"
-                class="pi pi-exclamation-triangle text-yellow-500"
+                class="icon-[lucide--triangle-alert] text-warning-background"
               />
               <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             </template>
@@ -61,27 +61,27 @@
     <ContentDivider class="my-2" />
     <div class="flex justify-end gap-2 px-3 py-1">
       <Button
-        text
+        variant="muted-textonly"
         class="text-sm"
-        severity="secondary"
-        :label="$t('g.cancel')"
         :disabled="isQueueing"
         @click="emit('cancel')"
-      />
+      >
+        {{ $t('g.cancel') }}
+      </Button>
       <Button
-        severity="secondary"
-        :label="$t('g.install')"
-        class="dark-theme:bg-unset dark-theme:text-unset rounded-lg bg-black/80 px-4 py-2.5 text-sm text-neutral-100"
+        variant="secondary"
+        class="rounded-lg bg-secondary-background px-4 py-2.5 text-sm text-base-foreground"
         :disabled="isQueueing"
         @click="handleSubmit"
-      />
+      >
+        {{ $t('g.install') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
 import { valid as validSemver } from 'semver'
@@ -91,6 +91,7 @@ import { useI18n } from 'vue-i18n'
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
@@ -236,7 +237,7 @@ const handleSubmit = async () => {
   // Convert 'latest' to actual version number for installation
   const actualVersion =
     selectedVersion.value === 'latest'
-      ? nodePack.latest_version?.version ?? 'latest'
+      ? (nodePack.latest_version?.version ?? 'latest')
       : selectedVersion.value
 
   await managerStore.installPack.call({

@@ -58,6 +58,9 @@ async function uploadFile(
           getResourceURL(...splitFilePath(path))
         )
         audioWidget.value = path
+
+        // Manually trigger the callback to update VueNodes
+        audioWidget.callback?.(path)
       }
     } else {
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
@@ -139,7 +142,7 @@ app.registerExtension({
   onNodeOutputsUpdated(nodeOutputs: Record<NodeLocatorId, any>) {
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
       if ('audio' in output) {
-        const node = getNodeByLocatorId(app.graph, nodeLocatorId)
+        const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
         if (!node) continue
 
         // @ts-expect-error fixme ts strict error
@@ -253,7 +256,7 @@ app.registerExtension({
         audio.setAttribute('name', 'media')
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
-        audioUIWidget.options.canvasOnly = true
+        audioUIWidget.options.canvasOnly = false
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false
@@ -376,10 +379,12 @@ app.registerExtension({
               mediaRecorder.stop()
             }
           },
-          { serialize: false, canvasOnly: true }
+          { serialize: false, canvasOnly: false }
         )
 
         recordWidget.label = t('g.startRecording')
+        // Override the type for Vue rendering while keeping 'button' for LiteGraph
+        recordWidget.type = 'audiorecord'
 
         const originalOnRemoved = node.onRemoved
         node.onRemoved = function () {

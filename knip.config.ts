@@ -8,9 +8,14 @@ const config: KnipConfig = {
         'src/assets/css/style.css',
         'src/main.ts',
         'src/scripts/ui/menu/index.ts',
-        'src/types/index.ts'
+        'src/types/index.ts',
+        'src/storybook/mocks/**/*.ts'
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
+    },
+    'apps/desktop-ui': {
+      entry: ['src/main.ts', 'src/i18n.ts'],
+      project: ['src/**/*.{js,ts,vue}']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
@@ -23,16 +28,14 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
     '@primeuix/utils',
-    '@primevue/icons',
-    // Dev
-    '@trivago/prettier-plugin-sort-imports'
+    '@primevue/icons'
   ],
   ignore: [
     // Auto generated manager types

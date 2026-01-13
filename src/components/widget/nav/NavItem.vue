@@ -1,17 +1,19 @@
 <template>
   <div
-    class="flex cursor-pointer items-center gap-2 rounded-md px-4 py-3 text-sm transition-colors"
+    class="flex cursor-pointer items-start gap-2 rounded-md px-4 py-3 text-sm transition-colors text-base-foreground"
     :class="
       active
-        ? 'bg-gray-400 dark-theme:bg-charcoal-300 text-neutral'
-        : 'text-neutral hover:bg-gray-100 dark-theme:hover:bg-charcoal-300'
+        ? 'bg-interface-menu-component-surface-selected'
+        : 'hover:bg-interface-menu-component-surface-hovered'
     "
     role="button"
     @click="onClick"
   >
-    <NavIcon v-if="icon" :icon="icon" />
-    <i v-else class="text-neutral icon-[lucide--folder] text-xs" />
-    <span class="flex items-center">
+    <div v-if="icon" class="pt-0.5">
+      <NavIcon :icon="icon" />
+    </div>
+    <i v-else class="text-neutral icon-[lucide--folder] text-xs shrink-0" />
+    <span class="flex items-center break-all">
       <slot></slot>
     </span>
   </div>

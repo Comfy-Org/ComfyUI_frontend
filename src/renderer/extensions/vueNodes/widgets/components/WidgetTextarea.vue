@@ -1,25 +1,37 @@
 <template>
-  <div class="relative">
+  <FloatLabel
+    variant="in"
+    :class="
+      cn(
+        'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        widget.borderStyle
+      )
+    "
+  >
     <Textarea
-      v-model="localValue"
       v-bind="filteredProps"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs lod-toggle')"
-      :placeholder="placeholder || widget.name || ''"
-      :aria-label="widget.name"
-      size="small"
-      rows="3"
+      :id
+      v-model="modelValue"
+      :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
+      :placeholder
+      :readonly="widget.options?.read_only"
+      :disabled="widget.options?.read_only"
+      fluid
       data-capture-wheel="true"
-      @update:model-value="onChange"
+      @pointerdown.capture.stop
+      @pointermove.capture.stop
+      @pointerup.capture.stop
+      @contextmenu.capture.stop
     />
-    <LODFallback />
-  </div>
+    <label :for="id">{{ displayName }}</label>
+  </FloatLabel>
 </template>
 
 <script setup lang="ts">
+import FloatLabel from 'primevue/floatlabel'
 import Textarea from 'primevue/textarea'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
-import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 import {
@@ -27,27 +39,19 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-import LODFallback from '../../components/LODFallback.vue'
 import { WidgetInputBaseClass } from './layout'
 
-const props = defineProps<{
+const { widget, placeholder = '' } = defineProps<{
   widget: SimplifiedWidget<string>
-  modelValue: string
   placeholder?: string
 }>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
-
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useStringWidgetValue(
-  props.widget,
-  props.modelValue,
-  emit
-)
+const modelValue = defineModel<string>({ default: '' })
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
 )
+
+const displayName = computed(() => widget.label || widget.name)
+const id = useId()
 </script>

@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
-import { useQueueSidebarTab } from '@/composables/sidebarTabs/useQueueSidebarTab'
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowsSidebarTab } from '@/platform/workflow/management/composables/useWorkflowsSidebarTab'
@@ -42,10 +42,10 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
     const menubarLabelFunction = () => {
       const menubarLabelKeys: Record<string, string> = {
-        queue: 'menu.queue',
         'node-library': 'sideToolbar.nodeLibrary',
         'model-library': 'sideToolbar.modelLibrary',
-        workflows: 'sideToolbar.workflows'
+        workflows: 'sideToolbar.workflows',
+        assets: 'sideToolbar.assets'
       }
 
       const key = menubarLabelKeys[tab.id]
@@ -102,7 +102,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
    * Register the core sidebar tabs.
    */
   const registerCoreSidebarTabs = () => {
-    registerSidebarTab(useQueueSidebarTab())
+    registerSidebarTab(useAssetsSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())

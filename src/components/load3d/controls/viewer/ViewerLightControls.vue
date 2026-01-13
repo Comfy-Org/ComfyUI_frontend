@@ -1,19 +1,20 @@
 <template>
-  <label>{{ t('load3d.lightIntensity') }}</label>
+  <div class="space-y-4">
+    <label>{{ $t('load3d.lightIntensity') }}</label>
 
-  <Slider
-    v-model="lightIntensity"
-    class="w-full"
-    :min="lightIntensityMinimum"
-    :max="lightIntensityMaximum"
-    :step="lightAdjustmentIncrement"
-  />
+    <Slider
+      v-model="lightIntensity"
+      class="w-full"
+      :min="lightIntensityMinimum"
+      :max="lightIntensityMaximum"
+      :step="lightAdjustmentIncrement"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import Slider from 'primevue/slider'
 
-import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const lightIntensity = defineModel<number>('lightIntensity')

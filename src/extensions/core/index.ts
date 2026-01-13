@@ -1,11 +1,15 @@
+import { isCloud } from '@/platform/distribution/types'
+
 import './clipspace'
 import './contextMenuFilter'
+import './customCombo'
 import './dynamicPrompts'
 import './editAttention'
 import './electronAdapter'
 import './groupNode'
 import './groupNodeManage'
 import './groupOptions'
+import './imageCompare'
 import './load3d'
 import './maskeditor'
 import './nodeTemplates'
@@ -21,3 +25,15 @@ import './uploadAudio'
 import './uploadImage'
 import './webcamCapture'
 import './widgetInputs'
+
+// Cloud-only extensions - tree-shaken in OSS builds
+if (isCloud) {
+  await import('./cloudRemoteConfig')
+  await import('./cloudBadges')
+  await import('./cloudSessionCookie')
+  await import('./cloudFeedbackTopbarButton')
+
+  if (window.__CONFIG__?.subscription_required) {
+    await import('./cloudSubscription')
+  }
+}

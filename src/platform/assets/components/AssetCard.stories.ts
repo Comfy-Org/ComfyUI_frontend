@@ -12,7 +12,6 @@ const createAssetData = (
   ...baseAsset,
   description:
     'High-quality realistic images with perfect detail and natural lighting effects for professional photography',
-  formattedSize: '2.1 GB',
   badges: [
     { label: 'checkpoints', type: 'type' },
     { label: '2.1 GB', type: 'size' }
@@ -33,8 +32,7 @@ const meta: Meta<typeof AssetCard> = {
   },
   decorators: [
     () => ({
-      template:
-        '<div class="p-8 bg-gray-50 dark-theme:bg-gray-900"><story /></div>'
+      template: '<div class="p-8 bg-base-background"><story /></div>'
     })
   ]
 }
@@ -49,8 +47,7 @@ export const Interactive: Story = {
   },
   decorators: [
     () => ({
-      template:
-        '<div class="p-8 bg-gray-50 dark-theme:bg-gray-900 max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -70,8 +67,7 @@ export const NonInteractive: Story = {
   },
   decorators: [
     () => ({
-      template:
-        '<div class="p-8 bg-gray-50 dark-theme:bg-gray-900 max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -79,6 +75,49 @@ export const NonInteractive: Story = {
       description: {
         story:
           'AssetCard in non-interactive mode - renders as div without button semantics.'
+      }
+    }
+  }
+}
+
+export const WithPreviewImage: Story = {
+  args: {
+    asset: createAssetData({
+      preview_url: '/assets/images/comfy-logo-single.svg'
+    }),
+    interactive: true
+  },
+  decorators: [
+    () => ({
+      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+    })
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story: 'AssetCard with a preview image displayed.'
+      }
+    }
+  }
+}
+
+export const FallbackGradient: Story = {
+  args: {
+    asset: createAssetData({
+      preview_url: undefined
+    }),
+    interactive: true
+  },
+  decorators: [
+    () => ({
+      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+    })
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'AssetCard showing fallback gradient when no preview image is available.'
       }
     }
   }
@@ -159,7 +198,7 @@ export const EdgeCases: Story = {
       return { edgeCases }
     },
     template: `
-      <div class="grid grid-cols-4 gap-6 p-8 bg-gray-50 dark-theme:bg-gray-900">
+      <div class="grid grid-cols-4 gap-6 p-8 bg-base-background">
         <AssetCard
           v-for="asset in edgeCases"
           :key="asset.id"

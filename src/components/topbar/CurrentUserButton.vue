@@ -3,34 +3,54 @@
   <div>
     <Button
       v-if="isLoggedIn"
-      class="user-profile-button p-1"
-      severity="secondary"
-      text
-      aria-label="user profile"
+      class="p-1 hover:bg-transparent"
+      variant="muted-textonly"
+      :aria-label="$t('g.currentUser')"
       @click="popover?.toggle($event)"
     >
-      <div class="flex items-center rounded-full bg-(--p-content-background)">
-        <UserAvatar :photo-url="photoURL" />
+      <div
+        :class="
+          cn(
+            'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
+            compact && 'size-full '
+          )
+        "
+      >
+        <UserAvatar :photo-url="photoURL" :class="compact && 'size-full'" />
 
-        <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.5rem' }" />
+        <i v-if="showArrow" class="icon-[lucide--chevron-down] size-3 px-1" />
       </div>
     </Button>
 
-    <Popover ref="popover" :show-arrow="false">
+    <Popover
+      ref="popover"
+      :show-arrow="false"
+      :pt="{
+        root: {
+          class: 'rounded-lg'
+        }
+      }"
+    >
       <CurrentUserPopover @close="closePopover" />
     </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { cn } from '@/utils/tailwindUtil'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
+
+const { showArrow = true, compact = false } = defineProps<{
+  showArrow?: boolean
+  compact?: boolean
+}>()
 
 const { isLoggedIn, userPhotoUrl } = useCurrentUser()
 

@@ -4,7 +4,7 @@
     <div v-if="showDefaultBanner" class="h-full w-full">
       <img
         :src="DEFAULT_BANNER"
-        alt="default banner"
+        :alt="$t('g.defaultBanner')"
         class="h-full w-full object-cover"
       />
     </div>

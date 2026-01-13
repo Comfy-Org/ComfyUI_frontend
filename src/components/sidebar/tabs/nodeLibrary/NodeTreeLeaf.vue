@@ -18,48 +18,55 @@
         #actions
       >
         <Button
-          size="small"
-          icon="pi pi-trash"
-          text
-          severity="danger"
+          variant="destructive"
+          size="icon-sm"
+          :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
+          <i class="icon-[lucide--trash-2] size-3.5" />
         </Button>
         <Button
-          size="small"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('g.edit')"
           @click.stop="editBlueprint"
         >
-          <template #icon>
-            <i class="icon-[lucide--square-pen]" />
-          </template>
+          <i class="icon-[lucide--square-pen] size-3.5" />
         </Button>
       </template>
       <template v-else #actions>
         <Button
           class="bookmark-button"
-          size="small"
-          :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('icon.bookmark')"
           @click.stop="toggleBookmark"
-        />
+        >
+          <i
+            :class="
+              cn(
+                isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+                'size-3.5'
+              )
+            "
+          />
+        </Button>
         <Button
           v-tooltip.bottom="$t('g.learnMore')"
           class="help-button"
-          size="small"
-          icon="pi pi-question"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('g.learnMore')"
           @click.stop="props.openNodeHelp(nodeDef)"
-        />
+        >
+          <i class="pi pi-question size-3.5" />
+        </Button>
       </template>
     </TreeExplorerTreeNode>
 
     <teleport v-if="isHovered" to="#node-library-node-preview-container">
       <div class="node-lib-node-preview" :style="nodePreviewStyle">
-        <NodePreview ref="previewRef" :node-def="nodeDef" />
+        <NodePreview :node-def="nodeDef" />
       </div>
     </teleport>
   </div>
@@ -67,7 +74,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
@@ -77,11 +83,13 @@ import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
@@ -132,11 +140,12 @@ function deleteBlueprint() {
   void useSubgraphStore().deleteBlueprint(props.node.data.name)
 }
 
-const previewRef = ref<InstanceType<typeof NodePreview> | null>(null)
 const nodePreviewStyle = ref<CSSProperties>({
-  position: 'absolute',
+  position: 'fixed',
   top: '0px',
-  left: '0px'
+  left: '0px',
+  pointerEvents: 'none',
+  zIndex: 1001
 })
 
 const handleNodeHover = async () => {
@@ -144,19 +153,15 @@ const handleNodeHover = async () => {
   if (!hoverTarget) return
 
   const targetRect = hoverTarget.getBoundingClientRect()
+  const margin = 40
 
-  const previewHeight = previewRef.value?.$el.offsetHeight || 0
-  const availableSpaceBelow = window.innerHeight - targetRect.bottom
-
-  nodePreviewStyle.value.top =
-    previewHeight > availableSpaceBelow
-      ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
-      : `${targetRect.top - 40}px`
-  if (sidebarLocation.value === 'left') {
-    nodePreviewStyle.value.left = `${targetRect.right}px`
-  } else {
-    nodePreviewStyle.value.left = `${targetRect.left - 400}px`
-  }
+  nodePreviewStyle.value.top = `${targetRect.top}px`
+  nodePreviewStyle.value.left =
+    sidebarLocation.value === 'left'
+      ? `${targetRect.right + margin}px`
+      : `${targetRect.left - margin}px`
+  nodePreviewStyle.value.transform =
+    sidebarLocation.value === 'right' ? 'translateX(-100%)' : undefined
 }
 
 const container = ref<HTMLElement | null>(null)

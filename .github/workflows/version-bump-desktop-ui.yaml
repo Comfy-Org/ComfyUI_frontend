@@ -14,6 +14,11 @@ on:
         required: false
         default: ''
         type: string
+      branch:
+        description: 'Base branch to bump (e.g., main, core/1.29, core/1.30)'
+        required: true
+        default: 'main'
+        type: string
 
 jobs:
   bump-version-desktop-ui:
@@ -26,7 +31,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
+          ref: ${{ github.event.inputs.branch }}
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: Validate branch exists
+        run: |
+          BRANCH="${{ github.event.inputs.branch }}"
+          if ! git show-ref --verify --quiet "refs/heads/$BRANCH" && ! git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+            echo "❌ Branch '$BRANCH' does not exist"
+            echo ""
+            echo "Available core branches:"
+            git branch -r | grep 'origin/core/' | sed 's/.*origin\//  - /' || echo "  (none found)"
+            echo ""
+            echo "Main branch:"
+            echo "  - main"
+            exit 1
+          fi
+          echo "✅ Branch '$BRANCH' exists"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -64,8 +86,9 @@ jobs:
           title: desktop-ui ${{ steps.bump-version.outputs.NEW_VERSION }}
           body: |
             ${{ steps.capitalised.outputs.capitalised }} version increment for @comfyorg/desktop-ui to ${{ steps.bump-version.outputs.NEW_VERSION }}
+
+            **Base branch:** `${{ github.event.inputs.branch }}`
           branch: desktop-ui-version-bump-${{ steps.bump-version.outputs.NEW_VERSION }}
-          base: main
+          base: ${{ github.event.inputs.branch }}
           labels: |
             Release
-

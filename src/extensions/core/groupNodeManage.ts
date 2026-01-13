@@ -270,7 +270,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
       this.groupData.oldToNewWidgetMap[this.selectedNodeInnerIndex]
     const items = Object.keys(widgets ?? {})
     // @ts-expect-error fixme ts strict error
-    const type = app.graph.extra.groupNodes[this.selectedGroup]
+    const type = app.rootGraph.extra.groupNodes[this.selectedGroup]
     const config = type.config?.[this.selectedNodeInnerIndex]?.input
     this.widgetsPage.replaceChildren(
       ...items.map((oldName) => {
@@ -290,7 +290,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     const inputs = this.groupData.nodeInputs[this.selectedNodeInnerIndex]
     const items = Object.keys(inputs ?? {})
     // @ts-expect-error fixme ts strict error
-    const type = app.graph.extra.groupNodes[this.selectedGroup]
+    const type = app.rootGraph.extra.groupNodes[this.selectedGroup]
     const config = type.config?.[this.selectedNodeInnerIndex]?.input
     this.inputsPage.replaceChildren(
       // @ts-expect-error fixme ts strict error
@@ -324,7 +324,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
       this.groupData.oldToNewOutputMap[this.selectedNodeInnerIndex]
 
     // @ts-expect-error fixme ts strict error
-    const type = app.graph.extra.groupNodes[this.selectedGroup]
+    const type = app.rootGraph.extra.groupNodes[this.selectedGroup]
     const config = type.config?.[this.selectedNodeInnerIndex]?.output
     const node = this.groupData.nodeData.nodes[this.selectedNodeInnerIndex]
     const checkable = node.type !== 'PrimitiveNode'
@@ -355,7 +355,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
   // @ts-expect-error fixme ts strict error
   show(type?) {
-    const groupNodes = Object.keys(app.graph.extra?.groupNodes ?? {}).sort(
+    const groupNodes = Object.keys(app.rootGraph.extra?.groupNodes ?? {}).sort(
       (a, b) => a.localeCompare(b)
     )
 
@@ -425,7 +425,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           'button.comfy-btn',
           {
             onclick: () => {
-              const node = app.graph.nodes.find(
+              const node = app.rootGraph.nodes.find(
                 (n) => n.type === `${PREFIX}${SEPARATOR}` + this.selectedGroup
               )
               if (node) {
@@ -440,7 +440,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                 )
               ) {
                 // @ts-expect-error fixme ts strict error
-                delete app.graph.extra.groupNodes[this.selectedGroup]
+                delete app.rootGraph.extra.groupNodes[this.selectedGroup]
                 LiteGraph.unregisterNodeType(
                   `${PREFIX}${SEPARATOR}` + this.selectedGroup
                 )
@@ -459,7 +459,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
               const types = {}
               for (const g in this.modifications) {
                 // @ts-expect-error fixme ts strict error
-                const type = app.graph.extra.groupNodes[g]
+                const type = app.rootGraph.extra.groupNodes[g]
                 let config = (type.config ??= {})
 
                 let nodeMods = this.modifications[g]?.nodes
@@ -483,23 +483,30 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
                     // Rewrite links
                     for (const l of type.links) {
+                      // @ts-expect-error l[0]/l[2] used as node index
                       if (l[0] != null) l[0] = type.nodes[l[0]].index
+                      // @ts-expect-error l[0]/l[2] used as node index
                       if (l[2] != null) l[2] = type.nodes[l[2]].index
                     }
 
                     // Rewrite externals
                     if (type.external) {
                       for (const ext of type.external) {
-                        ext[0] = type.nodes[ext[0]]
+                        if (ext[0] != null) {
+                          // @ts-expect-error ext[0] used as node index
+                          ext[0] = type.nodes[ext[0]].index
+                        }
                       }
                     }
 
                     // Rewrite modifications
                     for (const id of keys) {
+                      // @ts-expect-error id used as node index
                       if (config[id]) {
                         // @ts-expect-error fixme ts strict error
                         orderedConfig[type.nodes[id].index] = config[id]
                       }
+                      // @ts-expect-error id used as config key
                       delete config[id]
                     }
 
@@ -515,7 +522,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                 types[g] = type
 
                 if (!nodesByType) {
-                  nodesByType = app.graph.nodes.reduce((p, n) => {
+                  nodesByType = app.rootGraph.nodes.reduce((p, n) => {
                     // @ts-expect-error fixme ts strict error
                     p[n.type] ??= []
                     // @ts-expect-error fixme ts strict error
@@ -529,14 +536,14 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                 if (nodes) recreateNodes.push(...nodes)
               }
 
-              await GroupNodeConfig.registerFromWorkflow(types, {})
+              await GroupNodeConfig.registerFromWorkflow(types, [])
 
               for (const node of recreateNodes) {
                 node.recreate()
               }
 
               this.modifications = {}
-              this.app.graph.setDirtyCanvas(true, true)
+              this.app.canvas.setDirty(true, true)
               this.changeGroup(this.selectedGroup, false)
             }
           },
@@ -553,8 +560,8 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     this.element.replaceChildren(outer)
     this.changeGroup(
       type
-        ? groupNodes.find((g) => `${PREFIX}${SEPARATOR}${g}` === type) ??
-            groupNodes[0]
+        ? (groupNodes.find((g) => `${PREFIX}${SEPARATOR}${g}` === type) ??
+            groupNodes[0])
         : groupNodes[0]
     )
     this.element.showModal()

@@ -2,16 +2,20 @@
   <div class="overflow-hidden">
     <Tabs :value="activeTab">
       <TabList class="scrollbar-hide overflow-x-auto">
-        <Tab v-if="hasCompatibilityIssues" value="warning" class="mr-6 p-2">
+        <Tab
+          v-if="hasCompatibilityIssues"
+          value="warning"
+          class="mr-6 p-2 font-inter"
+        >
           <div class="flex items-center gap-1">
             <span>⚠️</span>
             {{ importFailed ? $t('g.error') : $t('g.warning') }}
           </div>
         </Tab>
-        <Tab value="description" class="mr-6 p-2">
+        <Tab value="description" class="mr-6 p-2 font-inter">
           {{ $t('g.description') }}
         </Tab>
-        <Tab value="nodes" class="p-2">
+        <Tab value="nodes" class="p-2 font-inter">
           {{ $t('g.nodes') }}
         </Tab>
       </TabList>

@@ -29,12 +29,6 @@ vi.mock('@/renderer/core/layout/transform/useTransformState', () => {
   }
 })
 
-vi.mock('@/renderer/extensions/vueNodes/lod/useLOD', () => ({
-  useLOD: vi.fn(() => ({
-    isLOD: false
-  }))
-}))
-
 function createMockCanvas(): LGraphCanvas {
   return {
     canvas: {
@@ -121,22 +115,6 @@ describe('TransformPane', () => {
       const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toHaveBeenCalledWith(mockCanvas)
     })
-
-    it('should emit transform update timing', async () => {
-      const mockCanvas = createMockCanvas()
-      const wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      await nextTick()
-
-      // Allow RAF to execute
-      vi.advanceTimersToNextFrame()
-
-      expect(wrapper.emitted('transformUpdate')).toBeTruthy()
-    })
   })
 
   describe('canvas event listeners', () => {
@@ -155,17 +133,17 @@ describe('TransformPane', () => {
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.addEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
         'pointerdown',
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.addEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
         'pointerup',
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.addEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.addEventListener).not.toHaveBeenCalledWith(
         'pointercancel',
         expect.any(Function),
         expect.any(Object)
@@ -188,17 +166,17 @@ describe('TransformPane', () => {
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.removeEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
         'pointerdown',
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.removeEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
         'pointerup',
         expect.any(Function),
         expect.any(Object)
       )
-      expect(mockCanvas.canvas.removeEventListener).toHaveBeenCalledWith(
+      expect(mockCanvas.canvas.removeEventListener).not.toHaveBeenCalledWith(
         'pointercancel',
         expect.any(Function),
         expect.any(Object)

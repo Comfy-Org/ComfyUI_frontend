@@ -1,7 +1,10 @@
-const sharedButtonClasses =
-  '!inline-flex !items-center !justify-center !border-0 !bg-transparent text-inherit transition-colors duration-150 ease-in-out ' +
-  'hover:!bg-[var(--color-node-component-surface-hovered)] active:!bg-[var(--color-node-component-surface-selected)] ' +
-  'disabled:!bg-[var(--color-node-component-disabled)] disabled:!text-[var(--color-node-icon-disabled)] disabled:cursor-not-allowed'
+import { cn } from '@comfyorg/tailwind-utils'
+
+const sharedButtonClasses = cn(
+  'inline-flex items-center justify-center border-0 bg-transparent text-inherit transition-colors duration-150 ease-in-out ',
+  'hover:bg-node-component-surface-hovered active:bg-node-component-surface-selected',
+  'disabled:bg-node-component-disabled disabled:text-node-icon-disabled disabled:cursor-not-allowed'
+)
 
 export function useNumberWidgetButtonPt(options?: {
   roundedLeft?: boolean
@@ -9,15 +12,15 @@ export function useNumberWidgetButtonPt(options?: {
 }) {
   const { roundedLeft = false, roundedRight = false } = options ?? {}
 
-  const increment = `${sharedButtonClasses}${roundedRight ? ' !rounded-r-lg' : ''}`
-  const decrement = `${sharedButtonClasses}${roundedLeft ? ' !rounded-l-lg' : ''}`
+  const increment = cn(sharedButtonClasses, roundedRight && 'rounded-r-lg')
+  const decrement = cn(sharedButtonClasses, roundedLeft && 'rounded-l-lg')
 
   return {
     incrementButton: {
-      class: increment.trim()
+      class: increment
     },
     decrementButton: {
-      class: decrement.trim()
+      class: decrement
     }
   }
 }

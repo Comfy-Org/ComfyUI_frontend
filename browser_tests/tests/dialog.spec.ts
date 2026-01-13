@@ -43,7 +43,6 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 
   // Wait for any async operations to complete after dialog closes
   await comfyPage.nextFrame()
-  await comfyPage.page.waitForTimeout(100)
 
   // Make a change to the graph
   await comfyPage.doubleClickCanvas()
@@ -86,8 +85,12 @@ test.describe('Missing models warning', () => {
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    const downloadButton = missingModelsWarning.getByLabel('Download')
+    const downloadButton = missingModelsWarning.getByText('Download')
     await expect(downloadButton).toBeVisible()
+
+    // Check that the copy URL button is also visible for Desktop environment
+    const copyUrlButton = missingModelsWarning.getByText('Copy URL')
+    await expect(copyUrlButton).toBeVisible()
   })
 
   test('Should display a warning when missing models are found in node properties', async ({
@@ -99,8 +102,12 @@ test.describe('Missing models warning', () => {
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    const downloadButton = missingModelsWarning.getByLabel('Download')
+    const downloadButton = missingModelsWarning.getByText('Download')
     await expect(downloadButton).toBeVisible()
+
+    // Check that the copy URL button is also visible for Desktop environment
+    const copyUrlButton = missingModelsWarning.getByText('Copy URL')
+    await expect(copyUrlButton).toBeVisible()
   })
 
   test('Should not display a warning when no missing models are found', async ({
@@ -169,7 +176,7 @@ test.describe('Missing models warning', () => {
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    const downloadButton = comfyPage.page.getByLabel('Download')
+    const downloadButton = comfyPage.page.getByText('Download')
     await expect(downloadButton).toBeVisible()
     const downloadPromise = comfyPage.page.waitForEvent('download')
     await downloadButton.click()
@@ -283,7 +290,7 @@ test.describe('Settings', () => {
     // Save keybinding
     const saveButton = comfyPage.page
       .getByLabel('New Blank Workflow')
-      .getByLabel('Save')
+      .getByText('Save')
     await saveButton.click()
 
     const request = await requestPromise
@@ -301,7 +308,9 @@ test.describe('Settings', () => {
 })
 
 test.describe('Support', () => {
-  test('Should open external zendesk link', async ({ comfyPage }) => {
+  test('Should open external zendesk link with OSS tag', async ({
+    comfyPage
+  }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     const pagePromise = comfyPage.page.context().waitForEvent('page')
     await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
@@ -309,6 +318,10 @@ test.describe('Support', () => {
 
     await newPage.waitForLoadState('networkidle')
     await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
+
+    const url = new URL(newPage.url())
+    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+
     await newPage.close()
   })
 })

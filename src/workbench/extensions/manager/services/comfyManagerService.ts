@@ -12,6 +12,7 @@ type ManagerQueueStatus = components['schemas']['QueueStatus']
 type InstallPackParams = components['schemas']['InstallPackParams']
 type InstalledPacksResponse = components['schemas']['InstalledPacksResponse']
 type UpdateAllPacksParams = components['schemas']['UpdateAllPacksParams']
+type UpdateComfyUIParams = components['schemas']['UpdateComfyUIParams']
 type ManagerTaskHistory = components['schemas']['HistoryResponse']
 type QueueTaskItem = components['schemas']['QueueTaskItem']
 
@@ -26,6 +27,7 @@ enum ManagerRoute {
   RESET_QUEUE = 'manager/queue/reset',
   QUEUE_STATUS = 'manager/queue/status',
   UPDATE_ALL = 'manager/queue/update_all',
+  UPDATE_COMFYUI = 'manager/queue/update_comfyui',
   LIST_INSTALLED = 'customnode/installed',
   GET_NODES = 'customnode/getmappings',
   IMPORT_FAIL_INFO = 'customnode/import_fail_info',
@@ -228,6 +230,14 @@ export const useComfyManagerService = () => {
     return queueTask('disable', params, ui_id, signal)
   }
 
+  const enablePack = async (
+    params: components['schemas']['EnablePackParams'],
+    ui_id?: string,
+    signal?: AbortSignal
+  ): Promise<null> => {
+    return queueTask('enable', params, ui_id, signal)
+  }
+
   const updatePack = async (
     params: components['schemas']['UpdatePackParams'],
     ui_id?: string,
@@ -256,6 +266,33 @@ export const useComfyManagerService = () => {
     return executeRequest<null>(
       () =>
         managerApiClient.get(ManagerRoute.UPDATE_ALL, {
+          params: queryParams,
+          signal
+        }),
+      { errorContext, routeSpecificErrors, isQueueOperation: true }
+    )
+  }
+
+  const updateComfyUI = async (
+    params: UpdateComfyUIParams = { is_stable: true },
+    ui_id?: string,
+    signal?: AbortSignal
+  ) => {
+    const errorContext = 'Updating ComfyUI'
+    const routeSpecificErrors = {
+      400: 'Bad Request: Missing required parameters',
+      403: 'Forbidden: To use this action, a security_level of `middle or below` is required'
+    }
+
+    const queryParams = {
+      client_id: api.clientId ?? api.initialClientId ?? 'unknown',
+      ui_id: ui_id || uuidv4(),
+      ...params
+    }
+
+    return executeRequest<null>(
+      () =>
+        managerApiClient.get(ManagerRoute.UPDATE_COMFYUI, {
           params: queryParams,
           signal
         }),
@@ -321,12 +358,13 @@ export const useComfyManagerService = () => {
     getImportFailInfoBulk,
     installPack,
     uninstallPack,
-    enablePack: installPack, // enable is done via install
+    enablePack,
     disablePack,
     updatePack,
     updateAllPacks,
 
     // System operations
+    updateComfyUI,
     rebootComfyUI,
     isLegacyManagerUI
   }

@@ -1,11 +1,15 @@
 import { useElementBounding, useRafFn } from '@vueuse/core'
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
@@ -17,10 +21,10 @@ import { computeUnionBounds } from '@/utils/mathUtil'
  */
 
 // Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
-export const moreOptionsOpen = ref(false)
-export const forceCloseMoreOptionsSignal = ref(0)
-export const restoreMoreOptionsSignal = ref(0)
-export const moreOptionsRestorePending = ref(false)
+const moreOptionsOpen = ref(false)
+const forceCloseMoreOptionsSignal = ref(0)
+const restoreMoreOptionsSignal = ref(0)
+const moreOptionsRestorePending = ref(false)
 let moreOptionsWasOpenBeforeDrag = false
 let moreOptionsSelectionSignature: string | null = null
 
@@ -62,6 +66,14 @@ export function useSelectionToolboxPosition(
     lgCanvas.canvas
   )
 
+  // Unified dragging state - combines both LiteGraph and Vue node dragging
+  const isDragging = computed((): boolean => {
+    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
+    const vueNodeDragging =
+      shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
+    return litegraphDragging || vueNodeDragging
+  })
+
   /**
    * Update position based on selection
    */
@@ -69,6 +81,12 @@ export function useSelectionToolboxPosition(
     const selectableItems = getSelectableItems()
 
     if (!selectableItems.size) {
+      visible.value = false
+      return
+    }
+
+    // Don't show toolbox while dragging
+    if (isDragging.value) {
       visible.value = false
       return
     }
@@ -95,8 +113,12 @@ export function useSelectionToolboxPosition(
       } else {
         // Fallback to LiteGraph bounds for regular nodes or non-string IDs
         if (item instanceof LGraphNode || item instanceof LGraphGroup) {
-          const bounds = item.getBounding()
-          allBounds.push([bounds[0], bounds[1], bounds[2], bounds[3]] as const)
+          allBounds.push([
+            item.pos[0],
+            item.pos[1] - LiteGraph.NODE_TITLE_HEIGHT,
+            item.size[0],
+            item.size[1] + LiteGraph.NODE_TITLE_HEIGHT
+          ])
         }
       }
     }
@@ -135,6 +157,14 @@ export function useSelectionToolboxPosition(
   // Sync with canvas transform
   const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
 
+  watchEffect(() => {
+    if (visible.value) {
+      startSync()
+    } else {
+      stopSync()
+    }
+  })
+
   // Watch for selection changes
   watch(
     () => canvasStore.getCanvas().state.selectionChanged,
@@ -151,11 +181,6 @@ export function useSelectionToolboxPosition(
         }
         updateSelectionBounds()
         canvasStore.getCanvas().state.selectionChanged = false
-        if (visible.value) {
-          startSync()
-        } else {
-          stopSync()
-        }
       }
     },
     { immediate: true }
@@ -232,14 +257,6 @@ export function useSelectionToolboxPosition(
       }
     })
   }
-
-  // Unified dragging state - combines both LiteGraph and Vue node dragging
-  const isDragging = computed((): boolean => {
-    const litegraphDragging = canvasStore.canvas?.state?.draggingItems ?? false
-    const vueNodeDragging =
-      shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
-    return litegraphDragging || vueNodeDragging
-  })
 
   watch(isDragging, handleDragStateChange)
 

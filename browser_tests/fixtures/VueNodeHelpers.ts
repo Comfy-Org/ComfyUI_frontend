@@ -65,7 +65,9 @@ export class VueNodeHelpers {
    * Select a specific Vue node by ID
    */
   async selectNode(nodeId: string): Promise<void> {
-    await this.page.locator(`[data-node-id="${nodeId}"]`).click()
+    await this.page
+      .locator(`[data-node-id="${nodeId}"] .lg-node-header`)
+      .click()
   }
 
   /**
@@ -77,11 +79,13 @@ export class VueNodeHelpers {
     // Select first node normally
     await this.selectNode(nodeIds[0])
 
-    // Add additional nodes with Ctrl+click
+    // Add additional nodes with Ctrl+click on header
     for (let i = 1; i < nodeIds.length; i++) {
-      await this.page.locator(`[data-node-id="${nodeIds[i]}"]`).click({
-        modifiers: ['Control']
-      })
+      await this.page
+        .locator(`[data-node-id="${nodeIds[i]}"] .lg-node-header`)
+        .click({
+          modifiers: ['Control']
+        })
     }
   }
 
@@ -155,8 +159,8 @@ export class VueNodeHelpers {
   getInputNumberControls(widget: Locator) {
     return {
       input: widget.locator('input'),
-      incrementButton: widget.locator('button').first(),
-      decrementButton: widget.locator('button').last()
+      decrementButton: widget.getByTestId('decrement'),
+      incrementButton: widget.getByTestId('increment')
     }
   }
 }

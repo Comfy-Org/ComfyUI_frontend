@@ -32,4 +32,42 @@ test.describe('Vue Node Groups', () => {
       'vue-groups-fit-to-contents.png'
     )
   })
+
+  test('should move nested groups together when dragging outer group', async ({
+    comfyPage
+  }) => {
+    await comfyPage.loadWorkflow('groups/nested-groups-1-inner-node')
+
+    // Get initial positions with null guards
+    const outerInitial = await comfyPage.getGroupPosition('Outer Group')
+    const innerInitial = await comfyPage.getGroupPosition('Inner Group')
+
+    const initialOffsetX = innerInitial.x - outerInitial.x
+    const initialOffsetY = innerInitial.y - outerInitial.y
+
+    // Drag the outer group
+    const dragDelta = { x: 100, y: 80 }
+    await comfyPage.dragGroup({
+      name: 'Outer Group',
+      deltaX: dragDelta.x,
+      deltaY: dragDelta.y
+    })
+
+    // Use retrying assertion to wait for positions to update
+    await expect(async () => {
+      const outerFinal = await comfyPage.getGroupPosition('Outer Group')
+      const innerFinal = await comfyPage.getGroupPosition('Inner Group')
+
+      const finalOffsetX = innerFinal.x - outerFinal.x
+      const finalOffsetY = innerFinal.y - outerFinal.y
+
+      // Both groups should have moved
+      expect(outerFinal.x).not.toBe(outerInitial.x)
+      expect(innerFinal.x).not.toBe(innerInitial.x)
+
+      // The relative offset should be maintained (inner group moved with outer)
+      expect(finalOffsetX).toBeCloseTo(initialOffsetX, 0)
+      expect(finalOffsetY).toBeCloseTo(initialOffsetY, 0)
+    }).toPass({ timeout: 5000 })
+  })
 })

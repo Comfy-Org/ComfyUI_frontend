@@ -4,7 +4,7 @@
       v-if="!hidden"
       :class="
         cn(
-          'bg-zinc-500/10 dark-theme:bg-charcoal-600 box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
+          'bg-component-node-widget-background box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
           { hidden: hideWhenEmpty && !hasAudio }
         )
       "
@@ -23,34 +23,27 @@
         <div
           role="button"
           :tabindex="0"
-          aria-label="Play/Pause"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          :aria-label="$t('g.playPause')"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="togglePlayPause"
         >
           <i
             v-if="!isPlaying"
-            class="icon-[lucide--play] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="text-secondary icon-[lucide--play] size-4"
           />
-          <i
-            v-else
-            class="icon-[lucide--pause] size-4 text-gray-600 dark-theme:text-gray-800"
-          />
+          <i v-else class="text-secondary icon-[lucide--pause] size-4" />
         </div>
 
         <!-- Time Display -->
-        <div
-          class="text-sm font-normal text-nowrap text-black dark-theme:text-white"
-        >
+        <div class="text-sm font-normal text-nowrap text-base-foreground">
           {{ formatTime(currentTime) }} / {{ formatTime(duration) }}
         </div>
       </div>
 
       <!-- Progress Bar -->
-      <div
-        class="relative h-0.5 flex-1 rounded-full bg-gray-300 dark-theme:bg-stone-200"
-      >
+      <div class="relative h-0.5 flex-1 rounded-full bg-interface-stroke">
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-gray-600 transition-all dark-theme:bg-white/50"
+          class="absolute top-0 left-0 h-full rounded-full bg-button-icon transition-all"
           :style="{ width: `${progressPercentage}%` }"
         />
         <input
@@ -71,37 +64,31 @@
         <div
           role="button"
           :tabindex="0"
-          aria-label="Volume"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          :aria-label="$t('g.volume')"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleMute"
         >
           <i
             v-if="showVolumeTwo"
-            class="icon-[lucide--volume-2] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="text-secondary icon-[lucide--volume-2] size-4"
           />
           <i
             v-else-if="showVolumeOne"
-            class="icon-[lucide--volume-1] size-4 text-gray-600 dark-theme:text-gray-800"
+            class="text-secondary icon-[lucide--volume-1] size-4"
           />
-          <i
-            v-else
-            class="icon-[lucide--volume-x] size-4 text-gray-600 dark-theme:text-gray-800"
-          />
+          <i v-else class="text-secondary icon-[lucide--volume-x] size-4" />
         </div>
 
         <!-- Options Button -->
         <div
           v-if="showOptionsButton"
-          ref="optionsButtonRef"
           role="button"
           :tabindex="0"
-          aria-label="More Options"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-black/10 dark-theme:hover:bg-white/10"
+          :aria-label="$t('g.moreOptions')"
+          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
           @click="toggleOptionsMenu"
         >
-          <i
-            class="icon-[lucide--more-vertical] size-4 text-gray-600 dark-theme:text-gray-800"
-          />
+          <i class="text-secondary icon-[lucide--more-vertical] size-4" />
         </div>
       </div>
 
@@ -111,15 +98,16 @@
         :model="menuItems"
         popup
         class="audio-player-menu"
-        pt:root:class="!bg-white dark-theme:!bg-charcoal-800 !border-sand-100 dark-theme:!border-charcoal-600"
-        pt:submenu:class="!bg-white dark-theme:!bg-charcoal-800"
+        :pt:root:class="
+          cn('bg-component-node-widget-background border-component-node-border')
+        "
+        :pt:submenu:class="cn('bg-component-node-widget-background')"
       >
         <template #item="{ item }">
           <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
-            <label
-              class="mb-2 block text-xs text-black dark-theme:text-white"
-              >{{ item.label }}</label
-            >
+            <label class="mb-2 block text-xs text-base-foreground">{{
+              item.label
+            }}</label>
             <Slider
               :model-value="volume * 10"
               :min="0"
@@ -134,18 +122,15 @@
             class="flex cursor-pointer items-center px-4 py-2 text-xs hover:bg-white/10"
             @click="item.onClick?.()"
           >
-            <span class="text-black dark-theme:text-white">{{
-              item.label
-            }}</span>
+            <span class="text-base-foreground">{{ item.label }}</span>
             <i
               v-if="item.selected"
-              class="ml-auto icon-[lucide--check] size-4 text-black dark-theme:text-white"
+              class="ml-auto icon-[lucide--check] size-4 text-base-foreground"
             />
           </div>
         </template>
       </TieredMenu>
     </div>
-    <LODFallback />
   </div>
 </template>
 
@@ -156,7 +141,6 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -170,10 +154,8 @@ const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
-    readonly?: boolean
     hideWhenEmpty?: boolean
     showOptionsButton?: boolean
-    modelValue?: string
     nodeId?: string
     audioUrl?: string
   }>(),
@@ -185,7 +167,6 @@ const props = withDefaults(
 // Refs
 const audioRef = ref<HTMLAudioElement>()
 const optionsMenu = ref()
-const optionsButtonRef = ref<HTMLElement>()
 const isPlaying = ref(false)
 const isMuted = ref(false)
 const volume = ref(1)
@@ -204,8 +185,8 @@ const showVolumeTwo = computed(() => !isMuted.value && volume.value > 0.5)
 const showVolumeOne = computed(() => isMuted.value && volume.value > 0)
 
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!props.nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
 const hidden = computed(() => {
@@ -388,7 +369,7 @@ onUnmounted(() => {
 
 <style scoped>
 .audio-player-menu {
-  --p-tieredmenu-item-focus-background: rgba(255, 255, 255, 0.1);
-  --p-tieredmenu-item-active-background: rgba(255, 255, 255, 0.1);
+  --p-tieredmenu-item-focus-background: rgb(255 255 255 / 0.1);
+  --p-tieredmenu-item-active-background: rgb(255 255 255 / 0.1);
 }
 </style>
