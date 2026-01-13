@@ -293,6 +293,10 @@ export function useSlotLinkInteraction({
     raf.cancel()
     dragContext.dispose()
     clearCompatible()
+    // Reset litegraph pointer state
+    if (app.canvas) {
+      app.canvas.pointer.isDown = false
+    }
   }
 
   const updatePointerState = (event: PointerEvent) => {
@@ -409,6 +413,11 @@ export function useSlotLinkInteraction({
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
+
+    // When in panning mode (read_only), let litegraph handle panning - don't stop propagation
+    if (app.canvas?.read_only) return
+
+    // Not in panning mode - Vue handles link drag, stop propagation to prevent litegraph interference
     event.stopPropagation()
 
     dragContext.pendingPointerMove = {
@@ -539,7 +548,10 @@ export function useSlotLinkInteraction({
   }
 
   const handlePointerUp = (event: PointerEvent) => {
-    event.stopPropagation()
+    // When in panning mode, let litegraph handle - but still cleanup our link drag state
+    if (!app.canvas?.read_only) {
+      event.stopPropagation()
+    }
     finishInteraction(event)
   }
 
@@ -584,6 +596,10 @@ export function useSlotLinkInteraction({
     if (event.button !== 0) return
     if (!nodeId) return
     if (pointerSession.isActive()) return
+
+    // Don't start link drag if in panning mode - let litegraph handle panning
+    if (app.canvas?.read_only) return
+
     event.preventDefault()
     event.stopPropagation()
 
@@ -703,6 +719,9 @@ export function useSlotLinkInteraction({
     )
 
     pointerSession.begin(event.pointerId)
+    // Sync pointer state with litegraph so spacebar panning works
+    canvas.last_mouse = [event.clientX, event.clientY]
+    canvas.pointer.isDown = true
 
     toCanvasPointerEvent(event)
     updatePointerState(event)

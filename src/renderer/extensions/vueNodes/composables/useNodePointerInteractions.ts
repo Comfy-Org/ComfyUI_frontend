@@ -6,8 +6,8 @@ import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 
 export function useNodePointerInteractions(
   nodeIdRef: MaybeRefOrGetter<string>
@@ -64,6 +64,12 @@ export function useNodePointerInteractions(
 
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event)) return
+
+    // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
+    if (!shouldHandleNodePointerEvents.value) {
+      forwardEventToCanvas(event)
+      return
+    }
 
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return
