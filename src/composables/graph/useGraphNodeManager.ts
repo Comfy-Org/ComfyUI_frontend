@@ -157,7 +157,7 @@ const normalizeWidgetValue = (value: unknown): WidgetValue => {
   return undefined
 }
 
-export function safeWidgetMapper(
+function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
@@ -207,6 +207,79 @@ export function safeWidgetMapper(
   }
 }
 
+// Extract safe data from LiteGraph node for Vue consumption
+export function extractVueNodeData(node: LGraphNode): VueNodeData {
+  // Determine subgraph ID - null for root graph, string for subgraphs
+  const subgraphId =
+    node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
+      ? String(node.graph.id)
+      : null
+  // Extract safe widget data
+  const slotMetadata = new Map<string, WidgetSlotMetadata>()
+
+  const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
+  Object.defineProperty(node, 'widgets', {
+    get() {
+      return reactiveWidgets
+    },
+    set(v) {
+      reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
+    }
+  })
+  const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
+  Object.defineProperty(node, 'inputs', {
+    get() {
+      return reactiveInputs
+    },
+    set(v) {
+      reactiveInputs.splice(0, reactiveInputs.length, ...v)
+    }
+  })
+
+  const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+    node.inputs?.forEach((input, index) => {
+      if (!input?.widget?.name) return
+      slotMetadata.set(input.widget.name, {
+        index,
+        linked: input.link != null
+      })
+    })
+    return node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
+  })
+
+  const nodeType =
+    node.type ||
+    node.constructor?.comfyClass ||
+    node.constructor?.title ||
+    node.constructor?.name ||
+    'Unknown'
+
+  const apiNode = node.constructor?.nodeData?.api_node ?? false
+  const badges = node.badges
+
+  return {
+    id: String(node.id),
+    title: typeof node.title === 'string' ? node.title : '',
+    type: nodeType,
+    mode: node.mode || 0,
+    titleMode: node.title_mode,
+    selected: node.selected || false,
+    executing: false, // Will be updated separately based on execution state
+    subgraphId,
+    apiNode,
+    badges,
+    hasErrors: !!node.has_errors,
+    widgets: safeWidgets,
+    inputs: reactiveInputs,
+    outputs: node.outputs ? [...node.outputs] : undefined,
+    flags: node.flags ? { ...node.flags } : undefined,
+    color: node.color || undefined,
+    bgcolor: node.bgcolor || undefined,
+    resizable: node.resizable,
+    shape: node.shape
+  }
+}
+
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
   const { createNode, deleteNode, setSource } = useLayoutMutations()
@@ -237,79 +310,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     for (const widget of currentData.widgets ?? []) {
       const slotInfo = slotMetadata.get(widget.name)
       if (slotInfo) widget.slotMetadata = slotInfo
-    }
-  }
-
-  // Extract safe data from LiteGraph node for Vue consumption
-  function extractVueNodeData(node: LGraphNode): VueNodeData {
-    // Determine subgraph ID - null for root graph, string for subgraphs
-    const subgraphId =
-      node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
-        ? String(node.graph.id)
-        : null
-    // Extract safe widget data
-    const slotMetadata = new Map<string, WidgetSlotMetadata>()
-
-    const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
-    Object.defineProperty(node, 'widgets', {
-      get() {
-        return reactiveWidgets
-      },
-      set(v) {
-        reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-      }
-    })
-    const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
-    Object.defineProperty(node, 'inputs', {
-      get() {
-        return reactiveInputs
-      },
-      set(v) {
-        reactiveInputs.splice(0, reactiveInputs.length, ...v)
-      }
-    })
-
-    const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
-      node.inputs?.forEach((input, index) => {
-        if (!input?.widget?.name) return
-        slotMetadata.set(input.widget.name, {
-          index,
-          linked: input.link != null
-        })
-      })
-      return node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
-    })
-
-    const nodeType =
-      node.type ||
-      node.constructor?.comfyClass ||
-      node.constructor?.title ||
-      node.constructor?.name ||
-      'Unknown'
-
-    const apiNode = node.constructor?.nodeData?.api_node ?? false
-    const badges = node.badges
-
-    return {
-      id: String(node.id),
-      title: typeof node.title === 'string' ? node.title : '',
-      type: nodeType,
-      mode: node.mode || 0,
-      titleMode: node.title_mode,
-      selected: node.selected || false,
-      executing: false, // Will be updated separately based on execution state
-      subgraphId,
-      apiNode,
-      badges,
-      hasErrors: !!node.has_errors,
-      widgets: safeWidgets,
-      inputs: reactiveInputs,
-      outputs: node.outputs ? [...node.outputs] : undefined,
-      flags: node.flags ? { ...node.flags } : undefined,
-      color: node.color || undefined,
-      bgcolor: node.bgcolor || undefined,
-      resizable: node.resizable,
-      shape: node.shape
     }
   }
 

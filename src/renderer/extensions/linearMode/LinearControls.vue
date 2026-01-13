@@ -6,7 +6,7 @@ import { computed, ref, shallowRef } from 'vue'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { safeWidgetMapper } from '@/composables/graph/useGraphNodeManager'
+import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
@@ -50,8 +50,6 @@ useEventListener(
 )
 
 function nodeToNodeData(node: LGraphNode) {
-  const mapper = safeWidgetMapper(node, new Map())
-  const widgets = node.widgets?.map(mapper) ?? []
   const dropIndicator =
     node.type !== 'LoadImage'
       ? undefined
@@ -61,14 +59,7 @@ function nodeToNodeData(node: LGraphNode) {
         }
 
   return {
-    executing: false,
-    bgcolor: node.bgcolor || undefined,
-    id: `${node.id}`,
-    mode: 0,
-    selected: false,
-    title: node.title,
-    type: node.type,
-    widgets,
+    ...extractVueNodeData(node),
 
     dropIndicator,
     onDragDrop: node.onDragDrop,
