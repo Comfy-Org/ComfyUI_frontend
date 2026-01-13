@@ -235,17 +235,19 @@ const buttonTooltip = computed(() => {
         <div
           :class="
             cn(
-              'absolute inset-0 z-10',
+              'absolute inset-0 z-10 cursor-ew-resize',
               textEdit && 'hidden pointer-events-none'
             )
           "
           @pointerdown="handleMouseDown"
           @pointermove="handleMouseMove"
           @pointerup="handleMouseUp"
-          @pointercancel="() => {
-            dragValue = undefined
-            dragDelta = 0
-          }"
+          @pointercancel="
+            () => {
+              dragValue = undefined
+              dragDelta = 0
+            }
+          "
         />
       </div>
 
