@@ -197,8 +197,8 @@
     :asset-type="contextMenuAssetType"
     :file-kind="contextMenuFileKind"
     :show-delete-button="shouldShowDeleteButton"
-    :selected-assets="getSelectedAssets(displayAssets)"
-    :is-bulk-mode="hasSelection && getSelectedAssets(displayAssets).length > 1"
+    :selected-assets="selectedAssets"
+    :is-bulk-mode="isBulkMode"
     @zoom="contextMenuAsset && handleZoomClick(contextMenuAsset)"
     @asset-deleted="refreshAssets"
     @bulk-download="handleBulkDownload"
@@ -346,8 +346,7 @@ const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
 
 // Total output count for all selected assets
 const totalOutputCount = computed(() => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  return getTotalOutputCount(selectedAssets)
+  return getTotalOutputCount(selectedAssets.value)
 })
 
 const currentAssets = computed(() =>
@@ -377,6 +376,12 @@ const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
 const displayAssets = computed(() => {
   return filteredAssets.value
 })
+
+const selectedAssets = computed(() => getSelectedAssets(displayAssets.value))
+
+const isBulkMode = computed(
+  () => hasSelection.value && selectedAssets.value.length > 1
+)
 
 const showLoadingState = computed(
   () =>
@@ -578,14 +583,12 @@ const copyJobId = async () => {
 }
 
 const handleDownloadSelected = () => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  downloadMultipleAssets(selectedAssets)
+  downloadMultipleAssets(selectedAssets.value)
   clearSelection()
 }
 
 const handleDeleteSelected = async () => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  await deleteMultipleAssets(selectedAssets)
+  await deleteMultipleAssets(selectedAssets.value)
   clearSelection()
 }
 
