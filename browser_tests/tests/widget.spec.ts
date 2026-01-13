@@ -109,7 +109,9 @@ test.describe('Slider widget', () => {
 
     await comfyPage.page.evaluate(() => {
       const app = window['app']
-      if (!app?.graph?.nodes?.[0]?.widgets?.[0]) return
+      if (!app?.graph?.nodes?.[0]?.widgets?.[0]) {
+        throw new Error('widget not found')
+      }
       const widget = app.graph.nodes[0].widgets[0]
       widget.callback = (value: number) => {
         window.widgetValue = value

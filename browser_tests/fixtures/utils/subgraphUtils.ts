@@ -10,6 +10,15 @@ export interface SubgraphSlot {
   label?: string
   name?: string
   displayName?: string
+  labelPos?: [number, number]
+}
+
+export interface SubgraphInputNode {
+  onPointerDown?: (e: unknown, pointer: unknown, linkConnector: unknown) => void
+}
+
+export interface SubgraphGraphWithNodes extends SubgraphGraph {
+  inputNode?: SubgraphInputNode
 }
 
 /**

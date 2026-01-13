@@ -120,23 +120,15 @@ export default class TaskHistory {
     filenames: string[],
     filetype: OutputFileType
   ): TaskOutput {
-    return filenames.reduce(
-      (outputs, filename, i) => {
-        const nodeId = `${i + 1}`
-        outputs[nodeId] = {
-          [filetype]: [{ filename, subfolder: '', type: 'output' }]
-        }
-        const contentType = getContentType(filename, filetype)
-        this.outputContentTypes.set(filename, contentType)
-        return outputs
-      },
-      {} as Record<
-        string,
-        {
-          [key: string]: { filename: string; subfolder: string; type: string }[]
-        }
-      >
-    )
+    return filenames.reduce<TaskOutput>((outputs, filename, i) => {
+      const nodeId = `${i + 1}`
+      outputs[nodeId] = {
+        [filetype]: [{ filename, subfolder: '', type: 'output' }]
+      }
+      const contentType = getContentType(filename, filetype)
+      this.outputContentTypes.set(filename, contentType)
+      return outputs
+    }, {})
   }
 
   private addTask(task: HistoryTaskItem) {

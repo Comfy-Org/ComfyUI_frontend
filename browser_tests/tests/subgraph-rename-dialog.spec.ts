@@ -11,6 +11,39 @@ const SELECTORS = {
   promptDialog: '.graphdialog input'
 } as const
 
+interface SubgraphSlot {
+  label?: string
+  name?: string
+  displayName?: string
+}
+
+interface SubgraphGraph {
+  inputs: SubgraphSlot[]
+  outputs: SubgraphSlot[]
+}
+
+function getSubgraph(): SubgraphGraph {
+  const assertSubgraph = (graph: unknown): asserts graph is SubgraphGraph => {
+    if (
+      graph === null ||
+      typeof graph !== 'object' ||
+      !('inputs' in graph) ||
+      !('outputs' in graph) ||
+      !Array.isArray((graph as { inputs: unknown }).inputs) ||
+      !Array.isArray((graph as { outputs: unknown }).outputs)
+    ) {
+      throw new Error('Not in subgraph')
+    }
+  }
+  const app = window['app']
+  if (!app) throw new Error('App not available')
+  const canvas = app.canvas
+  if (!canvas) throw new Error('Canvas not available')
+  const graph = canvas.graph
+  assertSubgraph(graph)
+  return graph
+}
+
 test.describe('Subgraph Slot Rename Dialog', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -25,32 +58,10 @@ test.describe('Subgraph Slot Rename Dialog', () => {
     await subgraphNode.navigateIntoSubgraph()
 
     // Get initial slot label
-    const initialInputLabel = await comfyPage.page.evaluate(() => {
-      const assertSubgraph = (
-        graph: unknown
-      ): asserts graph is {
-        inputs: { label?: string; name?: string }[]
-        outputs: unknown[]
-      } => {
-        if (
-          graph === null ||
-          typeof graph !== 'object' ||
-          !('inputs' in graph) ||
-          !('outputs' in graph) ||
-          !Array.isArray((graph as { inputs: unknown }).inputs) ||
-          !Array.isArray((graph as { outputs: unknown }).outputs)
-        ) {
-          throw new Error('Not in subgraph')
-        }
-      }
-      const app = window['app']
-      if (!app) throw new Error('App not available')
-      const canvas = app.canvas
-      if (!canvas) throw new Error('Canvas not available')
-      const graph = canvas.graph
-      assertSubgraph(graph)
+    const initialInputLabel = await comfyPage.page.evaluate((getSubgraph) => {
+      const graph = getSubgraph()
       return graph.inputs[0]?.label || graph.inputs[0]?.name || null
-    })
+    }, getSubgraph)
 
     // First rename
     await comfyPage.rightClickSubgraphInputSlot(initialInputLabel ?? undefined)
@@ -75,37 +86,15 @@ test.describe('Subgraph Slot Rename Dialog', () => {
     await comfyPage.nextFrame()
 
     // Verify the rename worked
-    const afterFirstRename = await comfyPage.page.evaluate(() => {
-      const assertSubgraph = (
-        graph: unknown
-      ): asserts graph is {
-        inputs: { label?: string; name?: string; displayName?: string }[]
-        outputs: unknown[]
-      } => {
-        if (
-          graph === null ||
-          typeof graph !== 'object' ||
-          !('inputs' in graph) ||
-          !('outputs' in graph) ||
-          !Array.isArray((graph as { inputs: unknown }).inputs) ||
-          !Array.isArray((graph as { outputs: unknown }).outputs)
-        ) {
-          throw new Error('Not in subgraph')
-        }
-      }
-      const app = window['app']
-      if (!app) throw new Error('App not available')
-      const canvas = app.canvas
-      if (!canvas) throw new Error('Canvas not available')
-      const graph = canvas.graph
-      assertSubgraph(graph)
+    const afterFirstRename = await comfyPage.page.evaluate((getSubgraph) => {
+      const graph = getSubgraph()
       const slot = graph.inputs[0]
       return {
         label: slot?.label || null,
         name: slot?.name || null,
         displayName: slot?.displayName || slot?.label || slot?.name || null
       }
-    })
+    }, getSubgraph)
     expect(afterFirstRename.label).toBe(RENAMED_NAME)
 
     // Now rename again - this is where the bug would show
@@ -139,32 +128,10 @@ test.describe('Subgraph Slot Rename Dialog', () => {
     await comfyPage.nextFrame()
 
     // Verify the second rename worked
-    const afterSecondRename = await comfyPage.page.evaluate(() => {
-      const assertSubgraph = (
-        graph: unknown
-      ): asserts graph is {
-        inputs: { label?: string }[]
-        outputs: unknown[]
-      } => {
-        if (
-          graph === null ||
-          typeof graph !== 'object' ||
-          !('inputs' in graph) ||
-          !('outputs' in graph) ||
-          !Array.isArray((graph as { inputs: unknown }).inputs) ||
-          !Array.isArray((graph as { outputs: unknown }).outputs)
-        ) {
-          throw new Error('Not in subgraph')
-        }
-      }
-      const app = window['app']
-      if (!app) throw new Error('App not available')
-      const canvas = app.canvas
-      if (!canvas) throw new Error('Canvas not available')
-      const graph = canvas.graph
-      assertSubgraph(graph)
+    const afterSecondRename = await comfyPage.page.evaluate((getSubgraph) => {
+      const graph = getSubgraph()
       return graph.inputs[0]?.label || null
-    })
+    }, getSubgraph)
     expect(afterSecondRename).toBe(SECOND_RENAMED_NAME)
   })
 
@@ -177,32 +144,10 @@ test.describe('Subgraph Slot Rename Dialog', () => {
     await subgraphNode.navigateIntoSubgraph()
 
     // Get initial output slot label
-    const initialOutputLabel = await comfyPage.page.evaluate(() => {
-      const assertSubgraph = (
-        graph: unknown
-      ): asserts graph is {
-        inputs: unknown[]
-        outputs: { label?: string; name?: string }[]
-      } => {
-        if (
-          graph === null ||
-          typeof graph !== 'object' ||
-          !('inputs' in graph) ||
-          !('outputs' in graph) ||
-          !Array.isArray((graph as { inputs: unknown }).inputs) ||
-          !Array.isArray((graph as { outputs: unknown }).outputs)
-        ) {
-          throw new Error('Not in subgraph')
-        }
-      }
-      const app = window['app']
-      if (!app) throw new Error('App not available')
-      const canvas = app.canvas
-      if (!canvas) throw new Error('Canvas not available')
-      const graph = canvas.graph
-      assertSubgraph(graph)
+    const initialOutputLabel = await comfyPage.page.evaluate((getSubgraph) => {
+      const graph = getSubgraph()
       return graph.outputs[0]?.label || graph.outputs[0]?.name || null
-    })
+    }, getSubgraph)
 
     // First rename
     await comfyPage.rightClickSubgraphOutputSlot(

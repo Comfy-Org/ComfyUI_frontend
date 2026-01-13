@@ -182,7 +182,9 @@ test.describe('Workflows sidebar', () => {
     // Compare the exported workflow with the original
     expect(downloadedContent).toBeDefined()
     expect(downloadedContentZh).toBeDefined()
-    if (!downloadedContent || !downloadedContentZh) return
+    if (!downloadedContent || !downloadedContentZh) {
+      throw new Error('Downloaded workflow content is undefined')
+    }
     delete downloadedContent.id
     delete downloadedContentZh.id
     expect(downloadedContent).toEqual(downloadedContentZh)

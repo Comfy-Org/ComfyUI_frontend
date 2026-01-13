@@ -23,9 +23,7 @@ test.describe('Group Node', () => {
       await libraryTab.open()
     })
 
-    test('Is added to node library sidebar', async ({
-      comfyPage: _comfyPage
-    }) => {
+    test('Is added to node library sidebar', async () => {
       expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
     })
 

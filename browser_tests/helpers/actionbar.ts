@@ -47,9 +47,10 @@ class ComfyQueueButtonOptions {
       const extMgr = app.extensionManager as {
         queueSettings?: { mode: string }
       }
-      if (extMgr.queueSettings) {
-        extMgr.queueSettings.mode = mode
+      if (!extMgr.queueSettings) {
+        throw new Error('queueSettings not initialized')
       }
+      extMgr.queueSettings.mode = mode
     }, mode)
   }
 

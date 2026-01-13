@@ -203,9 +203,9 @@ const config: Config = {
 
 ## Prefer Interfaces Over Type Aliases for Objects
 
-Use interfaces for object types - they have better error messages and performance:
+Use interfaces for object types. While modern TypeScript has narrowed performance differences between interfaces and type aliases, interfaces still offer clearer error messages and support declaration merging:
 
-❌ **Wrong:**
+❌ **Avoid for object types:**
 
 ```typescript
 type NodeConfig = {
@@ -214,7 +214,7 @@ type NodeConfig = {
 }
 ```
 
-✅ **Correct:**
+✅ **Preferred:**
 
 ```typescript
 interface NodeConfig {
@@ -385,7 +385,7 @@ declare function fn<T>(arg: T): T
 
 ## Summary
 
-1. **Never use `as`** outside of custom type guards
+1. **Never use `as`** outside of custom type guards (exception: test files may use `as Partial<T> as T` for partial mocks)
 2. **Use `instanceof`** for class/DOM element checks
 3. **Use `'prop' in obj`** for property existence checks
 4. **Use `typeof`** for primitive type checks

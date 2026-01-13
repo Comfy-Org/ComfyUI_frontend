@@ -159,19 +159,6 @@ class NodeSlotReference {
         const rawPos = node.getConnectionPos(type === 'input', index)
         const convertedPos = app.canvas.ds.convertOffsetToCanvas(rawPos)
 
-        // Debug logging - convert Float64Arrays to regular arrays for visibility
-
-        console.log(
-          `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
-          {
-            nodePos: [node.pos[0], node.pos[1]],
-            nodeSize: [node.size[0], node.size[1]],
-            rawConnectionPos: [rawPos[0], rawPos[1]],
-            convertedPos: [convertedPos[0], convertedPos[1]],
-            currentGraphType: graph.constructor.name
-          }
-        )
-
         return convertedPos
       },
       [this.type, this.node.id, this.index] as const
@@ -256,8 +243,8 @@ class NodeWidgetReference {
     const pos: [number, number] = await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
         const app = window.app
-        if (!app?.graph) throw new Error('App not initialized')
-        const node = app.graph.getNodeById(id)
+        if (!app?.canvas?.graph) throw new Error('App not initialized')
+        const node = app.canvas.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
         if (!node.widgets) throw new Error(`Node ${id} has no widgets.`)
         const widget = node.widgets[index]
@@ -310,8 +297,8 @@ class NodeWidgetReference {
     return await this.node.comfyPage.page.evaluate(
       ([id, index]) => {
         const app = window.app
-        if (!app?.graph) throw new Error('App not initialized')
-        const node = app.graph.getNodeById(id)
+        if (!app?.canvas?.graph) throw new Error('App not initialized')
+        const node = app.canvas.graph.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
         if (!node.widgets) throw new Error(`Node ${id} has no widgets.`)
         const widget = node.widgets[index]

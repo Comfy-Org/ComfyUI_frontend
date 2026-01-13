@@ -189,7 +189,15 @@ test.describe('Color Palette', () => {
       const extMgr = app.extensionManager as {
         colorPalette?: { addCustomColorPalette?: (p: unknown) => void }
       }
-      extMgr.colorPalette?.addCustomColorPalette?.(p)
+      if (!extMgr.colorPalette) {
+        throw new Error('colorPalette extension not found on extensionManager')
+      }
+      if (!extMgr.colorPalette.addCustomColorPalette) {
+        throw new Error(
+          'addCustomColorPalette method not found on colorPalette extension'
+        )
+      }
+      extMgr.colorPalette.addCustomColorPalette(p)
     }, customColorPalettes.obsidian_dark)
     expect(await comfyPage.getToastErrorCount()).toBe(0)
 

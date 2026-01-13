@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { SubgraphGraphWithNodes } from '../fixtures/utils/subgraphUtils'
 
 // Constants
 const RENAMED_INPUT_NAME = 'renamed_input'
@@ -322,16 +323,7 @@ test.describe('Subgraph Operations', () => {
       await comfyPage.page.evaluate(() => {
         const app = window['app']
         if (!app) throw new Error('App not initialized')
-        const graph = app.canvas.graph as {
-          inputs?: { label?: string; labelPos?: [number, number] }[]
-          inputNode?: {
-            onPointerDown?: (
-              e: unknown,
-              pointer: unknown,
-              linkConnector: unknown
-            ) => void
-          }
-        } | null
+        const graph = app.canvas.graph as SubgraphGraphWithNodes | null
         if (!graph || !('inputs' in graph)) {
           throw new Error('Not in a subgraph')
         }

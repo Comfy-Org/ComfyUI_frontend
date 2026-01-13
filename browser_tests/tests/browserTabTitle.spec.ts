@@ -1,6 +1,10 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import {
+  deleteActiveWorkflow,
+  getActiveWorkflowFilename
+} from '../fixtures/utils/workflowUtils'
 
 test.describe('Browser tab title', () => {
   test.describe('Beta Menu', () => {
@@ -9,14 +13,11 @@ test.describe('Browser tab title', () => {
     })
 
     test('Can display workflow name', async ({ comfyPage }) => {
-      const workflowName = await comfyPage.page.evaluate(async () => {
+      const workflowName = await comfyPage.page.evaluate(() => {
         const app = window['app']
         if (!app) throw new Error('App not initialized')
-        const extMgr = app.extensionManager as {
-          workflow?: { activeWorkflow?: { filename?: string } }
-        }
-        return extMgr.workflow?.activeWorkflow?.filename
-      })
+        return getActiveWorkflowFilename(app)
+      }, getActiveWorkflowFilename)
       expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
     })
 
@@ -25,14 +26,11 @@ test.describe('Browser tab title', () => {
     test.skip('Can display workflow name with unsaved changes', async ({
       comfyPage
     }) => {
-      const workflowName = await comfyPage.page.evaluate(async () => {
+      const workflowName = await comfyPage.page.evaluate(() => {
         const app = window['app']
         if (!app) throw new Error('App not initialized')
-        const extMgr = app.extensionManager as {
-          workflow?: { activeWorkflow?: { filename?: string } }
-        }
-        return extMgr.workflow?.activeWorkflow?.filename
-      })
+        return getActiveWorkflowFilename(app)
+      }, getActiveWorkflowFilename)
       expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
 
       await comfyPage.menu.topbar.saveWorkflow('test')
@@ -47,11 +45,8 @@ test.describe('Browser tab title', () => {
       await comfyPage.page.evaluate(async () => {
         const app = window['app']
         if (!app) throw new Error('App not initialized')
-        const extMgr = app.extensionManager as {
-          workflow?: { activeWorkflow?: { delete?: () => Promise<void> } }
-        }
-        return extMgr.workflow?.activeWorkflow?.delete?.()
-      })
+        await deleteActiveWorkflow(app)
+      }, deleteActiveWorkflow)
     })
   })
 
