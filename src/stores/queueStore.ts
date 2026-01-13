@@ -415,7 +415,7 @@ export class TaskItemImpl {
     // Single fetch for both workflow and outputs (with caching)
     const jobDetail = await getJobDetail(this.promptId)
 
-    const workflowData = extractWorkflow(jobDetail)
+    const workflowData = await extractWorkflow(jobDetail)
     if (!workflowData) {
       return
     }

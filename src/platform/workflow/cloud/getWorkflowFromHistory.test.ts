@@ -8,8 +8,6 @@ import {
 } from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 const mockWorkflow: ComfyWorkflowJSON = {
-  id: 'test-workflow-id',
-  revision: 0,
   last_node_id: 5,
   last_link_id: 3,
   nodes: [],
@@ -104,25 +102,25 @@ describe('fetchJobDetail', () => {
 })
 
 describe('extractWorkflow', () => {
-  it('should extract workflow from job detail', () => {
-    const result = extractWorkflow(mockJobDetailResponse)
+  it('should extract workflow from job detail', async () => {
+    const result = await extractWorkflow(mockJobDetailResponse)
 
     expect(result).toEqual(mockWorkflow)
   })
 
-  it('should return undefined when job is undefined', () => {
-    const result = extractWorkflow(undefined)
+  it('should return undefined when job is undefined', async () => {
+    const result = await extractWorkflow(undefined)
 
     expect(result).toBeUndefined()
   })
 
-  it('should return undefined when workflow is missing', () => {
+  it('should return undefined when workflow is missing', async () => {
     const jobWithoutWorkflow: JobDetail = {
       ...mockJobDetailResponse,
       workflow: {}
     }
 
-    const result = extractWorkflow(jobWithoutWorkflow)
+    const result = await extractWorkflow(jobWithoutWorkflow)
 
     expect(result).toBeUndefined()
   })

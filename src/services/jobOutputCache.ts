@@ -99,5 +99,5 @@ export async function getJobWorkflow(
   jobId: string
 ): Promise<ComfyWorkflowJSON | undefined> {
   const detail = await getJobDetail(jobId)
-  return extractWorkflow(detail)
+  return await extractWorkflow(detail)
 }

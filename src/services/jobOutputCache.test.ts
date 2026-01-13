@@ -254,7 +254,7 @@ describe('jobOutputCache', () => {
       const mockWorkflow = { version: 1 }
 
       vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
-      vi.mocked(extractWorkflow).mockReturnValue(mockWorkflow as any)
+      vi.mocked(extractWorkflow).mockResolvedValue(mockWorkflow as any)
 
       const result = await getJobWorkflow('job-wf')
 
@@ -268,7 +268,7 @@ describe('jobOutputCache', () => {
         await import('@/platform/remote/comfyui/jobs/fetchJobs')
 
       vi.mocked(fetchJobDetail).mockResolvedValue(undefined)
-      vi.mocked(extractWorkflow).mockReturnValue(undefined)
+      vi.mocked(extractWorkflow).mockResolvedValue(undefined)
 
       const result = await getJobWorkflow('missing')
 

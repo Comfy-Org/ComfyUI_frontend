@@ -17,8 +17,6 @@ vi.mock('@/services/extensionService', () => ({
 }))
 
 const mockWorkflow: ComfyWorkflowJSON = {
-  id: 'test-workflow-id',
-  revision: 0,
   last_node_id: 5,
   last_link_id: 3,
   nodes: [],
