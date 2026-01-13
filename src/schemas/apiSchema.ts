@@ -96,7 +96,7 @@ const zExecutionInterruptedWsMessage = zExecutionWsMessageBase.extend({
   node_type: zNodeType,
   executed: z.array(zNodeId)
 })
-const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
+export const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
   node_id: zNodeId,
   node_type: zNodeType,
   executed: z.array(zNodeId),

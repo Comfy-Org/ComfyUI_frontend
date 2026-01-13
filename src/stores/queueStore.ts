@@ -10,6 +10,7 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import type {
   ExecutionErrorWsMessage,
   HistoryTaskItem,
@@ -324,35 +325,26 @@ export class TaskItemImpl {
   /**
    * Extracts the execution error message from status messages.
    * Used by error reporting UI components.
-   *
-   * Note: The type cast is required because `messages` is typed as
-   * `Array<[string, unknown]>` - TypeScript cannot narrow the second tuple
-   * element's type based on a runtime string check for 'execution_error'.
    */
   get errorMessage(): string | undefined {
-    const messages = this.status?.messages
-    if (!Array.isArray(messages) || !messages.length) return undefined
-    const record = messages.find(
-      (entry: unknown) => Array.isArray(entry) && entry[0] === 'execution_error'
-    ) as [string, { exception_message?: string }?] | undefined
-    return record?.[1]?.exception_message
+    return this.executionError?.exception_message
   }
 
   /**
    * Extracts the full execution error from status messages.
    * Returns the ExecutionErrorWsMessage for detailed error dialogs.
-   *
-   * Note: The type cast is required because `messages` is typed as
-   * `Array<[string, unknown]>` - TypeScript cannot narrow the second tuple
-   * element's type based on a runtime string check for 'execution_error'.
+   * Uses Zod validation to ensure type safety.
    */
   get executionError(): ExecutionErrorWsMessage | undefined {
     const messages = this.status?.messages
     if (!Array.isArray(messages) || !messages.length) return undefined
-    const record = messages.find(
-      (entry: unknown) => Array.isArray(entry) && entry[0] === 'execution_error'
-    ) as [string, ExecutionErrorWsMessage?] | undefined
-    return record?.[1]
+    for (const entry of messages) {
+      if (entry[0] === 'execution_error') {
+        const parsed = zExecutionErrorWsMessage.safeParse(entry[1])
+        return parsed.success ? parsed.data : undefined
+      }
+    }
+    return undefined
   }
 
   /**
