@@ -117,7 +117,7 @@ describe('useAssetDownloadStore', () => {
     it('associates task with model type for completion tracking', () => {
       const store = useAssetDownloadStore()
 
-      store.trackDownload('task-123', 'checkpoints')
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
       dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
 
       expect(store.lastCompletedDownload).toMatchObject({
@@ -129,7 +129,7 @@ describe('useAssetDownloadStore', () => {
     it('handles out-of-order messages where completed arrives before progress', () => {
       const store = useAssetDownloadStore()
 
-      store.trackDownload('task-123', 'checkpoints')
+      store.trackDownload('task-123', 'checkpoints', 'model.safetensors')
 
       dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
 

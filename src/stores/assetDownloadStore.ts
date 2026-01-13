@@ -29,12 +29,13 @@ const POLL_INTERVAL_MS = 10_000
 
 function generateDownloadTrackingPlaceholder(
   taskId: string,
-  modelType: string
+  modelType: string,
+  assetName: string
 ): AssetDownload {
   return {
     taskId,
     modelType,
-    assetName: '',
+    assetName,
     bytesTotal: 0,
     bytesDownloaded: 0,
     progress: 0,
@@ -61,12 +62,12 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const hasActiveDownloads = computed(() => activeDownloads.value.length > 0)
   const hasDownloads = computed(() => downloads.value.size > 0)
 
-  function trackDownload(taskId: string, modelType: string) {
+  function trackDownload(taskId: string, modelType: string, assetName: string) {
     if (downloads.value.has(taskId)) return
 
     downloads.value.set(
       taskId,
-      generateDownloadTrackingPlaceholder(taskId, modelType)
+      generateDownloadTrackingPlaceholder(taskId, modelType, assetName)
     )
   }
 
