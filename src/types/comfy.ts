@@ -31,7 +31,7 @@ export interface VueWidgetDefinition {
   aliases?: string[]
 }
 
-type VueWidgets = Record<string, VueWidgetDefinition>
+export type VueWidgets = Record<string, VueWidgetDefinition>
 
 export interface AboutPageBadge {
   label: string

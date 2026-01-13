@@ -82,11 +82,10 @@ export const useExtensionService = () => {
     }
 
     if (extension.getCustomVueWidgets) {
+      const getVueWidgets = extension.getCustomVueWidgets
       void (async () => {
-        if (extension.getCustomVueWidgets) {
-          const vueWidgets = await extension.getCustomVueWidgets(app)
-          registerVueWidgets(vueWidgets)
-        }
+        const vueWidgets = await getVueWidgets(app)
+        registerVueWidgets(vueWidgets)
       })()
     }
 
