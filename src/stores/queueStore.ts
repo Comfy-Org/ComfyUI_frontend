@@ -341,7 +341,14 @@ export class TaskItemImpl {
     for (const entry of messages) {
       if (entry[0] === 'execution_error') {
         const parsed = zExecutionErrorWsMessage.safeParse(entry[1])
-        return parsed.success ? parsed.data : undefined
+        if (!parsed.success) {
+          console.warn(
+            '[TaskItemImpl.executionError] Validation failed:',
+            parsed.error
+          )
+          return undefined
+        }
+        return parsed.data
       }
     }
     return undefined
