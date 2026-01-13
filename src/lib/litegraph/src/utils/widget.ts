@@ -11,7 +11,7 @@ export function getWidgetStep(options: IWidgetOptions<unknown>): number {
 
 export function evaluateInput(input: string): number | undefined {
   // Check if v is a valid equation or a number
-  if (/^[\d\s()*+/-]+$/.test(input)) {
+  if (/^[\d\s.()*+/-]+$/.test(input)) {
     // Solve the equation if possible
     try {
       input = eval(input)
