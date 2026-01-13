@@ -2132,6 +2132,35 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     },
     LtxvApiImageToVideo: {
       displayPrice: ltxvPricingCalculator
+    },
+    WanReferenceVideoApi: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const sizeWidget = node.widgets?.find(
+          (w) => w.name === 'size'
+        ) as IComboWidget
+
+        if (!durationWidget || !sizeWidget) {
+          return formatCreditsRangeLabel(0.7, 1.5, {
+            note: '(varies with size & duration)'
+          })
+        }
+
+        const seconds = parseFloat(String(durationWidget.value))
+        const sizeStr = String(sizeWidget.value).toLowerCase()
+
+        const rate = sizeStr.includes('1080p') ? 0.15 : 0.1
+        const inputMin = 2 * rate
+        const inputMax = 5 * rate
+        const outputPrice = seconds * rate
+
+        const minTotal = inputMin + outputPrice
+        const maxTotal = inputMax + outputPrice
+
+        return formatCreditsRangeLabel(minTotal, maxTotal)
+      }
     }
   }
 
@@ -2285,6 +2314,7 @@ export const useNodePricing = () => {
       ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
       WanTextToVideoApi: ['duration', 'size'],
       WanImageToVideoApi: ['duration', 'resolution'],
+      WanReferenceVideoApi: ['duration', 'size'],
       LtxvApiTextToVideo: ['model', 'duration', 'resolution'],
       LtxvApiImageToVideo: ['model', 'duration', 'resolution']
     }
