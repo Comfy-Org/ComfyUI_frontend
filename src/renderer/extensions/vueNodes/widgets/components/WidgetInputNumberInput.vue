@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { onClickOutside } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
@@ -17,6 +18,15 @@ const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
 const { locale } = useI18n()
+
+const widgetContainer = useTemplateRef<HTMLDivElement>('widgetContainer')
+const inputField = useTemplateRef<HTMLInputElement>('inputField')
+const textEdit = ref(false)
+onClickOutside(widgetContainer, () => {
+  if (textEdit.value) {
+    textEdit.value = false
+  }
+})
 
 const decimalSeparator = computed(() =>
   Intl.NumberFormat(locale.value)
@@ -54,6 +64,8 @@ function updateValue(e: UIEvent) {
       Math.max(filteredProps.value.min, parsed)
     )
   else target.value = formattedValue.value
+
+  textEdit.value = false
 }
 
 const sharedButtonClass = 'w-8 bg-transparent border-0 text-sm text-smoke-700'
@@ -119,21 +131,21 @@ const buttonsDisabled = computed(() => {
   )
 })
 
-const dragValue = ref<number | undefined>()
-let dragDelta = 0
+const dragValue = ref<number>()
+const dragDelta = ref(0)
 function handleMouseDown(e: PointerEvent) {
   if (props.widget.options?.disabled) return
   const { target } = e
   if (!(target instanceof HTMLElement)) return
   target.setPointerCapture(e.pointerId)
   dragValue.value = modelValue.value
-  dragDelta = 0
+  dragDelta.value = 0
 }
 function handleMouseMove(e: PointerEvent) {
   if (dragValue.value === undefined) return
-  dragDelta += e.movementX
+  dragDelta.value += e.movementX
   const unclippedValue =
-    modelValue.value + ((dragDelta / 10) | 0) * stepValue.value
+    modelValue.value + ((dragDelta.value / 10) | 0) * stepValue.value
   dragValue.value = Math.min(
     filteredProps.value.max,
     Math.max(filteredProps.value.min, unclippedValue)
@@ -144,6 +156,13 @@ function handleMouseUp() {
   if (newValue === undefined) return
   modelValue.value = newValue
   dragValue.value = undefined
+
+  if (dragDelta.value === 0) {
+    textEdit.value = true
+    inputField.value?.focus()
+    inputField.value?.setSelectionRange(0, -1)
+  }
+  dragDelta.value = 0
 }
 
 const buttonTooltip = computed(() => {
@@ -157,6 +176,7 @@ const buttonTooltip = computed(() => {
 <template>
   <WidgetLayoutField :widget>
     <div
+      ref="widgetContainer"
       v-tooltip="buttonTooltip"
       v-bind="filteredProps"
       :aria-label="widget.name"
@@ -171,39 +191,64 @@ const buttonTooltip = computed(() => {
         tabindex="-1"
         @click="modelValue -= stepValue"
       />
-      <input
-        :aria-valuenow="dragValue ?? modelValue"
-        :aria-valuemin="filteredProps.min"
-        :aria-valuemax="filteredProps.max"
-        class="bg-transparent border-0 focus:outline-0 p-1 flex-1 min-w-[4ch] truncate py-1.5 my-0.25 text-sm"
-        inputmode="decimal"
-        :value="formattedValue"
-        role="spinbutton"
-        tabindex="0"
-        :disabled="widget.options?.disabled"
-        autocomplete="off"
-        autocorrect="off"
-        spellcheck="false"
-        @blur="updateValue"
-        @keyup.enter="updateValue"
-        @keydown.up.prevent="
-          modelValue = Math.min(modelValue + stepValue, filteredProps.max)
-        "
-        @keydown.down.prevent="
-          modelValue = Math.max(modelValue - stepValue, filteredProps.min)
-        "
-        @keydown.page-up.prevent="
-          modelValue = Math.min(modelValue + 10 * stepValue, filteredProps.max)
-        "
-        @keydown.page-down.prevent="
-          modelValue = Math.max(modelValue - 10 * stepValue, filteredProps.min)
-        "
-        @pointerdown="handleMouseDown"
-        @pointermove="handleMouseMove"
-        @pointerup="handleMouseUp"
-        @pointercancel="dragValue = undefined"
-        @dragstart.prevent
-      />
+      <div class="relative min-w-[4ch] flex-1 py-1.5 my-0.25">
+        <input
+          ref="inputField"
+          :aria-valuenow="dragValue ?? modelValue"
+          :aria-valuemin="filteredProps.min"
+          :aria-valuemax="filteredProps.max"
+          :class="
+            cn(
+              'bg-transparent border-0 focus:outline-0 p-1 truncate text-sm absolute inset-0'
+            )
+          "
+          inputmode="decimal"
+          :value="formattedValue"
+          role="spinbutton"
+          tabindex="0"
+          :disabled="widget.options?.disabled"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          @blur="updateValue"
+          @keyup.enter="updateValue"
+          @keydown.up.prevent="
+            modelValue = Math.min(modelValue + stepValue, filteredProps.max)
+          "
+          @keydown.down.prevent="
+            modelValue = Math.max(modelValue - stepValue, filteredProps.min)
+          "
+          @keydown.page-up.prevent="
+            modelValue = Math.min(
+              modelValue + 10 * stepValue,
+              filteredProps.max
+            )
+          "
+          @keydown.page-down.prevent="
+            modelValue = Math.max(
+              modelValue - 10 * stepValue,
+              filteredProps.min
+            )
+          "
+          @dragstart.prevent
+        />
+        <div
+          :class="
+            cn(
+              'absolute inset-0 z-10',
+              textEdit && 'hidden pointer-events-none'
+            )
+          "
+          @pointerdown="handleMouseDown"
+          @pointermove="handleMouseMove"
+          @pointerup="handleMouseUp"
+          @pointercancel="() => {
+            dragValue = undefined
+            dragDelta = 0
+          }"
+        />
+      </div>
+
       <slot />
       <button
         v-if="!buttonsDisabled"
