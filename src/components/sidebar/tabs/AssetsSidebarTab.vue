@@ -199,7 +199,7 @@
     :show-delete-button="shouldShowDeleteButton"
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
-    @zoom="contextMenuAsset && handleZoomClick(contextMenuAsset)"
+    @zoom="handleZoomClick(contextMenuAsset)"
     @asset-deleted="refreshAssets"
     @bulk-download="handleBulkDownload"
     @bulk-delete="handleBulkDelete"
