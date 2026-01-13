@@ -37,12 +37,18 @@ defineProps<{
   mobile?: boolean
 }>()
 const emit = defineEmits<{
-  updateSelection: [selection: [AssetItem, ResultItemImpl, [number, number]]]
+  updateSelection: [
+    selection: [
+      AssetItem | undefined,
+      ResultItemImpl | undefined,
+      [number, number]
+    ]
+  ]
 }>()
 
 defineExpose({ onWheel })
 
-const selectedIndex = ref<[number, number]>([0, 0])
+const selectedIndex = ref<[number, number]>([-1, 0])
 
 watch(selectedIndex, () => {
   const [index] = selectedIndex.value
@@ -86,10 +92,10 @@ function allOutputs(item?: AssetItem) {
 
 const selectedOutput = computed(() => {
   const [index, key] = selectedIndex.value
-  if (index >= 0 && key >= 0) {
-    const output = allOutputs(outputs.media.value[index])[key]
-    if (output) return output
-  }
+  if (index < 0) return undefined
+
+  const output = allOutputs(outputs.media.value[index])[key]
+  if (output) return output
 
   return allOutputs(outputs.media.value[0])[0]
 })
@@ -98,9 +104,9 @@ watch(
   () => outputs.media.value,
   (newAssets, oldAssets) => {
     if (newAssets.length === oldAssets.length) return
-    if (selectedIndex.value[0] === 0 && selectedIndex.value[1] === 0) {
+    if (selectedIndex.value[0] <= 0 && selectedIndex.value[1] === 0) {
       //force update
-      selectedIndex.value = [0, 0]
+      selectedIndex.value = [selectedIndex.value[0], 0]
       return
     }
 
