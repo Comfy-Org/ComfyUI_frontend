@@ -16,6 +16,7 @@ export interface AssetDownload {
   lastUpdate: number
   assetId?: string
   error?: string
+  modelType?: string
 }
 
 interface CompletedDownload {
@@ -23,15 +24,12 @@ interface CompletedDownload {
   modelType: string
   timestamp: number
 }
-
-const MAX_COMPLETED_DOWNLOADS = 10
 const STALE_THRESHOLD_MS = 10_000
 const POLL_INTERVAL_MS = 10_000
 
 export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const downloads = ref<Map<string, AssetDownload>>(new Map())
-  const pendingModelTypes = new Map<string, string>()
-  const completedDownloads = ref<CompletedDownload[]>([])
+  const lastCompletedDownload = ref<CompletedDownload | null>(null)
 
   const downloadList = computed(() => Array.from(downloads.value.values()))
   const activeDownloads = computed(() =>
@@ -48,7 +46,16 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   const hasDownloads = computed(() => downloads.value.size > 0)
 
   function trackDownload(taskId: string, modelType: string) {
-    pendingModelTypes.set(taskId, modelType)
+    downloads.value.set(taskId, {
+      taskId,
+      modelType,
+      assetName: '',
+      bytesTotal: 0,
+      bytesDownloaded: 0,
+      progress: 0,
+      status: 'created',
+      lastUpdate: Date.now()
+    })
   }
 
   function handleAssetDownload(e: CustomEvent<AssetDownloadWsMessage>) {
@@ -69,24 +76,18 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
       progress: data.progress,
       status: data.status,
       error: data.error,
-      lastUpdate: Date.now()
+      lastUpdate: Date.now(),
+      modelType: existing?.modelType
     }
 
     downloads.value.set(data.task_id, download)
 
-    if (data.status === 'completed') {
-      const modelType = pendingModelTypes.get(data.task_id)
-      if (modelType) {
-        const updated = [
-          ...completedDownloads.value,
-          { taskId: data.task_id, modelType, timestamp: Date.now() }
-        ]
-        if (updated.length > MAX_COMPLETED_DOWNLOADS) updated.shift()
-        completedDownloads.value = updated
-        pendingModelTypes.delete(data.task_id)
+    if (data.status === 'completed' && download.modelType) {
+      lastCompletedDownload.value = {
+        taskId: data.task_id,
+        modelType: download.modelType,
+        timestamp: Date.now()
       }
-    } else if (data.status === 'failed') {
-      pendingModelTypes.delete(data.task_id)
     }
   }
 
@@ -157,7 +158,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     hasActiveDownloads,
     hasDownloads,
     downloadList,
-    completedDownloads,
+    lastCompletedDownload,
     trackDownload,
     clearFinishedDownloads
   }
