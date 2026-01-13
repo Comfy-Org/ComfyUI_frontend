@@ -67,6 +67,9 @@ const emit = defineEmits<{
   'bulk-download': [assets: AssetItem[]]
   'bulk-delete': [assets: AssetItem[]]
   hide: []
+  'bulk-add-to-workflow': [assets: AssetItem[]]
+  'bulk-open-workflow': [assets: AssetItem[]]
+  'bulk-export-workflow': [assets: AssetItem[]]
 }>()
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
@@ -142,11 +145,32 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       disabled: true
     })
 
+    // Bulk Add to Workflow
+    items.push({
+      label: t('mediaAsset.selection.addToWorkflowAll'),
+      icon: 'icon-[comfy--node]',
+      command: () => emit('bulk-add-to-workflow', selectedAssets)
+    })
+
     // Bulk Download
     items.push({
       label: t('mediaAsset.selection.downloadSelectedAll'),
       icon: 'icon-[lucide--download]',
       command: () => emit('bulk-download', selectedAssets)
+    })
+
+    // Bulk Open Workflow
+    items.push({
+      label: t('mediaAsset.selection.openWorkflowAll'),
+      icon: 'icon-[comfy--workflow]',
+      command: () => emit('bulk-open-workflow', selectedAssets)
+    })
+
+    // Bulk Export Workflow
+    items.push({
+      label: t('mediaAsset.selection.exportWorkflowAll'),
+      icon: 'icon-[lucide--file-output]',
+      command: () => emit('bulk-export-workflow', selectedAssets)
     })
 
     // Bulk Delete (if allowed)

@@ -321,7 +321,13 @@ const {
   deactivate: deactivateSelection
 } = useAssetSelection()
 
-const { downloadMultipleAssets, deleteMultipleAssets } = useMediaAssetActions()
+const {
+  downloadMultipleAssets,
+  deleteMultipleAssets,
+  addMultipleToWorkflow,
+  openMultipleWorkflows,
+  exportMultipleWorkflows
+} = useMediaAssetActions()
 
 // Footer responsive behavior
 const footerRef = ref<HTMLElement | null>(null)
@@ -604,6 +610,21 @@ const handleBulkDownload = (assets: AssetItem[]) => {
 
 const handleBulkDelete = async (assets: AssetItem[]) => {
   await deleteMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
+  await addMultipleToWorkflow(assets)
+  clearSelection()
+}
+
+const handleBulkOpenWorkflow = async (assets: AssetItem[]) => {
+  await openMultipleWorkflows(assets)
+  clearSelection()
+}
+
+const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
+  await exportMultipleWorkflows(assets)
   clearSelection()
 }
 
