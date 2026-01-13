@@ -386,9 +386,6 @@ function addAutogrowGroup(
   }))
 
   const newInputs = namedSpecs
-    .filter(
-      (namedSpec) => !node.inputs.some((inp) => inp.name === namedSpec.name)
-    )
     .map((namedSpec) => {
       addNodeInput(node, namedSpec)
       const input = spliceInputs(node, node.inputs.length - 1, 1)[0]
@@ -396,6 +393,9 @@ function addAutogrowGroup(
         ensureWidgetForInput(node, input)
       return input
     })
+    .filter(
+      (newInput) => !node.inputs.some((inp) => inp.name === newInput.name)
+    )
 
   const lastIndex = node.inputs.findLastIndex((inp) =>
     inp.name.startsWith(groupName)
@@ -433,7 +433,8 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   if (
     !lastInput ||
     ordinal == undefined ||
-    ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node)
+    (ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node) &&
+      !app.configuringGraph)
   )
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
