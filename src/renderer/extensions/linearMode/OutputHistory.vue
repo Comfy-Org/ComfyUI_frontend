@@ -223,11 +223,18 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       class="h-24 md:h-full min-w-24 grow-1 p-3 overflow-x-auto overflow-y-clip md:overflow-y-auto md:overflow-x-clip md:border-r-1 border-node-component-border flex md:flex-col items-center contain-size"
     >
       <section
-        v-if="queueStore.runningTasks.length > 0"
+        v-if="
+          queueStore.runningTasks.length > 0 ||
+          queueStore.pendingTasks.length > 0
+        "
         data-testid="linear-job"
         class="py-3 not-md:h-24 md:w-full aspect-square px-1 relative"
       >
-        <i class="icon-[lucide--loader-circle] size-full animate-spin" />
+        <i
+          v-if="queueStore.runningTasks.length > 0"
+          class="icon-[lucide--loader-circle] size-full animate-spin"
+        />
+        <i v-else class="icon-[lucide--ellipsis] size-full animate-pulse" />
         <div
           v-if="
             queueStore.runningTasks.length + queueStore.pendingTasks.length > 1

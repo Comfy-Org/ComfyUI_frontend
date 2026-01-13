@@ -339,7 +339,7 @@ export const useWorkflowService = () => {
       }
 
       workflowData.extra ??= {}
-      workflowData.extra.linearMode == useCanvasStore().linearMode
+      workflowData.extra.linearMode = useCanvasStore().linearMode
 
       const tempWorkflow = workflowStore.createNewTemporary(
         path ? appendJsonExt(path) : undefined,

@@ -17,7 +17,7 @@
       <i class="pi pi-bars" />
     </Button>
     <i
-      v-if="workflowOption.workflow.activeState?.extra?.linearMode"
+      v-else-if="workflowOption.workflow.activeState?.extra?.linearMode"
       class="icon-[lucide--panels-top-left] bg-primary-background"
     />
     <span class="workflow-label inline-block max-w-[150px] truncate text-sm">

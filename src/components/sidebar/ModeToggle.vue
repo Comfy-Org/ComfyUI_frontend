@@ -17,7 +17,7 @@ const canvasStore = useCanvasStore()
       <i class="icon-[lucide--panels-top-left]" />
     </Button>
     <Button
-      gize="icon"
+      size="icon"
       :title="t('linearMode.graphMode')"
       :variant="canvasStore.linearMode ? 'secondary' : 'inverted'"
       @click="useCommandStore().execute('Comfy.ToggleLinear')"
