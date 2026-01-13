@@ -3,7 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { nextTick, customRef, reactive, shallowReactive } from 'vue'
+import { customRef, reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
@@ -430,7 +430,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     } else {
       // Not during workflow loading - initialize layout immediately
       // This handles individual node additions during normal operation
-      nextTick(initializeVueNodeLayout)
+      requestAnimationFrame(initializeVueNodeLayout)
     }
 
     // Call original callback if provided
