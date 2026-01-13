@@ -61,24 +61,32 @@
           ref="inputRef"
           v-model="currentQuery"
           class="text-base h-5 bg-transparent border-0 focus:outline-0 flex-1"
+          type="text"
           autofocus
           :placeholder="t('g.searchNodes') + '...'"
           @keydown.enter.prevent="onAddNode(hoveredSuggestion)"
+          @keydown.down.prevent="updateIndexBy(1)"
+          @keydown.up.prevent="updateIndexBy(-1)"
         />
       </div>
       <div
         v-bind="containerProps"
         class="bg-comfy-menu-bg p-1 rounded-lg border-border-subtle border max-h-150"
       >
-        <div v-bind="wrapperProps">
+        <div v-bind="wrapperProps" class="comfy-autocomplete-list">
           <NodeSearchItem
             v-for="{ data: option, index } in virtualList"
             :key="index"
-            class="hover:bg-secondary-background-hover p-1 rounded-sm"
+            :class="
+              cn(
+                'p-1 rounded-sm',
+                hoveredIndex === index && 'bg-secondary-background-hover'
+              )
+            "
             :node-def="option"
             :current-query="debouncedQuery"
             @click="onAddNode(option)"
-            @pointerover="setHoverSuggestion(index)"
+            @pointerover="hoveredIndex = index"
           />
         </div>
         <div
@@ -93,9 +101,8 @@
 
 <script setup lang="ts">
 import { refDebounced, useVirtualList } from '@vueuse/core'
-import { debounce } from 'es-toolkit/compat'
 import Dialog from 'primevue/dialog'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodePreview from '@/components/node/NodePreview.vue'
@@ -107,6 +114,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 import SearchFilterChip from '../common/SearchFilterChip.vue'
 
@@ -124,7 +132,6 @@ const { filters, searchLimit = 64 } = defineProps<{
 }>()
 
 const nodeSearchFilterVisible = ref(false)
-const hoveredSuggestion = ref<ComfyNodeDefImpl>()
 const currentQuery = ref('')
 const debouncedQuery = refDebounced(currentQuery, 100, { maxWait: 400 })
 const inputRef = useTemplateRef('inputRef')
@@ -132,19 +139,16 @@ const inputRef = useTemplateRef('inputRef')
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 
-// Debounced search tracking (500ms as per implementation plan)
-const debouncedTrackSearch = debounce((query: string) => {
+watchEffect(() => {
+  const query = debouncedQuery.value
   if (query.trim()) {
     telemetry?.trackNodeSearch({ query })
   }
-}, 500)
+})
 
 const suggestions = computed(() => {
   const query = debouncedQuery.value
   const queryIsEmpty = query === '' && filters.length === 0
-
-  // Track search queries with debounce
-  debouncedTrackSearch(query)
 
   return queryIsEmpty
     ? nodeFrequencyStore.topNodeDefs
@@ -188,12 +192,14 @@ const onRemoveFilter = async (
   emit('removeFilter', filterAndValue)
   inputRef.value?.focus()
 }
-const setHoverSuggestion = (index: number) => {
-  if (index === -1) {
-    hoveredSuggestion.value = undefined
-    return
-  }
-  const value = suggestions.value[index]
-  hoveredSuggestion.value = value
+const hoveredIndex = ref<number>()
+const hoveredSuggestion = computed(() =>
+  hoveredIndex.value ? suggestions.value[hoveredIndex.value] : undefined
+)
+function updateIndexBy(delta: number) {
+  hoveredIndex.value = Math.max(
+    0,
+    Math.min(suggestions.value.length, (hoveredIndex.value ?? 0) + delta)
+  )
 }
 </script>

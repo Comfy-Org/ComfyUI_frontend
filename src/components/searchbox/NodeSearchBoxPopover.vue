@@ -12,7 +12,6 @@
         mask: { class: 'node-search-box-dialog-mask' },
         transition: {
           enterFromClass: 'opacity-0',
-          // 100ms is the duration of the transition in the dialog component
           enterActiveClass: 'transition-all duration-20 ease-out',
           leaveActiveClass: 'transition-all duration-20 ease-in',
           leaveToClass: 'opacity-0 scale-75'
