@@ -57,6 +57,7 @@
         :assets="filteredAssets"
         :loading="isLoading"
         @asset-select="handleAssetSelectAndEmit"
+        @asset-deleted="refreshAssets"
       />
     </template>
   </BaseModalLayout>

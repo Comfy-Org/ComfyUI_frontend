@@ -7,7 +7,7 @@
     }"
     draggable="false"
     href="#"
-    class="p-breadcrumb-item-link h-12 cursor-pointer px-2"
+    class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
@@ -25,7 +25,7 @@
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
   <Menu
-    v-if="isActive"
+    v-if="isActive || isRoot"
     ref="menu"
     :model="menuItems"
     :popup="true"
@@ -59,6 +59,7 @@ import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -135,79 +136,28 @@ const tooltipText = computed(() => {
   return props.item.label
 })
 
-const menuItems = computed<MenuItem[]>(() => {
-  return [
-    {
-      label: t('g.rename'),
-      icon: 'pi pi-pencil',
-      command: startRename
-    },
-    {
-      label: t('breadcrumbsMenu.duplicate'),
-      icon: 'pi pi-copy',
-      command: async () => {
-        await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
-      },
-      visible: isRoot && !props.item.isBlueprint
-    },
-    {
-      separator: true,
-      visible: isRoot
-    },
-    {
-      label: t('menuLabels.Save'),
-      icon: 'pi pi-save',
-      command: async () => {
-        await useCommandStore().execute('Comfy.SaveWorkflow')
-      },
-      visible: isRoot
-    },
-    {
-      label: t('menuLabels.Save As'),
-      icon: 'pi pi-save',
-      command: async () => {
-        await useCommandStore().execute('Comfy.SaveWorkflowAs')
-      },
-      visible: isRoot
-    },
-    {
-      separator: true
-    },
-    {
-      label: t('breadcrumbsMenu.clearWorkflow'),
-      icon: 'pi pi-trash',
-      command: async () => {
-        await useCommandStore().execute('Comfy.ClearWorkflow')
+const startRename = async () => {
+  // Check if element is hidden (collapsed breadcrumb)
+  // When collapsed, root item is hidden via CSS display:none, so use rename command
+  if (isRoot && wrapperRef.value?.offsetParent === null) {
+    await useCommandStore().execute('Comfy.RenameWorkflow')
+    return
+  }
+
+  isEditing.value = true
+  itemLabel.value = props.item.label as string
+  void nextTick(() => {
+    if (itemInputRef.value?.$el) {
+      itemInputRef.value.$el.focus()
+      itemInputRef.value.$el.select()
+      if (wrapperRef.value) {
+        itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
       }
-    },
-    {
-      separator: true,
-      visible: props.item.key === 'root' && props.item.isBlueprint
-    },
-    {
-      label: t('subgraphStore.publish'),
-      icon: 'pi pi-copy',
-      command: async () => {
-        await workflowService.saveWorkflowAs(workflowStore.activeWorkflow!)
-      },
-      visible: props.item.key === 'root' && props.item.isBlueprint
-    },
-    {
-      separator: true,
-      visible: isRoot
-    },
-    {
-      label: props.item.isBlueprint
-        ? t('breadcrumbsMenu.deleteBlueprint')
-        : t('breadcrumbsMenu.deleteWorkflow'),
-      icon: 'pi pi-times',
-      command: async () => {
-        await workflowService.deleteWorkflow(workflowStore.activeWorkflow!)
-      },
-      visible: isRoot
     }
-  ]
-})
+  })
+}
+
+const { menuItems } = useWorkflowActionsMenu(startRename, { isRoot })
 
 const handleClick = (event: MouseEvent) => {
   if (isEditing.value) {
@@ -228,20 +178,6 @@ const handleClick = (event: MouseEvent) => {
   }
 }
 
-const startRename = () => {
-  isEditing.value = true
-  itemLabel.value = props.item.label as string
-  void nextTick(() => {
-    if (itemInputRef.value?.$el) {
-      itemInputRef.value.$el.focus()
-      itemInputRef.value.$el.select()
-      if (wrapperRef.value) {
-        itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
-      }
-    }
-  })
-}
-
 const inputBlur = async (doRename: boolean) => {
   if (doRename) {
     await rename(itemLabel.value, props.item.label as string)
@@ -249,6 +185,14 @@ const inputBlur = async (doRename: boolean) => {
 
   isEditing.value = false
 }
+
+const toggleMenu = (event: MouseEvent) => {
+  menu.value?.toggle(event)
+}
+
+defineExpose({
+  toggleMenu
+})
 </script>
 
 <style scoped>
