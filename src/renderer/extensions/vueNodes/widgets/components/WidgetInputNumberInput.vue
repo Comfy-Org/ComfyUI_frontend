@@ -39,13 +39,16 @@ function unformatValue(value: string) {
 
 const modelValue = defineModel<number>({ default: 0 })
 
-const formattedValue = computed(() =>
-  n(dragValue.value ?? modelValue.value, {
+const formattedValue = computed(() => {
+  const unformattedValue = dragValue.value ?? modelValue.value
+  if (!isFinite(unformattedValue)) return `${unformattedValue}`
+
+  return n(unformattedValue, {
     useGrouping: useGrouping.value,
     minimumFractionDigits: precision.value,
     maximumFractionDigits: precision.value
   })
-)
+})
 
 function updateValue(e: UIEvent) {
   const { target } = e
