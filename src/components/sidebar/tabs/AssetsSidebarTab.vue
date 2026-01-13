@@ -199,7 +199,7 @@
     :show-delete-button="shouldShowDeleteButton"
     :selected-assets="getSelectedAssets(displayAssets)"
     :is-bulk-mode="hasSelection && getSelectedAssets(displayAssets).length > 1"
-    @zoom="handleContextMenuZoom"
+    @zoom="contextMenuAsset && handleZoomClick(contextMenuAsset)"
     @asset-deleted="refreshAssets"
     @bulk-download="handleBulkDownload"
     @bulk-delete="handleBulkDelete"
@@ -468,11 +468,6 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
   void nextTick(() => {
     contextMenuRef.value?.show(event)
   })
-}
-
-function handleContextMenuZoom() {
-  if (!contextMenuAsset.value) return
-  handleZoomClick(contextMenuAsset.value)
 }
 
 const handleZoomClick = (asset: AssetItem) => {
