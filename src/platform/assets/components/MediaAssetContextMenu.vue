@@ -152,13 +152,6 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       command: () => emit('bulk-add-to-workflow', selectedAssets)
     })
 
-    // Bulk Download
-    items.push({
-      label: t('mediaAsset.selection.downloadSelectedAll'),
-      icon: 'icon-[lucide--download]',
-      command: () => emit('bulk-download', selectedAssets)
-    })
-
     // Bulk Open Workflow
     items.push({
       label: t('mediaAsset.selection.openWorkflowAll'),
@@ -171,6 +164,13 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       label: t('mediaAsset.selection.exportWorkflowAll'),
       icon: 'icon-[lucide--file-output]',
       command: () => emit('bulk-export-workflow', selectedAssets)
+    })
+
+    // Bulk Download
+    items.push({
+      label: t('mediaAsset.selection.downloadSelectedAll'),
+      icon: 'icon-[lucide--download]',
+      command: () => emit('bulk-download', selectedAssets)
     })
 
     // Bulk Delete (if allowed)

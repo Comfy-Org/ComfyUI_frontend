@@ -372,6 +372,8 @@ export function useMediaAssetActions() {
   const addMultipleToWorkflow = async (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
+    const NODE_OFFSET = 50
+    let nodeIndex = 0
     let succeeded = 0
     let failed = 0
 
@@ -389,8 +391,12 @@ export function useMediaAssetActions() {
         continue
       }
 
+      const center = litegraphService.getCanvasCenter()
       const node = litegraphService.addNodeOnGraph(nodeDef, {
-        pos: litegraphService.getCanvasCenter()
+        pos: [
+          center[0] + nodeIndex * NODE_OFFSET,
+          center[1] + nodeIndex * NODE_OFFSET
+        ]
       })
 
       if (!node) {
@@ -419,6 +425,7 @@ export function useMediaAssetActions() {
       }
       node.graph?.setDirtyCanvas(true, true)
       succeeded++
+      nodeIndex++
     }
 
     if (failed === 0) {
