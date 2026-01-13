@@ -11,10 +11,10 @@
     </clipPath>
   </defs>
   <g clip-path="var(--shape)" stroke-width="4">
-    <path d="M100 50A50 50 0 0 1 25 93L50 50" fill="var(--type1, red)"/>
-    <path d="M25 93A50 50 0 0 1 25 7L50 50" fill="var(--type2, blue)"/>
-    <path d="M25 7A50 50 0 0 1 100 50L50 50" fill="var(--type3, green)"/>
-    <path d="M50 50L100 50M50 50L25 93M50 50L25 7" stroke="var(--inner-stroke, black)"/>
+    <path d="M0 50A50 50 0 0 0 75 93L50 50" fill="var(--type1, red)"/>
+    <path d="M75 93A50 50 0 0 0 75 7L50 50" fill="var(--type2, blue)"/>
+    <path d="M75 7A50 50 0 0 0 0 50L50 50" fill="var(--type3, green)"/>
+    <path d="M50 50L0 50M50 50L75 93M50 50L75 7" stroke="var(--inner-stroke, black)"/>
     <path d="M50 2A48 48 0 0 1 50 98A48 48 0 0 1 50 2" fill="transparent" stroke="var(--outer-stroke, transparent)"/>
   </g>
 </svg>

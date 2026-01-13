@@ -11,8 +11,8 @@
     </clipPath>
   </defs>
   <g clip-path="var(--shape)" stroke-width="4">
-    <path d="M0 50 A 50 50 0 0 0 100 50" fill="var(--type1, red)"/>
-    <path d="M100 50 A 50 50 0 0 0 0 50" fill="var(--type2, blue)"/>
+    <path d="M0 50 A 50 50 0 0 1 100 50" fill="var(--type1, red)"/>
+    <path d="M100 50 A 50 50 0 0 1 0 50" fill="var(--type2, blue)"/>
     <path d="M0 50L100 50" stroke="var(--inner-stroke, black)"/>
     <path d="M50 2A48 48 0 0 1 50 98A48 48 0 0 1 50 2" fill="transparent" stroke="var(--outer-stroke, transparent)"/>
   </g>
