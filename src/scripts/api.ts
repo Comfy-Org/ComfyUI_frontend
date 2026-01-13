@@ -10,13 +10,18 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type { IFuseOptions } from 'fuse.js'
+import {
+  type TemplateInfo,
+  type WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
+  AssetDownloadWsMessage,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -158,6 +163,7 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
+  asset_download: AssetDownloadWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -1274,6 +1280,24 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
+  }
+
+  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
+    try {
+      const res = await axios.get(
+        this.fileURL('/templates/fuse_options.json'),
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : null
+    } catch (error) {
+      console.error('Error loading fuse options:', error)
+      return null
+    }
   }
 }
 

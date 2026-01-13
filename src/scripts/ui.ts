@@ -287,10 +287,11 @@ class ComfyList {
                       true,
                       false
                     )
-                    if (item.outputs) {
+                    if ('outputs' in item && item.outputs) {
                       app.nodeOutputs = {}
                       for (const [key, value] of Object.entries(item.outputs)) {
-                        const realKey = item.meta?.[key]?.display_node ?? key
+                        const realKey = item['meta']?.[key]?.display_node ?? key
+                        // @ts-expect-error fixme ts strict error
                         app.nodeOutputs[realKey] = value
                       }
                     }

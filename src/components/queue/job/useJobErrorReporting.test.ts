@@ -36,10 +36,15 @@ describe('useJobErrorReporting', () => {
     copyToClipboard = vi.fn()
     showErrorDialog = vi.fn()
     showExecutionErrorDialog = vi.fn()
-    dialog = { showErrorDialog, showExecutionErrorDialog }
+    dialog = {
+      showErrorDialog,
+      showExecutionErrorDialog
+    } as unknown as JobErrorDialogService
     composable = useJobErrorReporting({
       taskForJob,
-      copyToClipboard,
+      copyToClipboard: copyToClipboard as (
+        value: string
+      ) => void | Promise<void>,
       dialog
     })
   })
