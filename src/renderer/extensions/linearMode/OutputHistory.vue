@@ -38,11 +38,7 @@ defineProps<{
 }>()
 const emit = defineEmits<{
   updateSelection: [
-    selection: [
-      AssetItem | undefined,
-      ResultItemImpl | undefined,
-      [number, number]
-    ]
+    selection: [AssetItem | undefined, ResultItemImpl | undefined, boolean]
   ]
 }>()
 
@@ -55,7 +51,7 @@ watch(selectedIndex, () => {
   emit('updateSelection', [
     outputs.media.value[index],
     selectedOutput.value,
-    selectedIndex.value
+    selectedIndex.value[0] <= 0
   ])
 })
 
@@ -103,10 +99,10 @@ const selectedOutput = computed(() => {
 watch(
   () => outputs.media.value,
   (newAssets, oldAssets) => {
-    if (newAssets.length === oldAssets.length) return
-    if (selectedIndex.value[0] <= 0 && selectedIndex.value[1] === 0) {
+    if (newAssets.length === oldAssets.length || oldAssets.length === 0) return
+    if (selectedIndex.value[0] <= 0) {
       //force update
-      selectedIndex.value = [selectedIndex.value[0], 0]
+      selectedIndex.value = [0, 0]
       return
     }
 

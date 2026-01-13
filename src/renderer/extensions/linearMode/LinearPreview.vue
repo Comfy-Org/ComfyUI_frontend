@@ -152,7 +152,7 @@ async function rerun(e: Event) {
     </div>
   </section>
   <ImagePreview
-    v-if="getMediaType(selectedOutput) === 'images'"
+    v-if="latentPreview ?? getMediaType(selectedOutput) === 'images'"
     :mobile
     :src="latentPreview ?? selectedOutput!.url"
   />

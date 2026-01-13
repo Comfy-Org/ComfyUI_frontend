@@ -34,7 +34,7 @@ whenever(
 
 const selectedItem = ref<AssetItem>()
 const selectedOutput = ref<ResultItemImpl>()
-const selectedIndex = ref<[number, number]>([0, 0])
+const canShowPreview = ref(true)
 const outputHistoryRef = useTemplateRef('outputHistoryRef')
 
 const topLeftRef = useTemplateRef('topLeftRef')
@@ -58,7 +58,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       <div class="flex flex-col text-muted-foreground">
         <LinearPreview
           :latent-preview="
-            selectedIndex[0] === 0 && selectedIndex[1] === 0 && hasPreview
+            canShowPreview && hasPreview
               ? nodeOutputStore.latestPreview[0]
               : undefined
           "
@@ -72,10 +72,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         ref="outputHistoryRef"
         mobile
         @update-selection="
-          ([item, output, index]) => {
+          ([item, output, canShow]) => {
             selectedItem = item
             selectedOutput = output
-            selectedIndex = index
+            canShowPreview = canShow
             hasPreview = false
           }
         "
@@ -102,10 +102,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           ref="outputHistoryRef"
           :scroll-reset-button-to="unrefElement(bottomLeftRef) ?? undefined"
           @update-selection="
-            ([item, output, index]) => {
+            ([item, output, canShow]) => {
               selectedItem = item
               selectedOutput = output
-              selectedIndex = index
+              canShowPreview = canShow
               hasPreview = false
             }
           "
@@ -126,7 +126,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       >
         <LinearPreview
           :latent-preview="
-            selectedIndex[0] === 0 && selectedIndex[1] === 0 && hasPreview
+            canShowPreview && hasPreview
               ? nodeOutputStore.latestPreview[0]
               : undefined
           "
@@ -168,10 +168,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           ref="outputHistoryRef"
           :scroll-reset-button-to="unrefElement(bottomRightRef) ?? undefined"
           @update-selection="
-            ([item, output, index]) => {
+            ([item, output, canShow]) => {
               selectedItem = item
               selectedOutput = output
-              selectedIndex = index
+              canShowPreview = canShow
               hasPreview = false
             }
           "
