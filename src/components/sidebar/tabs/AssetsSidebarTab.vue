@@ -200,6 +200,7 @@
     :selected-assets="selectedAssets"
     :is-bulk-mode="isBulkMode"
     @zoom="handleZoomClick(contextMenuAsset)"
+    @hide="handleContextMenuHide"
     @asset-deleted="refreshAssets"
     @bulk-download="handleBulkDownload"
     @bulk-delete="handleBulkDelete"
@@ -473,6 +474,10 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
   void nextTick(() => {
     contextMenuRef.value?.show(event)
   })
+}
+
+function handleContextMenuHide() {
+  contextMenuAsset.value = null
 }
 
 const handleZoomClick = (asset: AssetItem) => {

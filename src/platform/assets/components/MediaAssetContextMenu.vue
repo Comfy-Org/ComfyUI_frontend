@@ -11,6 +11,7 @@
         )
       }
     }"
+    @hide="emit('hide')"
   >
     <template #item="{ item, props }">
       <Button
@@ -65,6 +66,7 @@ const emit = defineEmits<{
   'asset-deleted': []
   'bulk-download': [assets: AssetItem[]]
   'bulk-delete': [assets: AssetItem[]]
+  hide: []
 }>()
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
