@@ -12,10 +12,12 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 
 interface SettingPanelItem {
   node: SettingTreeNode
   component: Component
+  props?: Record<string, unknown>
 }
 
 export function useSettingUI(
@@ -27,6 +29,9 @@ export function useSettingUI(
     | 'user'
     | 'credits'
     | 'subscription'
+    | 'workspace'
+    | 'workspace-plan'
+    | 'workspace-members'
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
@@ -35,6 +40,7 @@ export function useSettingUI(
 
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription } = useSubscription()
+  const { workspaceName } = useWorkspace()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -62,6 +68,33 @@ export function useSettingUI(
 
   const settingCategories = computed<SettingTreeNode[]>(
     () => settingRoot.value.children ?? []
+  )
+
+  // Core setting categories (built-in to ComfyUI) in display order
+  // 'Other' includes floating settings that don't have a specific category
+  const CORE_CATEGORIES_ORDER = [
+    'Comfy',
+    'LiteGraph',
+    'Appearance',
+    '3D',
+    'Mask Editor',
+    'Other'
+  ]
+  const CORE_CATEGORIES = new Set(CORE_CATEGORIES_ORDER)
+
+  const coreSettingCategories = computed<SettingTreeNode[]>(() => {
+    const categories = settingCategories.value.filter((node) =>
+      CORE_CATEGORIES.has(node.label)
+    )
+    return categories.sort(
+      (a, b) =>
+        CORE_CATEGORIES_ORDER.indexOf(a.label) -
+        CORE_CATEGORIES_ORDER.indexOf(b.label)
+    )
+  })
+
+  const customNodeSettingCategories = computed<SettingTreeNode[]>(() =>
+    settingCategories.value.filter((node) => !CORE_CATEGORIES.has(node.label))
   )
 
   // Define panel items
@@ -110,12 +143,37 @@ export function useSettingUI(
   const userPanel: SettingPanelItem = {
     node: {
       key: 'user',
-      label: 'User',
+      label: 'Profile',
       children: []
     },
     component: defineAsyncComponent(
       () => import('@/components/dialog/content/setting/UserPanel.vue')
     )
+  }
+
+  const workspacePanel: SettingPanelItem = {
+    node: {
+      key: 'workspace',
+      label: 'Workspace',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/components/dialog/content/setting/WorkspacePanel.vue')
+    )
+  }
+
+  // Sidebar-only node for Plan & Credits (uses same WorkspacePanel component)
+  const workspacePlanNode: SettingTreeNode = {
+    key: 'workspace-plan',
+    label: 'WorkspacePlan',
+    children: []
+  }
+
+  // Sidebar-only node for Members (uses same WorkspacePanel component)
+  const workspaceMembersNode: SettingTreeNode = {
+    key: 'workspace-members',
+    label: 'WorkspaceMembers',
+    children: []
   }
 
   const keybindingPanel: SettingPanelItem = {
@@ -156,6 +214,7 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
+      workspacePanel,
       keybindingPanel,
       extensionPanel,
       ...(isElectron() ? [serverConfigPanel] : []),
@@ -187,40 +246,43 @@ export function useSettingUI(
   })
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() => [
-    // Account settings - show different panels based on distribution and auth state
+    // Workspace settings
     {
-      key: 'account',
-      label: 'Account',
+      key: 'workspace',
+      label: 'Workspace',
       children: [
-        userPanel.node,
-        ...(isLoggedIn.value &&
-        shouldShowPlanCreditsPanel.value &&
-        subscriptionPanel
-          ? [subscriptionPanel.node]
-          : []),
+        workspacePanel.node,
+        workspacePlanNode,
+        ...(workspaceName.value ? [workspaceMembersNode] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
           : [])
       ].map(translateCategory)
     },
-    // Normal settings stored in the settingStore
+    // General settings - Profile + all core settings + special panels
     {
-      key: 'settings',
-      label: 'Application Settings',
-      children: settingCategories.value.map(translateCategory)
-    },
-    // Special settings such as about, keybinding, extension, server-config
-    {
-      key: 'specialSettings',
-      label: 'Special Settings',
+      key: 'general',
+      label: 'General',
       children: [
-        keybindingPanel.node,
-        extensionPanel.node,
-        aboutPanel.node,
-        ...(isElectron() ? [serverConfigPanel.node] : [])
-      ].map(translateCategory)
-    }
+        translateCategory(userPanel.node),
+        ...coreSettingCategories.value.map(translateCategory),
+        translateCategory(keybindingPanel.node),
+        translateCategory(extensionPanel.node),
+        translateCategory(aboutPanel.node),
+        ...(isElectron() ? [translateCategory(serverConfigPanel.node)] : [])
+      ]
+    },
+    // Custom node settings (only shown if custom nodes have registered settings)
+    ...(customNodeSettingCategories.value.length > 0
+      ? [
+          {
+            key: 'other',
+            label: 'Other',
+            children: customNodeSettingCategories.value.map(translateCategory)
+          }
+        ]
+      : [])
   ])
 
   onMounted(() => {

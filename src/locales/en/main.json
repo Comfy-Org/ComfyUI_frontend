@@ -1264,7 +1264,10 @@
     "Scene": "Scene",
     "3D": "3D",
     "Light": "Light",
-    "User": "User",
+    "Profile": "Profile",
+    "Workspace": "Workspace",
+    "WorkspacePlan": "Plan & Credits",
+    "WorkspaceMembers": "Members",
     "Credits": "Credits",
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
@@ -2091,6 +2094,19 @@
     "provider": "Sign-in Provider",
     "notSet": "Not set",
     "updatePassword": "Update Password"
+  },
+  "workspacePanel": {
+    "tabs": {
+      "dashboard": "Dashboard",
+      "planCredits": "Plan & Credits",
+      "members": "Members"
+    },
+    "dashboard": {
+      "placeholder": "Dashboard workspace settings"
+    },
+    "members": {
+      "placeholder": "Member settings"
+    }
   },
   "selectionToolbox": {
     "executeButton": {

@@ -1,6 +1,6 @@
 <template>
-  <div class="settings-container">
-    <ScrollPanel class="settings-sidebar w-48 shrink-0 p-2 2xl:w-64">
+  <div class="flex h-[80vh] w-full overflow-hidden">
+    <ScrollPanel class="w-48 shrink-0 p-2 2xl:w-64">
       <SearchBox
         v-model:model-value="searchQuery"
         class="settings-search-box mb-2 w-full"
@@ -20,16 +20,23 @@
           (option: SettingTreeNode) =>
             !queryIsEmpty && !searchResultsCategories.has(option.label ?? '')
         "
-        class="w-full border-none"
+        class="w-full border-none bg-transparent"
       >
-        <template #optiongroup>
-          <Divider class="my-0" />
+        <template #optiongroup="{ option }">
+          <Divider v-if="option.key !== 'workspace'" class="my-2" />
+          <h3 class="px-2 py-1 text-xs font-semibold uppercase text-muted">
+            {{ option.label }}
+          </h3>
+        </template>
+        <template #option="{ option }">
+          <WorkspaceSidebarItem v-if="option.key === 'workspace'" />
+          <span v-else>{{ option.translatedLabel }}</span>
         </template>
       </Listbox>
     </ScrollPanel>
     <Divider layout="vertical" class="mx-1 hidden md:flex 2xl:mx-4" />
     <Divider layout="horizontal" class="flex md:hidden" />
-    <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
+    <Tabs :value="tabValue" :lazy="true" class="h-full flex-1 overflow-x-auto">
       <TabPanels class="settings-tab-panels h-full w-full pr-0">
         <PanelTemplate value="Search Results">
           <SettingsPanel :setting-groups="searchResults" />
@@ -48,7 +55,7 @@
         </PanelTemplate>
 
         <Suspense v-for="panel in panels" :key="panel.node.key">
-          <component :is="panel.component" />
+          <component :is="panel.component" v-bind="panel.props" />
           <template #fallback>
             <div>{{ $t('g.loadingPanel', { panel: panel.node.label }) }}</div>
           </template>
@@ -69,6 +76,7 @@ import { computed, watch } from 'vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
+import WorkspaceSidebarItem from '@/components/dialog/content/setting/WorkspaceSidebarItem.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
@@ -86,6 +94,10 @@ const { defaultPanel } = defineProps<{
     | 'server-config'
     | 'user'
     | 'credits'
+    | 'subscription'
+    | 'workspace'
+    | 'workspace-plan'
+    | 'workspace-members'
 }>()
 
 const {
@@ -158,40 +170,5 @@ watch(activeCategory, (_, oldValue) => {
 <style>
 .settings-tab-panels {
   padding-top: 0 !important;
-}
-</style>
-
-<style scoped>
-.settings-container {
-  display: flex;
-  height: 70vh;
-  width: 60vw;
-  max-width: 64rem;
-  overflow: hidden;
-}
-
-.settings-content {
-  overflow-x: auto;
-}
-
-@media (max-width: 768px) {
-  .settings-container {
-    flex-direction: column;
-    height: auto;
-    width: 80vw;
-  }
-
-  .settings-sidebar {
-    width: 100%;
-  }
-
-  .settings-content {
-    height: 350px;
-  }
-}
-
-/* Hide the first group separator */
-.settings-sidebar :deep(.p-listbox-option-group:nth-child(1)) {
-  display: none;
 }
 </style>

@@ -209,7 +209,7 @@ const handleOpenPlansAndPricing = () => {
 
 const handleOpenPlanAndCreditsSettings = () => {
   if (isCloud) {
-    dialogService.showSettingsDialog('subscription')
+    dialogService.showSettingsDialog('workspace-plan')
   } else {
     dialogService.showSettingsDialog('credits')
   }
