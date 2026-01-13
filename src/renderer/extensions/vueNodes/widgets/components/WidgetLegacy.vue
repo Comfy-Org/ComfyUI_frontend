@@ -104,10 +104,10 @@ function handleMove(e: PointerEvent) {
   >
     <canvas
       ref="canvasEl"
-      class="absolute mt-[-13px] w-full cursor-crosshair"
-      @pointerdown="handleDown"
-      @pointerup="handleUp"
-      @pointermove="handleMove"
+      class="absolute w-full cursor-crosshair"
+      @pointerdown.stop="handleDown"
+      @pointerup.stop="handleUp"
+      @pointermove.stop="handleMove"
     />
   </div>
 </template>

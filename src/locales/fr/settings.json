@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Sauvegarder et restaurer la position et le niveau de zoom du canevas dans les flux de travail"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Méthode d’aperçu en direct",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "aucun",
+      "taesd": "taesd"
+    },
+    "tooltip": "Méthode d’aperçu en direct pendant la génération d’image. « default » utilise le paramètre CLI du serveur."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Nombre de décimales pour l'arrondi du widget flottant [0 = auto].",
     "tooltip": "(nécessite le rechargement de la page)"
@@ -99,6 +110,10 @@
       "Circle": "Cercle",
       "None": "Aucun"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Sélection en direct",
+    "tooltip": "Lorsqu’elle est activée, les nœuds sont sélectionnés/désélectionnés en temps réel pendant que vous faites glisser le rectangle de sélection, comme dans d’autres outils de conception."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Vitesse de zoom du canevas"
@@ -165,6 +180,15 @@
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "Intensité lumineuse minimale",
     "tooltip": "Définit la valeur minimale autorisée de l’intensité lumineuse pour les scènes 3D. Cela définit la limite inférieure de luminosité pouvant être réglée lors de l’ajustement de l’éclairage dans tout widget 3D."
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "Moteur PLY",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "Sélectionnez le moteur pour charger les fichiers PLY. « threejs » utilise le PLYLoader natif de Three.js (idéal pour les fichiers PLY de maillage). « fastply » utilise un chargeur optimisé pour les fichiers PLY de nuages de points ASCII. « sparkjs » utilise Spark.js pour les fichiers PLY de Gaussian Splatting 3D."
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "Afficher la Grille",
@@ -344,6 +368,14 @@
   },
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Espacement des éléments de l'explorateur d'arborescence"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Disposition de la barre d’onglets",
+    "options": {
+      "Default": "Par défaut",
+      "Integrated": "Intégrée"
+    },
+    "tooltip": "Contrôle la disposition de la barre d’onglets. « Intégrée » déplace les contrôles Aide et Utilisateur dans la zone de la barre d’onglets."
   },
   "Comfy_UseNewMenu": {
     "name": "Utiliser le nouveau menu",

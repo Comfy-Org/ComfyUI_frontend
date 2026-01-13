@@ -121,7 +121,11 @@ function useSubscriptionInternal() {
     void showSubscriptionRequiredDialog()
   }
 
-  const shouldWatchCancellation = (): boolean =>
+  /**
+   * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
+   * Use to determine which UI to show (SubscriptionPanel vs LegacyCreditsPanel).
+   */
+  const isSubscriptionEnabled = (): boolean =>
     Boolean(isCloud && window.__CONFIG__?.subscription_required)
 
   const { startCancellationWatcher, stopCancellationWatcher } =
@@ -130,7 +134,7 @@ function useSubscriptionInternal() {
       isActiveSubscription: isSubscribedOrIsNotCloud,
       subscriptionStatus,
       telemetry,
-      shouldWatchCancellation
+      shouldWatchCancellation: isSubscriptionEnabled
     })
 
   const manageSubscription = async () => {
@@ -248,6 +252,9 @@ function useSubscriptionInternal() {
     isYearlySubscription,
     subscriptionTierName,
     subscriptionStatus,
+
+    // Utilities
+    isSubscriptionEnabled,
 
     // Actions
     subscribe,

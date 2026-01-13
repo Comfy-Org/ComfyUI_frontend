@@ -39,6 +39,87 @@
       "sigmas": {
         "name": "シグマ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "AddTextPrefix": {
+    "display_name": "テキストの接頭辞を追加",
+    "inputs": {
+      "prefix": {
+        "name": "接頭辞",
+        "tooltip": "追加する接頭辞。"
+      },
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "処理するテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "AddTextSuffix": {
+    "display_name": "テキストの接尾辞を追加",
+    "inputs": {
+      "suffix": {
+        "name": "接尾辞",
+        "tooltip": "追加する接尾辞。"
+      },
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "処理するテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "AdjustBrightness": {
+    "display_name": "明るさを調整",
+    "inputs": {
+      "factor": {
+        "name": "係数",
+        "tooltip": "明るさの係数。1.0 = 変更なし、<1.0 = 暗く、>1.0 = 明るく。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "処理する画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "処理済み画像"
+      }
+    }
+  },
+  "AdjustContrast": {
+    "display_name": "コントラストを調整",
+    "inputs": {
+      "factor": {
+        "name": "係数",
+        "tooltip": "コントラストの係数。1.0 = 変更なし、<1.0 = コントラスト減少、>1.0 = コントラスト増加。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "処理する画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "処理済み画像"
+      }
     }
   },
   "AlignYourStepsScheduler": {
@@ -70,6 +151,11 @@
         "name": "音量",
         "tooltip": "デシベル(dB)単位での音量調整。0 = 変更なし、+6 = 2倍、-6 = 半分、など"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "AudioConcat": {
@@ -85,6 +171,11 @@
       "direction": {
         "name": "方向",
         "tooltip": "audio2をaudio1の後ろに追加するか前に追加するか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -131,6 +222,11 @@
         "name": "結合方法",
         "tooltip": "オーディオ波形を結合するために使用する方法。"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BasicGuider": {
@@ -141,6 +237,11 @@
       },
       "model": {
         "name": "モデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -159,6 +260,50 @@
       "steps": {
         "name": "ステップ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchImagesNode": {
+    "display_name": "画像をバッチ処理",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchLatentsNode": {
+    "display_name": "latentをバッチ処理",
+    "inputs": {
+      "latents": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchMasksNode": {
+    "display_name": "マスクをバッチ処理",
+    "inputs": {
+      "masks": {
+        "name": "マスク"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BetaSamplingScheduler": {
@@ -175,6 +320,11 @@
       },
       "steps": {
         "name": "ステップ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -525,6 +675,11 @@
       "positive": {
         "name": "ポジティブ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CFGNorm": {
@@ -763,6 +918,25 @@
       }
     }
   },
+  "CLIPTextEncodeKandinsky5": {
+    "display_name": "CLIPTextEncodeKandinsky5",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "qwen25_7b": {
+        "name": "qwen25_7b"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CLIPTextEncodeLumina2": {
     "description": "CLIPモデルを使用してシステムプロンプトとユーザープロンプトをエンコードし、特定の画像の生成をガイドするために使用できる埋め込みを生成します。",
     "display_name": "CLIP Text Encode for Lumina2",
@@ -953,6 +1127,29 @@
       }
     }
   },
+  "CenterCropImages": {
+    "display_name": "中央で画像を切り抜き",
+    "inputs": {
+      "height": {
+        "name": "高さ",
+        "tooltip": "切り抜き高さ。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "処理する画像。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "切り抜き幅。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "処理済み画像"
+      }
+    }
+  },
   "CheckpointLoader": {
     "display_name": "設定でチェックポイントを読み込む（非推奨）",
     "inputs": {
@@ -1086,6 +1283,26 @@
       },
       "hooks_H": {
         "name": "フック_H"
+      }
+    }
+  },
+  "ComfySwitchNode": {
+    "display_name": "スイッチ",
+    "inputs": {
+      "on_false": {
+        "name": "偽の場合"
+      },
+      "on_true": {
+        "name": "真の場合"
+      },
+      "switch": {
+        "name": "スイッチ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "出力",
+        "tooltip": null
       }
     }
   },
@@ -1321,14 +1538,14 @@
         "name": "秒_合計"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ポジティブ"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "ネガティブ"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "ConditioningTimestepsRange": {
     "display_name": "タイムステップ範囲",
@@ -1384,6 +1601,10 @@
       "dim": {
         "name": "dim",
         "tooltip": "コンテキストウィンドウを適用する次元。"
+      },
+      "freenoise": {
+        "name": "フリーノイズ",
+        "tooltip": "FreeNoiseノイズシャッフルを適用するかどうか。ウィンドウのブレンドを改善します。"
       },
       "fuse_method": {
         "name": "fuse_method",
@@ -1785,6 +2006,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CustomCombo": {
+    "display_name": "カスタムコンボ",
+    "inputs": {
+      "choice": {
+        "name": "選択"
+      },
+      "option0": {
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "DiffControlNetLoader": {
@@ -1823,7 +2064,12 @@
     }
   },
   "DisableNoise": {
-    "display_name": "ノイズを無効にする"
+    "display_name": "ノイズを無効にする",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "DualCFGGuider": {
     "display_name": "デュアルCFGガイダー",
@@ -1848,6 +2094,11 @@
       },
       "style": {
         "name": "style"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1932,6 +2183,11 @@
         "name": "sample_rate",
         "tooltip": "空のオーディオクリップのサンプルレート。"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyChromaRadianceLatentImage": {
@@ -1975,6 +2231,25 @@
       }
     }
   },
+  "EmptyFlux2LatentImage": {
+    "display_name": "Empty Flux 2 Latent",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyHunyuanImageLatent": {
     "display_name": "EmptyHunyuanImageLatent",
     "inputs": {
@@ -1996,6 +2271,28 @@
   },
   "EmptyHunyuanLatentVideo": {
     "display_name": "EmptyHunyuanLatentVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHunyuanVideo15Latent": {
+    "display_name": "Empty HunyuanVideo 1.5 Latent",
     "inputs": {
       "batch_size": {
         "name": "バッチサイズ"
@@ -2065,6 +2362,11 @@
       "seconds": {
         "name": "秒"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyLatentHunyuan3Dv2": {
@@ -2076,6 +2378,11 @@
       },
       "resolution": {
         "name": "解像度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2113,6 +2420,28 @@
       },
       "length": {
         "name": "長さ"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyQwenImageLayeredLatentImage": {
+    "display_name": "Empty Qwen Image Layered Latent",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "layers": {
+        "name": "レイヤー"
       },
       "width": {
         "name": "幅"
@@ -2171,6 +2500,11 @@
       "steps": {
         "name": "ステップ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ExtendIntermediateSigmas": {
@@ -2190,6 +2524,11 @@
       },
       "steps": {
         "name": "ステップ数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2211,6 +2550,11 @@
       "top": {
         "name": "上"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FlipSigmas": {
@@ -2218,6 +2562,102 @@
     "inputs": {
       "sigmas": {
         "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2MaxImageNode": {
+    "description": "プロンプトと解像度に基づいて同期的に画像を生成します。",
+    "display_name": "Flux.2 [max] 画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "参照用として最大9枚の画像を使用できます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成または編集のためのプロンプト"
+      },
+      "prompt_upsampling": {
+        "name": "プロンプトアップサンプリング",
+        "tooltip": "プロンプトのアップサンプリングを行うかどうか。有効にすると、より創造的な生成のためにプロンプトが自動的に修正されます。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノイズ生成に使用されるランダムシード。"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ProImageNode": {
+    "description": "プロンプトと解像度に基づいて同期的に画像を生成します。",
+    "display_name": "Flux.2 [pro] 画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "参照用として最大9枚の画像を使用できます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成または編集のためのプロンプト"
+      },
+      "prompt_upsampling": {
+        "name": "プロンプトアップサンプリング",
+        "tooltip": "プロンプトのアップサンプリングを行うかどうか。有効にすると、より創造的な生成のためにプロンプトが自動的に修正されます。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "ノイズ生成に使用されるランダムシード。"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2Scheduler": {
+    "display_name": "Flux2Scheduler",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "steps": {
+        "name": "ステップ数"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2541,6 +2981,11 @@
       "s2": {
         "name": "s2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FreeU_V2": {
@@ -2560,6 +3005,11 @@
       },
       "s2": {
         "name": "s2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2619,6 +3069,58 @@
       }
     }
   },
+  "GeminiImage2Node": {
+    "description": "Google Vertex API を通じて画像を同期的に生成または編集します。",
+    "display_name": "Nano Banana Pro（Google Gemini Image）",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "「auto」に設定すると入力画像のアスペクト比に合わせます。画像が指定されていない場合、通常は16:9の正方形が生成されます。"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "files": {
+        "name": "ファイル",
+        "tooltip": "モデルのコンテキストとして使用するオプションのファイル。Gemini Generate Content Input Filesノードからの入力を受け付けます。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "オプションの参照画像。複数画像を含める場合はBatch Imagesノードを使用してください（最大14枚まで）。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "生成する画像や適用する編集内容を説明するテキストプロンプト。モデルが従うべき制約、スタイル、詳細も含めてください。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力の目標解像度。2K/4Kの場合はGeminiのネイティブアップスケーラーが使用されます。"
+      },
+      "response_modalities": {
+        "name": "応答モダリティ",
+        "tooltip": "「IMAGE」を選択すると画像のみ出力、「IMAGE+TEXT」を選択すると生成画像とテキスト応答の両方を返します。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シード値を特定の値に固定すると、モデルは繰り返しリクエストに対して同じ応答を提供するよう最善を尽くしますが、決定的な出力は保証されません。また、モデルやパラメータ設定（例：temperature）を変更すると、同じシード値でも応答が変化する場合があります。デフォルトではランダムなシード値が使用されます。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "AIの挙動を決定する基本的な指示。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImageNode": {
     "description": "Google API経由で画像を同期的に編集します。",
     "display_name": "Google Gemini 画像",
@@ -2646,9 +3148,17 @@
         "name": "プロンプト",
         "tooltip": "生成用のテキストプロンプト"
       },
+      "response_modalities": {
+        "name": "応答モダリティ",
+        "tooltip": "「IMAGE」を選択すると画像のみ出力、「IMAGE+TEXT」を選択すると生成画像とテキスト応答の両方を返します。"
+      },
       "seed": {
         "name": "シード",
         "tooltip": "シードが特定の値に固定されている場合、モデルは繰り返しリクエストに対して同じ応答を提供するよう最善を尽くします。決定的な出力は保証されません。また、モデルや温度などのパラメータ設定を変更すると、同じシード値を使用しても応答にばらつきが生じることがあります。デフォルトでは、ランダムなシード値が使用されます。"
+      },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "AIの挙動を決定する基本的な指示。"
       }
     },
     "outputs": {
@@ -2710,6 +3220,10 @@
         "name": "シード",
         "tooltip": "シードを特定の値に固定すると、モデルは繰り返しリクエストに対して同じ応答を提供するよう最善を尽くします。確定的な出力は保証されません。また、モデルや温度などのパラメータ設定を変更すると、同じシード値を使用しても応答にばらつきが生じることがあります。デフォルトではランダムなシード値が使用されます。"
       },
+      "system_prompt": {
+        "name": "システムプロンプト",
+        "tooltip": "AIの挙動を決定する基本的な指示。"
+      },
       "video": {
         "name": "動画",
         "tooltip": "モデルのコンテキストとして使用するオプションの動画。"
@@ -2717,6 +3231,72 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GenerateTracks": {
+    "display_name": "GenerateTracks",
+    "inputs": {
+      "bezier": {
+        "name": "ベジエ",
+        "tooltip": "中間点を制御点としてベジエ曲線パスを有効にします。"
+      },
+      "end_x": {
+        "name": "終了X",
+        "tooltip": "終了位置の正規化されたX座標（0-1）。"
+      },
+      "end_y": {
+        "name": "終了Y",
+        "tooltip": "終了位置の正規化されたY座標（0-1）。"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "interpolation": {
+        "name": "補間",
+        "tooltip": "パスに沿った動きのタイミング／速度を制御します。"
+      },
+      "mid_x": {
+        "name": "中間X",
+        "tooltip": "ベジエ曲線の正規化されたX制御点。「bezier」が有効な場合のみ使用されます。"
+      },
+      "mid_y": {
+        "name": "中間Y",
+        "tooltip": "ベジエ曲線の正規化されたY制御点。「bezier」が有効な場合のみ使用されます。"
+      },
+      "num_frames": {
+        "name": "フレーム数"
+      },
+      "num_tracks": {
+        "name": "トラック数"
+      },
+      "start_x": {
+        "name": "開始X",
+        "tooltip": "開始位置の正規化されたX座標（0-1）。"
+      },
+      "start_y": {
+        "name": "開始Y",
+        "tooltip": "開始位置の正規化されたY座標（0-1）。"
+      },
+      "track_mask": {
+        "name": "トラックマスク",
+        "tooltip": "表示フレームを示すオプションのマスク。"
+      },
+      "track_spread": {
+        "name": "トラック間隔",
+        "tooltip": "トラック間の正規化された距離。トラックは動きの方向に対して垂直に広がります。"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "トラック長",
         "tooltip": null
       }
     }
@@ -2729,17 +3309,17 @@
         "name": "画像"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "幅"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "高さ"
+      {
+        "tooltip": null
       },
-      "2": {
-        "name": "バッチサイズ"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "GetVideoComponents": {
     "description": "ビデオからすべてのコンポーネント（フレーム、オーディオ、フレームレート）を抽出します。",
@@ -2777,6 +3357,11 @@
       "tapered_corners": {
         "name": "テーパードコーナー"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Hunyuan3Dv2Conditioning": {
@@ -2786,14 +3371,14 @@
         "name": "clip_vision_output"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ポジティブ"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "ネガティブ"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "Hunyuan3Dv2ConditioningMultiView": {
     "display_name": "Hunyuan3Dv2ConditioningMultiView",
@@ -2811,14 +3396,14 @@
         "name": "右"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ポジティブ"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "ネガティブ"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
@@ -2886,6 +3471,120 @@
       },
       "2": {
         "name": "潜在表現",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15ImageToVideo": {
+    "display_name": "HunyuanVideo15ImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15LatentUpscaleWithModel": {
+    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "inputs": {
+      "crop": {
+        "name": "切り抜き"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "samples": {
+        "name": "サンプル"
+      },
+      "upscale_method": {
+        "name": "アップスケール方法"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15SuperResolution": {
+    "display_name": "HunyuanVideo15SuperResolution",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "clipビジョン出力"
+      },
+      "latent": {
+        "name": "潜在"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "noise_augmentation": {
+        "name": "ノイズ拡張"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "潜在",
         "tooltip": null
       }
     }
@@ -3094,6 +3793,11 @@
       "strength": {
         "name": "強度"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageBatch": {
@@ -3157,6 +3861,26 @@
       "image": {
         "name": "画像"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCompare": {
+    "description": "2枚の画像をスライダーで並べて比較します。",
+    "display_name": "画像比較",
+    "inputs": {
+      "compare_view": {
+        "name": "compare_view"
+      },
+      "image_a": {
+        "name": "image_a"
+      },
+      "image_b": {
+        "name": "image_b"
+      }
     }
   },
   "ImageCompositeMasked": {
@@ -3180,6 +3904,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageCrop": {
@@ -3200,6 +3929,30 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageDeduplication": {
+    "display_name": "画像の重複排除",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "処理する画像のリスト。"
+      },
+      "similarity_threshold": {
+        "name": "類似度しきい値",
+        "tooltip": "類似度しきい値（0-1）。値が高いほど類似しています。このしきい値を超える画像は重複とみなされます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "処理済み画像"
+      }
     }
   },
   "ImageFlip": {
@@ -3210,6 +3963,11 @@
       },
       "image": {
         "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3224,6 +3982,42 @@
       },
       "length": {
         "name": "長さ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageGrid": {
+    "display_name": "画像グリッド",
+    "inputs": {
+      "cell_height": {
+        "name": "セル高さ",
+        "tooltip": "グリッド内の各セルの高さ。"
+      },
+      "cell_width": {
+        "name": "セル幅",
+        "tooltip": "グリッド内の各セルの幅。"
+      },
+      "columns": {
+        "name": "列数",
+        "tooltip": "グリッドの列数。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "処理する画像のリスト。"
+      },
+      "padding": {
+        "name": "余白",
+        "tooltip": "画像間の余白。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "処理済み画像"
       }
     }
   },
@@ -3333,6 +4127,11 @@
       "rotation": {
         "name": "回転"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageScale": {
@@ -3381,6 +4180,11 @@
       "upscale_method": {
         "name": "アップスケール方法"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageScaleToTotalPixels": {
@@ -3391,6 +4195,9 @@
       },
       "megapixels": {
         "name": "メガピクセル"
+      },
+      "resolution_steps": {
+        "name": "解像度ステップ"
       },
       "upscale_method": {
         "name": "拡大方法"
@@ -3446,6 +4253,11 @@
       "spacing_width": {
         "name": "間隔の幅"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageToMask": {
@@ -3456,6 +4268,11 @@
       },
       "image": {
         "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3565,6 +4382,29 @@
     "inputs": {
       "mask": {
         "name": "マスク"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "左右のモノラルオーディオチャンネルをステレオオーディオに結合します。",
+    "display_name": "オーディオチャンネル結合",
+    "inputs": {
+      "audio_left": {
+        "name": "audio_left"
+      },
+      "audio_right": {
+        "name": "audio_right"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -3691,6 +4531,58 @@
       "sampler_name": {
         "name": "サンプラー名"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kandinsky5ImageToVideo": {
+    "display_name": "Kandinsky5ImageToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "空のビデオlatent"
+      },
+      "3": {
+        "name": "cond_latent",
+        "tooltip": "ノイズのないエンコード済み開始画像。モデル出力のlatentのノイズの多い開始部分を置き換えるために使用されます"
+      }
     }
   },
   "KarrasScheduler": {
@@ -3707,6 +4599,11 @@
       },
       "steps": {
         "name": "ステップ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3950,6 +4847,35 @@
       }
     }
   },
+  "KlingImageToVideoWithAudio": {
+    "display_name": "Kling画像（最初のフレーム）からビデオと音声へ",
+    "inputs": {
+      "duration": {
+        "name": "継続時間"
+      },
+      "generate_audio": {
+        "name": "音声を生成"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "model_name": {
+        "name": "モデル名"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ポジティブなテキストプロンプト。"
+      },
+      "start_frame": {
+        "name": "開始フレーム"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingLipSyncAudioToVideoNode": {
     "description": "Klingリップシンク音声から動画ノード。動画ファイル内の口の動きを音声ファイルの内容に同期します。",
     "display_name": "Klingリップシンク：音声付き動画",
@@ -4007,6 +4933,227 @@
       },
       "2": {
         "name": "再生時間",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingMotionControl": {
+    "display_name": "Klingモーションコントロール",
+    "inputs": {
+      "character_orientation": {
+        "name": "キャラクターの向き",
+        "tooltip": "キャラクターの向き／オリエンテーションの参照元を制御します。\nビデオ: 動き、表情、カメラの動き、向きは参照ビデオに従います（他の詳細はプロンプトで指定）。\n画像: 動きや表情は参照ビデオに従いますが、キャラクターの向きは参照画像に合わせます（カメラや他の詳細はプロンプトで指定）。"
+      },
+      "keep_original_sound": {
+        "name": "元の音声を保持"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "reference_image": {
+        "name": "参照画像"
+      },
+      "reference_video": {
+        "name": "参照ビデオ",
+        "tooltip": "動きの参照ビデオは動きや表情を制御します。\nキャラクターの向きによる制限:\n - 画像: 3～10秒（最大10秒）\n - ビデオ: 3～30秒（最大30秒）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProEditVideoNode": {
+    "description": "Klingの最新モデルで既存のビデオを編集します。",
+    "display_name": "Kling Omniビデオ編集（Pro）",
+    "inputs": {
+      "keep_original_sound": {
+        "name": "元の音声を保持"
+      },
+      "model_name": {
+        "name": "モデル名"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオ内容を説明するテキストプロンプト。ポジティブ・ネガティブ両方の説明を含めることができます。"
+      },
+      "reference_images": {
+        "name": "参照画像",
+        "tooltip": "最大4枚まで追加の参照画像。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "編集するビデオ。出力ビデオの長さは同じになります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProFirstLastFrameNode": {
+    "description": "開始フレーム、オプションの終了フレーム、またはリファレンス画像を使用して最新のKlingモデルでビデオを生成します。",
+    "display_name": "Kling Omni ファースト・ラストフレームからビデオへ (Pro)",
+    "inputs": {
+      "duration": {
+        "name": "継続時間"
+      },
+      "end_frame": {
+        "name": "終了フレーム",
+        "tooltip": "ビデオのオプションの終了フレームです。「reference_images」と同時に使用することはできません。"
+      },
+      "first_frame": {
+        "name": "開始フレーム"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオ内容を説明するテキストプロンプトです。肯定的・否定的な説明の両方を含めることができます。"
+      },
+      "reference_images": {
+        "name": "リファレンス画像",
+        "tooltip": "最大6枚までの追加リファレンス画像。"
+      },
+      "resolution": {
+        "name": "解像度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProImageNode": {
+    "description": "Klingの最新モデルで画像を作成または編集します。",
+    "display_name": "Kling Omni 画像 (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像内容を説明するテキストプロンプトです。肯定的・否定的な説明の両方を含めることができます。"
+      },
+      "reference_images": {
+        "name": "リファレンス画像",
+        "tooltip": "最大10枚までの追加リファレンス画像。"
+      },
+      "resolution": {
+        "name": "解像度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProImageToVideoNode": {
+    "description": "最大7枚のリファレンス画像を使って最新のKlingモデルでビデオを生成します。",
+    "display_name": "Kling Omni 画像からビデオへ (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "duration": {
+        "name": "継続時間"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオ内容を説明するテキストプロンプトです。肯定的・否定的な説明の両方を含めることができます。"
+      },
+      "reference_images": {
+        "name": "リファレンス画像",
+        "tooltip": "最大7枚までのリファレンス画像。"
+      },
+      "resolution": {
+        "name": "解像度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProTextToVideoNode": {
+    "description": "テキストプロンプトを使って最新のKlingモデルでビデオを生成します。",
+    "display_name": "Kling Omni テキストからビデオへ (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "duration": {
+        "name": "継続時間"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオ内容を説明するテキストプロンプトです。肯定的・否定的な説明の両方を含めることができます。"
+      },
+      "resolution": {
+        "name": "解像度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProVideoToVideoNode": {
+    "description": "ビデオと最大4枚の参照画像を使用して、最新のKlingモデルでビデオを生成します。",
+    "display_name": "Kling Omni ビデオからビデオ (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "duration": {
+        "name": "長さ"
+      },
+      "keep_original_sound": {
+        "name": "元の音声を保持"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "ビデオ内容を説明するテキストプロンプト。肯定的および否定的な説明の両方を含めることができます。"
+      },
+      "reference_images": {
+        "name": "参照画像",
+        "tooltip": "追加で最大4枚の参照画像。"
+      },
+      "reference_video": {
+        "name": "参照ビデオ",
+        "tooltip": "参照として使用するビデオ。"
+      },
+      "resolution": {
+        "name": "解像度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -4125,6 +5272,35 @@
       }
     }
   },
+  "KlingTextToVideoWithAudio": {
+    "display_name": "Kling テキストからビデオ（音声付き）",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "duration": {
+        "name": "長さ"
+      },
+      "generate_audio": {
+        "name": "音声を生成"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "model_name": {
+        "name": "model_name"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "肯定的なテキストプロンプト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoExtendNode": {
     "description": "Kling Video Extendノード。他のKlingノードで作成された動画を拡張します。video_idは他のKlingノードを使用して作成されます。",
     "display_name": "Kling Video Extend",
@@ -4179,6 +5355,26 @@
       }
     }
   },
+  "LTXAVTextEncoderLoader": {
+    "description": "[レシピ]\n\nltxav: gemma 3 12B",
+    "display_name": "LTXV オーディオテキストエンコーダーローダー",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name"
+      },
+      "device": {
+        "name": "device"
+      },
+      "text_encoder": {
+        "name": "text_encoder"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LTXVAddGuide": {
     "display_name": "LTXVAddGuide",
     "inputs": {
@@ -4217,6 +5413,76 @@
       },
       "2": {
         "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEDecode": {
+    "display_name": "LTXV オーディオVAEデコード",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "latent のデコードに使用する Audio VAE モデル。"
+      },
+      "samples": {
+        "name": "samples",
+        "tooltip": "デコードする latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEEncode": {
+    "display_name": "LTXV オーディオVAEエンコード",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "エンコードするオーディオ。"
+      },
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "エンコードに使用する Audio VAE モデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio Latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAELoader": {
+    "display_name": "LTXV オーディオVAEローダー",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt_name",
+        "tooltip": "読み込む Audio VAE チェックポイント。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Audio VAE",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVConcatAVLatent": {
+    "display_name": "LTXVConcatAVLatent",
+    "inputs": {
+      "audio_latent": {
+        "name": "audio_latent"
+      },
+      "video_latent": {
+        "name": "video_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -4273,6 +5539,33 @@
       }
     }
   },
+  "LTXVEmptyLatentAudio": {
+    "display_name": "LTXV 空のラテントオーディオ",
+    "inputs": {
+      "audio_vae": {
+        "name": "audio_vae",
+        "tooltip": "設定を取得するための Audio VAE モデル。"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "バッチ内の latent オーディオサンプル数。"
+      },
+      "frame_rate": {
+        "name": "frame_rate",
+        "tooltip": "1秒あたりのフレーム数。"
+      },
+      "frames_number": {
+        "name": "frames_number",
+        "tooltip": "フレーム数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Latent",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVImgToVideo": {
     "display_name": "LTXV画像からビデオへ",
     "inputs": {
@@ -4316,6 +5609,47 @@
       "2": {
         "name": "潜在",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVImgToVideoInplace": {
+    "display_name": "LTXVImgToVideoInplace",
+    "inputs": {
+      "bypass": {
+        "name": "バイパス",
+        "tooltip": "コンディショニングをバイパスします。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVLatentUpsampler": {
+    "display_name": "LTXVLatentUpsampler",
+    "inputs": {
+      "samples": {
+        "name": "サンプル"
+      },
+      "upscale_model": {
+        "name": "アップスケールモデル"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },
@@ -4367,6 +5701,25 @@
       }
     }
   },
+  "LTXVSeparateAVLatent": {
+    "description": "LTXV Separate AV Latent",
+    "display_name": "LTXVSeparateAVLatent",
+    "inputs": {
+      "av_latent": {
+        "name": "av_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ビデオlatent",
+        "tooltip": null
+      },
+      "1": {
+        "name": "オーディオlatent",
+        "tooltip": null
+      }
+    }
+  },
   "LaplaceScheduler": {
     "display_name": "ラプラススケジューラー",
     "inputs": {
@@ -4384,6 +5737,11 @@
       },
       "steps": {
         "name": "ステップ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4522,6 +5880,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentConcat": {
@@ -4577,6 +5940,25 @@
       },
       "samples": {
         "name": "サンプル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentCutToBatch": {
+    "display_name": "LatentCutToBatch",
+    "inputs": {
+      "dim": {
+        "name": "次元"
+      },
+      "samples": {
+        "name": "サンプル"
+      },
+      "slice_size": {
+        "name": "スライスサイズ"
       }
     },
     "outputs": {
@@ -4738,6 +6120,19 @@
       }
     }
   },
+  "LatentUpscaleModelLoader": {
+    "display_name": "Latent アップスケールモデルを読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LazyCache": {
     "description": "EasyCacheの自家製バージョン - EasyCacheをさらに「簡単に」実装するバージョン。全体的にはEasyCacheより劣りますが、一部の稀なケースでは優れており、ComfyUIのすべてとの普遍的な互換性があります。",
     "display_name": "LazyCache",
@@ -4785,30 +6180,32 @@
       },
       "upload 3d model": {
       },
+      "upload extra resources": {
+      },
       "width": {
         "name": "幅"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "画像"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "マスク"
+      {
+        "tooltip": null
       },
-      "2": {
-        "name": "メッシュパス"
+      {
+        "tooltip": null
       },
-      "3": {
-        "name": "法線"
+      {
+        "tooltip": null
       },
-      "4": {
-        "name": "線画"
+      {
+        "tooltip": null
       },
-      "5": {
-        "name": "カメラ情報"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "音声を読み込む",
@@ -4822,6 +6219,11 @@
       "upload": {
         "name": "アップロードするファイルを選択"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LoadImage": {
@@ -4832,6 +6234,21 @@
       },
       "upload": {
         "name": "アップロードするファイルを選択"
+      }
+    }
+  },
+  "LoadImageDataSetFromFolder": {
+    "display_name": "フォルダから画像データセットを読み込む",
+    "inputs": {
+      "folder": {
+        "name": "フォルダ",
+        "tooltip": "画像を読み込むフォルダ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "読み込まれた画像のリスト"
       }
     }
   },
@@ -4853,6 +6270,8 @@
     "description": "出力フォルダから画像を読み込みます。更新ボタンをクリックすると、ノードは画像リストを更新し、自動的に最初の画像を選択します。これにより、簡単に反復処理が可能になります。",
     "display_name": "画像の読み込み（出力から）",
     "inputs": {
+      "Auto-refresh after generation": {
+      },
       "image": {
         "name": "画像"
       },
@@ -4863,11 +6282,49 @@
       }
     }
   },
+  "LoadImageTextDataSetFromFolder": {
+    "display_name": "フォルダから画像とテキストデータセットを読み込む",
+    "inputs": {
+      "folder": {
+        "name": "フォルダ",
+        "tooltip": "画像を読み込むフォルダ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "読み込まれた画像のリスト"
+      },
+      "1": {
+        "name": "テキスト",
+        "tooltip": "テキストキャプションのリスト"
+      }
+    }
+  },
   "LoadLatent": {
     "display_name": "潜在を読み込む",
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadTrainingDataset": {
+    "display_name": "トレーニングデータセットの読み込み",
+    "inputs": {
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "保存されたデータセットが含まれるフォルダー名（出力ディレクトリ内）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "latent 辞書のリスト"
+      },
+      "1": {
+        "name": "conditioning",
+        "tooltip": "conditioning リストのリスト"
       }
     }
   },
@@ -4957,11 +6414,11 @@
         "tooltip": "拡散モデルを変更する強度。この値は負の値も可能です。"
       }
     },
-    "outputs": {
-      "0": {
-        "tooltip": "変更された拡散モデル。"
+    "outputs": [
+      {
+        "name": "model"
       }
-    }
+    ]
   },
   "LoraSave": {
     "display_name": "LoRAを抽出して保存",
@@ -4992,10 +6449,12 @@
     "display_name": "損失グラフをプロット",
     "inputs": {
       "filename_prefix": {
-        "name": "ファイル名プレフィックス"
+        "name": "ファイル名プレフィックス",
+        "tooltip": "保存される損失グラフ画像のファイル名プレフィックス。"
       },
       "loss": {
-        "name": "損失"
+        "name": "損失",
+        "tooltip": "トレーニングノードからの損失マップ。"
       }
     }
   },
@@ -5301,6 +6760,50 @@
       }
     }
   },
+  "MakeTrainingDataset": {
+    "display_name": "トレーニングデータセットを作成",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "テキストをコンディショニングにエンコードするためのCLIPモデル。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "エンコードする画像のリスト。"
+      },
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "テキストキャプションのリスト。長さn（画像と一致）、1（全てに繰り返し）、または省略（空文字列を使用）できます。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "画像をlatentにエンコードするためのVAEモデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latentリスト",
+        "tooltip": "latent辞書のリスト"
+      },
+      "1": {
+        "name": "コンディショニング",
+        "tooltip": "コンディショニングリストのリスト"
+      }
+    }
+  },
+  "ManualSigmas": {
+    "display_name": "マニュアルシグマ",
+    "inputs": {
+      "sigmas": {
+        "name": "シグマ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "マスク合成",
     "inputs": {
@@ -5319,6 +6822,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "MaskPreview": {
@@ -5335,6 +6843,41 @@
     "inputs": {
       "mask": {
         "name": "マスク"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MergeImageLists": {
+    "display_name": "画像リストを結合",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "処理する画像のリスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "処理済み画像"
+      }
+    }
+  },
+  "MergeTextLists": {
+    "display_name": "テキストリストを結合",
+    "inputs": {
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "処理するテキストのリスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": "処理済みテキスト"
       }
     }
   },
@@ -7779,6 +9322,52 @@
       }
     }
   },
+  "NormalizeImages": {
+    "display_name": "画像を正規化",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "処理する画像。"
+      },
+      "mean": {
+        "name": "平均値",
+        "tooltip": "正規化のための平均値。"
+      },
+      "std": {
+        "name": "標準偏差",
+        "tooltip": "正規化のための標準偏差。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": "処理済み画像"
+      }
+    }
+  },
+  "NormalizeVideoLatentStart": {
+    "description": "ビデオのlatentの初期フレームを、後続の参照フレームの平均値と標準偏差に合わせて正規化します。開始フレームとビデオの残り部分との違いを減らすのに役立ちます。",
+    "display_name": "NormalizeVideoLatentStart",
+    "inputs": {
+      "latent": {
+        "name": "latent"
+      },
+      "reference_frame_count": {
+        "name": "reference_frame_count",
+        "tooltip": "開始フレームの後に参照として使用するlatentフレーム数"
+      },
+      "start_frame_count": {
+        "name": "start_frame_count",
+        "tooltip": "最初から正規化するlatentフレーム数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIChatConfig": {
     "description": "OpenAIチャットノードの詳細設定オプションを指定できます。",
     "display_name": "OpenAI ChatGPT 詳細オプション",
@@ -7927,6 +9516,9 @@
       "mask": {
         "name": "マスク",
         "tooltip": "インペインティング用のオプションマスク（白い部分が置き換えられます）"
+      },
+      "model": {
+        "name": "model"
       },
       "n": {
         "name": "生成数",
@@ -8440,6 +10032,11 @@
       "steps": {
         "name": "ステップ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PorterDuffImageComposite": {
@@ -8473,6 +10070,9 @@
   "Preview3D": {
     "display_name": "3Dプレビュー",
     "inputs": {
+      "bg_image": {
+        "name": "bg_image"
+      },
       "camera_info": {
         "name": "カメラ情報"
       },
@@ -8488,6 +10088,8 @@
     "display_name": "プレビュー任意",
     "inputs": {
       "preview": {
+      },
+      "previewMode": {
       },
       "source": {
         "name": "ソース"
@@ -8628,6 +10230,36 @@
       }
     }
   },
+  "RandomCropImages": {
+    "display_name": "ランダムクロップ画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "height": {
+        "name": "height",
+        "tooltip": "クロップ高さ。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "処理する画像。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ランダムシード。"
+      },
+      "width": {
+        "name": "width",
+        "tooltip": "クロップ幅。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "処理済み画像"
+      }
+    }
+  },
   "RandomNoise": {
     "display_name": "ランダムノイズ",
     "inputs": {
@@ -8636,6 +10268,11 @@
       },
       "noise_seed": {
         "name": "ノイズシード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -8676,6 +10313,11 @@
     "inputs": {
       "audio": {
         "name": "オーディオ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9181,6 +10823,11 @@
       "image": {
         "name": "画像"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RepeatLatentBatch": {
@@ -9191,6 +10838,51 @@
       },
       "samples": {
         "name": "サンプル"
+      }
+    }
+  },
+  "ReplaceText": {
+    "display_name": "テキスト置換",
+    "inputs": {
+      "find": {
+        "name": "find",
+        "tooltip": "検索するテキスト。"
+      },
+      "replace": {
+        "name": "replace",
+        "tooltip": "置換後のテキスト。"
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "処理するテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texts",
+        "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "ReplaceVideoLatentFrames": {
+    "display_name": "ReplaceVideoLatentFrames",
+    "inputs": {
+      "destination": {
+        "name": "destination",
+        "tooltip": "フレームが置き換えられる宛先latent。"
+      },
+      "index": {
+        "name": "index",
+        "tooltip": "宛先latent内でソースlatentフレームを配置する開始フレームインデックス。負の値は末尾からカウントします。"
+      },
+      "source": {
+        "name": "source",
+        "tooltip": "宛先latentに挿入するフレームを提供するソースlatent。指定しない場合、宛先latentは変更されません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9222,6 +10914,95 @@
       },
       "target_width": {
         "name": "ターゲット幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ResizeImageMaskNode": {
+    "display_name": "画像/マスクのリサイズ",
+    "inputs": {
+      "input": {
+        "name": "input"
+      },
+      "resize_type": {
+        "name": "resize_type"
+      },
+      "resize_type_multiplier": {
+        "name": "multiplier"
+      },
+      "scale_method": {
+        "name": "scale_method"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "resized",
+        "tooltip": null
+      }
+    }
+  },
+  "ResizeImagesByLongerEdge": {
+    "display_name": "長辺で画像をリサイズ",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "処理する画像。"
+      },
+      "longer_edge": {
+        "name": "longer_edge",
+        "tooltip": "長辺の目標長さ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "処理済み画像"
+      }
+    }
+  },
+  "ResizeImagesByShorterEdge": {
+    "display_name": "短辺で画像をリサイズ",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "処理する画像。"
+      },
+      "shorter_edge": {
+        "name": "shorter_edge",
+        "tooltip": "短辺の目標長さ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "処理済み画像"
+      }
+    }
+  },
+  "ResolutionBucket": {
+    "display_name": "解像度バケット",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "conditioningリストのリスト（latentsの長さと一致する必要があります）。"
+      },
+      "latents": {
+        "name": "latents",
+        "tooltip": "解像度ごとにバケット化するlatent辞書のリスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latents",
+        "tooltip": "解像度バケットごとのバッチ化されたlatent辞書のリスト。"
+      },
+      "1": {
+        "name": "conditioning",
+        "tooltip": "解像度バケットごとのconditionリスト。"
       }
     }
   },
@@ -9476,6 +11257,11 @@
       "steps": {
         "name": "ステップ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SD_4XUpscale_Conditioning": {
@@ -9629,14 +11415,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "出力"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "デノイズ出力"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SamplerCustomAdvanced": {
     "display_name": "カスタムサンプラー（高度）",
@@ -9657,14 +11443,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "出力"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "デノイズ出力"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SamplerDPMAdaptative": {
     "display_name": "サンプラーDPM適応",
@@ -9699,6 +11485,11 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerDPMPP_2M_SDE": {
@@ -9716,6 +11507,11 @@
       "solver_type": {
         "name": "ソルバータイプ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerDPMPP_2S_Ancestral": {
@@ -9726,6 +11522,11 @@
       },
       "s_noise": {
         "name": "s_noise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9740,6 +11541,11 @@
       },
       "s_noise": {
         "name": "s_noise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9757,6 +11563,11 @@
       },
       "s_noise": {
         "name": "s_noise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9776,6 +11587,11 @@
       "solver_type": {
         "name": "solver_type"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerEulerAncestral": {
@@ -9787,6 +11603,11 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerEulerAncestralCFGPP": {
@@ -9797,6 +11618,11 @@
       },
       "s_noise": {
         "name": "s_noise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9838,6 +11664,11 @@
       "order": {
         "name": "順序"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerSASolver": {
@@ -9870,6 +11701,37 @@
       "use_pece": {
         "name": "use_pece"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerSEEDS2": {
+    "description": "このサンプラーノードは複数のサンプラーを表すことができます：\n\nseeds_2\n- デフォルト設定\n\nexp_heun_2_x0\n- solver_type=phi_2, r=1.0, eta=0.0\n\nexp_heun_2_x0_sde\n- solver_type=phi_2, r=1.0, eta=1.0, s_noise=1.0",
+    "display_name": "SamplerSEEDS2",
+    "inputs": {
+      "eta": {
+        "name": "eta",
+        "tooltip": "ストカスティック強度"
+      },
+      "r": {
+        "name": "r",
+        "tooltip": "中間段階の相対ステップサイズ（c2ノード）"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "SDEノイズ倍率"
+      },
+      "solver_type": {
+        "name": "solver_type"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplingPercentToSigma": {
@@ -9886,11 +11748,11 @@
         "name": "sampling_percent"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "sigma_value"
+    "outputs": [
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SaveAnimatedPNG": {
     "display_name": "アニメーションPNGを保存",
@@ -10008,6 +11870,44 @@
       }
     }
   },
+  "SaveImageDataSetToFolder": {
+    "display_name": "画像データセットをフォルダに保存",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "保存する画像ファイル名の接頭辞。"
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "画像を保存するフォルダ名（出力ディレクトリ内）。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "保存する画像のリスト。"
+      }
+    }
+  },
+  "SaveImageTextDataSetToFolder": {
+    "display_name": "画像とテキストのデータセットをフォルダに保存",
+    "inputs": {
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "保存する画像ファイル名の接頭辞。"
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "画像を保存するフォルダ名（出力ディレクトリ内）。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "保存する画像のリスト。"
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "保存するテキストキャプションのリスト。"
+      }
+    }
+  },
   "SaveImageWebsocket": {
     "display_name": "画像を保存するWebSocket",
     "inputs": {
@@ -10027,6 +11927,23 @@
       }
     }
   },
+  "SaveLoRA": {
+    "display_name": "LoRA重みを保存",
+    "inputs": {
+      "lora": {
+        "name": "lora",
+        "tooltip": "保存するLoRAモデル。LoRAレイヤー付きのモデルは使用しないでください。"
+      },
+      "prefix": {
+        "name": "prefix",
+        "tooltip": "保存するLoRAファイルの接頭辞。"
+      },
+      "steps": {
+        "name": "steps",
+        "tooltip": "オプション：LoRAが学習されたステップ数。保存ファイル名に使用されます。"
+      }
+    }
+  },
   "SaveSVGNode": {
     "description": "SVGファイルをディスクに保存します。",
     "display_name": "SVG保存ノード",
@@ -10037,6 +11954,27 @@
       },
       "svg": {
         "name": "svg"
+      }
+    }
+  },
+  "SaveTrainingDataset": {
+    "display_name": "学習データセットを保存",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "MakeTrainingDatasetからのconditioningリストのリスト。"
+      },
+      "folder_name": {
+        "name": "folder_name",
+        "tooltip": "データセットを保存するフォルダ名（出力ディレクトリ内）。"
+      },
+      "latents": {
+        "name": "latents",
+        "tooltip": "MakeTrainingDatasetからのlatent辞書のリスト。"
+      },
+      "shard_size": {
+        "name": "shard_size",
+        "tooltip": "シャードファイルごとのサンプル数。"
       }
     }
   },
@@ -10160,6 +12098,11 @@
       "sigmas": {
         "name": "シグマ"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SetHookKeyframes": {
@@ -10197,6 +12140,58 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "ShuffleDataset": {
+    "display_name": "画像データセットをシャッフル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "処理する画像のリスト。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ランダムシード。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "処理済み画像"
+      }
+    }
+  },
+  "ShuffleImageTextDataset": {
+    "display_name": "画像・テキストデータセットをシャッフル",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "シャッフルする画像のリスト。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ランダムシード。"
+      },
+      "texts": {
+        "name": "texts",
+        "tooltip": "シャッフルするテキストのリスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": "シャッフルされた画像"
+      },
+      "1": {
+        "name": "texts",
+        "tooltip": "シャッフルされたテキスト"
       }
     }
   },
@@ -10296,6 +12291,11 @@
       "width": {
         "name": "幅"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SplitAudioChannels": {
@@ -10306,14 +12306,14 @@
         "name": "オーディオ"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "左チャンネル"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "右チャンネル"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SplitImageWithAlpha": {
     "display_name": "アルファで画像を分割",
@@ -10341,14 +12341,14 @@
         "name": "ステップ"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "高シグマ"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "低シグマ"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "SplitSigmasDenoise": {
     "display_name": "シグマを分割してノイズ除去",
@@ -10360,14 +12360,14 @@
         "name": "シグマ"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "高シグマ"
+    "outputs": [
+      {
+        "tooltip": null
       },
-      "1": {
-        "name": "低シグマ"
+      {
+        "tooltip": null
       }
-    }
+    ]
   },
   "StabilityAudioInpaint": {
     "description": "テキスト指示を使用して既存のオーディオサンプルの一部を変換します。",
@@ -10969,6 +12969,21 @@
       }
     }
   },
+  "StripWhitespace": {
+    "display_name": "空白文字の削除",
+    "inputs": {
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "処理するテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": "処理済みテキスト"
+      }
+    }
+  },
   "StyleModelApply": {
     "display_name": "スタイルモデルを適用",
     "inputs": {
@@ -11149,6 +13164,36 @@
       }
     }
   },
+  "TextToLowercase": {
+    "display_name": "テキストを小文字に変換",
+    "inputs": {
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "処理するテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "TextToUppercase": {
+    "display_name": "テキストを大文字に変換",
+    "inputs": {
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "処理するテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": "処理済みテキスト"
+      }
+    }
+  },
   "ThresholdMask": {
     "display_name": "しきい値マスク",
     "inputs": {
@@ -11157,6 +13202,11 @@
       },
       "value": {
         "name": "値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11168,6 +13218,118 @@
       },
       "ratio": {
         "name": "比率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazImageEnhance": {
+    "description": "業界標準のアップスケーリングと画像強化。",
+    "display_name": "Topaz画像強化",
+    "inputs": {
+      "color_preservation": {
+        "name": "色の保持",
+        "tooltip": "元の色を保持します。"
+      },
+      "creativity": {
+        "name": "クリエイティビティ"
+      },
+      "crop_to_fill": {
+        "name": "クロップしてフィル",
+        "tooltip": "デフォルトでは、出力アスペクト比が異なる場合はレターボックス化されます。有効にすると、画像をクロップして出力サイズに合わせます。"
+      },
+      "face_enhancement": {
+        "name": "顔強化",
+        "tooltip": "処理中に顔（存在する場合）を強化します。"
+      },
+      "face_enhancement_creativity": {
+        "name": "顔強化クリエイティビティ",
+        "tooltip": "顔強化の創造性レベルを設定します。"
+      },
+      "face_enhancement_strength": {
+        "name": "顔強化の強度",
+        "tooltip": "強化された顔のシャープさを背景と比較して調整します。"
+      },
+      "face_preservation": {
+        "name": "顔の保持",
+        "tooltip": "被写体の顔の特徴を保持します。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "output_height": {
+        "name": "出力高さ",
+        "tooltip": "0の場合は元の高さまたは出力幅と同じ高さで出力します。"
+      },
+      "output_width": {
+        "name": "出力幅",
+        "tooltip": "0の場合は自動計算（通常は元のサイズまたはoutput_heightが指定されていればそれを使用）。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "創造的なアップスケーリングのガイダンス用のオプションテキストプロンプト。"
+      },
+      "subject_detection": {
+        "name": "被写体検出"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhance": {
+    "description": "強力なアップスケーリングと復元技術で動画に新たな命を吹き込む。",
+    "display_name": "Topaz Video Enhance",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "動的圧縮レベル",
+        "tooltip": "CQPレベル。"
+      },
+      "interpolation_duplicate": {
+        "name": "重複フレーム除去",
+        "tooltip": "入力動画の重複フレームを解析し、削除します。"
+      },
+      "interpolation_duplicate_threshold": {
+        "name": "重複検出感度",
+        "tooltip": "重複フレームの検出感度。"
+      },
+      "interpolation_enabled": {
+        "name": "補間有効"
+      },
+      "interpolation_frame_rate": {
+        "name": "補間フレームレート",
+        "tooltip": "出力フレームレート。"
+      },
+      "interpolation_model": {
+        "name": "補間モデル"
+      },
+      "interpolation_slowmo": {
+        "name": "スローモーション補間",
+        "tooltip": "入力動画に適用されるスローモーション係数。例：2の場合、出力は2倍遅くなり、再生時間も2倍になります。"
+      },
+      "upscaler_creativity": {
+        "name": "アップスケーラー創造性",
+        "tooltip": "創造性レベル（Starlight (Astra) Creative のみ適用されます）。"
+      },
+      "upscaler_enabled": {
+        "name": "アップスケーラー有効"
+      },
+      "upscaler_model": {
+        "name": "アップスケーラーモデル"
+      },
+      "upscaler_resolution": {
+        "name": "アップスケーラー解像度"
+      },
+      "video": {
+        "name": "動画"
       }
     },
     "outputs": {
@@ -11202,6 +13364,10 @@
       "batch_size": {
         "name": "バッチサイズ",
         "tooltip": "学習に使用するバッチサイズ。"
+      },
+      "bucket_mode": {
+        "name": "バケットモード",
+        "tooltip": "解像度バケットモードを有効にします。有効時は、ResolutionBucketノードから事前にバケット化されたlatentを期待します。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -11263,20 +13429,20 @@
         "tooltip": "トレーニングに使用するデータ型。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_with_lora"
+    "outputs": [
+      {
+        "tooltip": "LoRA適用済みモデル"
       },
-      "1": {
-        "name": "lora"
+      {
+        "tooltip": "LoRA重み"
       },
-      "2": {
-        "name": "loss"
+      {
+        "tooltip": "損失履歴"
       },
-      "3": {
-        "name": "steps"
+      {
+        "tooltip": "総トレーニングステップ数"
       }
-    }
+    ]
   },
   "TrimAudioDuration": {
     "description": "オーディオテンソルを選択した時間範囲でトリミングします。",
@@ -11292,6 +13458,11 @@
       "start_index": {
         "name": "start_index",
         "tooltip": "開始時間（秒）。負の値を指定すると末尾からカウント（小数点以下対応）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11334,8 +13505,32 @@
   "TripoConversionNode": {
     "display_name": "Tripo: モデル変換",
     "inputs": {
+      "animate_in_place": {
+        "name": "その場でアニメーション"
+      },
+      "bake": {
+        "name": "ベイク"
+      },
+      "export_orientation": {
+        "name": "エクスポート方向"
+      },
+      "export_vertex_colors": {
+        "name": "頂点カラーをエクスポート"
+      },
       "face_limit": {
         "name": "face_limit"
+      },
+      "fbx_preset": {
+        "name": "FBXプリセット"
+      },
+      "flatten_bottom": {
+        "name": "底面を平坦化"
+      },
+      "flatten_bottom_threshold": {
+        "name": "底面平坦化しきい値"
+      },
+      "force_symmetry": {
+        "name": "対称性を強制"
       },
       "format": {
         "name": "format"
@@ -11343,14 +13538,29 @@
       "original_model_task_id": {
         "name": "original_model_task_id"
       },
+      "pack_uv": {
+        "name": "UVパック"
+      },
+      "part_names": {
+        "name": "パーツ名"
+      },
+      "pivot_to_center_bottom": {
+        "name": "ピボットを底面中央へ"
+      },
       "quad": {
         "name": "quad"
+      },
+      "scale_factor": {
+        "name": "スケール係数"
       },
       "texture_format": {
         "name": "texture_format"
       },
       "texture_size": {
         "name": "texture_size"
+      },
+      "with_animation": {
+        "name": "アニメーション付き"
       }
     }
   },
@@ -11359,6 +13569,9 @@
     "inputs": {
       "face_limit": {
         "name": "face_limit"
+      },
+      "geometry_quality": {
+        "name": "ジオメトリ品質"
       },
       "image": {
         "name": "image"
@@ -11411,6 +13624,9 @@
     "inputs": {
       "face_limit": {
         "name": "face_limit"
+      },
+      "geometry_quality": {
+        "name": "ジオメトリ品質"
       },
       "image": {
         "name": "image"
@@ -11529,6 +13745,9 @@
       "face_limit": {
         "name": "face_limit"
       },
+      "geometry_quality": {
+        "name": "ジオメトリ品質"
+      },
       "image_seed": {
         "name": "image_seed"
       },
@@ -11604,6 +13823,25 @@
       "1": {
         "name": "モデル タスクID",
         "tooltip": null
+      }
+    }
+  },
+  "TruncateText": {
+    "display_name": "テキストを切り詰める",
+    "inputs": {
+      "max_length": {
+        "name": "最大長",
+        "tooltip": "テキストの最大長。"
+      },
+      "texts": {
+        "name": "テキスト",
+        "tooltip": "処理するテキスト。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": "処理済みテキスト"
       }
     }
   },
@@ -11748,6 +13986,11 @@
       "vae": {
         "name": "vae"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VAEDecodeHunyuan3D": {
@@ -11764,6 +14007,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11811,6 +14059,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11889,6 +14142,63 @@
       },
       "steps": {
         "name": "ステップ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Veo3FirstLastFrameNode": {
+    "description": "プロンプトと最初・最後のフレームを使って動画を生成します。",
+    "display_name": "Google Veo 3 ファースト・ラストフレームから動画生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力動画のアスペクト比"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "出力動画の長さ（秒）"
+      },
+      "first_frame": {
+        "name": "最初のフレーム",
+        "tooltip": "開始フレーム"
+      },
+      "generate_audio": {
+        "name": "音声生成",
+        "tooltip": "動画用の音声を生成します。"
+      },
+      "last_frame": {
+        "name": "最後のフレーム",
+        "tooltip": "終了フレーム"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト",
+        "tooltip": "動画で避けたい内容を指定するネガティブテキストプロンプト"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画のテキスト説明"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "動画生成用のシード値"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12015,6 +14325,166 @@
       },
       "model": {
         "name": "モデル"
+      }
+    }
+  },
+  "Vidu2ImageToVideoNode": {
+    "description": "画像とオプションのプロンプトから動画を生成します。",
+    "display_name": "Vidu2 画像から動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "生成される動画の開始フレームとして使用する画像です。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "フレーム内のオブジェクトの動きの振幅。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "動画生成用のオプションテキストプロンプト（最大2000文字）。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "複数の参照画像とプロンプトから動画を生成します。",
+    "display_name": "Vidu2 参照画像から動画生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "有効にすると、プロンプトに基づいた音声とBGMが動画に含まれます。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "フレーム内のオブジェクトの動きの振幅。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "有効にすると、プロンプトに基づいた音声とBGMが動画に含まれます。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "各被写体ごとに最大3枚の参照画像を指定してください（全被写体で合計7枚まで）。プロンプト内で@subject{subject_id}で参照できます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "開始フレーム、終了フレーム、およびプロンプトから動画を生成します。",
+    "display_name": "Vidu2 開始/終了フレームからの動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "フレーム内のオブジェクトの動きの振幅。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "プロンプトの説明（最大2000文字）。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "テキストプロンプトから動画を生成します",
+    "display_name": "Vidu2 テキストから動画生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "background_music": {
+        "name": "background_music",
+        "tooltip": "生成された動画にBGMを追加するかどうか。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "動画生成用のテキスト説明（最大2000文字）。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12206,6 +14676,11 @@
       "voxel": {
         "name": "voxel"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VoxelToMeshBasic": {
@@ -12216,6 +14691,11 @@
       },
       "voxel": {
         "name": "ボクセル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12495,6 +14975,10 @@
       "context_stride": {
         "name": "コンテキストストライド",
         "tooltip": "コンテキストウィンドウのストライド。均一スケジュールにのみ適用されます。"
+      },
+      "freenoise": {
+        "name": "フリーノイズ",
+        "tooltip": "FreeNoiseノイズシャッフルを適用するかどうか。ウィンドウのブレンドを改善します。"
       },
       "fuse_method": {
         "name": "融合方法",
@@ -12836,9 +15320,130 @@
         "name": "シード",
         "tooltip": "生成に使用するシード値。"
       },
+      "shot_type": {
+        "name": "ショットタイプ",
+        "tooltip": "生成される動画のショットタイプ（単一連続ショットかカットを含む複数ショットか）を指定します。このパラメータはprompt_extendがTrueの時のみ有効です。"
+      },
       "watermark": {
         "name": "透かし",
         "tooltip": "結果に「AI生成」の透かしを追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveConcatTrack": {
+    "display_name": "WanMoveConcatTrack",
+    "inputs": {
+      "tracks_1": {
+        "name": "トラック1"
+      },
+      "tracks_2": {
+        "name": "トラック2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveTrackToVideo": {
+    "display_name": "WanMoveTrackToVideo",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "トラックコンディショニングの強度。"
+      },
+      "tracks": {
+        "name": "トラック"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveTracksFromCoords": {
+    "display_name": "WanMoveTracksFromCoords",
+    "inputs": {
+      "track_coords": {
+        "name": "トラック座標"
+      },
+      "track_mask": {
+        "name": "トラックマスク"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "トラック長",
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveVisualizeTracks": {
+    "display_name": "WanMoveVisualizeTracks",
+    "inputs": {
+      "circle_size": {
+        "name": "円のサイズ"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "line_resolution": {
+        "name": "線の解像度"
+      },
+      "line_width": {
+        "name": "線の太さ"
+      },
+      "opacity": {
+        "name": "不透明度"
+      },
+      "tracks": {
+        "name": "トラック"
       }
     },
     "outputs": {
@@ -12890,6 +15495,51 @@
       },
       "3": {
         "name": "潜在表現",
+        "tooltip": null
+      }
+    }
+  },
+  "WanReferenceVideoApi": {
+    "description": "入力動画のキャラクターと声を使用し、プロンプトと組み合わせてキャラクターの一貫性を保った新しい動画を生成します。",
+    "display_name": "Wan Reference to Video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "duration": {
+        "name": "長さ"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト",
+        "tooltip": "避けたい内容を説明するネガティブプロンプト。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "要素やビジュアル特徴を説明するプロンプト。英語と中国語に対応。`character1`や`character2`などの識別子で参照キャラクターを指定できます。"
+      },
+      "reference_videos": {
+        "name": "参照動画"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "shot_type": {
+        "name": "ショットタイプ",
+        "tooltip": "生成される動画のショットタイプ（単一連続ショットか複数カットか）を指定します。"
+      },
+      "size": {
+        "name": "サイズ"
+      },
+      "watermark": {
+        "name": "ウォーターマーク",
+        "tooltip": "AI生成のウォーターマークを結果に追加するかどうか。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13072,6 +15722,10 @@
         "name": "seed",
         "tooltip": "生成に使用するシード値。"
       },
+      "shot_type": {
+        "name": "ショットタイプ",
+        "tooltip": "生成される動画のショットタイプ（単一連続ショットか複数カットか）を指定します。このパラメータはprompt_extendがTrueの時のみ有効です。"
+      },
       "size": {
         "name": "size"
       },
@@ -13216,6 +15870,32 @@
       }
     }
   },
+  "ZImageFunControlnet": {
+    "display_name": "ZImageFunControlnet",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "inpaint_image": {
+        "name": "インペイント画像"
+      },
+      "mask": {
+        "name": "マスク"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_patch": {
+        "name": "モデルパッチ"
+      },
+      "strength": {
+        "name": "強度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    }
+  },
   "unCLIPCheckpointLoader": {
     "display_name": "unCLIPチェックポイントローダー",
     "inputs": {
@@ -13238,6 +15918,20 @@
       },
       "strength": {
         "name": "強度"
+      }
+    }
+  },
+  "wanBlockSwap": {
+    "description": "NOP",
+    "display_name": "wanBlockSwap",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   }

@@ -33,6 +33,9 @@ const mockSubscriptionData = {
     const baseName = TIER_TO_NAME[mockSubscriptionTier.value]
     return mockIsYearlySubscription.value ? `${baseName} Yearly` : baseName
   }),
+  subscriptionStatus: computed(() => ({
+    renewal_date: '2024-12-31T00:00:00Z'
+  })),
   isYearlySubscription: computed(() => mockIsYearlySubscription.value),
   handleInvoiceHistory: vi.fn()
 }

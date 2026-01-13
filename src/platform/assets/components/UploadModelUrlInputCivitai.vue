@@ -11,14 +11,14 @@
               <a
                 href="https://civitai.com/models"
                 target="_blank"
-                class="text-muted-foreground"
+                class="text-muted-foreground underline"
               >
                 {{ $t('assetBrowser.uploadModelDescription2Link') }}
               </a>
             </template>
           </i18n-t>
         </li>
-        <li>
+        <li v-if="!flags.asyncModelUploadEnabled">
           <i18n-t keypath="assetBrowser.uploadModelDescription3" tag="span">
             <template #size>
               <span class="font-bold italic">{{
@@ -38,21 +38,27 @@
           }}</span>
         </template>
       </i18n-t>
-      <InputText
-        v-model="url"
-        autofocus
-        :placeholder="$t('assetBrowser.civitaiLinkPlaceholder')"
-        class="w-full bg-secondary-background border-0 p-4"
-        data-attr="upload-model-step1-url-input"
-      />
-      <p v-if="error" class="text-xs text-error">
+      <div class="relative">
+        <InputText
+          v-model="url"
+          autofocus
+          :placeholder="$t('assetBrowser.civitaiLinkPlaceholder')"
+          class="w-full border-0 bg-secondary-background p-4 pr-10"
+          data-attr="upload-model-step1-url-input"
+        />
+        <i
+          v-if="isValidUrl"
+          class="icon-[lucide--circle-check-big] absolute top-1/2 right-3 size-5 -translate-y-1/2 text-green-500"
+        />
+      </div>
+      <p v-if="error" class="text-sm text-error">
         {{ error }}
       </p>
       <i18n-t
         v-else
         keypath="assetBrowser.civitaiLinkExample"
         tag="p"
-        class="text-xs"
+        class="text-sm"
       >
         <template #example>
           <strong>{{ $t('assetBrowser.civitaiLinkExampleStrong') }}</strong>
@@ -61,7 +67,7 @@
           <a
             href="https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295"
             target="_blank"
-            class="text-muted-foreground"
+            class="text-muted-foreground underline"
           >
             {{ $t('assetBrowser.civitaiLinkExampleUrl') }}
           </a>
@@ -73,10 +79,23 @@
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
+import { computed } from 'vue'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
+import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
+
+const { flags } = useFeatureFlags()
 
 defineProps<{
   error?: string
 }>()
 
 const url = defineModel<string>({ required: true })
+
+const isValidUrl = computed(() => {
+  const trimmedUrl = url.value.trim()
+  if (!trimmedUrl) return false
+  return validateSourceUrl(trimmedUrl, civitaiImportSource)
+})
 </script>

@@ -192,9 +192,9 @@ describe('PackEnableToggle', () => {
       const wrapper = mountComponent()
 
       // Check if warning icon exists
-      const warningIcon = wrapper.find('.pi-exclamation-triangle')
+      const warningIcon = wrapper.find('.icon-\\[lucide--triangle-alert\\]')
       expect(warningIcon.exists()).toBe(true)
-      expect(warningIcon.classes()).toContain('text-yellow-500')
+      expect(warningIcon.classes()).toContain('text-warning-background')
     })
 
     it('should not show warning icon when package has no conflicts', () => {
@@ -204,7 +204,7 @@ describe('PackEnableToggle', () => {
       const wrapper = mountComponent()
 
       // Check if warning icon does not exist
-      const warningIcon = wrapper.find('.pi-exclamation-triangle')
+      const warningIcon = wrapper.find('.icon-\\[lucide--triangle-alert\\]')
       expect(warningIcon.exists()).toBe(false)
     })
   })

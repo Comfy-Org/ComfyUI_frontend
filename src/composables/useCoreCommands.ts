@@ -64,10 +64,12 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useDialogStore } from '@/stores/dialogStore'
+
 const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
 
 const moveSelectedNodesVersionAdded = '1.22.2'
-
 export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
@@ -79,12 +81,24 @@ export function useCoreCommands(): ComfyCommand[] {
   const executionStore = useExecutionStore()
   const telemetry = useTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
+  const settingStore = useSettingStore()
 
   const bottomPanelStore = useBottomPanelStore()
+
+  const dialogStore = useDialogStore()
+  const maskEditorStore = useMaskEditorStore()
 
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const getTracker = () => workflowStore.activeWorkflow?.changeTracker
+
+  function isQueuePanelV2Enabled() {
+    return settingStore.get('Comfy.Queue.QPOV2')
+  }
+
+  async function toggleQueuePanelV2() {
+    await settingStore.set('Comfy.Queue.QPOV2', !isQueuePanelV2Enabled())
+  }
 
   const moveSelectedNodes = (
     positionUpdater: (pos: Point, gridSize: number) => Point
@@ -175,6 +189,26 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.RenameWorkflow',
+      icon: 'pi pi-pencil',
+      label: 'Rename Workflow',
+      menubarLabel: 'Rename',
+      function: async () => {
+        const workflow = workflowStore.activeWorkflow
+        if (!workflow || !workflow.isPersisted) return
+
+        const newName = await dialogService.prompt({
+          title: t('g.rename'),
+          message: t('workflowService.enterFilename') + ':',
+          defaultValue: workflow.filename
+        })
+        if (!newName || newName === workflow.filename) return
+
+        const newPath = workflow.directory + '/' + newName + '.json'
+        await workflowService.renameWorkflow(workflow, newPath)
+      }
+    },
+    {
       id: 'Comfy.ExportWorkflow',
       icon: 'pi pi-download',
       label: 'Export Workflow',
@@ -199,7 +233,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Undo',
       category: 'essentials' as const,
       function: async () => {
-        await getTracker()?.undo?.()
+        // If Mask Editor is open, use its history instead of the graph
+        if (dialogStore.isDialogOpen('global-mask-editor')) {
+          maskEditorStore.canvasHistory.undo()
+        } else {
+          await getTracker()?.undo?.()
+        }
       }
     },
     {
@@ -208,7 +247,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Redo',
       category: 'essentials' as const,
       function: async () => {
-        await getTracker()?.redo?.()
+        if (dialogStore.isDialogOpen('global-mask-editor')) {
+          maskEditorStore.canvasHistory.redo()
+        } else {
+          await getTracker()?.redo?.()
+        }
       }
     },
     {
@@ -898,15 +941,6 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
-      id: 'Comfy.Manager.ToggleManagerProgressDialog',
-      icon: 'pi pi-spinner',
-      label: 'Toggle the Custom Nodes Manager Progress Bar',
-      versionAdded: '1.13.9',
-      function: () => {
-        dialogService.toggleManagerProgressDialog()
-      }
-    },
-    {
       id: 'Comfy.User.OpenSignInDialog',
       icon: 'pi pi-user',
       label: 'Open Sign In Dialog',
@@ -1190,6 +1224,12 @@ export function useCoreCommands(): ComfyCommand[] {
         await settingStore.set('Comfy.Assets.UseAssetAPI', !current)
         await useWorkflowService().reloadCurrentWorkflow() // ensure changes take effect immediately
       }
+    },
+    {
+      id: 'Comfy.ToggleQPOV2',
+      icon: 'pi pi-list',
+      label: 'Toggle Queue Panel V2',
+      function: toggleQueuePanelV2
     },
     {
       id: 'Comfy.ToggleLinear',

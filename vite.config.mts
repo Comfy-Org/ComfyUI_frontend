@@ -482,12 +482,6 @@ export default defineConfig({
       : []
   },
 
-  test: {
-    globals: true,
-    environment: 'happy-dom',
-    setupFiles: ['./vitest.setup.ts']
-  },
-
   define: {
     __COMFYUI_FRONTEND_VERSION__: JSON.stringify(
       process.env.npm_package_version

@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "ワークフロー内のキャンバスの位置とズームレベルを保存および復元する"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "ライブプレビューメソッド",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "none",
+      "taesd": "taesd"
+    },
+    "tooltip": "画像生成中のライブプレビューメソッド。「default」はサーバーのCLI設定を使用します。"
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "浮動小数点ウィジェットの丸め小数点数 [0 = 自動]。",
     "tooltip": "(ページの再読み込みが必要)"
@@ -99,6 +110,10 @@
       "Circle": "円",
       "None": "なし"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "ライブ選択",
+    "tooltip": "有効にすると、他のデザインツールのように選択範囲をドラッグする際、ノードがリアルタイムで選択／解除されます。"
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "キャンバスズーム速度"
@@ -165,6 +180,15 @@
   "Comfy_Load3D_LightIntensityMinimum": {
     "name": "光の強度の最小値",
     "tooltip": "3Dシーンで許可される光の強度の最小値を設定します。これは、3Dウィジェットで照明を調整する際に設定できる明るさの下限を定義します。"
+  },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLYエンジン",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLYファイルを読み込むエンジンを選択します。「threejs」はネイティブのThree.js PLYLoaderを使用します（メッシュPLYファイルに最適）。「fastply」はASCIIポイントクラウドPLYファイル用の最適化されたローダーです。「sparkjs」は3D Gaussian Splatting PLYファイル用のSpark.jsを使用します。"
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "グリッドを表示",
@@ -344,6 +368,14 @@
   },
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "ツリーエクスプローラーアイテムのパディング"
+  },
+  "Comfy_UI_TabBarLayout": {
+    "name": "タブバーのレイアウト",
+    "options": {
+      "Default": "デフォルト",
+      "Integrated": "統合"
+    },
+    "tooltip": "タブバーのレイアウトを制御します。「統合」を選択すると、ヘルプとユーザーコントロールがタブバーエリアに移動します。"
   },
   "Comfy_UseNewMenu": {
     "name": "新しいメニューを使用",

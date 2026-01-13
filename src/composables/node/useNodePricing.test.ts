@@ -1664,31 +1664,41 @@ describe('useNodePricing', () => {
           {
             model: 'gemini-2.5-pro-preview-05-06',
             expected: creditsListLabel([0.00125, 0.01], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gemini-2.5-pro',
             expected: creditsListLabel([0.00125, 0.01], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gemini-3-pro-preview',
             expected: creditsListLabel([0.002, 0.012], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gemini-2.5-flash-preview-04-17',
             expected: creditsListLabel([0.0003, 0.0025], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gemini-2.5-flash',
             expected: creditsListLabel([0.0003, 0.0025], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           { model: 'unknown-gemini-model', expected: 'Token-based' }
@@ -1700,16 +1710,6 @@ describe('useNodePricing', () => {
           ])
           expect(getNodeDisplayPrice(node)).toBe(expected)
         })
-      })
-
-      it('should return per-second pricing for Gemini Veo models', () => {
-        const { getNodeDisplayPrice } = useNodePricing()
-        const node = createMockNode('GeminiNode', [
-          { name: 'model', value: 'veo-2.0-generate-001' }
-        ])
-
-        const price = getNodeDisplayPrice(node)
-        expect(price).toBe(creditsLabel(0.5, { suffix: '/second' }))
       })
 
       it('should return fallback for GeminiNode without model widget', () => {
@@ -1737,73 +1737,97 @@ describe('useNodePricing', () => {
           {
             model: 'o4-mini',
             expected: creditsListLabel([0.0011, 0.0044], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'o1-pro',
             expected: creditsListLabel([0.15, 0.6], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'o1',
             expected: creditsListLabel([0.015, 0.06], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'o3-mini',
             expected: creditsListLabel([0.0011, 0.0044], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'o3',
             expected: creditsListLabel([0.01, 0.04], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-4o',
             expected: creditsListLabel([0.0025, 0.01], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-4.1-nano',
             expected: creditsListLabel([0.0001, 0.0004], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-4.1-mini',
             expected: creditsListLabel([0.0004, 0.0016], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-4.1',
             expected: creditsListLabel([0.002, 0.008], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-5-nano',
             expected: creditsListLabel([0.00005, 0.0004], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-5-mini',
             expected: creditsListLabel([0.00025, 0.002], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-5',
             expected: creditsListLabel([0.00125, 0.01], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           }
         ]
@@ -1824,37 +1848,49 @@ describe('useNodePricing', () => {
           {
             model: 'gpt-4.1-nano-test',
             expected: creditsListLabel([0.0001, 0.0004], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-4.1-mini-test',
             expected: creditsListLabel([0.0004, 0.0016], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'gpt-4.1-test',
             expected: creditsListLabel([0.002, 0.008], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'o1-pro-test',
             expected: creditsListLabel([0.15, 0.6], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'o1-test',
             expected: creditsListLabel([0.015, 0.06], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           {
             model: 'o3-mini-test',
             expected: creditsListLabel([0.0011, 0.0044], {
-              suffix: ' per 1K tokens'
+              suffix: ' per 1K tokens',
+              approximate: true,
+              separator: '-'
             })
           },
           { model: 'unknown-model', expected: 'Token-based' }

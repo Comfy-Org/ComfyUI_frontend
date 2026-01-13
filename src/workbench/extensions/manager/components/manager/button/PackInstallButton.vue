@@ -7,7 +7,7 @@
   >
     <i
       v-if="hasConflict && !isInstalling && !isLoading"
-      class="pi pi-exclamation-triangle text-yellow-500"
+      class="icon-[lucide--triangle-alert] text-warning-background"
     />
     <DotSpinner
       v-else-if="isLoading || isInstalling"

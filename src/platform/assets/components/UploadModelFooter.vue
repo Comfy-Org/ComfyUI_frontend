@@ -80,14 +80,33 @@
       <i v-if="isUploading" class="icon-[lucide--loader-circle] animate-spin" />
       <span>{{ $t('assetBrowser.upload') }}</span>
     </Button>
-    <Button
-      v-else-if="currentStep === 3 && uploadStatus === 'success'"
-      variant="secondary"
-      data-attr="upload-model-step3-finish-button"
-      @click="emit('close')"
+    <template
+      v-else-if="
+        currentStep === 3 &&
+        (uploadStatus === 'success' || uploadStatus === 'processing')
+      "
     >
-      {{ $t('assetBrowser.finish') }}
-    </Button>
+      <Button
+        variant="muted-textonly"
+        size="lg"
+        data-attr="upload-model-step3-import-another-button"
+        @click="emit('importAnother')"
+      >
+        {{ $t('assetBrowser.importAnother') }}
+      </Button>
+      <Button
+        variant="secondary"
+        size="lg"
+        data-attr="upload-model-step3-finish-button"
+        @click="emit('close')"
+      >
+        {{
+          uploadStatus === 'processing'
+            ? $t('g.close')
+            : $t('assetBrowser.finish')
+        }}
+      </Button>
+    </template>
     <VideoHelpDialog
       v-model="showCivitaiHelp"
       video-url="https://media.comfy.org/compressed_768/civitai_howto.webm"
@@ -119,7 +138,7 @@ defineProps<{
   isUploading: boolean
   canFetchMetadata: boolean
   canUploadModel: boolean
-  uploadStatus: 'idle' | 'uploading' | 'success' | 'error'
+  uploadStatus?: 'processing' | 'success' | 'error'
 }>()
 
 const emit = defineEmits<{
@@ -127,5 +146,6 @@ const emit = defineEmits<{
   (e: 'fetchMetadata'): void
   (e: 'upload'): void
   (e: 'close'): void
+  (e: 'importAnother'): void
 }>()
 </script>

@@ -1,6 +1,5 @@
 <template>
   <div
-    v-if="!deletedLocal"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
@@ -33,7 +32,7 @@
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
-        v-if="flags.assetUpdateOptionsEnabled && !(asset.is_immutable ?? true)"
+        v-if="showAssetOptions"
         :class="
           cn(
             'absolute top-2 right-2 invisible group-hover:visible',
@@ -44,6 +43,7 @@
         <MoreButton ref="dropdown-menu-button" size="sm">
           <template #default>
             <Button
+              v-if="flags.assetRenameEnabled"
               variant="secondary"
               size="md"
               class="justify-start"
@@ -53,6 +53,7 @@
               <span>{{ $t('g.rename') }}</span>
             </Button>
             <Button
+              v-if="flags.assetDeletionEnabled"
               variant="secondary"
               size="md"
               class="justify-start"
@@ -137,8 +138,9 @@ const { asset, interactive } = defineProps<{
   interactive?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   select: [asset: AssetDisplayItem]
+  deleted: [asset: AssetDisplayItem]
 }>()
 
 const { t } = useI18n()
@@ -156,9 +158,14 @@ const descId = useId()
 
 const isEditing = ref(false)
 const newNameRef = ref<string>()
-const deletedLocal = ref(false)
 
 const displayName = computed(() => newNameRef.value ?? asset.name)
+
+const showAssetOptions = computed(
+  () =>
+    (flags.assetDeletionEnabled || flags.assetRenameEnabled) &&
+    !(asset.is_immutable ?? true)
+)
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
@@ -203,7 +210,7 @@ function confirmDeletion() {
           })
           // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
-          deletedLocal.value = true
+          emit('deleted', asset)
         } catch (err: unknown) {
           console.error(err)
           promptText.value = t('assetBrowser.deletion.failed', {

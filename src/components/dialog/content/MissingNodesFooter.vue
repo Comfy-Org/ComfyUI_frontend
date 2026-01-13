@@ -22,7 +22,7 @@
 
   <!-- OSS mode: Open Manager + Install All buttons -->
   <div v-else-if="showManagerButtons" class="flex justify-end gap-1 py-2 px-4">
-    <Button variant="textonly" size="sm" @click="openManager">{{
+    <Button variant="textonly" @click="openManager">{{
       $t('g.openManager')
     }}</Button>
     <PackInstallButton
