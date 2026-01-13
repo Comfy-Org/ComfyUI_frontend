@@ -323,14 +323,6 @@ export class TaskItemImpl {
   }
 
   /**
-   * Extracts the execution error message from status messages.
-   * Used by error reporting UI components.
-   */
-  get errorMessage(): string | undefined {
-    return this.executionError?.exception_message
-  }
-
-  /**
    * Extracts the full execution error from status messages.
    * Returns the ExecutionErrorWsMessage for detailed error dialogs.
    * Uses Zod validation to ensure type safety.
