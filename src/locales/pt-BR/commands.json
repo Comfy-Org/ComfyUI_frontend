@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "Atualizar Definições de Nós"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "Renomear Workflow"
+  },
   "Comfy_SaveWorkflow": {
     "label": "Salvar Fluxo de Trabalho"
   },

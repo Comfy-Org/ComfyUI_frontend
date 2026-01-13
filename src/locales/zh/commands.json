@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "刷新节点定义"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "重命名工作流"
+  },
   "Comfy_SaveWorkflow": {
     "label": "保存工作流"
   },
