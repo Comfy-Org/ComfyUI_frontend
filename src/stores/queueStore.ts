@@ -324,6 +324,10 @@ export class TaskItemImpl {
   /**
    * Extracts the execution error message from status messages.
    * Used by error reporting UI components.
+   *
+   * Note: The type cast is required because `messages` is typed as
+   * `Array<[string, unknown]>` - TypeScript cannot narrow the second tuple
+   * element's type based on a runtime string check for 'execution_error'.
    */
   get errorMessage(): string | undefined {
     const messages = this.status?.messages
@@ -337,6 +341,10 @@ export class TaskItemImpl {
   /**
    * Extracts the full execution error from status messages.
    * Returns the ExecutionErrorWsMessage for detailed error dialogs.
+   *
+   * Note: The type cast is required because `messages` is typed as
+   * `Array<[string, unknown]>` - TypeScript cannot narrow the second tuple
+   * element's type based on a runtime string check for 'execution_error'.
    */
   get executionError(): ExecutionErrorWsMessage | undefined {
     const messages = this.status?.messages
