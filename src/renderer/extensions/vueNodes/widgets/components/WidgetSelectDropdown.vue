@@ -60,8 +60,9 @@ const combinedProps = computed(() => ({
 }))
 
 const getAssetData = () => {
-  if (props.isAssetMode && props.nodeType) {
-    return useAssetWidgetData(toRef(() => props.nodeType))
+  const nodeType = props.widget.options?.nodeType ?? props.nodeType
+  if (props.isAssetMode && nodeType) {
+    return useAssetWidgetData(toRef(nodeType))
   }
   return null
 }
