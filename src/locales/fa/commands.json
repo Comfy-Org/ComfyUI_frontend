@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "به‌روزرسانی تعاریف نود"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "تغییر نام Workflow"
+  },
   "Comfy_SaveWorkflow": {
     "label": "ذخیره ورک‌فلو"
   },

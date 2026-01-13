@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "تحديث تعريفات العقد"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "إعادة تسمية سير العمل"
+  },
   "Comfy_SaveWorkflow": {
     "label": "حفظ سير العمل"
   },
