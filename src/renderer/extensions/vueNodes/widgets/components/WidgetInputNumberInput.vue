@@ -14,10 +14,11 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
+const { n } = useI18n()
+
 const props = defineProps<{
   widget: SimplifiedWidget<number>
 }>()
-const { locale } = useI18n()
 
 const widgetContainer = useTemplateRef<HTMLDivElement>('widgetContainer')
 const inputField = useTemplateRef<HTMLInputElement>('inputField')
@@ -28,16 +29,8 @@ onClickOutside(widgetContainer, () => {
   }
 })
 
-const decimalSeparator = computed(() =>
-  Intl.NumberFormat(locale.value)
-    .format(1.1)
-    .replace(/\p{Number}/gu, '')
-)
-const groupSeparator = computed(() =>
-  Intl.NumberFormat(locale.value)
-    .format(11111)
-    .replace(/\p{Number}/gu, '')
-)
+const decimalSeparator = computed(() => n(1.1).replace(/\p{Number}/gu, ''))
+const groupSeparator = computed(() => n(11111).replace(/\p{Number}/gu, ''))
 function unformatValue(value: string) {
   return value
     .replaceAll(groupSeparator.value, '')
@@ -47,11 +40,11 @@ function unformatValue(value: string) {
 const modelValue = defineModel<number>({ default: 0 })
 
 const formattedValue = computed(() =>
-  new Intl.NumberFormat(locale.value, {
+  n(dragValue.value ?? modelValue.value, {
     useGrouping: useGrouping.value,
     minimumFractionDigits: precision.value,
     maximumFractionDigits: precision.value
-  }).format(dragValue.value ?? modelValue.value)
+  })
 )
 
 function updateValue(e: UIEvent) {
@@ -131,6 +124,13 @@ const buttonsDisabled = computed(() => {
   )
 })
 
+function updateValueBy(delta: number) {
+  modelValue.value = Math.min(
+    filteredProps.value.max,
+    Math.max(filteredProps.value.min, modelValue.value + delta)
+  )
+}
+
 const dragValue = ref<number>()
 const dragDelta = ref(0)
 function handleMouseDown(e: PointerEvent) {
@@ -145,7 +145,8 @@ function handleMouseMove(e: PointerEvent) {
   if (dragValue.value === undefined) return
   dragDelta.value += e.movementX
   const unclippedValue =
-    modelValue.value + ((dragDelta.value / 10) | 0) * stepValue.value
+    dragValue.value + ((dragDelta.value / 10) | 0) * stepValue.value
+  dragDelta.value %= 10
   dragValue.value = Math.min(
     filteredProps.value.max,
     Math.max(filteredProps.value.min, unclippedValue)
@@ -184,6 +185,7 @@ const buttonTooltip = computed(() => {
     >
       <button
         v-if="!buttonsDisabled"
+        data-testid="decrement"
         :class="
           cn(sharedButtonClass, 'pi pi-minus', !canDecrement && 'opacity-60')
         "
@@ -212,24 +214,10 @@ const buttonTooltip = computed(() => {
           spellcheck="false"
           @blur="updateValue"
           @keyup.enter="updateValue"
-          @keydown.up.prevent="
-            modelValue = Math.min(modelValue + stepValue, filteredProps.max)
-          "
-          @keydown.down.prevent="
-            modelValue = Math.max(modelValue - stepValue, filteredProps.min)
-          "
-          @keydown.page-up.prevent="
-            modelValue = Math.min(
-              modelValue + 10 * stepValue,
-              filteredProps.max
-            )
-          "
-          @keydown.page-down.prevent="
-            modelValue = Math.max(
-              modelValue - 10 * stepValue,
-              filteredProps.min
-            )
-          "
+          @keydown.up.prevent="updateValueBy(stepValue)"
+          @keydown.down.prevent="updateValueBy(-stepValue)"
+          @keydown.page-up.prevent="updateValueBy(10 * stepValue)"
+          @keydown.page-down.prevent="updateValueBy(-10 * stepValue)"
           @dragstart.prevent
         />
         <div
@@ -254,6 +242,7 @@ const buttonTooltip = computed(() => {
       <slot />
       <button
         v-if="!buttonsDisabled"
+        data-testid="increment"
         :class="
           cn(sharedButtonClass, 'pi pi-plus', !canIncrement && 'opacity-60')
         "
