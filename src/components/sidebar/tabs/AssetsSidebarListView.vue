@@ -83,7 +83,7 @@
             <Button
               variant="secondary"
               size="icon"
-              :aria-label="t('g.moreOptions')"
+              :aria-label="t('mediaAsset.actions.moreOptions')"
               @click.stop="emit('context-menu', $event, item.asset)"
             >
               <i class="icon-[lucide--ellipsis] size-4" />
