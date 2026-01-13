@@ -6417,7 +6417,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (nodeNewOpts.inputs) {
               newNode.inputs = []
               for (const input of nodeNewOpts.inputs) {
-                newNode.addOutput(input[0], input[1])
+                newNode.addInput(input[0], input[1])
               }
             }
             if (nodeNewOpts.outputs) {
@@ -7249,13 +7249,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const filter = graphcanvas.filter || graphcanvas.graph.filter
 
         // filter by type preprocess
-        let sIn: HTMLInputElement | null = null
-        let sOut: HTMLInputElement | null = null
+        let sIn: HTMLSelectElement | null = null
+        let sOut: HTMLSelectElement | null = null
         if (options.do_type_filter && that.search_box) {
-          sIn = that.search_box.querySelector<HTMLInputElement>(
+          sIn = that.search_box.querySelector<HTMLSelectElement>(
             '.slot_in_type_filter'
           )
-          sOut = that.search_box.querySelector<HTMLInputElement>(
+          sOut = that.search_box.querySelector<HTMLSelectElement>(
             '.slot_out_type_filter'
           )
         }

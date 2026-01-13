@@ -97,7 +97,7 @@ export type NodeId = number | string
 export type NodeProperty = string | number | boolean | object
 
 interface INodePropertyInfo {
-  name: string
+  name?: string
   type?: string
   default_value?: NodeProperty
   widget?: string
