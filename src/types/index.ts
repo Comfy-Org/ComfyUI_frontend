@@ -24,7 +24,7 @@ import type {
   ToastMessageOptions
 } from './extensionTypes'
 
-export type { ComfyExtension } from './comfy'
+export type { ComfyExtension, VueWidgetDefinition, VueWidgets } from './comfy'
 export type { ComfyApi } from '@/scripts/api'
 export type { ComfyApp } from '@/scripts/app'
 export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
