@@ -161,6 +161,8 @@ The project uses **Nx** for build orchestration and task management
 
 ## Testing Guidelines
 
+See @docs/testing/*.md for detailed patterns.
+
 - Frameworks:
   - Vitest (unit/component, happy-dom)
   - Playwright (E2E)
