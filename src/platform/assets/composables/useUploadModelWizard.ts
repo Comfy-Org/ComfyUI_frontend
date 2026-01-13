@@ -245,7 +245,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           if (selectedModelType.value) {
             assetDownloadStore.trackDownload(
               result.task.task_id,
-              selectedModelType.value
+              selectedModelType.value,
+              filename
             )
           }
           uploadStatus.value = 'processing'
