@@ -342,7 +342,8 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   //ensure outputs get updated
   const index = node.inputs.length - 1
   requestAnimationFrame(() => {
-    const input = node.inputs.at(index)!
+    const input = node.inputs.at(index)
+    if (!input) return
     node.onConnectionsChange?.(
       LiteGraph.INPUT,
       index,
@@ -454,6 +455,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       inp.name.lastIndexOf('.') === groupName.length
   )
   const stride = inputSpecs.length
+  if (stride + index >= node.inputs.length) return
   if (groupInputs.length % stride !== 0) {
     console.error('Failed to group multi-input autogrow inputs')
     return
@@ -474,10 +476,24 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       const curIndex = node.inputs.findIndex((inp) => inp === curInput)
       if (curIndex === -1) throw new Error('missing input')
       link.target_slot = curIndex
+      node.onConnectionsChange?.(
+        LiteGraph.INPUT,
+        curIndex,
+        true,
+        link,
+        curInput
+      )
     }
     const lastInput = groupInputs.at(column - stride)
     if (!lastInput) continue
     lastInput.link = null
+    node.onConnectionsChange?.(
+      LiteGraph.INPUT,
+      node.inputs.length + column - stride,
+      false,
+      null,
+      lastInput
+    )
   }
   const removalChecks = groupInputs.slice((min - 1) * stride)
   let i
