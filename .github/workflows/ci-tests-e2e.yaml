@@ -144,6 +144,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Download blob reports
         uses: actions/download-artifact@v4
         with:
@@ -154,10 +159,10 @@ jobs:
       - name: Merge into HTML Report
         run: |
           # Generate HTML report
-          npx @playwright/test merge-reports --reporter=html ./all-blob-reports
+          pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports
           # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          npx @playwright/test merge-reports --reporter=json ./all-blob-reports
+          pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v4
