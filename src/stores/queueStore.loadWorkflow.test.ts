@@ -8,7 +8,7 @@ import type {
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { TaskItemImpl } from '@/stores/queueStore'
-import * as jobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
+import * as jobOutputCache from '@/services/jobOutputCache'
 
 vi.mock('@/services/extensionService', () => ({
   useExtensionService: vi.fn(() => ({
@@ -90,16 +90,13 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     const job = createHistoryJob('test-prompt-id')
     const task = new TaskItemImpl(job)
 
-    vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
       mockJobDetail as JobDetail
     )
 
     await task.loadWorkflow(mockApp)
 
-    expect(jobsModule.fetchJobDetail).toHaveBeenCalledWith(
-      expect.any(Function),
-      'test-prompt-id'
-    )
+    expect(jobOutputCache.getJobDetail).toHaveBeenCalledWith('test-prompt-id')
     expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
   })
 
@@ -107,11 +104,11 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     const job = createHistoryJob('test-prompt-id')
     const task = new TaskItemImpl(job)
 
-    vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(undefined)
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(undefined)
 
     await task.loadWorkflow(mockApp)
 
-    expect(jobsModule.fetchJobDetail).toHaveBeenCalled()
+    expect(jobOutputCache.getJobDetail).toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
   })
 
@@ -119,13 +116,13 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     const job = createRunningJob('test-prompt-id')
     const runningTask = new TaskItemImpl(job)
 
-    vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
       mockJobDetail as JobDetail
     )
 
     await runningTask.loadWorkflow(mockApp)
 
-    expect(jobsModule.fetchJobDetail).not.toHaveBeenCalled()
+    expect(jobOutputCache.getJobDetail).not.toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
   })
 
@@ -133,11 +130,11 @@ describe('TaskItemImpl.loadWorkflow - workflow fetching', () => {
     const job = createHistoryJob('test-prompt-id')
     const task = new TaskItemImpl(job)
 
-    vi.spyOn(jobsModule, 'fetchJobDetail').mockResolvedValue(undefined)
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(undefined)
 
     await task.loadWorkflow(mockApp)
 
-    expect(jobsModule.fetchJobDetail).toHaveBeenCalled()
+    expect(jobOutputCache.getJobDetail).toHaveBeenCalled()
     expect(mockApp.loadGraphData).not.toHaveBeenCalled()
   })
 })
