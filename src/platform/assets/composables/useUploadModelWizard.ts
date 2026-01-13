@@ -245,7 +245,8 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
           if (selectedModelType.value) {
             assetDownloadStore.trackDownload(
               result.task.task_id,
-              selectedModelType.value
+              selectedModelType.value,
+              filename
             )
           }
           uploadStatus.value = 'processing'
@@ -284,6 +285,20 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     }
   }
 
+  function resetWizard() {
+    currentStep.value = 1
+    isFetchingMetadata.value = false
+    isUploading.value = false
+    uploadStatus.value = undefined
+    uploadError.value = ''
+    wizardData.value = {
+      url: '',
+      name: '',
+      tags: []
+    }
+    selectedModelType.value = undefined
+  }
+
   return {
     // State
     currentStep,
@@ -302,6 +317,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     // Actions
     fetchMetadata,
     uploadModel,
-    goToPreviousStep
+    goToPreviousStep,
+    resetWizard
   }
 }

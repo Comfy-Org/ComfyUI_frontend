@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import type { ISelectButtonWidget } from '../types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
@@ -29,7 +31,7 @@ export class SelectButtonWidget
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
-    const text = 'SelectButton: Vue-only'
+    const text = `SelectButton: ${t('widgets.node2only')}`
     ctx.fillText(text, width / 2, y + height / 2)
 
     Object.assign(ctx, {

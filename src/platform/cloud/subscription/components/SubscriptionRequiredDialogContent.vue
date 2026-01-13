@@ -128,7 +128,6 @@ import PricingTable from '@/platform/cloud/subscription/components/PricingTable.
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -140,7 +139,8 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { fetchStatus, isActiveSubscription } = useSubscription()
+const { fetchStatus, isActiveSubscription, isSubscriptionEnabled } =
+  useSubscription()
 
 // Legacy price for non-tier flow with locale-aware formatting
 const formattedMonthlyPrice = new Intl.NumberFormat(
@@ -156,9 +156,7 @@ const commandStore = useCommandStore()
 const telemetry = useTelemetry()
 
 // Always show custom pricing table for cloud subscriptions
-const showCustomPricingTable = computed(
-  () => isCloud && window.__CONFIG__?.subscription_required
-)
+const showCustomPricingTable = computed(() => isSubscriptionEnabled())
 
 const POLL_INTERVAL_MS = 3000
 const MAX_POLL_ATTEMPTS = 3
