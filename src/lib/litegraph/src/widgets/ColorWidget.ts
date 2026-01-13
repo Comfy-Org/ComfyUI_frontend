@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import type { IColorWidget } from '../types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
@@ -29,7 +31,7 @@ export class ColorWidget
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
-    const text = 'Color: Vue-only'
+    const text = `Color: ${t('widgets.node2only')}`
     ctx.fillText(text, width / 2, y + height / 2)
 
     Object.assign(ctx, {
