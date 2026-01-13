@@ -428,7 +428,12 @@ onMounted(async () => {
 
   await newUserService().initializeIfNewUser(settingStore)
 
-  if (!canvasRef.value) return
+  if (!canvasRef.value) {
+    console.error(
+      '[GraphCanvas] canvasRef.value is null during onMounted - comfyApp.setup was skipped'
+    )
+    return
+  }
   await comfyApp.setup(canvasRef.value)
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false

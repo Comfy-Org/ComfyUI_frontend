@@ -82,7 +82,7 @@ watch(
           : inputValue.value
         const start = 0
         const end = fileName.length
-        el.setSelectionRange?.(start, end)
+        el.setSelectionRange(start, end)
       })
     }
   },

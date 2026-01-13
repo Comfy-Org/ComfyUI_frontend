@@ -63,5 +63,13 @@ const closePopover = () => {
   popover.value?.hide()
 }
 
-defineExpose({ popover, closePopover })
+const openPopover = (event: Event) => {
+  popover.value?.show(event)
+}
+
+const togglePopover = (event: Event) => {
+  popover.value?.toggle(event)
+}
+
+defineExpose({ closePopover, openPopover, togglePopover })
 </script>

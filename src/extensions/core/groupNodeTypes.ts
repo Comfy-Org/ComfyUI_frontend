@@ -51,7 +51,16 @@ export interface GroupNodeInputsSpec {
 export type GroupNodeOutputType = string | (string | number)[]
 
 /**
- * Partial link info used internally by group node getInputLink override.
- * Extends ILinkRouting to be compatible with the base getInputLink return type.
+ * Represents a partial or synthetic link used internally by group node's
+ * `getInputLink` override when resolving connections through collapsed group nodes.
+ *
+ * Unlike a full `ILinkRouting`, this represents a computed/virtual link that may not
+ * correspond to an actual link in the graph's link registry. It's constructed on-the-fly
+ * to represent the logical connection path through group node boundaries.
+ *
+ * This type aliases `ILinkRouting` (rather than narrowing it) because the consuming code
+ * expects the same shape for both real and synthetic links. The distinction is purely
+ * semantic: callers should be aware that these links are transient and may not have
+ * valid `link_id` references in the global link map.
  */
 export interface PartialLinkInfo extends ILinkRouting {}

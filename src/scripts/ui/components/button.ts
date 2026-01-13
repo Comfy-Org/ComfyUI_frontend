@@ -28,15 +28,15 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
   contentElement = $el('span')
   popup: ComfyPopup | null = null
   element: HTMLElement
-  overIcon!: string
-  iconSize!: number
-  content!: string | HTMLElement
-  icon!: string
-  tooltip!: string
-  classList!: ClassList
-  hidden!: boolean
-  enabled!: boolean
-  action!: (e: Event, btn: ComfyButton) => void
+  overIcon: string | undefined
+  iconSize: number | undefined
+  content: string | HTMLElement | undefined
+  icon: string | undefined
+  tooltip: string | undefined
+  classList: ClassList | undefined
+  hidden: boolean | undefined
+  enabled: boolean | undefined
+  action: ((e: Event, btn: ComfyButton) => void) | undefined
 
   constructor({
     icon,
@@ -74,13 +74,13 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
       'icon',
       icon,
       toggleElement(this.iconElement, { onShow: this.updateIcon })
-    )!
+    )
     this.overIcon = prop(this, 'overIcon', overIcon, () => {
       if (this.isOver) {
         this.updateIcon()
       }
-    })!
-    this.iconSize = prop(this, 'iconSize', iconSize, this.updateIcon)!
+    })
+    this.iconSize = prop(this, 'iconSize', iconSize, this.updateIcon)
     this.content = prop(
       this,
       'content',
@@ -94,7 +94,7 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
           }
         }
       })
-    )!
+    )
 
     this.tooltip = prop(this, 'tooltip', tooltip, (v) => {
       if (v) {
@@ -102,17 +102,17 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
       } else {
         this.element.removeAttribute('title')
       }
-    })!
+    })
     if (tooltip !== undefined) {
       this.element.setAttribute('aria-label', tooltip)
     }
-    this.classList = prop(this, 'classList', classList, this.updateClasses)!
-    this.hidden = prop(this, 'hidden', false, this.updateClasses)!
+    this.classList = prop(this, 'classList', classList, this.updateClasses)
+    this.hidden = prop(this, 'hidden', false, this.updateClasses)
     this.enabled = prop(this, 'enabled', enabled, () => {
       this.updateClasses()
       ;(this.element as HTMLButtonElement).disabled = !this.enabled
-    })!
-    this.action = prop(this, 'action', action)!
+    })
+    this.action = prop(this, 'action', action)
     this.element.addEventListener('click', (e) => {
       if (this.popup) {
         // we are either a touch device or triggered by click not hover
@@ -154,7 +154,9 @@ export class ComfyButton implements ComfyComponent<HTMLElement> {
         internalClasses.push('popup-closed')
       }
     }
-    applyClasses(this.element, this.classList, ...internalClasses)
+    if (this.classList !== undefined) {
+      applyClasses(this.element, this.classList, ...internalClasses)
+    }
   }
 
   withPopup(popup: ComfyPopup, mode: 'click' | 'hover' = 'click') {

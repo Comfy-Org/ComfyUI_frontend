@@ -37,12 +37,15 @@ app.registerExtension({
             })
             container.replaceChildren(video)
 
-            setTimeout(() => resolveVideo(video), 500) // Fallback as loadedmetadata doesnt fire sometimes?
-            video.addEventListener(
-              'loadedmetadata',
-              () => resolveVideo(video),
-              false
-            )
+            let resolved = false
+            const resolve = () => {
+              if (resolved) return
+              resolved = true
+              clearTimeout(fallbackTimeout)
+              resolveVideo(video)
+            }
+            const fallbackTimeout = setTimeout(resolve, 500)
+            video.addEventListener('loadedmetadata', resolve, { once: true })
             video.srcObject = stream
             video.play()
           } catch (error) {

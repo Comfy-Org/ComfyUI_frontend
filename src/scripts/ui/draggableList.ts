@@ -114,6 +114,17 @@ export class DraggableList extends EventTarget {
     return () => source.removeEventListener(event, boundListener)
   }
 
+  getPointerCoordinates(
+    e: MouseEvent | TouchEvent
+  ): { clientX: number; clientY: number } | null {
+    if ('clientX' in e) {
+      return { clientX: e.clientX, clientY: e.clientY }
+    }
+    const touch = e.touches?.[0] ?? e.changedTouches?.[0]
+    if (!touch) return null
+    return { clientX: touch.clientX, clientY: touch.clientY }
+  }
+
   dragStart(e: MouseEvent | TouchEvent) {
     const target = e.target
     if (!(target instanceof HTMLElement)) return
@@ -123,8 +134,10 @@ export class DraggableList extends EventTarget {
 
     if (!this.draggableItem) return
 
-    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX
-    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY
+    const coords = this.getPointerCoordinates(e)
+    if (!coords) return
+
+    const { clientX, clientY } = coords
 
     this.pointerStartX = clientX
     this.pointerStartY = clientY
@@ -184,10 +197,12 @@ export class DraggableList extends EventTarget {
   drag(e: MouseEvent | TouchEvent) {
     if (!this.draggableItem) return
 
+    const coords = this.getPointerCoordinates(e)
+    if (!coords) return
+
     e.preventDefault()
 
-    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX
-    const clientY = 'clientY' in e ? e.clientY : e.touches[0].clientY
+    const { clientX, clientY } = coords
 
     const listRect = this.listContainer.getBoundingClientRect()
 

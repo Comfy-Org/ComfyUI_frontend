@@ -666,9 +666,12 @@ export class GroupNodeConfig {
         unknown,
         Record<string, unknown>
       ]
+      // Intentional casts: widget config types are dynamic at runtime and the
+      // compiler cannot infer the union shapes expected by mergeIfValid.
       const output = { widget: primitiveConfig } as unknown as Parameters<
         typeof mergeIfValid
       >[0]
+      // Intentional casts for targetWidget and primitiveConfig — see mergeIfValid.
       const config = mergeIfValid(
         output,
         targetWidget as Parameters<typeof mergeIfValid>[1],

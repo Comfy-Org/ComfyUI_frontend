@@ -118,6 +118,11 @@ declare module '@/lib/litegraph/src/litegraph' {
      * This method is a no-op stub for backward compatibility with extensions.
      */
     convertWidgetToInput?(): boolean
+    /**
+     * Recreates this node, typically used to refresh node state after definition changes.
+     * Callers should await the result and handle the null case (recreation failed or was cancelled).
+     * @returns A promise resolving to the new node instance, or null if recreation failed.
+     */
     recreate?(): Promise<LGraphNode | null>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
     /** @deprecated groupNode */

@@ -36,54 +36,76 @@ interface MockStore {
   maskOpacity: number
 }
 
-function getImgCanvas(): MockCanvas {
-  if (!mockStore.imgCanvas) throw new Error('imgCanvas not initialized')
-  return mockStore.imgCanvas
-}
+const {
+  mockStore,
+  getImgCanvas,
+  getMaskCanvas,
+  getRgbCanvas,
+  getImgCtx,
+  getMaskCtx,
+  getRgbCtx,
+  getCanvasBackground
+} = vi.hoisted(() => {
+  const mockStore: MockStore = {
+    imgCanvas: null,
+    maskCanvas: null,
+    rgbCanvas: null,
+    imgCtx: null,
+    maskCtx: null,
+    rgbCtx: null,
+    canvasBackground: null,
+    maskColor: { r: 0, g: 0, b: 0 },
+    maskBlendMode: 'black' as MaskBlendMode,
+    maskOpacity: 0.8
+  }
 
-function getMaskCanvas(): MockCanvas {
-  if (!mockStore.maskCanvas) throw new Error('maskCanvas not initialized')
-  return mockStore.maskCanvas
-}
+  function getImgCanvas(): MockCanvas {
+    if (!mockStore.imgCanvas) throw new Error('imgCanvas not initialized')
+    return mockStore.imgCanvas
+  }
 
-function getRgbCanvas(): MockCanvas {
-  if (!mockStore.rgbCanvas) throw new Error('rgbCanvas not initialized')
-  return mockStore.rgbCanvas
-}
+  function getMaskCanvas(): MockCanvas {
+    if (!mockStore.maskCanvas) throw new Error('maskCanvas not initialized')
+    return mockStore.maskCanvas
+  }
 
-function getImgCtx(): MockContext {
-  if (!mockStore.imgCtx) throw new Error('imgCtx not initialized')
-  return mockStore.imgCtx
-}
+  function getRgbCanvas(): MockCanvas {
+    if (!mockStore.rgbCanvas) throw new Error('rgbCanvas not initialized')
+    return mockStore.rgbCanvas
+  }
 
-function getMaskCtx(): MockContext {
-  if (!mockStore.maskCtx) throw new Error('maskCtx not initialized')
-  return mockStore.maskCtx
-}
+  function getImgCtx(): MockContext {
+    if (!mockStore.imgCtx) throw new Error('imgCtx not initialized')
+    return mockStore.imgCtx
+  }
 
-function getRgbCtx(): MockContext {
-  if (!mockStore.rgbCtx) throw new Error('rgbCtx not initialized')
-  return mockStore.rgbCtx
-}
+  function getMaskCtx(): MockContext {
+    if (!mockStore.maskCtx) throw new Error('maskCtx not initialized')
+    return mockStore.maskCtx
+  }
 
-function getCanvasBackground(): { style: Partial<MockCanvasStyle> } {
-  if (!mockStore.canvasBackground)
-    throw new Error('canvasBackground not initialized')
-  return mockStore.canvasBackground
-}
+  function getRgbCtx(): MockContext {
+    if (!mockStore.rgbCtx) throw new Error('rgbCtx not initialized')
+    return mockStore.rgbCtx
+  }
 
-const mockStore: MockStore = {
-  imgCanvas: null,
-  maskCanvas: null,
-  rgbCanvas: null,
-  imgCtx: null,
-  maskCtx: null,
-  rgbCtx: null,
-  canvasBackground: null,
-  maskColor: { r: 0, g: 0, b: 0 },
-  maskBlendMode: MaskBlendMode.Black,
-  maskOpacity: 0.8
-}
+  function getCanvasBackground(): { style: Partial<MockCanvasStyle> } {
+    if (!mockStore.canvasBackground)
+      throw new Error('canvasBackground not initialized')
+    return mockStore.canvasBackground
+  }
+
+  return {
+    mockStore,
+    getImgCanvas,
+    getMaskCanvas,
+    getRgbCanvas,
+    getImgCtx,
+    getMaskCtx,
+    getRgbCtx,
+    getCanvasBackground
+  }
+})
 
 vi.mock('@/stores/maskEditorStore', () => ({
   useMaskEditorStore: vi.fn(() => mockStore)

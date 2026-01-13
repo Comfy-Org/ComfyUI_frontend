@@ -289,10 +289,13 @@ describe.skip('SubgraphSerialization - Version Compatibility', () => {
       id: 'future-id',
       name: 'Future Subgraph'
     })
-    // Test with unknown future fields - simulating a hypothetical future version
+    // Test with unknown future fields - simulating a hypothetical future version.
+    // NOTE: The "as unknown as ExportedSubgraph" assertion below is an intentional
+    // exception to normal type-safety rules. It simulates a future schema/version
+    // to validate deserialization resilience against forward-compatible data.
     const extendedFormat = {
       ...futureFormat,
-      version: 2 as const, // Type assertion for test purposes
+      version: 2 as const,
       futureFeature: 'unknown_data'
     } as unknown as ExportedSubgraph
 

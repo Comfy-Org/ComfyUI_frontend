@@ -92,7 +92,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
   try {
     graph.beforeChange()
 
-    const deserialised = JSON.parse(data)
+    const deserialised = JSON.parse(data) as VintageSerialisable
 
     // Find the top left point of the boundary of all pasted nodes
     const topLeft = [Infinity, Infinity]
@@ -128,7 +128,8 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
       const relativeId = info[0]
       const outNode = relativeId != null ? nodes[relativeId] : undefined
 
-      const inNode = nodes[info[2]]
+      const inNodeId = info[2]
+      const inNode = inNodeId != null ? nodes[inNodeId] : undefined
       if (outNode && inNode) outNode.connect(info[1], inNode, info[3])
       else console.warn('Warning, nodes missing on pasting')
     }

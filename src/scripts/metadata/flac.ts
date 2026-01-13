@@ -39,6 +39,7 @@ export function getFromFlacFile(file: File): Promise<Record<string, string>> {
       if (event.target?.result instanceof ArrayBuffer) {
         r(getFromFlacBuffer(event.target.result))
       } else {
+        console.error('FileReader returned a non-ArrayBuffer result')
         r({})
       }
     }

@@ -36,7 +36,10 @@ class FilteredContextMenu<TValue = unknown> extends ContextMenu<TValue> {
 
       // We must request an animation frame for the current node of the active canvas to update.
       requestAnimationFrame(() => {
-        const currentNode = LGraphCanvas.active_canvas.current_node
+        const activeCanvas = LGraphCanvas.active_canvas
+        if (!activeCanvas) return
+
+        const currentNode = activeCanvas.current_node
         const clickedComboValue = currentNode?.widgets
           ?.filter(
             (w) =>

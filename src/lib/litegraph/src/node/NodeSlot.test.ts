@@ -25,9 +25,10 @@ describe('NodeSlot', () => {
       const serialized = outputAsSerialisable(slot)
       expect(serialized).not.toHaveProperty('_data')
     })
+  })
 
+  describe('inputAsSerialisable', () => {
     it('removes pos from widget input slots', () => {
-      // Minimal slot for serialization test - boundingRect is calculated at runtime, not serialized
       const widgetInputSlot: INodeInputSlot = {
         name: 'test-id',
         pos: [10, 20],
@@ -54,7 +55,6 @@ describe('NodeSlot', () => {
     })
 
     it('preserves only widget name during serialization', () => {
-      // Extra widget properties simulate real data that should be stripped during serialization
       const widgetInputSlot: INodeInputSlot = {
         name: 'test-id',
         type: 'STRING',

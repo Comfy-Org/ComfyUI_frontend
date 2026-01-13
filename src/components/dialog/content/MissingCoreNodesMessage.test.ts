@@ -76,7 +76,9 @@ describe('MissingCoreNodesMessage', () => {
     vi.clearAllMocks()
     mockSystemStatsStore = createMockSystemStatsStore()
     vi.mocked(useSystemStatsStore).mockReturnValue(
-      mockSystemStatsStore as unknown as ReturnType<typeof useSystemStatsStore>
+      mockSystemStatsStore as Partial<
+        ReturnType<typeof useSystemStatsStore>
+      > as ReturnType<typeof useSystemStatsStore>
     )
   })
 

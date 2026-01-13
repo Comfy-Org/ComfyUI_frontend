@@ -190,7 +190,7 @@ function findBox(
   start: number,
   end: number,
   type: string
-): IsobmffBoxContentRange | null {
+): IsobmffBoxContentRange {
   let offset = start
   while (offset < end) {
     if (offset + 8 > end) break

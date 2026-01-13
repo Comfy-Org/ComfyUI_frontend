@@ -23,8 +23,11 @@ type WritableComboWidget = Omit<IComboWidget, 'value'> & { value: ExposedValue }
 const isImageFile = (file: File) => file.type.startsWith('image/')
 const isVideoFile = (file: File) => file.type.startsWith('video/')
 
-const findFileComboWidget = (node: LGraphNode, inputName: string) =>
-  node.widgets!.find((w) => w.name === inputName) as IComboWidget
+const findFileComboWidget = (
+  node: LGraphNode,
+  inputName: string
+): IComboWidget | undefined =>
+  node.widgets?.find((w): w is IComboWidget => w.name === inputName)
 
 export const useImageUploadWidget = () => {
   const widgetConstructor: ComfyWidgetConstructor = (
@@ -50,6 +53,9 @@ export const useImageUploadWidget = () => {
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
     const fileComboWidget = findFileComboWidget(node, imageInputName)
+    if (!fileComboWidget) {
+      throw new Error(`Widget "${imageInputName}" not found on node`)
+    }
     const initialFile = `${fileComboWidget.value}`
     const formatPath = (value: InternalFile) =>
       createAnnotatedPath(value, { rootFolder: image_folder })

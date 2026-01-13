@@ -75,7 +75,11 @@ function getFormAttrs(item: FormItem) {
           : item.options
       attrs['options'] = options
 
-      if (options && typeof options[0] !== 'string') {
+      if (
+        Array.isArray(options) &&
+        options.length > 0 &&
+        typeof options[0] !== 'string'
+      ) {
         attrs['optionLabel'] = 'text'
         attrs['optionValue'] = 'value'
       }

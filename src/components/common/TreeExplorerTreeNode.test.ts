@@ -61,7 +61,7 @@ describe('TreeExplorerTreeNode', () => {
     expect(wrapper.findComponent(EditableText).props('modelValue')).toBe(
       'Test Node'
     )
-    const badgeValue = wrapper.findComponent(Badge).props()['value']
+    const badgeValue = wrapper.findComponent(Badge).props('value')
     expect(String(badgeValue)).toBe('3')
   })
 

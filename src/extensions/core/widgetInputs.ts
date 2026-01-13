@@ -112,8 +112,12 @@ export class PrimitiveNode extends LGraphNode {
         const newValues = rawValues.map(String)
         comboWidget.options.values = newValues
         if (!newValues.includes(String(comboWidget.value))) {
-          comboWidget.value = newValues[0]
-          comboWidget.callback?.(comboWidget.value)
+          if (newValues.length > 0) {
+            comboWidget.value = newValues[0]
+            comboWidget.callback?.(comboWidget.value)
+          } else {
+            comboWidget.value = ''
+          }
         }
       }
     }

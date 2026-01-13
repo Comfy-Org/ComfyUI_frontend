@@ -7,24 +7,6 @@ import type {
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
-
-type ComboValuesType = IComboWidget['options']['values']
-
-/**
- * Normalizes combo widget values to an array.
- * Handles the case where values may be a dictionary (Record<string, string>)
- * or a legacy function type.
- */
-function getComboValuesArray(
-  values: ComboValuesType | undefined,
-  widget?: IComboWidget,
-  node?: LGraphNode
-): string[] {
-  if (!values) return []
-  if (typeof values === 'function') return values(widget, node)
-  if (Array.isArray(values)) return values
-  return Object.keys(values)
-}
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
@@ -45,6 +27,24 @@ import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from './app'
 import './domWidget'
 import './errorNodeWidgets'
+
+type ComboValuesType = IComboWidget['options']['values']
+
+/**
+ * Normalizes combo widget values to an array.
+ * Handles the case where values may be a dictionary (Record<string, string>)
+ * or a legacy function type.
+ */
+function getComboValuesArray(
+  values: ComboValuesType | undefined,
+  widget?: IComboWidget,
+  node?: LGraphNode
+): string[] {
+  if (!values) return []
+  if (typeof values === 'function') return values(widget, node)
+  if (Array.isArray(values)) return values
+  return Object.keys(values)
+}
 
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,

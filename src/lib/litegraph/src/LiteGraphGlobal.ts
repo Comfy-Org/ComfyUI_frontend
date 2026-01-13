@@ -856,22 +856,17 @@ export class LiteGraphGlobal {
           capture
         )
       }
-    }
-
-    if (
-      pointerAndMouseEvents.includes(sEvent) ||
-      pointerOnlyEvents.includes(sEvent)
-    ) {
+    } else if (pointerOnlyEvents.includes(sEvent)) {
       if (this.pointerevents_method == 'pointer') {
-        return oDOM.removeEventListener(
+        oDOM.removeEventListener(
           this.pointerevents_method + sEvent,
           fCall,
           capture
         )
       }
+    } else {
+      oDOM.removeEventListener(sEvent, fCall, capture)
     }
-
-    return oDOM.removeEventListener(sEvent, fCall, capture)
   }
 
   getTime(): number {

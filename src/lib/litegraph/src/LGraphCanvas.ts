@@ -104,6 +104,14 @@ import type { UUID } from './utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 
+function isContentEditable(el: HTMLElement | null): boolean {
+  while (el) {
+    if (el.isContentEditable) return true
+    el = el.parentElement
+  }
+  return false
+}
+
 interface IShowSearchOptions {
   node_to?: SubgraphOutputNode | LGraphNode | null
   node_from?: SubgraphInputNode | LGraphNode | null
@@ -3681,6 +3689,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     let block_default = false
     const targetEl = e.target
     if (targetEl instanceof HTMLInputElement) return
+    if (targetEl instanceof HTMLTextAreaElement) return
+    if (targetEl instanceof HTMLElement && isContentEditable(targetEl)) return
 
     if (e.type == 'keydown') {
       // TODO: Switch
@@ -3717,18 +3727,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.pasteFromClipboard({ connectInputs: e.shiftKey })
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         // delete or backspace
-        if (
-          !(targetEl instanceof HTMLInputElement) &&
-          !(targetEl instanceof HTMLTextAreaElement)
-        ) {
-          if (this.selectedItems.size === 0) {
-            this.#noItemsSelected()
-            return
-          }
-
-          this.deleteSelected()
-          block_default = true
+        if (this.selectedItems.size === 0) {
+          this.#noItemsSelected()
+          return
         }
+
+        this.deleteSelected()
+        block_default = true
       }
 
       // TODO
@@ -7838,6 +7843,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (typeof root.onOpen == 'function') root.onOpen()
+
+    root.graph = this.graph
 
     return root
   }

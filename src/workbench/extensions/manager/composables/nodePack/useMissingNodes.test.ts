@@ -9,22 +9,17 @@ import { useMissingNodes } from '@/workbench/extensions/manager/composables/node
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
-type PartialNodeDefStore = Pick<
-  ReturnType<typeof useNodeDefStore>,
-  'nodeDefsByName'
->
+type NodeDefStore = ReturnType<typeof useNodeDefStore>
 type PartialManagerStore = Pick<
   ReturnType<typeof useComfyManagerStore>,
   'isPackInstalled'
 >
 
-function createMockNodeDefStore(
-  names: string[]
-): ReturnType<typeof useNodeDefStore> {
-  const nodeDefsByName = Object.fromEntries(
+function createMockNodeDefStore(names: string[]): NodeDefStore {
+  const nodeDefsByName: Record<string, ComfyNodeDefImpl> = Object.fromEntries(
     names.map((name) => [name, { name } as ComfyNodeDefImpl])
   )
-  return { nodeDefsByName } as ReturnType<typeof useNodeDefStore>
+  return { nodeDefsByName } as unknown as NodeDefStore
 }
 
 vi.mock('@vueuse/core', async () => {
@@ -117,12 +112,7 @@ describe('useMissingNodes', () => {
     })
 
     // Reset node def store mock
-    const partialNodeDefStore: PartialNodeDefStore = {
-      nodeDefsByName: {}
-    }
-    mockUseNodeDefStore.mockReturnValue(
-      partialNodeDefStore as ReturnType<typeof useNodeDefStore>
-    )
+    mockUseNodeDefStore.mockReturnValue(createMockNodeDefStore([]))
 
     // Reset app.rootGraph.nodes
     mockApp.rootGraph = { nodes: [] }

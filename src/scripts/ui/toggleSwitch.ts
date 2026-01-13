@@ -1,6 +1,6 @@
 import { $el } from '../ui'
 
-interface ToggleSwitchItem {
+export interface ToggleSwitchItem {
   text: string
   value?: string
   tooltip?: string
@@ -19,6 +19,13 @@ export function toggleSwitch(
 ) {
   const onChange = e?.onChange
 
+  const normalizedItems: ToggleSwitchItem[] = items.map((item) => {
+    if (typeof item === 'string') {
+      return { text: item, value: item }
+    }
+    return { ...item, value: item.value ?? item.text }
+  })
+
   let selectedIndex: number | null = null
   let elements: HTMLLabelElement[]
 
@@ -27,20 +34,14 @@ export function toggleSwitch(
       elements[selectedIndex].classList.remove('comfy-toggle-selected')
     }
     onChange?.({
-      item: items[index] as ToggleSwitchItem,
-      prev:
-        selectedIndex == null
-          ? undefined
-          : (items[selectedIndex] as ToggleSwitchItem)
+      item: normalizedItems[index],
+      prev: selectedIndex == null ? undefined : normalizedItems[selectedIndex]
     })
     selectedIndex = index
     elements[selectedIndex].classList.add('comfy-toggle-selected')
   }
 
-  elements = items.map((item, i) => {
-    if (typeof item === 'string') item = { text: item }
-    if (!item.value) item.value = item.text
-
+  elements = normalizedItems.map((item, i) => {
     const toggle = $el(
       'label',
       {
