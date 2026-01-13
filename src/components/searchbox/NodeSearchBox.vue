@@ -66,15 +66,25 @@
           @keydown.enter.prevent="onAddNode(hoveredSuggestion)"
         />
       </div>
-      <div class="bg-comfy-menu-bg p-1 rounded-lg border-border-subtle border">
-        <NodeSearchItem
-          v-for="(option, index) in suggestions.slice(0, 10)"
-          :key="option.name"
-          class="hover:bg-secondary-background-hover p-1 rounded-sm"
-          :node-def="option"
-          :current-query="debouncedQuery"
-          @click="onAddNode(option)"
-          @pointerover="setHoverSuggestion(index)"
+      <div
+        v-bind="containerProps"
+        class="bg-comfy-menu-bg p-1 rounded-lg border-border-subtle border max-h-150"
+      >
+        <div v-bind="wrapperProps">
+          <NodeSearchItem
+            v-for="{ data: option, index } in virtualList"
+            :key="index"
+            class="hover:bg-secondary-background-hover p-1 rounded-sm"
+            :node-def="option"
+            :current-query="debouncedQuery"
+            @click="onAddNode(option)"
+            @pointerover="setHoverSuggestion(index)"
+          />
+        </div>
+        <div
+          v-if="suggestions.length === 0"
+          class="p-1"
+          v-text="t('g.noResultsFound')"
         />
       </div>
     </div>
@@ -82,7 +92,7 @@
 </template>
 
 <script setup lang="ts">
-import { refDebounced } from '@vueuse/core'
+import { refDebounced, useVirtualList } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import Dialog from 'primevue/dialog'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
@@ -144,6 +154,12 @@ const suggestions = computed(() => {
         })
       ]
 })
+
+const {
+  list: virtualList,
+  containerProps,
+  wrapperProps
+} = useVirtualList(suggestions, { itemHeight: 40 })
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
 
