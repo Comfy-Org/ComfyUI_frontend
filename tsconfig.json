@@ -44,7 +44,8 @@
       "./node_modules"
     ],
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "@webgpu/types"
     ],
     "outDir": "./dist",
     "rootDir": "./"
@@ -54,6 +55,7 @@
     "eslint.config.ts",
     "global.d.ts",
     "knip.config.ts",
+    "lint-staged.config.ts",
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",

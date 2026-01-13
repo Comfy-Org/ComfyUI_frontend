@@ -1,5 +1,5 @@
+# Description: Linting and code formatting validation for pull requests
 name: "CI: Lint Format"
-description: "Linting and code formatting validation for pull requests"
 
 on:
   pull_request:
@@ -51,7 +51,7 @@ jobs:
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
-            echo "changed=false" >> $GITHUB_OUTPUT  
+            echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Commit changes

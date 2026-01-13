@@ -28,6 +28,7 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import { AssetWidget } from '@/lib/litegraph/src/widgets/AssetWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
@@ -300,17 +301,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           continue
         }
 
-        const resolved = link.resolve(this.subgraph)
-        if (!resolved.input || !resolved.inputNode) {
-          console.warn('Invalid resolved link', resolved, this)
+        const { inputNode } = link.resolve(this.subgraph)
+        if (!inputNode) {
+          console.warn('Failed to resolve inputNode', link, this)
+          continue
+        }
+
+        //Manually find input since target_slot can't be trusted
+        const targetInput = inputNode.inputs.find((inp) => inp.link === linkId)
+        if (!targetInput) {
+          console.warn('Failed to find corresponding input', link, inputNode)
           continue
         }
 
         // No widget - ignore this link
-        const widget = resolved.inputNode.getWidgetFromSlot(resolved.input)
+        const widget = inputNode.getWidgetFromSlot(targetInput)
         if (!widget) continue
 
-        this.#setWidget(subgraphInput, input, widget, resolved.input.widget)
+        this.#setWidget(subgraphInput, input, widget, targetInput.widget)
         break
       }
     }
@@ -326,6 +334,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const promotedWidget = toConcreteWidget(widget, this).createCopyForNode(
       this
     )
+    if (widget instanceof AssetWidget)
+      promotedWidget.options.nodeType ??= widget.node.type
 
     Object.assign(promotedWidget, {
       get name() {

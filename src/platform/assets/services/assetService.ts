@@ -1,16 +1,54 @@
 import { fromZodError } from 'zod-validation-error'
 
-import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
+import { st } from '@/i18n'
+import {
+  assetItemSchema,
+  assetResponseSchema,
+  asyncUploadResponseSchema
+} from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
+  AssetMetadata,
   AssetResponse,
+  AsyncUploadResponse,
   ModelFile,
   ModelFolder
 } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
+/**
+ * Maps CivitAI validation error codes to localized error messages
+ */
+function getLocalizedErrorMessage(errorCode: string): string {
+  const errorMessages: Record<string, string> = {
+    FILE_TOO_LARGE: st('assetBrowser.errorFileTooLarge', 'File too large'),
+    FORMAT_NOT_ALLOWED: st(
+      'assetBrowser.errorFormatNotAllowed',
+      'Format not allowed'
+    ),
+    UNSAFE_PICKLE_SCAN: st(
+      'assetBrowser.errorUnsafePickleScan',
+      'Unsafe pickle scan'
+    ),
+    UNSAFE_VIRUS_SCAN: st(
+      'assetBrowser.errorUnsafeVirusScan',
+      'Unsafe virus scan'
+    ),
+    MODEL_TYPE_NOT_SUPPORTED: st(
+      'assetBrowser.errorModelTypeNotSupported',
+      'Model type not supported'
+    )
+  }
+  return (
+    errorMessages[errorCode] ||
+    st('assetBrowser.errorUnknown', 'Unknown error') ||
+    'Unknown error'
+  )
+}
+
 const ASSETS_ENDPOINT = '/assets'
+const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 
@@ -249,6 +287,233 @@ function createAssetService() {
     }
   }
 
+  /**
+   * Update metadata of an asset by ID
+   * Only available in cloud environment
+   *
+   * @param id - The asset ID (UUID)
+   * @param newData - The data to update
+   * @returns Promise<AssetItem>
+   * @throws Error if update fails
+   */
+  async function updateAsset(
+    id: string,
+    newData: Partial<AssetMetadata>
+  ): Promise<AssetItem> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(newData)
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to update asset ${id}: Server returned ${res.status}`
+      )
+    }
+
+    const newAsset = assetItemSchema.safeParse(await res.json())
+    if (newAsset.success) {
+      return newAsset.data
+    }
+
+    throw new Error(
+      `Unable to update asset ${id}: Invalid response - ${newAsset.error}`
+    )
+  }
+
+  /**
+   * Retrieves metadata from a download URL without downloading the file
+   *
+   * @param url - Download URL to retrieve metadata from (will be URL-encoded)
+   * @returns Promise with metadata including content_length, final_url, filename, etc.
+   * @throws Error if metadata retrieval fails
+   */
+  async function getAssetMetadata(url: string): Promise<AssetMetadata> {
+    const encodedUrl = encodeURIComponent(url)
+    const res = await api.fetchApi(
+      `${ASSETS_ENDPOINT}/remote-metadata?url=${encodedUrl}`
+    )
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(
+        getLocalizedErrorMessage(errorData.code || 'UNKNOWN_ERROR')
+      )
+    }
+
+    const data: AssetMetadata = await res.json()
+    if (data.validation?.is_valid === false) {
+      throw new Error(
+        getLocalizedErrorMessage(
+          data.validation?.errors?.[0]?.code || 'UNKNOWN_ERROR'
+        )
+      )
+    }
+
+    return data
+  }
+
+  /**
+   * Uploads an asset by providing a URL to download from
+   *
+   * @param params - Upload parameters
+   * @param params.url - HTTP/HTTPS URL to download from
+   * @param params.name - Display name (determines extension)
+   * @param params.tags - Optional freeform tags
+   * @param params.user_metadata - Optional custom metadata object
+   * @param params.preview_id - Optional UUID for preview asset
+   * @returns Promise<AssetItem & { created_new: boolean }> - Asset object with created_new flag
+   * @throws Error if upload fails
+   */
+  async function uploadAssetFromUrl(params: {
+    url: string
+    name: string
+    tags?: string[]
+    user_metadata?: Record<string, any>
+    preview_id?: string
+  }): Promise<AssetItem & { created_new: boolean }> {
+    const res = await api.fetchApi(ASSETS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(params)
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        st(
+          'assetBrowser.errorUploadFailed',
+          'Failed to upload asset. Please try again.'
+        )
+      )
+    }
+
+    return await res.json()
+  }
+
+  /**
+   * Uploads an asset from base64 data
+   *
+   * @param params - Upload parameters
+   * @param params.data - Base64 data URL (e.g., "data:image/png;base64,...")
+   * @param params.name - Display name (determines extension)
+   * @param params.tags - Optional freeform tags
+   * @param params.user_metadata - Optional custom metadata object
+   * @returns Promise<AssetItem & { created_new: boolean }> - Asset object with created_new flag
+   * @throws Error if upload fails
+   */
+  async function uploadAssetFromBase64(params: {
+    data: string
+    name: string
+    tags?: string[]
+    user_metadata?: Record<string, any>
+  }): Promise<AssetItem & { created_new: boolean }> {
+    // Validate that data is a data URL
+    if (!params.data || !params.data.startsWith('data:')) {
+      throw new Error(
+        'Invalid data URL: expected a string starting with "data:"'
+      )
+    }
+
+    // Convert base64 data URL to Blob
+    const blob = await fetch(params.data).then((r) => r.blob())
+
+    // Create FormData and append the blob
+    const formData = new FormData()
+    formData.append('file', blob, params.name)
+
+    if (params.tags) {
+      formData.append('tags', JSON.stringify(params.tags))
+    }
+
+    if (params.user_metadata) {
+      formData.append('user_metadata', JSON.stringify(params.user_metadata))
+    }
+
+    const res = await api.fetchApi(ASSETS_ENDPOINT, {
+      method: 'POST',
+      body: formData
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Failed to upload asset from base64: ${res.status} ${res.statusText}`
+      )
+    }
+
+    return await res.json()
+  }
+
+  /**
+   * Uploads an asset asynchronously using the /api/assets/download endpoint
+   * Returns immediately with either the asset (if already exists) or a task to track
+   *
+   * @param params - Upload parameters
+   * @param params.source_url - HTTP/HTTPS URL to download from
+   * @param params.tags - Optional freeform tags
+   * @param params.user_metadata - Optional custom metadata object
+   * @param params.preview_id - Optional UUID for preview asset
+   * @returns Promise<AsyncUploadResponse> - Either sync asset or async task info
+   * @throws Error if upload fails
+   */
+  async function uploadAssetAsync(params: {
+    source_url: string
+    tags?: string[]
+    user_metadata?: Record<string, unknown>
+    preview_id?: string
+  }): Promise<AsyncUploadResponse> {
+    const res = await api.fetchApi(ASSETS_DOWNLOAD_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        st(
+          'assetBrowser.errorUploadFailed',
+          'Failed to upload asset. Please try again.'
+        )
+      )
+    }
+
+    const data = await res.json()
+
+    if (res.status === 202) {
+      const result = asyncUploadResponseSchema.safeParse({
+        type: 'async',
+        task: data
+      })
+      if (!result.success) {
+        throw new Error(
+          st(
+            'assetBrowser.errorUploadFailed',
+            'Failed to parse async upload response. Please try again.'
+          )
+        )
+      }
+      return result.data
+    }
+
+    const result = asyncUploadResponseSchema.safeParse({
+      type: 'sync',
+      asset: data
+    })
+    if (!result.success) {
+      throw new Error(
+        st(
+          'assetBrowser.errorUploadFailed',
+          'Failed to parse sync upload response. Please try again.'
+        )
+      )
+    }
+    return result.data
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -256,7 +521,12 @@ function createAssetService() {
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
-    deleteAsset
+    deleteAsset,
+    updateAsset,
+    getAssetMetadata,
+    uploadAssetFromUrl,
+    uploadAssetFromBase64,
+    uploadAssetAsync
   }
 }
 

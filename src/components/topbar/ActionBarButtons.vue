@@ -4,26 +4,27 @@
       v-for="(button, index) in actionBarButtonStore.buttons"
       :key="index"
       v-tooltip.bottom="button.tooltip"
-      :label="button.label"
       :aria-label="button.tooltip || button.label"
       :class="button.class"
-      text
-      rounded
-      severity="secondary"
-      class="h-7"
+      variant="muted-textonly"
+      size="sm"
+      class="h-7 rounded-full"
       @click="button.onClick"
     >
-      <template #icon>
-        <i :class="button.icon" />
-      </template>
+      <i :class="button.icon" />
+      <span v-if="!isMobile && button.label">{{ button.label }}</span>
     </Button>
   </div>
 </template>
 
 <script lang="ts" setup>
-import Button from 'primevue/button'
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 
 const actionBarButtonStore = useActionBarButtonStore()
+
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobile = breakpoints.smaller('sm')
 </script>

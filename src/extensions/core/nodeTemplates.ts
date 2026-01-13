@@ -367,12 +367,13 @@ const ext: ComfyExtension = {
           data = JSON.parse(data || '{}')
           const nodeIds = Object.keys(app.canvas.selected_nodes)
           for (let i = 0; i < nodeIds.length; i++) {
-            const node = app.graph.getNodeById(nodeIds[i])
+            const node = app.canvas.graph?.getNodeById(nodeIds[i])
             const nodeData = node?.constructor.nodeData
 
-            let groupData = GroupNodeHandler.getGroupData(node)
-            if (groupData) {
-              groupData = groupData.nodeData
+            if (!node) continue
+            const groupConfig = GroupNodeHandler.getGroupData(node)
+            if (groupConfig) {
+              const groupData = groupConfig.nodeData
               // @ts-expect-error
               if (!data.groupNodes) {
                 // @ts-expect-error
@@ -402,7 +403,10 @@ const ext: ComfyExtension = {
         callback: () => {
           clipboardAction(async () => {
             const data = JSON.parse(t.data)
-            await GroupNodeConfig.registerFromWorkflow(data.groupNodes, {})
+            await GroupNodeConfig.registerFromWorkflow(
+              data.groupNodes ?? {},
+              []
+            )
 
             // Check for old clipboard format
             if (!data.reroutes) {

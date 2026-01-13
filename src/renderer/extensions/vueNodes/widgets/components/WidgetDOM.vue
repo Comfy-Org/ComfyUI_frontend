@@ -9,7 +9,6 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 const props = defineProps<{
   widget: SimplifiedWidget<void>
   nodeId: string
-  readonly?: boolean
 }>()
 
 const domEl = ref<HTMLElement>()
@@ -25,5 +24,13 @@ onMounted(() => {
 })
 </script>
 <template>
-  <div ref="domEl" />
+  <div
+    ref="domEl"
+    @pointerdown.stop
+    @pointermove.stop
+    @pointerup.stop
+    @mousedown.stop
+    @mousemove.stop
+    @mouseup.stop
+  />
 </template>

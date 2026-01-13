@@ -4,17 +4,16 @@
       value: $t('commands.Comfy_3DViewer_Open3DViewer.label'),
       showDelay: 1000
     }"
-    severity="secondary"
-    text
-    icon="pi pi-pencil"
-    icon-class="w-4 h-4"
+    variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_3DViewer_Open3DViewer.label')"
     @click="open3DViewer"
-  />
+  >
+    <i class="icon-[lucide--pencil]" />
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { useCommandStore } from '@/stores/commandStore'
 
 const commandStore = useCommandStore()

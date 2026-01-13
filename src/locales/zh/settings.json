@@ -29,12 +29,26 @@
     "name": "画布背景图像",
     "tooltip": "画布背景的图像 URL。你可以在输出面板中右键点击一张图片，并选择“设为背景”来使用它。"
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左键点击行为",
+    "options": {
+      "Panning": "平移",
+      "Select": "选择"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "鼠标滚轮滚动",
+    "options": {
+      "Panning": "平移",
+      "Zoom in/out": "放大/缩小"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "画布导航模式",
     "options": {
+      "Custom": "自定义",
       "Drag Navigation": "拖动画布",
-      "Standard (New)": "标准（新）",
-      "Custom": "自定义"
+      "Standard (New)": "标准（新）"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -65,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "在工作流中保存和恢复视图位置及缩放"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "实时预览",
+    "options": {
+      "auto": "自动",
+      "default": "默认",
+      "latent2rgb": "latent2rgb",
+      "none": "无",
+      "taesd": "taesd"
+    },
+    "tooltip": "图像生成过程中实时预览。 \"默认\" 使用服务器 CLI 设置。"
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "浮点组件四舍五入的小数位数 [0 = 自动]。",
     "tooltip": "(需要重新加载页面)"
@@ -85,6 +110,10 @@
       "Circle": "圆",
       "None": "无"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "实时选择",
+    "tooltip": "启用后，在框选拖动时实时选择/取消选择节点，类似于其他设计工具。"
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "画布缩放速度"
@@ -152,6 +181,15 @@
     "name": "光照强度下限",
     "tooltip": "设置3D场景允许的最小光照强度值。此项定义在调整任何3D控件照明时可设定的最低亮度。"
   },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY 引擎",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "选择加载 PLY 文件的引擎。 \"threejs\" 使用原生 Three.js PLY 加载器（最适合网格 PLY）。 \"fastply\" 使用专用于 ASCII 点云的 PLY 文件加载器。 \"sparkjs\" 使用 Spark.js 加载 3D 高斯泼溅 PLY 文件。"
+  },
   "Comfy_Load3D_ShowGrid": {
     "name": "显示网格",
     "tooltip": "默认显示网格开关"
@@ -166,10 +204,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "将画笔调整锁定到主轴",
     "tooltip": "启用后，画笔调整将仅根据您移动的方向影响大小或硬度。"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "使用新画笔编辑器",
-    "tooltip": "切换到新的画笔编辑器界面"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "自动加载所有模型文件夹",
@@ -312,6 +346,13 @@
       "small": "小"
     }
   },
+  "Comfy_Sidebar_Style": {
+    "name": "侧边栏样式",
+    "options": {
+      "connected": "连接式",
+      "floating": "浮动式"
+    }
+  },
   "Comfy_Sidebar_UnifiedWidth": {
     "name": "统一侧边栏宽度"
   },
@@ -328,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "树形浏览器项目内边距"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "标签栏布局",
+    "options": {
+      "Default": "默认",
+      "Integrated": "集成"
+    },
+    "tooltip": "控制标签栏的布局。“集成”会将帮助和用户控件移动到标签栏区域。"
+  },
   "Comfy_UseNewMenu": {
     "name": "使用新菜单",
     "options": {
@@ -338,6 +387,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "校验工作流"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "自动缩放布局（Vue节点）",
+    "tooltip": "切换到Vue渲染时自动缩放节点位置以防止重叠"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "现代节点设计（Vue节点）",
+    "tooltip": "现代：基于DOM的渲染，具有增强的交互性、原生浏览器功能和更新的视觉设计。经典：传统的画布渲染。"
   },
   "Comfy_WidgetControlMode": {
     "name": "组件控制模式",
@@ -376,6 +433,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "保存节点ID到工作流"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "覆盖现有子图蓝图时需要确认"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "已打开工作流的位置",
     "options": {
@@ -407,37 +467,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "始终吸附到网格"
-  },
-  "Comfy_Canvas_LeftMouseClickBehavior": {
-    "name": "左键点击行为",
-    "options": {
-      "Panning": "平移",
-      "Select": "选择"
-    }
-  },
-  "Comfy_Canvas_MouseWheelScroll": {
-    "name": "鼠标滚轮滚动",
-    "options": {
-      "Panning": "平移",
-      "Zoom in/out": "放大/缩小"
-    }
-  },
-  "Comfy_Sidebar_Style": {
-    "name": "侧边栏样式",
-    "options": {
-      "floating": "浮动式",
-      "connected": "连接式"
-    }
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "自动缩放布局（Vue节点）",
-    "tooltip": "切换到Vue渲染时自动缩放节点位置以防止重叠"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "现代节点设计（Vue节点）",
-    "tooltip": "现代：基于DOM的渲染，具有增强的交互性、原生浏览器功能和更新的视觉设计。经典：传统的画布渲染。"
-  },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "覆盖现有子图蓝图时需要确认"
   }
 }

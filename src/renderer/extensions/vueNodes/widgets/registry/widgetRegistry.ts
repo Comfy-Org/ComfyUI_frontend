@@ -24,12 +24,6 @@ const WidgetSelect = defineAsyncComponent(
 const WidgetColorPicker = defineAsyncComponent(
   () => import('../components/WidgetColorPicker.vue')
 )
-const WidgetMultiSelect = defineAsyncComponent(
-  () => import('../components/WidgetMultiSelect.vue')
-)
-const WidgetSelectButton = defineAsyncComponent(
-  () => import('../components/WidgetSelectButton.vue')
-)
 const WidgetTextarea = defineAsyncComponent(
   () => import('../components/WidgetTextarea.vue')
 )
@@ -41,12 +35,6 @@ const WidgetImageCompare = defineAsyncComponent(
 )
 const WidgetGalleria = defineAsyncComponent(
   () => import('../components/WidgetGalleria.vue')
-)
-const WidgetFileUpload = defineAsyncComponent(
-  () => import('../components/WidgetFileUpload.vue')
-)
-const WidgetTreeSelect = defineAsyncComponent(
-  () => import('../components/WidgetTreeSelect.vue')
 )
 const WidgetMarkdown = defineAsyncComponent(
   () => import('../components/WidgetMarkdown.vue')
@@ -71,7 +59,6 @@ export const FOR_TESTING = {
   WidgetAudioUI,
   WidgetButton,
   WidgetColorPicker,
-  WidgetFileUpload,
   WidgetInputNumber,
   WidgetInputText,
   WidgetMarkdown,
@@ -125,18 +112,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     { component: WidgetColorPicker, aliases: ['COLOR'], essential: false }
   ],
   [
-    'multiselect',
-    { component: WidgetMultiSelect, aliases: ['MULTISELECT'], essential: false }
-  ],
-  [
-    'selectbutton',
-    {
-      component: WidgetSelectButton,
-      aliases: ['SELECTBUTTON'],
-      essential: false
-    }
-  ],
-  [
     'textarea',
     {
       component: WidgetTextarea,
@@ -158,20 +133,12 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     { component: WidgetGalleria, aliases: ['GALLERIA'], essential: false }
   ],
   [
-    'fileupload',
+    'markdown',
     {
-      component: WidgetFileUpload,
-      aliases: ['FILEUPLOAD', 'file'],
+      component: WidgetMarkdown,
+      aliases: ['MARKDOWN', 'progressText'],
       essential: false
     }
-  ],
-  [
-    'treeselect',
-    { component: WidgetTreeSelect, aliases: ['TREESELECT'], essential: false }
-  ],
-  [
-    'markdown',
-    { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
   ],
   ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
@@ -229,4 +196,13 @@ export const isEssential = (type: string): boolean => {
 
 export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
+}
+
+const EXPANDING_TYPES = ['textarea', 'markdown', 'load3D'] as const
+
+export function shouldExpand(type: string): boolean {
+  const canonicalType = getCanonicalType(type)
+  return EXPANDING_TYPES.includes(
+    canonicalType as (typeof EXPANDING_TYPES)[number]
+  )
 }

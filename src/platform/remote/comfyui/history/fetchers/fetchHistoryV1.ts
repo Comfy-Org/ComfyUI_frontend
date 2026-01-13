@@ -15,13 +15,28 @@ import type {
  * Fetches history from V1 API endpoint
  * @param api - API instance with fetchApi method
  * @param maxItems - Maximum number of history items to fetch
+ * @param offset - Offset for pagination (must be non-negative integer)
  * @returns Promise resolving to V1 history response
+ * @throws Error if offset is invalid (negative or non-integer)
  */
 export async function fetchHistoryV1(
   fetchApi: (url: string) => Promise<Response>,
-  maxItems: number = 200
+  maxItems: number = 200,
+  offset?: number
 ): Promise<HistoryV1Response> {
-  const res = await fetchApi(`/history?max_items=${maxItems}`)
+  // Validate offset parameter
+  if (offset !== undefined && (offset < 0 || !Number.isInteger(offset))) {
+    throw new Error(
+      `Invalid offset parameter: ${offset}. Must be a non-negative integer.`
+    )
+  }
+
+  const params = new URLSearchParams({ max_items: maxItems.toString() })
+  if (offset !== undefined) {
+    params.set('offset', offset.toString())
+  }
+  const url = `/history?${params.toString()}`
+  const res = await fetchApi(url)
   const json: Record<
     string,
     Omit<HistoryTaskItem, 'taskType'>

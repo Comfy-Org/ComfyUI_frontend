@@ -1,4 +1,5 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
 import path from 'path'
 
 import type {
@@ -8,16 +9,26 @@ import type {
 
 export class ComfyTemplates {
   readonly content: Locator
+  readonly allTemplateCards: Locator
 
   constructor(readonly page: Page) {
     this.content = page.getByTestId('template-workflows-content')
+    this.allTemplateCards = page.locator('[data-testid^="template-workflow-"]')
+  }
+
+  async waitForMinimumCardCount(count: number) {
+    return await expect(async () => {
+      const cardCount = await this.allTemplateCards.count()
+      expect(cardCount).toBeGreaterThanOrEqual(count)
+    }).toPass({
+      timeout: 1_000
+    })
   }
 
   async loadTemplate(id: string) {
-    await this.content
-      .getByTestId(`template-workflow-${id}`)
-      .getByRole('img')
-      .click()
+    const templateCard = this.content.getByTestId(`template-workflow-${id}`)
+    await templateCard.scrollIntoViewIfNeeded()
+    await templateCard.getByRole('img').click()
   }
 
   async getAllTemplates(): Promise<TemplateInfo[]> {

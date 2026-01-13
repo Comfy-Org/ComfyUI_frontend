@@ -13,7 +13,69 @@
     option-label="name"
     option-value="value"
     unstyled
-    :pt="pt"
+    :pt="{
+      root: ({ props }: SelectPassThroughMethodOptions<SelectOption>) => ({
+        class: [
+          // container
+          'h-10 relative inline-flex cursor-pointer select-none items-center',
+          // trigger surface
+          'rounded-lg',
+          'bg-secondary-background text-base-foreground',
+          'border-[2.5px] border-solid border-transparent',
+          'transition-all duration-200 ease-in-out',
+          'focus-within:border-node-component-border',
+          // disabled
+          { 'opacity-60 cursor-default': props.disabled }
+        ]
+      }),
+      label: {
+        class:
+          // Align with MultiSelect labelContainer spacing
+          'flex-1 flex items-center whitespace-nowrap pl-4 py-2 outline-hidden'
+      },
+      dropdown: {
+        class:
+          // Right chevron touch area
+          'flex shrink-0 items-center justify-center px-3 py-2'
+      },
+      overlay: {
+        class: cn(
+          'mt-2 p-2 rounded-lg',
+          'bg-base-background text-base-foreground',
+          'border border-solid border-border-default'
+        )
+      },
+      listContainer: () => ({
+        style: `max-height: min(${listMaxHeight}, 50vh)`,
+        class: 'scrollbar-custom'
+      }),
+      list: {
+        class:
+          // Same list tone/size as MultiSelect
+          'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
+      },
+      option: ({ context }: SelectPassThroughMethodOptions<SelectOption>) => ({
+        class: cn(
+          // Row layout
+          'flex items-center justify-between gap-3 px-2 py-3 rounded',
+          'hover:bg-secondary-background-hover',
+          // Add focus state for keyboard navigation
+          context.focused && 'bg-secondary-background-hover',
+          // Selected state + check icon
+          context.selected &&
+            'bg-secondary-background-selected hover:bg-secondary-background-selected'
+        )
+      }),
+      optionLabel: {
+        class: 'truncate'
+      },
+      optionGroupLabel: {
+        class: 'px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground'
+      },
+      emptyMessage: {
+        class: 'px-3 py-2 text-sm text-muted-foreground'
+      }
+    }"
     :aria-label="label || t('g.singleSelectDropdown')"
     role="combobox"
     :aria-expanded="false"
@@ -22,15 +84,15 @@
   >
     <!-- Trigger value -->
     <template #value="slotProps">
-      <div class="flex items-center gap-2 text-sm text-neutral-500">
+      <div class="flex items-center gap-2 text-sm">
         <slot name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
-          class="text-zinc-700 dark-theme:text-smoke-200"
+          class="text-base-foreground"
         >
           {{ getLabel(slotProps.value) }}
         </span>
-        <span v-else class="text-zinc-700 dark-theme:text-smoke-200">
+        <span v-else class="text-base-foreground">
           {{ label }}
         </span>
       </div>
@@ -38,7 +100,7 @@
 
     <!-- Trigger caret -->
     <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-base text-neutral-500" />
+      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
     </template>
 
     <!-- Option row -->
@@ -48,10 +110,7 @@
         :style="optionStyle"
       >
         <span class="truncate">{{ option.name }}</span>
-        <i
-          v-if="selected"
-          class="icon-[lucide--check] text-neutral-600 dark-theme:text-white"
-        />
+        <i v-if="selected" class="icon-[lucide--check] text-base-foreground" />
       </div>
     </template>
   </Select>
@@ -93,7 +152,7 @@ const {
   popoverMaxWidth?: string
 }>()
 
-const selectedItem = defineModel<string | null>({ required: true })
+const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
 
@@ -119,73 +178,4 @@ const optionStyle = computed(() => {
 
   return styles.join('; ')
 })
-
-/**
- * Unstyled + PT API only
- * - No background/border (same as page background)
- * - Text/icon scale: compact size matching MultiSelect
- */
-const pt = computed(() => ({
-  root: ({ props }: SelectPassThroughMethodOptions<SelectOption>) => ({
-    class: [
-      // container
-      'h-10 relative inline-flex cursor-pointer select-none items-center',
-      // trigger surface
-      'rounded-lg',
-      'bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
-      'border-[2.5px] border-solid border-transparent',
-      'transition-all duration-200 ease-in-out',
-      'focus-within:border-blue-400 dark-theme:focus-within:border-blue-500',
-      // disabled
-      { 'opacity-60 cursor-default': props.disabled }
-    ]
-  }),
-  label: {
-    class:
-      // Align with MultiSelect labelContainer spacing
-      'flex-1 flex items-center whitespace-nowrap pl-4 py-2 outline-hidden'
-  },
-  dropdown: {
-    class:
-      // Right chevron touch area
-      'flex shrink-0 items-center justify-center px-3 py-2'
-  },
-  overlay: {
-    class: cn(
-      'mt-2 p-2 rounded-lg',
-      'bg-white dark-theme:bg-zinc-800 text-neutral dark-theme:text-white',
-      'border border-solid border-neutral-200 dark-theme:border-zinc-700'
-    )
-  },
-  listContainer: () => ({
-    style: `max-height: min(${listMaxHeight}, 50vh)`,
-    class: 'scrollbar-custom'
-  }),
-  list: {
-    class:
-      // Same list tone/size as MultiSelect
-      'flex flex-col gap-0 p-0 m-0 list-none border-none text-sm'
-  },
-  option: ({ context }: SelectPassThroughMethodOptions<SelectOption>) => ({
-    class: [
-      // Row layout
-      'flex items-center justify-between gap-3 px-2 py-3 rounded',
-      'hover:bg-neutral-100/50 dark-theme:hover:bg-zinc-700/50',
-      // Selected state + check icon
-      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.selected },
-      // Add focus state for keyboard navigation
-      { 'bg-neutral-100/50 dark-theme:bg-zinc-700/50': context.focused }
-    ]
-  }),
-  optionLabel: {
-    class: 'truncate'
-  },
-  optionGroupLabel: {
-    class:
-      'px-3 py-2 text-xs uppercase tracking-wide text-zinc-500 dark-theme:text-zinc-400'
-  },
-  emptyMessage: {
-    class: 'px-3 py-2 text-sm text-zinc-500 dark-theme:text-zinc-400'
-  }
-}))
 </script>

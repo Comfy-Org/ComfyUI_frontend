@@ -29,6 +29,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
 
@@ -39,6 +40,8 @@ interface SlotInteractionOptions {
 }
 
 interface SlotInteractionHandlers {
+  onClick: (event: PointerEvent) => void
+  onDoubleClick: (event: PointerEvent) => void
   onPointerDown: (event: PointerEvent) => void
 }
 
@@ -80,6 +83,28 @@ function createPointerSession(): PointerSession {
   }
 
   return { begin, register, matches, isActive, clear }
+}
+
+/**
+ * Resolves the actual DOM element under the pointer position.
+ *
+ * On touch/mobile devices, pointer events have "implicit pointer capture" -
+ * event.target stays as the element where the touch started, not the element
+ * currently under the pointer. This helper uses document.elementFromPoint()
+ * to get the actual element under the pointer, falling back to the provided
+ * fallback target if elementFromPoint returns null.
+ *
+ * @param clientX - The client X coordinate of the pointer
+ * @param clientY - The client Y coordinate of the pointer
+ * @param fallback - Fallback target to use if elementFromPoint returns null
+ * @returns The resolved target element
+ */
+export function resolvePointerTarget(
+  clientX: number,
+  clientY: number,
+  fallback: EventTarget | null
+): EventTarget | null {
+  return document.elementFromPoint(clientX, clientY) ?? fallback
 }
 
 export function useSlotLinkInteraction({
@@ -296,7 +321,7 @@ export function useSlotLinkInteraction({
 
     let hoveredSlotKey: string | null = null
     let hoveredNodeId: NodeId | null = null
-    const target = data.target
+    const target = resolvePointerTarget(data.clientX, data.clientY, data.target)
     if (target === dragContext.lastPointerEventTarget) {
       hoveredSlotKey = dragContext.lastPointerTargetSlotKey
       hoveredNodeId = dragContext.lastPointerTargetNodeId
@@ -384,6 +409,8 @@ export function useSlotLinkInteraction({
 
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
+    event.stopPropagation()
+
     dragContext.pendingPointerMove = {
       clientX: event.clientX,
       clientY: event.clientY,
@@ -496,9 +523,14 @@ export function useSlotLinkInteraction({
       ? state.candidate
       : null
 
-    const hasConnected = connectByPriority(canvasEvent.target, snappedCandidate)
+    const dropTarget = resolvePointerTarget(
+      event.clientX,
+      event.clientY,
+      canvasEvent.target
+    )
+    const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    if (!hasConnected) {
+    if (!hasConnected && dropTarget === app.canvas?.canvas) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 
@@ -507,6 +539,7 @@ export function useSlotLinkInteraction({
   }
 
   const handlePointerUp = (event: PointerEvent) => {
+    event.stopPropagation()
     finishInteraction(event)
   }
 
@@ -713,7 +746,26 @@ export function useSlotLinkInteraction({
     }
   })
 
+  function onDoubleClick(e: PointerEvent) {
+    const { graph } = app.canvas
+    if (!graph) return
+    const node = graph.getNodeById(nodeId)
+    if (!node) return
+    augmentToCanvasPointerEvent(e, node, app.canvas)
+    node.onInputDblClick?.(index, e)
+  }
+  function onClick(e: PointerEvent) {
+    const { graph } = app.canvas
+    if (!graph) return
+    const node = graph.getNodeById(nodeId)
+    if (!node) return
+    augmentToCanvasPointerEvent(e, node, app.canvas)
+    node.onInputClick?.(index, e)
+  }
+
   return {
+    onClick,
+    onDoubleClick,
     onPointerDown
   }
 }

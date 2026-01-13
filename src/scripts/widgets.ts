@@ -6,22 +6,19 @@ import type {
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
-import { useFileUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFileUploadWidget'
 import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
 import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
 import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
-import { useMultiSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMultiSelectWidget'
-import { useSelectButtonWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useSelectButtonWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
-import { useTreeSelectWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTreeSelectWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
@@ -288,7 +285,7 @@ export function addValueControlWidgets(
   return widgets
 }
 
-export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
+export const ComfyWidgets = {
   INT: transformWidgetConstructorV2ToV1(useIntWidget()),
   FLOAT: transformWidgetConstructorV2ToV1(useFloatWidget()),
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),
@@ -296,13 +293,16 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
   IMAGEUPLOAD: useImageUploadWidget(),
-  FILEUPLOAD: transformWidgetConstructorV2ToV1(useFileUploadWidget()),
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
-  TREESELECT: transformWidgetConstructorV2ToV1(useTreeSelectWidget()),
-  MULTISELECT: transformWidgetConstructorV2ToV1(useMultiSelectWidget()),
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
-  SELECTBUTTON: transformWidgetConstructorV2ToV1(useSelectButtonWidget()),
-  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget())
+  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
+  ...dynamicWidgets
+} as const
+
+export function isValidWidgetType(
+  key: unknown
+): key is keyof typeof ComfyWidgets {
+  return ComfyWidgets[key as keyof typeof ComfyWidgets] !== undefined
 }

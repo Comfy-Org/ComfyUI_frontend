@@ -6,13 +6,20 @@
     <ContentDivider :width="0.3" />
     <Button
       v-if="isSmallScreen"
-      :icon="isSideNavOpen ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"
-      severity="secondary"
-      filled
-      class="absolute top-1/2 z-10 -translate-y-1/2"
-      :class="isSideNavOpen ? 'left-[12rem]' : 'left-2'"
+      variant="secondary"
+      size="icon"
+      :class="
+        cn(
+          'absolute top-1/2 z-10 -translate-y-1/2',
+          isSideNavOpen ? 'left-[12rem]' : 'left-2'
+        )
+      "
       @click="toggleSideNav"
-    />
+    >
+      <i
+        :class="isSideNavOpen ? 'pi pi-chevron-left' : 'pi pi-chevron-right'"
+      />
+    </Button>
     <div class="relative flex flex-1 overflow-hidden">
       <ManagerNavSidebar
         v-if="isSideNavOpen"
@@ -20,7 +27,7 @@
         :tabs="tabs"
       />
       <div
-        class="flex-1 overflow-auto bg-gray-50 dark-theme:bg-neutral-900"
+        class="flex-1 overflow-auto bg-base-background"
         :class="{
           'transition-all duration-300': isSmallScreen
         }"
@@ -31,7 +38,9 @@
             v-if="shouldShowManagerBanner"
             class="relative mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
           >
-            <i class="pi pi-exclamation-triangle text-lg text-yellow-600"></i>
+            <i
+              class="icon-[lucide--triangle-alert] text-lg text-warning-background"
+            />
             <div class="flex flex-1 flex-col gap-2">
               <p class="m-0 text-sm font-bold">
                 {{ $t('manager.conflicts.warningBanner.title') }}
@@ -46,13 +55,14 @@
                 {{ $t('manager.conflicts.warningBanner.button') }}
               </p>
             </div>
-            <IconButton
+            <Button
               class="absolute top-0 right-0"
-              type="transparent"
+              variant="textonly"
+              size="icon"
               @click="dismissWarningBanner"
             >
               <i class="pi pi-times text-xs text-base-foreground"></i>
-            </IconButton>
+            </Button>
           </div>
           <RegistrySearchBar
             v-model:search-query="searchQuery"
@@ -125,7 +135,6 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
-import Button from 'primevue/button'
 import {
   computed,
   onBeforeUnmount,
@@ -137,13 +146,15 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useResponsiveCollapse } from '@/composables/element/useResponsiveCollapse'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
+import { cn } from '@/utils/tailwindUtil'
 import ManagerNavSidebar from '@/workbench/extensions/manager/components/manager/ManagerNavSidebar.vue'
 import InfoPanel from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanel.vue'
 import InfoPanelMultiItem from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue'
@@ -165,6 +176,7 @@ const { initialTab } = defineProps<{
 }>()
 
 const { t } = useI18n()
+const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
 const conflictAcknowledgment = useConflictAcknowledgment()
@@ -356,7 +368,9 @@ watch([isAllTab, searchResults], () => {
 
 const onClickWarningLink = () => {
   window.open(
-    'https://docs.comfy.org/troubleshooting/custom-node-issues',
+    buildDocsUrl('/troubleshooting/custom-node-issues', {
+      includeLocale: true
+    }),
     '_blank'
   )
 }

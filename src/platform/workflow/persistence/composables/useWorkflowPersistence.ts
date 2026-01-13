@@ -1,7 +1,12 @@
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
+import {
+  hydratePreservedQuery,
+  mergePreservedQueryIntoQuery
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -15,7 +20,23 @@ export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const route = useRoute()
+  const router = useRouter()
   const templateUrlLoader = useTemplateUrlLoader()
+  const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
+
+  const ensureTemplateQueryFromIntent = async () => {
+    hydratePreservedQuery(TEMPLATE_NAMESPACE)
+    const mergedQuery = mergePreservedQueryIntoQuery(
+      TEMPLATE_NAMESPACE,
+      route.query
+    )
+
+    if (mergedQuery) {
+      await router.replace({ query: mergedQuery })
+    }
+
+    return mergedQuery ?? route.query
+  }
 
   const workflowPersistenceEnabled = computed(() =>
     settingStore.get('Comfy.Workflow.Persist')
@@ -23,7 +44,7 @@ export function useWorkflowPersistence() {
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
-    const workflow = JSON.stringify(comfyApp.graph.serialize())
+    const workflow = JSON.stringify(comfyApp.rootGraph.serialize())
 
     try {
       localStorage.setItem('workflow', workflow)
@@ -101,8 +122,8 @@ export function useWorkflowPersistence() {
   }
 
   const loadTemplateFromUrlIfPresent = async () => {
-    const hasTemplateUrl =
-      route.query.template && typeof route.query.template === 'string'
+    const query = await ensureTemplateQueryFromIntent()
+    const hasTemplateUrl = query.template && typeof query.template === 'string'
 
     if (hasTemplateUrl) {
       await templateUrlLoader.loadTemplateFromUrl()

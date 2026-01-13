@@ -92,4 +92,3 @@ jobs:
           base: ${{ github.event.inputs.branch }}
           labels: |
             Release
-

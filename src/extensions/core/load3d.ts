@@ -198,6 +198,17 @@ useExtensionService().registerExtension({
       type: 'boolean',
       defaultValue: false,
       experimental: true
+    },
+    {
+      id: 'Comfy.Load3D.PLYEngine',
+      category: ['3D', 'PLY', 'PLY Engine'],
+      name: 'PLY Engine',
+      tooltip:
+        'Select the engine for loading PLY files. "threejs" uses the native Three.js PLYLoader (best for mesh PLY files). "fastply" uses an optimized loader for ASCII point cloud PLY files. "sparkjs" uses Spark.js for 3D Gaussian Splatting PLY files.',
+      type: 'combo',
+      options: ['threejs', 'fastply', 'sparkjs'],
+      defaultValue: 'threejs',
+      experimental: true
     }
   ],
   commands: [
@@ -238,7 +249,10 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
-        const fileInput = createFileInput('.gltf,.glb,.obj,.fbx,.stl', false)
+        const fileInput = createFileInput(
+          '.gltf,.glb,.obj,.fbx,.stl,.ply,.spz,.splat,.ksplat',
+          false
+        )
 
         node.properties['Resource Folder'] = ''
 
@@ -301,6 +315,8 @@ useExtensionService().registerExtension({
     const load3d = useLoad3dService().getLoad3d(node)
     if (!load3d) return []
 
+    if (load3d.isSplatModel()) return []
+
     return createExportMenuItems(load3d)
   },
 
@@ -317,7 +333,7 @@ useExtensionService().registerExtension({
       const cameraConfig = node.properties['Camera Config'] as any
       const cameraState = cameraConfig?.state
 
-      const config = new Load3DConfiguration(load3d)
+      const config = new Load3DConfiguration(load3d, node.properties)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
       const width = node.widgets?.find((w) => w.name === 'width')
@@ -409,6 +425,8 @@ useExtensionService().registerExtension({
     const load3d = useLoad3dService().getLoad3d(node)
     if (!load3d) return []
 
+    if (load3d.isSplatModel()) return []
+
     return createExportMenuItems(load3d)
   },
 
@@ -444,7 +462,7 @@ useExtensionService().registerExtension({
     const onExecuted = node.onExecuted
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      const config = new Load3DConfiguration(load3d)
+      const config = new Load3DConfiguration(load3d, node.properties)
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 

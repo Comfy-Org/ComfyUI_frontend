@@ -6,7 +6,7 @@
     @mouseenter="viewer.handleMouseEnter"
     @mouseleave="viewer.handleMouseLeave"
   >
-    <div ref="mainContentRef" class="relative flex-1">
+    <div class="relative flex-1">
       <div
         ref="containerRef"
         class="absolute h-full w-full"
@@ -14,6 +14,16 @@
         @dragover.prevent.stop="handleDragOver"
         @dragleave.stop="handleDragLeave"
         @drop.prevent.stop="handleDrop"
+      />
+      <AnimationControls
+        v-if="viewer.animations.value && viewer.animations.value.length > 0"
+        v-model:animations="viewer.animations.value"
+        v-model:playing="viewer.playing.value"
+        v-model:selected-speed="viewer.selectedSpeed.value"
+        v-model:selected-animation="viewer.selectedAnimation.value"
+        v-model:animation-progress="viewer.animationProgress.value"
+        v-model:animation-duration="viewer.animationDuration.value"
+        @seek="viewer.handleSeek"
       />
       <div
         v-if="isDragging"
@@ -37,6 +47,7 @@
               v-model:background-render-mode="viewer.backgroundRenderMode.value"
               v-model:fov="viewer.fov.value"
               :has-background-image="viewer.hasBackgroundImage.value"
+              :disable-background-upload="viewer.isStandaloneMode.value"
               @update-background-image="viewer.handleBackgroundImageUpdate"
             />
           </div>
@@ -45,6 +56,8 @@
             <ModelControls
               v-model:up-direction="viewer.upDirection.value"
               v-model:material-mode="viewer.materialMode.value"
+              :hide-material-mode="viewer.isSplatModel.value"
+              :is-ply-model="viewer.isPlyModel.value"
             />
           </div>
 
@@ -55,13 +68,13 @@
             />
           </div>
 
-          <div class="space-y-4 p-2">
+          <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
             <LightControls
               v-model:light-intensity="viewer.lightIntensity.value"
             />
           </div>
 
-          <div class="space-y-4 p-2">
+          <div v-if="!viewer.isSplatModel.value" class="space-y-4 p-2">
             <ExportControls @export-model="viewer.exportModel" />
           </div>
         </div>
@@ -69,12 +82,10 @@
 
       <div class="p-4">
         <div class="flex gap-2">
-          <Button
-            icon="pi pi-times"
-            severity="secondary"
-            :label="t('g.cancel')"
-            @click="handleCancel"
-          />
+          <Button variant="secondary" @click="handleCancel">
+            <i class="pi pi-times" />
+            {{ t('g.cancel') }}
+          </Button>
         </div>
       </div>
     </div>
@@ -82,44 +93,56 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { onBeforeUnmount, onMounted, ref, toRaw } from 'vue'
 
+import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import CameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import ExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
 import LightControls from '@/components/load3d/controls/viewer/ViewerLightControls.vue'
 import ModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
+import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{
-  node: LGraphNode
+  node?: LGraphNode
+  modelUrl?: string
 }>()
 
 const viewerContentRef = ref<HTMLDivElement>()
 const containerRef = ref<HTMLDivElement>()
-const mainContentRef = ref<HTMLDivElement>()
 const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 
-const viewer = useLoad3dService().getOrCreateViewer(toRaw(props.node))
+const isStandaloneMode = !props.node && props.modelUrl
+
+const viewer = props.node
+  ? useLoad3dService().getOrCreateViewer(toRaw(props.node))
+  : useLoad3dViewer()
 
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
   useLoad3dDrag({
     onModelDrop: async (file) => {
       await viewer.handleModelDrop(file)
     },
-    disabled: viewer.isPreview
+    disabled: viewer.isPreview.value || isStandaloneMode
   })
 
 onMounted(async () => {
-  const source = useLoad3dService().getLoad3d(props.node)
-  if (source && containerRef.value) {
-    await viewer.initializeViewer(containerRef.value, source)
+  if (!containerRef.value) return
+
+  if (isStandaloneMode && props.modelUrl) {
+    await viewer.initializeStandaloneViewer(containerRef.value, props.modelUrl)
+  } else if (props.node) {
+    const source = useLoad3dService().getLoad3d(props.node)
+    if (source) {
+      await viewer.initializeViewer(containerRef.value, source)
+    }
   }
 
   if (viewerContentRef.value) {
@@ -150,7 +173,9 @@ onMounted(async () => {
 })
 
 const handleCancel = () => {
-  viewer.restoreInitialState()
+  if (!isStandaloneMode) {
+    viewer.restoreInitialState()
+  }
   useDialogStore().closeDialog()
 }
 

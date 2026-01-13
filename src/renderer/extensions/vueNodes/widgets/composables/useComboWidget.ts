@@ -13,16 +13,16 @@ import {
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   ComboInputSpec,
   InputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
-import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { addValueControlWidgets } from '@/scripts/widgets'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -69,6 +69,16 @@ const addMultiSelectWidget = (
   addWidget(node, widget as BaseDOMWidget<object | string>)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
+  if (inputSpec.control_after_generate) {
+    widget.linkedWidgets = addValueControlWidgets(
+      node,
+      widget,
+      'fixed',
+      undefined,
+      transformInputSpecV2ToV1(inputSpec)
+    )
+  }
+
   return widget
 }
 

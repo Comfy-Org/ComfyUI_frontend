@@ -1,5 +1,6 @@
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { calculateNodeBounds } from '@/renderer/core/spatial/boundsCalculator'
+import type { PositionedNode } from '@/renderer/core/spatial/boundsCalculator'
 
 import type {
   IMinimapDataSource,
@@ -29,10 +30,12 @@ export abstract class AbstractMinimapDataSource implements IMinimapDataSource {
     }
 
     // Convert MinimapNodeData to the format expected by calculateNodeBounds
-    const compatibleNodes = nodes.map((node) => ({
-      pos: [node.x, node.y],
-      size: [node.width, node.height]
-    }))
+    const compatibleNodes = nodes.map(
+      (node): PositionedNode => ({
+        pos: [node.x, node.y],
+        size: [node.width, node.height]
+      })
+    )
 
     const bounds = calculateNodeBounds(compatibleNodes)
     if (!bounds) {

@@ -4,6 +4,7 @@ import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
 import { reconcileHistory } from '@/platform/remote/comfyui/history/reconciliation'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { getWorkflowFromHistory } from '@/platform/workflow/cloud'
 import type {
   ComfyWorkflowJSON,
@@ -23,11 +24,13 @@ import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 // Task type used in the API.
 type APITaskType = 'queue' | 'history'
 
-export enum TaskItemDisplayStatus {
+enum TaskItemDisplayStatus {
   Running = 'Running',
   Pending = 'Pending',
   Completed = 'Completed',
@@ -202,8 +205,12 @@ export class ResultItemImpl {
     )
   }
 
+  get is3D(): boolean {
+    return getMediaTypeFromFilename(this.filename) === '3D'
+  }
+
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo || this.isAudio
+    return this.isImage || this.isVideo || this.isAudio || this.is3D
   }
 }
 
@@ -311,6 +318,22 @@ export class TaskItemImpl {
 
   get messages() {
     return this.status?.messages || []
+  }
+
+  /**
+   * Server-provided creation time in milliseconds, when available.
+   *
+   * Sources:
+   * - Queue: 5th tuple element may be a metadata object with { create_time }.
+   * - History (Cloud V2): Adapter injects create_time into prompt[3].extra_data.
+   */
+  get createTime(): number | undefined {
+    const extra = (this.extraData as any) || {}
+    const fromExtra =
+      typeof extra.create_time === 'number' ? extra.create_time : undefined
+    if (typeof fromExtra === 'number') return fromExtra
+
+    return undefined
   }
 
   get interrupted() {
@@ -507,6 +530,19 @@ export const useQueueStore = defineStore('queue', () => {
 
       const currentHistory = toValue(historyTasks)
 
+      const appearedTasks = [...pendingTasks.value, ...runningTasks.value]
+      const executionStore = useExecutionStore()
+      appearedTasks.forEach((task) => {
+        const promptIdString = String(task.promptId)
+        const workflowId = task.workflow?.id
+        if (workflowId && promptIdString) {
+          executionStore.registerPromptWorkflowIdMapping(
+            promptIdString,
+            workflowId
+          )
+        }
+      })
+
       const items = reconcileHistory(
         history.History,
         currentHistory.map((impl) => impl.toTaskItem()),
@@ -582,4 +618,19 @@ export const useQueueSettingsStore = defineStore('queueSettingsStore', {
     mode: 'disabled' as AutoQueueMode,
     batchCount: 1
   })
+})
+
+export const useQueueUIStore = defineStore('queueUIStore', () => {
+  const settingStore = useSettingStore()
+
+  const isOverlayExpanded = computed({
+    get: () => settingStore.get('Comfy.Queue.History.Expanded'),
+    set: (value) => settingStore.set('Comfy.Queue.History.Expanded', value)
+  })
+
+  function toggleOverlay() {
+    isOverlayExpanded.value = !isOverlayExpanded.value
+  }
+
+  return { isOverlayExpanded, toggleOverlay }
 })

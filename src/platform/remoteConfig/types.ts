@@ -1,3 +1,5 @@
+import type { TelemetryEventName } from '@/platform/telemetry/types'
+
 /**
  * Server health alert configuration from the backend
  */
@@ -31,4 +33,12 @@ export type RemoteConfig = {
   comfy_api_base_url?: string
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
+  telemetry_disabled_events?: TelemetryEventName[]
+  model_upload_button_enabled?: boolean
+  asset_deletion_enabled?: boolean
+  asset_rename_enabled?: boolean
+  private_models_enabled?: boolean
+  onboarding_survey_enabled?: boolean
+  huggingface_model_import_enabled?: boolean
+  async_model_upload_enabled?: boolean
 }

@@ -1,25 +1,29 @@
 <template>
   <div class="flex flex-col">
     <Button
-      class="p-button-rounded p-button-text"
-      :class="{ 'p-button-outlined': showGrid }"
+      v-tooltip.right="{ value: $t('load3d.showGrid'), showDelay: 300 }"
+      variant="textonly"
+      size="icon"
+      :class="cn('rounded-full', showGrid && 'ring-2 ring-white/50')"
+      :aria-label="$t('load3d.showGrid')"
       @click="toggleGrid"
     >
-      <i
-        v-tooltip.right="{ value: $t('load3d.showGrid'), showDelay: 300 }"
-        class="pi pi-table text-lg text-white"
-      />
+      <i class="pi pi-table text-lg text-base-foreground" />
     </Button>
 
     <div v-if="!hasBackgroundImage">
-      <Button class="p-button-rounded p-button-text" @click="openColorPicker">
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.backgroundColor'),
-            showDelay: 300
-          }"
-          class="pi pi-palette text-lg text-white"
-        />
+      <Button
+        v-tooltip.right="{
+          value: $t('load3d.backgroundColor'),
+          showDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        :aria-label="$t('load3d.backgroundColor')"
+        @click="openColorPicker"
+      >
+        <i class="pi pi-palette text-lg text-base-foreground" />
         <input
           ref="colorPickerRef"
           type="color"
@@ -33,14 +37,18 @@
     </div>
 
     <div v-if="!hasBackgroundImage">
-      <Button class="p-button-rounded p-button-text" @click="openImagePicker">
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.uploadBackgroundImage'),
-            showDelay: 300
-          }"
-          class="pi pi-image text-lg text-white"
-        />
+      <Button
+        v-tooltip.right="{
+          value: $t('load3d.uploadBackgroundImage'),
+          showDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        :aria-label="$t('load3d.uploadBackgroundImage')"
+        @click="openImagePicker"
+      >
+        <i class="pi pi-image text-lg text-base-foreground" />
         <input
           ref="imagePickerRef"
           type="file"
@@ -53,17 +61,22 @@
 
     <div v-if="hasBackgroundImage">
       <Button
-        class="p-button-rounded p-button-text"
-        :class="{ 'p-button-outlined': backgroundRenderMode === 'panorama' }"
+        v-tooltip.right="{
+          value: $t('load3d.panoramaMode'),
+          showDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        :class="
+          cn(
+            'rounded-full',
+            backgroundRenderMode === 'panorama' && 'ring-2 ring-white/50'
+          )
+        "
+        :aria-label="$t('load3d.panoramaMode')"
         @click="toggleBackgroundRenderMode"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.panoramaMode'),
-            showDelay: 300
-          }"
-          class="pi pi-globe text-lg text-white"
-        />
+        <i class="pi pi-globe text-lg text-base-foreground" />
       </Button>
     </div>
 
@@ -75,27 +88,29 @@
 
     <div v-if="hasBackgroundImage">
       <Button
-        class="p-button-rounded p-button-text"
+        v-tooltip.right="{
+          value: $t('load3d.removeBackgroundImage'),
+          showDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        :aria-label="$t('load3d.removeBackgroundImage')"
         @click="removeBackgroundImage"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.removeBackgroundImage'),
-            showDelay: 300
-          }"
-          class="pi pi-times text-lg text-white"
-        />
+        <i class="pi pi-times text-lg text-base-foreground" />
       </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
+import { cn } from '@/utils/tailwindUtil'
 
 const emit = defineEmits<{
   (e: 'updateBackgroundImage', file: File | null): void

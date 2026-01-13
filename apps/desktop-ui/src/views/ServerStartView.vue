@@ -85,11 +85,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  InstallStage,
-  type InstallStageInfo,
-  type InstallStageName,
-  ProgressStatus
+import { InstallStage, ProgressStatus } from '@comfyorg/comfyui-electron-types'
+import type {
+  InstallStageInfo,
+  InstallStageName
 } from '@comfyorg/comfyui-electron-types'
 import type { Terminal } from '@xterm/xterm'
 import Button from 'primevue/button'

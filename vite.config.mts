@@ -10,12 +10,13 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
+import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig } from 'vite'
 import type { ProxyOptions, UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins'
 
 dotenvConfig()
 
@@ -26,6 +27,7 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -52,7 +54,8 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
-  (DISTRIBUTION === 'cloud' && !IS_DEV)
+  (DISTRIBUTION === 'cloud' && !IS_DEV) ||
+  IS_STORYBOOK
 
 const DEV_SEVER_FALLBACK_URL =
   DISTRIBUTION === 'cloud'
@@ -145,7 +148,7 @@ export default defineConfig({
         '**/.git/**',
         '**/.github/**',
         '**/.nx/**',
-        '**/*.{test,spec}.ts',
+        '**/*.{test,spec,stories}.ts',
         '**/coverage/**',
         '**/dist/**',
         '**/playwright-report/**',
@@ -169,6 +172,8 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         ...cloudProxyConfig,
         bypass: (req, res, _options) => {
+          if (!res) return null
+
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
           if (req.url === '/api/extensions') {
@@ -231,7 +236,41 @@ export default defineConfig({
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
       : [vue()]),
     tailwindcss(),
+    typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    // Inject legacy user stylesheet links for desktop/localhost only
+    {
+      name: 'inject-user-stylesheet-links',
+      enforce: 'post',
+      transformIndexHtml(html) {
+        if (DISTRIBUTION === 'cloud') return html
+
+        return {
+          html,
+          tags: [
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'user.css'
+              },
+              injectTo: 'head-prepend'
+            },
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'api/userdata/user.css'
+              },
+              injectTo: 'head-prepend'
+            }
+          ]
+        }
+      }
+    },
+
     // Twitter/Open Graph meta tags plugin (cloud distribution only)
     {
       name: 'inject-twitter-meta',
@@ -316,47 +355,6 @@ export default defineConfig({
         }
       }
     },
-    // Skip import-map generation for cloud builds to keep bundle small
-    ...(DISTRIBUTION !== 'cloud'
-      ? [
-          generateImportMapPlugin([
-            {
-              name: 'vue',
-              pattern: 'vue',
-              entry: './dist/vue.esm-browser.prod.js'
-            },
-            {
-              name: 'vue-i18n',
-              pattern: 'vue-i18n',
-              entry: './dist/vue-i18n.esm-browser.prod.js'
-            },
-            {
-              name: 'primevue',
-              pattern: /^primevue\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true
-            },
-            {
-              name: '@primevue/themes',
-              pattern: /^@primevue\/themes\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true
-            },
-            {
-              name: '@primevue/forms',
-              pattern: /^@primevue\/forms\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true,
-              override: {
-                '@primeuix/forms': {
-                  entry: ''
-                }
-              }
-            }
-          ])
-        ]
-      : []),
-
     Icons({
       compiler: 'vue3',
       customCollections: {
@@ -437,7 +435,7 @@ export default defineConfig({
             return 'vendor-chart'
           }
 
-          if (id.includes('three')) {
+          if (id.includes('three') || id.includes('@sparkjsdev')) {
             return 'vendor-three'
           }
 
@@ -482,12 +480,6 @@ export default defineConfig({
           'console.clear'
         ]
       : []
-  },
-
-  test: {
-    globals: true,
-    environment: 'happy-dom',
-    setupFiles: ['./vitest.setup.ts']
   },
 
   define: {

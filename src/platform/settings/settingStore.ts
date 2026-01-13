@@ -38,8 +38,9 @@ function onChange(
   }
   // Backward compatibility with old settings dialog.
   // Some extensions still listens event emitted by the old settings dialog.
-  // @ts-expect-error 'setting' is possibly 'undefined'.ts(18048)
-  app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
+  if (setting) {
+    app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
+  }
 }
 
 export const useSettingStore = defineStore('setting', () => {
@@ -116,9 +117,10 @@ export const useSettingStore = defineStore('setting', () => {
       return versionedDefault
     }
 
-    return typeof param.defaultValue === 'function'
-      ? param.defaultValue()
-      : param.defaultValue
+    const defaultValue = param.defaultValue
+    return typeof defaultValue === 'function'
+      ? (defaultValue as () => Settings[K])()
+      : defaultValue
   }
 
   function getVersionedDefaultValue<

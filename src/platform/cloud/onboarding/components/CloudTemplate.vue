@@ -49,7 +49,7 @@
             <Button
               type="button"
               class="h-10 bg-black font-bold text-white"
-              severity="secondary"
+              variant="secondary"
               @click="handleDownloadClick"
             >
               {{ t('cloudStart_download') }}
@@ -62,8 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-
+import Button from '@/components/ui/button/Button.vue'
 import { t } from '@/i18n'
 import videoPoster from '@/platform/cloud/onboarding/assets/videos/thumbnail.png'
 import videoSrc from '@/platform/cloud/onboarding/assets/videos/video.mp4'

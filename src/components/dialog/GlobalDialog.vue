@@ -14,6 +14,7 @@
         <component
           :is="item.headerComponent"
           v-if="item.headerComponent"
+          v-bind="item.headerProps"
           :id="item.key"
         />
         <h3 v-else :id="item.key">

@@ -29,12 +29,26 @@
     "name": "صورة خلفية اللوحة",
     "tooltip": "رابط صورة لخلفية اللوحة. يمكنك النقر بزر الفأرة الأيمن على صورة في لوحة النتائج واختيار \"تعيين كخلفية\" لاستخدامها، أو رفع صورتك الخاصة باستخدام زر الرفع."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "سلوك النقر بزر الفأرة الأيسر",
+    "options": {
+      "Panning": "التنقل",
+      "Select": "تحديد"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "تمرير عجلة الفأرة",
+    "options": {
+      "Panning": "التنقل",
+      "Zoom in/out": "تكبير/تصغير"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "وضع تنقل اللوحة",
     "options": {
+      "Custom": "مخصص",
       "Drag Navigation": "سحب للتنقل",
-      "Standard (New)": "قياسي (جديد)",
-      "Custom": "مخصص"
+      "Standard (New)": "قياسي (جديد)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -65,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "حفظ واستعادة موقع اللوحة ومستوى التكبير في سير العمل"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "طريقة المعاينة الحية",
+    "options": {
+      "auto": "تلقائي",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "بدون",
+      "taesd": "taesd"
+    },
+    "tooltip": "طريقة المعاينة الحية أثناء توليد الصورة. \"default\" تستخدم إعداد الخادم CLI."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "عدد أرقام التقريب العشرية لأدوات التحكم العائمة [0 = تلقائي]",
     "tooltip": "(يتطلب إعادة تحميل الصفحة)"
@@ -85,6 +110,10 @@
       "Circle": "دائرة",
       "None": "لا شيء"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "تحديد مباشر",
+    "tooltip": "عند التفعيل، يتم تحديد/إلغاء تحديد العقد في الوقت الفعلي أثناء سحب مستطيل التحديد، كما في أدوات التصميم الأخرى."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "سرعة تكبير اللوحة"
@@ -152,6 +181,15 @@
     "name": "أدنى شدة إضاءة",
     "tooltip": "يحدد الحد الأدنى المسموح به لشدة الإضاءة في المشاهد ثلاثية الأبعاد."
   },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "محرك PLY",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "اختر المحرك لتحميل ملفات PLY. \"threejs\" يستخدم PLYLoader الأصلي من Three.js (الأفضل لملفات PLY الشبكية). \"fastply\" يستخدم محمل محسن لملفات PLY السحابية النقطية بنسق ASCII. \"sparkjs\" يستخدم Spark.js لملفات PLY الخاصة بتوزيع Gaussian ثلاثي الأبعاد."
+  },
   "Comfy_Load3D_ShowGrid": {
     "name": "رؤية الشبكة الابتدائية",
     "tooltip": "يتحكم في ظهور الشبكة بشكل افتراضي عند إنشاء عنصر ثلاثي الأبعاد جديد."
@@ -166,10 +204,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "تقييد تعديل الفرشاة إلى المحور السائد",
     "tooltip": "عند التمكين، تؤثر التعديلات على الحجم أو الصلابة فقط بناءً على الاتجاه الذي تتحرك فيه أكثر."
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "استخدام محرر القناع الجديد",
-    "tooltip": "التحويل إلى واجهة محرر القناع الجديدة"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "تحميل جميع مجلدات النماذج تلقائيًا",
@@ -312,6 +346,13 @@
       "small": "صغير"
     }
   },
+  "Comfy_Sidebar_Style": {
+    "name": "نمط الشريط الجانبي",
+    "options": {
+      "connected": "متصل",
+      "floating": "عائم"
+    }
+  },
   "Comfy_Sidebar_UnifiedWidth": {
     "name": "عرض موحد للشريط الجانبي"
   },
@@ -328,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "حشو عناصر مستعرض الشجرة"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "تخطيط شريط التبويبات",
+    "options": {
+      "Default": "افتراضي",
+      "Integrated": "مُدمج"
+    },
+    "tooltip": "يتحكم في تخطيط شريط التبويبات. \"مُدمج\" ينقل عناصر المساعدة والتحكمات الخاصة بالمستخدم إلى منطقة شريط التبويبات."
+  },
   "Comfy_UseNewMenu": {
     "name": "استخدام القائمة الجديدة",
     "options": {
@@ -338,6 +387,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "التحقق من صحة سير العمل"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "تخطيط مقياس تلقائي (عقد Vue)",
+    "tooltip": "قياس مواضع العقد تلقائيًا عند التبديل إلى عرض Vue لمنع التداخل"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "تصميم العقد الحديث (عقد Vue)",
+    "tooltip": "الحديث: عرض قائم على DOM مع تفاعلية محسّنة وميزات متصفح أصلية وتصميم مرئي محدث. الكلاسيكي: عرض لوحة تقليدي."
   },
   "Comfy_WidgetControlMode": {
     "name": "وضع التحكم في الودجت",
@@ -376,6 +433,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ترتيب معرفات العقد عند حفظ سير العمل"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "طلب تأكيد لاستبدال مخطط الرسم البياني الفرعي الموجود"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "موضع تبويبات سير العمل المفتوحة",
     "options": {
@@ -407,37 +467,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "الالتصاق بالشبكة دائمًا"
-  },
-  "Comfy_Canvas_LeftMouseClickBehavior": {
-    "name": "سلوك النقر بزر الفأرة الأيسر",
-    "options": {
-      "Panning": "التنقل",
-      "Select": "تحديد"
-    }
-  },
-  "Comfy_Canvas_MouseWheelScroll": {
-    "name": "تمرير عجلة الفأرة",
-    "options": {
-      "Panning": "التنقل",
-      "Zoom in/out": "تكبير/تصغير"
-    }
-  },
-  "Comfy_Sidebar_Style": {
-    "name": "نمط الشريط الجانبي",
-    "options": {
-      "floating": "عائم",
-      "connected": "متصل"
-    }
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "تخطيط مقياس تلقائي (عقد Vue)",
-    "tooltip": "قياس مواضع العقد تلقائيًا عند التبديل إلى عرض Vue لمنع التداخل"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "تصميم العقد الحديث (عقد Vue)",
-    "tooltip": "الحديث: عرض قائم على DOM مع تفاعلية محسّنة وميزات متصفح أصلية وتصميم مرئي محدث. الكلاسيكي: عرض لوحة تقليدي."
-  },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "طلب تأكيد لاستبدال مخطط الرسم البياني الفرعي الموجود"
   }
 }

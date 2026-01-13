@@ -191,17 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Check for Custom Node Updates"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Toggle the Custom Nodes Manager Progress Bar"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Decrease Brush Size in MaskEditor"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Increase Brush Size in MaskEditor"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Open Color Picker in MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Mirror Horizontal in MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Mirror Vertical in MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Rotate Left in MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Rotate Right in MaskEditor"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Unload Models"
@@ -224,6 +236,9 @@
   "Comfy_PublishSubgraph": {
     "label": "Publish Subgraph"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Toggle Job History"
+  },
   "Comfy_QueuePrompt": {
     "label": "Queue Prompt"
   },
@@ -238,6 +253,9 @@
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "Refresh Node Definitions"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Rename Workflow"
   },
   "Comfy_SaveWorkflow": {
     "label": "Save Workflow"
@@ -257,6 +275,12 @@
   "Comfy_ToggleHelpCenter": {
     "label": "Help Center"
   },
+  "Comfy_ToggleLinear": {
+    "label": "toggle linear mode"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Toggle Queue Panel V2"
+  },
   "Comfy_ToggleTheme": {
     "label": "Toggle Theme (Dark/Light)"
   },
@@ -270,7 +294,7 @@
     "label": "Sign Out"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "Experimental: Enable Vue Nodes"
+    "label": "Experimental: Enable Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "Close Current Workflow"
@@ -316,14 +340,6 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "Toggle Node Library Sidebar",
     "tooltip": "Node Library"
-  },
-  "Workspace_ToggleSidebarTab_assets": {
-    "label": "Toggle Assets Sidebar",
-    "tooltip": "Assets"
-  },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Toggle Queue Sidebar",
-    "tooltip": "Queue"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Toggle Workflows Sidebar",

@@ -221,11 +221,13 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
     const newNode = LiteGraph.createNode(node.type)
     if (!newNode) {
       console.warn('Failed to create node', node.type)
+      const serializedData = structuredClone(node.serialize())
+      clonedNodes.push(serializedData)
       continue
     }
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
-    const data = LiteGraph.cloneObject(node.serialize())
+    const data = structuredClone(node.serialize())
     newNode.configure(data)
 
     clonedNodes.push(newNode.serialize())

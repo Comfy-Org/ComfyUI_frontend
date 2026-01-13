@@ -67,7 +67,7 @@ export interface ToastMessageOptions {
   /**
    * Detail content of the message.
    */
-  detail?: any | undefined
+  detail?: string
   /**
    * Whether the message can be closed manually using the close icon.
    * @defaultValue true
@@ -84,11 +84,12 @@ export interface ToastMessageOptions {
   /**
    * Style class of the message.
    */
-  styleClass?: any
+  styleClass?: string | string[] | Record<string, boolean>
   /**
    * Style class of the content.
+   * Matches PrimeVue Toast API which accepts Vue class bindings.
    */
-  contentStyleClass?: any
+  contentStyleClass?: string | string[] | Record<string, boolean>
 }
 
 export type ToastManager = {
@@ -107,8 +108,8 @@ export interface ExtensionManager {
   dialog: ReturnType<typeof useDialogService>
   command: CommandManager
   setting: {
-    get: (id: string) => any
-    set: (id: string, value: any) => void
+    get: <T = unknown>(id: string) => T | undefined
+    set: <T = unknown>(id: string, value: T) => void
   }
 }
 
