@@ -60,10 +60,12 @@ describe('useJobErrorReporting', () => {
     dialog = {
       showExecutionErrorDialog,
       showErrorDialog
-    }
+    } as unknown as JobErrorDialogService
     composable = useJobErrorReporting({
       taskForJob,
-      copyToClipboard,
+      copyToClipboard: copyToClipboard as (
+        value: string
+      ) => void | Promise<void>,
       dialog
     })
   })
