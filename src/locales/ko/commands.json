@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "노드 정의 새로 고침"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "워크플로우 이름 변경"
+  },
   "Comfy_SaveWorkflow": {
     "label": "워크플로 저장"
   },
