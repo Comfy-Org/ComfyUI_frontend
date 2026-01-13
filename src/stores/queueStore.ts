@@ -20,6 +20,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 enum TaskItemDisplayStatus {
@@ -599,4 +600,19 @@ export const useQueueSettingsStore = defineStore('queueSettingsStore', {
     mode: 'disabled' as AutoQueueMode,
     batchCount: 1
   })
+})
+
+export const useQueueUIStore = defineStore('queueUIStore', () => {
+  const settingStore = useSettingStore()
+
+  const isOverlayExpanded = computed({
+    get: () => settingStore.get('Comfy.Queue.History.Expanded'),
+    set: (value) => settingStore.set('Comfy.Queue.History.Expanded', value)
+  })
+
+  function toggleOverlay() {
+    isOverlayExpanded.value = !isOverlayExpanded.value
+  }
+
+  return { isOverlayExpanded, toggleOverlay }
 })

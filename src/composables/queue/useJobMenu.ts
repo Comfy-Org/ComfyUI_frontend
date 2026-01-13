@@ -38,7 +38,7 @@ export type MenuEntry =
  * @param onInspectAsset Callback to trigger when inspecting a completed job's asset
  */
 export function useJobMenu(
-  currentMenuItem: () => JobListItem | null,
+  currentMenuItem: () => JobListItem | null = () => null,
   onInspectAsset?: (item: JobListItem) => void
 ) {
   const workflowStore = useWorkflowStore()
@@ -49,45 +49,48 @@ export function useJobMenu(
   const nodeDefStore = useNodeDefStore()
   const mediaAssetActions = useMediaAssetActions()
 
-  const openJobWorkflow = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    const data = await getJobWorkflow(item.id)
+  const resolveItem = (item?: JobListItem | null): JobListItem | null =>
+    item ?? currentMenuItem()
+
+  const openJobWorkflow = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    const data = await getJobWorkflow(target.id)
     if (!data) return
-    const filename = `Job ${item.id}.json`
+    const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
     await workflowService.openWorkflow(temp)
   }
 
-  const copyJobId = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    await copyToClipboard(item.id)
+  const copyJobId = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    await copyToClipboard(target.id)
   }
 
-  const cancelJob = async () => {
-    const item = currentMenuItem()
-    if (!item) return
-    if (item.state === 'running' || item.state === 'initialization') {
-      await api.interrupt(item.id)
-    } else if (item.state === 'pending') {
-      await api.deleteItem('queue', item.id)
+  const cancelJob = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
+    if (target.state === 'running' || target.state === 'initialization') {
+      await api.interrupt(target.id)
+    } else if (target.state === 'pending') {
+      await api.deleteItem('queue', target.id)
     }
     await queueStore.update()
   }
 
-  const copyErrorMessage = async () => {
-    const item = currentMenuItem()
-    const message = item?.taskRef?.errorMessage
+  const copyErrorMessage = async (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    const message = target?.taskRef?.errorMessage
     if (message) await copyToClipboard(message)
   }
 
-  const reportError = () => {
-    const item = currentMenuItem()
-    if (!item) return
+  const reportError = (item?: JobListItem | null) => {
+    const target = resolveItem(item)
+    if (!target) return
 
     // Use execution_error from list response if available
-    const executionError = item.taskRef?.executionError
+    const executionError = target.taskRef?.executionError
 
     if (executionError) {
       useDialogService().showExecutionErrorDialog(executionError)
@@ -95,7 +98,7 @@ export function useJobMenu(
     }
 
     // Fall back to simple error dialog
-    const message = item.taskRef?.errorMessage
+    const message = target.taskRef?.errorMessage
     if (message) {
       useDialogService().showErrorDialog(new Error(message), {
         reportType: 'queueJobError'

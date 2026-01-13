@@ -47,6 +47,7 @@
       <MediaAssetFilterBar
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
+        v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
         class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
@@ -196,6 +197,7 @@ import { cn } from '@/utils/tailwindUtil'
 const { t } = useI18n()
 
 const activeTab = ref<'input' | 'output'>('output')
+const viewMode = ref<'list' | 'grid'>('grid')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)

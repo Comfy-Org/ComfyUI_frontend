@@ -517,7 +517,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'download')
-    entry?.onClick?.()
+    void entry?.onClick?.()
 
     expect(downloadFileMock).toHaveBeenCalledWith('https://asset')
   })
@@ -528,7 +528,7 @@ describe('useJobMenu', () => {
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'download')
-    entry?.onClick?.()
+    void entry?.onClick?.()
 
     expect(downloadFileMock).not.toHaveBeenCalled()
   })
