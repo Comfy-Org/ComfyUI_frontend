@@ -121,17 +121,10 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
-              :show-delete-button="shouldShowDeleteButton"
-              :open-context-menu-id="openContextMenuId"
-              :selected-assets="getSelectedAssets(displayAssets)"
-              :has-selection="hasSelection"
               @click="handleAssetSelect(item)"
+              @context-menu="handleAssetContextMenu"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
-              @asset-deleted="refreshAssets"
-              @context-menu-opened="openContextMenuId = item.id"
-              @bulk-download="handleBulkDownload"
-              @bulk-delete="handleBulkDelete"
             />
           </template>
         </VirtualGrid>
@@ -266,8 +259,6 @@ const isListView = computed(
   () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
 )
 
-// Track which asset's context menu is open (for single-instance context menu management)
-const openContextMenuId = ref<string | null>(null)
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
 

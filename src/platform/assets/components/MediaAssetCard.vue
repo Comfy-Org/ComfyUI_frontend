@@ -22,7 +22,9 @@
     "
     :data-selected="selected"
     @click.stop="$emit('click')"
-    @contextmenu.prevent="handleContextMenu"
+    @contextmenu.prevent.stop="
+      asset ? emit('context-menu', $event, asset) : undefined
+    "
   >
     <!-- Top Area: Media Preview -->
     <div class="relative aspect-square overflow-hidden p-0">
@@ -64,7 +66,9 @@
             variant="overlay-white"
             size="icon"
             :aria-label="$t('mediaAsset.actions.moreOptions')"
-            @click.stop="handleContextMenu"
+            @click.stop="
+              asset ? emit('context-menu', $event, asset) : undefined
+            "
           >
             <i class="icon-[lucide--ellipsis] size-4" />
           </Button>
@@ -119,25 +123,10 @@
       </div>
     </div>
   </div>
-
-  <MediaAssetContextMenu
-    v-if="asset"
-    ref="contextMenu"
-    :asset="asset"
-    :asset-type="assetType"
-    :file-kind="fileKind"
-    :show-delete-button="showDeleteButton"
-    :selected-assets="selectedAssets"
-    :is-bulk-mode="hasSelection && (selectedAssets?.length ?? 0) > 1"
-    @zoom="handleZoomClick"
-    @asset-deleted="emit('asset-deleted')"
-    @bulk-download="emit('bulk-download', $event)"
-    @bulk-delete="emit('bulk-delete', $event)"
-  />
 </template>
 
 <script setup lang="ts">
-import { useElementHover, whenever } from '@vueuse/core'
+import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -155,7 +144,6 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaAssetContextMenu from './MediaAssetContextMenu.vue'
 import MediaTitle from './MediaTitle.vue'
 
 const mediaComponents = {
@@ -171,40 +159,22 @@ function getTopComponent(kind: MediaKind) {
   return mediaComponents.top[kind] || mediaComponents.top.image
 }
 
-const {
-  asset,
-  loading,
-  selected,
-  showOutputCount,
-  outputCount,
-  showDeleteButton,
-  openContextMenuId,
-  selectedAssets,
-  hasSelection
-} = defineProps<{
+const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
-  showDeleteButton?: boolean
-  openContextMenuId?: string | null
-  selectedAssets?: AssetItem[]
-  hasSelection?: boolean
 }>()
 
 const emit = defineEmits<{
   click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
-  'asset-deleted': []
-  'context-menu-opened': []
-  'bulk-download': [assets: AssetItem[]]
-  'bulk-delete': [assets: AssetItem[]]
+  'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
-const contextMenu = ref<InstanceType<typeof MediaAssetContextMenu>>()
 
 const isVideoPlaying = ref(false)
 const showVideoControls = ref(false)
@@ -299,17 +269,4 @@ const handleImageLoaded = (width: number, height: number) => {
 const handleOutputCountClick = () => {
   emit('output-count-click')
 }
-
-const handleContextMenu = (event: MouseEvent) => {
-  emit('context-menu-opened')
-  contextMenu.value?.show(event)
-}
-
-// Close this context menu when another opens
-whenever(
-  () => openContextMenuId && openContextMenuId !== asset?.id,
-  () => {
-    contextMenu.value?.hide()
-  }
-)
 </script>
