@@ -2083,6 +2083,7 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "uploadSelect": {
       "placeholder": "Select...",

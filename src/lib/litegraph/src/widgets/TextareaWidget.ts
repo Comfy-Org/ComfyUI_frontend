@@ -1,3 +1,5 @@
+import { t } from '@/i18n'
+
 import type { ITextareaWidget } from '../types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
@@ -29,7 +31,7 @@ export class TextareaWidget
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
 
-    const text = 'Textarea: Vue-only'
+    const text = `Textarea: ${t('widgets.node2only')}`
     ctx.fillText(text, width / 2, y + height / 2)
 
     Object.assign(ctx, {

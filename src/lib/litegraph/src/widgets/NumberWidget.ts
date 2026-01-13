@@ -1,5 +1,5 @@
 import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
-import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
+import { evaluateInput, getWidgetStep } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
@@ -68,19 +68,8 @@ export class NumberWidget
       'Value',
       this.value,
       (v: string) => {
-        // Check if v is a valid equation or a number
-        if (/^[\d\s()*+/-]+|\d+\.\d+$/.test(v)) {
-          // Solve the equation if possible
-          try {
-            v = eval(v)
-          } catch {
-            // Ignore eval errors
-          }
-        }
-        const newValue = Number(v)
-        if (!isNaN(newValue)) {
-          this.setValue(newValue, { e, node, canvas })
-        }
+        const parsed = evaluateInput(v)
+        if (parsed !== undefined) this.setValue(parsed, { e, node, canvas })
       },
       e
     )
