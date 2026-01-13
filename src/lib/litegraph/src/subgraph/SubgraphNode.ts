@@ -30,7 +30,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { AssetWidget } from '@/lib/litegraph/src/widgets/AssetWidget'
-import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
