@@ -1889,6 +1889,9 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     MeshyAnimateModelNode: {
       displayPrice: formatCreditsLabel(meshyCreditsToUsd(3))
     },
+    MeshyTextureNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(10))
+    },
     // Google/Gemini nodes
     GeminiNode: {
       displayPrice: (node: LGraphNode): string => {
