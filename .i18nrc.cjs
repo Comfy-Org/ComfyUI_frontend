@@ -6,6 +6,7 @@ const { defineConfig } = require('@lobehub/i18n-cli');
 module.exports = defineConfig({
   modelName: 'gpt-4.1',
   splitToken: 1024,
+  saveImmediately: true,
   entry: 'src/locales/en',
   entryLocale: 'en',
   output: 'src/locales',
