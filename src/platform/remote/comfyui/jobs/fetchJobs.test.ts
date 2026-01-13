@@ -257,35 +257,66 @@ describe('fetchJobs', () => {
   })
 
   describe('extractWorkflow', () => {
-    it('extracts workflow from nested structure', () => {
+    const validWorkflow = {
+      version: 0.4,
+      last_node_id: 1,
+      last_link_id: 0,
+      nodes: [],
+      links: []
+    }
+
+    it('extracts and validates workflow from nested structure', async () => {
       const jobDetail = {
         ...createMockJob('job1', 'completed'),
         workflow: {
           extra_data: {
             extra_pnginfo: {
-              workflow: { nodes: [], links: [] }
+              workflow: validWorkflow
             }
           }
         }
       }
 
-      const workflow = extractWorkflow(jobDetail)
+      const workflow = await extractWorkflow(jobDetail)
 
-      expect(workflow).toEqual({ nodes: [], links: [] })
+      expect(workflow).toEqual(validWorkflow)
     })
 
-    it('returns undefined if workflow not present', () => {
+    it('returns undefined if workflow not present', async () => {
       const jobDetail = createMockJob('job1', 'completed')
 
-      const workflow = extractWorkflow(jobDetail)
+      const workflow = await extractWorkflow(jobDetail)
 
       expect(workflow).toBeUndefined()
     })
 
-    it('returns undefined for undefined input', () => {
-      const workflow = extractWorkflow(undefined)
+    it('returns undefined for undefined input', async () => {
+      const workflow = await extractWorkflow(undefined)
 
       expect(workflow).toBeUndefined()
+    })
+
+    it('returns undefined for invalid workflow and logs warning', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const jobDetail = {
+        ...createMockJob('job1', 'completed'),
+        workflow: {
+          extra_data: {
+            extra_pnginfo: {
+              workflow: { invalid: 'data' }
+            }
+          }
+        }
+      }
+
+      const workflow = await extractWorkflow(jobDetail)
+
+      expect(workflow).toBeUndefined()
+      expect(consoleSpy).toHaveBeenCalledWith(
+        '[extractWorkflow] Workflow validation failed:',
+        expect.any(String)
+      )
+      consoleSpy.mockRestore()
     })
   })
 })

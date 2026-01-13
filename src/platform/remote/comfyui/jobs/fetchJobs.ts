@@ -7,6 +7,7 @@
  */
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { PromptId } from '@/schemas/apiSchema'
 
 import type {
@@ -136,16 +137,25 @@ export async function fetchJobDetail(
 }
 
 /**
- * Extracts workflow from job detail response.
+ * Extracts and validates workflow from job detail response.
  * The workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
- * Full workflow validation happens downstream via validateComfyWorkflow.
+ *
+ * Uses Zod validation via validateComfyWorkflow to ensure the workflow
+ * conforms to the expected schema. Logs validation failures for debugging
+ * but still returns undefined to allow graceful degradation.
  */
-export function extractWorkflow(
+export async function extractWorkflow(
   job: JobDetail | undefined
-): ComfyWorkflowJSON | undefined {
+): Promise<ComfyWorkflowJSON | undefined> {
   const parsed = zWorkflowContainer.safeParse(job?.workflow)
   if (!parsed.success) return undefined
-  return parsed.data.extra_data?.extra_pnginfo?.workflow as
-    | ComfyWorkflowJSON
-    | undefined
+
+  const rawWorkflow = parsed.data.extra_data?.extra_pnginfo?.workflow
+  if (!rawWorkflow) return undefined
+
+  const validated = await validateComfyWorkflow(rawWorkflow, (error) => {
+    console.warn('[extractWorkflow] Workflow validation failed:', error)
+  })
+
+  return validated ?? undefined
 }
