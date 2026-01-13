@@ -53,6 +53,18 @@ describe('widgetRegistry', () => {
       expect(getComponent('MY_WIDGET', 'test')).toBe(MockComponent)
       expect(getComponent('MYWIDGET', 'test')).toBe(MockComponent)
     })
+
+    it('should overwrite previous entry when re-registering same widget key', () => {
+      registerVueWidgets({
+        myWidget: { component: MockComponent }
+      })
+
+      registerVueWidgets({
+        myWidget: { component: MockComponent2 }
+      })
+
+      expect(getComponent('myWidget', 'test')).toBe(MockComponent2)
+    })
   })
 
   describe('getComponent', () => {
