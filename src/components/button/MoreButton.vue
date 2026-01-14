@@ -1,7 +1,7 @@
 <template>
   <div class="relative inline-flex items-center">
     <Button
-      size="icon"
+      :size="size"
       variant="secondary"
       v-bind="$attrs"
       @click="popover?.toggle"
@@ -11,8 +11,7 @@
           cn(
             !isVertical
               ? 'icon-[lucide--ellipsis]'
-              : 'icon-[lucide--more-vertical]',
-            'text-sm'
+              : 'icon-[lucide--more-vertical]'
           )
         "
       />
@@ -63,6 +62,7 @@ import Popover from 'primevue/popover'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import { cn } from '@/utils/tailwindUtil'
 
 defineOptions({
@@ -71,9 +71,10 @@ defineOptions({
 
 interface MoreButtonProps {
   isVertical?: boolean
+  size?: ButtonVariants['size']
 }
 
-const { isVertical = false } = defineProps<MoreButtonProps>()
+const { isVertical = false, size = 'icon' } = defineProps<MoreButtonProps>()
 
 defineEmits<{
   menuOpened: []

@@ -179,10 +179,10 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template v-if="args.hasLeftPanel" #leftPanel>
           <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
             <template #header-icon>
-              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+              <i class="icon-[lucide--puzzle]" />
             </template>
             <template #header-title>
-              <span class="text-neutral text-base">Title</span>
+              <span>Title</span>
             </template>
           </LeftSidePanel>
         </template>
@@ -200,30 +200,32 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <!-- Header Right Area -->
         <template v-if="args.hasHeaderRightArea" #header-right-area>
           <div class="flex gap-2">
-            <Button variant="primary" @click="() => {}">
-                <i class="icon-[lucide--upload] size-3" />
-              <span> Upload Model </span>
+            <Button variant="primary" size="lg" @click="() => {}">
+              <i class="icon-[lucide--upload]" />
+              <span>Upload Model</span>
             </Button>
 
-            <MoreButton>
+            <MoreButton size="icon-lg">
               <template #default="{ close }">
                 <Button
                   variant="secondary"
+                  size="lg"
                   label="Settings"
                   @click="() => { close() }"
                 >
                   <template #icon>
-                    <i class="icon-[lucide--download] size-3" />
+                    <i class="icon-[lucide--download]" />
                   </template>
                 </Button>
 
                 <Button
                   variant="primary"
+                  size="lg"
                   label="Profile"
                   @click="() => { close() }"
                 >
                   <template #icon>
-                    <i class="icon-[lucide--scroll] size-3" />
+                    <i class="icon-[lucide--scroll]" />
                   </template>
                 </Button>
               </template>
@@ -254,7 +256,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
               class="w-[135px]"
             >
               <template #icon>
-                <i class="icon-[lucide--filter] size-3" />
+                <i class="icon-[lucide--filter]" />
               </template>
             </SingleSelect>
           </div>
@@ -274,8 +276,8 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <div class="w-full h-full bg-blue-500"></div>
                   </template>
                   <template #top-right>
-                    <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
-                      <i class="icon-[lucide--info] size-4" />
+                    <Button size="icon-lg" @click="() => {}">
+                      <i class="icon-[lucide--info]" />
                     </Button>
                   </template>
                   <template #bottom-right>
@@ -283,7 +285,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <SquareChip label="1.2 MB" />
                     <SquareChip label="LoRA">
                       <template #icon>
-                        <i class="icon-[lucide--folder] size-3" />
+                        <i class="icon-[lucide--folder]" />
                       </template>
                     </SquareChip>
                   </template>
@@ -303,10 +305,10 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <template v-if="args.hasLeftPanel" #leftPanel>
           <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
             <template #header-icon>
-              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+              <i class="icon-[lucide--puzzle]" />
             </template>
             <template #header-title>
-              <span class="text-neutral text-base">Title</span>
+              <span>Title</span>
             </template>
           </LeftSidePanel>
         </template>
@@ -324,26 +326,28 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <!-- Header Right Area -->
         <template v-if="args.hasHeaderRightArea" #header-right-area>
           <div class="flex gap-2">
-            <Button variant="primary" @click="() => {}">
-                <i class="icon-[lucide--upload] size-3" />
+            <Button variant="primary" size="lg" @click="() => {}">
+                <i class="icon-[lucide--upload]" />
                 <span>Upload Model</span>
             </Button>
 
-            <MoreButton>
+            <MoreButton size="icon-lg">
               <template #default="{ close }">
                 <Button
                   variant="secondary"
+                  size="lg"
                   @click="() => { close() }"
                 >
-                    <i class="icon-[lucide--download] size-3" />
+                    <i class="icon-[lucide--download]" />
                     <span>Settings</span>
                 </Button>
 
                 <Button
                   variant="primary"
+                  size="lg"
                   @click="() => { close() }"
                 >
-                    <i class="icon-[lucide--scroll] size-3" />
+                    <i class="icon-[lucide--scroll]" />
                     <span>Profile</span>
                 </Button>
               </template>
@@ -371,7 +375,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
               class="w-[135px]"
             >
               <template #icon>
-                <i class="icon-[lucide--filter] size-3" />
+                <i class="icon-[lucide--filter]" />
               </template>
             </SingleSelect>
           </div>
@@ -391,8 +395,8 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <div class="w-full h-full bg-blue-500"></div>
                   </template>
                   <template #top-right>
-                    <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
-                      <i class="icon-[lucide--info] size-4" />
+                    <Button size="icon-lg" @click="() => {}">
+                      <i class="icon-[lucide--info]" />
                     </Button>
                   </template>
                   <template #bottom-right>
@@ -400,7 +404,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <SquareChip label="1.2 MB" />
                     <SquareChip label="LoRA">
                       <template #icon>
-                        <i class="icon-[lucide--folder] size-3" />
+                        <i class="icon-[lucide--folder]" />
                       </template>
                     </SquareChip>
                   </template>

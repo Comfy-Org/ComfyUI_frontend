@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'relative flex w-full items-center gap-2 bg-comfy-input cursor-text text-comfy-input-foreground',
+        'relative flex w-full items-center gap-2 bg-secondary-background cursor-text',
         customClass,
         wrapperStyle
       )
@@ -27,15 +27,11 @@
       <i :class="filterIcon" />
     </Button>
     <InputIcon v-if="!modelValue" :class="icon" />
-    <Button
-      v-if="modelValue"
-      class="clear-button absolute left-0"
-      variant="textonly"
-      size="icon"
+    <InputIcon
+      v-else
+      class="icon-[lucide--x] cursor-pointer"
       @click="modelValue = ''"
-    >
-      <i class="icon-[lucide--x] size-4" />
-    </Button>
+    />
   </div>
   <div v-if="filters?.length" class="search-filters flex flex-wrap gap-2 pt-2">
     <SearchFilterChip
@@ -63,7 +59,7 @@ import SearchFilterChip from './SearchFilterChip.vue'
 
 const {
   placeholder = 'Search...',
-  icon = 'pi pi-search',
+  icon = 'icon-[lucide--search]',
   debounceTime = 300,
   filterIcon,
   filters = [],

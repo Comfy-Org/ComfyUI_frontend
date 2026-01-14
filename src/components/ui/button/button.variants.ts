@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const buttonVariants = cva({
-  base: 'relative inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap appearance-none border-none rounded-md text-sm font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  base: 'relative inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap appearance-none border-none rounded-md text-sm font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_i]:pointer-events-none [&_i]:size-4 [&_i]:shrink-0',
   variants: {
     variant: {
       secondary:
@@ -26,7 +26,8 @@ export const buttonVariants = cva({
       md: 'h-8 rounded-lg p-2 text-xs',
       lg: 'h-10 rounded-lg px-4 py-2 text-sm',
       icon: 'size-8',
-      'icon-sm': 'size-5 p-0'
+      'icon-sm': 'size-5 p-0',
+      'icon-lg': 'size-10'
     }
   },
 
@@ -48,8 +49,13 @@ const variants = [
   'destructive-textonly',
   'overlay-white'
 ] as const satisfies Array<ButtonVariants['variant']>
-const sizes = ['sm', 'md', 'lg', 'icon', 'icon-sm'] as const satisfies Array<
-  ButtonVariants['size']
->
+const sizes = [
+  'sm',
+  'md',
+  'lg',
+  'icon',
+  'icon-sm',
+  'icon-lg'
+] as const satisfies Array<ButtonVariants['size']>
 
 export const FOR_STORIES = { variants, sizes } as const

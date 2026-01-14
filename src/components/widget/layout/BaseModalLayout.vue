@@ -2,7 +2,7 @@
   <div class="base-widget-layout rounded-2xl overflow-hidden relative">
     <Button
       v-show="!isRightPanelOpen && hasRightPanel"
-      size="lg"
+      size="icon-lg"
       :class="
         cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
           'opacity-0 pointer-events-none': isRightPanelOpen || !hasRightPanel
@@ -13,11 +13,11 @@
       <i class="icon-[lucide--panel-right]" />
     </Button>
     <Button
-      size="lg"
-      class="absolute top-4 right-6 z-10 transition-opacity duration-200 w-10"
+      size="icon-lg"
+      class="absolute top-4 right-6 z-10 transition-opacity duration-200"
       @click="closeDialog"
     >
-      <i class="pi pi-times" />
+      <i class="icon-[lucide--x]" />
     </Button>
     <div class="flex h-full w-full">
       <Transition name="slide-panel">
@@ -40,7 +40,7 @@
             class="w-full h-18 px-6 flex items-center justify-between gap-2"
           >
             <div class="flex flex-1 shrink-0 gap-2">
-              <Button v-if="!notMobile" size="icon" @click="toggleLeftPanel">
+              <Button v-if="!notMobile" size="icon-lg" @click="toggleLeftPanel">
                 <i
                   :class="
                     cn(
@@ -64,7 +64,7 @@
             >
               <Button
                 v-if="isRightPanelOpen && hasRightPanel"
-                size="lg"
+                size="icon-lg"
                 @click="toggleRightPanel"
               >
                 <i class="icon-[lucide--panel-right-close]" />
