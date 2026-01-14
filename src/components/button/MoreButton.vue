@@ -1,11 +1,6 @@
 <template>
   <div class="relative inline-flex items-center">
-    <Button
-      :size="size"
-      variant="secondary"
-      v-bind="$attrs"
-      @click="popover?.toggle"
-    >
+    <Button :size variant="secondary" v-bind="$attrs" @click="popover?.toggle">
       <i
         :class="
           cn(
