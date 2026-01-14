@@ -28,9 +28,7 @@ export const useJobErrorReporting = ({
   copyToClipboard,
   dialog
 }: UseJobErrorReportingOptions) => {
-  const errorMessageValue = computed(() => {
-    return taskForJob.value?.executionError?.exception_message ?? ''
-  })
+  const errorMessageValue = computed(() => taskForJob.value?.errorMessage ?? '')
 
   const copyErrorMessage = () => {
     if (errorMessageValue.value) {
@@ -44,6 +42,7 @@ export const useJobErrorReporting = ({
       dialog.showExecutionErrorDialog(executionError)
       return
     }
+
     if (errorMessageValue.value) {
       dialog.showErrorDialog(new Error(errorMessageValue.value), {
         reportType: 'queueJobError'
