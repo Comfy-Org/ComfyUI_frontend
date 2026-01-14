@@ -165,7 +165,7 @@ defineExpose({ runButtonClick })
       <Popover
         v-if="partitionedNodes[0].length"
         align="start"
-        class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height)"
+        class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
         :reference="notesTo"
         side="left"
         :to="notesTo"
