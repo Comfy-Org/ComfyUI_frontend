@@ -1,16 +1,33 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-export type RightSidePanelTab = 'parameters' | 'settings' | 'info' | 'subgraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+
+export type RightSidePanelTab =
+  | 'parameters'
+  | 'nodes'
+  | 'settings'
+  | 'info'
+  | 'subgraph'
+
+type RightSidePanelSection = 'advanced-inputs' | string
 
 /**
  * Store for managing the right side panel state.
  * This panel displays properties and settings for selected nodes.
  */
 export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
-  const isOpen = ref(false)
+  const settingStore = useSettingStore()
+
+  const isOpen = computed({
+    get: () => settingStore.get('Comfy.RightSidePanel.IsOpen'),
+    set: (value: boolean) =>
+      settingStore.set('Comfy.RightSidePanel.IsOpen', value)
+  })
   const activeTab = ref<RightSidePanelTab>('parameters')
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
+  const focusedSection = ref<RightSidePanelSection | null>(null)
+  const searchQuery = ref('')
 
   function openPanel(tab?: RightSidePanelTab) {
     isOpen.value = true
@@ -27,12 +44,33 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     isOpen.value = !isOpen.value
   }
 
+  /**
+   * Focus on a specific section in the right side panel.
+   * This will open the panel, switch to the parameters tab, and signal
+   * the component to expand and scroll to the section.
+   */
+  function focusSection(section: RightSidePanelSection) {
+    openPanel('parameters')
+    focusedSection.value = section
+  }
+
+  /**
+   * Clear the focused section after it has been handled.
+   */
+  function clearFocusedSection() {
+    focusedSection.value = null
+  }
+
   return {
     isOpen,
     activeTab,
     isEditingSubgraph,
+    focusedSection,
+    searchQuery,
     openPanel,
     closePanel,
-    togglePanel
+    togglePanel,
+    focusSection,
+    clearFocusedSection
   }
 })

@@ -52,13 +52,37 @@
         class="pb-1 px-2 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
-      <Divider type="dashed" class="my-2" />
+      <div
+        v-if="isQueuePanelV2Enabled"
+        class="flex items-center justify-between px-2 py-2 2xl:px-4"
+      >
+        <span class="text-sm text-muted-foreground">
+          {{ activeJobsLabel }}
+        </span>
+        <div class="flex items-center gap-2">
+          <span class="text-sm text-base-foreground">
+            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
+          </span>
+          <Button
+            variant="destructive"
+            size="icon"
+            :aria-label="
+              t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
+            "
+            :disabled="queuedCount === 0"
+            @click="handleClearQueue"
+          >
+            <i class="icon-[lucide--list-x] size-4" />
+          </Button>
+        </div>
+      </div>
+      <Divider v-else type="dashed" class="my-2" />
     </template>
     <template #body>
-      <div v-if="loading && !displayAssets.length">
+      <div v-if="showLoadingState">
         <ProgressSpinner class="absolute left-1/2 w-[50px] -translate-x-1/2" />
       </div>
-      <div v-else-if="!loading && !displayAssets.length">
+      <div v-else-if="showEmptyState">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
           :title="
@@ -72,7 +96,16 @@
         />
       </div>
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
+        <AssetsSidebarListView
+          v-if="isListView"
+          :assets="displayAssets"
+          :is-selected="isSelected"
+          @select-asset="handleAssetSelect"
+          @context-menu="handleAssetContextMenu"
+          @approach-end="handleApproachEnd"
+        />
         <VirtualGrid
+          v-else
           :items="mediaAssetsWithKey"
           :grid-style="{
             display: 'grid',
@@ -88,13 +121,10 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
-              :show-delete-button="shouldShowDeleteButton"
-              :open-context-menu-id="openContextMenuId"
               @click="handleAssetSelect(item)"
+              @context-menu="handleAssetContextMenu"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
-              @asset-deleted="refreshAssets"
-              @context-menu-opened="openContextMenuId = item.id"
             />
           </template>
         </VirtualGrid>
@@ -110,7 +140,6 @@
           <div ref="selectionCountButtonRef" class="inline-flex w-48">
             <Button
               variant="secondary"
-              size="lg"
               :class="cn(isCompact && 'text-left')"
               @click="handleDeselectAll"
             >
@@ -161,49 +190,79 @@
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
+  <MediaAssetContextMenu
+    v-if="contextMenuAsset"
+    ref="contextMenuRef"
+    :asset="contextMenuAsset"
+    :asset-type="contextMenuAssetType"
+    :file-kind="contextMenuFileKind"
+    :show-delete-button="shouldShowDeleteButton"
+    :selected-assets="selectedAssets"
+    :is-bulk-mode="isBulkMode"
+    @zoom="handleZoomClick(contextMenuAsset)"
+    @hide="handleContextMenuHide"
+    @asset-deleted="refreshAssets"
+    @bulk-download="handleBulkDownload"
+    @bulk-delete="handleBulkDelete"
+  />
 </template>
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
-import { Divider } from 'primevue'
+import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { getJobDetail } from '@/services/jobOutputCache'
+import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { ResultItemImpl } from '@/stores/queueStore'
+import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-const { t } = useI18n()
+const { t, n } = useI18n()
+const commandStore = useCommandStore()
+const queueStore = useQueueStore()
+const settingStore = useSettingStore()
 
 const activeTab = ref<'input' | 'output'>('output')
-const viewMode = ref<'list' | 'grid'>('grid')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
+const viewMode = ref<'list' | 'grid'>('grid')
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
+const isListView = computed(
+  () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
+)
 
-// Track which asset's context menu is open (for single-instance context menu management)
-const openContextMenuId = ref<string | null>(null)
+const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
+const contextMenuAsset = ref<AssetItem | null>(null)
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
@@ -212,10 +271,13 @@ const shouldShowDeleteButton = computed(() => {
   return true
 })
 
-const getOutputCount = (item: AssetItem): number => {
-  const count = item.user_metadata?.outputCount
-  return typeof count === 'number' && count > 0 ? count : 1
-}
+const contextMenuAssetType = computed(() =>
+  contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
+)
+
+const contextMenuFileKind = computed<MediaKind>(() =>
+  getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
+)
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
@@ -227,6 +289,19 @@ const shouldShowOutputCount = (item: AssetItem): boolean => {
 const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
   return formatDuration(folderExecutionTime.value * 1000)
+})
+
+const queuedCount = computed(() => queueStore.pendingTasks.length)
+const activeJobsCount = computed(
+  () => queueStore.pendingTasks.length + queueStore.runningTasks.length
+)
+const activeJobsLabel = computed(() => {
+  const count = activeJobsCount.value
+  return t(
+    'sideToolbar.queueProgressOverlay.activeJobs',
+    { count: n(count) },
+    count
+  )
 })
 
 const toast = useToast()
@@ -241,6 +316,8 @@ const {
   hasSelection,
   clearSelection,
   getSelectedAssets,
+  getOutputCount,
+  getTotalOutputCount,
   activate: activateSelection,
   deactivate: deactivateSelection
 } = useAssetSelection()
@@ -271,8 +348,7 @@ const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
 
 // Total output count for all selected assets
 const totalOutputCount = computed(() => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  return selectedAssets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+  return getTotalOutputCount(selectedAssets.value)
 })
 
 const currentAssets = computed(() =>
@@ -302,6 +378,26 @@ const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
 const displayAssets = computed(() => {
   return filteredAssets.value
 })
+
+const selectedAssets = computed(() => getSelectedAssets(displayAssets.value))
+
+const isBulkMode = computed(
+  () => hasSelection.value && selectedAssets.value.length > 1
+)
+
+const showLoadingState = computed(
+  () =>
+    loading.value &&
+    displayAssets.value.length === 0 &&
+    (!isListView.value || activeJobsCount.value === 0)
+)
+
+const showEmptyState = computed(
+  () =>
+    !loading.value &&
+    displayAssets.value.length === 0 &&
+    (!isListView.value || activeJobsCount.value === 0)
+)
 
 watch(displayAssets, (newAssets) => {
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
@@ -372,6 +468,31 @@ watch(
 const handleAssetSelect = (asset: AssetItem) => {
   const index = displayAssets.value.findIndex((a) => a.id === asset.id)
   handleAssetClick(asset, index, displayAssets.value)
+}
+
+function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+  contextMenuAsset.value = asset
+  void nextTick(() => {
+    contextMenuRef.value?.show(event)
+  })
+}
+
+function handleContextMenuHide() {
+  contextMenuAsset.value = null
+}
+
+const handleBulkDownload = (assets: AssetItem[]) => {
+  downloadMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleBulkDelete = async (assets: AssetItem[]) => {
+  await deleteMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleClearQueue = async () => {
+  await commandStore.execute('Comfy.ClearPendingTasks')
 }
 
 const handleZoomClick = (asset: AssetItem) => {
@@ -524,14 +645,12 @@ const copyJobId = async () => {
 }
 
 const handleDownloadSelected = () => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  downloadMultipleAssets(selectedAssets)
+  downloadMultipleAssets(selectedAssets.value)
   clearSelection()
 }
 
 const handleDeleteSelected = async () => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  await deleteMultipleAssets(selectedAssets)
+  await deleteMultipleAssets(selectedAssets.value)
   clearSelection()
 }
 

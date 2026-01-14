@@ -446,6 +446,9 @@ export default defineConfig({
           if (id.includes('/vue') || id.includes('pinia')) {
             return 'vendor-vue'
           }
+          if (id.includes('reka-ui')) {
+            return 'vendor-reka-ui'
+          }
 
           return 'vendor-other'
         }

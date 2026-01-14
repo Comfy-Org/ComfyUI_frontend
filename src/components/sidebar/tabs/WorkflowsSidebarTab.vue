@@ -1,6 +1,7 @@
 <template>
   <SidebarTabTemplate
     :title="$t('sideToolbar.workflows')"
+    v-bind="$attrs"
     class="workflows-sidebar-tab"
   >
     <template #tool-buttons>

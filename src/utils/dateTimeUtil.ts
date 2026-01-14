@@ -75,3 +75,17 @@ export const formatClockTime = (ts: number, locale: string): string => {
     second: '2-digit'
   }).format(d)
 }
+
+export function formatDuration(durationSeconds?: number) {
+  if (durationSeconds == undefined) return ''
+  const hours = (durationSeconds / 60 ** 2) | 0
+  const minutes = ((durationSeconds % 60 ** 2) / 60) | 0
+  const seconds = (durationSeconds % 60) | 0
+  const parts = []
+
+  if (hours > 0) parts.push(`${hours}h`)
+  if (minutes > 0) parts.push(`${minutes}m`)
+  if (seconds > 0) parts.push(`${seconds}s`)
+
+  return parts.join(' ')
+}

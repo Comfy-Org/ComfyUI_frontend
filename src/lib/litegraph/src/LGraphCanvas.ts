@@ -52,6 +52,11 @@ import type {
   LinkSegment,
   NewNodePosition,
   NullableProperties,
+  Panel,
+  PanelButton,
+  PanelWidget,
+  PanelWidgetCallback,
+  PanelWidgetOptions,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -94,7 +99,7 @@ import type {
   SubgraphIO
 } from './types/serialisation'
 import type { NeverNever, PickNevers } from './types/utility'
-import type { IBaseWidget } from './types/widgets'
+import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
@@ -230,6 +235,15 @@ interface ICreatePanelOptions {
   onClose?: () => void
   width?: number | string
   height?: number | string
+}
+
+interface SlotTypeDefaultNodeOpts {
+  node?: string
+  title?: string
+  properties?: Record<string, NodeProperty>
+  inputs?: [string, string][]
+  outputs?: [string, string][]
+  json?: Parameters<LGraphNode['configure']>[0]
 }
 
 const cursors = {
@@ -693,9 +707,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   _highlight_input?: INodeInputSlot
   // TODO: Check if panels are used
   /** @deprecated Panels */
-  node_panel?: any
+  node_panel?: Panel
   /** @deprecated Panels */
-  options_panel?: any
+  options_panel?: Panel
   _bg_img?: HTMLImageElement
   _pattern?: CanvasPattern
   _pattern_img?: HTMLImageElement
@@ -1249,11 +1263,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     function inner_clicked(
       this: ContextMenuDivElement<INodeSlotContextItem>,
-      v: IContextMenuValue<INodeSlotContextItem>,
-      e: any,
-      prev: any
+      v?: string | IContextMenuValue<INodeSlotContextItem>,
+      _options?: unknown,
+      e?: MouseEvent,
+      prev?: ContextMenu<INodeSlotContextItem>
     ) {
       if (!node) return
+      if (!v || typeof v === 'string') return
 
       // TODO: This is a static method, so the below "that" appears broken.
       if (v.callback) void v.callback.call(this, node, v, e, prev)
@@ -6354,8 +6370,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ? LiteGraph.slot_types_default_out
       : LiteGraph.slot_types_default_in
     if (slotTypesDefault?.[fromSlotType]) {
-      // TODO: Remove "any" kludge
-      let nodeNewType: any = false
+      let nodeNewType: string | Record<string, unknown> | false = false
       if (typeof slotTypesDefault[fromSlotType] == 'object') {
         for (const typeX in slotTypesDefault[fromSlotType]) {
           if (
@@ -6373,11 +6388,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         nodeNewType = slotTypesDefault[fromSlotType]
       }
       if (nodeNewType) {
-        // TODO: Remove "any" kludge
-        let nodeNewOpts: any = false
-        if (typeof nodeNewType == 'object' && nodeNewType.node) {
-          nodeNewOpts = nodeNewType
-          nodeNewType = nodeNewType.node
+        let nodeNewOpts: SlotTypeDefaultNodeOpts | undefined
+        let nodeTypeStr: string
+        if (typeof nodeNewType == 'object') {
+          nodeNewOpts = nodeNewType as SlotTypeDefaultNodeOpts
+          nodeTypeStr = nodeNewOpts.node ?? ''
+        } else {
+          nodeTypeStr = nodeNewType
         }
 
         // that.graph.beforeChange();
@@ -6386,7 +6403,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const nodeX = opts.position[0] + opts.posAdd[0] + xSizeFix
         const nodeY = opts.position[1] + opts.posAdd[1] + ySizeFix
         const pos = [nodeX, nodeY]
-        const newNode = LiteGraph.createNode(nodeNewType, nodeNewOpts.title, {
+        const newNode = LiteGraph.createNode(nodeTypeStr, nodeNewOpts?.title, {
           pos
         })
         if (newNode) {
@@ -6399,20 +6416,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
             if (nodeNewOpts.inputs) {
               newNode.inputs = []
-              for (const i in nodeNewOpts.inputs) {
-                newNode.addOutput(
-                  nodeNewOpts.inputs[i][0],
-                  nodeNewOpts.inputs[i][1]
-                )
+              for (const input of nodeNewOpts.inputs) {
+                newNode.addInput(input[0], input[1])
               }
             }
             if (nodeNewOpts.outputs) {
               newNode.outputs = []
-              for (const i in nodeNewOpts.outputs) {
-                newNode.addOutput(
-                  nodeNewOpts.outputs[i][0],
-                  nodeNewOpts.outputs[i][1]
-                )
+              for (const output of nodeNewOpts.outputs) {
+                newNode.addOutput(output[0], output[1])
               }
             }
             if (nodeNewOpts.json) {
@@ -6909,8 +6920,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // hide on mouse leave
     if (options.hide_on_mouse_leave) {
-      // FIXME: Remove "any" kludge
-      let prevent_timeout: any = false
+      let prevent_timeout = 0
       let timeout_close: ReturnType<typeof setTimeout> | null = null
       LiteGraph.pointerListenerAdd(dialog, 'enter', function () {
         if (timeout_close) {
@@ -7104,8 +7114,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           // join node after inserting
           if (options.node_from) {
-            // FIXME: any
-            let iS: any = false
+            let iS: number | false = false
             switch (typeof options.slot_from) {
               case 'string':
                 iS = options.node_from.findOutputSlot(options.slot_from)
@@ -7131,8 +7140,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 // try with first if no name set
                 iS = 0
             }
-            if (options.node_from.outputs[iS] !== undefined) {
-              if (iS !== false && iS > -1) {
+            if (iS !== false && options.node_from.outputs[iS] !== undefined) {
+              if (iS > -1) {
                 if (node == null)
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
@@ -7149,8 +7158,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
           }
           if (options.node_to) {
-            // FIXME: any
-            let iS: any = false
+            let iS: number | false = false
             switch (typeof options.slot_from) {
               case 'string':
                 iS = options.node_to.findInputSlot(options.slot_from)
@@ -7176,8 +7184,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 // try with first if no name set
                 iS = 0
             }
-            if (options.node_to.inputs[iS] !== undefined) {
-              if (iS !== false && iS > -1) {
+            if (iS !== false && options.node_to.inputs[iS] !== undefined) {
+              if (iS > -1) {
                 if (node == null)
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
@@ -7240,13 +7248,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
         const filter = graphcanvas.filter || graphcanvas.graph.filter
 
-        // FIXME: any
         // filter by type preprocess
-        let sIn: any = false
-        let sOut: any = false
+        let sIn: HTMLSelectElement | null = null
+        let sOut: HTMLSelectElement | null = null
         if (options.do_type_filter && that.search_box) {
-          sIn = that.search_box.querySelector('.slot_in_type_filter')
-          sOut = that.search_box.querySelector('.slot_out_type_filter')
+          sIn = that.search_box.querySelector<HTMLSelectElement>(
+            '.slot_in_type_filter'
+          )
+          sOut = that.search_box.querySelector<HTMLSelectElement>(
+            '.slot_out_type_filter'
+          )
         }
 
         const keys = Object.keys(LiteGraph.registered_node_types)
@@ -7264,7 +7275,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // add general type if filtering
         if (
           options.show_general_after_typefiltered &&
-          (sIn.value || sOut.value)
+          (sIn?.value || sOut?.value)
         ) {
           const filtered_extra: string[] = []
           for (const i in LiteGraph.registered_node_types) {
@@ -7289,7 +7300,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
         // check il filtering gave no results
         if (
-          (sIn.value || sOut.value) &&
+          (sIn?.value || sOut?.value) &&
           helper.childNodes.length == 0 &&
           options.show_general_if_none_on_typefilter
         ) {
@@ -7337,8 +7348,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (options.do_type_filter && !opts.skipFilter) {
             const sType = type
 
-            let sV =
-              opts.inTypeOverride !== false ? opts.inTypeOverride : sIn.value
+            let sV: string | undefined =
+              typeof opts.inTypeOverride === 'string'
+                ? opts.inTypeOverride
+                : sIn?.value
             // type is stored
             if (sIn && sV && LiteGraph.registered_slot_in_types[sV]?.nodes) {
               const doesInc =
@@ -7346,8 +7359,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               if (doesInc === false) return false
             }
 
-            sV = sOut.value
-            if (opts.outTypeOverride !== false) sV = opts.outTypeOverride
+            sV = sOut?.value
+            if (typeof opts.outTypeOverride === 'string')
+              sV = opts.outTypeOverride
             // type is stored
             if (sOut && sV && LiteGraph.registered_slot_out_types[sV]?.nodes) {
               const doesInc =
@@ -7628,15 +7642,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return dialog
   }
 
-  createPanel(title: string, options: ICreatePanelOptions) {
+  createPanel(title: string, options: ICreatePanelOptions): Panel {
     options = options || {}
 
-    // TODO: any kludge
-    const root: any = document.createElement('div')
+    const root = document.createElement('div') as Panel
     root.className = 'litegraph dialog'
     root.innerHTML =
       "<div class='dialog-header'><span class='dialog-title'></span></div><div class='dialog-content'></div><div style='display:none;' class='dialog-alt-content'></div><div class='dialog-footer'></div>"
-    root.header = root.querySelector('.dialog-header')
+    root.header = root.querySelector('.dialog-header')!
 
     if (options.width)
       root.style.width =
@@ -7653,11 +7666,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       })
       root.header.append(close)
     }
-    root.title_element = root.querySelector('.dialog-title')
+    root.title_element = root.querySelector('.dialog-title')!
     root.title_element.textContent = title
-    root.content = root.querySelector('.dialog-content')
-    root.alt_content = root.querySelector('.dialog-alt-content')
-    root.footer = root.querySelector('.dialog-footer')
+    root.content = root.querySelector('.dialog-content')!
+    root.alt_content = root.querySelector('.dialog-alt-content')!
+    root.footer = root.querySelector('.dialog-footer')!
     root.footer.style.marginTop = '-96px'
 
     root.close = function () {
@@ -7667,7 +7680,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // function to swap panel content
-    root.toggleAltContent = function (force: unknown) {
+    root.toggleAltContent = function (force?: boolean) {
       let vTo: string
       let vAlt: string
       if (force !== undefined) {
@@ -7681,7 +7694,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       root.content.style.display = vAlt
     }
 
-    root.toggleFooterVisibility = function (force: unknown) {
+    root.toggleFooterVisibility = function (force?: boolean) {
       let vTo: string
       if (force !== undefined) {
         vTo = force ? 'block' : 'none'
@@ -7695,7 +7708,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.content.innerHTML = ''
     }
 
-    root.addHTML = function (code: string, classname: string, on_footer: any) {
+    root.addHTML = function (
+      code: string,
+      classname?: string,
+      on_footer?: boolean
+    ) {
       const elem = document.createElement('div')
       if (classname) elem.className = classname
       elem.innerHTML = code
@@ -7704,9 +7721,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return elem
     }
 
-    root.addButton = function (name: any, callback: any, options: any) {
-      // TODO: any kludge
-      const elem: any = document.createElement('button')
+    root.addButton = function (
+      name: string,
+      callback: () => void,
+      options?: unknown
+    ): PanelButton {
+      const elem = document.createElement('button') as PanelButton
       elem.textContent = name
       elem.options = options
       elem.classList.add('btn')
@@ -7723,20 +7743,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     root.addWidget = function (
       type: string,
-      name: any,
-      value: unknown,
-      options: { label?: any; type?: any; values?: any; callback?: any },
-      callback: (arg0: any, arg1: any, arg2: any) => void
-    ) {
+      name: string,
+      value: TWidgetValue,
+      options?: PanelWidgetOptions,
+      callback?: PanelWidgetCallback
+    ): PanelWidget {
       options = options || {}
       let str_value = String(value)
       type = type.toLowerCase()
       if (type == 'number' && typeof value === 'number')
         str_value = value.toFixed(3)
 
-      // FIXME: any kludge
-      const elem: HTMLDivElement & { options?: unknown; value?: unknown } =
-        document.createElement('div')
+      const elem: PanelWidget = document.createElement('div') as PanelWidget
       elem.className = 'property'
       elem.innerHTML =
         "<span class='property_name'></span><span class='property_value'></span>"
@@ -7744,7 +7762,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!nameSpan) throw new TypeError('Property name element was null.')
 
       nameSpan.textContent = options.label || name
-      // TODO: any kludge
       const value_element: HTMLSpanElement | null =
         elem.querySelector('.property_value')
       if (!value_element) throw new TypeError('Property name element was null.')
@@ -7756,7 +7773,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       if (type == 'code') {
         elem.addEventListener('click', function () {
-          root.inner_showCodePad(this.dataset['property'])
+          const property = this.dataset['property']
+          if (property) root.inner_showCodePad?.(property)
         })
       } else if (type == 'boolean') {
         elem.classList.add('boolean')
@@ -7799,19 +7817,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value_element.textContent = str_value ?? ''
 
         value_element.addEventListener('click', function (event) {
-          const values = options.values || []
+          const values = options?.values || []
           const propname = this.parentElement?.dataset['property']
-          const inner_clicked = (v: string | null) => {
-            // node.setProperty(propname,v);
-            // graphcanvas.dirty_canvas = true;
-            this.textContent = v
+          const inner_clicked = (v?: string) => {
+            this.textContent = v ?? null
             innerChange(propname, v)
             return false
           }
           new LiteGraph.ContextMenu(values, {
             event,
             className: 'dark',
-            // @ts-expect-error fixme ts strict error - callback signature mismatch
             callback: inner_clicked
           })
         })
@@ -7819,9 +7834,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       root.content.append(elem)
 
-      function innerChange(name: string | undefined, value: unknown) {
-        options.callback?.(name, value, options)
-        callback?.(name, value, options)
+      function innerChange(name: string | undefined, value: TWidgetValue) {
+        const opts = options || {}
+        opts.callback?.(name, value, opts)
+        callback?.(name, value, opts)
       }
 
       return elem
@@ -7850,7 +7866,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       },
       onClose: () => {
         this.NODEPANEL_IS_OPEN = false
-        this.node_panel = null
+        this.node_panel = undefined
       }
     })
     this.node_panel = panel
@@ -7871,11 +7887,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       panel.addHTML('<h3>Properties</h3>')
 
-      const fUpdate = (
-        name: string,
-        value: string | number | boolean | object | undefined
-      ) => {
+      const fUpdate: PanelWidgetCallback = (name, value) => {
         if (!this.graph) throw new NullGraphError()
+        if (!name) return
         this.graph.beforeChange(node)
         switch (name) {
           case 'Title':
@@ -7979,7 +7993,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       panel.alt_content.innerHTML = "<textarea class='code'></textarea>"
       const textarea: HTMLTextAreaElement =
-        panel.alt_content.querySelector('textarea')
+        panel.alt_content.querySelector('textarea')!
       const fDoneWith = function () {
         panel.toggleAltContent(false)
         panel.toggleFooterVisibility(true)
