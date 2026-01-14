@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { watchDebounced } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import {
   computed,
   customRef,
@@ -26,17 +27,19 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import SidePanelSearch from '../layout/SidePanelSearch.vue'
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
 const canvasStore = useCanvasStore()
+const rightSidePanelStore = useRightSidePanelStore()
+const { searchQuery } = storeToRefs(rightSidePanelStore)
 
 const draggableList = ref<DraggableList | undefined>(undefined)
 const draggableItems = ref()
-const searchQuery = ref<string>('')
 const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
   get() {
     track()
@@ -55,10 +58,6 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
     node.properties.proxyWidgets = value
   }
 }))
-
-async function searcher(query: string) {
-  searchQuery.value = query
-}
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -244,14 +243,25 @@ onBeforeUnmount(() => {
 
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="p-4 flex gap-2">
-      <SidePanelSearch :searcher />
+    <div class="px-4 pb-4 pt-1 flex gap-2 border-b border-interface-stroke">
+      <FormSearchInput v-model="searchQuery" />
     </div>
 
     <div class="flex-1">
       <div
+        v-if="
+          searchQuery &&
+          filteredActive.length === 0 &&
+          filteredCandidates.length === 0
+        "
+        class="text-sm text-muted-foreground px-4 py-10 text-center"
+      >
+        {{ $t('rightSidePanel.noneSearchDesc') }}
+      </div>
+
+      <div
         v-if="filteredActive.length"
-        class="flex flex-col border-t border-interface-stroke"
+        class="flex flex-col border-b border-interface-stroke"
       >
         <div
           class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
@@ -270,7 +280,7 @@ onBeforeUnmount(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
-            class="bg-interface-panel-surface"
+            class="bg-comfy-menu-bg"
             :node-title="node.title"
             :widget-name="widget.name"
             :is-shown="true"
@@ -283,7 +293,7 @@ onBeforeUnmount(() => {
 
       <div
         v-if="filteredCandidates.length"
-        class="flex flex-col border-t border-interface-stroke"
+        class="flex flex-col border-b border-interface-stroke"
       >
         <div
           class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
@@ -302,7 +312,7 @@ onBeforeUnmount(() => {
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="toKey([node, widget])"
-            class="bg-interface-panel-surface"
+            class="bg-comfy-menu-bg"
             :node-title="node.title"
             :widget-name="widget.name"
             @toggle-visibility="promote([node, widget])"
@@ -312,7 +322,7 @@ onBeforeUnmount(() => {
 
       <div
         v-if="recommendedWidgets.length"
-        class="flex justify-center border-t border-interface-stroke py-4"
+        class="flex justify-center border-b border-interface-stroke py-4"
       >
         <Button
           size="sm"

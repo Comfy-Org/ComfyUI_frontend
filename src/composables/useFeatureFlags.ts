@@ -16,6 +16,7 @@ export enum ServerFeatureFlag {
   PRIVATE_MODELS_ENABLED = 'private_models_enabled',
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   HUGGINGFACE_MODEL_IMPORT_ENABLED = 'huggingface_model_import_enabled',
+  LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   ASYNC_MODEL_UPLOAD_ENABLED = 'async_model_upload_enabled'
 }
 
@@ -75,6 +76,12 @@ export function useFeatureFlags() {
           ServerFeatureFlag.HUGGINGFACE_MODEL_IMPORT_ENABLED,
           false
         )
+      )
+    },
+    get linearToggleEnabled() {
+      return (
+        remoteConfig.value.linear_toggle_enabled ??
+        api.getServerFeature(ServerFeatureFlag.LINEAR_TOGGLE_ENABLED, false)
       )
     },
     get asyncModelUploadEnabled() {

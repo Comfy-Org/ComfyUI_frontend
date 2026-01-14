@@ -8,13 +8,11 @@ test.describe('Properties panel', () => {
 
     const { propertiesPanel } = comfyPage.menu
 
-    await expect(propertiesPanel.panelTitle).toContainText(
-      'No node(s) selected'
-    )
+    await expect(propertiesPanel.panelTitle).toContainText('Workflow Overview')
 
     await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
 
-    await expect(propertiesPanel.panelTitle).toContainText('3 nodes selected')
+    await expect(propertiesPanel.panelTitle).toContainText('3 items selected')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
     await expect(
       propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')

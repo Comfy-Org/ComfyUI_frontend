@@ -2478,6 +2478,7 @@
     "dropPrompt": "파일을 끌어다 놓거나"
   },
   "widgets": {
+    "node2only": "Node 2.0 전용",
     "selectModel": "모델 선택",
     "uploadSelect": {
       "placeholder": "선택...",
