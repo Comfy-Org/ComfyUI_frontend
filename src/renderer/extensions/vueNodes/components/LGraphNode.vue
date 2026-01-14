@@ -40,7 +40,7 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--component-node-background': nodeBodyBackgroundColor
+        '--component-node-background': applyLightThemeColor(nodeData.bgcolor)
       }
     ]"
     v-bind="remainingPointerHandlers"
@@ -168,7 +168,6 @@ import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeS
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { isTransparent } from '@/utils/colorUtil'
 import {
   getLocatorIdFromNodeData,
@@ -227,19 +226,6 @@ const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
-
-const nodeBodyBackgroundColor = computed(() => {
-  const colorPaletteStore = useColorPaletteStore()
-
-  if (!nodeData.bgcolor) {
-    return ''
-  }
-
-  return applyLightThemeColor(
-    nodeData.bgcolor,
-    Boolean(colorPaletteStore.completedActivePalette.light_theme)
-  )
-})
 
 const nodeOpacity = computed(() => {
   const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1

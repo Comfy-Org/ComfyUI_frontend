@@ -1235,7 +1235,12 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
       label: 'toggle linear mode',
-      function: () => (canvasStore.linearMode = !canvasStore.linearMode)
+      function: () => {
+        const newMode = !canvasStore.linearMode
+        app.rootGraph.extra.linearMode = newMode
+        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        canvasStore.linearMode = newMode
+      }
     }
   ]
 

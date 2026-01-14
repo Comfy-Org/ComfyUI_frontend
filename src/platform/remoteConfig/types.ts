@@ -40,5 +40,6 @@ export type RemoteConfig = {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   huggingface_model_import_enabled?: boolean
+  linear_toggle_enabled?: boolean
   async_model_upload_enabled?: boolean
 }

@@ -11,7 +11,10 @@
         headerShapeClass
       )
     "
-    :style="headerStyle"
+    :style="{
+      backgroundColor: applyLightThemeColor(nodeData?.color),
+      opacity: useSettingStore().get('Comfy.Node.Opacity') ?? 1
+    }"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -104,7 +107,6 @@ import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
@@ -154,23 +156,6 @@ const tooltipConfig = computed(() => {
 
 const enterSubgraphTooltipConfig = computed(() => {
   return createTooltipConfig(st('enterSubgraph', 'Enter Subgraph'))
-})
-
-const headerStyle = computed(() => {
-  const colorPaletteStore = useColorPaletteStore()
-
-  const opacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
-
-  if (!nodeData?.color) {
-    return { backgroundColor: '', opacity }
-  }
-
-  const headerColor = applyLightThemeColor(
-    nodeData.color,
-    Boolean(colorPaletteStore.completedActivePalette.light_theme)
-  )
-
-  return { backgroundColor: headerColor, opacity }
 })
 
 const resolveTitle = (info: VueNodeData | undefined) => {
