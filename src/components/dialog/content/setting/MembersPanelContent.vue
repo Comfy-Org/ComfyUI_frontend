@@ -234,12 +234,7 @@
             <!-- Invite info -->
             <div class="flex items-center gap-3">
               <div
-                v-tooltip="{
-                  value: $t('workspacePanel.members.actions.acceptInvite'),
-                  showDelay: 300
-                }"
-                class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full bg-secondary-background hover:bg-secondary-background-hover"
-                @click="handleAcceptInvite(invite)"
+                class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
               >
                 <span class="text-sm font-bold text-base-foreground">
                   {{ invite.name.charAt(0).toUpperCase() }}
@@ -343,8 +338,8 @@ const {
   pendingInvites,
   fetchMembers,
   fetchPendingInvites,
-  copyInviteLinkAndAccept,
-  acceptInvite,
+  copyInviteLink,
+  revokeInvite,
   isPersonalWorkspace,
   permissions,
   uiConfig,
@@ -451,18 +446,14 @@ function formatDate(date: Date): string {
   return d(date, { dateStyle: 'medium' })
 }
 
-async function handleCopyInviteLink(invite: PendingInvite) {
-  // Demo: copying invite link simulates user accepting, moves to active members
-  await copyInviteLinkAndAccept(invite.id)
-}
-
-function handleAcceptInvite(invite: PendingInvite) {
-  // Demo: clicking avatar accepts the invite, moves to active members
-  acceptInvite(invite.id)
+function handleCopyInviteLink(invite: PendingInvite) {
+  copyInviteLink(invite.id)
 }
 
 function handleRevokeInvite(invite: PendingInvite) {
-  showRevokeInviteDialog(invite.id)
+  showRevokeInviteDialog(() => {
+    revokeInvite(invite.id)
+  })
 }
 
 function handleCreateWorkspace() {
@@ -471,7 +462,9 @@ function handleCreateWorkspace() {
   })
 }
 
-function handleRemoveMember(member: WorkspaceMember) {
-  showRemoveMemberDialog(member.id)
+function handleRemoveMember(_member: WorkspaceMember) {
+  showRemoveMemberDialog(() => {
+    // TODO: Implement actual remove member API call
+  })
 }
 </script>

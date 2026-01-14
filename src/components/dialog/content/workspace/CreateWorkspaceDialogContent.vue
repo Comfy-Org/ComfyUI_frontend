@@ -62,16 +62,14 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { onConfirm } = defineProps<{
-  onConfirm?: (name: string) => void | Promise<void>
+  onConfirm: (name: string) => void | Promise<void>
 }>()
 
 const dialogStore = useDialogStore()
 const toast = useToast()
-const { createWorkspace } = useWorkspace()
 const loading = ref(false)
 const workspaceName = ref('')
 
@@ -90,13 +88,8 @@ async function onCreate() {
   if (!isValidName.value) return
   loading.value = true
   try {
-    const name = workspaceName.value.trim()
-    // Create workspace using global state (creates OWNER unsubscribed workspace)
-    createWorkspace(name)
-    // Call optional callback if provided
-    await onConfirm?.(name)
+    await onConfirm(workspaceName.value.trim())
     dialogStore.closeDialog({ key: 'create-workspace' })
-    // Show toast prompting to subscribe
     toast.add({
       group: 'workspace-created'
     })

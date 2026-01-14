@@ -16,7 +16,7 @@
             <Button
               variant="primary"
               class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
-              @click="handleSubscribeWorkspace"
+              @click="showSubscriptionDialog"
             >
               {{ $t('subscription.subscribeNow') }}
             </Button>
@@ -259,23 +259,13 @@ import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 import { cn } from '@/utils/tailwindUtil'
 
 const authActions = useFirebaseAuthActions()
-const {
-  permissions,
-  isWorkspaceSubscribed,
-  workspaceRole,
-  subscribeWorkspace
-} = useWorkspace()
+const { permissions, isWorkspaceSubscribed, workspaceRole } = useWorkspace()
 const { t, n } = useI18n()
 
 // OWNER with unsubscribed workspace
 const isOwnerUnsubscribed = computed(
   () => workspaceRole.value === 'OWNER' && !isWorkspaceSubscribed.value
 )
-
-// Demo: Subscribe workspace to PRO monthly plan
-function handleSubscribeWorkspace() {
-  subscribeWorkspace('PRO_MONTHLY')
-}
 
 const {
   isActiveSubscription,

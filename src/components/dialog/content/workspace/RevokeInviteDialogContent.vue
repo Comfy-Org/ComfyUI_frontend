@@ -41,15 +41,13 @@
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { inviteId } = defineProps<{
-  inviteId: string
+const { onConfirm } = defineProps<{
+  onConfirm: () => void | Promise<void>
 }>()
 
 const dialogStore = useDialogStore()
-const { revokeInvite } = useWorkspace()
 const loading = ref(false)
 
 function onCancel() {
@@ -59,7 +57,7 @@ function onCancel() {
 async function onRevoke() {
   loading.value = true
   try {
-    await revokeInvite(inviteId)
+    await onConfirm()
     dialogStore.closeDialog({ key: 'revoke-invite' })
   } finally {
     loading.value = false
