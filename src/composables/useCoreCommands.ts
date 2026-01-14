@@ -64,7 +64,7 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useImageCanvasStore } from '@/stores/imageCanvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
@@ -86,7 +86,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const bottomPanelStore = useBottomPanelStore()
 
   const dialogStore = useDialogStore()
-  const maskEditorStore = useMaskEditorStore()
+  const imageCanvasStore = useImageCanvasStore()
 
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
@@ -233,9 +233,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Undo',
       category: 'essentials' as const,
       function: async () => {
-        // If Mask Editor is open, use its history instead of the graph
-        if (dialogStore.isDialogOpen('global-mask-editor')) {
-          maskEditorStore.canvasHistory.undo()
+        // If Image Canvas is open, use its history instead of the graph
+        if (dialogStore.isDialogOpen('global-image-canvas')) {
+          imageCanvasStore.canvasHistory.undo()
         } else {
           await getTracker()?.undo?.()
         }
@@ -247,8 +247,8 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Redo',
       category: 'essentials' as const,
       function: async () => {
-        if (dialogStore.isDialogOpen('global-mask-editor')) {
-          maskEditorStore.canvasHistory.redo()
+        if (dialogStore.isDialogOpen('global-image-canvas')) {
+          imageCanvasStore.canvasHistory.redo()
         } else {
           await getTracker()?.redo?.()
         }

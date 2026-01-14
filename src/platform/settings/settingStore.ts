@@ -198,6 +198,10 @@ export const useSettingStore = defineStore('setting', () => {
 
     // Migrate old zoom threshold setting to new font size setting
     await migrateZoomThresholdToFontSize()
+
+    // Migrate old maskEditor settings to imageCanvas
+
+    await migrateMaskEditorToImageCanvas()
   }
 
   /**
@@ -237,6 +241,117 @@ export const useSettingStore = defineStore('setting', () => {
       await api.storeSetting(newKey, clampedFontSize)
       await api.storeSetting(oldKey, undefined)
     }
+  }
+
+  /**
+   * Migrate maskEditor settings to imageCanvas settings.
+   * Preserves user settings when the feature was renamed from maskEditor to imageCanvas.
+   */
+  async function migrateMaskEditorToImageCanvas() {
+    // Migrate BrushAdjustmentSpeed setting
+    const oldSpeedKey = 'Comfy.MaskEditor.BrushAdjustmentSpeed'
+    const newSpeedKey = 'Comfy.ImageCanvas.BrushAdjustmentSpeed'
+
+    if (
+      settingValues.value[oldSpeedKey] !== undefined &&
+      settingValues.value[newSpeedKey] === undefined
+    ) {
+      const oldValue = settingValues.value[oldSpeedKey]
+      settingValues.value[newSpeedKey] = oldValue
+      delete settingValues.value[oldSpeedKey]
+      await api.storeSetting(newSpeedKey as any, oldValue)
+      await api.storeSetting(oldSpeedKey as any, undefined)
+    }
+
+    // Migrate UseDominantAxis setting
+    const oldAxisKey = 'Comfy.MaskEditor.UseDominantAxis'
+    const newAxisKey = 'Comfy.ImageCanvas.UseDominantAxis'
+
+    if (
+      settingValues.value[oldAxisKey] !== undefined &&
+      settingValues.value[newAxisKey] === undefined
+    ) {
+      const oldValue = settingValues.value[oldAxisKey]
+      settingValues.value[newAxisKey] = oldValue
+      delete settingValues.value[oldAxisKey]
+      await api.storeSetting(newAxisKey as any, oldValue)
+      await api.storeSetting(oldAxisKey as any, undefined)
+    }
+
+    // Migrate keybindings stored in settings
+    await migrateMaskEditorKeybindings()
+  }
+
+  /**
+   * Migrate maskEditor keybindings to imageCanvas keybindings.
+   * Keybindings are stored in two settings: NewBindings and UnsetBindings
+   */
+  async function migrateMaskEditorKeybindings() {
+    const commandMappings: Record<string, string> = {
+      'Comfy.MaskEditor.OpenMaskEditor': 'Comfy.ImageCanvas.OpenImageCanvas',
+      'Comfy.MaskEditor.BrushSize.Increase':
+        'Comfy.ImageCanvas.BrushSize.Increase',
+      'Comfy.MaskEditor.BrushSize.Decrease':
+        'Comfy.ImageCanvas.BrushSize.Decrease',
+      'Comfy.MaskEditor.ColorPicker': 'Comfy.ImageCanvas.ColorPicker',
+      'Comfy.MaskEditor.Rotate.Right': 'Comfy.ImageCanvas.Rotate.Right',
+      'Comfy.MaskEditor.Rotate.Left': 'Comfy.ImageCanvas.Rotate.Left',
+      'Comfy.MaskEditor.Mirror.Horizontal':
+        'Comfy.ImageCanvas.Mirror.Horizontal',
+      'Comfy.MaskEditor.Mirror.Vertical': 'Comfy.ImageCanvas.Mirror.Vertical'
+    }
+
+    let anyMigrated = false
+
+    // Migrate NewBindings
+    const newBindingsKey = 'Comfy.Keybinding.NewBindings'
+    const newBindings = settingValues.value[newBindingsKey]
+
+    if (Array.isArray(newBindings)) {
+      let modified = false
+      const migratedBindings = newBindings.map((binding) => {
+        if (binding.commandId && commandMappings[binding.commandId]) {
+          modified = true
+          return {
+            ...binding,
+            commandId: commandMappings[binding.commandId]
+          }
+        }
+        return binding
+      })
+
+      if (modified) {
+        settingValues.value[newBindingsKey] = migratedBindings
+        await api.storeSetting(newBindingsKey as any, migratedBindings)
+        anyMigrated = true
+      }
+    }
+
+    // Migrate UnsetBindings
+    const unsetBindingsKey = 'Comfy.Keybinding.UnsetBindings'
+    const unsetBindings = settingValues.value[unsetBindingsKey]
+
+    if (Array.isArray(unsetBindings)) {
+      let modified = false
+      const migratedBindings = unsetBindings.map((binding) => {
+        if (binding.commandId && commandMappings[binding.commandId]) {
+          modified = true
+          return {
+            ...binding,
+            commandId: commandMappings[binding.commandId]
+          }
+        }
+        return binding
+      })
+
+      if (modified) {
+        settingValues.value[unsetBindingsKey] = migratedBindings
+        await api.storeSetting(unsetBindingsKey as any, migratedBindings)
+        anyMigrated = true
+      }
+    }
+
+    return anyMigrated
   }
 
   return {

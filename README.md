@@ -13,7 +13,6 @@
 [![][github-downloads-shield]][github-downloads-link]
 [![][github-downloads-latest-shield]][github-downloads-link]
 
-
 [github-release-shield]: https://img.shields.io/github/v/release/Comfy-Org/ComfyUI_frontend?style=flat&sort=semver
 [github-release-link]: https://github.com/Comfy-Org/ComfyUI_frontend/releases
 [github-release-date-shield]: https://img.shields.io/github/release-date/Comfy-Org/ComfyUI_frontend?style=flat
@@ -47,6 +46,7 @@ The project follows a structured release process for each minor version, consist
    - Version is finalized and made available to all users
 
 ### Nightly Releases
+
 Nightly releases are published daily at [https://github.com/Comfy-Org/ComfyUI_frontend/releases](https://github.com/Comfy-Org/ComfyUI_frontend/releases).
 
 To use the latest nightly release, add the following command line argument to your ComfyUI launch script:
@@ -56,16 +56,17 @@ To use the latest nightly release, add the following command line argument to yo
 ```
 
 ## Overlapping Release Cycles
+
 The development of successive minor versions overlaps. For example, while version 1.1 is in feature freeze, development for version 1.2 begins simultaneously. Each feature has approximately 4 weeks from merge to ComfyUI stable release (2 weeks on main, 2 weeks frozen on RC).
 
 ### Example Release Cycle
 
-| Week | Date Range | Version 1.1 | Version 1.2 | Version 1.3 | Patch Releases |
-|------|------------|-------------|-------------|-------------|----------------|
-| 1-2 | Mar 1-14 | Development | - | - | - |
-| 3-4 | Mar 15-28 | Feature Freeze | Development | - | 1.1.0 through 1.1.13 (daily) |
-| 5-6 | Mar 29-Apr 11 | Released | Feature Freeze | Development | 1.1.14+ (daily)<br>1.2.0 through 1.2.13 (daily) |
-| 7-8 | Apr 12-25 | - | Released | Feature Freeze | 1.2.14+ (daily)<br>1.3.0 through 1.3.13 (daily) |
+| Week | Date Range    | Version 1.1    | Version 1.2    | Version 1.3    | Patch Releases                                  |
+| ---- | ------------- | -------------- | -------------- | -------------- | ----------------------------------------------- |
+| 1-2  | Mar 1-14      | Development    | -              | -              | -                                               |
+| 3-4  | Mar 15-28     | Feature Freeze | Development    | -              | 1.1.0 through 1.1.13 (daily)                    |
+| 5-6  | Mar 29-Apr 11 | Released       | Feature Freeze | Development    | 1.1.14+ (daily)<br>1.2.0 through 1.2.13 (daily) |
+| 7-8  | Apr 12-25     | -              | Released       | Feature Freeze | 1.2.14+ (daily)<br>1.3.0 through 1.3.13 (daily) |
 
 ## Release Summary
 
@@ -74,19 +75,21 @@ The development of successive minor versions overlaps. For example, while versio
 <details id='feature-native-translation'>
   <summary>v1.5: Native translation (i18n)</summary>
 
-  ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language
-  in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, Korean, or Arabic. This native
-  implementation offers better performance, reliability, and maintainability compared to previous solutions.<br>
+ComfyUI now includes built-in translation support, replacing the need for third-party translation extensions. Select your language
+in `Comfy > Locale > Language` to translate the interface into English, Chinese (Simplified), Russian, Japanese, Korean, or Arabic. This native
+implementation offers better performance, reliability, and maintainability compared to previous solutions.<br>
 
-  More details available here: https://blog.comfy.org/p/native-localization-support-i18n
+More details available here: https://blog.comfy.org/p/native-localization-support-i18n
+
 </details>
 
-<details id='feature-mask-editor'>
-  <summary>v1.4: New mask editor</summary>
+<details id='feature-image-canvas'>
+  <summary>v1.4: New image canvas</summary>
 
-  https://github.com/Comfy-Org/ComfyUI_frontend/pull/1284 implements a new mask editor.
+https://github.com/Comfy-Org/ComfyUI_frontend/pull/1284 implements a new image canvas.
 
-  ![image](https://github.com/user-attachments/assets/f0ea6ee5-00ee-4e5d-a09c-6938e86a1f17)
+![image](https://github.com/user-attachments/assets/f0ea6ee5-00ee-4e5d-a09c-6938e86a1f17)
+
 </details>
 
 <details id='feature-integrated-server-terminal'>
@@ -95,18 +98,22 @@ The development of successive minor versions overlaps. For example, while versio
 Press Ctrl + ` to toggle integrated terminal.
 
 https://github.com/user-attachments/assets/eddedc6a-07a3-4a83-9475-63b3977f6d94
+
 </details>
 
 <details id='feature-keybinding-customization'>
   <summary>v1.3.7: Keybinding customization</summary>
 
 ## Basic UI
+
 ![image](https://github.com/user-attachments/assets/c84a1609-3880-48e0-a746-011f36beda68)
 
 ## Reset button
+
 ![image](https://github.com/user-attachments/assets/4d2922da-bb4f-4f90-8017-a8e4a0db07c7)
 
 ## Edit Keybinding
+
 ![image](https://github.com/user-attachments/assets/77626b7a-cb46-48f8-9465-e03120aac66a)
 ![image](https://github.com/user-attachments/assets/79131a4e-75c6-4715-bd11-c6aaed887779)
 
@@ -117,27 +124,34 @@ https://github.com/user-attachments/assets/eddedc6a-07a3-4a83-9475-63b3977f6d94
 <details id='feature-node-library-sidebar'>
   <summary>v1.2.4: Node library sidebar tab</summary>
 
-  #### Drag & Drop
+#### Drag & Drop
+
 https://github.com/user-attachments/assets/853e20b7-bc0e-49c9-bbce-a2ba7566f92f
 
-  #### Filter
+#### Filter
+
 https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
+
 </details>
 
 <details id='feature-queue-sidebar'>
   <summary>v1.2.0: Queue/History sidebar tab</summary>
 
-  https://github.com/user-attachments/assets/86e264fe-4d26-4f07-aa9a-83bdd2d02b8f
+https://github.com/user-attachments/assets/86e264fe-4d26-4f07-aa9a-83bdd2d02b8f
+
 </details>
 
 <details id='feature-node-search'>
   <summary>v1.1.0: Node search box</summary>
 
-  #### Fuzzy search & Node preview
-  ![image](https://github.com/user-attachments/assets/94733e32-ea4e-4a9c-b321-c1a05db48709)
+#### Fuzzy search & Node preview
 
-  #### Release link with shift
-  https://github.com/user-attachments/assets/a1b2b5c3-10d1-4256-b620-345de6858f25
+![image](https://github.com/user-attachments/assets/94733e32-ea4e-4a9c-b321-c1a05db48709)
+
+#### Release link with shift
+
+https://github.com/user-attachments/assets/a1b2b5c3-10d1-4256-b620-345de6858f25
+
 </details>
 
 ### QoL changes
@@ -146,12 +160,14 @@ https://github.com/user-attachments/assets/4bbca3ee-318f-4cf0-be32-a5a5541066cf
   <summary>v1.3.32: **Litegraph** Nested group</summary>
 
 https://github.com/user-attachments/assets/f51adeb1-028e-40af-81e4-0ac13075198a
+
 </details>
 
 <details id='feature-group-selection'>
   <summary>v1.3.24: **Litegraph** Group selection</summary>
 
 https://github.com/user-attachments/assets/e6230a94-411e-4fba-90cb-6c694200adaa
+
 </details>
 
 <details id='feature-toggle-link-visibility'>
@@ -227,17 +243,21 @@ https://github.com/user-attachments/assets/c142c43f-2fe9-4030-8196-b3bfd4c6977d
 <details id='feature-auto-connect-link'>
   <summary>v1.2.2: **Litegraph** auto connects to correct slot</summary>
 
-  #### Before
-  https://github.com/user-attachments/assets/c253f778-82d5-4e6f-aec0-ea2ccf421651
+#### Before
 
-  #### After
-  https://github.com/user-attachments/assets/b6360ac0-f0d2-447c-9daa-8a2e20c0dc1d
+https://github.com/user-attachments/assets/c253f778-82d5-4e6f-aec0-ea2ccf421651
+
+#### After
+
+https://github.com/user-attachments/assets/b6360ac0-f0d2-447c-9daa-8a2e20c0dc1d
+
 </details>
 
 <details id='feature-hide-text-overflow'>
   <summary>v1.1.8: **Litegraph** hides text overflow on widget value</summary>
 
-  https://github.com/user-attachments/assets/5696a89d-4a47-4fcc-9e8c-71e1264943f2
+https://github.com/user-attachments/assets/5696a89d-4a47-4fcc-9e8c-71e1264943f2
+
 </details>
 
 ### Developer APIs
@@ -283,8 +303,7 @@ window['app'].extensionManager.dialog
 
 ```js
 // window.alert
-window['app'].extensionManager.toast
-  .addAlert("Test Alert")
+window['app'].extensionManager.toast.addAlert('Test Alert')
 ```
 
 ![image](https://github.com/user-attachments/assets/9b18bdca-76ef-4432-95de-5cd2369684f2)
@@ -383,28 +402,28 @@ app.extensionManager.setting.set('TestSetting', 'Hello, universe!')
 <details id='extension-api-commands-keybindings'>
   <summary>v1.3.7: Register commands and keybindings</summary>
 
-  Extensions can call the following API to register commands and keybindings. Do
-  note that keybindings defined in core cannot be overwritten, and some keybindings
-  are reserved by the browser.
+Extensions can call the following API to register commands and keybindings. Do
+note that keybindings defined in core cannot be overwritten, and some keybindings
+are reserved by the browser.
 
 ```js
-  app.registerExtension({
-    name: 'TestExtension1',
-    commands: [
-      {
-        id: 'TestCommand',
-        function: () => {
-          alert('TestCommand')
-        }
+app.registerExtension({
+  name: 'TestExtension1',
+  commands: [
+    {
+      id: 'TestCommand',
+      function: () => {
+        alert('TestCommand')
       }
-    ],
-    keybindings: [
-      {
-        combo: { key: 'k' },
-        commandId: 'TestCommand'
-      }
-    ]
-  })
+    }
+  ],
+  keybindings: [
+    {
+      combo: { key: 'k' },
+      commandId: 'TestCommand'
+    }
+  ]
+})
 ```
 
 </details>
@@ -412,66 +431,69 @@ app.extensionManager.setting.set('TestSetting', 'Hello, universe!')
 <details id='extension-api-topbar-menu'>
   <summary>v1.3.1: Extension API to register custom topbar menu items</summary>
 
-  Extensions can call the following API to register custom topbar menu items.
+Extensions can call the following API to register custom topbar menu items.
 
 ```js
-  app.registerExtension({
-    name: 'TestExtension1',
-    commands: [
-      {
-        id: 'foo-id',
-        label: 'foo',
-        function: () => {
-          alert(1)
-        }
+app.registerExtension({
+  name: 'TestExtension1',
+  commands: [
+    {
+      id: 'foo-id',
+      label: 'foo',
+      function: () => {
+        alert(1)
       }
-    ],
-    menuCommands: [
-      {
-        path: ['ext', 'ext2'],
-        commands: ['foo-id']
-      }
-    ]
-  })
+    }
+  ],
+  menuCommands: [
+    {
+      path: ['ext', 'ext2'],
+      commands: ['foo-id']
+    }
+  ]
+})
 ```
 
 ![image](https://github.com/user-attachments/assets/ae7b082f-7ce9-4549-a446-4563567102fe)
+
 </details>
 
 <details id='extension-api-toast'>
   <summary>v1.2.27: Extension API to add toast message</summary>i
 
-  Extensions can call the following API to add toast messages.
+Extensions can call the following API to add toast messages.
 
 ```js
-  app.extensionManager.toast.add({
-    severity: 'info',
-    summary: 'Loaded!',
-    detail: 'Extension loaded!',
-    life: 3000
-  })
+app.extensionManager.toast.add({
+  severity: 'info',
+  summary: 'Loaded!',
+  detail: 'Extension loaded!',
+  life: 3000
+})
 ```
+
 Documentation of all supported options can be found here: <https://primevue.org/toast/#api.toast.interfaces.ToastMessageOptions>
 
 ![image](https://github.com/user-attachments/assets/de02cd7e-cd81-43d1-a0b0-bccef92ff487)
+
 </details>
 
 <details id='extension-api-sidebar-tab'>
   <summary>v1.2.4: Extension API to register custom sidebar tab</summary>
 
-  Extensions now can call the following API to register a sidebar tab.
+Extensions now can call the following API to register a sidebar tab.
 
 ```js
-  app.extensionManager.registerSidebarTab({
-    id: "search",
-    icon: "pi pi-search",
-    title: "search",
-    tooltip: "search",
-    type: "custom",
-    render: (el) => {
-      el.innerHTML = "<div>Custom search tab</div>";
-    },
-  });
+app.extensionManager.registerSidebarTab({
+  id: 'search',
+  icon: 'pi pi-search',
+  title: 'search',
+  tooltip: 'search',
+  type: 'custom',
+  render: (el) => {
+    el.innerHTML = '<div>Custom search tab</div>'
+  }
+})
 ```
 
 The list of supported icons can be found here: <https://primevue.org/icons/#list>
@@ -479,6 +501,7 @@ The list of supported icons can be found here: <https://primevue.org/icons/#list
 We will support custom icons later.
 
 ![image](https://github.com/user-attachments/assets/7bff028a-bf91-4cab-bf97-55c243b3f5e0)
+
 </details>
 
 <details id='extension-api-selection-toolbox'>

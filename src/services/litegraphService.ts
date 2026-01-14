@@ -62,7 +62,7 @@ import {
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from './extensionService'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useImageCanvas } from '@/composables/imagecanvas/useImageCanvas'
 
 export interface HasInitialMinSize {
   _initialMinSize: { width: number; height: number }
@@ -645,9 +645,9 @@ export const useLitegraphService = () => {
 
         if (isImageNode(this)) {
           options.push({
-            content: 'Open in MaskEditor | Image Canvas',
+            content: 'Open in Image Canvas',
             callback: () => {
-              useMaskEditor().openMaskEditor(this)
+              useImageCanvas().openImageCanvas(this)
             }
           })
         }
