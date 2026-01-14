@@ -69,7 +69,7 @@ jobs:
       - name: Checkout ComfyUI (sparse)
         uses: actions/checkout@v5
         with:
-          repository: comfyanonymous/ComfyUI
+          repository: Comfy-Org/ComfyUI
           sparse-checkout: |
             requirements.txt
           path: comfyui
@@ -184,7 +184,7 @@ jobs:
           # Note: This only affects the local checkout, NOT the fork's master branch
           # We only push the automation branch, leaving the fork's master untouched
           echo "Fetching upstream master..."
-          if ! git fetch https://github.com/comfyanonymous/ComfyUI.git master; then
+          if ! git fetch https://github.com/Comfy-Org/ComfyUI.git master; then
             echo "Failed to fetch upstream master"
             exit 1
           fi
@@ -257,7 +257,7 @@ jobs:
           # Extract fork owner from repository name
           FORK_OWNER=$(echo "$COMFYUI_FORK" | cut -d'/' -f1)
 
-          echo "Creating PR from ${COMFYUI_FORK} to comfyanonymous/ComfyUI"
+          echo "Creating PR from ${COMFYUI_FORK} to Comfy-Org/ComfyUI"
 
           # Configure git
           git config user.name "github-actions[bot]"
@@ -288,7 +288,7 @@ jobs:
 
           # Try to create PR, ignore error if it already exists
           if ! gh pr create \
-            --repo comfyanonymous/ComfyUI \
+            --repo Comfy-Org/ComfyUI \
             --head "${FORK_OWNER}:${BRANCH}" \
             --base master \
             --title "Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
@@ -297,7 +297,7 @@ jobs:
 
             # Check if PR already exists
             set +e
-            EXISTING_PR=$(gh pr list --repo comfyanonymous/ComfyUI --head "${FORK_OWNER}:${BRANCH}" --json number --jq '.[0].number' 2>&1)
+            EXISTING_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "${FORK_OWNER}:${BRANCH}" --json number --jq '.[0].number' 2>&1)
             PR_LIST_EXIT=$?
             set -e
 
@@ -318,7 +318,7 @@ jobs:
         run: |
           echo "## ComfyUI PR Created" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Draft PR created in comfyanonymous/ComfyUI" >> $GITHUB_STEP_SUMMARY
+          echo "Draft PR created in Comfy-Org/ComfyUI" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### PR Body:" >> $GITHUB_STEP_SUMMARY
           cat pr-body.txt >> $GITHUB_STEP_SUMMARY
