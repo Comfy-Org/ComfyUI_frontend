@@ -57,9 +57,11 @@ function nodeToNodeData(node: LGraphNode) {
           iconClass: 'icon-[lucide--image]',
           label: t('linearMode.dragAndDropImage')
         }
+  const nodeData = extractVueNodeData(node)
+  for (const widget of nodeData.widgets ?? []) widget.slotMetadata = undefined
 
   return {
-    ...extractVueNodeData(node),
+    ...nodeData,
 
     dropIndicator,
     onDragDrop: node.onDragDrop,
