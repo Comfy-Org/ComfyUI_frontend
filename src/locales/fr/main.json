@@ -2478,6 +2478,7 @@
     "dropPrompt": "Déposez votre fichier ou"
   },
   "widgets": {
+    "node2only": "Node 2.0 uniquement",
     "selectModel": "Sélectionner un modèle",
     "uploadSelect": {
       "placeholder": "Sélectionner...",

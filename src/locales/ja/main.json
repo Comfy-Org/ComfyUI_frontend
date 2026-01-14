@@ -2478,6 +2478,7 @@
     "dropPrompt": "ファイルをドロップするか"
   },
   "widgets": {
+    "node2only": "Node 2.0専用",
     "selectModel": "モデルを選択",
     "uploadSelect": {
       "placeholder": "選択...",

@@ -2478,6 +2478,7 @@
     "dropPrompt": "Suelta tu archivo o"
   },
   "widgets": {
+    "node2only": "Solo Node 2.0",
     "selectModel": "Seleccionar modelo",
     "uploadSelect": {
       "placeholder": "Seleccionar...",

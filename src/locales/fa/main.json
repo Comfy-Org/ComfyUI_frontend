@@ -2488,6 +2488,7 @@
     "dropPrompt": "فایل خود را رها کنید یا"
   },
   "widgets": {
+    "node2only": "فقط Node 2.0",
     "selectModel": "انتخاب مدل",
     "uploadSelect": {
       "placeholder": "انتخاب...",
