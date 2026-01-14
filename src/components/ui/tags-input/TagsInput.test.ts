@@ -23,8 +23,7 @@ describe('TagsInput', () => {
     const wrapper = mountTagsInput()
 
     expect(wrapper.classes()).toContain('flex')
-    expect(wrapper.classes()).toContain('rounded-md')
-    expect(wrapper.classes()).toContain('border')
+    expect(wrapper.classes()).toContain('rounded-lg')
   })
 
   it('applies custom class prop', () => {
@@ -39,11 +38,11 @@ describe('TagsInput', () => {
     expect(wrapper.text()).toContain('Slot Content')
   })
 
-  it('applies design system border and background tokens', () => {
+  it('applies design system styling tokens', () => {
     const wrapper = mountTagsInput()
 
-    expect(wrapper.classes()).toContain('border-secondary-background-hover')
-    expect(wrapper.classes()).toContain('bg-base-background')
+    expect(wrapper.classes()).toContain('bg-transparent')
+    expect(wrapper.classes()).toContain('rounded-lg')
   })
 
   it('has focus ring styling', () => {

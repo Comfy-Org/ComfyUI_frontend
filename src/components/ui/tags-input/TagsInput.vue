@@ -22,7 +22,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     v-bind="forwarded"
     :class="
       cn(
-        'flex flex-wrap items-center gap-2 rounded-md border border-secondary-background-hover bg-base-background px-3 py-1.5 text-sm text-base-foreground focus-within:ring-1 focus-within:ring-primary-background',
+        'flex flex-wrap items-center gap-2 rounded-lg bg-modal-card-background-hovered p-2 text-xs text-base-foreground focus-within:ring-1 focus-within:ring-primary-background',
         props.class
       )
     "
