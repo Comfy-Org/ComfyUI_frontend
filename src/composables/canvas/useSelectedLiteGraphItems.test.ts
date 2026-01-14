@@ -224,8 +224,23 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should toggle node modes correctly', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const node1 = { id: 1, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const node2 = { id: 2, mode: LGraphEventMode.NEVER } as LGraphNode
+      const mockGraph = { change: vi.fn() }
+      const node1 = {
+        id: 1,
+        mode: LGraphEventMode.ALWAYS,
+        changeMode: vi.fn((mode) => {
+          node1.mode = mode
+        }),
+        graph: mockGraph
+      } as unknown as LGraphNode
+      const node2 = {
+        id: 2,
+        mode: LGraphEventMode.NEVER,
+        changeMode: vi.fn((mode) => {
+          node2.mode = mode
+        }),
+        graph: mockGraph
+      } as unknown as LGraphNode
 
       app.canvas.selected_nodes = { '0': node1, '1': node2 }
 
@@ -236,11 +251,22 @@ describe('useSelectedLiteGraphItems', () => {
       // node2 should stay NEVER (since a selected node exists which is not NEVER)
       expect(node1.mode).toBe(LGraphEventMode.NEVER)
       expect(node2.mode).toBe(LGraphEventMode.NEVER)
+      expect(node1.changeMode).toHaveBeenCalledWith(LGraphEventMode.NEVER)
+      expect(node2.changeMode).toHaveBeenCalledWith(LGraphEventMode.NEVER)
+      expect(mockGraph.change).toHaveBeenCalled()
     })
 
     it('toggleSelectedNodesMode should set mode to ALWAYS when already in target mode', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const node = { id: 1, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const mockGraph = { change: vi.fn() }
+      const node = {
+        id: 1,
+        mode: LGraphEventMode.BYPASS,
+        changeMode: vi.fn((mode) => {
+          node.mode = mode
+        }),
+        graph: mockGraph
+      } as unknown as LGraphNode
 
       app.canvas.selected_nodes = { '0': node }
 
@@ -249,6 +275,8 @@ describe('useSelectedLiteGraphItems', () => {
 
       // Should change to ALWAYS
       expect(node.mode).toBe(LGraphEventMode.ALWAYS)
+      expect(node.changeMode).toHaveBeenCalledWith(LGraphEventMode.ALWAYS)
+      expect(mockGraph.change).toHaveBeenCalled()
     })
 
     it('getSelectedNodes should include nodes from subgraphs', () => {
@@ -277,17 +305,43 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should apply unified state to subgraph children', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
+      const mockGraph = { change: vi.fn() }
+      const subNode1 = {
+        id: 11,
+        mode: LGraphEventMode.ALWAYS,
+        changeMode: vi.fn((mode) => {
+          subNode1.mode = mode
+        }),
+        graph: mockGraph
+      } as unknown as LGraphNode
+      const subNode2 = {
+        id: 12,
+        mode: LGraphEventMode.NEVER,
+        changeMode: vi.fn((mode) => {
+          subNode2.mode = mode
+        }),
+        graph: mockGraph
+      } as unknown as LGraphNode
       const subgraphNode = {
         id: 1,
         mode: LGraphEventMode.ALWAYS,
         isSubgraphNode: () => true,
         subgraph: {
           nodes: [subNode1, subNode2]
-        }
+        },
+        changeMode: vi.fn((mode) => {
+          subgraphNode.mode = mode
+        }),
+        graph: mockGraph
       } as unknown as LGraphNode
-      const regularNode = { id: 2, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const regularNode = {
+        id: 2,
+        mode: LGraphEventMode.BYPASS,
+        changeMode: vi.fn((mode) => {
+          regularNode.mode = mode
+        }),
+        graph: mockGraph
+      } as unknown as LGraphNode
 
       app.canvas.selected_nodes = { '0': subgraphNode, '1': regularNode }
 
@@ -308,15 +362,34 @@ describe('useSelectedLiteGraphItems', () => {
 
     it('toggleSelectedNodesMode should toggle to ALWAYS when subgraph is already in target mode', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-      const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
-      const subNode2 = { id: 12, mode: LGraphEventMode.BYPASS } as LGraphNode
+      const mockGraph = { change: vi.fn() }
+      const subNode1 = {
+        id: 11,
+        mode: LGraphEventMode.ALWAYS,
+        changeMode: vi.fn((mode) => {
+          subNode1.mode = mode
+        }),
+        graph: mockGraph
+      } as unknown as LGraphNode
+      const subNode2 = {
+        id: 12,
+        mode: LGraphEventMode.BYPASS,
+        changeMode: vi.fn((mode) => {
+          subNode2.mode = mode
+        }),
+        graph: mockGraph
+      } as unknown as LGraphNode
       const subgraphNode = {
         id: 1,
         mode: LGraphEventMode.NEVER, // Already in NEVER mode
         isSubgraphNode: () => true,
         subgraph: {
           nodes: [subNode1, subNode2]
-        }
+        },
+        changeMode: vi.fn((mode) => {
+          subgraphNode.mode = mode
+        }),
+        graph: mockGraph
       } as unknown as LGraphNode
 
       app.canvas.selected_nodes = { '0': subgraphNode }

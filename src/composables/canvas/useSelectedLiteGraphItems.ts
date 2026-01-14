@@ -7,6 +7,8 @@ import {
   traverseNodesDepthFirst
 } from '@/utils/graphTraversalUtil'
 
+import { useNodeMode } from './useNodeMode'
+
 /**
  * Composable for handling selected LiteGraph items filtering and operations.
  * This provides utilities for working with selected items on the canvas,
@@ -114,6 +116,8 @@ export function useSelectedLiteGraphItems() {
     const selectedNodes = app.canvas.selected_nodes
     if (!selectedNodes) return
 
+    const { setNodeMode } = useNodeMode()
+
     // Convert selected_nodes object to array
     const selectedNodeArray: LGraphNode[] = []
     for (const i in selectedNodes) {
@@ -127,8 +131,7 @@ export function useSelectedLiteGraphItems() {
     // Process each selected node independently to determine its target state and apply to children
     selectedNodeArray.forEach((selectedNode) => {
       // Apply standard toggle logic to the selected node itself
-
-      selectedNode.mode = newModeForSelectedNode
+      setNodeMode(selectedNode, newModeForSelectedNode)
 
       // If this selected node is a subgraph, apply the same mode uniformly to all its children
       // This ensures predictable behavior: all children get the same state as their parent
@@ -139,7 +142,7 @@ export function useSelectedLiteGraphItems() {
             if (node === selectedNode) return undefined
 
             // Apply the parent's new mode to all children uniformly
-            node.mode = newModeForSelectedNode
+            setNodeMode(node, newModeForSelectedNode)
             return undefined
           }
         })

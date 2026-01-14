@@ -2,23 +2,18 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useNodeMode } from '@/composables/canvas/useNodeMode'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import FormSelectButton from '@/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.vue'
 
 import LayoutField from './LayoutField.vue'
 
-/**
- * Good design limits dependencies and simplifies the interface of the abstraction layer.
- * Here, we only care about the mode method,
- * and do not concern ourselves with other methods.
- */
-type PickedNode = Pick<LGraphNode, 'mode'>
-
-const { nodes } = defineProps<{ nodes: PickedNode[] }>()
+const { nodes } = defineProps<{ nodes: LGraphNode[] }>()
 const emit = defineEmits<{ (e: 'changed'): void }>()
 
 const { t } = useI18n()
+const { setNodesMode } = useNodeMode()
 
 const nodeState = computed({
   get() {
@@ -39,9 +34,7 @@ const nodeState = computed({
     return mode
   },
   set(value: LGraphNode['mode']) {
-    nodes.forEach((node) => {
-      node.mode = value
-    })
+    setNodesMode(nodes, value)
     emit('changed')
   }
 })
