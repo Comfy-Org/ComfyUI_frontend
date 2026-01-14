@@ -26,7 +26,7 @@ export function renameWidget(
       console.error('Could not find subgraph for proxy widget')
       return false
     }
-    const interiorNode = subgraph.getNodeById(parseInt(widget._overlay.nodeId))
+    const interiorNode = subgraph.getNodeById(widget._overlay.nodeId)
 
     if (!interiorNode) {
       console.error('Could not find interior node for proxy widget')
