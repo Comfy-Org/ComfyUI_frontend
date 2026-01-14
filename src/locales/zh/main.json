@@ -2488,6 +2488,7 @@
     "dropPrompt": "将文件拖到此处或"
   },
   "widgets": {
+    "node2only": "仅限 Node 2.0",
     "selectModel": "选择模型",
     "uploadSelect": {
       "placeholder": "请选择...",

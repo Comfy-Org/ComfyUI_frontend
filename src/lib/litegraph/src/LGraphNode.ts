@@ -1,8 +1,6 @@
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
-  calculateInputSlotPos,
   calculateInputSlotPosFromSlot,
-  calculateOutputSlotPos,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
@@ -41,6 +39,7 @@ import type {
   INodeSlotContextItem,
   IPinnable,
   ISlotType,
+  Panel,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -96,9 +95,12 @@ export type NodeId = number | string
 export type NodeProperty = string | number | boolean | object
 
 interface INodePropertyInfo {
-  name: string
+  name?: string
   type?: string
-  default_value: NodeProperty | undefined
+  default_value?: NodeProperty
+  widget?: string
+  label?: string
+  values?: TWidgetValue[]
 }
 
 interface IMouseOverData {
@@ -606,8 +608,8 @@ export class LGraphNode
     target_slot: number,
     requested_slot?: number | string
   ): number | false | null
-  onShowCustomPanelInfo?(this: LGraphNode, panel: any): void
-  onAddPropertyToPanel?(this: LGraphNode, pName: string, panel: any): boolean
+  onShowCustomPanelInfo?(this: LGraphNode, panel: Panel): void
+  onAddPropertyToPanel?(this: LGraphNode, pName: string, panel: Panel): boolean
   onWidgetChanged?(
     this: LGraphNode,
     name: string,
@@ -667,8 +669,7 @@ export class LGraphNode
     index: number,
     e: CanvasPointerEvent
   ): void
-  // TODO: Return type
-  onGetPropertyInfo?(this: LGraphNode, property: string): any
+  onGetPropertyInfo?(this: LGraphNode, property: string): INodePropertyInfo
   onNodeOutputAdd?(this: LGraphNode, value: unknown): void
   onNodeInputAdd?(this: LGraphNode, value: unknown): void
   onMenuNodeInputs?(
@@ -3346,7 +3347,7 @@ export class LGraphNode
    * @returns Position of the input slot
    */
   getInputPos(slot: number): Point {
-    return calculateInputSlotPos(this.#getSlotPositionContext(), slot)
+    return getSlotPosition(this, slot, true)
   }
 
   /**
@@ -3366,10 +3367,7 @@ export class LGraphNode
    * @returns Position of the output slot
    */
   getOutputPos(outputSlotIndex: number): Point {
-    return calculateOutputSlotPos(
-      this.#getSlotPositionContext(),
-      outputSlotIndex
-    )
+    return getSlotPosition(this, outputSlotIndex, false)
   }
 
   /**

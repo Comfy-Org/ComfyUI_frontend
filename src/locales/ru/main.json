@@ -2478,6 +2478,7 @@
     "dropPrompt": "Перетащите ваш файл или"
   },
   "widgets": {
+    "node2only": "Только Node 2.0",
     "selectModel": "Выбрать модель",
     "uploadSelect": {
       "placeholder": "Выбрать...",
