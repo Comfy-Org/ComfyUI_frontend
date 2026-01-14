@@ -80,6 +80,7 @@ const mockData = vi.hoisted(() => {
     size: { width: 100, height: 100 },
     zIndex: 1,
     visible: true,
+    mode: 0,
     bounds: {
       x: 0,
       y: 0,

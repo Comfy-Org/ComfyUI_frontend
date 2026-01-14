@@ -48,6 +48,7 @@ export interface NodeLayout {
   size: Size
   zIndex: number
   visible: boolean
+  mode: number // LGraphEventMode: 0=ALWAYS, 2=NEVER, 4=BYPASS, etc.
   // Computed bounds for hit testing
   bounds: Bounds
 }
@@ -120,6 +121,7 @@ type OperationType =
   | 'moveNode'
   | 'resizeNode'
   | 'setNodeZIndex'
+  | 'setNodeMode'
   | 'createNode'
   | 'deleteNode'
   | 'setNodeVisibility'
@@ -155,6 +157,15 @@ export interface SetNodeZIndexOperation extends NodeOpBase {
   type: 'setNodeZIndex'
   zIndex: number
   previousZIndex: number
+}
+
+/**
+ * Set node mode operation
+ */
+export interface SetNodeModeOperation extends NodeOpBase {
+  type: 'setNodeMode'
+  mode: number
+  previousMode: number
 }
 
 /**
@@ -243,6 +254,7 @@ export type LayoutOperation =
   | MoveNodeOperation
   | ResizeNodeOperation
   | SetNodeZIndexOperation
+  | SetNodeModeOperation
   | CreateNodeOperation
   | DeleteNodeOperation
   | SetNodeVisibilityOperation

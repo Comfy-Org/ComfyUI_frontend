@@ -62,6 +62,7 @@ describe('layoutMath utils', () => {
       size: { width, height },
       zIndex: 0,
       visible: true,
+      mode: 0,
       bounds: { x, y, width, height }
     })
 

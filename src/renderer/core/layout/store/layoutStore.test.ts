@@ -17,6 +17,7 @@ describe('layoutStore CRDT operations', () => {
     size: { width: 200, height: 100 },
     zIndex: 0,
     visible: true,
+    mode: 0,
     bounds: { x: 100, y: 100, width: 200, height: 100 }
   })
 
