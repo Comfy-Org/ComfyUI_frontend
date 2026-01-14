@@ -101,6 +101,7 @@
           :assets="displayAssets"
           :is-selected="isSelected"
           @select-asset="handleAssetSelect"
+          @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
         <VirtualGrid
@@ -120,17 +121,10 @@
               :selected="isSelected(item.id)"
               :show-output-count="shouldShowOutputCount(item)"
               :output-count="getOutputCount(item)"
-              :show-delete-button="shouldShowDeleteButton"
-              :open-context-menu-id="openContextMenuId"
-              :selected-assets="getSelectedAssets(displayAssets)"
-              :has-selection="hasSelection"
               @click="handleAssetSelect(item)"
+              @context-menu="handleAssetContextMenu"
               @zoom="handleZoomClick(item)"
               @output-count-click="enterFolderView(item)"
-              @asset-deleted="refreshAssets"
-              @context-menu-opened="openContextMenuId = item.id"
-              @bulk-download="handleBulkDownload"
-              @bulk-delete="handleBulkDelete"
             />
           </template>
         </VirtualGrid>
@@ -196,6 +190,21 @@
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
+  <MediaAssetContextMenu
+    v-if="contextMenuAsset"
+    ref="contextMenuRef"
+    :asset="contextMenuAsset"
+    :asset-type="contextMenuAssetType"
+    :file-kind="contextMenuFileKind"
+    :show-delete-button="shouldShowDeleteButton"
+    :selected-assets="selectedAssets"
+    :is-bulk-mode="isBulkMode"
+    @zoom="handleZoomClick(contextMenuAsset)"
+    @hide="handleContextMenuHide"
+    @asset-deleted="refreshAssets"
+    @bulk-download="handleBulkDownload"
+    @bulk-delete="handleBulkDelete"
+  />
 </template>
 
 <script setup lang="ts">
@@ -203,7 +212,7 @@ import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -216,13 +225,16 @@ import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
+import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -248,8 +260,8 @@ const isListView = computed(
   () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
 )
 
-// Track which asset's context menu is open (for single-instance context menu management)
-const openContextMenuId = ref<string | null>(null)
+const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
+const contextMenuAsset = ref<AssetItem | null>(null)
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
@@ -257,6 +269,14 @@ const shouldShowDeleteButton = computed(() => {
   if (activeTab.value === 'input' && !isCloud) return false
   return true
 })
+
+const contextMenuAssetType = computed(() =>
+  contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
+)
+
+const contextMenuFileKind = computed<MediaKind>(() =>
+  getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
+)
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
@@ -327,8 +347,7 @@ const isHoveringSelectionCount = useElementHover(selectionCountButtonRef)
 
 // Total output count for all selected assets
 const totalOutputCount = computed(() => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  return getTotalOutputCount(selectedAssets)
+  return getTotalOutputCount(selectedAssets.value)
 })
 
 const currentAssets = computed(() =>
@@ -358,6 +377,12 @@ const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
 const displayAssets = computed(() => {
   return filteredAssets.value
 })
+
+const selectedAssets = computed(() => getSelectedAssets(displayAssets.value))
+
+const isBulkMode = computed(
+  () => hasSelection.value && selectedAssets.value.length > 1
+)
 
 const showLoadingState = computed(
   () =>
@@ -442,6 +467,17 @@ watch(
 const handleAssetSelect = (asset: AssetItem) => {
   const index = displayAssets.value.findIndex((a) => a.id === asset.id)
   handleAssetClick(asset, index, displayAssets.value)
+}
+
+function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
+  contextMenuAsset.value = asset
+  void nextTick(() => {
+    contextMenuRef.value?.show(event)
+  })
+}
+
+function handleContextMenuHide() {
+  contextMenuAsset.value = null
 }
 
 const handleZoomClick = (asset: AssetItem) => {
@@ -552,14 +588,12 @@ const copyJobId = async () => {
 }
 
 const handleDownloadSelected = () => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  downloadMultipleAssets(selectedAssets)
+  downloadMultipleAssets(selectedAssets.value)
   clearSelection()
 }
 
 const handleDeleteSelected = async () => {
-  const selectedAssets = getSelectedAssets(displayAssets.value)
-  await deleteMultipleAssets(selectedAssets)
+  await deleteMultipleAssets(selectedAssets.value)
   clearSelection()
 }
 
