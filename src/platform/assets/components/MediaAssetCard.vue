@@ -135,7 +135,7 @@
     :is-bulk-mode="hasSelection && (selectedAssets?.length ?? 0) > 1"
     @zoom="handleZoomClick"
     @bulk-download="emit('bulk-download', $event)"
-    @delete-assets="emit('delete-assets', $event)"
+    @bulk-delete="emit('bulk-delete', $event)"
   />
 </template>
 
@@ -205,7 +205,7 @@ const emit = defineEmits<{
   'output-count-click': []
   'context-menu-opened': []
   'bulk-download': [assets: AssetItem[]]
-  'delete-assets': [assets: AssetItem[]]
+  'bulk-delete': [assets: AssetItem[]]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()

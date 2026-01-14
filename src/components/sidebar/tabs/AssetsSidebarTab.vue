@@ -122,7 +122,7 @@
               @output-count-click="enterFolderView(item)"
               @context-menu-opened="openContextMenuId = item.id"
               @bulk-download="handleBulkDownload"
-              @delete-assets="handleDeleteAssets"
+              @bulk-delete="handleBulkDelete"
             />
           </template>
         </VirtualGrid>
@@ -200,8 +200,6 @@ import {
   onMounted,
   onUnmounted,
   ref,
-  shallowRef,
-  triggerRef,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -248,7 +246,7 @@ const isQueuePanelV2Enabled = computed(() =>
 const openContextMenuId = ref<string | null>(null)
 
 // Track which assets are currently being deleted (for showing loading state)
-const deletingAssetIds = shallowRef(new Set<string>())
+const deletingAssetIds = ref(new Set<string>())
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
@@ -543,12 +541,13 @@ const handleDownloadSelected = () => {
 }
 
 const setAssetsDeletingState = (assetIds: string[], isDeleting: boolean) => {
-  assetIds.forEach((id) =>
-    isDeleting
-      ? deletingAssetIds.value.add(id)
-      : deletingAssetIds.value.delete(id)
-  )
-  triggerRef(deletingAssetIds)
+  assetIds.forEach((id) => {
+    if (isDeleting) {
+      deletingAssetIds.value.add(id)
+    } else {
+      deletingAssetIds.value.delete(id)
+    }
+  })
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
@@ -557,9 +556,9 @@ const handleBulkDownload = (assets: AssetItem[]) => {
 }
 
 const handleDeleteSelected = () =>
-  handleDeleteAssets(getSelectedAssets(displayAssets.value))
+  handleBulkDelete(getSelectedAssets(displayAssets.value))
 
-const handleDeleteAssets = async (assets: AssetItem[]) => {
+const handleBulkDelete = async (assets: AssetItem[]) => {
   const assetIds = assets.map((a) => a.id)
 
   await deleteMultipleAssets(assets, (isDeleting) =>
