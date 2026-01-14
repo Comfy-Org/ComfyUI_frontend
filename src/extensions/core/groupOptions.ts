@@ -7,14 +7,14 @@ import {
   LGraphGroup,
   type LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { app } from '../../scripts/app'
 
 function setNodeMode(node: LGraphNode, mode: number) {
-  node.mode = mode
-  node.graph?.change()
+  layoutStore.setNodeMode(node.id.toString(), mode)
 }
 
 function addNodesToGroup(group: LGraphGroup, items: Iterable<Positionable>) {

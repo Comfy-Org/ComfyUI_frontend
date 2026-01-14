@@ -1325,6 +1325,9 @@ export class LGraphNode
       case LGraphEventMode.ALWAYS:
         break
 
+      case LGraphEventMode.BYPASS:
+        break
+
       // @ts-expect-error Not impl.
       case LiteGraph.ON_REQUEST:
         break

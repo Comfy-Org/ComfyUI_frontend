@@ -8,6 +8,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { patchLGraphNodeMode } from '@/renderer/core/layout/sync/patchLGraphNodeMode'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
@@ -36,7 +37,8 @@ function useVueNodeLifecycleIndividual() {
       size: [node.size[0], removeNodeTitleHeight(node.size[1])] as [
         number,
         number
-      ]
+      ],
+      mode: node.mode
     }))
     layoutStore.initializeFromLiteGraph(nodes)
 
@@ -58,6 +60,9 @@ function useVueNodeLifecycleIndividual() {
         link.target_slot
       )
     }
+
+    // Patch LGraphNode.changeMode to sync with layoutStore
+    patchLGraphNodeMode()
 
     // Initialize layout sync (one-way: Layout Store → LiteGraph)
     startSync(canvasStore.canvas)
