@@ -147,7 +147,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
 
     // Bulk Add to Workflow
     items.push({
-      label: t('mediaAsset.selection.addToWorkflowAll'),
+      label: t('mediaAsset.selection.insertAllAssetsAsNodes'),
       icon: 'icon-[comfy--node]',
       command: () => emit('bulk-add-to-workflow', selectedAssets)
     })
@@ -199,7 +199,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   // Add to workflow (conditional)
   if (showAddToWorkflow.value) {
     items.push({
-      label: t('mediaAsset.actions.addToWorkflow'),
+      label: t('mediaAsset.actions.insertAsNodeInWorkflow'),
       icon: 'icon-[comfy--node]',
       command: () => actions.addWorkflow(asset)
     })
