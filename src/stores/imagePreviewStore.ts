@@ -130,6 +130,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
+    // Skip if outputs is null/undefined - preserve existing output
+    // This can happen when backend returns null for cached/deduplicated nodes
+    // (e.g., two LoadImage nodes selecting the same image)
+    if (outputs == null) return
+
     if (options.merge) {
       const existingOutput = app.nodeOutputs[nodeLocatorId]
       if (existingOutput && outputs) {
