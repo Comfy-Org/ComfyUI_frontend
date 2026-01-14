@@ -107,10 +107,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const {
-  contentTitle,
-  rightPanelOpen = false
-} = defineProps<{
+const { contentTitle, rightPanelOpen = false } = defineProps<{
   contentTitle: string
   rightPanelOpen?: boolean
 }>()

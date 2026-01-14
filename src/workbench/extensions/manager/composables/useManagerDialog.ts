@@ -14,7 +14,6 @@ export function useManagerDialog() {
   }
 
   async function show(initialTab?: ManagerTab) {
-
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: ManagerDialog,
