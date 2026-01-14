@@ -104,7 +104,7 @@ function widgetWithVueTrack(
     return { get() {}, set() {} }
   })
 }
-export function useReactiveWidgetValue(widget: IBaseWidget) {
+function useReactiveWidgetValue(widget: IBaseWidget) {
   widgetWithVueTrack(widget)
   widget.vueTrack()
   return widget.value
@@ -120,10 +120,57 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
     update: (value) => (cagWidget.value = normalizeControlOption(value))
   }
 }
+
 function getNodeType(node: LGraphNode, widget: IBaseWidget) {
   if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
   const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)
   return subNode?.type
+}
+
+/**
+ * Shared widget enhancements used by both safeWidgetMapper and Right Side Panel
+ */
+interface SharedWidgetEnhancements {
+  /** Reactive widget value that updates when the widget changes */
+  value: WidgetValue
+  /** Control widget for seed randomization/increment/decrement */
+  controlWidget?: SafeControlWidget
+  /** Input specification from node definition */
+  spec?: InputSpec
+  /** Node type (for subgraph promoted widgets) */
+  nodeType?: string
+  /** Border style for promoted/advanced widgets */
+  borderStyle?: string
+  /** Widget label */
+  label?: string
+  /** Widget options */
+  options?: Record<string, any>
+}
+
+/**
+ * Extracts common widget enhancements shared across different rendering contexts.
+ * This function centralizes the logic for extracting metadata and reactive values
+ * from widgets, ensuring consistency between Nodes 2.0 and Right Side Panel.
+ */
+export function getSharedWidgetEnhancements(
+  node: LGraphNode,
+  widget: IBaseWidget
+): SharedWidgetEnhancements {
+  const nodeDefStore = useNodeDefStore()
+
+  return {
+    value: useReactiveWidgetValue(widget),
+    controlWidget: getControlWidget(widget),
+    spec: nodeDefStore.getInputSpecForWidget(node, widget.name),
+    nodeType: getNodeType(node, widget),
+    borderStyle: widget.promoted
+      ? 'ring ring-component-node-widget-promoted'
+      : widget.advanced
+        ? 'ring ring-component-node-widget-advanced'
+        : undefined,
+    label: widget.label,
+    options: widget.options
+  }
 }
 
 /**
@@ -157,20 +204,17 @@ const normalizeWidgetValue = (value: unknown): WidgetValue => {
   return undefined
 }
 
-export function safeWidgetMapper(
+function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
-  const nodeDefStore = useNodeDefStore()
   return function (widget) {
     try {
-      const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
+      // Get shared enhancements used by both Nodes 2.0 and Right Side Panel
+      const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
       const slotInfo = slotMetadata.get(widget.name)
-      const borderStyle = widget.promoted
-        ? 'ring ring-component-node-widget-promoted'
-        : widget.advanced
-          ? 'ring ring-component-node-widget-advanced'
-          : undefined
+
+      // Wrapper callback specific to Nodes 2.0 rendering
       const callback = (v: unknown) => {
         const value = normalizeWidgetValue(v)
         widget.value = value ?? undefined
@@ -185,16 +229,10 @@ export function safeWidgetMapper(
       return {
         name: widget.name,
         type: widget.type,
-        value: useReactiveWidgetValue(widget),
-        borderStyle,
+        ...sharedEnhancements,
         callback,
-        controlWidget: getControlWidget(widget),
         hasLayoutSize: typeof widget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget),
-        label: widget.label,
-        nodeType: getNodeType(node, widget),
-        options: widget.options,
-        spec,
         slotMetadata: slotInfo
       }
     } catch (error) {
@@ -207,15 +245,77 @@ export function safeWidgetMapper(
   }
 }
 
-export function isValidWidgetValue(value: unknown): value is WidgetValue {
-  return (
-    value === null ||
-    value === undefined ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean' ||
-    typeof value === 'object'
-  )
+// Extract safe data from LiteGraph node for Vue consumption
+export function extractVueNodeData(node: LGraphNode): VueNodeData {
+  // Determine subgraph ID - null for root graph, string for subgraphs
+  const subgraphId =
+    node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
+      ? String(node.graph.id)
+      : null
+  // Extract safe widget data
+  const slotMetadata = new Map<string, WidgetSlotMetadata>()
+
+  const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
+  Object.defineProperty(node, 'widgets', {
+    get() {
+      return reactiveWidgets
+    },
+    set(v) {
+      reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
+    }
+  })
+  const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
+  Object.defineProperty(node, 'inputs', {
+    get() {
+      return reactiveInputs
+    },
+    set(v) {
+      reactiveInputs.splice(0, reactiveInputs.length, ...v)
+    }
+  })
+
+  const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
+    node.inputs?.forEach((input, index) => {
+      if (!input?.widget?.name) return
+      slotMetadata.set(input.widget.name, {
+        index,
+        linked: input.link != null
+      })
+    })
+    return node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
+  })
+
+  const nodeType =
+    node.type ||
+    node.constructor?.comfyClass ||
+    node.constructor?.title ||
+    node.constructor?.name ||
+    'Unknown'
+
+  const apiNode = node.constructor?.nodeData?.api_node ?? false
+  const badges = node.badges
+
+  return {
+    id: String(node.id),
+    title: typeof node.title === 'string' ? node.title : '',
+    type: nodeType,
+    mode: node.mode || 0,
+    titleMode: node.title_mode,
+    selected: node.selected || false,
+    executing: false, // Will be updated separately based on execution state
+    subgraphId,
+    apiNode,
+    badges,
+    hasErrors: !!node.has_errors,
+    widgets: safeWidgets,
+    inputs: reactiveInputs,
+    outputs: node.outputs ? [...node.outputs] : undefined,
+    flags: node.flags ? { ...node.flags } : undefined,
+    color: node.color || undefined,
+    bgcolor: node.bgcolor || undefined,
+    resizable: node.resizable,
+    shape: node.shape
+  }
 }
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
@@ -248,79 +348,6 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     for (const widget of currentData.widgets ?? []) {
       const slotInfo = slotMetadata.get(widget.name)
       if (slotInfo) widget.slotMetadata = slotInfo
-    }
-  }
-
-  // Extract safe data from LiteGraph node for Vue consumption
-  function extractVueNodeData(node: LGraphNode): VueNodeData {
-    // Determine subgraph ID - null for root graph, string for subgraphs
-    const subgraphId =
-      node.graph && 'id' in node.graph && node.graph !== node.graph.rootGraph
-        ? String(node.graph.id)
-        : null
-    // Extract safe widget data
-    const slotMetadata = new Map<string, WidgetSlotMetadata>()
-
-    const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
-    Object.defineProperty(node, 'widgets', {
-      get() {
-        return reactiveWidgets
-      },
-      set(v) {
-        reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-      }
-    })
-    const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
-    Object.defineProperty(node, 'inputs', {
-      get() {
-        return reactiveInputs
-      },
-      set(v) {
-        reactiveInputs.splice(0, reactiveInputs.length, ...v)
-      }
-    })
-
-    const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
-      node.inputs?.forEach((input, index) => {
-        if (!input?.widget?.name) return
-        slotMetadata.set(input.widget.name, {
-          index,
-          linked: input.link != null
-        })
-      })
-      return node.widgets?.map(safeWidgetMapper(node, slotMetadata)) ?? []
-    })
-
-    const nodeType =
-      node.type ||
-      node.constructor?.comfyClass ||
-      node.constructor?.title ||
-      node.constructor?.name ||
-      'Unknown'
-
-    const apiNode = node.constructor?.nodeData?.api_node ?? false
-    const badges = node.badges
-
-    return {
-      id: String(node.id),
-      title: typeof node.title === 'string' ? node.title : '',
-      type: nodeType,
-      mode: node.mode || 0,
-      titleMode: node.title_mode,
-      selected: node.selected || false,
-      executing: false, // Will be updated separately based on execution state
-      subgraphId,
-      apiNode,
-      badges,
-      hasErrors: !!node.has_errors,
-      widgets: safeWidgets,
-      inputs: reactiveInputs,
-      outputs: node.outputs ? [...node.outputs] : undefined,
-      flags: node.flags ? { ...node.flags } : undefined,
-      color: node.color || undefined,
-      bgcolor: node.bgcolor || undefined,
-      resizable: node.resizable,
-      shape: node.shape
     }
   }
 

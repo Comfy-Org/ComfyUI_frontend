@@ -195,7 +195,7 @@ export abstract class SubgraphIONodeBase<
     if (!(options.length > 0)) return
 
     new LiteGraph.ContextMenu(options, {
-      event: event as any,
+      event,
       title: slot.name || 'Subgraph Output',
       callback: (item: IContextMenuValue) => {
         this.#onSlotMenuAction(item, slot, event)

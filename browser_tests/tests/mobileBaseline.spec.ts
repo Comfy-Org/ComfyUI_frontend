@@ -22,8 +22,14 @@ test.describe('Mobile Baseline Snapshots', () => {
   test('@mobile settings dialog', async ({ comfyPage }) => {
     await comfyPage.settingDialog.open()
     await comfyPage.nextFrame()
+
     await expect(comfyPage.settingDialog.root).toHaveScreenshot(
-      'mobile-settings-dialog.png'
+      'mobile-settings-dialog.png',
+      {
+        mask: [
+          comfyPage.settingDialog.root.getByTestId('current-user-indicator')
+        ]
+      }
     )
   })
 })

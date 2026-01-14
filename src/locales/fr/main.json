@@ -60,6 +60,7 @@
     "findInLibrary": "Trouvez-le dans la section {type} de la bibliothèque de modèles.",
     "finish": "Terminer",
     "genericLinkPlaceholder": "Collez le lien ici",
+    "importAnother": "Importer un autre",
     "jobId": "ID de tâche",
     "loadingModels": "Chargement de {type}...",
     "maxFileSize": "Taille maximale du fichier : {size}",
@@ -1520,6 +1521,7 @@
     "Redo": "Refaire",
     "Refresh Node Definitions": "Actualiser les définitions de nœud",
     "Reinstall": "Réinstaller",
+    "Rename": "Renommer",
     "Reset View": "Réinitialiser la vue",
     "Resize Selected Nodes": "Redimensionner les nœuds sélectionnés",
     "Restart": "Redémarrer",
@@ -2476,6 +2478,7 @@
     "dropPrompt": "Déposez votre fichier ou"
   },
   "widgets": {
+    "node2only": "Node 2.0 uniquement",
     "selectModel": "Sélectionner un modèle",
     "uploadSelect": {
       "placeholder": "Sélectionner...",

@@ -3,7 +3,7 @@ import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
-import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
+import type { LGraphNode, LGraph } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
@@ -1591,14 +1591,29 @@ export class ComfyPage {
       return window['app'].graph.nodes
     })
   }
-  async getNodeRefsByType(type: string): Promise<NodeReference[]> {
+  async waitForGraphNodes(count: number) {
+    await this.page.waitForFunction((count) => {
+      return window['app']?.canvas.graph?.nodes?.length === count
+    }, count)
+  }
+  async getNodeRefsByType(
+    type: string,
+    includeSubgraph: boolean = false
+  ): Promise<NodeReference[]> {
     return Promise.all(
       (
-        await this.page.evaluate((type) => {
-          return window['app'].graph.nodes
-            .filter((n: LGraphNode) => n.type === type)
-            .map((n: LGraphNode) => n.id)
-        }, type)
+        await this.page.evaluate(
+          ({ type, includeSubgraph }) => {
+            const graph = (
+              includeSubgraph ? window['app'].canvas.graph : window['app'].graph
+            ) as LGraph
+            const nodes = graph.nodes
+            return nodes
+              .filter((n: LGraphNode) => n.type === type)
+              .map((n: LGraphNode) => n.id)
+          },
+          { type, includeSubgraph }
+        )
       ).map((id: NodeId) => this.getNodeRefById(id))
     )
   }

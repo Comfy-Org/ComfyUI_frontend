@@ -44,6 +44,7 @@
         <SidebarBottomPanelToggleButton :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
+        <ModeToggle v-if="showLinearToggle" />
       </div>
     </div>
     <HelpCenterPopups :is-small="isSmall" />
@@ -51,15 +52,17 @@
 </template>
 
 <script setup lang="ts">
-import { useResizeObserver } from '@vueuse/core'
+import { useResizeObserver, whenever } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import HelpCenterPopups from '@/components/helpcenter/HelpCenterPopups.vue'
 import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
+import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -83,6 +86,12 @@ const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
+
+const showLinearToggle = ref(useFeatureFlags().flags.linearToggleEnabled)
+whenever(
+  () => canvasStore.linearMode,
+  () => (showLinearToggle.value = true)
+)
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'

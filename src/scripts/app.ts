@@ -1224,6 +1224,8 @@ export class ComfyApp {
           // Fit view if no nodes visible in restored viewport
           this.canvas.ds.computeVisibleArea(this.canvas.viewport)
           if (
+            this.canvas.visible_area.width &&
+            this.canvas.visible_area.height &&
             !anyItemOverlapsRect(
               this.rootGraph._nodes,
               this.canvas.visible_area

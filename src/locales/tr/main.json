@@ -60,6 +60,7 @@
     "findInLibrary": "Bunu modeller kütüphanesinin {type} bölümünde bulabilirsiniz.",
     "finish": "Bitir",
     "genericLinkPlaceholder": "Bağlantıyı buraya yapıştırın",
+    "importAnother": "Başka Birini İçe Aktar",
     "jobId": "İş ID",
     "loadingModels": "{type} yükleniyor...",
     "maxFileSize": "Maksimum dosya boyutu: {size}",
@@ -1520,6 +1521,7 @@
     "Redo": "Yinele",
     "Refresh Node Definitions": "Düğüm Tanımlarını Yenile",
     "Reinstall": "Yeniden Yükle",
+    "Rename": "Yeniden Adlandır",
     "Reset View": "Görünümü Sıfırla",
     "Resize Selected Nodes": "Seçili Düğümleri Yeniden Boyutlandır",
     "Restart": "Yeniden Başlat",
@@ -2476,6 +2478,7 @@
     "dropPrompt": "Dosyanızı bırakın veya"
   },
   "widgets": {
+    "node2only": "Yalnızca Node 2.0",
     "selectModel": "Model seç",
     "uploadSelect": {
       "placeholder": "Seç...",

@@ -366,6 +366,208 @@ export function useMediaAssetActions() {
   }
 
   /**
+   * Add multiple assets to the current workflow
+   * Creates loader nodes for each asset
+   */
+  const addMultipleToWorkflow = async (assets: AssetItem[]) => {
+    if (!assets || assets.length === 0) return
+
+    const NODE_OFFSET = 50
+    let nodeIndex = 0
+    let succeeded = 0
+    let failed = 0
+
+    for (const asset of assets) {
+      const { nodeType, widgetName } = detectNodeTypeFromFilename(asset.name)
+
+      if (!nodeType || !widgetName) {
+        failed++
+        continue
+      }
+
+      const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+      if (!nodeDef) {
+        failed++
+        continue
+      }
+
+      const center = litegraphService.getCanvasCenter()
+      const node = litegraphService.addNodeOnGraph(nodeDef, {
+        pos: [
+          center[0] + nodeIndex * NODE_OFFSET,
+          center[1] + nodeIndex * NODE_OFFSET
+        ]
+      })
+
+      if (!node) {
+        failed++
+        continue
+      }
+
+      const metadata = getOutputAssetMetadata(asset.user_metadata)
+      const assetType = getAssetType(asset, 'input')
+
+      const annotated = createAnnotatedPath(
+        {
+          filename: asset.name,
+          subfolder: metadata?.subfolder || '',
+          type: isResultItemType(assetType) ? assetType : undefined
+        },
+        {
+          rootFolder: isResultItemType(assetType) ? assetType : undefined
+        }
+      )
+
+      const widget = node.widgets?.find((w) => w.name === widgetName)
+      if (widget) {
+        widget.value = annotated
+        widget.callback?.(annotated)
+      }
+      node.graph?.setDirtyCanvas(true, true)
+      succeeded++
+      nodeIndex++
+    }
+
+    if (failed === 0) {
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.selection.nodesAddedToWorkflow', {
+          count: succeeded
+        }),
+        life: 2000
+      })
+    } else if (succeeded === 0) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('mediaAsset.selection.failedToAddNodes'),
+        life: 3000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.partialAddNodesSuccess', {
+          succeeded,
+          failed
+        }),
+        life: 3000
+      })
+    }
+  }
+
+  /**
+   * Open workflows from multiple assets in new tabs
+   */
+  const openMultipleWorkflows = async (assets: AssetItem[]) => {
+    if (!assets || assets.length === 0) return
+
+    let succeeded = 0
+    let failed = 0
+
+    for (const asset of assets) {
+      try {
+        const { workflow, filename } = await extractWorkflowFromAsset(asset)
+        const result = await workflowActions.openWorkflowAction(
+          workflow,
+          filename
+        )
+
+        if (result.success) {
+          succeeded++
+        } else {
+          failed++
+        }
+      } catch {
+        failed++
+      }
+    }
+
+    if (failed === 0) {
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.selection.workflowsOpened', { count: succeeded }),
+        life: 2000
+      })
+    } else if (succeeded === 0) {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.noWorkflowsFound'),
+        life: 3000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.partialWorkflowsOpened', {
+          succeeded,
+          failed
+        }),
+        life: 3000
+      })
+    }
+  }
+
+  /**
+   * Export workflows from multiple assets as JSON files
+   */
+  const exportMultipleWorkflows = async (assets: AssetItem[]) => {
+    if (!assets || assets.length === 0) return
+
+    let succeeded = 0
+    let failed = 0
+
+    for (const asset of assets) {
+      try {
+        const { workflow, filename } = await extractWorkflowFromAsset(asset)
+        const result = await workflowActions.exportWorkflowAction(
+          workflow,
+          filename
+        )
+
+        if (result.success) {
+          succeeded++
+        } else {
+          failed++
+        }
+      } catch {
+        failed++
+      }
+    }
+
+    if (failed === 0) {
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.selection.workflowsExported', {
+          count: succeeded
+        }),
+        life: 2000
+      })
+    } else if (succeeded === 0) {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.noWorkflowsToExport'),
+        life: 3000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.partialWorkflowsExported', {
+          succeeded,
+          failed
+        }),
+        life: 3000
+      })
+    }
+  }
+
+  /**
    * Delete multiple assets with confirmation dialog
    * @param assets Array of assets to delete
    */
@@ -482,7 +684,10 @@ export function useMediaAssetActions() {
     deleteMultipleAssets,
     copyJobId,
     addWorkflow,
+    addMultipleToWorkflow,
     openWorkflow,
-    exportWorkflow
+    openMultipleWorkflows,
+    exportWorkflow,
+    exportMultipleWorkflows
   }
 }
