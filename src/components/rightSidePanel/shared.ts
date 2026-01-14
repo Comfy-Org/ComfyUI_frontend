@@ -41,7 +41,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
     return list
   }
 
-  const itemToSearchable = new Map<T[number], WidgetSearchItem<T[number]>>()
+  const searchableToOriginal = new Map<WidgetSearchItem<T[number]>, T[number]>()
   const searchableList: WidgetSearchItem<T[number]>[] = list.map((item) => {
     const searchableItem = {
       ...item,
@@ -50,7 +50,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
       searchableType: item.widget.type.toLowerCase(),
       searchableValue: item.widget.value?.toString().toLowerCase() || ''
     }
-    itemToSearchable.set(item, searchableItem)
+    searchableToOriginal.set(searchableItem, item)
     return searchableItem
   })
 
@@ -69,14 +69,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
   const results = fuse.search(query.trim())
 
   const matchedItems = new Set(
-    results.map((result) => {
-      for (const [original, searchable] of itemToSearchable.entries()) {
-        if (searchable === result.item) {
-          return original
-        }
-      }
-      return result.item as T[number]
-    })
+    results.map((result) => searchableToOriginal.get(result.item)!)
   )
 
   return list.filter((item) => matchedItems.has(item)) as T
