@@ -23,6 +23,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
@@ -62,6 +63,8 @@ function nodeToNodeData(node: LGraphNode) {
 
   return {
     ...nodeData,
+    //note lastNodeErrors uses exeuctionid, node.id is execution for root
+    hasErrors: !!executionStore.lastNodeErrors?.[node.id],
 
     dropIndicator,
     onDragDrop: node.onDragDrop,
@@ -187,7 +190,13 @@ defineExpose({ runButtonClick })
             <NodeWidgets
               :node-data
               :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
-              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg"
+              :class="
+                cn(
+                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg',
+                  nodeData.hasErrors &&
+                    'ring-2 ring-inset ring-node-stroke-error'
+                )
+              "
             />
           </template>
         </div>
@@ -217,7 +226,13 @@ defineExpose({ runButtonClick })
           >
             <NodeWidgets
               :node-data
-              class="py-3 gap-y-4 **:[.col-span-2]:grid-cols-1 text-sm **:[.p-floatlabel]:h-35 rounded-lg"
+              :class="
+                cn(
+                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg',
+                  nodeData.hasErrors &&
+                    'ring-2 ring-inset ring-node-stroke-error'
+                )
+              "
               :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
             />
           </DropZone>
