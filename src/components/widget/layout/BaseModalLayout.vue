@@ -2,7 +2,7 @@
   <div class="base-widget-layout rounded-2xl overflow-hidden relative">
     <Button
       v-show="!isRightPanelOpen && hasRightPanel"
-      size="icon"
+      size="lg"
       :class="
         cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
           'opacity-0 pointer-events-none': isRightPanelOpen || !hasRightPanel
@@ -10,7 +10,7 @@
       "
       @click="toggleRightPanel"
     >
-      <i class="icon-[lucide--panel-right] text-sm" />
+      <i class="icon-[lucide--panel-right]" />
     </Button>
     <Button
       size="lg"
@@ -64,7 +64,7 @@
             >
               <Button
                 v-if="isRightPanelOpen && hasRightPanel"
-                size="icon"
+                size="lg"
                 @click="toggleRightPanel"
               >
                 <i class="icon-[lucide--panel-right-close]" />
@@ -90,7 +90,7 @@
         </div>
         <aside
           v-if="hasRightPanel && isRightPanelOpen"
-          class="w-1/4 min-w-40 max-w-80"
+          class="w-1/4 min-w-40 max-w-80 pt-16 pb-8"
         >
           <slot name="rightPanel"></slot>
         </aside>
@@ -107,8 +107,16 @@ import Button from '@/components/ui/button/Button.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const { contentTitle } = defineProps<{
+const {
+  contentTitle,
+  rightPanelOpen = false
+} = defineProps<{
   contentTitle: string
+  rightPanelOpen?: boolean
+}>()
+
+const emit = defineEmits<{
+  'update:rightPanelOpen': [value: boolean]
 }>()
 
 const BREAKPOINTS = { md: 880 }
@@ -125,8 +133,15 @@ const breakpoints = useBreakpoints(BREAKPOINTS)
 const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
-const isRightPanelOpen = ref<boolean>(false)
+const isRightPanelOpen = ref<boolean>(rightPanelOpen)
 const mobileMenuOpen = ref<boolean>(false)
+
+watch(
+  () => rightPanelOpen,
+  (value) => {
+    isRightPanelOpen.value = value
+  }
+)
 
 const hasRightPanel = computed(() => !!slots.rightPanel)
 
@@ -153,6 +168,7 @@ const toggleLeftPanel = () => {
 
 const toggleRightPanel = () => {
   isRightPanelOpen.value = !isRightPanelOpen.value
+  emit('update:rightPanelOpen', isRightPanelOpen.value)
 }
 </script>
 <style scoped>

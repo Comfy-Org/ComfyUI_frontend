@@ -20,12 +20,6 @@ export enum ManagerTab {
   UpdateAvailable = 'updateAvailable'
 }
 
-export interface TabItem {
-  id: ManagerTab
-  label: string
-  icon: string
-}
-
 export type TaskLog = {
   taskName: string
   taskId: string
@@ -35,11 +29,6 @@ export type TaskLog = {
 export interface UseNodePacksOptions {
   immediate?: boolean
   maxConcurrent?: number
-}
-
-export interface SearchOption<T> {
-  id: T
-  label: string
 }
 
 export enum SortableAlgoliaField {

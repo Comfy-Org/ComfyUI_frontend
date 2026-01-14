@@ -7,7 +7,7 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 
 /**
  * Composable to find NodePacks that have updates available
- * Uses the same filtering approach as ManagerDialogContent.vue
+ * Uses the same filtering approach as ManagerDialog.vue
  * Automatically fetches installed pack data when initialized
  */
 export const useUpdateAvailableNodes = () => {
@@ -34,7 +34,7 @@ export const useUpdateAvailableNodes = () => {
     return compare(latestVersion, installedVersion) > 0
   }
 
-  // Same filtering logic as ManagerDialogContent.vue
+  // Same filtering logic as ManagerDialog.vue
   const filterOutdatedPacks = (packs: components['schemas']['Node'][]) =>
     packs.filter(isOutdatedPack)
 
