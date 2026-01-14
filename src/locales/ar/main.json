@@ -2478,6 +2478,7 @@
     "dropPrompt": "أسقط ملفك أو"
   },
   "widgets": {
+    "node2only": "فقط Node 2.0",
     "selectModel": "اختر نموذج",
     "uploadSelect": {
       "placeholder": "اختر...",

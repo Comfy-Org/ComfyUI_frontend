@@ -2478,6 +2478,7 @@
     "dropPrompt": "Dosyanızı bırakın veya"
   },
   "widgets": {
+    "node2only": "Yalnızca Node 2.0",
     "selectModel": "Model seç",
     "uploadSelect": {
       "placeholder": "Seç...",
