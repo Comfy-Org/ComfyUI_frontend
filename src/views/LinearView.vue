@@ -85,7 +85,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       />
       <LinearControls ref="linearWorkflowRef" mobile />
       <div class="text-base-foreground flex items-center gap-4 justify-end m-4">
-        <div v-text="t('linearMode.beta')" />
+        <a
+          href="https://form.typeform.com/to/gmVqFi8l"
+          v-text="t('linearMode.beta')"
+        />
         <TypeformPopoverButton data-tf-widget="gmVqFi8l" />
       </div>
     </div>
