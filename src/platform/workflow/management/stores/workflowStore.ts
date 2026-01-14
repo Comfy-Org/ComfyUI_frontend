@@ -87,13 +87,6 @@ export class ComfyWorkflow extends UserFile {
   override async load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
-    await super.load({ force })
-    if (!force && this.isLoaded) return this as this & LoadedComfyWorkflow
-
-    if (!this.originalContent) {
-      throw new Error('[ASSERT] Workflow content should be loaded')
-    }
-
     const draftStore = useWorkflowDraftStore()
     let draft = !force ? draftStore.getDraft(this.path) : undefined
     let draftState: ComfyWorkflowJSON | null = null
@@ -116,13 +109,15 @@ export class ComfyWorkflow extends UserFile {
       }
     }
 
-    // Note: originalContent is populated by super.load()
-    this.changeTracker = markRaw(
-      new ChangeTracker(
-        this,
-        /* initialState= */ JSON.parse(this.originalContent)
-      )
-    )
+    await super.load({ force })
+    if (!force && this.isLoaded) return this as this & LoadedComfyWorkflow
+
+    if (!this.originalContent) {
+      throw new Error('[ASSERT] Workflow content should be loaded')
+    }
+
+    const initialState = JSON.parse(this.originalContent)
+    this.changeTracker = markRaw(new ChangeTracker(this, initialState))
     if (draftState && draftContent) {
       this.changeTracker.activeState = draftState
       this.content = draftContent

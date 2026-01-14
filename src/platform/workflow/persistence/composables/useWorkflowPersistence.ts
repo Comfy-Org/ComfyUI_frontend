@@ -29,7 +29,6 @@ export function useWorkflowPersistence() {
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const workflowDraftStore = useWorkflowDraftStore()
 
-
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
     const mergedQuery = mergePreservedQueryIntoQuery(
@@ -52,13 +51,13 @@ export function useWorkflowPersistence() {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
-
-    const workflow = JSON.stringify(comfyApp.rootGraph.serialize())
+    const graphData = comfyApp.rootGraph.serialize()
+    const workflowJson = JSON.stringify(graphData)
 
     try {
-      localStorage.setItem('workflow', workflow)
+      localStorage.setItem('workflow', workflowJson)
       if (api.clientId) {
-        sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
+        sessionStorage.setItem(`workflow:${api.clientId}`, workflowJson)
       }
     } catch (error) {
       // Only log our own keys and aggregate stats
@@ -66,7 +65,7 @@ export function useWorkflowPersistence() {
         (key) => key.startsWith('workflow:') || key === 'workflow'
       )
       console.error('QuotaExceededError details:', {
-        workflowSizeKB: Math.round(workflow.length / 1024),
+        workflowSizeKB: Math.round(workflowJson.length / 1024),
         totalStorageItems: Object.keys(sessionStorage).length,
         ourWorkflowKeys: ourKeys.length,
         ourWorkflowSizes: ourKeys.map((key) => ({
@@ -84,7 +83,7 @@ export function useWorkflowPersistence() {
     }
 
     workflowDraftStore.saveDraft(activeWorkflow.path, {
-      data: workflow,
+      data: workflowJson,
       updatedAt: Date.now(),
       name: activeWorkflow.key,
       isTemporary: activeWorkflow.isTemporary
