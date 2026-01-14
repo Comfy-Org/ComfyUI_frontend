@@ -237,6 +237,15 @@ interface ICreatePanelOptions {
   height?: number | string
 }
 
+interface SlotTypeDefaultNodeOpts {
+  node?: string
+  title?: string
+  properties?: Record<string, NodeProperty>
+  inputs?: [string, string][]
+  outputs?: [string, string][]
+  json?: Parameters<LGraphNode['configure']>[0]
+}
+
 const cursors = {
   NE: 'nesw-resize',
   SE: 'nwse-resize',
@@ -6379,15 +6388,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         nodeNewType = slotTypesDefault[fromSlotType]
       }
       if (nodeNewType) {
-        interface SlotTypeDefaultNodeOpts {
-          node?: string
-          title?: string
-          properties?: Record<string, NodeProperty>
-          inputs?: [string, string][]
-          outputs?: [string, string][]
-          json?: Parameters<LGraphNode['configure']>[0]
-        }
-
         let nodeNewOpts: SlotTypeDefaultNodeOpts | undefined
         let nodeTypeStr: string
         if (typeof nodeNewType == 'object') {
