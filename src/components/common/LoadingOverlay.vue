@@ -5,9 +5,11 @@
       class="absolute inset-0 z-50 flex items-center justify-center bg-backdrop/50"
     >
       <div class="flex flex-col items-center">
-        <div class="relative flex items-center justify-center">
-          <div class="animate-spin spinner" />
-          <div class="absolute">
+        <div class="grid place-items-center">
+          <div
+            class="col-start-1 row-start-1 h-12 w-12 animate-spin rounded-full border-4 border-muted-foreground border-t-base-foreground"
+          />
+          <div class="col-start-1 row-start-1">
             <slot />
           </div>
         </div>
@@ -25,13 +27,3 @@ defineProps<{
   loadingMessage?: string
 }>()
 </script>
-
-<style scoped>
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--muted-foreground);
-  border-top-color: var(--base-foreground);
-  border-radius: 50%;
-}
-</style>
