@@ -9,26 +9,42 @@ import FormSelectButton from '@/renderer/extensions/vueNodes/widgets/components/
 
 import LayoutField from './LayoutField.vue'
 
-const { nodes } = defineProps<{ nodes: LGraphNode[] }>()
+/**
+ * Good design limits dependencies and simplifies the interface of the abstraction layer.
+ * Here, we only care about the node id,
+ * and do not concern ourselves with other methods.
+ */
+type PickedNode = Pick<LGraphNode, 'id'>
+
+const { nodes } = defineProps<{ nodes: PickedNode[] }>()
 const emit = defineEmits<{ (e: 'changed'): void }>()
 
 const { t } = useI18n()
 
+const nodeIds = computed(() => nodes.map((node) => node.id.toString()))
+
+/**
+ * Retrieves layout references for all selected nodes from the store.
+ */
+const nodeRefs = computed(() =>
+  nodeIds.value.map((nodeId) => layoutStore.getNodeLayoutRef(nodeId))
+)
+
+/**
+ * Manages the execution mode state for selected nodes.
+ * When getting: returns the common mode if all nodes share the same mode, null otherwise.
+ * When setting: applies the new mode to all selected nodes via the layout store.
+ */
 const nodeState = computed({
   get() {
-    if (nodes.length === 0) return null
+    if (nodeIds.value.length === 0) return null
 
-    const nodeIds = nodes.map((node) => node.id.toString())
-    const modes = nodeIds
-      .map((nodeId) => {
-        const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
-        return nodeRef.value?.mode
-      })
+    const modes = nodeRefs.value
+      .map((nodeRef) => nodeRef.value?.mode)
       .filter((mode): mode is number => mode !== undefined && mode !== null)
 
     if (modes.length === 0) return null
 
-    // For multiple nodes, if all nodes have the same mode, return that mode, otherwise return null
     const firstMode = modes[0]
     const allSame = modes.every((mode) => mode === firstMode)
 
@@ -37,8 +53,7 @@ const nodeState = computed({
   set(value: LGraphNode['mode']) {
     if (value === null || value === undefined) return
 
-    const nodeIds = nodes.map((node) => node.id.toString())
-    layoutStore.setNodesMode(nodeIds, value)
+    layoutStore.setNodesMode(nodeIds.value, value)
     emit('changed')
   }
 })
