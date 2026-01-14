@@ -144,9 +144,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      # Setup pnpm/node to run playwright merge-reports (no browsers needed)
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
 
       - name: Download blob reports
         uses: actions/download-artifact@v4
@@ -158,10 +159,10 @@ jobs:
       - name: Merge into HTML Report
         run: |
           # Generate HTML report
-          pnpm exec playwright merge-reports --reporter=html ./all-blob-reports
+          pnpm dlx @playwright/test merge-reports --reporter=html ./all-blob-reports
           # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          pnpm exec playwright merge-reports --reporter=json ./all-blob-reports
+          pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload HTML report
         uses: actions/upload-artifact@v4

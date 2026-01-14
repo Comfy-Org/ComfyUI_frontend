@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "Обновить определения нод"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "Переименовать рабочий процесс"
+  },
   "Comfy_SaveWorkflow": {
     "label": "Сохранить рабочий процесс"
   },

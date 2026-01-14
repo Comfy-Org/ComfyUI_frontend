@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "Düğüm Tanımlarını Yenile"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "Çalışma Akışını Yeniden Adlandır"
+  },
   "Comfy_SaveWorkflow": {
     "label": "İş Akışını Kaydet"
   },

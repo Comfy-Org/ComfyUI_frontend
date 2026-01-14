@@ -1,6 +1,5 @@
 <template>
   <div
-    v-if="!deletedLocal"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
@@ -139,8 +138,9 @@ const { asset, interactive } = defineProps<{
   interactive?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   select: [asset: AssetDisplayItem]
+  deleted: [asset: AssetDisplayItem]
 }>()
 
 const { t } = useI18n()
@@ -158,7 +158,6 @@ const descId = useId()
 
 const isEditing = ref(false)
 const newNameRef = ref<string>()
-const deletedLocal = ref(false)
 
 const displayName = computed(() => newNameRef.value ?? asset.name)
 
@@ -211,7 +210,7 @@ function confirmDeletion() {
           })
           // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
-          deletedLocal.value = true
+          emit('deleted', asset)
         } catch (err: unknown) {
           console.error(err)
           promptText.value = t('assetBrowser.deletion.failed', {
