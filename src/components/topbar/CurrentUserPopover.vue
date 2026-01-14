@@ -21,114 +21,197 @@
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
         {{ userEmail }}
       </p>
-      <span
+      <!-- <span
         v-if="subscriptionTierName"
         class="my-0 text-xs text-foreground bg-secondary-background-hover rounded-full uppercase px-2 py-0.5 font-bold mt-2"
       >
         {{ subscriptionTierName }}
-      </span>
+      </span> -->
     </div>
 
-    <!-- Credits Section -->
-    <div v-if="isActiveSubscription" class="flex items-center gap-2 px-4 py-2">
-      <i class="icon-[lucide--component] text-amber-400 text-sm" />
-      <Skeleton
-        v-if="authStore.isFetchingBalance"
-        width="4rem"
-        height="1.25rem"
-        class="w-full"
-      />
-      <span v-else class="text-base font-semibold text-base-foreground">{{
-        formattedBalance
-      }}</span>
-      <i
-        v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
-        class="icon-[lucide--circle-help] cursor-help text-base text-muted-foreground mr-auto"
-      />
-      <Button
-        variant="secondary"
-        size="sm"
-        class="text-base-foreground"
-        data-testid="add-credits-button"
-        @click="handleTopUp"
-      >
-        {{ $t('subscription.addCredits') }}
-      </Button>
-    </div>
-
-    <div v-else class="flex justify-center px-4">
-      <SubscribeButton
-        :fluid="false"
-        :label="$t('subscription.subscribeToComfyCloud')"
-        size="sm"
-        variant="gradient"
-        @subscribed="handleSubscribed"
-      />
-    </div>
-
-    <Divider class="my-2 mx-0" />
-
+    <!-- Workspace Selector -->
     <div
-      v-if="isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
-      data-testid="partner-nodes-menu-item"
-      @click="handleOpenPartnerNodesInfo"
+      class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+      @click="toggleWorkspaceSwitcher"
     >
-      <i class="icon-[lucide--tag] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
-        $t('subscription.partnerNodesCredits')
-      }}</span>
+      <div class="flex min-w-0 flex-1 items-center gap-2">
+        <WorkspaceProfilePic
+          class="size-6 shrink-0 text-xs"
+          :workspace-name="workspaceName"
+        />
+        <span class="truncate text-sm text-base-foreground">{{
+          workspaceName
+        }}</span>
+        <div
+          v-if="subscriptionTierName"
+          class="shrink-0 rounded bg-secondary-background-hover px-1.5 py-0.5 text-xs"
+        >
+          {{ subscriptionTierName }}
+        </div>
+        <span v-else class="shrink-0 text-xs text-muted-foreground">
+          {{ $t('workspaceSwitcher.subscribe') }}
+        </span>
+      </div>
+      <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
     </div>
 
+    <Popover
+      ref="workspaceSwitcherPopover"
+      append-to="body"
+      :pt="{
+        content: {
+          class: 'p-0'
+        }
+      }"
+    >
+      <WorkspaceSwitcherPopover
+        @select="workspaceSwitcherPopover?.hide()"
+        @create="handleCreateWorkspace"
+      />
+    </Popover>
+
+    <!-- Credits Section (PERSONAL and OWNER only) -->
+    <template v-if="showCreditsSection">
+      <!-- Subscribed: Show balance + Add credits -->
+      <div
+        v-if="isActiveSubscription && isWorkspaceSubscribed"
+        class="flex items-center gap-2 px-4 py-2"
+      >
+        <i class="icon-[lucide--component] text-sm text-amber-400" />
+        <Skeleton
+          v-if="authStore.isFetchingBalance"
+          width="4rem"
+          height="1.25rem"
+          class="w-full"
+        />
+        <span v-else class="text-base font-semibold text-base-foreground">{{
+          formattedBalance
+        }}</span>
+        <i
+          v-tooltip="{ value: $t('credits.unified.tooltip'), showDelay: 300 }"
+          class="icon-[lucide--circle-help] mr-auto cursor-help text-base text-muted-foreground"
+        />
+        <Button
+          variant="secondary"
+          size="sm"
+          class="text-base-foreground"
+          data-testid="add-credits-button"
+          @click="handleTopUp"
+        >
+          {{ $t('subscription.addCredits') }}
+        </Button>
+      </div>
+
+      <!-- OWNER unsubscribed: Show Subscribe button (primary) -->
+      <div
+        v-else-if="workspaceRole === 'OWNER' && !isWorkspaceSubscribed"
+        class="flex justify-center px-4 py-2"
+      >
+        <Button
+          variant="primary"
+          size="sm"
+          class="w-full"
+          data-testid="subscribe-button"
+          @click="handleOpenPlansAndPricing"
+        >
+          {{ $t('subscription.subscribeNow') }}
+        </Button>
+      </div>
+
+      <!-- PERSONAL unsubscribed: Show gradient SubscribeButton -->
+      <div v-else class="flex justify-center px-4">
+        <SubscribeButton
+          :fluid="false"
+          :label="$t('subscription.subscribeToComfyCloud')"
+          size="sm"
+          variant="gradient"
+          @subscribed="handleSubscribed"
+        />
+      </div>
+
+      <Divider class="mx-0 my-2" />
+    </template>
+
+    <!-- Plans & Pricing (PERSONAL and OWNER only) -->
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      v-if="showPlansAndPricing"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="plans-pricing-menu-item"
       @click="handleOpenPlansAndPricing"
     >
-      <i class="icon-[lucide--receipt-text] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--receipt-text] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.plansAndPricing')
       }}</span>
       <span
         v-if="canUpgrade"
-        class="text-xs font-bold text-base-background bg-base-foreground px-1.5 py-0.5 rounded-full"
+        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
       >
         {{ $t('subscription.upgrade') }}
       </span>
     </div>
 
+    <!-- Manage Plan (PERSONAL and OWNER, only if subscribed) -->
     <div
-      v-if="isActiveSubscription"
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      v-if="showManagePlan"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="manage-plan-menu-item"
       @click="handleOpenPlanAndCreditsSettings"
     >
-      <i class="icon-[lucide--file-text] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--file-text] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.managePlan')
       }}</span>
     </div>
 
+    <!-- Partner Nodes Pricing (always shown) -->
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      data-testid="partner-nodes-menu-item"
+      @click="handleOpenPartnerNodesInfo"
+    >
+      <i class="icon-[lucide--tag] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
+        $t('subscription.partnerNodesCredits')
+      }}</span>
+    </div>
+
+    <Divider class="mx-0 my-2" />
+
+    <!-- Workspace Settings (always shown) -->
+    <div
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
+      data-testid="workspace-settings-menu-item"
+      @click="handleOpenWorkspaceSettings"
+    >
+      <i class="icon-[lucide--users] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
+        $t('userSettings.workspaceSettings')
+      }}</span>
+    </div>
+
+    <!-- Account Settings (always shown) -->
+    <div
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="user-settings-menu-item"
       @click="handleOpenUserSettings"
     >
-      <i class="icon-[lucide--settings-2] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--settings-2] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('userSettings.accountSettings')
       }}</span>
     </div>
 
-    <Divider class="my-2 mx-0" />
+    <Divider class="mx-0 my-2" />
 
+    <!-- Logout (always shown) -->
     <div
-      class="flex items-center gap-2 px-4 py-2 cursor-pointer hover:bg-secondary-background-hover"
+      class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
-      <i class="icon-[lucide--log-out] text-muted-foreground text-sm" />
-      <span class="text-sm text-base-foreground flex-1">{{
+      <i class="icon-[lucide--log-out] text-sm text-muted-foreground" />
+      <span class="flex-1 text-sm text-base-foreground">{{
         $t('auth.signOut.signOut')
       }}</span>
     </div>
@@ -137,12 +220,15 @@
 
 <script setup lang="ts">
 import Divider from 'primevue/divider'
+import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import WorkspaceSwitcherPopover from '@/components/topbar/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
@@ -152,8 +238,17 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+
+const {
+  workspaceName,
+  workspaceRole,
+  isPersonalWorkspace,
+  isWorkspaceSubscribed
+} = useWorkspace()
+const workspaceSwitcherPopover = ref<InstanceType<typeof Popover> | null>(null)
 
 const emit = defineEmits<{
   close: []
@@ -197,8 +292,28 @@ const canUpgrade = computed(() => {
   )
 })
 
+// Menu visibility based on role
+// PERSONAL: Plans & pricing, Manage plan (if subscribed), Partner nodes, Divider, Workspace settings, Account settings, Divider, Log out
+// MEMBER: Partner nodes, Divider, Workspace settings, Account settings, Divider, Log out
+// OWNER (unsubscribed): Plans & pricing, Partner nodes, Divider, Workspace settings, Account settings, Divider, Log out
+// OWNER (subscribed): Plans & pricing, Manage plan, Partner nodes, Divider, Workspace settings, Account settings, Divider, Log out
+const showPlansAndPricing = computed(
+  () => isPersonalWorkspace.value || workspaceRole.value === 'OWNER'
+)
+const showManagePlan = computed(
+  () => showPlansAndPricing.value && isActiveSubscription.value
+)
+const showCreditsSection = computed(
+  () => isPersonalWorkspace.value || workspaceRole.value === 'OWNER'
+)
+
 const handleOpenUserSettings = () => {
   dialogService.showSettingsDialog('user')
+  emit('close')
+}
+
+const handleOpenWorkspaceSettings = () => {
+  dialogService.showSettingsDialog('workspace')
   emit('close')
 }
 
@@ -209,7 +324,7 @@ const handleOpenPlansAndPricing = () => {
 
 const handleOpenPlanAndCreditsSettings = () => {
   if (isCloud) {
-    dialogService.showSettingsDialog('workspace-plan')
+    dialogService.showSettingsDialog('workspace')
   } else {
     dialogService.showSettingsDialog('credits')
   }
@@ -239,6 +354,18 @@ const handleLogout = async () => {
 
 const handleSubscribed = async () => {
   await fetchStatus()
+}
+
+const handleCreateWorkspace = () => {
+  workspaceSwitcherPopover.value?.hide()
+  dialogService.showCreateWorkspaceDialog(() => {
+    // TODO: Implement actual create workspace API call
+  })
+  emit('close')
+}
+
+const toggleWorkspaceSwitcher = (event: MouseEvent) => {
+  workspaceSwitcherPopover.value?.toggle(event)
 }
 
 onMounted(() => {

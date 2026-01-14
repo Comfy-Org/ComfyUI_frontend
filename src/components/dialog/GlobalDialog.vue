@@ -4,7 +4,10 @@
     v-for="item in dialogStore.dialogStack"
     :key="item.key"
     v-model:visible="item.visible"
-    class="global-dialog"
+    :class="[
+      'global-dialog',
+      item.key === 'global-settings' ? 'settings-dialog' : ''
+    ]"
     v-bind="item.dialogComponentProps"
     :pt="item.dialogComponentProps.pt"
     :aria-labelledby="item.key"

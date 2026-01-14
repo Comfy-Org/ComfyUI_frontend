@@ -23,8 +23,8 @@
         class="w-full border-none bg-transparent"
       >
         <template #optiongroup="{ option }">
-          <Divider v-if="option.key !== 'workspace'" class="my-2" />
-          <h3 class="px-2 py-1 text-xs font-semibold uppercase text-muted">
+          <!-- <Divider v-if="option.key !== 'workspace'" class="my-2" /> -->
+          <h3 class="text-xs font-semibold uppercase text-muted m-0 pt-6 pb-2">
             {{ option.label }}
           </h3>
         </template>
@@ -96,8 +96,6 @@ const { defaultPanel } = defineProps<{
     | 'credits'
     | 'subscription'
     | 'workspace'
-    | 'workspace-plan'
-    | 'workspace-members'
 }>()
 
 const {

@@ -12,7 +12,6 @@ import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 
 interface SettingPanelItem {
   node: SettingTreeNode
@@ -30,8 +29,6 @@ export function useSettingUI(
     | 'credits'
     | 'subscription'
     | 'workspace'
-    | 'workspace-plan'
-    | 'workspace-members'
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
@@ -40,7 +37,6 @@ export function useSettingUI(
 
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription } = useSubscription()
-  const { workspaceName } = useWorkspace()
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -162,20 +158,6 @@ export function useSettingUI(
     )
   }
 
-  // Sidebar-only node for Plan & Credits (uses same WorkspacePanel component)
-  const workspacePlanNode: SettingTreeNode = {
-    key: 'workspace-plan',
-    label: 'WorkspacePlan',
-    children: []
-  }
-
-  // Sidebar-only node for Members (uses same WorkspacePanel component)
-  const workspaceMembersNode: SettingTreeNode = {
-    key: 'workspace-members',
-    label: 'WorkspaceMembers',
-    children: []
-  }
-
   const keybindingPanel: SettingPanelItem = {
     node: {
       key: 'keybinding',
@@ -252,8 +234,6 @@ export function useSettingUI(
       label: 'Workspace',
       children: [
         workspacePanel.node,
-        workspacePlanNode,
-        ...(workspaceName.value ? [workspaceMembersNode] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]

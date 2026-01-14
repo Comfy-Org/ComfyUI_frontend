@@ -2,6 +2,12 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
+import CreateWorkspaceDialogContent from '@/components/dialog/content/workspace/CreateWorkspaceDialogContent.vue'
+import DeleteWorkspaceDialogContent from '@/components/dialog/content/workspace/DeleteWorkspaceDialogContent.vue'
+import InviteMemberDialogContent from '@/components/dialog/content/workspace/InviteMemberDialogContent.vue'
+import LeaveWorkspaceDialogContent from '@/components/dialog/content/workspace/LeaveWorkspaceDialogContent.vue'
+import RemoveMemberDialogContent from '@/components/dialog/content/workspace/RemoveMemberDialogContent.vue'
+import RevokeInviteDialogContent from '@/components/dialog/content/workspace/RevokeInviteDialogContent.vue'
 import MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
 import MissingNodesFooter from '@/components/dialog/content/MissingNodesFooter.vue'
 import MissingNodesHeader from '@/components/dialog/content/MissingNodesHeader.vue'
@@ -103,8 +109,6 @@ export const useDialogService = () => {
       | 'credits'
       | 'subscription'
       | 'workspace'
-      | 'workspace-plan'
-      | 'workspace-members'
   ) {
     const props = panel ? { props: { defaultPanel: panel } } : undefined
 
@@ -112,11 +116,6 @@ export const useDialogService = () => {
       key: 'global-settings',
       headerComponent: SettingDialogHeader,
       component: SettingDialogContent,
-      dialogComponentProps: {
-        pt: {
-          root: { class: 'settings-dialog' }
-        }
-      },
       ...props
     })
   }
@@ -126,11 +125,6 @@ export const useDialogService = () => {
       key: 'global-settings',
       headerComponent: SettingDialogHeader,
       component: SettingDialogContent,
-      dialogComponentProps: {
-        pt: {
-          root: { class: 'settings-dialog' }
-        }
-      },
       props: {
         defaultPanel: 'about'
       }
@@ -532,6 +526,106 @@ export const useDialogService = () => {
     show()
   }
 
+  function showLeaveWorkspaceDialog(onConfirm: () => void | Promise<void>) {
+    return dialogStore.showDialog({
+      key: 'leave-workspace',
+      component: LeaveWorkspaceDialogContent,
+      props: { onConfirm },
+      dialogComponentProps: {
+        headless: true,
+        pt: {
+          header: { class: 'p-0! hidden' },
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl' }
+        }
+      }
+    })
+  }
+
+  function showDeleteWorkspaceDialog(onConfirm: () => void | Promise<void>) {
+    return dialogStore.showDialog({
+      key: 'delete-workspace',
+      component: DeleteWorkspaceDialogContent,
+      props: { onConfirm },
+      dialogComponentProps: {
+        headless: true,
+        pt: {
+          header: { class: 'p-0! hidden' },
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl' }
+        }
+      }
+    })
+  }
+
+  function showRemoveMemberDialog(onConfirm: () => void | Promise<void>) {
+    return dialogStore.showDialog({
+      key: 'remove-member',
+      component: RemoveMemberDialogContent,
+      props: { onConfirm },
+      dialogComponentProps: {
+        headless: true,
+        pt: {
+          header: { class: 'p-0! hidden' },
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl' }
+        }
+      }
+    })
+  }
+
+  function showRevokeInviteDialog(onConfirm: () => void | Promise<void>) {
+    return dialogStore.showDialog({
+      key: 'revoke-invite',
+      component: RevokeInviteDialogContent,
+      props: { onConfirm },
+      dialogComponentProps: {
+        headless: true,
+        pt: {
+          header: { class: 'p-0! hidden' },
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl' }
+        }
+      }
+    })
+  }
+
+  function showInviteMemberDialog(
+    onConfirm: (email: string) => void | Promise<void>
+  ) {
+    return dialogStore.showDialog({
+      key: 'invite-member',
+      component: InviteMemberDialogContent,
+      props: { onConfirm },
+      dialogComponentProps: {
+        headless: true,
+        pt: {
+          header: { class: 'p-0! hidden' },
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl max-w-[512px] w-full' }
+        }
+      }
+    })
+  }
+
+  function showCreateWorkspaceDialog(
+    onConfirm: (name: string) => void | Promise<void>
+  ) {
+    return dialogStore.showDialog({
+      key: 'create-workspace',
+      component: CreateWorkspaceDialogContent,
+      props: { onConfirm },
+      dialogComponentProps: {
+        headless: true,
+        pt: {
+          header: { class: 'p-0! hidden' },
+          content: { class: 'p-0! m-0! rounded-2xl' },
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -543,6 +637,12 @@ export const useDialogService = () => {
     showSubscriptionRequiredDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
+    showLeaveWorkspaceDialog,
+    showDeleteWorkspaceDialog,
+    showRemoveMemberDialog,
+    showRevokeInviteDialog,
+    showInviteMemberDialog,
+    showCreateWorkspaceDialog,
     showExtensionDialog,
     prompt,
     showErrorDialog,

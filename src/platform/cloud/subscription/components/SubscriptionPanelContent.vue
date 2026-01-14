@@ -3,66 +3,98 @@
     <div class="rounded-2xl border border-interface-stroke p-6">
       <div>
         <div class="flex items-center justify-between gap-2">
-          <div class="flex flex-col gap-2">
-            <div class="text-sm font-bold text-text-primary">
-              {{ subscriptionTierName }}
+          <!-- OWNER Unsubscribed State -->
+          <template v-if="isOwnerUnsubscribed">
+            <div class="flex flex-col gap-2">
+              <div class="text-sm font-bold text-text-primary">
+                {{ $t('subscription.workspaceNotSubscribed') }}
+              </div>
+              <div class="text-sm text-text-secondary">
+                {{ $t('subscription.subscriptionRequiredMessage') }}
+              </div>
             </div>
-            <div class="flex items-baseline gap-1 font-inter font-semibold">
-              <span class="text-2xl">${{ tierPrice }}</span>
-              <span class="text-base">{{
-                $t('subscription.perMonth')
-              }}</span>
-            </div>
-            <div
-              v-if="isActiveSubscription"
-              class="text-sm text-text-secondary"
+            <Button
+              variant="primary"
+              class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
+              @click="showSubscriptionDialog"
             >
-              <template v-if="isCancelled">
-                {{
-                  $t('subscription.expiresDate', {
-                    date: formattedEndDate
-                  })
-                }}
-              </template>
-              <template v-else>
-                {{
-                  $t('subscription.renewsDate', {
-                    date: formattedRenewalDate
-                  })
-                }}
-              </template>
+              {{ $t('subscription.subscribeNow') }}
+            </Button>
+          </template>
+
+          <!-- Normal Subscribed State -->
+          <template v-else>
+            <div class="flex flex-col gap-2">
+              <div class="text-sm font-bold text-text-primary">
+                {{ subscriptionTierName }}
+              </div>
+              <div class="flex items-baseline gap-1 font-inter font-semibold">
+                <span class="text-2xl">${{ tierPrice }}</span>
+                <span class="text-base">{{ $t('subscription.perMonth') }}</span>
+              </div>
+              <div
+                v-if="isActiveSubscription"
+                class="text-sm text-text-secondary"
+              >
+                <template v-if="isCancelled">
+                  {{
+                    $t('subscription.expiresDate', {
+                      date: formattedEndDate
+                    })
+                  }}
+                </template>
+                <template v-else>
+                  {{
+                    $t('subscription.renewsDate', {
+                      date: formattedRenewalDate
+                    })
+                  }}
+                </template>
+              </div>
             </div>
-          </div>
 
-          <Button
-            v-if="isActiveSubscription"
-            variant="secondary"
-            class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
-            @click="
-              async () => {
-                await authActions.accessBillingPortal()
-              }
-            "
-          >
-            {{ $t('subscription.manageSubscription') }}
-          </Button>
-          <Button
-            v-if="isActiveSubscription"
-            variant="primary"
-            class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
-            @click="showSubscriptionDialog"
-          >
-            {{ $t('subscription.upgradePlan') }}
-          </Button>
+            <template
+              v-if="isActiveSubscription && permissions.canManageSubscription"
+            >
+              <Button
+                variant="secondary"
+                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                @click="
+                  async () => {
+                    await authActions.accessBillingPortal()
+                  }
+                "
+              >
+                {{ $t('subscription.managePayment') }}
+              </Button>
+              <Button
+                variant="primary"
+                class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
+                @click="showSubscriptionDialog"
+              >
+                {{ $t('subscription.upgradePlan') }}
+              </Button>
+              <Button
+                v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                variant="muted-textonly"
+                size="icon"
+                :aria-label="$t('g.moreOptions')"
+                @click="planMenu?.toggle($event)"
+              >
+                <i class="pi pi-ellipsis-h" />
+              </Button>
+              <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
+            </template>
 
-          <SubscribeButton
-            v-else
-            :label="$t('subscription.subscribeNow')"
-            size="sm"
-            :fluid="false"
-            class="text-xs"
-            @subscribed="handleRefresh"
-          />
+            <SubscribeButton
+              v-if="!isActiveSubscription"
+              :label="$t('subscription.subscribeNow')"
+              size="sm"
+              :fluid="false"
+              class="text-xs"
+              @subscribed="handleRefresh"
+            />
+          </template>
         </div>
       </div>
 
@@ -91,13 +123,9 @@
                 <div class="text-sm text-muted">
                   {{ $t('subscription.totalCredits') }}
                 </div>
-                <Skeleton
-                  v-if="isLoadingBalance"
-                  width="8rem"
-                  height="2rem"
-                />
+                <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
                 <div v-else class="text-2xl font-bold">
-                  {{ totalCredits }}
+                  {{ isOwnerUnsubscribed ? '0' : totalCredits }}
                 </div>
               </div>
 
@@ -111,7 +139,9 @@
                         width="5rem"
                         height="1rem"
                       />
-                      <span v-else>{{ includedCreditsDisplay }}</span>
+                      <span v-else>{{
+                        isOwnerUnsubscribed ? '0 / 0' : includedCreditsDisplay
+                      }}</span>
                     </td>
                     <td class="align-middle" :title="creditsRemainingLabel">
                       {{ creditsRemainingLabel }}
@@ -124,7 +154,9 @@
                         width="3rem"
                         height="1rem"
                       />
-                      <span v-else>{{ prepaidCredits }}</span>
+                      <span v-else>{{
+                        isOwnerUnsubscribed ? '0' : prepaidCredits
+                      }}</span>
                     </td>
                     <td
                       class="align-middle"
@@ -146,7 +178,7 @@
                   {{ $t('subscription.viewUsageHistory') }}
                 </a>
                 <Button
-                  v-if="isActiveSubscription"
+                  v-if="isActiveSubscription && !isOwnerUnsubscribed"
                   variant="secondary"
                   class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                   @click="handleAddApiCredits"
@@ -204,8 +236,9 @@
 </template>
 
 <script setup lang="ts">
+import Menu from 'primevue/menu'
 import Skeleton from 'primevue/skeleton'
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -222,10 +255,17 @@ import {
   getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 import { cn } from '@/utils/tailwindUtil'
 
 const authActions = useFirebaseAuthActions()
+const { permissions, isWorkspaceSubscribed, workspaceRole } = useWorkspace()
 const { t, n } = useI18n()
+
+// OWNER with unsubscribed workspace
+const isOwnerUnsubscribed = computed(
+  () => workspaceRole.value === 'OWNER' && !isWorkspaceSubscribed.value
+)
 
 const {
   isActiveSubscription,
@@ -239,6 +279,18 @@ const {
 } = useSubscription()
 
 const { show: showSubscriptionDialog } = useSubscriptionDialog()
+
+const planMenu = ref<InstanceType<typeof Menu> | null>(null)
+
+const planMenuItems = computed(() => [
+  {
+    label: t('subscription.cancelSubscription'),
+    icon: 'pi pi-times',
+    command: async () => {
+      await authActions.accessBillingPortal()
+    }
+  }
+])
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value

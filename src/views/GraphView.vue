@@ -17,6 +17,7 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
+  <WorkspaceCreatedToast />
   <ModelImportProgressDialog />
   <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
@@ -45,6 +46,7 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
+import WorkspaceCreatedToast from '@/components/toast/WorkspaceCreatedToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
