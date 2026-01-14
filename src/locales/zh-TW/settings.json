@@ -369,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "樹狀瀏覽器項目間距"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "分頁列佈局",
+    "options": {
+      "Default": "預設",
+      "Integrated": "整合"
+    },
+    "tooltip": "控制分頁列的佈局。「整合」會將說明和使用者控制項移至分頁列區域。"
+  },
   "Comfy_UseNewMenu": {
     "name": "使用新選單",
     "options": {

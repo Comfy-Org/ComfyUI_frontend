@@ -74,8 +74,22 @@
           "
           :primary-text="getAssetPrimaryText(item.asset)"
           :secondary-text="getAssetSecondaryText(item.asset)"
+          @mouseenter="onAssetEnter(item.asset.id)"
+          @mouseleave="onAssetLeave(item.asset.id)"
+          @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
           @click.stop="emit('select-asset', item.asset)"
-        />
+        >
+          <template v-if="hoveredAssetId === item.asset.id" #actions>
+            <Button
+              variant="secondary"
+              size="icon"
+              :aria-label="t('mediaAsset.actions.moreOptions')"
+              @click.stop="emit('context-menu', $event, item.asset)"
+            >
+              <i class="icon-[lucide--ellipsis] size-4" />
+            </Button>
+          </template>
+        </AssetsListItem>
       </template>
     </VirtualGrid>
   </div>
@@ -111,12 +125,14 @@ const { assets, isSelected } = defineProps<{
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
+  (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
 }>()
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
 const hoveredJobId = ref<string | null>(null)
+const hoveredAssetId = ref<string | null>(null)
 
 type AssetListItem = { key: string; asset: AssetItem }
 
@@ -189,6 +205,16 @@ function onJobEnter(jobId: string) {
 function onJobLeave(jobId: string) {
   if (hoveredJobId.value === jobId) {
     hoveredJobId.value = null
+  }
+}
+
+function onAssetEnter(assetId: string) {
+  hoveredAssetId.value = assetId
+}
+
+function onAssetLeave(assetId: string) {
+  if (hoveredAssetId.value === assetId) {
+    hoveredAssetId.value = null
   }
 }
 

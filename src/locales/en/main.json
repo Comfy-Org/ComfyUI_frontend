@@ -1178,6 +1178,7 @@
     "Queue Selected Output Nodes": "Queue Selected Output Nodes",
     "Redo": "Redo",
     "Refresh Node Definitions": "Refresh Node Definitions",
+    "Rename": "Rename",
     "Save": "Save",
     "Save As": "Save As",
     "Show Settings Dialog": "Show Settings Dialog",
@@ -2084,6 +2085,7 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "uploadSelect": {
       "placeholder": "Select...",
@@ -2313,6 +2315,7 @@
     "filterBy": "Filter by",
     "findInLibrary": "Find it in the {type} section of the models library.",
     "finish": "Finish",
+    "importAnother": "Import Another",
     "genericLinkPlaceholder": "Paste link here",
     "jobId": "Job ID",
     "loadingModels": "Loading {type}...",

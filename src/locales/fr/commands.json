@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "Actualiser les définitions de nœud"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "Renommer le workflow"
+  },
   "Comfy_SaveWorkflow": {
     "label": "Enregistrer le flux de travail"
   },

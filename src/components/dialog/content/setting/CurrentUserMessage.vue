@@ -7,7 +7,7 @@
     pt:text="w-full"
   >
     <div class="flex items-center justify-between">
-      <div>
+      <div data-testid="current-user-indicator">
         {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}
       </div>
       <Button

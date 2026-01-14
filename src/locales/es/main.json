@@ -60,6 +60,7 @@
     "findInLibrary": "Encuéntralo en la sección {type} de la biblioteca de modelos.",
     "finish": "Finalizar",
     "genericLinkPlaceholder": "Pega el enlace aquí",
+    "importAnother": "Importar otro",
     "jobId": "ID de tarea",
     "loadingModels": "Cargando {type}...",
     "maxFileSize": "Tamaño máximo de archivo: {size}",
@@ -1412,6 +1413,7 @@
     "disabledTooltip": "El flujo de trabajo no se encolará automáticamente",
     "execute": "Ejecutar",
     "help": "Ayuda",
+    "helpAndFeedback": "Ayuda y comentarios",
     "hideMenu": "Ocultar menú",
     "instant": "Instantáneo",
     "instantTooltip": "El flujo de trabajo se encolará instantáneamente después de que finalice una generación",
@@ -1519,6 +1521,7 @@
     "Redo": "Rehacer",
     "Refresh Node Definitions": "Actualizar definiciones de nodo",
     "Reinstall": "Reinstalar",
+    "Rename": "Renombrar",
     "Reset View": "Restablecer vista",
     "Resize Selected Nodes": "Redimensionar Nodos Seleccionados",
     "Restart": "Reiniciar",
@@ -2475,6 +2478,7 @@
     "dropPrompt": "Suelta tu archivo o"
   },
   "widgets": {
+    "node2only": "Solo Node 2.0",
     "selectModel": "Seleccionar modelo",
     "uploadSelect": {
       "placeholder": "Seleccionar...",

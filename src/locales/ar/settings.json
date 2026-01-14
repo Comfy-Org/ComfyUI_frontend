@@ -369,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "حشو عناصر مستعرض الشجرة"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "تخطيط شريط التبويبات",
+    "options": {
+      "Default": "افتراضي",
+      "Integrated": "مُدمج"
+    },
+    "tooltip": "يتحكم في تخطيط شريط التبويبات. \"مُدمج\" ينقل عناصر المساعدة والتحكمات الخاصة بالمستخدم إلى منطقة شريط التبويبات."
+  },
   "Comfy_UseNewMenu": {
     "name": "استخدام القائمة الجديدة",
     "options": {
