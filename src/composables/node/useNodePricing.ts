@@ -2,6 +2,17 @@ import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 
+/**
+ * Meshy credit pricing constant.
+ * 1 Meshy credit = $0.04 USD
+ * Change this value to update all Meshy node prices.
+ */
+const MESHY_CREDIT_PRICE_USD = 0.04
+
+/** Convert Meshy credits to USD */
+const meshyCreditsToUsd = (credits: number): number =>
+  credits * MESHY_CREDIT_PRICE_USD
+
 const DEFAULT_NUMBER_OPTIONS: Intl.NumberFormatOptions = {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0
@@ -523,6 +534,54 @@ const calculateTripo3DGenerationPrice = (
 
   const dollars = credits * 0.01
   return formatCreditsLabel(dollars)
+}
+
+/**
+ * Meshy Image to 3D pricing calculator.
+ * Pricing based on should_texture widget:
+ *   - Without texture: 20 credits
+ *   - With texture: 30 credits
+ */
+const calculateMeshyImageToModelPrice = (node: LGraphNode): string => {
+  const shouldTextureWidget = node.widgets?.find(
+    (w) => w.name === 'should_texture'
+  ) as IComboWidget
+
+  if (!shouldTextureWidget) {
+    return formatCreditsRangeLabel(
+      meshyCreditsToUsd(20),
+      meshyCreditsToUsd(30),
+      { note: '(varies with texture)' }
+    )
+  }
+
+  const shouldTexture = String(shouldTextureWidget.value).toLowerCase()
+  const credits = shouldTexture === 'true' ? 30 : 20
+  return formatCreditsLabel(meshyCreditsToUsd(credits))
+}
+
+/**
+ * Meshy Multi-Image to 3D pricing calculator.
+ * Pricing based on should_texture widget:
+ *   - Without texture: 5 credits
+ *   - With texture: 15 credits
+ */
+const calculateMeshyMultiImageToModelPrice = (node: LGraphNode): string => {
+  const shouldTextureWidget = node.widgets?.find(
+    (w) => w.name === 'should_texture'
+  ) as IComboWidget
+
+  if (!shouldTextureWidget) {
+    return formatCreditsRangeLabel(
+      meshyCreditsToUsd(5),
+      meshyCreditsToUsd(15),
+      { note: '(varies with texture)' }
+    )
+  }
+
+  const shouldTexture = String(shouldTextureWidget.value).toLowerCase()
+  const credits = shouldTexture === 'true' ? 15 : 5
+  return formatCreditsLabel(meshyCreditsToUsd(credits))
 }
 
 /**
@@ -1812,6 +1871,27 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     TripoRefineNode: {
       displayPrice: formatCreditsLabel(0.3)
     },
+    MeshyTextToModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(20))
+    },
+    MeshyRefineNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(10))
+    },
+    MeshyImageToModelNode: {
+      displayPrice: calculateMeshyImageToModelPrice
+    },
+    MeshyMultiImageToModelNode: {
+      displayPrice: calculateMeshyMultiImageToModelPrice
+    },
+    MeshyRigModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(5))
+    },
+    MeshyAnimateModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(3))
+    },
+    MeshyTextureNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(10))
+    },
     // Google/Gemini nodes
     GeminiNode: {
       displayPrice: (node: LGraphNode): string => {
@@ -2527,6 +2607,9 @@ export const useNodePricing = () => {
         'animate_in_place'
       ],
       TripoTextureNode: ['texture_quality'],
+      // Meshy nodes
+      MeshyImageToModelNode: ['should_texture'],
+      MeshyMultiImageToModelNode: ['should_texture'],
       // Google/Gemini nodes
       GeminiNode: ['model'],
       GeminiImage2Node: ['resolution'],
