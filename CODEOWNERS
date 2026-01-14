@@ -37,7 +37,7 @@
 /src/components/graph/selectionToolbox/           @Myestery
 
 # Minimap
-/src/renderer/extensions/minimap/                 @jtydhr88 @Myestery 
+/src/renderer/extensions/minimap/                 @jtydhr88 @Myestery
 
 # Workflow Templates
 /src/platform/workflow/templates/                 @Myestery @christian-byrne @comfyui-wiki
@@ -55,8 +55,7 @@
 /src/workbench/extensions/manager/                @viva-jinyi @christian-byrne @ltdrdata
 
 # Translations
-/src/locales/                                     @Yorha4D @KarryCharon @shinshin86 @Comfy-Org/comfy_maintainer @Comfy-org/comfy_frontend_devs
-/src/locales/pt-BR/                               @JonatanAtila @Yorha4D @KarryCharon @shinshin86
+/src/locales/                                     @Comfy-Org/comfy_maintainer @Comfy-org/comfy_frontend_devs
 
 # LLM Instructions (blank on purpose)
 .claude/
