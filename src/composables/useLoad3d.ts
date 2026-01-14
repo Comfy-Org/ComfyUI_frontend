@@ -214,11 +214,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         return modelPath
       }
 
-      let cleanPath = modelPath
+      let cleanPath = modelPath.trim()
       let forcedType: 'output' | 'input' | undefined
 
-      if (modelPath.trim().endsWith('[output]')) {
-        cleanPath = modelPath.replace(/\s*\[output\]$/, '')
+      if (cleanPath.endsWith('[output]')) {
+        cleanPath = cleanPath.replace(/\s*\[output\]$/, '').trim()
         forcedType = 'output'
       }
 
