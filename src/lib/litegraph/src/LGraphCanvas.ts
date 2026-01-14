@@ -7817,7 +7817,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value_element.textContent = str_value ?? ''
 
         value_element.addEventListener('click', function (event) {
-          const values = (options?.values || []) as string[]
+          const values = options?.values || []
           const propname = this.parentElement?.dataset['property']
           const inner_clicked = (v?: string) => {
             this.textContent = v ?? null
