@@ -102,7 +102,7 @@ test.describe('Vue Node Link Interaction', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
+    // await comfyPage.setup()
     await comfyPage.loadWorkflow('vueNodes/simple-triple')
     await comfyPage.vueNodes.waitForNodes()
     await fitToViewInstant(comfyPage)
@@ -992,5 +992,52 @@ test.describe('Vue Node Link Interaction', () => {
       }
       expect(linked).toBe(true)
     })
+  })
+
+  test('Dragging from subgraph input connects to correct slot', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    // Setup workflow with a KSampler node
+    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.waitForGraphNodes(0)
+    await comfyPage.executeCommand('Workspace.SearchBox.Toggle')
+    await comfyPage.nextFrame()
+    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+    await comfyPage.waitForGraphNodes(1)
+
+    // Convert the KSampler node to a subgraph
+    let ksamplerNode = (await comfyPage.getNodeRefsByType('KSampler'))?.[0]
+    await comfyPage.vueNodes.selectNode(String(ksamplerNode.id))
+    await comfyPage.executeCommand('Comfy.Graph.ConvertToSubgraph')
+
+    // Enter the subgraph
+    await comfyPage.vueNodes.enterSubgraph()
+    await fitToViewInstant(comfyPage)
+
+    // Get the KSampler node inside the subgraph
+    ksamplerNode = (await comfyPage.getNodeRefsByType('KSampler', true))?.[0]
+    const positiveInput = await ksamplerNode.getInput(1)
+    const negativeInput = await ksamplerNode.getInput(2)
+
+    const positiveInputPos = await getSlotCenter(
+      comfyPage.page,
+      ksamplerNode.id,
+      1,
+      true
+    )
+
+    const sourceSlot = await comfyPage.getSubgraphInputSlot()
+    const calculatedSourcePos = await sourceSlot.getOpenSlotPosition()
+
+    await comfyMouse.move(calculatedSourcePos)
+    await comfyMouse.drag(positiveInputPos)
+    await comfyMouse.drop()
+
+    // Verify connection went to the correct slot
+    const positiveLinks = await positiveInput.getLinkCount()
+    const negativeLinks = await negativeInput.getLinkCount()
+    expect(positiveLinks).toBe(1)
+    expect(negativeLinks).toBe(0)
   })
 })

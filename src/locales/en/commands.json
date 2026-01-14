@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "Refresh Node Definitions"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "Rename Workflow"
+  },
   "Comfy_SaveWorkflow": {
     "label": "Save Workflow"
   },

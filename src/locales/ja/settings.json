@@ -369,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "ツリーエクスプローラーアイテムのパディング"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "タブバーのレイアウト",
+    "options": {
+      "Default": "デフォルト",
+      "Integrated": "統合"
+    },
+    "tooltip": "タブバーのレイアウトを制御します。「統合」を選択すると、ヘルプとユーザーコントロールがタブバーエリアに移動します。"
+  },
   "Comfy_UseNewMenu": {
     "name": "新しいメニューを使用",
     "options": {

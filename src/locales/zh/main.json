@@ -60,6 +60,7 @@
     "findInLibrary": "模型在模型库的{type}区里",
     "finish": "完成",
     "genericLinkPlaceholder": "粘贴链接到这",
+    "importAnother": "导入其他",
     "jobId": "任务ID",
     "loadingModels": "正在加载{type}...",
     "maxFileSize": "最大文件大小：{size}",
@@ -1412,6 +1413,7 @@
     "disabledTooltip": "工作流将不会自动执行",
     "execute": "执行",
     "help": "说明",
+    "helpAndFeedback": "帮助与反馈",
     "hideMenu": "隐藏菜单",
     "instant": "实时",
     "instantTooltip": "工作流将会在生成完成后立即执行",
@@ -1519,6 +1521,7 @@
     "Redo": "重做",
     "Refresh Node Definitions": "刷新节点定义",
     "Reinstall": "重装",
+    "Rename": "重命名",
     "Reset View": "重置视图",
     "Resize Selected Nodes": "调整选定节点的大小",
     "Restart": "重启",
@@ -2485,6 +2488,7 @@
     "dropPrompt": "将文件拖到此处或"
   },
   "widgets": {
+    "node2only": "仅限 Node 2.0",
     "selectModel": "选择模型",
     "uploadSelect": {
       "placeholder": "请选择...",

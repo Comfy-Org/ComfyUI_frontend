@@ -98,8 +98,8 @@ type ParamsArray<
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
   /** @deprecated Legacy config - unused */
-  align_to_grid?: any
-  links_ontop?: any
+  align_to_grid?: boolean
+  links_ontop?: boolean
 }
 
 export interface GroupNodeWorkflowData {
@@ -842,8 +842,13 @@ export class LGraph
     if (!list_of_graphcanvas) return
 
     for (const c of list_of_graphcanvas) {
-      // eslint-disable-next-line prefer-spread
-      c[action]?.apply(c, params)
+      const method = c[action]
+
+      if (typeof method === 'function') {
+        const args =
+          params == null ? [] : Array.isArray(params) ? params : [params]
+        ;(method as (...args: unknown[]) => unknown).apply(c, args)
+      }
     }
   }
 
@@ -1230,7 +1235,7 @@ export class LGraph
   }
 
   /** @todo Clean up - never implemented. */
-  triggerInput(name: string, value: any): void {
+  triggerInput(name: string, value: unknown): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
       // @ts-expect-error - onTrigger method may not exist on all node types
@@ -1239,7 +1244,7 @@ export class LGraph
   }
 
   /** @todo Clean up - never implemented. */
-  setCallback(name: string, func: any): void {
+  setCallback(name: string, func?: () => void): void {
     const nodes = this.findNodesByTitle(name)
     for (const node of nodes) {
       // @ts-expect-error - setTrigger method may not exist on all node types

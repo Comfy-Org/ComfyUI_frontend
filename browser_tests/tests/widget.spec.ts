@@ -194,7 +194,10 @@ test.describe('Image widget', () => {
     const comboEntry = comfyPage.page.getByRole('menuitem', {
       name: 'image32x32.webp'
     })
-    await comboEntry.click({ noWaitAfter: true })
+    await comboEntry.click()
+
+    // Stabilization for the image swap
+    await comfyPage.nextFrame()
 
     // Expect the image preview to change automatically
     await expect(comfyPage.canvas).toHaveScreenshot(

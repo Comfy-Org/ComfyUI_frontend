@@ -60,6 +60,7 @@
     "findInLibrary": "Найдите это в разделе {type} библиотеки моделей.",
     "finish": "Готово",
     "genericLinkPlaceholder": "Вставьте ссылку сюда",
+    "importAnother": "Импортировать другой",
     "jobId": "ID задачи",
     "loadingModels": "Загрузка {type}...",
     "maxFileSize": "Максимальный размер файла: {size}",
@@ -1412,6 +1413,7 @@
     "disabledTooltip": "Рабочий процесс не будет автоматически помещён в очередь",
     "execute": "Выполнить",
     "help": "Справка",
+    "helpAndFeedback": "Помощь и обратная связь",
     "hideMenu": "Скрыть меню",
     "instant": "Мгновенно",
     "instantTooltip": "Рабочий процесс будет помещён в очередь сразу же после завершения генерации",
@@ -1519,6 +1521,7 @@
     "Redo": "Повторить",
     "Refresh Node Definitions": "Обновить определения нод",
     "Reinstall": "Переустановить",
+    "Rename": "Переименовать",
     "Reset View": "Сбросить вид",
     "Resize Selected Nodes": "Изменить размер выбранных узлов",
     "Restart": "Перезапустить",
@@ -2475,6 +2478,7 @@
     "dropPrompt": "Перетащите ваш файл или"
   },
   "widgets": {
+    "node2only": "Только Node 2.0",
     "selectModel": "Выбрать модель",
     "uploadSelect": {
       "placeholder": "Выбрать...",

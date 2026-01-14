@@ -1159,6 +1159,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.34.1'
   },
   {
+    id: 'Comfy.RightSidePanel.IsOpen',
+    name: 'Right side panel open state',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.37.0'
+  },
+  {
     id: 'Comfy.Queue.QPOV2',
     name: 'Queue Panel V2',
     type: 'hidden',

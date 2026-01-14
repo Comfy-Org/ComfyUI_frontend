@@ -15,9 +15,12 @@ import type {
 interface Props {
   items: DropdownItem[]
   isSelected: (item: DropdownItem, index: number) => boolean
-  isQuerying: boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
+  searcher?: (
+    query: string,
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<void>
 }
 
 defineProps<Props>()
@@ -50,7 +53,7 @@ const searchQuery = defineModel<string>('searchQuery')
       v-model:sort-selected="sortSelected"
       v-model:search-query="searchQuery"
       :sort-options="sortOptions"
-      :is-querying="isQuerying"
+      :searcher
     />
     <!-- List -->
     <div class="relative flex h-full mt-2 overflow-y-scroll">

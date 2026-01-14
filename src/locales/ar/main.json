@@ -60,6 +60,7 @@
     "findInLibrary": "ابحث عنه في قسم {type} من مكتبة النماذج.",
     "finish": "إنهاء",
     "genericLinkPlaceholder": "الصق الرابط هنا",
+    "importAnother": "استيراد آخر",
     "jobId": "معرّف المهمة",
     "loadingModels": "جارٍ تحميل {type}...",
     "maxFileSize": "الحد الأقصى لحجم الملف: {size}",
@@ -1412,6 +1413,7 @@
     "disabledTooltip": "لن يتم وضع سير العمل في قائمة الانتظار تلقائيًا",
     "execute": "تنفيذ",
     "help": "مساعدة",
+    "helpAndFeedback": "المساعدة والتعليقات",
     "hideMenu": "إخفاء القائمة",
     "instant": "فوري",
     "instantTooltip": "سيتم وضع سير العمل في قائمة الانتظار فور انتهاء التوليد",
@@ -1519,6 +1521,7 @@
     "Redo": "إعادة",
     "Refresh Node Definitions": "تحديث تعريفات العقد",
     "Reinstall": "إعادة التثبيت",
+    "Rename": "إعادة التسمية",
     "Reset View": "إعادة تعيين العرض",
     "Resize Selected Nodes": "تغيير حجم العقد المحددة",
     "Restart": "إعادة التشغيل",
@@ -2475,6 +2478,7 @@
     "dropPrompt": "أسقط ملفك أو"
   },
   "widgets": {
+    "node2only": "فقط Node 2.0",
     "selectModel": "اختر نموذج",
     "uploadSelect": {
       "placeholder": "اختر...",

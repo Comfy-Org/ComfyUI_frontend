@@ -50,7 +50,7 @@ const togglePopover = (event: Event) => {
         variant="textonly"
         size="sm"
         class="h-4 w-7 self-center rounded-xl bg-blue-100/30 p-0"
-        @pointerdown.stop.prevent="togglePopover"
+        @click.stop.prevent="togglePopover"
       >
         <i :class="`${controlButtonIcon} text-blue-100 text-xs size-3.5`" />
       </Button>

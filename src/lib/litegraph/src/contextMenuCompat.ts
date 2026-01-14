@@ -81,6 +81,7 @@ class LegacyMenuCompat {
         return currentImpl
       },
       set: (newImpl: LGraphCanvas[K]) => {
+        if (!newImpl) return
         const fnKey = `${methodName as string}:${newImpl.toString().slice(0, 100)}`
         if (!this.hasWarned.has(fnKey) && this.currentExtension) {
           this.hasWarned.add(fnKey)

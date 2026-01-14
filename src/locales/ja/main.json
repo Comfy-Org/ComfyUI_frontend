@@ -60,6 +60,7 @@
     "findInLibrary": "モデルライブラリの{type}セクションで見つけることができます。",
     "finish": "完了",
     "genericLinkPlaceholder": "ここにリンクを貼り付けてください",
+    "importAnother": "別のファイルをインポート",
     "jobId": "ジョブID",
     "loadingModels": "{type}を読み込み中...",
     "maxFileSize": "最大ファイルサイズ：{size}",
@@ -1412,6 +1413,7 @@
     "disabledTooltip": "ワークフローは自動的にキューに追加されません",
     "execute": "実行",
     "help": "ヘルプ",
+    "helpAndFeedback": "ヘルプとフィードバック",
     "hideMenu": "メニューを隠す",
     "instant": "即時",
     "instantTooltip": "生成完了後すぐにキューに追加",
@@ -1519,6 +1521,7 @@
     "Redo": "やり直す",
     "Refresh Node Definitions": "ノード定義を更新",
     "Reinstall": "再インストール",
+    "Rename": "名前を変更",
     "Reset View": "ビューをリセット",
     "Resize Selected Nodes": "選択したノードのサイズ変更",
     "Restart": "再起動",
@@ -2475,6 +2478,7 @@
     "dropPrompt": "ファイルをドロップするか"
   },
   "widgets": {
+    "node2only": "Node 2.0専用",
     "selectModel": "モデルを選択",
     "uploadSelect": {
       "placeholder": "選択...",

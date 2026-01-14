@@ -60,6 +60,7 @@
     "findInLibrary": "모델 라이브러리의 {type} 섹션에서 찾을 수 있습니다.",
     "finish": "완료",
     "genericLinkPlaceholder": "여기에 링크를 붙여넣으세요",
+    "importAnother": "다른 항목 가져오기",
     "jobId": "작업 ID",
     "loadingModels": "{type} 불러오는 중...",
     "maxFileSize": "최대 파일 크기: {size}",
@@ -1412,6 +1413,7 @@
     "disabledTooltip": "워크플로 작업을 자동으로 실행 대기열에 추가하지 않습니다.",
     "execute": "실행",
     "help": "도움말",
+    "helpAndFeedback": "도움말 및 피드백",
     "hideMenu": "메뉴 숨기기",
     "instant": "즉시",
     "instantTooltip": "워크플로 실행이 완료되면 즉시 실행 대기열에 추가합니다.",
@@ -1519,6 +1521,7 @@
     "Redo": "다시 실행",
     "Refresh Node Definitions": "노드 정의 새로 고침",
     "Reinstall": "재설치",
+    "Rename": "이름 바꾸기",
     "Reset View": "보기 초기화",
     "Resize Selected Nodes": "선택된 노드 크기 조정",
     "Restart": "재시작",
@@ -2475,6 +2478,7 @@
     "dropPrompt": "파일을 끌어다 놓거나"
   },
   "widgets": {
+    "node2only": "Node 2.0 전용",
     "selectModel": "모델 선택",
     "uploadSelect": {
       "placeholder": "선택...",

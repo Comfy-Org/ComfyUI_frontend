@@ -254,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "ノード定義を更新"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "ワークフローの名前を変更"
+  },
   "Comfy_SaveWorkflow": {
     "label": "ワークフローを保存する"
   },

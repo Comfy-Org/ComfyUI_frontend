@@ -189,6 +189,26 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.RenameWorkflow',
+      icon: 'pi pi-pencil',
+      label: 'Rename Workflow',
+      menubarLabel: 'Rename',
+      function: async () => {
+        const workflow = workflowStore.activeWorkflow
+        if (!workflow || !workflow.isPersisted) return
+
+        const newName = await dialogService.prompt({
+          title: t('g.rename'),
+          message: t('workflowService.enterFilename') + ':',
+          defaultValue: workflow.filename
+        })
+        if (!newName || newName === workflow.filename) return
+
+        const newPath = workflow.directory + '/' + newName + '.json'
+        await workflowService.renameWorkflow(workflow, newPath)
+      }
+    },
+    {
       id: 'Comfy.ExportWorkflow',
       icon: 'pi pi-download',
       label: 'Export Workflow',
@@ -1215,7 +1235,12 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
       label: 'toggle linear mode',
-      function: () => (canvasStore.linearMode = !canvasStore.linearMode)
+      function: () => {
+        const newMode = !canvasStore.linearMode
+        app.rootGraph.extra.linearMode = newMode
+        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        canvasStore.linearMode = newMode
+      }
     }
   ]
 

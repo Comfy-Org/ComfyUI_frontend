@@ -1,10 +1,10 @@
 <template>
   <WidgetLayoutField :widget>
-    <Select
+    <SelectPlus
       v-model="modelValue"
       :invalid
       :filter="selectOptions.length > 4"
-      :auto-filter-focus="selectOptions.length > 4"
+      auto-filter-focus
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
@@ -25,9 +25,9 @@
 </template>
 
 <script setup lang="ts">
-import Select from 'primevue/select'
 import { computed } from 'vue'
 
+import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'

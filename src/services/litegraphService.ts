@@ -50,6 +50,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -674,7 +675,8 @@ export const useLitegraphService = () => {
         const input = this.inputs.find(
           (inp) => inp.widget?.name === overWidget.name
         )
-        if (input)
+
+        if (input) {
           options.unshift({
             content: `${t('contextMenu.RenameWidget')}: ${overWidget.label ?? overWidget.name}`,
             callback: async () => {
@@ -690,6 +692,22 @@ export const useLitegraphService = () => {
               useCanvasStore().canvas?.setDirty(true)
             }
           })
+        }
+
+        const favoritedWidgetsStore = useFavoritedWidgetsStore()
+        const isFavorited = favoritedWidgetsStore.isFavorited(
+          this,
+          overWidget.name
+        )
+        options.unshift({
+          content: isFavorited
+            ? `${t('contextMenu.UnfavoriteWidget')}: ${overWidget.label ?? overWidget.name}`
+            : `${t('contextMenu.FavoriteWidget')}: ${overWidget.label ?? overWidget.name}`,
+          callback: () => {
+            favoritedWidgetsStore.toggleFavorite(this, overWidget.name)
+          }
+        })
+
         if (this.graph && !this.graph.isRootGraph) {
           addWidgetPromotionOptions(options, overWidget, this)
         }
