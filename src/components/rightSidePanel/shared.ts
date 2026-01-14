@@ -1,0 +1,271 @@
+import type { InjectionKey, MaybeRefOrGetter } from 'vue'
+import { computed, toValue } from 'vue'
+
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
+
+export const GetNodeParentGroupKey: InjectionKey<
+  (node: LGraphNode) => LGraphGroup | null
+> = Symbol('getNodeParentGroup')
+
+export type NodeWidgetsList = Array<{ node: LGraphNode; widget: IBaseWidget }>
+export type NodeWidgetsListList = Array<{
+  node: LGraphNode
+  widgets: NodeWidgetsList
+}>
+
+/**
+ * Searches widgets in a list and returns search results.
+ * Filters by name, localized label, type, and user-input value.
+ * Performs basic tokenization of the query string.
+ */
+export function searchWidgets<T extends { widget: IBaseWidget }[]>(
+  list: T,
+  query: string
+): T {
+  if (query.trim() === '') {
+    return list
+  }
+  const words = query.trim().toLowerCase().split(' ')
+  return list.filter(({ widget }) => {
+    const label = widget.label?.toLowerCase()
+    const name = widget.name.toLowerCase()
+    const type = widget.type.toLowerCase()
+    const value = widget.value?.toString().toLowerCase()
+    return words.every(
+      (word) =>
+        name.includes(word) ||
+        label?.includes(word) ||
+        type?.includes(word) ||
+        value?.includes(word)
+    )
+  }) as T
+}
+
+/**
+ * Searches widgets and nodes in a list and returns search results.
+ * First checks if the node title matches the query (if so, keeps entire node).
+ * Otherwise, filters widgets using searchWidgets.
+ * Performs basic tokenization of the query string.
+ */
+export function searchWidgetsAndNodes(
+  list: NodeWidgetsListList,
+  query: string
+): NodeWidgetsListList {
+  if (query.trim() === '') {
+    return list
+  }
+  const words = query.trim().toLowerCase().split(' ')
+  return list
+    .map((item) => {
+      const { node } = item
+      const title = node.getTitle().toLowerCase()
+      if (words.every((word) => title.includes(word))) {
+        return { ...item, keep: true }
+      }
+      return {
+        ...item,
+        keep: false,
+        widgets: searchWidgets(item.widgets, query)
+      }
+    })
+    .filter((item) => item.keep || item.widgets.length > 0)
+}
+
+type MixedSelectionItem = LGraphGroup | LGraphNode
+type FlatAndCategorizeSelectedItemsResult = {
+  all: MixedSelectionItem[]
+  nodes: LGraphNode[]
+  groups: LGraphGroup[]
+  others: Positionable[]
+  nodeToParentGroup: Map<LGraphNode, LGraphGroup>
+}
+
+type FlatItemsContext = {
+  nodeToParentGroup: Map<LGraphNode, LGraphGroup>
+  depth: number
+  parentGroup?: LGraphGroup
+}
+
+/**
+ * The selected items may contain "Group" nodes, which can include child nodes.
+ * This function flattens such structures and categorizes items into:
+ * - all: all categorizable nodes (does not include nodes in "others")
+ * - nodes: node items
+ * - groups: group items
+ * - others: items not currently supported
+ * - nodeToParentGroup: a map from each node to its direct parent group (if any)
+ * @param items The selected items to flatten and categorize
+ * @returns An object containing arrays: all, nodes, groups, others, and nodeToParentGroup map
+ */
+export function flatAndCategorizeSelectedItems(
+  items: Positionable[]
+): FlatAndCategorizeSelectedItemsResult {
+  const ctx: FlatItemsContext = {
+    nodeToParentGroup: new Map<LGraphNode, LGraphGroup>(),
+    depth: 0
+  }
+  const { all, nodes, groups, others } = flatItems(items, ctx)
+  return {
+    all: repeatItems(all),
+    nodes: repeatItems(nodes),
+    groups: repeatItems(groups),
+    others: repeatItems(others),
+    nodeToParentGroup: ctx.nodeToParentGroup
+  }
+}
+
+export function useFlatAndCategorizeSelectedItems(
+  items: MaybeRefOrGetter<Positionable[]>
+) {
+  const result = computed(() => flatAndCategorizeSelectedItems(toValue(items)))
+
+  return {
+    flattedItems: computed(() => result.value.all),
+    selectedNodes: computed(() => result.value.nodes),
+    selectedGroups: computed(() => result.value.groups),
+    selectedOthers: computed(() => result.value.others),
+    nodeToParentGroup: computed(() => result.value.nodeToParentGroup)
+  }
+}
+
+function flatItems(
+  items: Positionable[],
+  ctx: FlatItemsContext
+): Omit<FlatAndCategorizeSelectedItemsResult, 'nodeToParentGroup'> {
+  const result: MixedSelectionItem[] = []
+  const nodes: LGraphNode[] = []
+  const groups: LGraphGroup[] = []
+  const others: Positionable[] = []
+
+  if (ctx.depth > 1000) {
+    return {
+      all: [],
+      nodes: [],
+      groups: [],
+      others: []
+    }
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i] as Positionable
+
+    if (isLGraphGroup(item)) {
+      result.push(item)
+      groups.push(item)
+
+      const children = Array.from(item.children)
+      const childCtx: FlatItemsContext = {
+        nodeToParentGroup: ctx.nodeToParentGroup,
+        depth: ctx.depth + 1,
+        parentGroup: item
+      }
+      const {
+        all: childAll,
+        nodes: childNodes,
+        groups: childGroups,
+        others: childOthers
+      } = flatItems(children, childCtx)
+      result.push(...childAll)
+      nodes.push(...childNodes)
+      groups.push(...childGroups)
+      others.push(...childOthers)
+    } else if (isLGraphNode(item)) {
+      result.push(item)
+      nodes.push(item)
+      if (ctx.parentGroup) {
+        ctx.nodeToParentGroup.set(item, ctx.parentGroup)
+      }
+    } else {
+      // Other types of items are not supported yet
+      // Do not add to all
+      others.push(item)
+    }
+  }
+  return {
+    all: result,
+    nodes,
+    groups,
+    others
+  }
+}
+
+function repeatItems<T>(items: T[]): T[] {
+  const itemSet = new Set<T>()
+  const result: T[] = []
+  for (const item of items) {
+    if (itemSet.has(item)) continue
+    itemSet.add(item)
+    result.push(item)
+  }
+  return result
+}
+
+/**
+ * Renames a widget and its corresponding input.
+ * Handles both regular widgets and proxy widgets in subgraphs.
+ *
+ * @param widget The widget to rename
+ * @param node The node containing the widget
+ * @param newLabel The new label for the widget (empty string or undefined to clear)
+ * @param parents Optional array of parent SubgraphNodes (for proxy widgets)
+ * @returns true if the rename was successful, false otherwise
+ */
+export function renameWidget(
+  widget: IBaseWidget,
+  node: LGraphNode,
+  newLabel: string,
+  parents?: SubgraphNode[]
+): boolean {
+  // For proxy widgets in subgraphs, we need to rename the original interior widget
+  if (isProxyWidget(widget) && parents?.length) {
+    const subgraph = parents[0].subgraph
+    if (!subgraph) {
+      console.error('Could not find subgraph for proxy widget')
+      return false
+    }
+    const interiorNode = subgraph.getNodeById(parseInt(widget._overlay.nodeId))
+
+    if (!interiorNode) {
+      console.error('Could not find interior node for proxy widget')
+      return false
+    }
+
+    const originalWidget = interiorNode.widgets?.find(
+      (w) => w.name === widget._overlay.widgetName
+    )
+
+    if (!originalWidget) {
+      console.error('Could not find original widget for proxy widget')
+      return false
+    }
+
+    // Rename the original widget
+    originalWidget.label = newLabel || undefined
+
+    // Also rename the corresponding input on the interior node
+    const interiorInput = interiorNode.inputs?.find(
+      (inp) => inp.widget?.name === widget._overlay.widgetName
+    )
+    if (interiorInput) {
+      interiorInput.label = newLabel || undefined
+    }
+  }
+
+  // Always rename the widget on the current node (either regular widget or proxy widget)
+  const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
+
+  // Intentionally mutate the widget object here as it's a reference
+  // to the actual widget in the graph
+  widget.label = newLabel || undefined
+  if (input) {
+    input.label = newLabel || undefined
+  }
+
+  return true
+}

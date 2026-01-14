@@ -104,7 +104,7 @@ function widgetWithVueTrack(
     return { get() {}, set() {} }
   })
 }
-export function useReactiveWidgetValue(widget: IBaseWidget) {
+function useReactiveWidgetValue(widget: IBaseWidget) {
   widgetWithVueTrack(widget)
   widget.vueTrack()
   return widget.value
@@ -120,10 +120,57 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
     update: (value) => (cagWidget.value = normalizeControlOption(value))
   }
 }
+
 function getNodeType(node: LGraphNode, widget: IBaseWidget) {
   if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
   const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)
   return subNode?.type
+}
+
+/**
+ * Shared widget enhancements used by both safeWidgetMapper and Right Side Panel
+ */
+interface SharedWidgetEnhancements {
+  /** Reactive widget value that updates when the widget changes */
+  value: WidgetValue
+  /** Control widget for seed randomization/increment/decrement */
+  controlWidget?: SafeControlWidget
+  /** Input specification from node definition */
+  spec?: InputSpec
+  /** Node type (for subgraph promoted widgets) */
+  nodeType?: string
+  /** Border style for promoted/advanced widgets */
+  borderStyle?: string
+  /** Widget label */
+  label?: string
+  /** Widget options */
+  options?: Record<string, any>
+}
+
+/**
+ * Extracts common widget enhancements shared across different rendering contexts.
+ * This function centralizes the logic for extracting metadata and reactive values
+ * from widgets, ensuring consistency between Nodes 2.0 and Right Side Panel.
+ */
+export function getSharedWidgetEnhancements(
+  node: LGraphNode,
+  widget: IBaseWidget
+): SharedWidgetEnhancements {
+  const nodeDefStore = useNodeDefStore()
+
+  return {
+    value: useReactiveWidgetValue(widget),
+    controlWidget: getControlWidget(widget),
+    spec: nodeDefStore.getInputSpecForWidget(node, widget.name),
+    nodeType: getNodeType(node, widget),
+    borderStyle: widget.promoted
+      ? 'ring ring-component-node-widget-promoted'
+      : widget.advanced
+        ? 'ring ring-component-node-widget-advanced'
+        : undefined,
+    label: widget.label,
+    options: widget.options
+  }
 }
 
 /**
@@ -161,16 +208,13 @@ export function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
-  const nodeDefStore = useNodeDefStore()
   return function (widget) {
     try {
-      const spec = nodeDefStore.getInputSpecForWidget(node, widget.name)
+      // Get shared enhancements used by both Nodes 2.0 and Right Side Panel
+      const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
       const slotInfo = slotMetadata.get(widget.name)
-      const borderStyle = widget.promoted
-        ? 'ring ring-component-node-widget-promoted'
-        : widget.advanced
-          ? 'ring ring-component-node-widget-advanced'
-          : undefined
+
+      // Wrapper callback specific to Nodes 2.0 rendering
       const callback = (v: unknown) => {
         const value = normalizeWidgetValue(v)
         widget.value = value ?? undefined
@@ -185,16 +229,10 @@ export function safeWidgetMapper(
       return {
         name: widget.name,
         type: widget.type,
-        value: useReactiveWidgetValue(widget),
-        borderStyle,
+        ...sharedEnhancements,
         callback,
-        controlWidget: getControlWidget(widget),
         hasLayoutSize: typeof widget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget),
-        label: widget.label,
-        nodeType: getNodeType(node, widget),
-        options: widget.options,
-        spec,
         slotMetadata: slotInfo
       }
     } catch (error) {
