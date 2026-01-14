@@ -4,6 +4,7 @@ import type { TagsInputItemDeleteProps } from 'reka-ui'
 import { TagsInputItemDelete, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const props = defineProps<
@@ -19,15 +20,15 @@ const forwardedProps = useForwardProps(delegatedProps)
 <template>
   <TagsInputItemDelete
     v-bind="forwardedProps"
+    :as="Button"
+    variant="textonly"
+    size="icon-sm"
     :class="
-      cn(
-        'mr-1 flex rounded bg-transparent text-muted-foreground transition-colors hover:text-base-foreground focus:outline-none',
-        props.class
-      )
+      cn('opacity-60 hover:bg-transparent hover:opacity-100', props.class)
     "
   >
     <slot>
-      <i class="icon-[lucide--x] size-3.5" />
+      <i class="icon-[lucide--x] size-4" />
     </slot>
   </TagsInputItemDelete>
 </template>

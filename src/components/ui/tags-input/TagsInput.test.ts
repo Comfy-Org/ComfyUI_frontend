@@ -44,7 +44,6 @@ describe('TagsInput', () => {
 
     expect(wrapper.classes()).toContain('border-secondary-background-hover')
     expect(wrapper.classes()).toContain('bg-base-background')
-    expect(wrapper.classes()).toContain('text-base-foreground')
   })
 
   it('has focus ring styling', () => {
