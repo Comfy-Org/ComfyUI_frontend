@@ -1,5 +1,7 @@
 import type { InjectionKey, MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
+import Fuse from 'fuse.js'
+import type { IFuseOptions } from 'fuse.js'
 
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
@@ -19,10 +21,17 @@ export type NodeWidgetsListList = Array<{
   widgets: NodeWidgetsList
 }>
 
+type WidgetSearchItem<T extends { widget: IBaseWidget }> = T & {
+  searchableLabel: string
+  searchableName: string
+  searchableType: string
+  searchableValue: string
+}
+
 /**
- * Searches widgets in a list and returns search results.
+ * Searches widgets in a list using fuzzy search and returns search results.
+ * Uses Fuse.js for better matching with typo tolerance and relevance ranking.
  * Filters by name, localized label, type, and user-input value.
- * Performs basic tokenization of the query string.
  */
 export function searchWidgets<T extends { widget: IBaseWidget }[]>(
   list: T,
@@ -31,27 +40,59 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
   if (query.trim() === '') {
     return list
   }
-  const words = query.trim().toLowerCase().split(' ')
-  return list.filter(({ widget }) => {
-    const label = widget.label?.toLowerCase()
-    const name = widget.name.toLowerCase()
-    const type = widget.type.toLowerCase()
-    const value = widget.value?.toString().toLowerCase()
-    return words.every(
-      (word) =>
-        name.includes(word) ||
-        label?.includes(word) ||
-        type?.includes(word) ||
-        value?.includes(word)
-    )
-  }) as T
+
+  const itemToSearchable = new Map<T[number], WidgetSearchItem<T[number]>>()
+  const searchableList: WidgetSearchItem<T[number]>[] = list.map((item) => {
+    const searchableItem = {
+      ...item,
+      searchableLabel: item.widget.label?.toLowerCase() || '',
+      searchableName: item.widget.name.toLowerCase(),
+      searchableType: item.widget.type.toLowerCase(),
+      searchableValue: item.widget.value?.toString().toLowerCase() || ''
+    }
+    itemToSearchable.set(item, searchableItem)
+    return searchableItem
+  })
+
+  const fuseOptions: IFuseOptions<WidgetSearchItem<T[number]>> = {
+    keys: [
+      { name: 'searchableName', weight: 0.4 },
+      { name: 'searchableLabel', weight: 0.3 },
+      { name: 'searchableValue', weight: 0.3 },
+      { name: 'searchableType', weight: 0.2 }
+    ],
+    threshold: 0.3,
+    includeScore: true
+  }
+
+  const fuse = new Fuse(searchableList, fuseOptions)
+  const results = fuse.search(query.trim())
+
+  const matchedItems = new Set(
+    results.map((result) => {
+      for (const [original, searchable] of itemToSearchable.entries()) {
+        if (searchable === result.item) {
+          return original
+        }
+      }
+      return result.item as T[number]
+    })
+  )
+
+  return list.filter((item) => matchedItems.has(item)) as T
+}
+
+type NodeSearchItem = {
+  node: LGraphNode
+  widgets: NodeWidgetsList
+  searchableTitle: string
 }
 
 /**
- * Searches widgets and nodes in a list and returns search results.
+ * Searches widgets and nodes in a list using fuzzy search and returns search results.
+ * Uses Fuse.js for node title matching with typo tolerance and relevance ranking.
  * First checks if the node title matches the query (if so, keeps entire node).
  * Otherwise, filters widgets using searchWidgets.
- * Performs basic tokenization of the query string.
  */
 export function searchWidgetsAndNodes(
   list: NodeWidgetsListList,
@@ -60,12 +101,27 @@ export function searchWidgetsAndNodes(
   if (query.trim() === '') {
     return list
   }
-  const words = query.trim().toLowerCase().split(' ')
+
+  const searchableList: NodeSearchItem[] = list.map((item) => ({
+    ...item,
+    searchableTitle: item.node.getTitle().toLowerCase()
+  }))
+
+  const fuseOptions: IFuseOptions<NodeSearchItem> = {
+    keys: [{ name: 'searchableTitle', weight: 1.0 }],
+    threshold: 0.3,
+    includeScore: true
+  }
+
+  const fuse = new Fuse(searchableList, fuseOptions)
+  const nodeMatches = fuse.search(query.trim())
+  const matchedNodeIds = new Set(
+    nodeMatches.map((result) => result.item.node.id)
+  )
+
   return list
     .map((item) => {
-      const { node } = item
-      const title = node.getTitle().toLowerCase()
-      if (words.every((word) => title.includes(word))) {
+      if (matchedNodeIds.has(item.node.id)) {
         return { ...item, keep: true }
       }
       return {
