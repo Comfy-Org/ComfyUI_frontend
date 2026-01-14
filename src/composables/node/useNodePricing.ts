@@ -209,13 +209,24 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
   const resolutionWidget = node.widgets?.find(
     (w) => w.name === 'resolution'
   ) as IComboWidget
+  const generateAudioWidget = node.widgets?.find(
+    (w) => w.name === 'generate_audio'
+  ) as IComboWidget | undefined
 
   if (!modelWidget || !durationWidget || !resolutionWidget) return 'Token-based'
 
   const model = String(modelWidget.value).toLowerCase()
   const resolution = String(resolutionWidget.value).toLowerCase()
   const seconds = parseFloat(String(durationWidget.value))
+  const generateAudio =
+    generateAudioWidget &&
+    String(generateAudioWidget.value).toLowerCase() === 'true'
   const priceByModel: Record<string, Record<string, [number, number]>> = {
+    'seedance-1-5-pro': {
+      '480p': [0.12, 0.12],
+      '720p': [0.26, 0.26],
+      '1080p': [0.58, 0.59]
+    },
     'seedance-1-0-pro': {
       '480p': [0.23, 0.24],
       '720p': [0.51, 0.56],
@@ -233,13 +244,15 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     }
   }
 
-  const modelKey = model.includes('seedance-1-0-pro-fast')
-    ? 'seedance-1-0-pro-fast'
-    : model.includes('seedance-1-0-pro')
-      ? 'seedance-1-0-pro'
-      : model.includes('seedance-1-0-lite')
-        ? 'seedance-1-0-lite'
-        : ''
+  const modelKey = model.includes('seedance-1-5-pro')
+    ? 'seedance-1-5-pro'
+    : model.includes('seedance-1-0-pro-fast')
+      ? 'seedance-1-0-pro-fast'
+      : model.includes('seedance-1-0-pro')
+        ? 'seedance-1-0-pro'
+        : model.includes('seedance-1-0-lite')
+          ? 'seedance-1-0-lite'
+          : ''
 
   const resKey = resolution.includes('1080')
     ? '1080p'
@@ -255,8 +268,10 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
 
   const [min10s, max10s] = baseRange
   const scale = seconds / 10
-  const minCost = min10s * scale
-  const maxCost = max10s * scale
+  const audioMultiplier =
+    modelKey === 'seedance-1-5-pro' && generateAudio ? 2 : 1
+  const minCost = min10s * scale * audioMultiplier
+  const maxCost = max10s * scale * audioMultiplier
 
   if (minCost === maxCost) return formatCreditsLabel(minCost)
   return formatCreditsRangeLabel(minCost, maxCost)
@@ -2540,9 +2555,24 @@ export const useNodePricing = () => {
         'sequential_image_generation',
         'max_images'
       ],
-      ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
-      ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
-      ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
+      ByteDanceTextToVideoNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
+      ByteDanceImageToVideoNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
+      ByteDanceFirstLastFrameNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
       ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
       WanTextToVideoApi: ['duration', 'size'],
       WanImageToVideoApi: ['duration', 'resolution'],
