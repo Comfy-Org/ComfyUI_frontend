@@ -6,7 +6,7 @@ import type { IFuseOptions } from 'fuse.js'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
@@ -61,8 +61,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
       { name: 'searchableValue', weight: 0.3 },
       { name: 'searchableType', weight: 0.2 }
     ],
-    threshold: 0.3,
-    includeScore: true
+    threshold: 0.3
   }
 
   const fuse = new Fuse(searchableList, fuseOptions)
@@ -76,8 +75,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
 }
 
 type NodeSearchItem = {
-  node: LGraphNode
-  widgets: NodeWidgetsList
+  nodeId: NodeId
   searchableTitle: string
 }
 
@@ -96,20 +94,19 @@ export function searchWidgetsAndNodes(
   }
 
   const searchableList: NodeSearchItem[] = list.map((item) => ({
-    ...item,
-    searchableTitle: item.node.getTitle().toLowerCase()
+    nodeId: item.node.id,
+    searchableTitle: (item.node.getTitle() ?? '').toLowerCase()
   }))
 
   const fuseOptions: IFuseOptions<NodeSearchItem> = {
     keys: [{ name: 'searchableTitle', weight: 1.0 }],
-    threshold: 0.3,
-    includeScore: true
+    threshold: 0.3
   }
 
   const fuse = new Fuse(searchableList, fuseOptions)
   const nodeMatches = fuse.search(query.trim())
   const matchedNodeIds = new Set(
-    nodeMatches.map((result) => result.item.node.id)
+    nodeMatches.map((result) => result.item.nodeId)
   )
 
   return list
