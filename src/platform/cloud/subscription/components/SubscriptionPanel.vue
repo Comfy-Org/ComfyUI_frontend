@@ -156,7 +156,7 @@
 
                   <div class="flex items-center justify-between">
                     <a
-                      href="https://platform.comfy.org/profile/usage"
+                      :href="usageHistoryUrl"
                       target="_blank"
                       rel="noopener noreferrer"
                       class="text-sm underline text-center text-muted"
@@ -272,6 +272,7 @@ import { useI18n } from 'vue-i18n'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
@@ -313,6 +314,9 @@ const tierKey = computed(() => {
 })
 const tierPrice = computed(() =>
   getTierPrice(tierKey.value, isYearlySubscription.value)
+)
+const usageHistoryUrl = computed(
+  () => `${getComfyPlatformBaseUrl()}/profile/usage`
 )
 
 const refillsDate = computed(() => {
