@@ -163,4 +163,14 @@ export class VueNodeHelpers {
       incrementButton: widget.getByTestId('increment')
     }
   }
+
+  /**
+   * Enter the subgraph of a node.
+   * @param nodeId - The ID of the node to enter the subgraph of. If not provided, the first matched subgraph will be entered.
+   */
+  async enterSubgraph(nodeId?: string): Promise<void> {
+    const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
+    const editButton = locator.getByTestId('subgraph-enter-button')
+    await editButton.click()
+  }
 }
