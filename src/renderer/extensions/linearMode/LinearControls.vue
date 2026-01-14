@@ -72,13 +72,18 @@ function nodeToNodeData(node: LGraphNode) {
   }
 }
 const partitionedNodes = computed(() => {
-  return partition(
+  const parts = partition(
     graphNodes.value
       .filter((node) => node.mode === 0 && node.widgets?.length)
       .map(nodeToNodeData)
       .reverse(),
     (node) => ['MarkdownNote', 'Note'].includes(node.type)
   )
+  for (const noteNode of parts[0]) {
+    for (const widget of noteNode.widgets ?? [])
+      widget.options = { ...widget.options, read_only: true }
+  }
+  return parts
 })
 
 const batchCountWidget: SimplifiedWidget<number> = {
@@ -190,13 +195,7 @@ defineExpose({ runButtonClick })
             <NodeWidgets
               :node-data
               :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
-              :class="
-                cn(
-                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg',
-                  nodeData.hasErrors &&
-                    'ring-2 ring-inset ring-node-stroke-error'
-                )
-              "
+              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg"
             />
           </template>
         </div>
