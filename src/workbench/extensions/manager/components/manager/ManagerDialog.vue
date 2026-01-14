@@ -7,7 +7,7 @@
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavId" :nav-items="navItems">
         <template #header-icon>
-          <i class="pi pi-box" />
+          <i class="icon-[lucide--puzzle]" />
         </template>
         <template #header-title>
           <span class="text-neutral text-base">{{ $t('manager.title') }}</span>
