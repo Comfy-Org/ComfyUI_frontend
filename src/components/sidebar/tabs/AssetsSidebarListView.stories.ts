@@ -5,7 +5,7 @@ import type { JobListItem } from '@/composables/queue/useJobList'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { setMockJobActions } from '@/storybook/mocks/useJobActions'
 import { setMockJobItems } from '@/storybook/mocks/useJobList'
-import { iconForJobState } from '@/utils/queueDisplay'
+import { iconForJobState } from '@/queue/utils/queueDisplay'
 
 import AssetsSidebarListView from './AssetsSidebarListView.vue'
 

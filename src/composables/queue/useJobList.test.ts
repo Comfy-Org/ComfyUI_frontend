@@ -5,8 +5,8 @@ import type { Ref } from 'vue'
 
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobState } from '@/types/queue'
-import { buildJobDisplay } from '@/utils/queueDisplay'
-import type { BuildJobDisplayCtx } from '@/utils/queueDisplay'
+import { buildJobDisplay } from '@/queue/utils/queueDisplay'
+import type { BuildJobDisplayCtx } from '@/queue/utils/queueDisplay'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
 type TestTask = {

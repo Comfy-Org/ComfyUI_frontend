@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import Button from '@/components/ui/button/Button.vue'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
-import { iconForJobState } from '@/utils/queueDisplay'
+import { iconForJobState } from '@/queue/utils/queueDisplay'
 
 const meta: Meta<typeof AssetsListItem> = {
   title: 'Platform/Assets/AssetsListItem',

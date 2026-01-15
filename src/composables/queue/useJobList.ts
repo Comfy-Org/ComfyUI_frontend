@@ -17,8 +17,8 @@ import {
   isYesterday
 } from '@/utils/dateTimeUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { buildJobDisplay } from '@/utils/queueDisplay'
-import { jobStateFromTask } from '@/utils/queueUtil'
+import { buildJobDisplay } from '@/queue/utils/queueDisplay'
+import { jobStateFromTask } from '@/queue/utils/queueUtil'
 
 /** Tabs for job list filtering */
 export const jobTabs = ['All', 'Completed', 'Failed'] as const

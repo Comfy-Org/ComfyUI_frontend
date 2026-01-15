@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { jobStateFromTask } from '@/utils/queueUtil'
+import { jobStateFromTask } from '@/queue/utils/queueUtil'
 
 export type CompletionSummaryMode = 'allSuccess' | 'mixed' | 'allFailed'
 
