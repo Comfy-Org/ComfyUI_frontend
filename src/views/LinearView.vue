@@ -44,7 +44,10 @@ const bottomRightRef = useTemplateRef('bottomRightRef')
 const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
-  <div class="absolute w-full h-full">
+  <div
+    class="absolute w-full h-full"
+    @wheel.capture="(e: WheelEvent) => outputHistoryRef?.onWheel(e)"
+  >
     <div class="workflow-tabs-container pointer-events-auto h-9.5 w-full">
       <div class="flex h-full items-center">
         <WorkflowTabs />
@@ -82,7 +85,10 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       />
       <LinearControls ref="linearWorkflowRef" mobile />
       <div class="text-base-foreground flex items-center gap-4 justify-end m-4">
-        <div v-text="t('linearMode.beta')" />
+        <a
+          href="https://form.typeform.com/to/gmVqFi8l"
+          v-text="t('linearMode.beta')"
+        />
         <TypeformPopoverButton data-tf-widget="gmVqFi8l" />
       </div>
     </div>
@@ -122,7 +128,6 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
         id="linearCenterPanel"
         :size="98"
         class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
-        @wheel.capture="(e: WheelEvent) => outputHistoryRef?.onWheel(e)"
       >
         <LinearPreview
           :latent-preview="
