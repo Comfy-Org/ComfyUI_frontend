@@ -7,8 +7,9 @@ defineProps<{
   onDragOver?: (e: DragEvent) => boolean
   onDragDrop?: (e: DragEvent) => Promise<boolean> | boolean
   dropIndicator?: {
-    label?: string
     iconClass?: string
+    imageUrl?: string
+    label?: string
     onClick?: (e: MouseEvent) => void
   }
 }>()
@@ -44,8 +45,15 @@ const canAcceptDrop = ref(false)
       "
       @click.prevent="dropIndicator?.onClick?.($event)"
     >
-      <span v-if="dropIndicator.label" v-text="dropIndicator.label" />
-      <i v-if="dropIndicator.iconClass" :class="dropIndicator.iconClass" />
+      <img
+        v-if="dropIndicator?.imageUrl"
+        class="h-23"
+        :src="dropIndicator?.imageUrl"
+      />
+      <template v-else>
+        <span v-if="dropIndicator.label" v-text="dropIndicator.label" />
+        <i v-if="dropIndicator.iconClass" :class="dropIndicator.iconClass" />
+      </template>
     </div>
   </div>
   <slot v-else />

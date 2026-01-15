@@ -159,7 +159,7 @@ async function rerun(e: Event) {
   <VideoPreview
     v-else-if="getMediaType(selectedOutput) === 'video'"
     :src="selectedOutput!.url"
-    class="object-contain flex-1 contain-size"
+    class="object-contain flex-1 md:contain-size"
   />
   <audio
     v-else-if="getMediaType(selectedOutput) === 'audio'"
@@ -178,7 +178,7 @@ async function rerun(e: Event) {
   />
   <img
     v-else
-    class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
+    class="pointer-events-none object-contain flex-1 max-h-full md:contain-size brightness-50 opacity-10"
     src="/assets/images/comfy-logo-mono.svg"
   />
 </template>
