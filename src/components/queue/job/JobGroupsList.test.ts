@@ -6,10 +6,6 @@ import JobGroupsList from '@/components/queue/job/JobGroupsList.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
-// Test helper type that allows mock taskRef objects
-type MockTaskRef = Record<string, unknown>
-type TestJobListItem = Omit<JobListItem, 'taskRef'> & { taskRef?: MockTaskRef }
-
 const QueueJobItemStub = defineComponent({
   name: 'QueueJobItemStub',
   props: {
@@ -30,9 +26,7 @@ const QueueJobItemStub = defineComponent({
   template: '<div class="queue-job-item-stub"></div>'
 })
 
-const createJobItem = (
-  overrides: Partial<TestJobListItem> = {}
-): JobListItem => {
+const createJobItem = (overrides: Partial<JobListItem> = {}): JobListItem => {
   const { taskRef, ...rest } = overrides
   return {
     id: 'job-id',
@@ -44,7 +38,7 @@ const createJobItem = (
     showClear: true,
     taskRef: (taskRef ?? {
       workflow: { id: 'workflow-id' }
-    }) as unknown as TaskItemImpl | undefined,
+    }) as TaskItemImpl,
     progressTotalPercent: 60,
     progressCurrentPercent: 30,
     runningNodeName: 'Node A',
