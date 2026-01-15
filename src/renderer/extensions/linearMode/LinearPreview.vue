@@ -178,7 +178,7 @@ async function rerun(e: Event) {
   />
   <img
     v-else
-    class="pointer-events-none object-contain flex-1 max-h-full contain-size brightness-50 opacity-10"
+    class="pointer-events-none object-contain flex-1 max-h-full md:contain-size brightness-50 opacity-10"
     src="/assets/images/comfy-logo-mono.svg"
   />
 </template>
