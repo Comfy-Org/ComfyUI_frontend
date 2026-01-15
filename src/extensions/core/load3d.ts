@@ -4,6 +4,10 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
+import type {
+  CameraConfig,
+  CameraState
+} from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
@@ -11,7 +15,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComfyApp, app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -32,12 +37,12 @@ const inputSpecPreview3D: CustomInputSpec = {
   isPreview: true
 }
 
-async function handleModelUpload(files: FileList, node: any) {
+async function handleModelUpload(files: FileList, node: LGraphNode) {
   if (!files?.length) return
 
-  const modelWidget = node.widgets?.find(
-    (w: any) => w.name === 'model_file'
-  ) as IStringWidget
+  const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
+    | IStringWidget
+    | undefined
 
   try {
     const resourceFolder = (node.properties['Resource Folder'] as string) || ''
@@ -81,7 +86,7 @@ async function handleModelUpload(files: FileList, node: any) {
   }
 }
 
-async function handleResourcesUpload(files: FileList, node: any) {
+async function handleResourcesUpload(files: FileList, node: LGraphNode) {
   if (!files?.length) return
 
   try {
@@ -330,7 +335,9 @@ useExtensionService().registerExtension({
     await nextTick()
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      const cameraConfig = node.properties['Camera Config'] as any
+      const cameraConfig = node.properties['Camera Config'] as
+        | CameraConfig
+        | undefined
       const cameraState = cameraConfig?.state
 
       const config = new Load3DConfiguration(load3d, node.properties)
@@ -357,7 +364,9 @@ useExtensionService().registerExtension({
             return null
           }
 
-          const cameraConfig = (node.properties['Camera Config'] as any) || {
+          const cameraConfig: CameraConfig = (node.properties[
+            'Camera Config'
+          ] as CameraConfig | undefined) || {
             cameraType: currentLoad3d.getCurrentCameraType(),
             fov: currentLoad3d.cameraManager.perspectiveCamera.fov
           }
@@ -388,7 +397,8 @@ useExtensionService().registerExtension({
             mask: `threed/${dataMask.name} [temp]`,
             normal: `threed/${dataNormal.name} [temp]`,
             camera_info:
-              (node.properties['Camera Config'] as any)?.state || null,
+              (node.properties['Camera Config'] as CameraConfig | undefined)
+                ?.state || null,
             recording: ''
           }
 
@@ -472,7 +482,9 @@ useExtensionService().registerExtension({
         if (lastTimeModelFile) {
           modelWidget.value = lastTimeModelFile
 
-          const cameraConfig = node.properties['Camera Config'] as any
+          const cameraConfig = node.properties['Camera Config'] as
+            | CameraConfig
+            | undefined
           const cameraState = cameraConfig?.state
 
           const settings = {
@@ -484,10 +496,13 @@ useExtensionService().registerExtension({
           config.configure(settings)
         }
 
-        node.onExecuted = function (message: any) {
-          onExecuted?.apply(this, arguments as any)
+        node.onExecuted = function (output: NodeExecutionOutput) {
+          onExecuted?.call(this, output)
 
-          let filePath = message.result[0]
+          const result = (output as Record<string, unknown>).result as
+            | unknown[]
+            | undefined
+          const filePath = result?.[0] as string | undefined
 
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
@@ -495,10 +510,10 @@ useExtensionService().registerExtension({
             useToastStore().addAlert(msg)
           }
 
-          let cameraState = message.result[1]
-          let bgImagePath = message.result[2]
+          const cameraState = result?.[1] as CameraState | undefined
+          const bgImagePath = result?.[2] as string | undefined
 
-          modelWidget.value = filePath.replaceAll('\\', '/')
+          modelWidget.value = filePath?.replaceAll('\\', '/')
 
           node.properties['Last Time Model File'] = modelWidget.value
 
