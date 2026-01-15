@@ -2493,7 +2493,7 @@
     "linearMode": "Simple Mode",
     "beta": "Beta - Give Feedback",
     "graphMode": "Graph Mode",
-    "dragAndDropImage": "Drag and drop an image",
+    "dragAndDropImage": "Click to browse or drag an image",
     "runCount": "Run count:",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
