@@ -15,17 +15,17 @@ export const useSessionCookie = () => {
     if (!isCloud) return
 
     const authStore = useFirebaseAuthStore()
-    const authHeader = await authStore.getAuthHeader()
+    const firebaseToken = await authStore.getIdToken()
 
-    if (!authHeader) {
-      throw new Error('No auth header available for session creation')
+    if (!firebaseToken) {
+      throw new Error('No Firebase token available for session creation')
     }
 
     const response = await fetch(api.apiURL('/auth/session'), {
       method: 'POST',
       credentials: 'include',
       headers: {
-        ...authHeader,
+        Authorization: `Bearer ${firebaseToken}`,
         'Content-Type': 'application/json'
       }
     })
