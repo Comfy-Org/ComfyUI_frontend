@@ -69,28 +69,19 @@ describe('useWorkspaceAuth', () => {
   })
 
   describe('initial state', () => {
-    it('currentWorkspace is null initially', () => {
-      const { currentWorkspace } = useWorkspaceAuth()
+    it('has correct initial state values', () => {
+      const {
+        currentWorkspace,
+        workspaceToken,
+        isAuthenticated,
+        isLoading,
+        error
+      } = useWorkspaceAuth()
+
       expect(currentWorkspace.value).toBeNull()
-    })
-
-    it('workspaceToken is null initially', () => {
-      const { workspaceToken } = useWorkspaceAuth()
       expect(workspaceToken.value).toBeNull()
-    })
-
-    it('isAuthenticated is false initially', () => {
-      const { isAuthenticated } = useWorkspaceAuth()
       expect(isAuthenticated.value).toBe(false)
-    })
-
-    it('isLoading is false initially', () => {
-      const { isLoading } = useWorkspaceAuth()
       expect(isLoading.value).toBe(false)
-    })
-
-    it('error is null initially', () => {
-      const { error } = useWorkspaceAuth()
       expect(error.value).toBeNull()
     })
   })
