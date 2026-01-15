@@ -31,3 +31,10 @@ const response = await fetch('/api/prompt')
 - Clear public interfaces
 - Restrict extension access
 - Clean up subscriptions
+
+## General Guidelines
+
+- Use `es-toolkit` for utility functions
+- Use TypeScript for type safety
+- Avoid `@ts-expect-error` - fix the underlying issue
+- Use `vue-i18n` for ALL user-facing strings (`src/locales/en/main.json`)

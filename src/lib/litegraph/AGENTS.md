@@ -1,5 +1,11 @@
 # Litegraph Guidelines
 
+## Code Philosophy
+
+- Write concise, legible, and easily maintainable code
+- Avoid repetition where possible, but not at expense of legibility
+- Prefer running single tests, not the whole suite, for performance
+
 ## Code Style
 
 - Prefer single line `if` syntax for concise expressions
