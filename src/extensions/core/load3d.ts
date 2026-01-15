@@ -499,7 +499,10 @@ useExtensionService().registerExtension({
         node.onExecuted = function (output: NodeExecutionOutput) {
           onExecuted?.call(this, output)
 
-          let filePath = output.result?.[0] as string | undefined
+          const result = (output as Record<string, unknown>).result as
+            | unknown[]
+            | undefined
+          const filePath = result?.[0] as string | undefined
 
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
@@ -507,8 +510,8 @@ useExtensionService().registerExtension({
             useToastStore().addAlert(msg)
           }
 
-          const cameraState = output.result?.[1] as CameraState | undefined
-          const bgImagePath = output.result?.[2] as string | undefined
+          const cameraState = result?.[1] as CameraState | undefined
+          const bgImagePath = result?.[2] as string | undefined
 
           modelWidget.value = filePath?.replaceAll('\\', '/')
 
