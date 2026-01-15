@@ -22,22 +22,6 @@ Applies to all `.vue` files anywhere in the codebase.
 - Use `defineExpose` only for imperative operations (`form.validate()`, `modal.open()`)
 - Proper props and emits definitions
 
-## PrimeVue Migrations
-
-Deprecated components and their replacements:
-
-| Deprecated | Replacement | Import Path |
-|------------|-------------|-------------|
-| `Dropdown` | `Select` | `primevue/select` |
-| `OverlayPanel` | `Popover` | `primevue/popover` |
-| `Calendar` | `DatePicker` | `primevue/datepicker` |
-| `InputSwitch` | `ToggleSwitch` | `primevue/toggleswitch` |
-| `Sidebar` | `Drawer` | `primevue/drawer` |
-| `Chips` | `AutoComplete` | `primevue/autocomplete` (with `multiple` enabled, `typeahead` disabled) |
-| `TabMenu` | `Tabs` | `primevue/tabs` (without panels) |
-| `Steps` | `Stepper` | `primevue/stepper` (without panels) |
-| `InlineMessage` | `Message` | `primevue/message` |
-
 ## VueUse Composables
 
 Prefer VueUse composables over manual event handling:
