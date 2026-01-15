@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { reactiveOmit } from '@vueuse/core'
 import type { TagsInputItemDeleteProps } from 'reka-ui'
 import { TagsInputItemDelete, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
@@ -7,14 +6,11 @@ import type { HTMLAttributes } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<
-  // eslint-disable-next-line vue/no-unused-properties
+const { class: className, ...restProps } = defineProps<
   TagsInputItemDeleteProps & { class?: HTMLAttributes['class'] }
 >()
 
-const delegatedProps = reactiveOmit(props, 'class')
-
-const forwardedProps = useForwardProps(delegatedProps)
+const forwardedProps = useForwardProps(restProps)
 </script>
 
 <template>
@@ -26,7 +22,7 @@ const forwardedProps = useForwardProps(delegatedProps)
     :class="
       cn(
         'opacity-60 hover:bg-transparent hover:opacity-100 transition-[opacity,width] duration-150 w-4 data-[disabled]:w-0 data-[disabled]:opacity-0 data-[disabled]:pointer-events-none overflow-hidden',
-        props.class
+        className
       )
     "
   >

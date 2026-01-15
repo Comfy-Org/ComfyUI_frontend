@@ -1,19 +1,15 @@
 <script setup lang="ts">
-import { reactiveOmit } from '@vueuse/core'
 import type { TagsInputItemProps } from 'reka-ui'
 import { TagsInputItem, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<
-  // eslint-disable-next-line vue/no-unused-properties
+const { class: className, ...restProps } = defineProps<
   TagsInputItemProps & { class?: HTMLAttributes['class'] }
 >()
 
-const delegatedProps = reactiveOmit(props, 'class')
-
-const forwardedProps = useForwardProps(delegatedProps)
+const forwardedProps = useForwardProps(restProps)
 </script>
 
 <template>
@@ -22,7 +18,7 @@ const forwardedProps = useForwardProps(delegatedProps)
     :class="
       cn(
         'flex h-6 items-center gap-1 rounded-sm bg-modal-card-tag-background py-1 pl-2 pr-1 text-modal-card-tag-foreground backdrop-blur-sm ring-offset-base-background data-[state=active]:ring-2 data-[state=active]:ring-primary-background data-[state=active]:ring-offset-1 data-[disabled]:pr-2',
-        props.class
+        className
       )
     "
   >

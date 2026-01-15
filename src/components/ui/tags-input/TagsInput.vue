@@ -1,22 +1,50 @@
 <script setup lang="ts">
-import { reactiveOmit } from '@vueuse/core'
+import { onClickOutside, useCurrentElement } from '@vueuse/core'
 import type { TagsInputRootEmits, TagsInputRootProps } from 'reka-ui'
 import { TagsInputRoot, useForwardPropsEmits } from 'reka-ui'
-import { toRef } from 'vue'
+import { computed, nextTick, provide, ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<
-  // eslint-disable-next-line vue/no-unused-properties
-  TagsInputRootProps & { class?: HTMLAttributes['class'] }
->()
+import { tagsInputFocusKey } from './tagsInputContext'
+import type { FocusCallback } from './tagsInputContext'
+
+const {
+  disabled = true,
+  class: className,
+  ...restProps
+} = defineProps<TagsInputRootProps & { class?: HTMLAttributes['class'] }>()
 const emits = defineEmits<TagsInputRootEmits>()
 
-const disabled = toRef(props, 'disabled')
-const delegatedProps = reactiveOmit(props, 'class')
+const isEditing = ref(false)
+const rootEl = useCurrentElement<HTMLElement>()
+const focusInput = ref<FocusCallback>()
+
+provide(tagsInputFocusKey, (callback: FocusCallback) => {
+  focusInput.value = callback
+})
+
+const internalDisabled = computed(() => disabled && !isEditing.value)
+
+const delegatedProps = computed(() => ({
+  ...restProps,
+  disabled: internalDisabled.value
+}))
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
+
+async function enableEditing() {
+  if (disabled && !isEditing.value) {
+    isEditing.value = true
+    await nextTick()
+    focusInput.value?.()
+  }
+}
+
+onClickOutside(rootEl, () => {
+  isEditing.value = false
+})
 </script>
 
 <template>
@@ -24,13 +52,19 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     v-bind="forwarded"
     :class="
       cn(
-        'group flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
-        !disabled &&
+        'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
+        !internalDisabled &&
           'hover:bg-modal-card-background-hovered focus-within:bg-modal-card-background-hovered',
-        props.class
+        internalDisabled && 'cursor-pointer',
+        className
       )
     "
+    @click="enableEditing"
   >
     <slot />
+    <i
+      v-if="disabled"
+      class="icon-[lucide--square-pen] absolute bottom-2 right-2 size-4 text-muted-foreground"
+    />
   </TagsInputRoot>
 </template>

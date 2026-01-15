@@ -18,7 +18,8 @@ const meta: Meta<typeof TagsInput> = {
     },
     disabled: {
       control: 'boolean',
-      description: 'Whether the input is disabled'
+      description:
+        'When true (default), shows read-only state with edit icon. Click to enable editing.'
     },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
