@@ -298,6 +298,7 @@
     },
     "retry": "Tentar novamente",
     "retrying": "Tentando novamente...",
+    "skipToCloudApp": "Pular para o aplicativo na nuvem",
     "start": {
       "desc": "Nenhuma configuração necessária. Funciona em qualquer dispositivo.",
       "download": "Baixar ComfyUI",

@@ -298,6 +298,7 @@
     },
     "retry": "再試一次",
     "retrying": "正在重試...",
+    "skipToCloudApp": "跳至雲端應用程式",
     "start": {
       "desc": "無需任何設定。可在任何裝置上使用。",
       "download": "下載 ComfyUI",

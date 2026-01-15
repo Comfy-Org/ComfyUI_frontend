@@ -298,6 +298,7 @@
     },
     "retry": "다시 시도",
     "retrying": "재시도 중...",
+    "skipToCloudApp": "클라우드 앱으로 건너뛰기",
     "start": {
       "desc": "설정 불필요. 모든 기기에서 작동합니다.",
       "download": "ComfyUI 다운로드",

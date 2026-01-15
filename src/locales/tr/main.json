@@ -298,6 +298,7 @@
     },
     "retry": "Tekrar Dene",
     "retrying": "Yeniden deneniyor...",
+    "skipToCloudApp": "Bulut uygulamasına geç",
     "start": {
       "desc": "Kurulum gerekmez. Her cihazda çalışır.",
       "download": "ComfyUI'ı İndir",

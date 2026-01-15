@@ -298,6 +298,7 @@
     },
     "retry": "再試行",
     "retrying": "再試行中...",
+    "skipToCloudApp": "クラウドアプリへスキップ",
     "start": {
       "desc": "セットアップ不要。あらゆるデバイスで動作します。",
       "download": "ComfyUIをダウンロード",
