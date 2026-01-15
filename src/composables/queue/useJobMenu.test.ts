@@ -132,7 +132,9 @@ const createJobItem = (
   title: overrides.title ?? 'Test job',
   meta: overrides.meta ?? 'meta',
   state: overrides.state ?? 'completed',
-  taskRef: overrides.taskRef as unknown as TaskItemImpl | undefined,
+  taskRef: overrides.taskRef as Partial<TaskItemImpl> | undefined as
+    | TaskItemImpl
+    | undefined,
   iconName: overrides.iconName,
   iconImageUrl: overrides.iconImageUrl,
   showClear: overrides.showClear,
