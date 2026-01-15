@@ -1,12 +1,19 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import { h, nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import TagsInput from './TagsInput.vue'
 import TagsInputInput from './TagsInputInput.vue'
 import TagsInputItem from './TagsInputItem.vue'
 import TagsInputItemDelete from './TagsInputItemDelete.vue'
 import TagsInputItemText from './TagsInputItemText.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: { g: { removeTag: 'Remove tag' } } }
+})
 
 describe('TagsInput', () => {
   function mountTagsInput(props = {}, slots = {}) {
@@ -29,6 +36,7 @@ describe('TagsInput', () => {
 describe('TagsInput with child components', () => {
   function mountFullTagsInput(tags: string[] = ['tag1', 'tag2']) {
     return mount(TagsInput, {
+      global: { plugins: [i18n] },
       props: {
         modelValue: tags
       },
