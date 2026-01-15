@@ -277,6 +277,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                   'border-2'
               )
             "
+            @click="selectedIndex = [index, key]"
           >
             <i
               :class="
