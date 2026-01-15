@@ -32,12 +32,12 @@ const inputSpecPreview3D: CustomInputSpec = {
   isPreview: true
 }
 
-async function handleModelUpload(files: FileList, node: any) {
+async function handleModelUpload(files: FileList, node: LGraphNode) {
   if (!files?.length) return
 
-  const modelWidget = node.widgets?.find(
-    (w: any) => w.name === 'model_file'
-  ) as IStringWidget
+  const modelWidget = node.widgets?.find((w) => w.name === 'model_file') as
+    | IStringWidget
+    | undefined
 
   try {
     const resourceFolder = (node.properties['Resource Folder'] as string) || ''
@@ -81,7 +81,7 @@ async function handleModelUpload(files: FileList, node: any) {
   }
 }
 
-async function handleResourcesUpload(files: FileList, node: any) {
+async function handleResourcesUpload(files: FileList, node: LGraphNode) {
   if (!files?.length) return
 
   try {
