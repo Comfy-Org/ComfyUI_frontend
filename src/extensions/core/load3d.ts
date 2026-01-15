@@ -4,7 +4,10 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
-import type { CameraState } from '@/extensions/core/load3d/interfaces'
+import type {
+  CameraConfig,
+  CameraState
+} from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
@@ -332,7 +335,9 @@ useExtensionService().registerExtension({
     await nextTick()
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      const cameraConfig = node.properties['Camera Config'] as any
+      const cameraConfig = node.properties['Camera Config'] as
+        | CameraConfig
+        | undefined
       const cameraState = cameraConfig?.state
 
       const config = new Load3DConfiguration(load3d, node.properties)
@@ -359,7 +364,9 @@ useExtensionService().registerExtension({
             return null
           }
 
-          const cameraConfig = (node.properties['Camera Config'] as any) || {
+          const cameraConfig: CameraConfig = (node.properties[
+            'Camera Config'
+          ] as CameraConfig | undefined) || {
             cameraType: currentLoad3d.getCurrentCameraType(),
             fov: currentLoad3d.cameraManager.perspectiveCamera.fov
           }
@@ -390,7 +397,8 @@ useExtensionService().registerExtension({
             mask: `threed/${dataMask.name} [temp]`,
             normal: `threed/${dataNormal.name} [temp]`,
             camera_info:
-              (node.properties['Camera Config'] as any)?.state || null,
+              (node.properties['Camera Config'] as CameraConfig | undefined)
+                ?.state || null,
             recording: ''
           }
 
@@ -474,7 +482,9 @@ useExtensionService().registerExtension({
         if (lastTimeModelFile) {
           modelWidget.value = lastTimeModelFile
 
-          const cameraConfig = node.properties['Camera Config'] as any
+          const cameraConfig = node.properties['Camera Config'] as
+            | CameraConfig
+            | undefined
           const cameraState = cameraConfig?.state
 
           const settings = {
