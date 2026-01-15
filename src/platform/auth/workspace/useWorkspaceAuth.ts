@@ -9,6 +9,13 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceWithRole } from './workspaceTypes'
 
+const WorkspaceWithRoleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(['personal', 'team']),
+  role: z.enum(['owner', 'member'])
+})
+
 const WorkspaceTokenResponseSchema = z.object({
   token: z.string(),
   expires_at: z.string(),
@@ -125,8 +132,15 @@ export function useWorkspaceAuth() {
         return false
       }
 
-      const workspace = JSON.parse(workspaceJson) as WorkspaceWithRole
-      currentWorkspace.value = workspace
+      const parsedWorkspace = JSON.parse(workspaceJson)
+      const parseResult = WorkspaceWithRoleSchema.safeParse(parsedWorkspace)
+
+      if (!parseResult.success) {
+        clearSessionStorage()
+        return false
+      }
+
+      currentWorkspace.value = parseResult.data
       workspaceToken.value = token
       error.value = null
 
