@@ -99,4 +99,64 @@ describe('TagsInput with child components', () => {
 
     expect(currentTags).toContain('newTag')
   })
+
+  it('does not enter edit mode when disabled', async () => {
+    const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
+      props: {
+        modelValue: ['tag1'],
+        disabled: true
+      },
+      slots: {
+        default: () => h(TagsInputInput, { placeholder: 'Add tag...' })
+      }
+    })
+
+    expect(wrapper.find('input').exists()).toBe(false)
+
+    await wrapper.trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('input').exists()).toBe(false)
+  })
+
+  it('exits edit mode when clicking outside', async () => {
+    const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
+      props: {
+        modelValue: ['tag1']
+      },
+      slots: {
+        default: () => h(TagsInputInput, { placeholder: 'Add tag...' })
+      },
+      attachTo: document.body
+    })
+
+    await wrapper.trigger('click')
+    await nextTick()
+    expect(wrapper.find('input').exists()).toBe(true)
+
+    document.body.click()
+    await nextTick()
+
+    expect(wrapper.find('input').exists()).toBe(false)
+
+    wrapper.unmount()
+  })
+
+  it('shows placeholder when modelValue is empty', async () => {
+    const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
+      props: {
+        modelValue: []
+      },
+      slots: {
+        default: ({ isEmpty }: { isEmpty: boolean }) =>
+          h(TagsInputInput, { placeholder: 'Add tag...', isEmpty })
+      }
+    })
+
+    await nextTick()
+
+    const input = wrapper.find('input')
+    expect(input.exists()).toBe(true)
+    expect(input.attributes('placeholder')).toBe('Add tag...')
+  })
 })
