@@ -43,10 +43,10 @@
           workspaceName
         }}</span>
         <div
-          v-if="subscriptionTierName"
+          v-if="workspaceTierName"
           class="shrink-0 rounded bg-secondary-background-hover px-1.5 py-0.5 text-xs"
         >
-          {{ subscriptionTierName }}
+          {{ workspaceTierName }}
         </div>
         <span v-else class="shrink-0 text-xs text-muted-foreground">
           {{ $t('workspaceSwitcher.subscribe') }}
@@ -112,7 +112,7 @@
           size="sm"
           class="w-full"
           data-testid="subscribe-button"
-          @click="handleOpenPlansAndPricing"
+          @click="handleOpenWorkspaceSettings"
         >
           {{ $t('subscription.subscribeNow') }}
         </Button>
@@ -246,7 +246,8 @@ const {
   workspaceName,
   workspaceRole,
   isPersonalWorkspace,
-  isWorkspaceSubscribed
+  isWorkspaceSubscribed,
+  subscriptionPlan
 } = useWorkspace()
 const workspaceSwitcherPopover = ref<InstanceType<typeof Popover> | null>(null)
 
@@ -261,14 +262,9 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const authActions = useFirebaseAuthActions()
 const authStore = useFirebaseAuthStore()
 const dialogService = useDialogService()
-const {
-  isActiveSubscription,
-  subscriptionTierName,
-  subscriptionTier,
-  fetchStatus
-} = useSubscription()
+const { isActiveSubscription, fetchStatus } = useSubscription()
 const subscriptionDialog = useSubscriptionDialog()
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 
 const formattedBalance = computed(() => {
   const cents =
@@ -285,11 +281,23 @@ const formattedBalance = computed(() => {
   })
 })
 
+// Workspace subscription tier name (not user tier)
+const workspaceTierName = computed(() => {
+  if (!isWorkspaceSubscribed.value) return null
+  if (!subscriptionPlan.value) return null
+  // Convert plan to display name
+  if (subscriptionPlan.value === 'PRO_MONTHLY')
+    return t('subscription.tiers.pro.name')
+  if (subscriptionPlan.value === 'PRO_YEARLY')
+    return t('subscription.tierNameYearly', {
+      name: t('subscription.tiers.pro.name')
+    })
+  return null
+})
+
 const canUpgrade = computed(() => {
-  const tier = subscriptionTier.value
-  return (
-    tier === 'FOUNDERS_EDITION' || tier === 'STANDARD' || tier === 'CREATOR'
-  )
+  // For workspace-based subscriptions, can upgrade if not on highest tier
+  return isWorkspaceSubscribed.value && subscriptionPlan.value !== null
 })
 
 // Menu visibility based on role

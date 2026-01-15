@@ -2128,7 +2128,8 @@
       "actions": {
         "copyLink": "Copy invite link",
         "revokeInvite": "Revoke invite",
-        "removeMember": "Remove member"
+        "removeMember": "Remove member",
+        "acceptInvite": "Click to accept invite (demo)"
       },
       "noInvites": "No pending invites",
       "noMembers": "No members",
@@ -2136,6 +2137,7 @@
       "createNewWorkspace": "create a new one."
     },
     "menu": {
+      "editWorkspaceDetails": "Edit workspace details",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
@@ -2177,6 +2179,11 @@
       "nameLabel": "Workspace name*",
       "namePlaceholder": "Enter workspace name",
       "create": "Create"
+    },
+    "editWorkspaceDialog": {
+      "title": "Edit workspace details",
+      "nameLabel": "Workspace name",
+      "save": "Save changes"
     },
     "toast": {
       "workspaceCreated": {

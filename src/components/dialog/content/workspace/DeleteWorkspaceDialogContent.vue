@@ -41,13 +41,11 @@
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { onConfirm } = defineProps<{
-  onConfirm: () => void | Promise<void>
-}>()
-
 const dialogStore = useDialogStore()
+const { deleteWorkspace } = useWorkspace()
 const loading = ref(false)
 
 function onCancel() {
@@ -57,7 +55,7 @@ function onCancel() {
 async function onDelete() {
   loading.value = true
   try {
-    await onConfirm()
+    await deleteWorkspace()
     dialogStore.closeDialog({ key: 'delete-workspace' })
   } finally {
     loading.value = false

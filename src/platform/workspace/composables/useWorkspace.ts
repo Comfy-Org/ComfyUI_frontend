@@ -1,8 +1,9 @@
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
-export type WorkspaceRole = 'PERSONAL' | 'MEMBER' | 'OWNER'
+type WorkspaceRole = 'PERSONAL' | 'MEMBER' | 'OWNER'
+type SubscriptionPlan = 'PRO_MONTHLY' | 'PRO_YEARLY' | null
 
 export interface WorkspaceMember {
   id: string
@@ -20,10 +21,14 @@ export interface PendingInvite {
   inviteLink: string
 }
 
-interface WorkspaceMockData {
+interface Workspace {
   id: string | null
   name: string
   role: WorkspaceRole
+  isSubscribed: boolean
+  subscriptionPlan: SubscriptionPlan
+  members: WorkspaceMember[]
+  pendingInvites: PendingInvite[]
 }
 
 export interface AvailableWorkspace {
@@ -33,7 +38,7 @@ export interface AvailableWorkspace {
 }
 
 /** Permission flags for workspace actions */
-export interface WorkspacePermissions {
+interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
   canInviteMembers: boolean
@@ -45,7 +50,7 @@ export interface WorkspacePermissions {
 }
 
 /** UI configuration for workspace role */
-export interface WorkspaceUIConfig {
+interface WorkspaceUIConfig {
   showMembersList: boolean
   showPendingTab: boolean
   showSearch: boolean
@@ -54,6 +59,7 @@ export interface WorkspaceUIConfig {
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
+  showEditWorkspaceMenuItem: boolean
   workspaceMenuAction: 'leave' | 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
@@ -66,7 +72,7 @@ const ROLE_PERMISSIONS: Record<WorkspaceRole, WorkspacePermissions> = {
     canManageInvites: false,
     canRemoveMembers: false,
     canLeaveWorkspace: false,
-    canAccessWorkspaceMenu: false,
+    canAccessWorkspaceMenu: true,
     canManageSubscription: true
   },
   MEMBER: {
@@ -101,6 +107,7 @@ const ROLE_UI_CONFIG: Record<WorkspaceRole, WorkspaceUIConfig> = {
     membersGridCols: 'grid-cols-1',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-1',
+    showEditWorkspaceMenuItem: true,
     workspaceMenuAction: null,
     workspaceMenuDisabledTooltip: null
   },
@@ -113,6 +120,7 @@ const ROLE_UI_CONFIG: Record<WorkspaceRole, WorkspaceUIConfig> = {
     membersGridCols: 'grid-cols-[1fr_auto]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[1fr_auto]',
+    showEditWorkspaceMenuItem: false,
     workspaceMenuAction: 'leave',
     workspaceMenuDisabledTooltip: null
   },
@@ -125,129 +133,202 @@ const ROLE_UI_CONFIG: Record<WorkspaceRole, WorkspaceUIConfig> = {
     membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[50%_40%_10%]',
+    showEditWorkspaceMenuItem: true,
     workspaceMenuAction: 'delete',
     workspaceMenuDisabledTooltip:
       'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
   }
 }
 
-const MOCK_DATA: Record<WorkspaceRole, WorkspaceMockData> = {
-  PERSONAL: {
+const MAX_OWNED_WORKSPACES = 10
+const MAX_WORKSPACE_MEMBERS = 50
+
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 10)
+}
+
+function createPersonalWorkspace(): Workspace {
+  return {
     id: null,
-    name: 'Personal',
-    role: 'PERSONAL'
-  },
-  MEMBER: {
-    id: 'workspace-abc-123',
-    name: 'Acme Corp',
-    role: 'MEMBER'
-  },
-  OWNER: {
-    id: 'workspace-xyz-789',
-    name: 'Acme Corp',
-    role: 'OWNER'
+    name: 'Personal workspace',
+    role: 'PERSONAL',
+    isSubscribed: true,
+    subscriptionPlan: null,
+    members: [],
+    pendingInvites: []
   }
 }
 
-/** Mock list of all available workspaces for the current user */
-const MOCK_AVAILABLE_WORKSPACES: AvailableWorkspace[] = [
-  { id: null, name: 'Personal workspace', role: 'PERSONAL' },
-  { id: 'workspace-comfy-001', name: 'Team Comfy', role: 'OWNER' },
-  { id: 'workspace-orange-002', name: 'OrangeDesignStudio', role: 'MEMBER' },
-  { id: 'workspace-001', name: 'Workspace001', role: 'MEMBER' },
-  { id: 'workspace-002', name: 'Workspace002', role: 'MEMBER' }
-]
-
-const MAX_OWNED_WORKSPACES = 10
-
-const MOCK_MEMBERS: WorkspaceMember[] = [
-  {
-    id: '1',
-    name: 'Alice',
-    email: 'alice@example.com',
-    joinDate: new Date('2025-11-15')
-  },
-  {
-    id: '2',
-    name: 'Bob',
-    email: 'bob@example.com',
-    joinDate: new Date('2025-12-01')
-  },
-  {
-    id: '3',
-    name: 'Charlie',
-    email: 'charlie@example.com',
-    joinDate: new Date('2026-01-05')
-  }
-]
-
-const MOCK_PENDING_INVITES: PendingInvite[] = [
-  {
-    id: '1',
-    name: 'John',
-    email: 'john@gmail.com',
-    inviteDate: new Date('2026-01-02'),
-    expiryDate: new Date('2026-01-09'),
-    inviteLink: 'https://example.com/invite/abc123'
-  },
-  {
-    id: '2',
-    name: 'User102',
-    email: 'user102@gmail.com',
-    inviteDate: new Date('2026-01-01'),
-    expiryDate: new Date('2026-01-08'),
-    inviteLink: 'https://example.com/invite/def456'
-  },
-  {
-    id: '3',
-    name: 'User944',
-    email: 'user944@gmail.com',
-    inviteDate: new Date('2026-01-01'),
-    expiryDate: new Date('2026-01-08'),
-    inviteLink: 'https://example.com/invite/ghi789'
-  },
-  {
-    id: '4',
-    name: 'User45',
-    email: 'user45@gmail.com',
-    inviteDate: new Date('2025-12-15'),
-    expiryDate: new Date('2025-12-22'),
-    inviteLink: 'https://example.com/invite/jkl012'
-  },
-  {
-    id: '5',
-    name: 'User944',
-    email: 'user944@gmail.com',
-    inviteDate: new Date('2025-12-05'),
-    expiryDate: new Date('2025-12-22'),
-    inviteLink: 'https://example.com/invite/mno345'
-  }
-]
-
-// Constants
-const MAX_WORKSPACE_MEMBERS = 50
-
-// Shared state for workspace
-const _workspaceId = ref<string | null>(null)
-const _workspaceName = ref<string>('Personal workspace')
-const _workspaceRole = ref<WorkspaceRole>('PERSONAL')
-const _isWorkspaceSubscribed = ref<boolean>(true)
+// Global state - start with personal workspace only
+const _workspaces = shallowRef<Workspace[]>([createPersonalWorkspace()])
+const _currentWorkspaceIndex = ref(0)
 const _activeTab = ref<string>('plan')
-const _members = ref<WorkspaceMember[]>([])
-const _pendingInvites = ref<PendingInvite[]>([])
-const _availableWorkspaces = ref<AvailableWorkspace[]>(
-  MOCK_AVAILABLE_WORKSPACES
-)
+
+// Helper to get current workspace
+function getCurrentWorkspace(): Workspace {
+  return _workspaces.value[_currentWorkspaceIndex.value]
+}
+
+// Helper to update current workspace
+function updateCurrentWorkspace(updates: Partial<Workspace>) {
+  const index = _currentWorkspaceIndex.value
+  const updated = { ..._workspaces.value[index], ...updates }
+  _workspaces.value = [
+    ..._workspaces.value.slice(0, index),
+    updated,
+    ..._workspaces.value.slice(index + 1)
+  ]
+}
+
+/**
+ * Switch to a different workspace
+ */
+function switchWorkspace(workspace: AvailableWorkspace) {
+  const index = _workspaces.value.findIndex((w) => w.id === workspace.id)
+  if (index !== -1) {
+    _currentWorkspaceIndex.value = index
+  }
+}
+
+/**
+ * Create a new workspace
+ */
+function createNewWorkspace(name: string): Workspace {
+  const newWorkspace: Workspace = {
+    id: `workspace-${generateId()}`,
+    name,
+    role: 'OWNER',
+    isSubscribed: false,
+    subscriptionPlan: null,
+    members: [],
+    pendingInvites: [
+      // Add one pending invite for testing revoke
+      {
+        id: generateId(),
+        name: 'PendingUser',
+        email: 'pending@example.com',
+        inviteDate: new Date(),
+        expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        inviteLink: `https://cloud.comfy.org/workspace/invite/${generateId()}`
+      }
+    ]
+  }
+
+  _workspaces.value = [..._workspaces.value, newWorkspace]
+  // Switch to the new workspace
+  _currentWorkspaceIndex.value = _workspaces.value.length - 1
+
+  return newWorkspace
+}
+
+/**
+ * Subscribe the current workspace to a plan
+ */
+function subscribeCurrentWorkspace(plan: SubscriptionPlan = 'PRO_MONTHLY') {
+  updateCurrentWorkspace({
+    isSubscribed: true,
+    subscriptionPlan: plan
+  })
+}
+
+/**
+ * Delete the current workspace (OWNER only)
+ */
+function deleteCurrentWorkspace() {
+  const current = getCurrentWorkspace()
+  if (current.role === 'OWNER') {
+    _workspaces.value = _workspaces.value.filter((w) => w.id !== current.id)
+    _currentWorkspaceIndex.value = 0
+  }
+}
+
+/**
+ * Leave the current workspace (MEMBER only)
+ */
+function leaveCurrentWorkspace() {
+  const current = getCurrentWorkspace()
+  if (current.role === 'MEMBER') {
+    _workspaces.value = _workspaces.value.filter((w) => w.id !== current.id)
+    _currentWorkspaceIndex.value = 0
+  }
+}
+
+/**
+ * Add a member to the current workspace
+ */
+function addMemberToWorkspace(
+  member: Omit<WorkspaceMember, 'id' | 'joinDate'>
+) {
+  const current = getCurrentWorkspace()
+  const newMember: WorkspaceMember = {
+    ...member,
+    id: generateId(),
+    joinDate: new Date()
+  }
+  updateCurrentWorkspace({
+    members: [...current.members, newMember]
+  })
+}
+
+/**
+ * Remove a member from the current workspace
+ */
+function removeMemberFromWorkspace(memberId: string) {
+  const current = getCurrentWorkspace()
+  updateCurrentWorkspace({
+    members: current.members.filter((m) => m.id !== memberId)
+  })
+}
+
+/**
+ * Update the current workspace name
+ */
+function updateWorkspaceNameFn(name: string) {
+  updateCurrentWorkspace({ name })
+}
+
+/**
+ * Revoke a pending invite
+ */
+function revokePendingInvite(inviteId: string) {
+  const current = getCurrentWorkspace()
+  updateCurrentWorkspace({
+    pendingInvites: current.pendingInvites.filter((i) => i.id !== inviteId)
+  })
+}
+
+/**
+ * Accept a pending invite (move to active members)
+ * For demo: simulates user accepting the invite
+ */
+function acceptPendingInvite(inviteId: string) {
+  const current = getCurrentWorkspace()
+  const invite = current.pendingInvites.find((i) => i.id === inviteId)
+  if (invite) {
+    // Remove from pending
+    const updatedPending = current.pendingInvites.filter(
+      (i) => i.id !== inviteId
+    )
+    // Add to active members
+    const newMember: WorkspaceMember = {
+      id: generateId(),
+      name: invite.name,
+      email: invite.email,
+      joinDate: new Date()
+    }
+    updateCurrentWorkspace({
+      pendingInvites: updatedPending,
+      members: [...current.members, newMember]
+    })
+  }
+}
 
 /**
  * Set workspace mock state for testing UI
  * Usage in browser console: window.__setWorkspaceRole('OWNER')
  */
 function setMockRole(role: WorkspaceRole) {
-  const data = MOCK_DATA[role]
-  _workspaceId.value = data.id
-  _workspaceName.value = data.name
-  _workspaceRole.value = data.role
+  updateCurrentWorkspace({ role })
 }
 
 /**
@@ -255,19 +336,7 @@ function setMockRole(role: WorkspaceRole) {
  * Usage in browser console: window.__setWorkspaceSubscribed(false)
  */
 function setMockSubscribed(subscribed: boolean) {
-  _isWorkspaceSubscribed.value = subscribed
-}
-
-/**
- * Switch to a different workspace
- */
-function switchWorkspace(workspace: AvailableWorkspace) {
-  _workspaceId.value = workspace.id
-  _workspaceName.value = workspace.name
-  _workspaceRole.value = workspace.role
-  // Reset members/invites when switching
-  _members.value = []
-  _pendingInvites.value = []
+  updateCurrentWorkspace({ isSubscribed: subscribed })
 }
 
 // Expose to window for dev testing
@@ -290,43 +359,45 @@ if (typeof window !== 'undefined') {
 export function useWorkspace() {
   const { userDisplayName, userEmail } = useCurrentUser()
 
-  const workspaceId = computed(() => _workspaceId.value)
-  const workspaceName = computed(() => _workspaceName.value)
-  const workspaceRole = computed(() => _workspaceRole.value)
+  // Computed from current workspace
+  const currentWorkspace = computed(() => getCurrentWorkspace())
+  const workspaceId = computed(() => currentWorkspace.value?.id ?? null)
+  const workspaceName = computed(
+    () => currentWorkspace.value?.name ?? 'Personal workspace'
+  )
+  const workspaceRole = computed(
+    () => currentWorkspace.value?.role ?? 'PERSONAL'
+  )
   const activeTab = computed(() => _activeTab.value)
 
   const isPersonalWorkspace = computed(
-    () => _workspaceRole.value === 'PERSONAL'
+    () => currentWorkspace.value?.role === 'PERSONAL'
   )
 
-  const isWorkspaceSubscribed = computed(() => _isWorkspaceSubscribed.value)
+  const isWorkspaceSubscribed = computed(
+    () => currentWorkspace.value?.isSubscribed ?? false
+  )
+
+  const subscriptionPlan = computed(
+    () => currentWorkspace.value?.subscriptionPlan ?? null
+  )
 
   const permissions = computed<WorkspacePermissions>(
-    () => ROLE_PERMISSIONS[_workspaceRole.value]
+    () => ROLE_PERMISSIONS[workspaceRole.value]
   )
 
   const uiConfig = computed<WorkspaceUIConfig>(
-    () => ROLE_UI_CONFIG[_workspaceRole.value]
+    () => ROLE_UI_CONFIG[workspaceRole.value]
   )
 
   function setActiveTab(tab: string | number) {
     _activeTab.value = String(tab)
   }
 
-  const members = computed(() => _members.value)
-  const pendingInvites = computed(() => _pendingInvites.value)
-
-  const totalMemberSlots = computed(
-    () => _members.value.length + _pendingInvites.value.length
-  )
-  const isInviteLimitReached = computed(
-    () => totalMemberSlots.value >= MAX_WORKSPACE_MEMBERS
-  )
-
-  // TODO: Replace with actual API calls
-  async function fetchMembers(): Promise<WorkspaceMember[]> {
-    if (_workspaceRole.value === 'PERSONAL') {
-      _members.value = [
+  // For personal workspace, always show current user as the only member
+  const members = computed<WorkspaceMember[]>(() => {
+    if (isPersonalWorkspace.value) {
+      return [
         {
           id: 'current-user',
           name: userDisplayName.value ?? 'You',
@@ -334,27 +405,45 @@ export function useWorkspace() {
           joinDate: new Date()
         }
       ]
-    } else {
-      _members.value = MOCK_MEMBERS
     }
-    return _members.value
+    return currentWorkspace.value?.members ?? []
+  })
+  const pendingInvites = computed(
+    () => currentWorkspace.value?.pendingInvites ?? []
+  )
+
+  const totalMemberSlots = computed(
+    () => members.value.length + pendingInvites.value.length
+  )
+  const isInviteLimitReached = computed(
+    () => totalMemberSlots.value >= MAX_WORKSPACE_MEMBERS
+  )
+
+  // Fetch members - returns current user for personal workspace
+  async function fetchMembers(): Promise<WorkspaceMember[]> {
+    if (isPersonalWorkspace.value) {
+      return [
+        {
+          id: 'current-user',
+          name: userDisplayName.value ?? 'You',
+          email: userEmail.value ?? '',
+          joinDate: new Date()
+        }
+      ]
+    }
+    return members.value
   }
 
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
-    if (_workspaceRole.value === 'PERSONAL') {
-      _pendingInvites.value = []
-    } else {
-      _pendingInvites.value = MOCK_PENDING_INVITES
-    }
-    return _pendingInvites.value
+    return pendingInvites.value
   }
 
-  async function revokeInvite(_inviteId: string): Promise<void> {
-    // TODO: API call to revoke invite
+  async function revokeInvite(inviteId: string): Promise<void> {
+    revokePendingInvite(inviteId)
   }
 
   async function copyInviteLink(inviteId: string): Promise<string> {
-    const invite = _pendingInvites.value.find((i) => i.id === inviteId)
+    const invite = pendingInvites.value.find((i) => i.id === inviteId)
     if (invite) {
       await navigator.clipboard.writeText(invite.inviteLink)
       return invite.inviteLink
@@ -363,34 +452,62 @@ export function useWorkspace() {
   }
 
   /**
+   * Copy invite link and simulate member accepting (for demo)
+   * When copy link is clicked, the invited user "accepts" and becomes a member
+   */
+  async function copyInviteLinkAndAccept(inviteId: string): Promise<string> {
+    const invite = pendingInvites.value.find((i) => i.id === inviteId)
+    if (invite) {
+      await navigator.clipboard.writeText(invite.inviteLink)
+
+      // Simulate user accepting invite: move from pending to active
+      revokePendingInvite(inviteId)
+      addMemberToWorkspace({
+        name: invite.name,
+        email: invite.email
+      })
+
+      return invite.inviteLink
+    }
+    throw new Error('Invite not found')
+  }
+
+  /**
    * Create an invite link for a given email
-   * TODO: Replace with actual API call
    */
   async function createInviteLink(email: string): Promise<string> {
     // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
-    // Generate mock invite link
-    const inviteId = Math.random().toString(36).substring(2, 10)
-    const inviteLink = `https://cloud.comfy.org/workspace?3423532/invite/hi789jkl012mno345pq`
+    const inviteId = generateId()
+    const inviteLink = `https://cloud.comfy.org/workspace/invite/${inviteId}`
 
-    // Add to pending invites (mock)
+    // Add to pending invites
+    const current = getCurrentWorkspace()
     const newInvite: PendingInvite = {
       id: inviteId,
       name: email.split('@')[0],
       email,
       inviteDate: new Date(),
-      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       inviteLink
     }
-    _pendingInvites.value = [..._pendingInvites.value, newInvite]
+    updateCurrentWorkspace({
+      pendingInvites: [...current.pendingInvites, newInvite]
+    })
 
     return inviteLink
   }
 
-  const availableWorkspaces = computed(() => _availableWorkspaces.value)
+  const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
+    _workspaces.value.map((w) => ({
+      id: w.id,
+      name: w.name,
+      role: w.role
+    }))
+  )
   const ownedWorkspacesCount = computed(
-    () => _availableWorkspaces.value.filter((w) => w.role === 'OWNER').length
+    () => _workspaces.value.filter((w) => w.role === 'OWNER').length
   )
   const canCreateWorkspace = computed(
     () => ownedWorkspacesCount.value < MAX_OWNED_WORKSPACES
@@ -403,6 +520,7 @@ export function useWorkspace() {
     activeTab,
     isPersonalWorkspace,
     isWorkspaceSubscribed,
+    subscriptionPlan,
     permissions,
     uiConfig,
     setActiveTab,
@@ -411,6 +529,11 @@ export function useWorkspace() {
     ownedWorkspacesCount,
     canCreateWorkspace,
     switchWorkspace,
+    // Workspace management
+    createWorkspace: createNewWorkspace,
+    subscribeWorkspace: subscribeCurrentWorkspace,
+    deleteWorkspace: deleteCurrentWorkspace,
+    leaveWorkspace: leaveCurrentWorkspace,
     // Members
     members,
     pendingInvites,
@@ -419,8 +542,13 @@ export function useWorkspace() {
     fetchMembers,
     fetchPendingInvites,
     revokeInvite,
+    acceptInvite: acceptPendingInvite,
     copyInviteLink,
+    copyInviteLinkAndAccept,
     createInviteLink,
+    addMember: addMemberToWorkspace,
+    removeMember: removeMemberFromWorkspace,
+    updateWorkspaceName: updateWorkspaceNameFn,
     // Dev helpers
     setMockRole,
     setMockSubscribed

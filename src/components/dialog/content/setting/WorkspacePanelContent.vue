@@ -53,7 +53,7 @@
                     : null
                 "
                 :class="[
-                  'flex items-center gap-2 px-3 py-2',
+                  'flex cursor-pointer items-center gap-2 px-3 py-2',
                   item.class,
                   item.disabled ? 'pointer-events-auto' : ''
                 ]"
@@ -110,7 +110,8 @@ const { t } = useI18n()
 const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
-  showInviteMemberDialog
+  showInviteMemberDialog,
+  showEditWorkspaceDialog
 } = useDialogService()
 const { isActiveSubscription } = useSubscription()
 const {
@@ -129,15 +130,11 @@ const {
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
 function handleLeaveWorkspace() {
-  showLeaveWorkspaceDialog(() => {
-    // TODO: Implement actual leave workspace API call
-  })
+  showLeaveWorkspaceDialog()
 }
 
 function handleDeleteWorkspace() {
-  showDeleteWorkspaceDialog(() => {
-    // TODO: Implement actual delete workspace API call
-  })
+  showDeleteWorkspaceDialog()
 }
 
 const isDeleteDisabled = computed(
@@ -164,31 +161,50 @@ function handleInviteMember() {
   })
 }
 
-const menuItems = computed(() => {
-  const action = uiConfig.value.workspaceMenuAction
-  if (!action) return []
+function handleEditWorkspace() {
+  showEditWorkspaceDialog()
+}
 
-  if (action === 'delete') {
-    return [
-      {
-        label: t('workspacePanel.menu.deleteWorkspace'),
-        icon: 'pi pi-trash',
-        class: isDeleteDisabled.value
-          ? 'text-danger/50 cursor-not-allowed'
-          : 'text-danger',
-        disabled: isDeleteDisabled.value,
-        command: isDeleteDisabled.value ? undefined : handleDeleteWorkspace
-      }
-    ]
+const menuItems = computed(() => {
+  const items: Array<{
+    label: string
+    icon: string
+    class?: string
+    disabled?: boolean
+    command?: () => void
+  }> = []
+
+  // Add "Edit workspace details" for PERSONAL and OWNER
+  if (uiConfig.value.showEditWorkspaceMenuItem) {
+    items.push({
+      label: t('workspacePanel.menu.editWorkspaceDetails'),
+      icon: 'pi pi-pencil',
+      command: handleEditWorkspace
+    })
   }
 
-  return [
-    {
+  const action = uiConfig.value.workspaceMenuAction
+
+  // Add role-specific action
+  if (action === 'delete') {
+    items.push({
+      label: t('workspacePanel.menu.deleteWorkspace'),
+      icon: 'pi pi-trash',
+      class: isDeleteDisabled.value
+        ? 'text-danger/50 cursor-not-allowed'
+        : 'text-danger',
+      disabled: isDeleteDisabled.value,
+      command: isDeleteDisabled.value ? undefined : handleDeleteWorkspace
+    })
+  } else if (action === 'leave') {
+    items.push({
       label: t('workspacePanel.menu.leaveWorkspace'),
       icon: 'pi pi-sign-out',
       command: handleLeaveWorkspace
-    }
-  ]
+    })
+  }
+
+  return items
 })
 
 onMounted(() => {

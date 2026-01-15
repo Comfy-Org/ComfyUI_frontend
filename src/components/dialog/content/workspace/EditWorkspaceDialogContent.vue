@@ -7,7 +7,7 @@
       class="flex h-12 items-center justify-between border-b border-border-default px-4"
     >
       <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ $t('workspacePanel.createWorkspaceDialog.title') }}
+        {{ $t('workspacePanel.editWorkspaceDialog.title') }}
       </h2>
       <button
         class="cursor-pointer rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
@@ -20,21 +20,15 @@
 
     <!-- Body -->
     <div class="flex flex-col gap-4 px-4 py-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.createWorkspaceDialog.message') }}
-      </p>
       <div class="flex flex-col gap-2">
         <label class="text-sm text-base-foreground">
-          {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
+          {{ $t('workspacePanel.editWorkspaceDialog.nameLabel') }}
         </label>
         <input
-          v-model="workspaceName"
+          v-model="newWorkspaceName"
           type="text"
           class="w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-secondary-foreground"
-          :placeholder="
-            $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
-          "
-          @keydown.enter="isValidName && onCreate()"
+          @keydown.enter="isValidName && onSave()"
         />
       </div>
     </div>
@@ -49,57 +43,42 @@
         size="lg"
         :loading
         :disabled="!isValidName"
-        @click="onCreate"
+        @click="onSave"
       >
-        {{ $t('workspacePanel.createWorkspaceDialog.create') }}
+        {{ $t('workspacePanel.editWorkspaceDialog.save') }}
       </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { onConfirm } = defineProps<{
-  onConfirm?: (name: string) => void | Promise<void>
-}>()
-
 const dialogStore = useDialogStore()
-const toast = useToast()
-const { createWorkspace } = useWorkspace()
+const { workspaceName, updateWorkspaceName } = useWorkspace()
 const loading = ref(false)
-const workspaceName = ref('')
+const newWorkspaceName = ref(workspaceName.value)
 
 const isValidName = computed(() => {
-  const name = workspaceName.value.trim()
-  // Allow alphanumeric, spaces, hyphens, underscores (safe characters)
+  const name = newWorkspaceName.value.trim()
   const safeNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\s\-_]*$/
   return name.length >= 1 && name.length <= 50 && safeNameRegex.test(name)
 })
 
 function onCancel() {
-  dialogStore.closeDialog({ key: 'create-workspace' })
+  dialogStore.closeDialog({ key: 'edit-workspace' })
 }
 
-async function onCreate() {
+async function onSave() {
   if (!isValidName.value) return
   loading.value = true
   try {
-    const name = workspaceName.value.trim()
-    // Create workspace using global state (creates OWNER unsubscribed workspace)
-    createWorkspace(name)
-    // Call optional callback if provided
-    await onConfirm?.(name)
-    dialogStore.closeDialog({ key: 'create-workspace' })
-    // Show toast prompting to subscribe
-    toast.add({
-      group: 'workspace-created'
-    })
+    updateWorkspaceName(newWorkspaceName.value.trim())
+    dialogStore.closeDialog({ key: 'edit-workspace' })
   } finally {
     loading.value = false
   }
