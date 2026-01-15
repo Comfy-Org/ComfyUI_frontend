@@ -53,6 +53,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // Timer state
   let refreshTimerId: ReturnType<typeof setTimeout> | null = null
 
+  // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
+  let refreshRequestId = 0
+
   // Getters
   const isAuthenticated = computed(
     () => currentWorkspace.value !== null && workspaceToken.value !== null
@@ -165,6 +168,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return
     }
 
+    // Increment request ID to invalidate any in-flight stale refresh operations
+    refreshRequestId++
+
     isLoading.value = true
     error.value = null
 
@@ -264,10 +270,20 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
 
     const workspaceId = currentWorkspace.value.id
+    // Capture the current request ID to detect if workspace context changed during refresh
+    const capturedRequestId = refreshRequestId
     const maxRetries = 3
     const baseDelayMs = 1000
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Check if workspace context changed since refresh started (user switched workspaces)
+      if (capturedRequestId !== refreshRequestId) {
+        console.warn(
+          'Aborting stale token refresh: workspace context changed during refresh'
+        )
+        return
+      }
+
       try {
         await switchWorkspace(workspaceId)
         return
@@ -282,8 +298,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
             err.code === 'NOT_AUTHENTICATED')
 
         if (isPermanentError) {
-          console.error('Workspace access revoked or auth invalid:', err)
-          clearWorkspaceContext()
+          // Only clear context if this refresh is still for the current workspace
+          if (capturedRequestId === refreshRequestId) {
+            console.error('Workspace access revoked or auth invalid:', err)
+            clearWorkspaceContext()
+          }
           return
         }
 
@@ -300,8 +319,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           continue
         }
 
-        console.error('Failed to refresh workspace token after retries:', err)
-        clearWorkspaceContext()
+        // Only clear context if this refresh is still for the current workspace
+        if (capturedRequestId === refreshRequestId) {
+          console.error('Failed to refresh workspace token after retries:', err)
+          clearWorkspaceContext()
+        }
       }
     }
   }
@@ -316,6 +338,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function clearWorkspaceContext(): void {
+    // Increment request ID to invalidate any in-flight stale refresh operations
+    refreshRequestId++
     stopRefreshTimer()
     currentWorkspace.value = null
     workspaceToken.value = null

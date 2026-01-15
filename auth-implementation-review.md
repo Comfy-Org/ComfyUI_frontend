@@ -2,8 +2,10 @@
 
 **Date**: 2026-01-15
 **Backend PRs**: #1995, #2018, #2020
-**Frontend PR**: #6295
-**Status**: ✅ SESSION COOKIE ONLY (Phase 1) - Workspace tokens NOT yet implemented on frontend
+**Frontend PR**: #6295 (Session Cookies), #8073 (Workspace Tokens)
+**Status**: ✅ FULLY IMPLEMENTED - Session cookies (PR #6295) + Workspace tokens (PR #8073)
+
+> **Note**: This document was originally a historical review of PR #6295 (Phase 1: Session Cookies only). PR #8073 has since implemented the workspace token infrastructure described in Phase 2.
 
 ---
 
@@ -16,11 +18,11 @@
 | **Backend: Cloud JWT Service** | ✅ Merged | Full workspace token exchange + JWKS |
 | **Backend: Workspace CRUD** | ✅ Merged | Feature-gated workspace management |
 | **Backend: Session Cookie** | ✅ Merged | `/auth/session` POST/DELETE endpoints |
-| **Frontend: Session Cookie** | ✅ Merged | Extension hooks for cookie lifecycle |
-| **Frontend: Workspace Tokens** | ❌ NOT IMPLEMENTED | Token exchange, refresh, per-tab isolation |
-| **Frontend: Workspace UI** | ❌ NOT IMPLEMENTED | Workspace selector, switcher |
+| **Frontend: Session Cookie** | ✅ Merged PR#6295 | Extension hooks for cookie lifecycle |
+| **Frontend: Workspace Tokens** | ✅ Implemented PR#8073 | Token exchange, refresh, per-tab isolation |
+| **Frontend: Workspace UI** | ⚠️ Partial | Infrastructure ready, UI components TBD |
 
-**Critical Finding**: Frontend PR #6295 only implements Phase 1 (session cookies). **Workspace token exchange and per-tab isolation are NOT implemented yet.**
+**Historical Note**: Frontend PR #6295 implemented Phase 1 (session cookies). **PR #8073 has since implemented workspace token exchange and per-tab isolation.** See `auth-implementation-review-FINAL.md` for the current complete implementation status.
 
 ---
 

@@ -109,6 +109,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     isInitialized.value = true
     if (user === null) {
       lastTokenUserId.value = null
+
+      // Clear workspace sessionStorage on logout to prevent stale tokens
+      try {
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      } catch {
+        // Ignore sessionStorage errors (e.g., in private browsing mode)
+      }
     }
 
     // Reset balance when auth state changes

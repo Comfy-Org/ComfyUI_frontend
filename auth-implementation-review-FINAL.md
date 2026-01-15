@@ -3,7 +3,7 @@
 **Date**: 2026-01-15
 **Backend PRs**: #1995, #2018, #2020
 **Frontend PR**: #8073 (CORRECT PR)
-**Status**: ✅ **FULLY IMPLEMENTED & ALIGNED**
+**Status**: 🔁 **IMPLEMENTATION IN PROGRESS / PENDING MERGE**
 
 ---
 
@@ -17,11 +17,11 @@
 | **Backend: Workspace CRUD** | ✅ Merged | Feature-gated workspace management |
 | **Backend: Session Cookie** | ✅ Merged | `/auth/session` POST/DELETE endpoints |
 | **Frontend: Session Cookie** | ✅ Merged PR#6295 | Extension hooks for cookie lifecycle |
-| **Frontend: Workspace Tokens** | ✅ **Merged PR#8073** | Token exchange, refresh, per-tab isolation |
+| **Frontend: Workspace Tokens** | 🔁 In review / Pending merge (PR #8073) | Token exchange, refresh, per-tab isolation |
 | **Frontend: Workspace UI** | ⚠️ Partial | Infrastructure ready, UI components TBD |
 | **Feature Flags** | ✅ Implemented | `team_workspaces_enabled` gates all workspace features |
 
-**Critical Finding**: ✅ **Backend and frontend are 100% aligned**. Workspace auth infrastructure is fully implemented and ready for gradual rollout via feature flags.
+**Critical Finding**: Backend is 100% ready. Frontend workspace auth infrastructure (PR #8073) is in review and pending merge. Once merged, backend and frontend will be fully aligned and ready for gradual rollout via feature flags.
 
 ---
 
