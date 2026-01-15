@@ -157,6 +157,7 @@
     "choose_file_to_upload": "choose file to upload",
     "capture": "capture",
     "nodes": "Nodes",
+    "nodesCount": "{count} nodes | {count} node | {count} nodes",
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
