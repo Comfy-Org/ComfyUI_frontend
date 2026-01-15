@@ -2,10 +2,12 @@ import { useStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
+import type {
+  DraftCacheState,
+  WorkflowDraftSnapshot
+} from '@/platform/workflow/persistence/base/draftCache'
 import {
-  type DraftCacheState,
   MAX_DRAFTS,
-  type WorkflowDraftSnapshot,
   createDraftCacheState,
   mostRecentDraftPath,
   moveDraft as moveDraftEntry,
@@ -43,7 +45,23 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
   }
 
   const saveDraft = (path: string, snapshot: WorkflowDraftSnapshot) => {
-    updateState(upsertDraft(currentState(), path, snapshot, MAX_DRAFTS))
+    try {
+      updateState(upsertDraft(currentState(), path, snapshot, MAX_DRAFTS))
+    } catch (error) {
+      if (
+        error instanceof DOMException &&
+        error.name === 'QuotaExceededError'
+      ) {
+        const state = currentState()
+        if (state.order.length > 0) {
+          const oldestPath = state.order[0]
+          updateState(removeDraftEntry(state, oldestPath))
+          updateState(upsertDraft(currentState(), path, snapshot, MAX_DRAFTS))
+        }
+      } else {
+        throw error
+      }
+    }
   }
 
   const removeDraft = (path: string) => {

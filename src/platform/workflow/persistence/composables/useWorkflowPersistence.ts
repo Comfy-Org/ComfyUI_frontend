@@ -1,5 +1,5 @@
-import { tryOnScopeDispose } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { tryOnScopeDispose, useDebounceFn } from '@vueuse/core'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -47,12 +47,31 @@ export function useWorkflowPersistence() {
     settingStore.get('Comfy.Workflow.Persist')
   )
 
-  const persistCurrentWorkflow = () => {
+  const lastSavedJsonByPath = ref<Record<string, string>>({})
+
+  const persistCurrentWorkflow = useDebounceFn(() => {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
     const graphData = comfyApp.rootGraph.serialize()
     const workflowJson = JSON.stringify(graphData)
+    const workflowPath = activeWorkflow.path
+
+    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
+    lastSavedJsonByPath.value[workflowPath] = workflowJson
+
+    try {
+      workflowDraftStore.saveDraft(activeWorkflow.path, {
+        data: workflowJson,
+        updatedAt: Date.now(),
+        name: activeWorkflow.key,
+        isTemporary: activeWorkflow.isTemporary
+      })
+    } catch (error) {
+      console.error('Failed to save draft', error)
+      // If draft store fails, don't continue saving to storage
+      return
+    }
 
     try {
       localStorage.setItem('workflow', workflowJson)
@@ -81,14 +100,7 @@ export function useWorkflowPersistence() {
       workflowDraftStore.removeDraft(activeWorkflow.path)
       return
     }
-
-    workflowDraftStore.saveDraft(activeWorkflow.path, {
-      data: workflowJson,
-      updatedAt: Date.now(),
-      name: activeWorkflow.key,
-      isTemporary: activeWorkflow.isTemporary
-    })
-  }
+  }, 1_000)
 
   const loadPreviousWorkflowFromStorage = async () => {
     const workflowName = getStorageValue('Comfy.PreviousWorkflow')
@@ -144,9 +156,11 @@ export function useWorkflowPersistence() {
       setStorageValue('Comfy.PreviousWorkflow', activeWorkflowKey)
       // When the activeWorkflow changes, the graph has already been loaded.
       // Saving the current state of the graph to the localStorage.
+      // Use debounced version to avoid immediate save on tab switch
       persistCurrentWorkflow()
     }
   )
+
   api.addEventListener('graphChanged', persistCurrentWorkflow)
 
   // Clean up event listener when component unmounts
