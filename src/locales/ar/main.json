@@ -1561,6 +1561,7 @@
     "Toggle Logs Bottom Panel": "تبديل لوحة السجلات السفلية",
     "Toggle Queue Panel V2": "تبديل لوحة قائمة الانتظار V2",
     "Toggle Search Box": "تبديل مربع البحث",
+    "Toggle Simple Mode": "تبديل وضع البسيط",
     "Toggle Terminal Bottom Panel": "تبديل لوحة الطرفية السفلية",
     "Toggle Theme (Dark/Light)": "تبديل السمة (داكن/فاتح)",
     "Toggle View Controls Bottom Panel": "تبديل لوحة عناصر التحكم في العرض السفلية",
@@ -1575,8 +1576,7 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب",
-    "toggle linear mode": "تبديل الوضع الخطي"
+    "Zoom to fit": "تكبير لتناسب"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",

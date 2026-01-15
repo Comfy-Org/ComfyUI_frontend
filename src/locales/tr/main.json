@@ -1561,6 +1561,7 @@
     "Toggle Logs Bottom Panel": "Kayıtlar Alt Panelini Aç/Kapat",
     "Toggle Queue Panel V2": "Kuyruk Paneli V2'yi Aç/Kapat",
     "Toggle Search Box": "Arama Kutusunu Aç/Kapat",
+    "Toggle Simple Mode": "Basit Modu Aç/Kapat",
     "Toggle Terminal Bottom Panel": "Terminal Alt Panelini Aç/Kapat",
     "Toggle Theme (Dark/Light)": "Temayı Değiştir (Karanlık/Açık)",
     "Toggle View Controls Bottom Panel": "Görünüm Kontrolleri Alt Panelini Aç/Kapat",
@@ -1575,8 +1576,7 @@
     "Workflows": "İş Akışları",
     "Zoom In": "Yakınlaştır",
     "Zoom Out": "Uzaklaştır",
-    "Zoom to fit": "Sığdırmak için yakınlaştır",
-    "toggle linear mode": "Doğrusal Modu Aç/Kapat"
+    "Zoom to fit": "Sığdırmak için yakınlaştır"
   },
   "minimap": {
     "nodeColors": "Düğüm Renkleri",

@@ -1561,6 +1561,7 @@
     "Toggle Logs Bottom Panel": "로그 하단 패널 전환",
     "Toggle Queue Panel V2": "대기열 패널 V2 전환",
     "Toggle Search Box": "검색 상자 전환",
+    "Toggle Simple Mode": "간단 모드 전환",
     "Toggle Terminal Bottom Panel": "터미널 하단 패널 전환",
     "Toggle Theme (Dark/Light)": "테마 전환 (어두운/밝은)",
     "Toggle View Controls Bottom Panel": "뷰 컨트롤 하단 패널 전환",
@@ -1575,8 +1576,7 @@
     "Workflows": "워크플로",
     "Zoom In": "확대",
     "Zoom Out": "축소",
-    "Zoom to fit": "화면에 맞추기",
-    "toggle linear mode": "선형 모드 전환"
+    "Zoom to fit": "화면에 맞추기"
   },
   "minimap": {
     "nodeColors": "노드 색상",

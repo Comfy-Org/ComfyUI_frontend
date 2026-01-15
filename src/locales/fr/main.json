@@ -1561,6 +1561,7 @@
     "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
     "Toggle Queue Panel V2": "Basculer le panneau de file d’attente V2",
     "Toggle Search Box": "Basculer la boîte de recherche",
+    "Toggle Simple Mode": "Basculer en mode simple",
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
     "Toggle View Controls Bottom Panel": "Basculer le panneau inférieur des contrôles d’affichage",
@@ -1575,8 +1576,7 @@
     "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
-    "Zoom to fit": "Ajuster à l'écran",
-    "toggle linear mode": "basculer en mode linéaire"
+    "Zoom to fit": "Ajuster à l'écran"
   },
   "minimap": {
     "nodeColors": "Couleurs des nœuds",

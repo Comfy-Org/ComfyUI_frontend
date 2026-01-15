@@ -1561,6 +1561,7 @@
     "Toggle Logs Bottom Panel": "切换日志底部面板",
     "Toggle Queue Panel V2": "切换队列面板 V2",
     "Toggle Search Box": "切换搜索框",
+    "Toggle Simple Mode": "切换简易模式",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
@@ -1575,8 +1576,7 @@
     "Workflows": "工作流",
     "Zoom In": "放大画面",
     "Zoom Out": "缩小画面",
-    "Zoom to fit": "缩放以适应",
-    "toggle linear mode": "切换线性模式"
+    "Zoom to fit": "缩放以适应"
   },
   "minimap": {
     "nodeColors": "节点颜色",

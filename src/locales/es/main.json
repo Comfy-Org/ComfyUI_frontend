@@ -1561,6 +1561,7 @@
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
     "Toggle Queue Panel V2": "Alternar panel de cola V2",
     "Toggle Search Box": "Alternar caja de búsqueda",
+    "Toggle Simple Mode": "Alternar modo simple",
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
     "Toggle View Controls Bottom Panel": "Alternar panel inferior de controles de vista",
@@ -1575,8 +1576,7 @@
     "Workflows": "Flujos de trabajo",
     "Zoom In": "Acercar",
     "Zoom Out": "Alejar",
-    "Zoom to fit": "Ajustar al tamaño",
-    "toggle linear mode": "alternar modo lineal"
+    "Zoom to fit": "Ajustar al tamaño"
   },
   "minimap": {
     "nodeColors": "Colores de nodos",

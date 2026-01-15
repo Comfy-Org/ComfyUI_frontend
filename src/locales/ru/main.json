@@ -1561,6 +1561,7 @@
     "Toggle Logs Bottom Panel": "Показать/скрыть нижнюю панель логов",
     "Toggle Queue Panel V2": "Переключить панель очереди V2",
     "Toggle Search Box": "Переключить поисковую панель",
+    "Toggle Simple Mode": "Переключить простой режим",
     "Toggle Terminal Bottom Panel": "Показать/скрыть нижнюю панель терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
     "Toggle View Controls Bottom Panel": "Показать/скрыть нижнюю панель элементов управления",
@@ -1575,8 +1576,7 @@
     "Workflows": "Рабочие процессы",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить",
-    "Zoom to fit": "Масштабировать по размеру",
-    "toggle linear mode": "Переключить линейный режим"
+    "Zoom to fit": "Масштабировать по размеру"
   },
   "minimap": {
     "nodeColors": "Цвета узлов",

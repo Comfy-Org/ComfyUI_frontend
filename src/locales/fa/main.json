@@ -1561,6 +1561,7 @@
     "Toggle Logs Bottom Panel": "تغییر وضعیت پنل لاگ پایین",
     "Toggle Queue Panel V2": "تغییر وضعیت پنل صف V2",
     "Toggle Search Box": "تغییر وضعیت جعبه جستجو",
+    "Toggle Simple Mode": "تغییر حالت ساده",
     "Toggle Terminal Bottom Panel": "تغییر وضعیت پنل ترمینال پایین",
     "Toggle Theme (Dark/Light)": "تغییر وضعیت تم (تاریک/روشن)",
     "Toggle View Controls Bottom Panel": "تغییر وضعیت کنترل‌های نمای پایین",
@@ -1575,8 +1576,7 @@
     "Workflows": "Workflowها",
     "Zoom In": "بزرگ‌نمایی",
     "Zoom Out": "کوچک‌نمایی",
-    "Zoom to fit": "بزرگ‌نمایی برای تطبیق",
-    "toggle linear mode": "تغییر وضعیت حالت خطی"
+    "Zoom to fit": "بزرگ‌نمایی برای تطبیق"
   },
   "minimap": {
     "nodeColors": "رنگ‌های نود",
