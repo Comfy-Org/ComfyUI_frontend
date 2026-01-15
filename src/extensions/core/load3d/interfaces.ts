@@ -141,7 +141,10 @@ export interface AnimationManagerInterface extends BaseManager {
   isAnimationPlaying: boolean
   animationSpeed: number
 
-  setupModelAnimations(model: THREE.Object3D, originalModel: any): void
+  setupModelAnimations(
+    model: THREE.Object3D,
+    originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null
+  ): void
   updateAnimationList(): void
   setAnimationSpeed(speed: number): void
   updateSelectedAnimation(index: number): void
