@@ -232,11 +232,27 @@ test.describe('Node Color Adjustments', () => {
   }) => {
     await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
     await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-    const saveWorkflowInterval = 1000
+    await comfyPage.nextFrame()
+    await comfyPage.page.waitForFunction(
+      () => {
+        const workflow = localStorage.getItem('workflow')
+        if (!workflow) return false
+        try {
+          const parsed = JSON.parse(workflow)
+          return parsed?.nodes && Array.isArray(parsed.nodes)
+        } catch {
+          return false
+        }
+      },
+      { timeout: 3000 }
+    )
     const workflow = await comfyPage.page.evaluate(() => {
       return localStorage.getItem('workflow')
     })
-    for (const node of JSON.parse(workflow ?? '{}').nodes) {
+    const parsed = JSON.parse(workflow ?? '{}')
+    expect(parsed.nodes).toBeDefined()
+    expect(Array.isArray(parsed.nodes)).toBe(true)
+    for (const node of parsed.nodes) {
       if (node.bgcolor) expect(node.bgcolor).not.toMatch(/hsla/)
       if (node.color) expect(node.color).not.toMatch(/hsla/)
     }

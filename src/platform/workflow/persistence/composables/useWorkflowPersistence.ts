@@ -1,4 +1,4 @@
-import { tryOnScopeDispose, useDebounceFn } from '@vueuse/core'
+import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -49,7 +49,7 @@ export function useWorkflowPersistence() {
 
   const lastSavedJsonByPath = ref<Record<string, string>>({})
 
-  const persistCurrentWorkflow = useDebounceFn(() => {
+  const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
@@ -100,14 +100,13 @@ export function useWorkflowPersistence() {
       workflowDraftStore.removeDraft(activeWorkflow.path)
       return
     }
-  }, 1_000)
+  }
 
   const loadPreviousWorkflowFromStorage = async () => {
     const workflowName = getStorageValue('Comfy.PreviousWorkflow')
     const preferredPath = workflowName
       ? `${ComfyWorkflow.basePath}${workflowName}`
       : null
-
     return await workflowDraftStore.loadPersistedWorkflow({
       workflowName,
       preferredPath,
@@ -213,7 +212,16 @@ export function useWorkflowPersistence() {
       if (workflowStore.getWorkflowByPath(path)) return
       const draft = workflowDraftStore.getDraft(path)
       if (!draft?.isTemporary) return
-      workflowStore.createTemporary(draft.name)
+      try {
+        const workflowData = JSON.parse(draft.data)
+        workflowStore.createTemporary(draft.name, workflowData)
+      } catch (err) {
+        console.warn(
+          'Failed to parse workflow draft, creating with default',
+          err
+        )
+        workflowStore.createTemporary(draft.name)
+      }
     })
 
     workflowStore.openWorkflowsInBackground({
