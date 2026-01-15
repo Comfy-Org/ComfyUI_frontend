@@ -35,6 +35,9 @@ const zOutputs = z
 
 export type NodeExecutionOutput = z.infer<typeof zOutputs>
 
+export type NodeOutputWith<T extends Record<string, unknown>> =
+  NodeExecutionOutput & T
+
 // WS messages
 const zStatusWsMessageStatus = z.object({
   exec_info: z.object({

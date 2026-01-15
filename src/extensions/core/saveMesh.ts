@@ -6,7 +6,11 @@ import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
+import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+
+type SaveMeshOutput = NodeOutputWith<{
+  '3d'?: ResultItem[]
+}>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
@@ -71,13 +75,10 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
-    node.onExecuted = function (output: NodeExecutionOutput) {
+    node.onExecuted = function (output: SaveMeshOutput) {
       onExecuted?.call(this, output)
 
-      const meshOutput = (output as Record<string, unknown>)['3d'] as
-        | ResultItem[]
-        | undefined
-      const fileInfo = meshOutput?.[0]
+      const fileInfo = output['3d']?.[0]
 
       if (!fileInfo) return
 
