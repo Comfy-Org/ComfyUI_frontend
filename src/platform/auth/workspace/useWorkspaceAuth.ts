@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref, shallowRef } from 'vue'
+import { computed, getCurrentInstance, onUnmounted, ref, shallowRef } from 'vue'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
@@ -46,7 +46,22 @@ export class WorkspaceAuthError extends Error {
   }
 }
 
+/**
+ * Composable for managing per-tab workspace authentication.
+ *
+ * **Must be called from a Vue component setup context** because it uses
+ * `onUnmounted` to clean up refresh timers. Using this composable outside
+ * of a component setup function will cause the timer to leak.
+ *
+ * @throws {Error} If called outside of a Vue component setup context
+ */
 export function useWorkspaceAuth() {
+  if (!getCurrentInstance()) {
+    throw new Error(
+      'useWorkspaceAuth must be called from within a Vue component setup function'
+    )
+  }
+
   const firebaseAuthStore = useFirebaseAuthStore()
 
   const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)

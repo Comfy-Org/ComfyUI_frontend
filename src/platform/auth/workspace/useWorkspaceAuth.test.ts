@@ -3,6 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceAuth, WorkspaceAuthError } from './useWorkspaceAuth'
 
+vi.mock('vue', async () => {
+  const actual = await vi.importActual('vue')
+  return {
+    ...actual,
+    getCurrentInstance: vi.fn(() => ({})),
+    onUnmounted: vi.fn()
+  }
+})
+
 const mockGetIdToken = vi.fn()
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
