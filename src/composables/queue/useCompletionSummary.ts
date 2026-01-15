@@ -57,8 +57,8 @@ export const useCompletionSummary = () => {
       }
       if (prev && !active) {
         const start = lastActiveStartTs.value ?? 0
-        const finished = queueStore.historyTasks.filter((t: any) => {
-          const ts: number | undefined = t.executionEndTimestamp
+        const finished = queueStore.historyTasks.filter((t) => {
+          const ts = t.executionEndTimestamp
           return typeof ts === 'number' && ts >= start
         })
 

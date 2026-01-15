@@ -117,13 +117,22 @@ vi.mock('@/utils/formatUtil', () => ({
 }))
 
 import { useJobMenu } from '@/composables/queue/useJobMenu'
+import type { TaskItemImpl } from '@/stores/queueStore'
 
-const createJobItem = (overrides: Partial<JobListItem> = {}): JobListItem => ({
+type MockTaskRef = Record<string, unknown>
+
+type TestJobListItem = Omit<JobListItem, 'taskRef'> & {
+  taskRef?: MockTaskRef
+}
+
+const createJobItem = (
+  overrides: Partial<TestJobListItem> = {}
+): JobListItem => ({
   id: overrides.id ?? 'job-1',
   title: overrides.title ?? 'Test job',
   meta: overrides.meta ?? 'meta',
   state: overrides.state ?? 'completed',
-  taskRef: overrides.taskRef,
+  taskRef: overrides.taskRef as unknown as TaskItemImpl | undefined,
   iconName: overrides.iconName,
   iconImageUrl: overrides.iconImageUrl,
   showClear: overrides.showClear,

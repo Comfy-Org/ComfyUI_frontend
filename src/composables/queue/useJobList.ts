@@ -38,7 +38,7 @@ export type JobListItem = {
   iconName?: string
   iconImageUrl?: string
   showClear?: boolean
-  taskRef?: any
+  taskRef?: TaskItemImpl
   progressTotalPercent?: number
   progressCurrentPercent?: number
   runningNodeName?: string
