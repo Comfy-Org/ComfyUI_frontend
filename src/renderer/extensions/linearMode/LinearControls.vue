@@ -119,7 +119,7 @@ async function runButtonClick(e: Event) {
       : 'Comfy.QueuePrompt'
 
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_linear'
+      button_id: props.mobile ? 'queue_run_linear_mobile' : 'queue_run_linear'
     })
     if (batchCount.value > 1) {
       useTelemetry()?.trackUiButtonClicked({
