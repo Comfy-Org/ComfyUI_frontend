@@ -24,6 +24,7 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -152,7 +153,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   /**
    * Retrieves the appropriate authentication header for API requests.
    * Checks for authentication in the following order:
-   * 1. Workspace token (if user has active workspace context)
+   * 1. Workspace token (if team_workspaces_enabled and user has active workspace context)
    * 2. Firebase authentication token (if user is logged in)
    * 3. API key (if stored in the browser's credential manager)
    *
@@ -162,14 +163,16 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    const workspaceToken = sessionStorage.getItem('Comfy.Workspace.Token')
-    const expiresAt = sessionStorage.getItem('Comfy.Workspace.ExpiresAt')
+    if (remoteConfig.value.team_workspaces_enabled) {
+      const workspaceToken = sessionStorage.getItem('Comfy.Workspace.Token')
+      const expiresAt = sessionStorage.getItem('Comfy.Workspace.ExpiresAt')
 
-    if (workspaceToken && expiresAt) {
-      const expiryTime = parseInt(expiresAt, 10)
-      if (Date.now() < expiryTime) {
-        return {
-          Authorization: `Bearer ${workspaceToken}`
+      if (workspaceToken && expiresAt) {
+        const expiryTime = parseInt(expiresAt, 10)
+        if (Date.now() < expiryTime) {
+          return {
+            Authorization: `Bearer ${workspaceToken}`
+          }
         }
       }
     }

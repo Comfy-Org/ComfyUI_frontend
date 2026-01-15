@@ -1,6 +1,7 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -87,6 +88,10 @@ export function useWorkspaceAuth() {
   }
 
   function initializeFromSession(): boolean {
+    if (!remoteConfig.value.team_workspaces_enabled) {
+      return false
+    }
+
     try {
       const workspaceJson = sessionStorage.getItem(
         STORAGE_KEYS.CURRENT_WORKSPACE
@@ -118,6 +123,10 @@ export function useWorkspaceAuth() {
   }
 
   async function switchWorkspace(workspaceId: string): Promise<void> {
+    if (!remoteConfig.value.team_workspaces_enabled) {
+      return
+    }
+
     isLoading.value = true
     error.value = null
 

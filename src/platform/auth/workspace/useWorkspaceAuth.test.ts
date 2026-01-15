@@ -21,6 +21,16 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
+const mockRemoteConfig = vi.hoisted(() => ({
+  value: {
+    team_workspaces_enabled: true
+  }
+}))
+
+vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+  remoteConfig: mockRemoteConfig
+}))
+
 const STORAGE_KEYS = {
   CURRENT_WORKSPACE: 'Comfy.Workspace.Current',
   TOKEN: 'Comfy.Workspace.Token',
@@ -581,6 +591,51 @@ describe('useWorkspaceAuth', () => {
       const { isAuthenticated } = useWorkspaceAuth()
 
       expect(isAuthenticated.value).toBe(false)
+    })
+  })
+
+  describe('feature flag disabled', () => {
+    beforeEach(() => {
+      mockRemoteConfig.value.team_workspaces_enabled = false
+    })
+
+    afterEach(() => {
+      mockRemoteConfig.value.team_workspaces_enabled = true
+    })
+
+    it('initializeFromSession returns false when flag disabled', () => {
+      const futureExpiry = Date.now() + 3600 * 1000
+      sessionStorage.setItem(
+        STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify(mockWorkspaceWithRole)
+      )
+      sessionStorage.setItem(STORAGE_KEYS.TOKEN, 'valid-token')
+      sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, futureExpiry.toString())
+
+      const { initializeFromSession, currentWorkspace, workspaceToken } =
+        useWorkspaceAuth()
+
+      const result = initializeFromSession()
+
+      expect(result).toBe(false)
+      expect(currentWorkspace.value).toBeNull()
+      expect(workspaceToken.value).toBeNull()
+    })
+
+    it('switchWorkspace is a no-op when flag disabled', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn()
+      vi.stubGlobal('fetch', mockFetch)
+
+      const { switchWorkspace, currentWorkspace, workspaceToken, isLoading } =
+        useWorkspaceAuth()
+
+      await switchWorkspace('workspace-123')
+
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(currentWorkspace.value).toBeNull()
+      expect(workspaceToken.value).toBeNull()
+      expect(isLoading.value).toBe(false)
     })
   })
 })

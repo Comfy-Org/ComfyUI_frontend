@@ -1,5 +1,6 @@
-import { api } from '@/scripts/api'
 import { isCloud } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 /**
@@ -10,22 +11,37 @@ export const useSessionCookie = () => {
   /**
    * Creates or refreshes the session cookie.
    * Called after login and on token refresh.
+   *
+   * When team_workspaces_enabled is true, uses Firebase token directly
+   * (since getAuthHeader() returns workspace token which shouldn't be used for session creation).
+   * When disabled, uses getAuthHeader() for backward compatibility.
    */
   const createSession = async (): Promise<void> => {
     if (!isCloud) return
 
     const authStore = useFirebaseAuthStore()
-    const firebaseToken = await authStore.getIdToken()
 
-    if (!firebaseToken) {
-      throw new Error('No Firebase token available for session creation')
+    let authHeader: Record<string, string>
+
+    if (remoteConfig.value.team_workspaces_enabled) {
+      const firebaseToken = await authStore.getIdToken()
+      if (!firebaseToken) {
+        throw new Error('No Firebase token available for session creation')
+      }
+      authHeader = { Authorization: `Bearer ${firebaseToken}` }
+    } else {
+      const header = await authStore.getAuthHeader()
+      if (!header) {
+        throw new Error('No auth header available for session creation')
+      }
+      authHeader = header
     }
 
     const response = await fetch(api.apiURL('/auth/session'), {
       method: 'POST',
       credentials: 'include',
       headers: {
-        Authorization: `Bearer ${firebaseToken}`,
+        ...authHeader,
         'Content-Type': 'application/json'
       }
     })
