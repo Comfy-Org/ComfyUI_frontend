@@ -94,7 +94,8 @@ const linearFeatureFlag = useFeatureFlags().featureFlag(
 const hasSeenLinear = ref(false)
 whenever(
   () => canvasStore.linearMode,
-  () => (hasSeenLinear.value = true)
+  () => (hasSeenLinear.value = true),
+  { immediate: true, once: true }
 )
 
 const isSmall = computed(
