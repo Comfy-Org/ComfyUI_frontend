@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 import { ref } from 'vue'
 
 import TagsInput from './TagsInput.vue'
@@ -7,7 +8,11 @@ import TagsInputItem from './TagsInputItem.vue'
 import TagsInputItemDelete from './TagsInputItemDelete.vue'
 import TagsInputItemText from './TagsInputItemText.vue'
 
-const meta: Meta<typeof TagsInput> = {
+interface GenericMeta<C> extends Omit<Meta<C>, 'component'> {
+  component: ComponentExposed<C>
+}
+
+const meta: GenericMeta<typeof TagsInput> = {
   title: 'Components/TagsInput',
   component: TagsInput,
   tags: ['autodocs'],

@@ -1,6 +1,10 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends AcceptableInputValue = string">
 import { onClickOutside, useCurrentElement } from '@vueuse/core'
-import type { TagsInputRootEmits, TagsInputRootProps } from 'reka-ui'
+import type {
+  AcceptableInputValue,
+  TagsInputRootEmits,
+  TagsInputRootProps
+} from 'reka-ui'
 import { TagsInputRoot, useForwardPropsEmits } from 'reka-ui'
 import { computed, nextTick, provide, ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
@@ -14,8 +18,8 @@ const {
   disabled = false,
   class: className,
   ...restProps
-} = defineProps<TagsInputRootProps & { class?: HTMLAttributes['class'] }>()
-const emits = defineEmits<TagsInputRootEmits>()
+} = defineProps<TagsInputRootProps<T> & { class?: HTMLAttributes['class'] }>()
+const emits = defineEmits<TagsInputRootEmits<T>>()
 
 const isEditing = ref(false)
 const rootEl = useCurrentElement<HTMLElement>()

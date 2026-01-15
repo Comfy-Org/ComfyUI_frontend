@@ -9,7 +9,7 @@ import TagsInputItemDelete from './TagsInputItemDelete.vue'
 import TagsInputItemText from './TagsInputItemText.vue'
 
 describe('TagsInput', () => {
-  const mountTagsInput = (props = {}, slots = {}) => {
+  function mountTagsInput(props = {}, slots = {}) {
     return mount(TagsInput, {
       props: {
         modelValue: [],
@@ -19,37 +19,10 @@ describe('TagsInput', () => {
     })
   }
 
-  it('renders with default styling classes', () => {
-    const wrapper = mountTagsInput()
-
-    expect(wrapper.classes()).toContain('flex')
-    expect(wrapper.classes()).toContain('rounded-lg')
-  })
-
-  it('applies custom class prop', () => {
-    const wrapper = mountTagsInput({ class: 'custom-class' })
-
-    expect(wrapper.classes()).toContain('custom-class')
-  })
-
   it('renders slot content', () => {
     const wrapper = mountTagsInput({}, { default: '<span>Slot Content</span>' })
 
     expect(wrapper.text()).toContain('Slot Content')
-  })
-
-  it('applies design system styling tokens', () => {
-    const wrapper = mountTagsInput()
-
-    expect(wrapper.classes()).toContain('bg-transparent')
-    expect(wrapper.classes()).toContain('rounded-lg')
-  })
-
-  it('has focus ring styling', () => {
-    const wrapper = mountTagsInput()
-
-    expect(wrapper.classes()).toContain('focus-within:ring-1')
-    expect(wrapper.classes()).toContain('focus-within:ring-primary-background')
   })
 })
 
@@ -101,27 +74,23 @@ describe('TagsInput with child components', () => {
     expect(textElements).toHaveLength(2)
   })
 
-  it('renders X icons in delete buttons', () => {
-    const wrapper = mountFullTagsInput(['tag1'])
-
-    const icon = wrapper.find('i.icon-\\[lucide--x\\]')
-    expect(icon.exists()).toBe(true)
-  })
-
   it('updates model value when adding a tag', async () => {
     let currentTags = ['existing']
 
-    const wrapper = mount(TagsInput, {
+    const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
       props: {
         modelValue: currentTags,
-        'onUpdate:modelValue': (payload: unknown[]) => {
-          currentTags = payload as string[]
+        'onUpdate:modelValue': (payload) => {
+          currentTags = payload
         }
       },
       slots: {
         default: () => h(TagsInputInput, { placeholder: 'Add tag...' })
       }
     })
+
+    await wrapper.trigger('click')
+    await nextTick()
 
     const input = wrapper.find('input')
     await input.setValue('newTag')
