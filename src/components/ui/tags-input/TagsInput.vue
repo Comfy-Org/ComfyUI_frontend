@@ -11,7 +11,7 @@ import { tagsInputFocusKey } from './tagsInputContext'
 import type { FocusCallback } from './tagsInputContext'
 
 const {
-  disabled = true,
+  disabled = false,
   class: className,
   ...restProps
 } = defineProps<TagsInputRootProps & { class?: HTMLAttributes['class'] }>()
@@ -25,7 +25,7 @@ provide(tagsInputFocusKey, (callback: FocusCallback) => {
   focusInput.value = callback
 })
 
-const internalDisabled = computed(() => disabled && !isEditing.value)
+const internalDisabled = computed(() => disabled || !isEditing.value)
 
 const delegatedProps = computed(() => ({
   ...restProps,
@@ -35,7 +35,7 @@ const delegatedProps = computed(() => ({
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 
 async function enableEditing() {
-  if (disabled && !isEditing.value) {
+  if (!disabled && !isEditing.value) {
     isEditing.value = true
     await nextTick()
     focusInput.value?.()
@@ -55,7 +55,7 @@ onClickOutside(rootEl, () => {
         'group relative flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
         !internalDisabled &&
           'hover:bg-modal-card-background-hovered focus-within:bg-modal-card-background-hovered',
-        internalDisabled && 'cursor-pointer',
+        !disabled && !isEditing && 'cursor-pointer',
         className
       )
     "
@@ -63,7 +63,7 @@ onClickOutside(rootEl, () => {
   >
     <slot />
     <i
-      v-if="disabled"
+      v-if="!disabled && !isEditing"
       class="icon-[lucide--square-pen] absolute bottom-2 right-2 size-4 text-muted-foreground"
     />
   </TagsInputRoot>
