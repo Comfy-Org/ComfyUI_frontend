@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { d, t } from '@/i18n'
@@ -12,6 +11,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
+import Preview3d from '@/renderer/extensions/linearMode/Preview3d.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import {
   getMediaType,
@@ -172,7 +172,7 @@ async function rerun(e: Event) {
     class="w-full max-w-128 m-auto my-12 overflow-y-auto"
     v-text="selectedOutput!.url"
   />
-  <Load3dViewerContent
+  <Preview3d
     v-else-if="getMediaType(selectedOutput) === '3d'"
     :model-url="selectedOutput!.url"
   />
