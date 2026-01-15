@@ -14,6 +14,7 @@ import { ViewHelperManager } from './ViewHelperManager'
 import {
   type CameraState,
   type CaptureResult,
+  type EventCallback,
   type Load3DOptions,
   type MaterialMode,
   type UpDirection
@@ -610,11 +611,11 @@ class Load3d {
     this.forceRender()
   }
 
-  addEventListener(event: string, callback: (data?: any) => void): void {
+  addEventListener<T>(event: string, callback: EventCallback<T>): void {
     this.eventManager.addEventListener(event, callback)
   }
 
-  removeEventListener(event: string, callback: (data?: any) => void): void {
+  removeEventListener<T>(event: string, callback: EventCallback<T>): void {
     this.eventManager.removeEventListener(event, callback)
   }
 
