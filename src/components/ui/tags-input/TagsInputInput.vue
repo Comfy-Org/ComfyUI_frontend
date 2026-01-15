@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { TagsInputInputProps } from 'reka-ui'
-import { TagsInputInput, useForwardProps } from 'reka-ui'
-import { inject, onMounted, onUnmounted, useTemplateRef } from 'vue'
+import { TagsInputInput, useForwardExpose, useForwardProps } from 'reka-ui'
+import { inject, onMounted, onUnmounted } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
@@ -14,11 +14,11 @@ const { class: className, ...restProps } = defineProps<
 
 const forwardedProps = useForwardProps(restProps)
 
-const inputRef = useTemplateRef<HTMLInputElement>('inputRef')
+const { forwardRef, currentElement } = useForwardExpose()
 const registerFocus = inject(tagsInputFocusKey, undefined)
 
 onMounted(() => {
-  registerFocus?.(() => inputRef.value?.focus())
+  registerFocus?.(() => currentElement.value?.focus())
 })
 
 onUnmounted(() => {
@@ -28,7 +28,7 @@ onUnmounted(() => {
 
 <template>
   <TagsInputInput
-    ref="inputRef"
+    :ref="forwardRef"
     v-bind="forwardedProps"
     :class="
       cn(
