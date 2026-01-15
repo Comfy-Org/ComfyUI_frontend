@@ -1,4 +1,5 @@
-import { computed, getCurrentInstance, onUnmounted, ref, shallowRef } from 'vue'
+import { useTimeoutFn } from '@vueuse/core'
+import { computed, getCurrentInstance, ref, shallowRef } from 'vue'
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
@@ -50,8 +51,8 @@ export class WorkspaceAuthError extends Error {
  * Composable for managing per-tab workspace authentication.
  *
  * **Must be called from a Vue component setup context** because it uses
- * `onUnmounted` to clean up refresh timers. Using this composable outside
- * of a component setup function will cause the timer to leak.
+ * VueUse's useTimeoutFn which requires lifecycle hooks for auto-cleanup.
+ * Using this composable outside of a component setup function will cause errors.
  *
  * @throws {Error} If called outside of a Vue component setup context
  */
@@ -69,28 +70,26 @@ export function useWorkspaceAuth() {
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
-  let refreshTimer: ReturnType<typeof setTimeout> | null = null
+  const refreshDelay = ref(0)
+  const { start: startRefreshTimer, stop: stopRefreshTimer } = useTimeoutFn(
+    () => {
+      void refreshToken()
+    },
+    refreshDelay,
+    { immediate: false }
+  )
 
   const isAuthenticated = computed(
     () => currentWorkspace.value !== null && workspaceToken.value !== null
   )
 
   function scheduleTokenRefresh(expiresAt: number): void {
-    clearRefreshTimer()
+    stopRefreshTimer()
     const now = Date.now()
     const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS
-    const delay = Math.max(0, refreshAt - now)
+    refreshDelay.value = Math.max(0, refreshAt - now)
 
-    refreshTimer = setTimeout(() => {
-      void refreshToken()
-    }, delay)
-  }
-
-  function clearRefreshTimer(): void {
-    if (refreshTimer !== null) {
-      clearTimeout(refreshTimer)
-      refreshTimer = null
-    }
+    startRefreshTimer()
   }
 
   function persistToSession(
@@ -278,19 +277,23 @@ export function useWorkspaceAuth() {
         await switchWorkspace(workspaceId)
         return
       } catch (err) {
-        const isTransientError =
-          err instanceof WorkspaceAuthError &&
-          err.code === 'TOKEN_EXCHANGE_FAILED'
+        const isAuthError = err instanceof WorkspaceAuthError
 
         const isPermanentError =
-          err instanceof WorkspaceAuthError &&
-          (err.code === 'ACCESS_DENIED' || err.code === 'WORKSPACE_NOT_FOUND')
+          isAuthError &&
+          (err.code === 'ACCESS_DENIED' ||
+            err.code === 'WORKSPACE_NOT_FOUND' ||
+            err.code === 'INVALID_FIREBASE_TOKEN' ||
+            err.code === 'NOT_AUTHENTICATED')
 
         if (isPermanentError) {
-          console.error('Workspace access revoked:', err)
+          console.error('Workspace access revoked or auth invalid:', err)
           clearWorkspaceContext()
           return
         }
+
+        const isTransientError =
+          isAuthError && err.code === 'TOKEN_EXCHANGE_FAILED'
 
         if (isTransientError && attempt < maxRetries) {
           const delay = baseDelayMs * Math.pow(2, attempt)
@@ -303,6 +306,7 @@ export function useWorkspaceAuth() {
         }
 
         console.error('Failed to refresh workspace token after retries:', err)
+        clearWorkspaceContext()
       }
     }
   }
@@ -317,16 +321,12 @@ export function useWorkspaceAuth() {
   }
 
   function clearWorkspaceContext(): void {
-    clearRefreshTimer()
+    stopRefreshTimer()
     currentWorkspace.value = null
     workspaceToken.value = null
     error.value = null
     clearSessionStorage()
   }
-
-  onUnmounted(() => {
-    clearRefreshTimer()
-  })
 
   return {
     currentWorkspace,

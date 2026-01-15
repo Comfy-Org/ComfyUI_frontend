@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
 
@@ -47,10 +47,11 @@ describe('useWorkspaceSwitch', () => {
     vi.clearAllMocks()
     mockCurrentWorkspace.value = { id: 'workspace-1' }
     mockActiveWorkflow.value = null
-    Object.defineProperty(window, 'location', {
-      value: { reload: mockReload },
-      writable: true
-    })
+    vi.stubGlobal('location', { reload: mockReload })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   describe('hasUnsavedChanges', () => {

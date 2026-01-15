@@ -1,14 +1,29 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkspaceAuth, WorkspaceAuthError } from './useWorkspaceAuth'
+import {
+  useWorkspaceAuth,
+  WorkspaceAuthError,
+  WORKSPACE_STORAGE_KEYS
+} from './useWorkspaceAuth'
+
+const mockStart = vi.fn()
+const mockStop = vi.fn()
+
+vi.mock('@vueuse/core', () => ({
+  useTimeoutFn: vi.fn((callback: () => void, delayRef: { value: number }) => {
+    mockStart.mockImplementation(() => {
+      setTimeout(callback, delayRef.value)
+    })
+    return { start: mockStart, stop: mockStop }
+  })
+}))
 
 vi.mock('vue', async () => {
   const actual = await vi.importActual('vue')
   return {
     ...actual,
-    getCurrentInstance: vi.fn(() => ({})),
-    onUnmounted: vi.fn()
+    getCurrentInstance: vi.fn(() => ({}))
   }
 })
 
@@ -39,12 +54,6 @@ const mockRemoteConfig = vi.hoisted(() => ({
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: mockRemoteConfig
 }))
-
-const WORKSPACE_STORAGE_KEYS = {
-  CURRENT_WORKSPACE: 'Comfy.Workspace.Current',
-  TOKEN: 'Comfy.Workspace.Token',
-  EXPIRES_AT: 'Comfy.Workspace.ExpiresAt'
-}
 
 const mockWorkspace = {
   id: 'workspace-123',
@@ -506,8 +515,7 @@ describe('useWorkspaceAuth', () => {
       vi.advanceTimersByTime(refreshDelay - 1)
       expect(mockFetch).toHaveBeenCalledTimes(1)
 
-      vi.advanceTimersByTime(1)
-      await Promise.resolve()
+      await vi.advanceTimersByTimeAsync(1)
 
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
