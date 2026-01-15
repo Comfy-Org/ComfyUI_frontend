@@ -175,6 +175,14 @@ const buttonTooltip = computed(() => {
   }
   return null
 })
+
+const sliderWidth = computed(() => {
+  const { min, max } = filteredProps.value
+  if (min === undefined || max === undefined) return 0
+  const value = dragValue.value ?? modelValue.value
+  const ratio = (value - min) / (max - min)
+  return (ratio * 100) | 0
+})
 </script>
 
 <template>
@@ -184,7 +192,7 @@ const buttonTooltip = computed(() => {
       v-tooltip="buttonTooltip"
       v-bind="filteredProps"
       :aria-label="widget.name"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7')"
+      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
     >
       <button
         v-if="!buttonsDisabled"
@@ -252,6 +260,10 @@ const buttonTooltip = computed(() => {
         :disabled="!canIncrement"
         tabindex="-1"
         @click="modelValue += stepValue"
+      />
+      <div
+        class="bg-primary-background/10 absolute left-0 bottom-0 h-full rounded-lg"
+        :style="{ width: `${sliderWidth}%` }"
       />
     </div>
   </WidgetLayoutField>
