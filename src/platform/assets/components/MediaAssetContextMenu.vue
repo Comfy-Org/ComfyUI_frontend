@@ -63,10 +63,10 @@ const {
 
 const emit = defineEmits<{
   zoom: []
+  hide: []
   'asset-deleted': []
   'bulk-download': [assets: AssetItem[]]
   'bulk-delete': [assets: AssetItem[]]
-  hide: []
   'bulk-add-to-workflow': [assets: AssetItem[]]
   'bulk-open-workflow': [assets: AssetItem[]]
   'bulk-export-workflow': [assets: AssetItem[]]
