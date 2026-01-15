@@ -38,10 +38,10 @@ export const Default: Story = {
     },
     setup() {
       const tags = ref(args.modelValue || ['tag1', 'tag2'])
-      return { tags }
+      return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" class="w-80">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
@@ -54,12 +54,13 @@ export const Default: Story = {
     `
   }),
   args: {
-    modelValue: ['Vue', 'TypeScript']
+    modelValue: ['Vue', 'TypeScript'],
+    disabled: false
   }
 }
 
 export const Empty: Story = {
-  render: () => ({
+  render: (args) => ({
     components: {
       TagsInput,
       TagsInputInput,
@@ -69,10 +70,10 @@ export const Empty: Story = {
     },
     setup() {
       const tags = ref<string[]>([])
-      return { tags }
+      return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" class="w-80">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
@@ -84,7 +85,7 @@ export const Empty: Story = {
 }
 
 export const ManyTags: Story = {
-  render: () => ({
+  render: (args) => ({
     components: {
       TagsInput,
       TagsInputInput,
@@ -103,10 +104,10 @@ export const ManyTags: Story = {
         'Python',
         'Rust'
       ])
-      return { tags }
+      return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" class="w-96">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-96">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
@@ -118,7 +119,11 @@ export const ManyTags: Story = {
 }
 
 export const Disabled: Story = {
-  render: () => ({
+  args: {
+    disabled: true
+  },
+
+  render: (args) => ({
     components: {
       TagsInput,
       TagsInputInput,
@@ -128,10 +133,10 @@ export const Disabled: Story = {
     },
     setup() {
       const tags = ref(['Read', 'Only', 'Tags'])
-      return { tags }
+      return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" :disabled="true" class="w-80 opacity-60">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
@@ -143,7 +148,7 @@ export const Disabled: Story = {
 }
 
 export const CustomWidth: Story = {
-  render: () => ({
+  render: (args) => ({
     components: {
       TagsInput,
       TagsInputInput,
@@ -153,10 +158,10 @@ export const CustomWidth: Story = {
     },
     setup() {
       const tags = ref(['Full', 'Width'])
-      return { tags }
+      return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" class="w-full">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-full">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
