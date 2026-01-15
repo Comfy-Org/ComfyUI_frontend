@@ -23,6 +23,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/useWorkspaceAuth'
 import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
@@ -164,8 +165,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
     if (remoteConfig.value.team_workspaces_enabled) {
-      const workspaceToken = sessionStorage.getItem('Comfy.Workspace.Token')
-      const expiresAt = sessionStorage.getItem('Comfy.Workspace.ExpiresAt')
+      const workspaceToken = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.TOKEN
+      )
+      const expiresAt = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT
+      )
 
       if (workspaceToken && expiresAt) {
         const expiryTime = parseInt(expiresAt, 10)

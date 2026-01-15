@@ -31,7 +31,7 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: mockRemoteConfig
 }))
 
-const STORAGE_KEYS = {
+const WORKSPACE_STORAGE_KEYS = {
   CURRENT_WORKSPACE: 'Comfy.Workspace.Current',
   TOKEN: 'Comfy.Workspace.Token',
   EXPIRES_AT: 'Comfy.Workspace.ExpiresAt'
@@ -99,11 +99,14 @@ describe('useWorkspaceAuth', () => {
     it('returns true and populates state when valid session data exists', () => {
       const futureExpiry = Date.now() + 3600 * 1000
       sessionStorage.setItem(
-        STORAGE_KEYS.CURRENT_WORKSPACE,
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
         JSON.stringify(mockWorkspaceWithRole)
       )
-      sessionStorage.setItem(STORAGE_KEYS.TOKEN, 'valid-token')
-      sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, futureExpiry.toString())
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'valid-token')
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
+        futureExpiry.toString()
+      )
 
       const { initializeFromSession, currentWorkspace, workspaceToken } =
         useWorkspaceAuth()
@@ -126,44 +129,58 @@ describe('useWorkspaceAuth', () => {
     it('returns false and clears storage when token is expired', () => {
       const pastExpiry = Date.now() - 1000
       sessionStorage.setItem(
-        STORAGE_KEYS.CURRENT_WORKSPACE,
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
         JSON.stringify(mockWorkspaceWithRole)
       )
-      sessionStorage.setItem(STORAGE_KEYS.TOKEN, 'expired-token')
-      sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, pastExpiry.toString())
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'expired-token')
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
+        pastExpiry.toString()
+      )
 
       const { initializeFromSession } = useWorkspaceAuth()
 
       const result = initializeFromSession()
 
       expect(result).toBe(false)
-      expect(sessionStorage.getItem(STORAGE_KEYS.CURRENT_WORKSPACE)).toBeNull()
-      expect(sessionStorage.getItem(STORAGE_KEYS.TOKEN)).toBeNull()
-      expect(sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT)).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBeNull()
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      ).toBeNull()
     })
 
     it('returns false and clears storage when data is malformed', () => {
-      sessionStorage.setItem(STORAGE_KEYS.CURRENT_WORKSPACE, 'invalid-json{')
-      sessionStorage.setItem(STORAGE_KEYS.TOKEN, 'some-token')
-      sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, 'not-a-number')
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        'invalid-json{'
+      )
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'some-token')
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT, 'not-a-number')
 
       const { initializeFromSession } = useWorkspaceAuth()
 
       const result = initializeFromSession()
 
       expect(result).toBe(false)
-      expect(sessionStorage.getItem(STORAGE_KEYS.CURRENT_WORKSPACE)).toBeNull()
-      expect(sessionStorage.getItem(STORAGE_KEYS.TOKEN)).toBeNull()
-      expect(sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT)).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBeNull()
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      ).toBeNull()
     })
 
     it('returns false when partial session data exists (missing token)', () => {
       sessionStorage.setItem(
-        STORAGE_KEYS.CURRENT_WORKSPACE,
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
         JSON.stringify(mockWorkspaceWithRole)
       )
       sessionStorage.setItem(
-        STORAGE_KEYS.EXPIRES_AT,
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
         (Date.now() + 3600 * 1000).toString()
       )
 
@@ -214,13 +231,15 @@ describe('useWorkspaceAuth', () => {
 
       await switchWorkspace('workspace-123')
 
-      expect(sessionStorage.getItem(STORAGE_KEYS.CURRENT_WORKSPACE)).toBe(
-        JSON.stringify(mockWorkspaceWithRole)
-      )
-      expect(sessionStorage.getItem(STORAGE_KEYS.TOKEN)).toBe(
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBe(JSON.stringify(mockWorkspaceWithRole))
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
         'workspace-token-abc'
       )
-      expect(sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT)).toBeTruthy()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      ).toBeTruthy()
     })
 
     it('sets isLoading to true during operation', async () => {
@@ -411,19 +430,23 @@ describe('useWorkspaceAuth', () => {
 
     it('clears sessionStorage', async () => {
       sessionStorage.setItem(
-        STORAGE_KEYS.CURRENT_WORKSPACE,
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
         JSON.stringify(mockWorkspaceWithRole)
       )
-      sessionStorage.setItem(STORAGE_KEYS.TOKEN, 'some-token')
-      sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, '12345')
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'some-token')
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT, '12345')
 
       const { clearWorkspaceContext } = useWorkspaceAuth()
 
       clearWorkspaceContext()
 
-      expect(sessionStorage.getItem(STORAGE_KEYS.CURRENT_WORKSPACE)).toBeNull()
-      expect(sessionStorage.getItem(STORAGE_KEYS.TOKEN)).toBeNull()
-      expect(sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT)).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBeNull()
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
+      ).toBeNull()
     })
   })
 
@@ -606,11 +629,14 @@ describe('useWorkspaceAuth', () => {
     it('initializeFromSession returns false when flag disabled', () => {
       const futureExpiry = Date.now() + 3600 * 1000
       sessionStorage.setItem(
-        STORAGE_KEYS.CURRENT_WORKSPACE,
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
         JSON.stringify(mockWorkspaceWithRole)
       )
-      sessionStorage.setItem(STORAGE_KEYS.TOKEN, 'valid-token')
-      sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, futureExpiry.toString())
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'valid-token')
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
+        futureExpiry.toString()
+      )
 
       const { initializeFromSession, currentWorkspace, workspaceToken } =
         useWorkspaceAuth()

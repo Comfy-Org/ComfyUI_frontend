@@ -10,7 +10,7 @@ import type {
   WorkspaceWithRole
 } from './workspaceTypes'
 
-const STORAGE_KEYS = {
+export const WORKSPACE_STORAGE_KEYS = {
   CURRENT_WORKSPACE: 'Comfy.Workspace.Current',
   TOKEN: 'Comfy.Workspace.Token',
   EXPIRES_AT: 'Comfy.Workspace.ExpiresAt'
@@ -67,11 +67,14 @@ export function useWorkspaceAuth() {
   ): void {
     try {
       sessionStorage.setItem(
-        STORAGE_KEYS.CURRENT_WORKSPACE,
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
         JSON.stringify(workspace)
       )
-      sessionStorage.setItem(STORAGE_KEYS.TOKEN, token)
-      sessionStorage.setItem(STORAGE_KEYS.EXPIRES_AT, expiresAt.toString())
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, token)
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
+        expiresAt.toString()
+      )
     } catch {
       console.warn('Failed to persist workspace context to sessionStorage')
     }
@@ -79,9 +82,9 @@ export function useWorkspaceAuth() {
 
   function clearSessionStorage(): void {
     try {
-      sessionStorage.removeItem(STORAGE_KEYS.CURRENT_WORKSPACE)
-      sessionStorage.removeItem(STORAGE_KEYS.TOKEN)
-      sessionStorage.removeItem(STORAGE_KEYS.EXPIRES_AT)
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+      sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT)
     } catch {
       console.warn('Failed to clear workspace context from sessionStorage')
     }
@@ -94,10 +97,12 @@ export function useWorkspaceAuth() {
 
     try {
       const workspaceJson = sessionStorage.getItem(
-        STORAGE_KEYS.CURRENT_WORKSPACE
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
       )
-      const token = sessionStorage.getItem(STORAGE_KEYS.TOKEN)
-      const expiresAtStr = sessionStorage.getItem(STORAGE_KEYS.EXPIRES_AT)
+      const token = sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)
+      const expiresAtStr = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT
+      )
 
       if (!workspaceJson || !token || !expiresAtStr) {
         return false
