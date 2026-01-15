@@ -140,7 +140,9 @@
 
 :root {
   --fg-color: #000;
-  --bg-color: #fff;
+  --bg-color-light: #fff;
+  --bg-color-dark: #202020;
+  --bg-color: var(--bg-color-light);
   --comfy-menu-bg: #353535;
   --comfy-menu-secondary-bg: #292929;
   --comfy-topbar-height: 2.5rem;
@@ -289,7 +291,7 @@
 
 .dark-theme {
   --fg-color: #fff;
-  --bg-color: #202020;
+  --bg-color: var(--bg-color-dark);
   --content-bg: #4e4e4e;
   --content-fg: #fff;
   --content-hover-bg: #222;
@@ -584,7 +586,10 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
-  background: var(--bg-color) var(--bg-img);
+  background: var(--bg-img, var(--bg-color-light));
+  @media (prefers-color-scheme: dark) {
+    background: var(--bg-img, var(--bg-color-dark));
+  }
   color: var(--fg-color);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
