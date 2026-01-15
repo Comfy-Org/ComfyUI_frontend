@@ -471,6 +471,20 @@ describe('useWorkflowStore', () => {
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
     })
+
+    it('should remove draft when closing temporary workflow', async () => {
+      const workflow = store.createTemporary('test.json')
+      const draftStore = useWorkflowDraftStore()
+      draftStore.saveDraft(workflow.path, {
+        data: defaultGraphJSON,
+        updatedAt: Date.now(),
+        name: workflow.key,
+        isTemporary: true
+      })
+      expect(draftStore.getDraft(workflow.path)).toBeDefined()
+      await store.closeWorkflow(workflow)
+      expect(draftStore.getDraft(workflow.path)).toBeUndefined()
+    })
   })
 
   describe('deleteWorkflow', () => {
