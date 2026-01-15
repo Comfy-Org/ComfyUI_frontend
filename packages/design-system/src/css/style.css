@@ -200,7 +200,7 @@
   --node-component-disabled: var(--color-alpha-ash-500-20);
   --node-component-executing: var(--color-blue-500);
   --node-component-header: var(--fg-color);
-  --node-component-header-icon: var(--color-ash-800);
+  --node-component-header-icon: var(--node-component-surface-highlight);
   --node-component-header-surface: var(--color-smoke-400);
   --node-component-outline: var(--color-black);
   --node-component-ring: rgb(from var(--color-smoke-500) r g b / 50%);
@@ -258,6 +258,7 @@
   --component-node-border: var(--color-border-default);
   --component-node-foreground: var(--base-foreground);
   --component-node-foreground-secondary: var(--color-muted-foreground);
+  --component-node-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.2);
   --component-node-widget-background: var(--secondary-background);
   --component-node-widget-background-hovered: var(--secondary-background-hover);
   --component-node-widget-background-selected: var(--secondary-background-selected);
@@ -323,7 +324,7 @@
   --node-component-border-error: var(--color-danger-100);
   --node-component-border-executing: var(--color-blue-500);
   --node-component-border-selected: var(--color-charcoal-200);
-  --node-component-header-icon: var(--color-slate-300);
+  --node-component-header-icon: var(--node-component-surface-highlight);
   --node-component-header-surface: var(--color-charcoal-800);
   --node-component-outline: var(--color-white);
   --node-component-ring: rgb(var(--color-smoke-500) / 20%);
@@ -384,6 +385,7 @@
   --component-node-border: var(--color-charcoal-100);
   --component-node-foreground: var(--base-foreground);
   --component-node-foreground-secondary: var(--color-muted-foreground);
+  --component-node-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.4);
   --component-node-widget-background: var(--secondary-background-hover);
   --component-node-widget-background-hovered: var(--secondary-background-selected);
   --component-node-widget-background-selected: var(--color-charcoal-100);
@@ -1324,6 +1326,29 @@ audio.comfy-audio.empty-audio-widget {
 .lg-node {
   /* Disable text selection on all nodes */
   user-select: none;
+  --component-node-widget-background: color-mix(
+    in srgb,
+    var(--component-node-background) 92%,
+    var(--contrast-mix-color, #000)
+  );
+  --component-node-widget-background-hovered: color-mix(
+    in srgb,
+    var(--component-node-background) 80%,
+    var(--contrast-mix-color, #000)
+  );
+}
+
+.dark-theme .lg-node {
+  --component-node-widget-background: color-mix(
+    in srgb,
+    var(--component-node-background) 85%,
+    var(--contrast-mix-color, #000)
+  );
+  --component-node-widget-background-hovered: color-mix(
+    in srgb,
+    var(--component-node-background) 70%,
+    var(--contrast-mix-color, #000)
+  );
 }
 
 .lg-node .lg-slot,

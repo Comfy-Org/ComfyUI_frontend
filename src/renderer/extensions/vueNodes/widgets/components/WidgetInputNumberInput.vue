@@ -64,7 +64,8 @@ function updateValue(e: UIEvent) {
   textEdit.value = false
 }
 
-const sharedButtonClass = 'w-8 bg-transparent border-0 text-sm text-smoke-700'
+const sharedButtonClass =
+  'w-8 bg-transparent border-0 text-sm text-node-component-surface-highlight'
 const canDecrement = computed(
   () =>
     modelValue.value > filteredProps.value.min &&

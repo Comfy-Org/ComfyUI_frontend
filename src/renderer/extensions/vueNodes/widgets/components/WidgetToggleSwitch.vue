@@ -18,6 +18,16 @@
         v-model="modelValue"
         v-bind="filteredProps"
         :aria-label="widget.name"
+        :pt="{
+          slider: {
+            class: 'bg-component-node-widget-background'
+          },
+          handle: {
+            class: modelValue
+              ? 'bg-component-node-foreground'
+              : 'bg-node-component-surface-highlight'
+          }
+        }"
       />
     </div>
   </WidgetLayoutField>

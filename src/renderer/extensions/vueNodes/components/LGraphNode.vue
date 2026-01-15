@@ -13,7 +13,7 @@
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',
-        'border-1 border-solid border-component-node-border',
+        'shadow-[var(--component-node-shadow)]',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',

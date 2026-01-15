@@ -14,7 +14,7 @@
         option: 'text-xs',
         dropdown: 'w-8',
         label: cn('truncate min-w-[4ch]', $slots.default && 'mr-5'),
-        overlay: 'w-fit min-w-full'
+        overlay: 'w-fit min-w-full bg-component-node-widget-background'
       }"
       data-capture-wheel="true"
     />

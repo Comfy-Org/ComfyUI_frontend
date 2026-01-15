@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1">
     <Button
-      class="text-base-foreground w-full border-0 bg-component-node-widget-background p-2"
+      class="text-base-foreground w-full border-0 bg-component-node-widget-background hover:bg-component-node-widget-background-hovered p-2"
       :aria-label="widget.label"
       size="sm"
       variant="textonly"

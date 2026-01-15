@@ -16,10 +16,8 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 const THEME_PROPERTY_MAP = {
   NODE_BOX_OUTLINE_COLOR: 'component-node-border',
   NODE_DEFAULT_BGCOLOR: 'component-node-background',
-  NODE_DEFAULT_BOXCOLOR: 'node-component-header-icon',
   NODE_DEFAULT_COLOR: 'node-component-header-surface',
   NODE_TITLE_COLOR: 'node-component-header',
-  WIDGET_BGCOLOR: 'component-node-widget-background',
   WIDGET_TEXT_COLOR: 'component-node-foreground'
 } as const satisfies Partial<Record<keyof Colors['litegraph_base'], string>>
 
