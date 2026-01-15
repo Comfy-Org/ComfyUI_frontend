@@ -24,7 +24,10 @@ const forwardedProps = useForwardProps(delegatedProps)
     variant="textonly"
     size="icon-sm"
     :class="
-      cn('opacity-60 hover:bg-transparent hover:opacity-100', props.class)
+      cn(
+        'opacity-60 hover:bg-transparent hover:opacity-100 transition-[opacity,width] duration-150 w-4 data-[disabled]:w-0 data-[disabled]:opacity-0 data-[disabled]:pointer-events-none overflow-hidden',
+        props.class
+      )
     "
   >
     <slot>

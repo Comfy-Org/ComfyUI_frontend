@@ -24,8 +24,9 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     v-bind="forwarded"
     :class="
       cn(
-        'flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
-        !disabled && 'hover:bg-modal-card-background-hovered',
+        'group flex flex-wrap items-center gap-2 rounded-lg bg-transparent p-2 text-xs text-base-foreground',
+        !disabled &&
+          'hover:bg-modal-card-background-hovered focus-within:bg-modal-card-background-hovered',
         props.class
       )
     "
