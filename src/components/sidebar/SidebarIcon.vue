@@ -11,6 +11,7 @@
         selected && 'side-bar-button-selected'
       )
     "
+    size="icon-lg"
     variant="muted-textonly"
     :aria-label="computedTooltip"
     @click="emit('click', $event)"
