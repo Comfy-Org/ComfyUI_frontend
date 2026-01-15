@@ -13,7 +13,7 @@ export function useManagerDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
   }
 
-  async function show(initialTab?: ManagerTab) {
+  function show(initialTab?: ManagerTab) {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: ManagerDialog,

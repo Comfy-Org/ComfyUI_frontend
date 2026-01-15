@@ -22,7 +22,7 @@
           class="min-w-34"
           :options="filterOptions"
         />
-        <AutoComplete
+        <AutoCompletePlus
           v-model.lazy="searchQuery"
           :suggestions="suggestions"
           :placeholder="$t('manager.searchPlaceholder')"
@@ -165,7 +165,6 @@
 import { whenever } from '@vueuse/core'
 import { merge, stubTrue } from 'es-toolkit/compat'
 import type { AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
-import AutoComplete from 'primevue/autocomplete'
 import {
   computed,
   onBeforeUnmount,
@@ -181,6 +180,7 @@ import { useI18n } from 'vue-i18n'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
+import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -540,9 +540,11 @@ const selectNodePack = (
     )
 
     if (index === -1) {
-      selectedNodePacks.value.push(nodePack)
+      selectedNodePacks.value = [...selectedNodePacks.value, nodePack]
     } else {
-      selectedNodePacks.value.splice(index, 1)
+      selectedNodePacks.value = selectedNodePacks.value.filter(
+        (pack) => pack.id !== nodePack.id
+      )
     }
   } else {
     selectedNodePacks.value = [nodePack]
