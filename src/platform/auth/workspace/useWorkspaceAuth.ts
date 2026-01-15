@@ -1,14 +1,25 @@
 import { computed, onUnmounted, ref, shallowRef } from 'vue'
+import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
 
 import { t } from '@/i18n'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
-import type {
-  WorkspaceTokenResponse,
-  WorkspaceWithRole
-} from './workspaceTypes'
+import type { WorkspaceWithRole } from './workspaceTypes'
+
+const WorkspaceTokenResponseSchema = z.object({
+  token: z.string(),
+  expires_at: z.string(),
+  workspace: z.object({
+    id: z.string(),
+    name: z.string(),
+    type: z.enum(['personal', 'team'])
+  }),
+  role: z.enum(['owner', 'member']),
+  permissions: z.array(z.string())
+})
 
 export const WORKSPACE_STORAGE_KEYS = {
   CURRENT_WORKSPACE: 'Comfy.Workspace.Current',
@@ -182,8 +193,29 @@ export function useWorkspaceAuth() {
         )
       }
 
-      const data: WorkspaceTokenResponse = await response.json()
+      const rawData = await response.json()
+      const parseResult = WorkspaceTokenResponseSchema.safeParse(rawData)
+
+      if (!parseResult.success) {
+        throw new WorkspaceAuthError(
+          t('workspaceAuth.errors.tokenExchangeFailed', {
+            error: fromZodError(parseResult.error).message
+          }),
+          'TOKEN_EXCHANGE_FAILED'
+        )
+      }
+
+      const data = parseResult.data
       const expiresAt = new Date(data.expires_at).getTime()
+
+      if (isNaN(expiresAt)) {
+        throw new WorkspaceAuthError(
+          t('workspaceAuth.errors.tokenExchangeFailed', {
+            error: 'Invalid expiry timestamp'
+          }),
+          'TOKEN_EXCHANGE_FAILED'
+        )
+      }
 
       const workspaceWithRole: WorkspaceWithRole = {
         ...data.workspace,
