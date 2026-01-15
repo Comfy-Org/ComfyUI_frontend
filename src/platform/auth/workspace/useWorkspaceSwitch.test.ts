@@ -1,10 +1,11 @@
-import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
 
-const mockSwitchWorkspace = vi.fn()
-const mockCurrentWorkspace = ref<{ id: string } | null>(null)
+const mockSwitchWorkspace = vi.hoisted(() => vi.fn())
+const mockCurrentWorkspace = vi.hoisted(() => ({
+  value: null as { id: string } | null
+}))
 
 vi.mock('@/platform/auth/workspace/useWorkspaceAuth', () => ({
   useWorkspaceAuth: () => ({
@@ -13,15 +14,19 @@ vi.mock('@/platform/auth/workspace/useWorkspaceAuth', () => ({
   })
 }))
 
-const mockActiveWorkflow = ref<{ isModified: boolean } | null>(null)
+const mockActiveWorkflow = vi.hoisted(() => ({
+  value: null as { isModified: boolean } | null
+}))
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
-    activeWorkflow: mockActiveWorkflow.value
+    get activeWorkflow() {
+      return mockActiveWorkflow.value
+    }
   })
 }))
 
-const mockConfirm = vi.fn()
+const mockConfirm = vi.hoisted(() => vi.fn())
 
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
