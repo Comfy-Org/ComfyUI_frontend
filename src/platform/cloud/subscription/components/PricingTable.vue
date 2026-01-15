@@ -252,7 +252,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
@@ -263,13 +262,10 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import {
-  FirebaseAuthStoreError,
-  useFirebaseAuthStore
-} from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
@@ -332,7 +328,6 @@ const tiers: PricingTierConfig[] = [
 ]
 
 const { n } = useI18n()
-const { getAuthHeader } = useFirebaseAuthStore()
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
@@ -384,12 +379,13 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     : t('subscription.subscribeTo', { plan: planName })
 }
 
-const getButtonSeverity = (tier: PricingTierConfig): 'primary' | 'secondary' =>
-  isCurrentPlan(tier.key)
-    ? 'secondary'
-    : tier.key === 'creator'
-      ? 'primary'
-      : 'secondary'
+const getButtonSeverity = (
+  tier: PricingTierConfig
+): 'primary' | 'secondary' => {
+  if (isCurrentPlan(tier.key)) return 'secondary'
+  if (tier.key === 'creator') return 'primary'
+  return 'secondary'
+}
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
@@ -404,47 +400,6 @@ const getAnnualTotal = (tier: PricingTierConfig): number =>
 
 const getCreditsDisplay = (tier: PricingTierConfig): number =>
   tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
-
-const initiateCheckout = async (tierKey: CheckoutTierKey) => {
-  const authHeader = await getAuthHeader()
-  if (!authHeader) {
-    throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
-  }
-
-  const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
-  const response = await fetch(
-    `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
-    {
-      method: 'POST',
-      headers: { ...authHeader, 'Content-Type': 'application/json' }
-    }
-  )
-
-  if (!response.ok) {
-    let errorMessage = 'Failed to initiate checkout'
-    try {
-      const errorData = await response.json()
-      errorMessage = errorData.message || errorMessage
-    } catch {
-      // If JSON parsing fails, try to get text response or use HTTP status
-      try {
-        const errorText = await response.text()
-        errorMessage =
-          errorText || `HTTP ${response.status} ${response.statusText}`
-      } catch {
-        errorMessage = `HTTP ${response.status} ${response.statusText}`
-      }
-    }
-
-    throw new FirebaseAuthStoreError(
-      t('toastMessages.failedToInitiateSubscription', {
-        error: errorMessage
-      })
-    )
-  }
-
-  return await response.json()
-}
 
 const handleSubscribe = wrapWithErrorHandlingAsync(
   async (tierKey: CheckoutTierKey) => {
@@ -475,10 +430,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           await accessBillingPortal(checkoutTier)
         }
       } else {
-        const response = await initiateCheckout(tierKey)
-        if (response.checkout_url) {
-          window.open(response.checkout_url, '_blank')
-        }
+        await performSubscriptionCheckout(tierKey, currentBillingCycle.value)
       }
     } finally {
       isLoading.value = false

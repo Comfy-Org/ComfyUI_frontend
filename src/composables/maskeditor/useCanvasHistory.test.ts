@@ -167,6 +167,7 @@ describe('useCanvasHistory', () => {
       const rafSpy = vi.spyOn(window, 'requestAnimationFrame')
 
       mockRefs.maskCanvas = {
+        // oxlint-disable-next-line no-misused-spread
         ...mockRefs.maskCanvas,
         width: 0,
         height: 0

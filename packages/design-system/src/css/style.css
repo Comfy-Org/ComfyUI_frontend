@@ -282,7 +282,7 @@
    --modal-card-border-highlighted: var(--secondary-background-selected);
    --modal-card-button-surface: var(--color-smoke-300);
    --modal-card-placeholder-background: var(--color-smoke-600);
-   --modal-card-tag-background: var(--color-smoke-400);
+   --modal-card-tag-background: var(--color-smoke-200);
    --modal-card-tag-foreground: var(--base-foreground);
    --modal-panel-background: var(--color-white);
 }

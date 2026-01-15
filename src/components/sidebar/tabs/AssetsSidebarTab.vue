@@ -486,7 +486,10 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
 }
 
 function handleContextMenuHide() {
-  contextMenuAsset.value = null
+  // Delay clearing to allow command callbacks to emit before component unmounts
+  requestAnimationFrame(() => {
+    contextMenuAsset.value = null
+  })
 }
 
 const handleZoomClick = (asset: AssetItem) => {
