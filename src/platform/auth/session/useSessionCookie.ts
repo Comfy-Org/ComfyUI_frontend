@@ -19,38 +19,51 @@ export const useSessionCookie = () => {
   const createSession = async (): Promise<void> => {
     if (!isCloud) return
 
-    const authStore = useFirebaseAuthStore()
+    try {
+      const authStore = useFirebaseAuthStore()
 
-    let authHeader: Record<string, string>
+      let authHeader: Record<string, string>
 
-    if (remoteConfig.value.team_workspaces_enabled) {
-      const firebaseToken = await authStore.getIdToken()
-      if (!firebaseToken) {
-        throw new Error('No Firebase token available for session creation')
+      if (remoteConfig.value.team_workspaces_enabled) {
+        const firebaseToken = await authStore.getIdToken()
+        if (!firebaseToken) {
+          console.warn(
+            'Failed to create session cookie:',
+            'No Firebase token available for session creation'
+          )
+          return
+        }
+        authHeader = { Authorization: `Bearer ${firebaseToken}` }
+      } else {
+        const header = await authStore.getAuthHeader()
+        if (!header) {
+          console.warn(
+            'Failed to create session cookie:',
+            'No auth header available for session creation'
+          )
+          return
+        }
+        authHeader = header
       }
-      authHeader = { Authorization: `Bearer ${firebaseToken}` }
-    } else {
-      const header = await authStore.getAuthHeader()
-      if (!header) {
-        throw new Error('No auth header available for session creation')
-      }
-      authHeader = header
-    }
 
-    const response = await fetch(api.apiURL('/auth/session'), {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      }
-    })
+      const response = await fetch(api.apiURL('/auth/session'), {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        }
+      })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(
-        `Failed to create session: ${errorData.message || response.statusText}`
-      )
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.warn(
+          'Failed to create session cookie:',
+          errorData.message || response.statusText
+        )
+      }
+    } catch (error) {
+      console.warn('Failed to create session cookie:', error)
     }
   }
 
@@ -61,16 +74,21 @@ export const useSessionCookie = () => {
   const deleteSession = async (): Promise<void> => {
     if (!isCloud) return
 
-    const response = await fetch(api.apiURL('/auth/session'), {
-      method: 'DELETE',
-      credentials: 'include'
-    })
+    try {
+      const response = await fetch(api.apiURL('/auth/session'), {
+        method: 'DELETE',
+        credentials: 'include'
+      })
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(
-        `Failed to delete session: ${errorData.message || response.statusText}`
-      )
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.warn(
+          'Failed to delete session cookie:',
+          errorData.message || response.statusText
+        )
+      }
+    } catch (error) {
+      console.warn('Failed to delete session cookie:', error)
     }
   }
 

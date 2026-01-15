@@ -7,26 +7,6 @@ import {
   WORKSPACE_STORAGE_KEYS
 } from './useWorkspaceAuth'
 
-const mockStart = vi.fn()
-const mockStop = vi.fn()
-
-vi.mock('@vueuse/core', () => ({
-  useTimeoutFn: vi.fn((callback: () => void, delayRef: { value: number }) => {
-    mockStart.mockImplementation(() => {
-      setTimeout(callback, delayRef.value)
-    })
-    return { start: mockStart, stop: mockStop }
-  })
-}))
-
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue')
-  return {
-    ...actual,
-    getCurrentInstance: vi.fn(() => ({}))
-  }
-})
-
 const mockGetIdToken = vi.fn()
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
