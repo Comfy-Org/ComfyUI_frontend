@@ -606,6 +606,18 @@ describe('useWorkspaceAuth', () => {
 
       expect(isAuthenticated.value).toBe(false)
     })
+
+    it('returns false when currentWorkspace is set but workspaceToken is null', async () => {
+      mockGetIdToken.mockResolvedValue(null)
+
+      const { currentWorkspace, workspaceToken, isAuthenticated } =
+        useWorkspaceAuth()
+
+      currentWorkspace.value = mockWorkspaceWithRole
+      workspaceToken.value = null
+
+      expect(isAuthenticated.value).toBe(false)
+    })
   })
 
   describe('feature flag disabled', () => {
