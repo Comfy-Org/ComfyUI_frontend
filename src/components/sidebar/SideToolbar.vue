@@ -44,7 +44,7 @@
         <SidebarBottomPanelToggleButton :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
-        <ModeToggle v-if="showLinearToggle" />
+        <ModeToggle v-if="hasSeenLinear || linearFeatureFlag" />
       </div>
     </div>
     <HelpCenterPopups :is-small="isSmall" />
@@ -87,10 +87,14 @@ const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
 
-const showLinearToggle = ref(useFeatureFlags().flags.linearToggleEnabled)
+const linearFeatureFlag = useFeatureFlags().featureFlag(
+  'linearToggleEnabled',
+  false
+)
+const hasSeenLinear = ref(false)
 whenever(
   () => canvasStore.linearMode,
-  () => (showLinearToggle.value = true)
+  () => (hasSeenLinear.value = true)
 )
 
 const isSmall = computed(
