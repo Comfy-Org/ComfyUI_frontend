@@ -1893,6 +1893,38 @@
       "tooltipLearnMore": "Learn more..."
     }
   },
+  "workspace": {
+    "selector": {
+      "title": "Select Workspace",
+      "loading": "Loading workspaces...",
+      "noWorkspaces": "No workspaces available",
+      "personalWorkspace": "Personal Workspace",
+      "switchTo": "Switch to {name}",
+      "current": "Current"
+    },
+    "switcher": {
+      "label": "Workspace",
+      "tooltip": "Switch workspace"
+    },
+    "errors": {
+      "fetchFailed": "Failed to load workspaces",
+      "switchFailed": "Failed to switch workspace",
+      "tokenRefreshFailed": "Failed to refresh workspace access",
+      "notAuthenticated": "Please sign in to access workspaces",
+      "accessDenied": "You don't have access to this workspace",
+      "workspaceNotFound": "Workspace not found"
+    },
+    "roles": {
+      "owner": "Owner",
+      "member": "Member"
+    },
+    "unsavedChanges": {
+      "title": "Unsaved Changes",
+      "message": "You have unsaved changes. Switching workspaces will reload the page and any unsaved work will be lost.",
+      "confirm": "Switch Anyway",
+      "cancel": "Stay Here"
+    }
+  },
   "validation": {
     "invalidEmail": "Invalid email address",
     "required": "Required",
@@ -2587,6 +2619,15 @@
       "all": "All",
       "completed": "Completed",
       "failed": "Failed"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "notAuthenticated": "You must be signed in to access workspaces",
+      "invalidFirebaseToken": "Authentication expired. Please sign in again.",
+      "accessDenied": "You do not have access to this workspace",
+      "workspaceNotFound": "Workspace not found",
+      "tokenExchangeFailed": "Failed to access workspace: {error}"
     }
   }
 }

@@ -59,6 +59,7 @@
               {{ queuedCount }}
             </span>
           </Button>
+          <WorkspaceSwitcher v-if="isLoggedIn && !isIntegratedTabBar" />
           <CurrentUserButton
             v-if="isLoggedIn && !isIntegratedTabBar"
             class="shrink-0"
@@ -99,6 +100,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import WorkspaceSwitcher from '@/platform/auth/workspace/components/WorkspaceSwitcher.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { app } from '@/scripts/app'

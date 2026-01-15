@@ -152,16 +152,28 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   /**
    * Retrieves the appropriate authentication header for API requests.
    * Checks for authentication in the following order:
-   * 1. Firebase authentication token (if user is logged in)
-   * 2. API key (if stored in the browser's credential manager)
+   * 1. Workspace token (if user has active workspace context)
+   * 2. Firebase authentication token (if user is logged in)
+   * 3. API key (if stored in the browser's credential manager)
    *
    * @returns {Promise<AuthHeader | null>}
-   *   - A LoggedInAuthHeader with Bearer token if Firebase authenticated
+   *   - A LoggedInAuthHeader with Bearer token (workspace or Firebase)
    *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
-   *   - null if neither authentication method is available
+   *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    // If available, set header with JWT used to identify the user to Firebase service
+    const workspaceToken = sessionStorage.getItem('Comfy.Workspace.Token')
+    const expiresAt = sessionStorage.getItem('Comfy.Workspace.ExpiresAt')
+
+    if (workspaceToken && expiresAt) {
+      const expiryTime = parseInt(expiresAt, 10)
+      if (Date.now() < expiryTime) {
+        return {
+          Authorization: `Bearer ${workspaceToken}`
+        }
+      }
+    }
+
     const token = await getIdToken()
     if (token) {
       return {
@@ -169,7 +181,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       }
     }
 
-    // If not authenticated with Firebase, try falling back to API key if available
     return useApiKeyAuthStore().getAuthHeader()
   }
 
