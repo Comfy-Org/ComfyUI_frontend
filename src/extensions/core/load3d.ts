@@ -4,6 +4,7 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
+import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
@@ -11,7 +12,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComfyApp, app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -484,10 +486,10 @@ useExtensionService().registerExtension({
           config.configure(settings)
         }
 
-        node.onExecuted = function (message: any) {
-          onExecuted?.apply(this, arguments as any)
+        node.onExecuted = function (output: NodeExecutionOutput) {
+          onExecuted?.call(this, output)
 
-          let filePath = message.result[0]
+          let filePath = output.result?.[0] as string | undefined
 
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
@@ -495,10 +497,10 @@ useExtensionService().registerExtension({
             useToastStore().addAlert(msg)
           }
 
-          let cameraState = message.result[1]
-          let bgImagePath = message.result[2]
+          const cameraState = output.result?.[1] as CameraState | undefined
+          const bgImagePath = output.result?.[2] as string | undefined
 
-          modelWidget.value = filePath.replaceAll('\\', '/')
+          modelWidget.value = filePath?.replaceAll('\\', '/')
 
           node.properties['Last Time Model File'] = modelWidget.value
 
