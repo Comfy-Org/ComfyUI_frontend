@@ -12,7 +12,7 @@
         :class="
           cn(
             'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
-            compact && 'size-full '
+            compact && 'size-full aspect-square'
           )
         "
       >
