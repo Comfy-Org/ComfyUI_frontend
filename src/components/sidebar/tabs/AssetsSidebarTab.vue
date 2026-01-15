@@ -204,6 +204,9 @@
     @asset-deleted="refreshAssets"
     @bulk-download="handleBulkDownload"
     @bulk-delete="handleBulkDelete"
+    @bulk-add-to-workflow="handleBulkAddToWorkflow"
+    @bulk-open-workflow="handleBulkOpenWorkflow"
+    @bulk-export-workflow="handleBulkExportWorkflow"
   />
 </template>
 
@@ -322,7 +325,13 @@ const {
   deactivate: deactivateSelection
 } = useAssetSelection()
 
-const { downloadMultipleAssets, deleteMultipleAssets } = useMediaAssetActions()
+const {
+  downloadMultipleAssets,
+  deleteMultipleAssets,
+  addMultipleToWorkflow,
+  openMultipleWorkflows,
+  exportMultipleWorkflows
+} = useMediaAssetActions()
 
 // Footer responsive behavior
 const footerRef = ref<HTMLElement | null>(null)
@@ -493,6 +502,21 @@ const handleBulkDelete = async (assets: AssetItem[]) => {
 
 const handleClearQueue = async () => {
   await commandStore.execute('Comfy.ClearPendingTasks')
+}
+
+const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
+  await addMultipleToWorkflow(assets)
+  clearSelection()
+}
+
+const handleBulkOpenWorkflow = async (assets: AssetItem[]) => {
+  await openMultipleWorkflows(assets)
+  clearSelection()
+}
+
+const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
+  await exportMultipleWorkflows(assets)
+  clearSelection()
 }
 
 const handleZoomClick = (asset: AssetItem) => {

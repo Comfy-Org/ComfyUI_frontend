@@ -2166,6 +2166,7 @@
     "renderErrorState": "Render Error State"
   },
   "cloudOnboarding": {
+    "skipToCloudApp": "Skip to the cloud app",
     "survey": {
       "title": "Cloud Survey",
       "placeholder": "Survey questions placeholder",
@@ -2414,7 +2415,7 @@
       "zoom": "Zoom in",
       "moreOptions": "More options",
       "seeMoreOutputs": "See more outputs",
-      "addToWorkflow": "Add to current workflow",
+      "insertAsNodeInWorkflow": "Insert as node in workflow",
       "download": "Download",
       "openWorkflow": "Open as workflow in new tab",
       "exportWorkflow": "Export workflow",
@@ -2435,11 +2436,23 @@
       "downloadSelectedAll": "Download all",
       "deleteSelected": "Delete",
       "deleteSelectedAll": "Delete all",
+      "insertAllAssetsAsNodes": "Insert all assets as nodes",
+      "openWorkflowAll": "Open all workflows",
+      "exportWorkflowAll": "Export all workflows",
       "downloadStarted": "Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file(s)",
       "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets",
-      "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed"
+      "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
+      "nodesAddedToWorkflow": "{count} node(s) added to workflow",
+      "failedToAddNodes": "Failed to add nodes to workflow",
+      "partialAddNodesSuccess": "{succeeded} added successfully, {failed} failed",
+      "workflowsOpened": "{count} workflow(s) opened in new tabs",
+      "noWorkflowsFound": "No workflow data found in selected assets",
+      "partialWorkflowsOpened": "{succeeded} workflow(s) opened, {failed} failed",
+      "workflowsExported": "{count} workflow(s) exported successfully",
+      "noWorkflowsToExport": "No workflow data found to export",
+      "partialWorkflowsExported": "{succeeded} exported successfully, {failed} failed"
     },
     "noJobIdFound": "No job ID found for this asset",
     "unsupportedFileType": "Unsupported file type for loader node",
