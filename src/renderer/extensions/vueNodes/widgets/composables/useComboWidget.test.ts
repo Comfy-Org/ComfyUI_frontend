@@ -215,7 +215,8 @@ describe('useComboWidget', () => {
       'asset',
       'ckpt_name',
       'model1.safetensors',
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(vi.mocked(assetService.isAssetBrowserEligible)).toHaveBeenCalledWith(
@@ -250,7 +251,8 @@ describe('useComboWidget', () => {
       'asset',
       'ckpt_name',
       'fallback.safetensors',
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(widget).toBe(mockWidget)
@@ -280,7 +282,8 @@ describe('useComboWidget', () => {
       'asset',
       'ckpt_name',
       'Select model', // Should fallback to this instead of undefined
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(Object)
     )
     expect(mockSettingStoreGet).toHaveBeenCalledWith('Comfy.Assets.UseAssetAPI')
     expect(widget).toBe(mockWidget)
