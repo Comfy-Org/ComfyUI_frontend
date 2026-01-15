@@ -1,11 +1,12 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createPinia, setActivePinia, storeToRefs } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  useWorkspaceAuth,
-  WorkspaceAuthError,
-  WORKSPACE_STORAGE_KEYS
-} from './useWorkspaceAuth'
+  useWorkspaceAuthStore,
+  WorkspaceAuthError
+} from '@/stores/workspaceAuthStore'
+
+import { WORKSPACE_STORAGE_KEYS } from './workspaceConstants'
 
 const mockGetIdToken = vi.fn()
 
@@ -54,7 +55,7 @@ const mockTokenResponse = {
   permissions: ['owner:*']
 }
 
-describe('useWorkspaceAuth', () => {
+describe('useWorkspaceAuthStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
@@ -68,13 +69,14 @@ describe('useWorkspaceAuth', () => {
 
   describe('initial state', () => {
     it('has correct initial state values', () => {
+      const store = useWorkspaceAuthStore()
       const {
         currentWorkspace,
         workspaceToken,
         isAuthenticated,
         isLoading,
         error
-      } = useWorkspaceAuth()
+      } = storeToRefs(store)
 
       expect(currentWorkspace.value).toBeNull()
       expect(workspaceToken.value).toBeNull()
@@ -97,10 +99,10 @@ describe('useWorkspaceAuth', () => {
         futureExpiry.toString()
       )
 
-      const { initializeFromSession, currentWorkspace, workspaceToken } =
-        useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
 
-      const result = initializeFromSession()
+      const result = store.initializeFromSession()
 
       expect(result).toBe(true)
       expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
@@ -108,9 +110,9 @@ describe('useWorkspaceAuth', () => {
     })
 
     it('returns false when sessionStorage is empty', () => {
-      const { initializeFromSession } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      const result = initializeFromSession()
+      const result = store.initializeFromSession()
 
       expect(result).toBe(false)
     })
@@ -127,9 +129,9 @@ describe('useWorkspaceAuth', () => {
         pastExpiry.toString()
       )
 
-      const { initializeFromSession } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      const result = initializeFromSession()
+      const result = store.initializeFromSession()
 
       expect(result).toBe(false)
       expect(
@@ -149,9 +151,9 @@ describe('useWorkspaceAuth', () => {
       sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'some-token')
       sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT, 'not-a-number')
 
-      const { initializeFromSession } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      const result = initializeFromSession()
+      const result = store.initializeFromSession()
 
       expect(result).toBe(false)
       expect(
@@ -173,9 +175,9 @@ describe('useWorkspaceAuth', () => {
         (Date.now() + 3600 * 1000).toString()
       )
 
-      const { initializeFromSession } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      const result = initializeFromSession()
+      const result = store.initializeFromSession()
 
       expect(result).toBe(false)
     })
@@ -192,14 +194,11 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const {
-        switchWorkspace,
-        currentWorkspace,
-        workspaceToken,
-        isAuthenticated
-      } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken, isAuthenticated } =
+        storeToRefs(store)
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
 
       expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
       expect(workspaceToken.value).toBe('workspace-token-abc')
@@ -216,9 +215,9 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const { switchWorkspace } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
 
       expect(
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
@@ -239,9 +238,10 @@ describe('useWorkspaceAuth', () => {
       })
       vi.stubGlobal('fetch', vi.fn().mockReturnValue(responsePromise))
 
-      const { switchWorkspace, isLoading } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { isLoading } = storeToRefs(store)
 
-      const switchPromise = switchWorkspace('workspace-123')
+      const switchPromise = store.switchWorkspace('workspace-123')
       expect(isLoading.value).toBe(true)
 
       resolveResponse!({
@@ -256,9 +256,10 @@ describe('useWorkspaceAuth', () => {
     it('throws WorkspaceAuthError with code NOT_AUTHENTICATED when Firebase token unavailable', async () => {
       mockGetIdToken.mockResolvedValue(undefined)
 
-      const { switchWorkspace, error } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { error } = storeToRefs(store)
 
-      await expect(switchWorkspace('workspace-123')).rejects.toThrow(
+      await expect(store.switchWorkspace('workspace-123')).rejects.toThrow(
         WorkspaceAuthError
       )
 
@@ -278,9 +279,10 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const { switchWorkspace, error } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { error } = storeToRefs(store)
 
-      await expect(switchWorkspace('workspace-123')).rejects.toThrow(
+      await expect(store.switchWorkspace('workspace-123')).rejects.toThrow(
         WorkspaceAuthError
       )
 
@@ -300,9 +302,10 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const { switchWorkspace, error } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { error } = storeToRefs(store)
 
-      await expect(switchWorkspace('workspace-123')).rejects.toThrow(
+      await expect(store.switchWorkspace('workspace-123')).rejects.toThrow(
         WorkspaceAuthError
       )
 
@@ -324,9 +327,10 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const { switchWorkspace, error } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { error } = storeToRefs(store)
 
-      await expect(switchWorkspace('workspace-123')).rejects.toThrow(
+      await expect(store.switchWorkspace('workspace-123')).rejects.toThrow(
         WorkspaceAuthError
       )
 
@@ -348,9 +352,10 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const { switchWorkspace, error } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { error } = storeToRefs(store)
 
-      await expect(switchWorkspace('workspace-123')).rejects.toThrow(
+      await expect(store.switchWorkspace('workspace-123')).rejects.toThrow(
         WorkspaceAuthError
       )
 
@@ -368,9 +373,9 @@ describe('useWorkspaceAuth', () => {
       })
       vi.stubGlobal('fetch', mockFetch)
 
-      const { switchWorkspace } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
 
       expect(mockFetch).toHaveBeenCalledWith(
         'https://api.example.com/api/auth/token',
@@ -397,19 +402,14 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const {
-        switchWorkspace,
-        clearWorkspaceContext,
-        currentWorkspace,
-        workspaceToken,
-        error,
-        isAuthenticated
-      } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken, error, isAuthenticated } =
+        storeToRefs(store)
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
       expect(isAuthenticated.value).toBe(true)
 
-      clearWorkspaceContext()
+      store.clearWorkspaceContext()
 
       expect(currentWorkspace.value).toBeNull()
       expect(workspaceToken.value).toBeNull()
@@ -425,9 +425,9 @@ describe('useWorkspaceAuth', () => {
       sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'some-token')
       sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.EXPIRES_AT, '12345')
 
-      const { clearWorkspaceContext } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      clearWorkspaceContext()
+      store.clearWorkspaceContext()
 
       expect(
         sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
@@ -441,9 +441,9 @@ describe('useWorkspaceAuth', () => {
 
   describe('getWorkspaceAuthHeader', () => {
     it('returns null when no workspace token', () => {
-      const { getWorkspaceAuthHeader } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      const header = getWorkspaceAuthHeader()
+      const header = store.getWorkspaceAuthHeader()
 
       expect(header).toBeNull()
     })
@@ -458,10 +458,10 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const { switchWorkspace, getWorkspaceAuthHeader } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      await switchWorkspace('workspace-123')
-      const header = getWorkspaceAuthHeader()
+      await store.switchWorkspace('workspace-123')
+      const header = store.getWorkspaceAuthHeader()
 
       expect(header).toEqual({
         Authorization: 'Bearer workspace-token-abc'
@@ -483,9 +483,9 @@ describe('useWorkspaceAuth', () => {
       })
       vi.stubGlobal('fetch', mockFetch)
 
-      const { switchWorkspace } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
 
       expect(mockFetch).toHaveBeenCalledTimes(1)
 
@@ -521,10 +521,10 @@ describe('useWorkspaceAuth', () => {
         })
       vi.stubGlobal('fetch', mockFetch)
 
-      const { switchWorkspace, currentWorkspace, workspaceToken } =
-        useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
       expect(workspaceToken.value).toBe('workspace-token-abc')
 
       const refreshBufferMs = 5 * 60 * 1000
@@ -544,9 +544,9 @@ describe('useWorkspaceAuth', () => {
       const mockFetch = vi.fn()
       vi.stubGlobal('fetch', mockFetch)
 
-      const { refreshToken } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
 
-      await refreshToken()
+      await store.refreshToken()
 
       expect(mockFetch).not.toHaveBeenCalled()
     })
@@ -559,10 +559,10 @@ describe('useWorkspaceAuth', () => {
       })
       vi.stubGlobal('fetch', mockFetch)
 
-      const { switchWorkspace, refreshToken, workspaceToken } =
-        useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { workspaceToken } = storeToRefs(store)
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
       expect(mockFetch).toHaveBeenCalledTimes(1)
 
       mockFetch.mockResolvedValue({
@@ -574,7 +574,7 @@ describe('useWorkspaceAuth', () => {
           })
       })
 
-      await refreshToken()
+      await store.refreshToken()
       expect(mockFetch).toHaveBeenCalledTimes(2)
       expect(workspaceToken.value).toBe('refreshed-token')
     })
@@ -591,15 +591,17 @@ describe('useWorkspaceAuth', () => {
         })
       )
 
-      const { switchWorkspace, isAuthenticated } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { isAuthenticated } = storeToRefs(store)
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
 
       expect(isAuthenticated.value).toBe(true)
     })
 
     it('returns false when workspace is null', () => {
-      const { isAuthenticated } = useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { isAuthenticated } = storeToRefs(store)
 
       expect(isAuthenticated.value).toBe(false)
     })
@@ -607,8 +609,9 @@ describe('useWorkspaceAuth', () => {
     it('returns false when currentWorkspace is set but workspaceToken is null', async () => {
       mockGetIdToken.mockResolvedValue(null)
 
+      const store = useWorkspaceAuthStore()
       const { currentWorkspace, workspaceToken, isAuthenticated } =
-        useWorkspaceAuth()
+        storeToRefs(store)
 
       currentWorkspace.value = mockWorkspaceWithRole
       workspaceToken.value = null
@@ -638,10 +641,10 @@ describe('useWorkspaceAuth', () => {
         futureExpiry.toString()
       )
 
-      const { initializeFromSession, currentWorkspace, workspaceToken } =
-        useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
 
-      const result = initializeFromSession()
+      const result = store.initializeFromSession()
 
       expect(result).toBe(false)
       expect(currentWorkspace.value).toBeNull()
@@ -653,10 +656,10 @@ describe('useWorkspaceAuth', () => {
       const mockFetch = vi.fn()
       vi.stubGlobal('fetch', mockFetch)
 
-      const { switchWorkspace, currentWorkspace, workspaceToken, isLoading } =
-        useWorkspaceAuth()
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken, isLoading } = storeToRefs(store)
 
-      await switchWorkspace('workspace-123')
+      await store.switchWorkspace('workspace-123')
 
       expect(mockFetch).not.toHaveBeenCalled()
       expect(currentWorkspace.value).toBeNull()
