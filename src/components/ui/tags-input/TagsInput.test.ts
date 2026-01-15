@@ -46,32 +46,23 @@ describe('TagsInput with child components', () => {
     })
   }
 
-  it('renders tags as child items', () => {
-    const wrapper = mountFullTagsInput(['Vue', 'TypeScript'])
+  it('renders tags structure and content', () => {
+    const tags = ['tag1', 'tag2']
+    const wrapper = mountFullTagsInput(tags)
 
     const items = wrapper.findAllComponents(TagsInputItem)
-    expect(items).toHaveLength(2)
-  })
-
-  it('renders input for adding new tags', () => {
-    const wrapper = mountFullTagsInput()
-
-    const input = wrapper.findComponent(TagsInputInput)
-    expect(input.exists()).toBe(true)
-  })
-
-  it('renders delete buttons for each tag', () => {
-    const wrapper = mountFullTagsInput(['tag1', 'tag2'])
-
-    const deleteButtons = wrapper.findAllComponents(TagsInputItemDelete)
-    expect(deleteButtons).toHaveLength(2)
-  })
-
-  it('renders tag text for each tag', () => {
-    const wrapper = mountFullTagsInput(['tag1', 'tag2'])
-
     const textElements = wrapper.findAllComponents(TagsInputItemText)
-    expect(textElements).toHaveLength(2)
+    const deleteButtons = wrapper.findAllComponents(TagsInputItemDelete)
+
+    expect(items).toHaveLength(tags.length)
+    expect(textElements).toHaveLength(tags.length)
+    expect(deleteButtons).toHaveLength(tags.length)
+
+    textElements.forEach((el, i) => {
+      expect(el.text()).toBe(tags[i])
+    })
+
+    expect(wrapper.findComponent(TagsInputInput).exists()).toBe(true)
   })
 
   it('updates model value when adding a tag', async () => {

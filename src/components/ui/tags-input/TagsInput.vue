@@ -70,6 +70,7 @@ onClickOutside(rootEl, () => {
     <slot :is-empty="modelValue.length === 0" />
     <i
       v-if="!disabled && !isEditing"
+      aria-hidden="true"
       class="icon-[lucide--square-pen] absolute bottom-2 right-2 size-4 text-muted-foreground"
     />
   </TagsInputRoot>

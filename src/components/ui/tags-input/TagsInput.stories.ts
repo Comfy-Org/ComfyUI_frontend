@@ -66,6 +66,9 @@ export const Default: Story = {
 }
 
 export const Empty: Story = {
+  args: {
+    disabled: false
+  },
   render: (args) => ({
     components: {
       TagsInput,
