@@ -4,7 +4,7 @@
     variant="textonly"
     @click="toggleHelpCenter"
   >
-    {{ $t('menu.helpAndFeedback') }}
+    <div class="not-md:hidden">{{ $t('menu.helpAndFeedback') }}</div>
     <i class="icon-[lucide--circle-help] ml-0.5" />
     <span
       v-if="shouldShowRedDot"

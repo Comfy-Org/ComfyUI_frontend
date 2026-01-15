@@ -23,6 +23,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { cn } from '@/utils/tailwindUtil'
 
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
@@ -55,13 +56,16 @@ function nodeToNodeData(node: LGraphNode) {
       ? undefined
       : {
           iconClass: 'icon-[lucide--image]',
-          label: t('linearMode.dragAndDropImage')
+          label: t('linearMode.dragAndDropImage'),
+          onClick: () => node.widgets?.[1]?.callback?.(undefined)
         }
   const nodeData = extractVueNodeData(node)
   for (const widget of nodeData.widgets ?? []) widget.slotMetadata = undefined
 
   return {
     ...nodeData,
+    //note lastNodeErrors uses exeuctionid, node.id is execution for root
+    hasErrors: !!executionStore.lastNodeErrors?.[node.id],
 
     dropIndicator,
     onDragDrop: node.onDragDrop,
@@ -69,13 +73,18 @@ function nodeToNodeData(node: LGraphNode) {
   }
 }
 const partitionedNodes = computed(() => {
-  return partition(
+  const parts = partition(
     graphNodes.value
       .filter((node) => node.mode === 0 && node.widgets?.length)
       .map(nodeToNodeData)
       .reverse(),
     (node) => ['MarkdownNote', 'Note'].includes(node.type)
   )
+  for (const noteNode of parts[0]) {
+    for (const widget of noteNode.widgets ?? [])
+      widget.options = { ...widget.options, read_only: true }
+  }
+  return parts
 })
 
 const batchCountWidget: SimplifiedWidget<number> = {
@@ -165,7 +174,7 @@ defineExpose({ runButtonClick })
       <Popover
         v-if="partitionedNodes[0].length"
         align="start"
-        class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height)"
+        class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
         :reference="notesTo"
         side="left"
         :to="notesTo"
@@ -217,7 +226,13 @@ defineExpose({ runButtonClick })
           >
             <NodeWidgets
               :node-data
-              class="py-3 gap-y-4 **:[.col-span-2]:grid-cols-1 text-sm **:[.p-floatlabel]:h-35 rounded-lg"
+              :class="
+                cn(
+                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg',
+                  nodeData.hasErrors &&
+                    'ring-2 ring-inset ring-node-stroke-error'
+                )
+              "
               :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
             />
           </DropZone>
