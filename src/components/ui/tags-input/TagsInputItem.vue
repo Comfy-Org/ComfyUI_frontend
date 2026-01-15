@@ -17,7 +17,7 @@ const forwardedProps = useForwardProps(restProps)
     v-bind="forwardedProps"
     :class="
       cn(
-        'flex h-6 items-center gap-1 rounded-sm bg-modal-card-tag-background py-1 pl-2 pr-1 text-modal-card-tag-foreground backdrop-blur-sm ring-offset-base-background data-[state=active]:ring-2 data-[state=active]:ring-primary-background data-[state=active]:ring-offset-1 data-[disabled]:pr-2',
+        'flex h-6 items-center gap-1 rounded-sm bg-modal-card-tag-background py-1 pl-2 pr-1 text-modal-card-tag-foreground backdrop-blur-sm ring-offset-base-background data-[state=active]:ring-2 data-[state=active]:ring-base-foreground data-[state=active]:ring-offset-1 data-[disabled]:pr-2',
         className
       )
     "

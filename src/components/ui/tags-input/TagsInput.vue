@@ -11,7 +11,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-import { tagsInputFocusKey } from './tagsInputContext'
+import { tagsInputFocusKey, tagsInputIsEditingKey } from './tagsInputContext'
 import type { FocusCallback } from './tagsInputContext'
 
 const {
@@ -28,6 +28,7 @@ const focusInput = ref<FocusCallback>()
 provide(tagsInputFocusKey, (callback: FocusCallback) => {
   focusInput.value = callback
 })
+provide(tagsInputIsEditingKey, isEditing)
 
 const internalDisabled = computed(() => disabled || !isEditing.value)
 
@@ -53,6 +54,7 @@ onClickOutside(rootEl, () => {
 
 <template>
   <TagsInputRoot
+    v-slot="{ modelValue }"
     v-bind="forwarded"
     :class="
       cn(
@@ -65,7 +67,7 @@ onClickOutside(rootEl, () => {
     "
     @click="enableEditing"
   >
-    <slot />
+    <slot :is-empty="modelValue.length === 0" />
     <i
       v-if="!disabled && !isEditing"
       class="icon-[lucide--square-pen] absolute bottom-2 right-2 size-4 text-muted-foreground"

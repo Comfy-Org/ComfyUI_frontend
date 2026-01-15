@@ -47,12 +47,12 @@ export const Default: Story = {
       return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
         </TagsInputItem>
-        <TagsInputInput placeholder="Add tag..." />
+        <TagsInputInput :is-empty="isEmpty" placeholder="Add tag..." />
       </TagsInput>
       <div class="mt-4 text-sm text-muted-foreground">
         Tags: {{ tags.join(', ') }}
@@ -79,12 +79,12 @@ export const Empty: Story = {
       return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
         </TagsInputItem>
-        <TagsInputInput placeholder="Start typing to add tags..." />
+        <TagsInputInput :is-empty="isEmpty" placeholder="Start typing to add tags..." />
       </TagsInput>
     `
   })
@@ -113,12 +113,12 @@ export const ManyTags: Story = {
       return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" :disabled="args.disabled" class="w-96">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-96" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
         </TagsInputItem>
-        <TagsInputInput placeholder="Add technology..." />
+        <TagsInputInput :is-empty="isEmpty" placeholder="Add technology..." />
       </TagsInput>
     `
   })
@@ -142,12 +142,12 @@ export const Disabled: Story = {
       return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-80" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
         </TagsInputItem>
-        <TagsInputInput placeholder="Cannot add tags..." />
+        <TagsInputInput :is-empty="isEmpty" placeholder="Cannot add tags..." />
       </TagsInput>
     `
   })
@@ -167,12 +167,12 @@ export const CustomWidth: Story = {
       return { tags, args }
     },
     template: `
-      <TagsInput v-model="tags" :disabled="args.disabled" class="w-full">
+      <TagsInput v-model="tags" :disabled="args.disabled" class="w-full" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
           <TagsInputItemDelete />
         </TagsInputItem>
-        <TagsInputInput placeholder="Add tag..." />
+        <TagsInputInput :is-empty="isEmpty" placeholder="Add tag..." />
       </TagsInput>
     `
   })
