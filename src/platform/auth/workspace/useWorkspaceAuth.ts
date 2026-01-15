@@ -269,15 +269,40 @@ export function useWorkspaceAuth() {
       return
     }
 
-    try {
-      await switchWorkspace(currentWorkspace.value.id)
-    } catch (err) {
-      console.error('Failed to refresh workspace token:', err)
-      if (
-        err instanceof WorkspaceAuthError &&
-        (err.code === 'ACCESS_DENIED' || err.code === 'WORKSPACE_NOT_FOUND')
-      ) {
-        clearWorkspaceContext()
+    const workspaceId = currentWorkspace.value.id
+    const maxRetries = 3
+    const baseDelayMs = 1000
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        await switchWorkspace(workspaceId)
+        return
+      } catch (err) {
+        const isTransientError =
+          err instanceof WorkspaceAuthError &&
+          err.code === 'TOKEN_EXCHANGE_FAILED'
+
+        const isPermanentError =
+          err instanceof WorkspaceAuthError &&
+          (err.code === 'ACCESS_DENIED' || err.code === 'WORKSPACE_NOT_FOUND')
+
+        if (isPermanentError) {
+          console.error('Workspace access revoked:', err)
+          clearWorkspaceContext()
+          return
+        }
+
+        if (isTransientError && attempt < maxRetries) {
+          const delay = baseDelayMs * Math.pow(2, attempt)
+          console.warn(
+            `Token refresh failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
+            err
+          )
+          await new Promise((resolve) => setTimeout(resolve, delay))
+          continue
+        }
+
+        console.error('Failed to refresh workspace token after retries:', err)
       }
     }
   }
