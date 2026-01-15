@@ -159,7 +159,7 @@ async function rerun(e: Event) {
   <VideoPreview
     v-else-if="getMediaType(selectedOutput) === 'video'"
     :src="selectedOutput!.url"
-    class="object-contain flex-1 contain-size"
+    class="object-contain flex-1 md:contain-size"
   />
   <audio
     v-else-if="getMediaType(selectedOutput) === 'audio'"
