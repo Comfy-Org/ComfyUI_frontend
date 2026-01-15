@@ -5,9 +5,13 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
+  CameraConfig,
   CameraState,
   CameraType,
+  LightConfig,
   MaterialMode,
+  ModelConfig,
+  SceneConfig,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
@@ -271,10 +275,18 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
       const sourceCameraState = source.getCameraState()
 
-      const sceneConfig = node.properties['Scene Config'] as any
-      const modelConfig = node.properties['Model Config'] as any
-      const cameraConfig = node.properties['Camera Config'] as any
-      const lightConfig = node.properties['Light Config'] as any
+      const sceneConfig = node.properties['Scene Config'] as
+        | SceneConfig
+        | undefined
+      const modelConfig = node.properties['Model Config'] as
+        | ModelConfig
+        | undefined
+      const cameraConfig = node.properties['Camera Config'] as
+        | CameraConfig
+        | undefined
+      const lightConfig = node.properties['Light Config'] as
+        | LightConfig
+        | undefined
 
       isPreview.value = node.type === 'Preview3D'
 
@@ -438,7 +450,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         materialMode: initialState.value.materialMode
       }
 
-      const currentCameraConfig = nodeValue.properties['Camera Config'] as any
+      const currentCameraConfig = nodeValue.properties['Camera Config'] as
+        | CameraConfig
+        | undefined
       nodeValue.properties['Camera Config'] = {
         ...currentCameraConfig,
         state: initialState.value.cameraState

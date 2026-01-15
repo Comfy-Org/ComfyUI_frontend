@@ -1,7 +1,12 @@
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
+
+type ImageCompareOutput = NodeOutputWith<{
+  a_images?: Record<string, string>[]
+  b_images?: Record<string, string>[]
+}>
 
 useExtensionService().registerExtension({
   name: 'Comfy.ImageCompare',
@@ -14,15 +19,10 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
-    node.onExecuted = function (output: NodeExecutionOutput) {
+    node.onExecuted = function (output: ImageCompareOutput) {
       onExecuted?.call(this, output)
 
-      const aImages = (output as Record<string, unknown>).a_images as
-        | Record<string, string>[]
-        | undefined
-      const bImages = (output as Record<string, unknown>).b_images as
-        | Record<string, string>[]
-        | undefined
+      const { a_images: aImages, b_images: bImages } = output
       const rand = app.getRandParam()
 
       const beforeUrl =

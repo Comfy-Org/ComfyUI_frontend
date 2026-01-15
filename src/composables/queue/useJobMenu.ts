@@ -12,7 +12,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type {
   ExecutionErrorWsMessage,
   ResultItem,
-  ResultItemType
+  ResultItemType,
+  TaskStatus
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
@@ -82,13 +83,20 @@ export function useJobMenu(
     await queueStore.update()
   }
 
+  const findExecutionError = (
+    messages: TaskStatus['messages'] | undefined
+  ): ExecutionErrorWsMessage | undefined => {
+    const errMessage = messages?.find((m) => m[0] === 'execution_error')
+    if (errMessage && errMessage[0] === 'execution_error') {
+      return errMessage[1]
+    }
+    return undefined
+  }
+
   const copyErrorMessage = async (item?: JobListItem | null) => {
     const target = resolveItem(item)
     if (!target) return
-    const msgs = target.taskRef?.status?.messages as any[] | undefined
-    const err = msgs?.find((m: any) => m?.[0] === 'execution_error')?.[1] as
-      | ExecutionErrorWsMessage
-      | undefined
+    const err = findExecutionError(target.taskRef?.status?.messages)
     const message = err?.exception_message
     if (message) await copyToClipboard(String(message))
   }
@@ -96,10 +104,7 @@ export function useJobMenu(
   const reportError = (item?: JobListItem | null) => {
     const target = resolveItem(item)
     if (!target) return
-    const msgs = target.taskRef?.status?.messages as any[] | undefined
-    const err = msgs?.find((m: any) => m?.[0] === 'execution_error')?.[1] as
-      | ExecutionErrorWsMessage
-      | undefined
+    const err = findExecutionError(target.taskRef?.status?.messages)
     if (err) useDialogService().showExecutionErrorDialog(err)
   }
 
