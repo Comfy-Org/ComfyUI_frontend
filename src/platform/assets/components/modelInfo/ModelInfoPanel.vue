@@ -1,103 +1,98 @@
 <template>
-  <div class="flex h-full flex-col bg-comfy-menu-bg">
-    <div class="flex h-18 items-center border-b border-divider px-4">
-      <h2 class="text-lg font-semibold">
-        {{ $t('assetBrowser.modelInfo.title') }}
-      </h2>
-    </div>
-
-    <div class="flex-1 overflow-y-auto scrollbar-custom">
-      <PropertiesAccordionItem>
-        <template #label>
-          <span class="text-xs uppercase">
-            {{ $t('assetBrowser.modelInfo.basicInfo') }}
-          </span>
-        </template>
-        <ModelInfoField :label="$t('assetBrowser.modelInfo.displayName')">
-          <span class="text-sm">{{ displayName }}</span>
-        </ModelInfoField>
-        <ModelInfoField :label="$t('assetBrowser.modelInfo.fileName')">
-          <span class="text-sm">{{ asset.name }}</span>
-        </ModelInfoField>
-        <ModelInfoField
-          v-if="sourceUrl"
-          :label="$t('assetBrowser.modelInfo.source')"
+  <div
+    data-component-id="ModelInfoPanel"
+    class="flex h-full flex-col scrollbar-custom"
+  >
+    <PropertiesAccordionItem class="bg-transparent">
+      <template #label>
+        <span class="text-xs uppercase font-inter">
+          {{ $t('assetBrowser.modelInfo.basicInfo') }}
+        </span>
+      </template>
+      <ModelInfoField :label="$t('assetBrowser.modelInfo.displayName')">
+        <span class="text-sm break-all">{{ displayName }}</span>
+      </ModelInfoField>
+      <ModelInfoField :label="$t('assetBrowser.modelInfo.fileName')">
+        <span class="text-sm break-all">{{ asset.name }}</span>
+      </ModelInfoField>
+      <ModelInfoField
+        v-if="sourceUrl"
+        :label="$t('assetBrowser.modelInfo.source')"
+      >
+        <a
+          :href="sourceUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm text-link hover:underline"
         >
-          <a
-            :href="sourceUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-sm text-link hover:underline"
+          {{
+            $t('assetBrowser.modelInfo.viewOnSource', { source: sourceName })
+          }}
+        </a>
+      </ModelInfoField>
+    </PropertiesAccordionItem>
+
+    <PropertiesAccordionItem class="bg-transparent">
+      <template #label>
+        <span class="text-xs uppercase font-inter">
+          {{ $t('assetBrowser.modelInfo.modelTagging') }}
+        </span>
+      </template>
+      <ModelInfoField
+        v-if="modelType"
+        :label="$t('assetBrowser.modelInfo.modelType')"
+      >
+        <span class="text-sm">{{ modelType }}</span>
+      </ModelInfoField>
+      <ModelInfoField
+        v-if="baseModel"
+        :label="$t('assetBrowser.modelInfo.compatibleBaseModels')"
+      >
+        <span class="text-sm">{{ baseModel }}</span>
+      </ModelInfoField>
+      <ModelInfoField
+        v-if="additionalTags.length > 0"
+        :label="$t('assetBrowser.modelInfo.additionalTags')"
+      >
+        <div class="flex flex-wrap gap-1">
+          <span
+            v-for="tag in additionalTags"
+            :key="tag"
+            class="rounded px-2 py-0.5 text-xs"
           >
-            {{
-              $t('assetBrowser.modelInfo.viewOnSource', { source: sourceName })
-            }}
-          </a>
-        </ModelInfoField>
-      </PropertiesAccordionItem>
-
-      <PropertiesAccordionItem>
-        <template #label>
-          <span class="text-xs uppercase">
-            {{ $t('assetBrowser.modelInfo.modelTagging') }}
+            {{ tag }}
           </span>
-        </template>
-        <ModelInfoField
-          v-if="modelType"
-          :label="$t('assetBrowser.modelInfo.modelType')"
-        >
-          <span class="text-sm">{{ modelType }}</span>
-        </ModelInfoField>
-        <ModelInfoField
-          v-if="baseModel"
-          :label="$t('assetBrowser.modelInfo.compatibleBaseModels')"
-        >
-          <span class="text-sm">{{ baseModel }}</span>
-        </ModelInfoField>
-        <ModelInfoField
-          v-if="additionalTags.length > 0"
-          :label="$t('assetBrowser.modelInfo.additionalTags')"
-        >
-          <div class="flex flex-wrap gap-1">
-            <span
-              v-for="tag in additionalTags"
-              :key="tag"
-              class="rounded bg-surface-container px-2 py-0.5 text-xs"
-            >
-              {{ tag }}
-            </span>
-          </div>
-        </ModelInfoField>
-      </PropertiesAccordionItem>
+        </div>
+      </ModelInfoField>
+    </PropertiesAccordionItem>
 
-      <PropertiesAccordionItem>
-        <template #label>
-          <span class="text-xs uppercase">
-            {{ $t('assetBrowser.modelInfo.modelDescription') }}
+    <PropertiesAccordionItem class="bg-transparent">
+      <template #label>
+        <span class="text-xs uppercase font-inter">
+          {{ $t('assetBrowser.modelInfo.modelDescription') }}
+        </span>
+      </template>
+      <ModelInfoField
+        v-if="triggerPhrases.length > 0"
+        :label="$t('assetBrowser.modelInfo.triggerPhrases')"
+      >
+        <div class="flex flex-wrap gap-1">
+          <span
+            v-for="phrase in triggerPhrases"
+            :key="phrase"
+            class="rounded px-2 py-0.5 text-xs"
+          >
+            {{ phrase }}
           </span>
-        </template>
-        <ModelInfoField
-          v-if="triggerPhrases.length > 0"
-          :label="$t('assetBrowser.modelInfo.triggerPhrases')"
-        >
-          <div class="flex flex-wrap gap-1">
-            <span
-              v-for="phrase in triggerPhrases"
-              :key="phrase"
-              class="rounded bg-surface-container px-2 py-0.5 text-xs"
-            >
-              {{ phrase }}
-            </span>
-          </div>
-        </ModelInfoField>
-        <ModelInfoField
-          v-if="description"
-          :label="$t('assetBrowser.modelInfo.description')"
-        >
-          <p class="text-sm whitespace-pre-wrap">{{ description }}</p>
-        </ModelInfoField>
-      </PropertiesAccordionItem>
-    </div>
+        </div>
+      </ModelInfoField>
+      <ModelInfoField
+        v-if="description"
+        :label="$t('assetBrowser.modelInfo.description')"
+      >
+        <p class="text-sm whitespace-pre-wrap">{{ description }}</p>
+      </ModelInfoField>
+    </PropertiesAccordionItem>
   </div>
 </template>
 
