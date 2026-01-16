@@ -7,10 +7,12 @@
       <div class="flex flex-col items-center">
         <div class="grid place-items-center">
           <div
-            :class="[
-              'col-start-1 row-start-1 animate-spin rounded-full border-muted-foreground border-t-base-foreground',
-              spinnerSizeClass
-            ]"
+            :class="
+              cn(
+                'col-start-1 row-start-1 animate-spin rounded-full border-muted-foreground border-t-base-foreground',
+                spinnerSizeClass
+              )
+            "
           />
           <div class="col-start-1 row-start-1">
             <slot />
@@ -26,6 +28,8 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
+import { cn } from '@/utils/tailwindUtil'
 
 const { size = 'md' } = defineProps<{
   loading: boolean
