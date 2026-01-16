@@ -240,11 +240,18 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { getJobDetail } from '@/services/jobOutputCache'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
+
+interface JobOutputItem {
+  filename: string
+  subfolder: string
+  type: string
+}
 
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
@@ -492,6 +499,47 @@ function handleContextMenuHide() {
   })
 }
 
+const handleBulkDownload = (assets: AssetItem[]) => {
+  downloadMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleBulkDelete = async (assets: AssetItem[]) => {
+  if (await deleteAssets(assets)) {
+    clearSelection()
+  }
+}
+
+const handleClearQueue = async () => {
+  await commandStore.execute('Comfy.ClearPendingTasks')
+}
+
+const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
+  await addMultipleToWorkflow(assets)
+  clearSelection()
+}
+
+const handleBulkOpenWorkflow = async (assets: AssetItem[]) => {
+  await openMultipleWorkflows(assets)
+  clearSelection()
+}
+
+const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
+  await exportMultipleWorkflows(assets)
+  clearSelection()
+}
+
+const handleDownloadSelected = () => {
+  downloadMultipleAssets(selectedAssets.value)
+  clearSelection()
+}
+
+const handleDeleteSelected = async () => {
+  if (await deleteAssets(selectedAssets.value)) {
+    clearSelection()
+  }
+}
+
 const handleZoomClick = (asset: AssetItem) => {
   const mediaType = getMediaTypeFromFilename(asset.name)
 
@@ -519,16 +567,16 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 }
 
-const enterFolderView = (asset: AssetItem) => {
+const enterFolderView = async (asset: AssetItem) => {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (!metadata) {
     console.warn('Invalid output asset metadata')
     return
   }
 
-  const { promptId, allOutputs, executionTimeInSeconds } = metadata
+  const { promptId, allOutputs, executionTimeInSeconds, outputCount } = metadata
 
-  if (!promptId || !Array.isArray(allOutputs) || allOutputs.length === 0) {
+  if (!promptId) {
     console.warn('Missing required folder view data')
     return
   }
@@ -536,7 +584,48 @@ const enterFolderView = (asset: AssetItem) => {
   folderPromptId.value = promptId
   folderExecutionTime.value = executionTimeInSeconds
 
-  folderAssets.value = allOutputs.map((output) => ({
+  // Determine which outputs to display
+  let outputsToDisplay = allOutputs ?? []
+
+  // If outputCount indicates more outputs than we have, fetch full outputs
+  const needsFullOutputs =
+    typeof outputCount === 'number' &&
+    outputCount > 1 &&
+    outputsToDisplay.length < outputCount
+
+  if (needsFullOutputs) {
+    try {
+      const jobDetail = await getJobDetail(promptId)
+      if (jobDetail?.outputs) {
+        // Convert job outputs to ResultItemImpl array
+        outputsToDisplay = Object.entries(jobDetail.outputs).flatMap(
+          ([nodeId, nodeOutputs]) =>
+            Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
+              (items as JobOutputItem[])
+                .map(
+                  (item) =>
+                    new ResultItemImpl({
+                      ...item,
+                      nodeId,
+                      mediaType
+                    })
+                )
+                .filter((r) => r.supportsPreview)
+            )
+        )
+      }
+    } catch (error) {
+      console.error('Failed to fetch job detail for folder view:', error)
+      outputsToDisplay = []
+    }
+  }
+
+  if (outputsToDisplay.length === 0) {
+    console.warn('No outputs available for folder view')
+    return
+  }
+
+  folderAssets.value = outputsToDisplay.map((output) => ({
     id: `${output.nodeId}-${output.filename}`,
     name: output.filename,
     size: 0,
@@ -597,49 +686,6 @@ const copyJobId = async () => {
       })
     }
   }
-}
-
-const handleDownloadSelected = () => {
-  downloadMultipleAssets(selectedAssets.value)
-  clearSelection()
-}
-
-const handleDeleteSelected = async () => {
-  const confirmed = await deleteAssets(selectedAssets.value)
-  if (confirmed) {
-    clearSelection()
-  }
-}
-
-const handleBulkDownload = (assets: AssetItem[]) => {
-  downloadMultipleAssets(assets)
-  clearSelection()
-}
-
-const handleBulkDelete = async (assets: AssetItem[]) => {
-  const confirmed = await deleteAssets(assets)
-  if (confirmed) {
-    clearSelection()
-  }
-}
-
-const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
-  await addMultipleToWorkflow(assets)
-  clearSelection()
-}
-
-const handleBulkOpenWorkflow = async (assets: AssetItem[]) => {
-  await openMultipleWorkflows(assets)
-  clearSelection()
-}
-
-const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
-  await exportMultipleWorkflows(assets)
-  clearSelection()
-}
-
-const handleClearQueue = async () => {
-  await commandStore.execute('Comfy.ClearPendingTasks')
 }
 
 const handleApproachEnd = useDebounceFn(async () => {

@@ -118,9 +118,6 @@ async function runButtonClick(e: Event) {
       ? 'Comfy.QueuePromptFront'
       : 'Comfy.QueuePrompt'
 
-    useTelemetry()?.trackUiButtonClicked({
-      button_id: props.mobile ? 'queue_run_linear_mobile' : 'queue_run_linear'
-    })
     if (batchCount.value > 1) {
       useTelemetry()?.trackUiButtonClicked({
         button_id: 'queue_run_multiple_batches_submitted'
@@ -129,7 +126,7 @@ async function runButtonClick(e: Event) {
     await commandStore.execute(commandId, {
       metadata: {
         subscribe_to_run: false,
-        trigger_source: 'button'
+        trigger_source: 'linear'
       }
     })
   } finally {

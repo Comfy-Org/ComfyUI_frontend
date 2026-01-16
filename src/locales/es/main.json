@@ -848,6 +848,7 @@
     "releaseTitle": "Lanzamiento de {package} {version}",
     "reloadToApplyChanges": "Recargar para aplicar cambios",
     "removeImage": "Eliminar imagen",
+    "removeTag": "Eliminar etiqueta",
     "removeVideo": "Eliminar video",
     "rename": "Renombrar",
     "reportIssue": "Enviar informe",
@@ -2574,6 +2575,21 @@
     "enterFilename": "Introduzca el nombre del archivo",
     "exportWorkflow": "Exportar flujo de trabajo",
     "saveWorkflow": "Guardar flujo de trabajo"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "Tienes cambios no guardados. ¿Quieres descartarlos y cambiar de espacio de trabajo?",
+      "title": "Cambios no guardados"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "No tienes acceso a este espacio de trabajo",
+      "invalidFirebaseToken": "La autenticación ha fallado. Por favor, intenta iniciar sesión de nuevo.",
+      "notAuthenticated": "Debes iniciar sesión para acceder a los espacios de trabajo",
+      "tokenExchangeFailed": "No se pudo autenticar con el espacio de trabajo: {error}",
+      "workspaceNotFound": "Espacio de trabajo no encontrado"
+    }
   },
   "zoomControls": {
     "hideMinimap": "Ocultar minimapa",
