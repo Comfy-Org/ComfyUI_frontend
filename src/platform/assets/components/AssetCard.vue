@@ -81,7 +81,7 @@
           :is-editing="isEditing"
           :input-attrs="{ 'data-testid': 'asset-name-input' }"
           @edit="assetRename"
-          @cancel="assetRename()"
+          @cancel="isEditing = false"
         />
       </h3>
       <p

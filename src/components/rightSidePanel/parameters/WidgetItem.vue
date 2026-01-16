@@ -123,13 +123,13 @@ const displayLabel = customRef((track, trigger) => {
     >
       <EditableText
         v-if="widget.name"
+        v-model:is-editing="isEditing"
         :model-value="displayLabel"
-        :is-editing="isEditing"
         :input-attrs="{ placeholder: widget.name }"
+        double-click-to-edit
         class="text-sm leading-8 p-0 m-0 truncate pointer-events-auto cursor-text"
         @edit="displayLabel = $event"
         @cancel="isEditing = false"
-        @click="isEditing = true"
       />
 
       <span

@@ -17,6 +17,7 @@
           :model-value="node.label"
           :is-editing="isEditing"
           @edit="handleRename"
+          @cancel="handleRename(node.label)"
         />
         <slot name="after-label" :node="props.node" />
       </span>

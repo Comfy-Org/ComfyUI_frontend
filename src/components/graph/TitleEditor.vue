@@ -8,6 +8,7 @@
       :is-editing="showInput"
       :model-value="editedTitle"
       @edit="onEdit"
+      @cancel="onCancel"
     />
   </div>
 </template>
@@ -47,6 +48,12 @@ const titleEditorStore = useTitleEditorStore()
 const canvasStore = useCanvasStore()
 const previousCanvasDraggable = ref(true)
 
+const closeEditor = () => {
+  showInput.value = false
+  titleEditorStore.titleEditorTarget = null
+  canvasStore.canvas!.allow_dragcanvas = previousCanvasDraggable.value
+}
+
 const onEdit = (newValue: string) => {
   if (titleEditorStore.titleEditorTarget && newValue?.trim()) {
     const trimmedTitle = newValue.trim()
@@ -60,9 +67,11 @@ const onEdit = (newValue: string) => {
 
     app.canvas.setDirty(true, true)
   }
-  showInput.value = false
-  titleEditorStore.titleEditorTarget = null
-  canvasStore.canvas!.allow_dragcanvas = previousCanvasDraggable.value
+  closeEditor()
+}
+
+const onCancel = () => {
+  closeEditor()
 }
 
 watch(

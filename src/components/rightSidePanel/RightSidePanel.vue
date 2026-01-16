@@ -198,13 +198,13 @@ function handleTitleCancel() {
         <h3 class="my-3.5 text-sm font-semibold line-clamp-2 cursor-default">
           <template v-if="allowTitleEdit">
             <EditableText
+              v-model:is-editing="isEditing"
               :model-value="panelTitle"
-              :is-editing="isEditing"
               :input-attrs="{ 'data-testid': 'node-title-input' }"
+              double-click-to-edit
               class="cursor-text"
               @edit="handleTitleEdit"
               @cancel="handleTitleCancel"
-              @click="isEditing = true"
             />
             <i
               v-if="!isEditing"
