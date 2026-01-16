@@ -10,7 +10,7 @@ Applies to all `.vue` files anywhere in the codebase.
 ## Vue 3 Composition API
 
 - Use `<script setup lang="ts">` for component logic
-- Destructure props (Vue 3.5 style with defaults)
+- Destructure props (Vue 3.5 style with defaults) like `const { color = 'blue' } = defineProps<...>()`
 - Use `ref`/`reactive` for state
 - Use `computed()` for derived state
 - Use lifecycle hooks: `onMounted`, `onUpdated`, etc.
