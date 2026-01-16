@@ -8,6 +8,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
+import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
@@ -295,6 +296,7 @@ export const ComfyWidgets = {
   IMAGEUPLOAD: useImageUploadWidget(),
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
+  BOUNDINGBOX: transformWidgetConstructorV2ToV1(useBoundingBoxWidget()),
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),

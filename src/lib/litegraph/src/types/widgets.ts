@@ -88,6 +88,8 @@ export type IWidget =
   | ISelectButtonWidget
   | ITextareaWidget
   | IAssetWidget
+  | IImageCropWidget
+  | IBoundingBoxWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -257,6 +259,32 @@ export interface IAssetWidget extends IBaseWidget<
 > {
   type: 'asset'
   value: string
+}
+
+/** Bounding box value with x, y, width, height */
+export interface BoundingBoxValue {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** Image crop widget for cropping image */
+export interface IImageCropWidget extends IBaseWidget<
+  BoundingBoxValue,
+  'imagecrop'
+> {
+  type: 'imagecrop'
+  value: BoundingBoxValue
+}
+
+/** Bounding box widget for defining regions with numeric inputs */
+export interface IBoundingBoxWidget extends IBaseWidget<
+  BoundingBoxValue,
+  'boundingbox'
+> {
+  type: 'boundingbox'
+  value: BoundingBoxValue
 }
 
 /**

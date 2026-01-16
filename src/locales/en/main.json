@@ -1718,6 +1718,17 @@
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
     "uploadingModel": "Uploading 3D model..."
   },
+  "imageCrop": {
+    "loading": "Loading...",
+    "noInputImage": "No input image connected",
+    "cropPreviewAlt": "Crop preview"
+  },
+  "boundingBox": {
+    "x": "X",
+    "y": "Y",
+    "width": "Width",
+    "height": "Height"
+  },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
