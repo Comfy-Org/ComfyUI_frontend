@@ -1,25 +1,5 @@
 <template>
   <div class="base-widget-layout rounded-2xl overflow-hidden relative">
-    <Button
-      v-show="!isRightPanelOpen && showRightPanelButton"
-      size="icon"
-      :class="
-        cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
-          'opacity-0 pointer-events-none':
-            isRightPanelOpen || !showRightPanelButton
-        })
-      "
-      @click="toggleRightPanel"
-    >
-      <i class="icon-[lucide--panel-right]" />
-    </Button>
-    <Button
-      size="lg"
-      class="absolute top-4 right-6 z-10 transition-opacity duration-200 w-10"
-      @click="closeDialog"
-    >
-      <i class="pi pi-times" />
-    </Button>
     <div class="flex h-full w-full">
       <Transition name="slide-panel">
         <nav
@@ -55,24 +35,18 @@
               <slot name="header"></slot>
             </div>
             <slot name="header-right-area"></slot>
-            <div
-              :class="
-                cn(
-                  'flex justify-end gap-2 w-0',
-                  showRightPanelButton && !isRightPanelOpen
-                    ? 'min-w-22'
-                    : 'min-w-10'
-                )
-              "
-            >
+            <template v-if="!isRightPanelOpen">
               <Button
-                v-if="isRightPanelOpen && showRightPanelButton"
+                v-if="showRightPanelButton"
                 size="icon"
                 @click="toggleRightPanel"
               >
-                <i class="icon-[lucide--panel-right-close]" />
+                <i class="icon-[lucide--panel-right] text-sm" />
               </Button>
-            </div>
+              <Button size="lg" class="w-10" @click="closeDialog">
+                <i class="pi pi-times" />
+              </Button>
+            </template>
           </header>
 
           <main class="flex min-h-0 flex-1 flex-col">
@@ -93,9 +67,33 @@
         </div>
         <aside
           v-if="hasRightPanel && isRightPanelOpen"
-          class="w-1/4 min-w-40 max-w-80 pt-16 pb-8"
+          class="flex w-72 shrink-0 bg-modal-panel-background flex-col border-l border-border-default"
         >
-          <slot name="rightPanel" />
+          <header
+            data-component-id="RightPanelHeader"
+            class="flex h-16 shrink-0 items-center gap-2 border-b border-border-default px-4"
+          >
+            <h2 v-if="rightPanelTitle" class="flex-1 text-lg font-semibold">
+              {{ rightPanelTitle }}
+            </h2>
+            <div v-else class="flex-1">
+              <slot name="rightPanelHeaderTitle" />
+            </div>
+            <slot name="rightPanelHeaderActions" />
+            <Button
+              v-if="showRightPanelButton"
+              size="icon"
+              @click="toggleRightPanel"
+            >
+              <i class="icon-[lucide--panel-right-close] text-sm" />
+            </Button>
+            <Button size="icon" @click="closeDialog">
+              <i class="pi pi-times" />
+            </Button>
+          </header>
+          <div class="min-h-0 flex-1 overflow-y-auto">
+            <slot name="rightPanel" />
+          </div>
         </aside>
       </div>
     </div>
@@ -110,8 +108,9 @@ import Button from '@/components/ui/button/Button.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const { contentTitle } = defineProps<{
+const { contentTitle, rightPanelTitle } = defineProps<{
   contentTitle: string
+  rightPanelTitle?: string
 }>()
 
 const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {

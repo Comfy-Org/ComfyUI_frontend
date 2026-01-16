@@ -5,6 +5,7 @@
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
     :content-title="displayTitle"
+    :right-panel-title="$t('assetBrowser.modelInfo.title')"
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanel>
