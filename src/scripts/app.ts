@@ -1433,7 +1433,7 @@ export class ComfyApp {
   async handleFile(file: File, openSource?: WorkflowOpenSource) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
-    if (!workflowData || JSON.stringify(workflowData) === '{}') {
+    if (_.isEmpty(workflowData)) {
       if (file.type.startsWith('image')) {
         const transfer = new DataTransfer()
         transfer.items.add(file)
