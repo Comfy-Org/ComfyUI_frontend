@@ -1,12 +1,6 @@
 # Storybook Guidelines
 
-## Story Structure
-
-Place `*.stories.ts` alongside components. See `docs/guidance/storybook.md` for patterns.
-
-## Mock Data
-
-Use realistic ComfyUI schemas (node definitions, components).
+See `@docs/guidance/storybook.md` for story patterns (auto-loaded for `*.stories.ts`).
 
 ## Available Context
 
