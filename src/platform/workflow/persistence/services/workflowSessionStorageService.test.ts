@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  getStorageStats,
-  getWithLruTracking,
+  getWithAccessTracking,
   removeFromStorage,
-  setWithLruEviction
-} from './sessionStorageLruService'
+  setWithEviction
+} from './workflowSessionStorageService'
 
-describe('sessionStorageLruService', () => {
+describe('workflowSessionStorageService', () => {
   beforeEach(() => {
     sessionStorage.clear()
     vi.clearAllMocks()
@@ -17,29 +16,21 @@ describe('sessionStorageLruService', () => {
     vi.restoreAllMocks()
   })
 
-  describe('setWithLruEviction', () => {
-    it('stores data with LRU metadata wrapper', () => {
+  describe('setWithEviction', () => {
+    it('stores data with accessedAt wrapper', () => {
       const data = { nodes: [], links: [] }
-      const result = setWithLruEviction('workflow:test', data)
+      const result = setWithEviction('workflow:test', data)
 
       expect(result).toBe(true)
 
       const stored = sessionStorage.getItem('workflow:test')
-      expect(stored).toBeTruthy()
-
       const parsed = JSON.parse(stored!)
       expect(parsed).toHaveProperty('accessedAt')
       expect(parsed).toHaveProperty('data')
       expect(parsed.data).toEqual(data)
-      expect(typeof parsed.accessedAt).toBe('number')
     })
 
-    it('returns true on successful storage', () => {
-      const result = setWithLruEviction('key', { test: 'data' })
-      expect(result).toBe(true)
-    })
-
-    it('evicts LRU entries when quota is exceeded', () => {
+    it('evicts oldest entries when quota is exceeded', () => {
       const oldEntry = { accessedAt: 1000, data: { old: 'data' } }
       const newEntry = { accessedAt: 2000, data: { new: 'data' } }
 
@@ -51,13 +42,12 @@ describe('sessionStorageLruService', () => {
       vi.spyOn(sessionStorage, 'setItem').mockImplementation((key, value) => {
         callCount++
         if (key === 'workflow:current' && callCount === 1) {
-          const error = new DOMException('Quota exceeded', 'QuotaExceededError')
-          throw error
+          throw new DOMException('Quota exceeded', 'QuotaExceededError')
         }
         return originalSetItem(key, value)
       })
 
-      const result = setWithLruEviction(
+      const result = setWithEviction(
         'workflow:current',
         { current: 'data' },
         /^workflow:/
@@ -73,32 +63,42 @@ describe('sessionStorageLruService', () => {
         throw new DOMException('Quota exceeded', 'QuotaExceededError')
       })
 
-      const result = setWithLruEviction('key', { test: 'data' })
+      const result = setWithEviction('key', { test: 'data' })
+      expect(result).toBe(false)
+
+      spy.mockRestore()
+    })
+
+    it('returns false on unexpected errors', () => {
+      const spy = vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
+        throw new Error('Unexpected error')
+      })
+
+      const result = setWithEviction('key', { test: 'data' })
       expect(result).toBe(false)
 
       spy.mockRestore()
     })
   })
 
-  describe('getWithLruTracking', () => {
+  describe('getWithAccessTracking', () => {
     it('returns null for non-existent key', () => {
-      const result = getWithLruTracking('nonexistent')
-      expect(result).toBeNull()
+      expect(getWithAccessTracking('nonexistent')).toBeNull()
     })
 
     it('returns unwrapped data for new format entries', () => {
       const entry = { accessedAt: Date.now(), data: { nodes: [], links: [] } }
       sessionStorage.setItem('workflow:test', JSON.stringify(entry))
 
-      const result = getWithLruTracking('workflow:test')
+      const result = getWithAccessTracking('workflow:test')
       expect(result).toEqual({ nodes: [], links: [] })
     })
 
-    it('handles legacy format (unwrapped data) with accessedAt: 0', () => {
+    it('handles legacy format with accessedAt: 0', () => {
       const legacyData = { nodes: [1, 2, 3], links: [] }
       sessionStorage.setItem('workflow:legacy', JSON.stringify(legacyData))
 
-      const result = getWithLruTracking('workflow:legacy')
+      const result = getWithAccessTracking('workflow:legacy')
       expect(result).toEqual(legacyData)
     })
 
@@ -107,7 +107,7 @@ describe('sessionStorageLruService', () => {
       const entry = { accessedAt: oldTime, data: { test: 'data' } }
       sessionStorage.setItem('workflow:test', JSON.stringify(entry))
 
-      getWithLruTracking('workflow:test', true)
+      getWithAccessTracking('workflow:test', true)
 
       const stored = JSON.parse(sessionStorage.getItem('workflow:test')!)
       expect(stored.accessedAt).toBeGreaterThan(oldTime)
@@ -118,10 +118,17 @@ describe('sessionStorageLruService', () => {
       const entry = { accessedAt: oldTime, data: { test: 'data' } }
       sessionStorage.setItem('workflow:test', JSON.stringify(entry))
 
-      getWithLruTracking('workflow:test', false)
+      getWithAccessTracking('workflow:test', false)
 
       const stored = JSON.parse(sessionStorage.getItem('workflow:test')!)
       expect(stored.accessedAt).toBe(oldTime)
+    })
+
+    it('returns null for invalid JSON', () => {
+      sessionStorage.setItem('workflow:invalid', 'not json')
+
+      const result = getWithAccessTracking('workflow:invalid')
+      expect(result).toBeNull()
     })
   })
 
@@ -135,61 +142,8 @@ describe('sessionStorageLruService', () => {
     })
   })
 
-  describe('getStorageStats', () => {
-    it('returns stats for all entries', () => {
-      const entry1 = { accessedAt: 1000, data: { a: 1 } }
-      const entry2 = { accessedAt: 2000, data: { b: 2 } }
-      sessionStorage.setItem('workflow:a', JSON.stringify(entry1))
-      sessionStorage.setItem('workflow:b', JSON.stringify(entry2))
-      sessionStorage.setItem('other:c', 'value')
-
-      const stats = getStorageStats()
-
-      expect(stats.totalItems).toBe(3)
-      expect(stats.matchingItems).toBe(3)
-    })
-
-    it('filters entries by pattern', () => {
-      const entry1 = { accessedAt: 1000, data: { a: 1 } }
-      const entry2 = { accessedAt: 2000, data: { b: 2 } }
-      sessionStorage.setItem('workflow:a', JSON.stringify(entry1))
-      sessionStorage.setItem('workflow:b', JSON.stringify(entry2))
-      sessionStorage.setItem('other:c', 'value')
-
-      const stats = getStorageStats(/^workflow:/)
-
-      expect(stats.totalItems).toBe(3)
-      expect(stats.matchingItems).toBe(2)
-      expect(stats.entries).toHaveLength(2)
-    })
-
-    it('sorts entries by accessedAt (oldest first)', () => {
-      const entry1 = { accessedAt: 2000, data: { newer: true } }
-      const entry2 = { accessedAt: 1000, data: { older: true } }
-      sessionStorage.setItem('workflow:newer', JSON.stringify(entry1))
-      sessionStorage.setItem('workflow:older', JSON.stringify(entry2))
-
-      const stats = getStorageStats(/^workflow:/)
-
-      expect(stats.entries[0].key).toBe('workflow:older')
-      expect(stats.entries[1].key).toBe('workflow:newer')
-    })
-
-    it('treats legacy entries as accessedAt: 0', () => {
-      const legacyData = { nodes: [], links: [] }
-      const newEntry = { accessedAt: 1000, data: { test: true } }
-      sessionStorage.setItem('workflow:legacy', JSON.stringify(legacyData))
-      sessionStorage.setItem('workflow:new', JSON.stringify(newEntry))
-
-      const stats = getStorageStats(/^workflow:/)
-
-      expect(stats.entries[0].key).toBe('workflow:legacy')
-      expect(stats.entries[0].accessedAt).toBe(0)
-    })
-  })
-
-  describe('LRU eviction order', () => {
-    it('evicts oldest entries first (legacy before new)', () => {
+  describe('eviction order', () => {
+    it('evicts legacy entries (accessedAt: 0) before new entries', () => {
       const legacyData = { nodes: [], links: [] }
       const newEntry = { accessedAt: Date.now(), data: { new: true } }
 
@@ -206,18 +160,21 @@ describe('sessionStorageLruService', () => {
         return originalSetItem(key, value)
       })
 
-      setWithLruEviction('workflow:current', { current: true }, /^workflow:/)
+      setWithEviction('workflow:current', { current: true }, /^workflow:/)
 
       expect(sessionStorage.getItem('workflow:legacy')).toBeNull()
       expect(sessionStorage.getItem('workflow:new')).toBeTruthy()
     })
 
-    it('evicts oldest new-format entries when no legacy entries exist', () => {
-      const oldEntry = { accessedAt: 1000, data: { old: true } }
-      const newEntry = { accessedAt: 2000, data: { new: true } }
+    it('does not evict protected keys', () => {
+      const workspaceEntry = { accessedAt: 0, data: { workspace: true } }
+      const workflowEntry = { accessedAt: 1000, data: { workflow: true } }
 
-      sessionStorage.setItem('workflow:old', JSON.stringify(oldEntry))
-      sessionStorage.setItem('workflow:new', JSON.stringify(newEntry))
+      sessionStorage.setItem(
+        'workspace.settings',
+        JSON.stringify(workspaceEntry)
+      )
+      sessionStorage.setItem('workflow:old', JSON.stringify(workflowEntry))
 
       let callCount = 0
       const originalSetItem = sessionStorage.setItem.bind(sessionStorage)
@@ -229,10 +186,10 @@ describe('sessionStorageLruService', () => {
         return originalSetItem(key, value)
       })
 
-      setWithLruEviction('workflow:current', { current: true }, /^workflow:/)
+      setWithEviction('workflow:current', { current: true }, /^workflow:/)
 
+      expect(sessionStorage.getItem('workspace.settings')).toBeTruthy()
       expect(sessionStorage.getItem('workflow:old')).toBeNull()
-      expect(sessionStorage.getItem('workflow:new')).toBeTruthy()
     })
   })
 })

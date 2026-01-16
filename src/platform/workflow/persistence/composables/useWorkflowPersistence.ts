@@ -16,10 +16,9 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import {
-  getStorageStats,
-  getWithLruTracking,
-  setWithLruEviction
-} from '@/platform/workflow/persistence/services/sessionStorageLruService'
+  getWithAccessTracking,
+  setWithEviction
+} from '@/platform/workflow/persistence/services/workflowSessionStorageService'
 import { useCommandStore } from '@/stores/commandStore'
 
 const WORKFLOW_KEY_PATTERN = /^workflow:/
@@ -66,22 +65,7 @@ export function useWorkflowPersistence() {
 
     if (api.clientId) {
       const key = `workflow:${api.clientId}`
-      const success = setWithLruEviction(
-        key,
-        workflowData,
-        WORKFLOW_KEY_PATTERN
-      )
-
-      if (!success) {
-        const stats = getStorageStats(WORKFLOW_KEY_PATTERN)
-        console.warn(
-          '[WorkflowPersistence] Failed to persist workflow after LRU eviction',
-          {
-            workflowSizeKB: Math.round(workflowJson.length / 1024),
-            ...stats
-          }
-        )
-      }
+      setWithEviction(key, workflowData, WORKFLOW_KEY_PATTERN)
     }
   }
 
@@ -98,9 +82,9 @@ export function useWorkflowPersistence() {
     const workflowName = getStorageValue('Comfy.PreviousWorkflow')
     const clientId = api.initialClientId ?? api.clientId
 
-    // Try loading from session storage first (uses LRU tracking)
+    // Try loading from session storage first
     if (clientId) {
-      const sessionWorkflow = getWithLruTracking<ComfyWorkflowJSON>(
+      const sessionWorkflow = getWithAccessTracking<ComfyWorkflowJSON>(
         `workflow:${clientId}`
       )
       if (await loadWorkflowFromData(sessionWorkflow, workflowName)) {
