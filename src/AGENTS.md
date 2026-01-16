@@ -13,7 +13,7 @@
 
 ## State Management (Stores)
 
-- Follow domain-driven design
+- Follow domain-driven design for organizing files/folders
 - Clear public interfaces
 - Restrict extension access
 - Clean up subscriptions
