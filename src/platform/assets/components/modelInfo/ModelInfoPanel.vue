@@ -3,7 +3,7 @@
     data-component-id="ModelInfoPanel"
     class="flex h-full flex-col scrollbar-custom"
   >
-    <PropertiesAccordionItem class="bg-transparent">
+    <PropertiesAccordionItem :class="accordionClass">
       <template #label>
         <span class="text-xs uppercase font-inter">
           {{ $t('assetBrowser.modelInfo.basicInfo') }}
@@ -32,7 +32,7 @@
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem class="bg-transparent">
+    <PropertiesAccordionItem :class="accordionClass">
       <template #label>
         <span class="text-xs uppercase font-inter">
           {{ $t('assetBrowser.modelInfo.modelTagging') }}
@@ -66,7 +66,7 @@
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem class="bg-transparent">
+    <PropertiesAccordionItem :class="accordionClass">
       <template #label>
         <span class="text-xs uppercase font-inter">
           {{ $t('assetBrowser.modelInfo.modelDescription') }}
@@ -112,6 +112,8 @@ import {
 } from '@/platform/assets/utils/assetMetadataUtils'
 
 import ModelInfoField from './ModelInfoField.vue'
+
+const accordionClass = 'bg-transparent border-t border-border-default'
 
 const { asset } = defineProps<{
   asset: AssetDisplayItem
