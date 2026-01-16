@@ -20,6 +20,7 @@ export function useManagerState() {
   const systemStatsStore = useSystemStatsStore()
   const { systemStats, isInitialized: systemInitialized } =
     storeToRefs(systemStatsStore)
+  const managerDialog = useManagerDialog()
 
   /**
    * The current manager UI state.
@@ -149,7 +150,6 @@ export function useManagerState() {
     const state = managerUIState.value
     const dialogService = useDialogService()
     const commandStore = useCommandStore()
-    const managerDialog = useManagerDialog()
 
     switch (state) {
       case ManagerUIState.DISABLED:

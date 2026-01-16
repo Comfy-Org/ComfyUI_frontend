@@ -4,7 +4,7 @@
       hasDisabledUpdatePacks ? $t('manager.disabledNodesWontUpdate') : null
     "
     class="border"
-    :size="size"
+    :size
     :disabled="isUpdating"
     @click="updateAllPacks"
   >

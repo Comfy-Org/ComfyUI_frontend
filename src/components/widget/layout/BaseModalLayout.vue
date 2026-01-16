@@ -107,14 +107,13 @@ import Button from '@/components/ui/button/Button.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-const { contentTitle, rightPanelOpen = false } = defineProps<{
+const { contentTitle } = defineProps<{
   contentTitle: string
-  rightPanelOpen?: boolean
 }>()
 
-const emit = defineEmits<{
-  'update:rightPanelOpen': [value: boolean]
-}>()
+const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
+  default: false
+})
 
 const BREAKPOINTS = { md: 880 }
 const PANEL_SIZES = {
@@ -130,15 +129,7 @@ const breakpoints = useBreakpoints(BREAKPOINTS)
 const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
-const isRightPanelOpen = ref<boolean>(rightPanelOpen)
 const mobileMenuOpen = ref<boolean>(false)
-
-watch(
-  () => rightPanelOpen,
-  (value) => {
-    isRightPanelOpen.value = value
-  }
-)
 
 const hasRightPanel = computed(() => !!slots.rightPanel)
 
@@ -165,7 +156,6 @@ const toggleLeftPanel = () => {
 
 const toggleRightPanel = () => {
   isRightPanelOpen.value = !isRightPanelOpen.value
-  emit('update:rightPanelOpen', isRightPanelOpen.value)
 }
 </script>
 <style scoped>
