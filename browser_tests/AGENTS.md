@@ -4,7 +4,7 @@
 
 - Test user workflows with Playwright fixtures
 - Check `assets/` for test data
-- Prefer specific selectors
+- Prefer specific selectors (accessible properties like text, aria-label, role over data-testid)
 - Test across viewports
 - Do NOT use `waitForTimeout` - use Locator actions and retrying assertions
 - Follow naming conventions (`*.spec.ts`)
