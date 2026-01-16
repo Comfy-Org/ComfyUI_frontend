@@ -14,7 +14,6 @@ Applies to all `.vue` files anywhere in the codebase.
 - Use `ref`/`reactive` for state
 - Use `computed()` for derived state
 - Use lifecycle hooks: `onMounted`, `onUpdated`, etc.
-- Use `Teleport`/`Suspense` when needed
 
 ## Component Communication
 
