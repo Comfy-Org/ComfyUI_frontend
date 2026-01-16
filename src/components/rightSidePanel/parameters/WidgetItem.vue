@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, customRef, ref } from 'vue'
+import { computed, customRef } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
@@ -40,7 +40,6 @@ const {
 
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
-const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
   const component = getComponent(widget.type, widget.name)
@@ -87,8 +86,6 @@ const displayLabel = customRef((track, trigger) => {
       return widget.label || widget.name
     },
     set(newValue: string) {
-      isEditing.value = false
-
       const trimmedLabel = newValue.trim()
 
       const success = renameWidget(widget, node, trimmedLabel, parents)
@@ -123,13 +120,11 @@ const displayLabel = customRef((track, trigger) => {
     >
       <EditableText
         v-if="widget.name"
-        v-model:is-editing="isEditing"
         :model-value="displayLabel"
         :input-attrs="{ placeholder: widget.name }"
         double-click-to-edit
         class="text-sm leading-8 p-0 m-0 truncate pointer-events-auto cursor-text"
         @edit="displayLabel = $event"
-        @cancel="isEditing = false"
       />
 
       <span
