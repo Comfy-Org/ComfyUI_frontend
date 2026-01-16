@@ -24,6 +24,8 @@ export function useNodeHelpContent(
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
+  let currentRequest: Promise<string> | null = null
+
   const baseUrl = computed(() => {
     const node = toValue(nodeRef)
     if (!node) return ''
@@ -43,16 +45,24 @@ export function useNodeHelpContent(
 
       if (node) {
         isLoading.value = true
+        const request = (currentRequest = nodeHelpService.fetchNodeHelp(
+          node,
+          locale.value || 'en'
+        ))
+
         try {
-          helpContent.value = await nodeHelpService.fetchNodeHelp(
-            node,
-            locale.value || 'en'
-          )
+          const content = await request
+          if (currentRequest !== request) return
+          helpContent.value = content
         } catch (e: unknown) {
+          if (currentRequest !== request) return
           error.value = e instanceof Error ? e.message : String(e)
           helpContent.value = node.description || ''
         } finally {
-          isLoading.value = false
+          if (currentRequest === request) {
+            currentRequest = null
+            isLoading.value = false
+          }
         }
       }
     },

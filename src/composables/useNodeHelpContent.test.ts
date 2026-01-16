@@ -380,4 +380,37 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
       `src='/docs/${mockCoreNode.name}/video3.webm'`
     )
   })
+
+  it('should ignore stale requests when node changes', async () => {
+    const nodeRef = ref(mockCoreNode)
+    let resolveFirst: (value: unknown) => void
+    const firstRequest = new Promise((resolve) => {
+      resolveFirst = resolve
+    })
+
+    mockFetch
+      .mockImplementationOnce(() => firstRequest)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => '# Second node content'
+      })
+
+    const { helpContent } = useNodeHelpContent(nodeRef)
+    await nextTick()
+
+    // Change node before first request completes
+    nodeRef.value = mockCustomNode
+    await nextTick()
+    await flushPromises()
+
+    // Now resolve the first (stale) request
+    resolveFirst!({
+      ok: true,
+      text: async () => '# First node content'
+    })
+    await flushPromises()
+
+    // Should have second node's content, not first
+    expect(helpContent.value).toBe('# Second node content')
+  })
 })
