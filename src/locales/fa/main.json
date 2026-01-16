@@ -2587,6 +2587,21 @@
     "exportWorkflow": "خروجی گرفتن از workflow",
     "saveWorkflow": "ذخیره workflow"
   },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
+      "title": "تغییرات ذخیره‌نشده"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "شما به این فضای کاری دسترسی ندارید.",
+      "invalidFirebaseToken": "احراز هویت ناموفق بود. لطفاً دوباره وارد شوید.",
+      "notAuthenticated": "برای دسترسی به فضاهای کاری باید وارد شوید.",
+      "tokenExchangeFailed": "احراز هویت با فضای کاری ناموفق بود: {error}",
+      "workspaceNotFound": "فضای کاری پیدا نشد."
+    }
+  },
   "zoomControls": {
     "hideMinimap": "مخفی‌سازی نقشه کوچک",
     "label": "کنترل‌های بزرگ‌نمایی",

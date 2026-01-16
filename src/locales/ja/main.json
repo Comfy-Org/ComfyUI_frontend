@@ -2576,6 +2576,21 @@
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
   },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
+      "title": "未保存の変更"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "このワークスペースへのアクセス権がありません",
+      "invalidFirebaseToken": "認証に失敗しました。もう一度ログインしてください。",
+      "notAuthenticated": "ワークスペースにアクセスするにはログインが必要です",
+      "tokenExchangeFailed": "ワークスペースの認証に失敗しました: {error}",
+      "workspaceNotFound": "ワークスペースが見つかりません"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "ミニマップを非表示",
     "label": "ズームコントロール",

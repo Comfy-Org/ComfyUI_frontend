@@ -2576,6 +2576,21 @@
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程"
   },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
+      "title": "未儲存的變更"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "您沒有存取此工作區的權限",
+      "invalidFirebaseToken": "驗證失敗。請重新登入。",
+      "notAuthenticated": "您必須登入才能存取工作區",
+      "tokenExchangeFailed": "與工作區驗證失敗：{error}",
+      "workspaceNotFound": "找不到工作區"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "隱藏小地圖",
     "label": "縮放控制",

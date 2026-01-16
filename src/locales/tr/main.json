@@ -2576,6 +2576,21 @@
     "exportWorkflow": "İş Akışını Dışa Aktar",
     "saveWorkflow": "İş akışını kaydet"
   },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
+      "title": "Kaydedilmemiş Değişiklikler"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "Bu çalışma alanına erişiminiz yok",
+      "invalidFirebaseToken": "Kimlik doğrulama başarısız oldu. Lütfen tekrar giriş yapmayı deneyin.",
+      "notAuthenticated": "Çalışma alanlarına erişmek için giriş yapmalısınız",
+      "tokenExchangeFailed": "Çalışma alanı ile kimlik doğrulama başarısız oldu: {error}",
+      "workspaceNotFound": "Çalışma alanı bulunamadı"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "Mini Haritayı Gizle",
     "label": "Yakınlaştırma Kontrolleri",

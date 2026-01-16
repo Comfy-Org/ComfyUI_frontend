@@ -2576,6 +2576,21 @@
     "exportWorkflow": "تصدير سير العمل",
     "saveWorkflow": "حفظ سير العمل"
   },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "لديك تغييرات غير محفوظة. هل تريد تجاهلها والانتقال إلى مساحة عمل أخرى؟",
+      "title": "تغييرات غير محفوظة"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "ليس لديك صلاحية الوصول إلى هذه مساحة العمل",
+      "invalidFirebaseToken": "فشل التحقق من الهوية. يرجى محاولة تسجيل الدخول مرة أخرى.",
+      "notAuthenticated": "يجب تسجيل الدخول للوصول إلى مساحات العمل",
+      "tokenExchangeFailed": "فشل التحقق من مساحة العمل: {error}",
+      "workspaceNotFound": "لم يتم العثور على مساحة العمل"
+    }
+  },
   "zoomControls": {
     "hideMinimap": "إخفاء الخريطة المصغرة",
     "label": "عناصر التحكم في التكبير",
