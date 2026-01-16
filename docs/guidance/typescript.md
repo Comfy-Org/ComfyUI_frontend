@@ -2,6 +2,7 @@
 globs:
   - '**/*.ts'
   - '**/*.tsx'
+  - '**/*.vue'
 ---
 
 # TypeScript Conventions
