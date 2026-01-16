@@ -6897,6 +6897,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "description": "یک اکشن انیمیشن خاص را به کاراکتری که قبلاً ریگ شده است اعمال کنید.",
+    "display_name": "Meshy: متحرک‌سازی مدل",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "برای مشاهده لیست مقادیر موجود به https://docs.meshy.ai/en/api/animation-library مراجعه کنید."
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: تصویر به مدل",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "حالت pose برای مدل تولیدشده را مشخص کنید."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed کنترل می‌کند که node دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از مقدار seed غیرقطعی هستند."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "اگر روی false تنظیم شود، یک مش مثلثی پردازش‌نشده بازمی‌گرداند."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "تعیین می‌کند که آیا تکسچر تولید شود یا خیر. اگر روی false تنظیم شود، مرحله تکسچر رد شده و مش بدون تکسچر بازمی‌گردد."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: چند تصویر به مدل",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "حالت pose برای مدل تولیدشده را مشخص کنید."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed کنترل می‌کند که node دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از مقدار seed غیرقطعی هستند."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "اگر روی false تنظیم شود، یک مش مثلثی پردازش‌نشده بازمی‌گرداند."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "تعیین می‌کند که آیا تکسچر تولید شود یا خیر. اگر روی false تنظیم شود، مرحله تکسچر رد شده و مش بدون تکسچر بازمی‌گردد."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "یک مدل پیش‌نویس ایجادشده قبلی را بهبود دهید.",
+    "display_name": "Meshy: بهبود مدل پیش‌نویس",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "تولید نقشه‌های PBR (فلزی، زبری، نرمال) علاوه بر رنگ پایه. توجه: هنگام استفاده از سبک Sculpture، این گزینه باید غیرفعال باشد، زیرا سبک Sculpture نقشه‌های PBR مخصوص خود را تولید می‌کند."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "فقط یکی از 'texture_image' یا 'texture_prompt' را می‌توان همزمان استفاده کرد."
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "یک متن راهنما برای هدایت فرایند بافت‌دهی وارد کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'texture_image' استفاده کرد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "یک کاراکتر ریگ‌شده در فرمت‌های استاندارد ارائه می‌دهد. ریگ خودکار در حال حاضر برای مش‌های بدون بافت، دارایی‌های غیرانسان‌نما یا دارایی‌های انسان‌نمایی که ساختار اندام و بدن آن‌ها نامشخص است، مناسب نیست.",
+    "display_name": "Meshy: ریگ مدل",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "ارتفاع تقریبی مدل کاراکتر به متر. این مقدار به دقت مقیاس‌بندی و ریگ کمک می‌کند."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "تصویر بافت رنگ پایه مدل با UV باز شده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: متن به مدل",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "حالت ژست برای مدل تولیدشده را مشخص کنید."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed کنترل می‌کند که node دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "در صورت غیرفعال بودن، یک مش مثلثی پردازش‌نشده بازمی‌گرداند."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: مدل بافت",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "فعال‌سازی UV اصلی",
+        "tooltip": "استفاده از UV اصلی مدل به جای تولید UV جدید. در صورت فعال بودن، Meshy بافت‌های موجود مدل بارگذاری‌شده را حفظ می‌کند. اگر مدل UV اصلی نداشته باشد، کیفیت خروجی ممکن است به خوبی نباشد."
+      },
+      "image_style": {
+        "name": "سبک تصویر",
+        "tooltip": "یک تصویر دوبعدی برای راهنمایی فرآیند بافت‌دهی. نمی‌توان همزمان با 'text_style_prompt' استفاده کرد."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "text_style_prompt": {
+        "name": "توضیح سبک بافت متنی",
+        "tooltip": "سبک بافت مورد نظر شیء را با استفاده از متن توصیف کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'image_style' استفاده کرد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "description": "تولید ویدئو از طریق پرامپت، با امکان استفاده از فریم ابتدایی با مدل جدید MiniMax Hailuo-02.",
     "display_name": "ویدئوی MiniMax Hailuo",

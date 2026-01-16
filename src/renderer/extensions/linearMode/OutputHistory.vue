@@ -217,7 +217,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       <ModeToggle />
     </div>
     <div class="border-border-subtle md:border-r" />
-    <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-50" />
+    <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-50 grow-1" />
     <article
       v-else
       ref="outputsRef"
@@ -277,6 +277,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                   'border-2'
               )
             "
+            @click="selectedIndex = [index, key]"
           >
             <i
               :class="

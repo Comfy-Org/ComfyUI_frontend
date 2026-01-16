@@ -1,27 +1,42 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 /**
  * Manages result gallery state and activation for queue items.
  */
-export function useResultGallery(getFilteredTasks: () => any[]) {
+export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
   const galleryActiveIndex = ref(-1)
   const galleryItems = shallowRef<ResultItemImpl[]>([])
 
-  const onViewItem = (item: JobListItem) => {
-    const items: ResultItemImpl[] = getFilteredTasks().flatMap((t: any) => {
-      const preview = t.previewOutput
-      return preview && preview.supportsPreview ? [preview] : []
-    })
+  async function onViewItem(item: JobListItem) {
+    const tasks = getFilteredTasks()
+    if (!tasks.length) return
+
+    const targetTask = item.taskRef
+    const targetOutputs = targetTask
+      ? await getOutputsForTask(targetTask)
+      : null
+
+    // Request was superseded by a newer one
+    if (targetOutputs === null && targetTask) return
+
+    // Use target's outputs if available, otherwise fall back to all previews
+    const items = targetOutputs?.length
+      ? targetOutputs
+      : tasks
+          .map((t) => t.previewOutput)
+          .filter((o): o is ResultItemImpl => !!o)
 
     if (!items.length) return
 
     galleryItems.value = items
-    const activeUrl: string | undefined = item.taskRef?.previewOutput?.url
-    const idx = activeUrl ? items.findIndex((o) => o.url === activeUrl) : 0
-    galleryActiveIndex.value = idx >= 0 ? idx : 0
+    galleryActiveIndex.value = findActiveIndex(
+      items,
+      item.taskRef?.previewOutput?.url
+    )
   }
 
   return {

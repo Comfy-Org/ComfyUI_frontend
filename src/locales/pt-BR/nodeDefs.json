@@ -6897,6 +6897,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "description": "Aplicar uma ação de animação específica a um personagem previamente rigado.",
+    "display_name": "Meshy: Animar Modelo",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "Visite https://docs.meshy.ai/en/api/animation-library para uma lista de valores disponíveis."
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: Imagem para Modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle_após_gerar"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "pose_mode": {
+        "name": "modo_de_pose",
+        "tooltip": "Especifique o modo de pose para o modelo gerado."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "should_remesh": {
+        "name": "refazer_malha",
+        "tooltip": "Quando definido como falso, retorna uma malha triangular não processada."
+      },
+      "should_remesh_target_polycount": {
+        "name": "contagem_alvo_de_polígonos"
+      },
+      "should_remesh_topology": {
+        "name": "topologia"
+      },
+      "should_texture": {
+        "name": "gerar_textura",
+        "tooltip": "Determina se as texturas serão geradas. Definir como falso pula a fase de textura e retorna uma malha sem texturas."
+      },
+      "should_texture_enable_pbr": {
+        "name": "habilitar_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "prompt_de_textura"
+      },
+      "symmetry_mode": {
+        "name": "modo_de_simetria"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: Múltiplas Imagens para Modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle_após_gerar"
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "pose_mode": {
+        "name": "modo_de_pose",
+        "tooltip": "Especifique o modo de pose para o modelo gerado."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "should_remesh": {
+        "name": "refazer_malha",
+        "tooltip": "Quando definido como falso, retorna uma malha triangular não processada."
+      },
+      "should_remesh_target_polycount": {
+        "name": "contagem_alvo_de_polígonos"
+      },
+      "should_remesh_topology": {
+        "name": "topologia"
+      },
+      "should_texture": {
+        "name": "gerar_textura",
+        "tooltip": "Determina se as texturas serão geradas. Definir como falso pula a fase de textura e retorna uma malha sem texturas."
+      },
+      "should_texture_enable_pbr": {
+        "name": "habilitar_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "prompt_de_textura"
+      },
+      "symmetry_mode": {
+        "name": "modo_de_simetria"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "Refine um modelo rascunho criado anteriormente.",
+    "display_name": "Meshy: Refinar Modelo Rascunho",
+    "inputs": {
+      "enable_pbr": {
+        "name": "habilitar_pbr",
+        "tooltip": "Gerar mapas PBR (metálico, rugosidade, normal) além da cor base. Nota: isso deve ser definido como falso ao usar o estilo Escultura, pois o estilo Escultura gera seu próprio conjunto de mapas PBR."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "texture_image": {
+        "name": "imagem_de_textura",
+        "tooltip": "Apenas um de 'texture_image' ou 'texture_prompt' pode ser usado ao mesmo tempo."
+      },
+      "texture_prompt": {
+        "name": "prompt_de_textura",
+        "tooltip": "Forneça um prompt de texto para orientar o processo de texturização. Máximo de 600 caracteres. Não pode ser usado ao mesmo tempo que 'texture_image'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "Fornece um personagem com rig em formatos padrão. O auto-rigging atualmente não é adequado para malhas sem textura, ativos não humanóides ou ativos humanóides com estrutura de membros e corpo indefinida.",
+    "display_name": "Meshy: Rig de Modelo",
+    "inputs": {
+      "height_meters": {
+        "name": "altura_metros",
+        "tooltip": "A altura aproximada do modelo do personagem em metros. Isso auxilia na escala e precisão do rig."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "imagem_de_textura",
+        "tooltip": "Imagem de textura de cor base UV-desdobrada do modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: Texto para Modelo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle_após_gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "pose_mode": {
+        "name": "modo_de_pose",
+        "tooltip": "Especifique o modo de pose para o modelo gerado."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "should_remesh": {
+        "name": "deve_refazer_malha",
+        "tooltip": "Quando definido como falso, retorna uma malha triangular não processada."
+      },
+      "should_remesh_target_polycount": {
+        "name": "contagem_alvo_de_polígonos"
+      },
+      "should_remesh_topology": {
+        "name": "topologia"
+      },
+      "style": {
+        "name": "estilo"
+      },
+      "symmetry_mode": {
+        "name": "modo_de_simetria"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: Modelo de Textura",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "habilitar_uv_original",
+        "tooltip": "Usar o UV original do modelo em vez de gerar novos UVs. Quando ativado, o Meshy preserva as texturas existentes do modelo enviado. Se o modelo não tiver UV original, a qualidade do resultado pode não ser tão boa."
+      },
+      "image_style": {
+        "name": "estilo_de_imagem",
+        "tooltip": "Uma imagem 2D para guiar o processo de texturização. Não pode ser usada ao mesmo tempo que 'text_style_prompt'."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "text_style_prompt": {
+        "name": "prompt_de_estilo_textual",
+        "tooltip": "Descreva o estilo de textura desejado para o objeto usando texto. Máximo de 600 caracteres. Não pode ser usado ao mesmo tempo que 'image_style'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_do_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "description": "Gera vídeos a partir do prompt, com quadro inicial opcional usando o novo modelo MiniMax Hailuo-02.",
     "display_name": "MiniMax Hailuo Vídeo",
