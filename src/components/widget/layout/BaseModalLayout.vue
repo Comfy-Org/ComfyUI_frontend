@@ -1,11 +1,12 @@
 <template>
   <div class="base-widget-layout rounded-2xl overflow-hidden relative">
     <Button
-      v-show="!isRightPanelOpen && hasRightPanel"
-      size="lg"
+      v-show="!isRightPanelOpen && showRightPanelButton"
+      size="icon"
       :class="
         cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
-          'opacity-0 pointer-events-none': isRightPanelOpen || !hasRightPanel
+          'opacity-0 pointer-events-none':
+            isRightPanelOpen || !showRightPanelButton
         })
       "
       @click="toggleRightPanel"
@@ -58,13 +59,15 @@
               :class="
                 cn(
                   'flex justify-end gap-2 w-0',
-                  hasRightPanel && !isRightPanelOpen ? 'min-w-22' : 'min-w-10'
+                  showRightPanelButton && !isRightPanelOpen
+                    ? 'min-w-22'
+                    : 'min-w-10'
                 )
               "
             >
               <Button
-                v-if="isRightPanelOpen && hasRightPanel"
-                size="lg"
+                v-if="isRightPanelOpen && showRightPanelButton"
+                size="icon"
                 @click="toggleRightPanel"
               >
                 <i class="icon-[lucide--panel-right-close]" />
@@ -92,7 +95,7 @@
           v-if="hasRightPanel && isRightPanelOpen"
           class="w-1/4 min-w-40 max-w-80 pt-16 pb-8"
         >
-          <slot name="rightPanel"></slot>
+          <slot name="rightPanel" />
         </aside>
       </div>
     </div>
@@ -115,6 +118,17 @@ const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
   default: false
 })
 
+const slots = useSlots()
+const hasRightPanel = computed(() => !!slots.rightPanel)
+
+const hideRightPanelButton = defineModel<boolean>('hideRightPanelButton', {
+  default: false
+})
+
+const showRightPanelButton = computed(
+  () => hasRightPanel.value && !hideRightPanelButton.value
+)
+
 const BREAKPOINTS = { md: 880 }
 const PANEL_SIZES = {
   width: 'w-1/3',
@@ -122,7 +136,6 @@ const PANEL_SIZES = {
   maxWidth: 'max-w-56'
 }
 
-const slots = useSlots()
 const closeDialog = inject(OnCloseKey, () => {})
 
 const breakpoints = useBreakpoints(BREAKPOINTS)
@@ -130,8 +143,6 @@ const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
 const mobileMenuOpen = ref<boolean>(false)
-
-const hasRightPanel = computed(() => !!slots.rightPanel)
 
 watch(notMobile, (isDesktop) => {
   if (!isDesktop) {

@@ -1,5 +1,7 @@
 <template>
   <BaseModalLayout
+    :hide-right-panel-button="true"
+    :right-panel-open="!!focusedAsset"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
     :content-title="displayTitle"
@@ -56,13 +58,16 @@
       <AssetGrid
         :assets="filteredAssets"
         :loading="isLoading"
+        :focused-asset-id="focusedAsset?.id"
+        @asset-focus="handleAssetFocus"
+        @asset-blur="focusedAsset = null"
         @asset-select="handleAssetSelectAndEmit"
         @asset-deleted="refreshAssets"
       />
     </template>
 
-    <template v-if="selectedAsset" #rightPanel>
-      <ModelInfoPanel :asset="selectedAsset" />
+    <template #rightPanel>
+      <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" />
     </template>
   </BaseModalLayout>
 </template>
@@ -155,7 +160,7 @@ const {
   updateFilters
 } = useAssetBrowser(fetchedAssets)
 
-const selectedAsset = ref<AssetDisplayItem | null>(null)
+const focusedAsset = ref<AssetDisplayItem | null>(null)
 
 const primaryCategoryTag = computed(() => {
   const assets = fetchedAssets.value ?? []
@@ -198,11 +203,12 @@ function handleClose() {
   emit('close')
 }
 
+function handleAssetFocus(asset: AssetDisplayItem) {
+  focusedAsset.value = asset
+}
+
 function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
-  selectedAsset.value = asset
   emit('asset-select', asset)
-  // onSelect callback is provided by dialog composable layer
-  // It handles the appropriate transformation (filename extraction or full asset)
   props.onSelect?.(asset)
 }
 </script>
