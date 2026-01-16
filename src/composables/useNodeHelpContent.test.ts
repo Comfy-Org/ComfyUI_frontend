@@ -1,5 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
@@ -82,12 +82,15 @@ describe('useNodeHelpContent', () => {
     python_module: 'custom_nodes.test_module.custom@1.0.0'
   }
 
-  // Mock fetch responses
   const mockFetch = vi.fn()
-  global.fetch = mockFetch
 
   beforeEach(() => {
     mockFetch.mockReset()
+    vi.stubGlobal('fetch', mockFetch)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   it('should generate correct baseUrl for core nodes', async () => {
