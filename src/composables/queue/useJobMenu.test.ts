@@ -60,12 +60,10 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
 
 const interruptMock = vi.fn()
 const deleteItemMock = vi.fn()
-const fetchApiMock = vi.fn()
 vi.mock('@/scripts/api', () => ({
   api: {
     interrupt: (...args: any[]) => interruptMock(...args),
-    deleteItem: (...args: any[]) => deleteItemMock(...args),
-    fetchApi: (...args: any[]) => fetchApiMock(...args)
+    deleteItem: (...args: any[]) => deleteItemMock(...args)
   }
 }))
 
@@ -140,9 +138,7 @@ const createJobItem = (
   title: overrides.title ?? 'Test job',
   meta: overrides.meta ?? 'meta',
   state: overrides.state ?? 'completed',
-  taskRef: overrides.taskRef as Partial<TaskItemImpl> | undefined as
-    | TaskItemImpl
-    | undefined,
+  taskRef: overrides.taskRef as TaskItemImpl | undefined,
   iconName: overrides.iconName,
   iconImageUrl: overrides.iconImageUrl,
   showClear: overrides.showClear,

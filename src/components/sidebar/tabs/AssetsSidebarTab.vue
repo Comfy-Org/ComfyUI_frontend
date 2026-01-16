@@ -247,6 +247,12 @@ import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+interface JobOutputItem {
+  filename: string
+  subfolder: string
+  type: string
+}
+
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
@@ -576,30 +582,29 @@ const enterFolderView = async (asset: AssetItem) => {
     outputsToDisplay.length < outputCount
 
   if (needsFullOutputs) {
-    const jobDetail = await getJobDetail(promptId)
-    if (jobDetail?.outputs) {
-      // Convert job outputs to ResultItemImpl array
-      outputsToDisplay = Object.entries(jobDetail.outputs).flatMap(
-        ([nodeId, nodeOutputs]) =>
-          Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-            (
-              items as Array<{
-                filename: string
-                subfolder: string
-                type: string
-              }>
+    try {
+      const jobDetail = await getJobDetail(promptId)
+      if (jobDetail?.outputs) {
+        // Convert job outputs to ResultItemImpl array
+        outputsToDisplay = Object.entries(jobDetail.outputs).flatMap(
+          ([nodeId, nodeOutputs]) =>
+            Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
+              (items as JobOutputItem[])
+                .map(
+                  (item) =>
+                    new ResultItemImpl({
+                      ...item,
+                      nodeId,
+                      mediaType
+                    })
+                )
+                .filter((r) => r.supportsPreview)
             )
-              .map(
-                (item) =>
-                  new ResultItemImpl({
-                    ...item,
-                    nodeId,
-                    mediaType
-                  })
-              )
-              .filter((r) => r.supportsPreview)
-          )
-      )
+        )
+      }
+    } catch (error) {
+      console.error('Failed to fetch job detail for folder view:', error)
+      outputsToDisplay = []
     }
   }
 

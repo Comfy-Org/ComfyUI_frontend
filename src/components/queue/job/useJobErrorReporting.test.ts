@@ -18,7 +18,7 @@ const createTaskWithError = (
     errorMessage,
     executionError,
     createTime: createTime ?? Date.now()
-  }) as unknown as TaskItemImpl
+  }) as Partial<TaskItemImpl> as TaskItemImpl
 
 describe('useJobErrorReporting', () => {
   let taskState = ref<TaskItemImpl | null>(null)
@@ -127,31 +127,6 @@ describe('useJobErrorReporting', () => {
     expect(showExecutionErrorDialog).toHaveBeenCalledTimes(1)
     expect(showExecutionErrorDialog).toHaveBeenCalledWith(executionError)
     expect(showErrorDialog).not.toHaveBeenCalled()
-  })
-
-  it('passes execution_error directly to dialog', () => {
-    const executionError: ExecutionError = {
-      prompt_id: 'job-1',
-      timestamp: 12345,
-      node_id: '5',
-      node_type: 'KSampler',
-      exception_message: 'Error',
-      exception_type: 'RuntimeError',
-      traceback: ['line 1'],
-      current_inputs: {},
-      current_outputs: {}
-    }
-    taskState.value = createTaskWithError(
-      'job-1',
-      'Error',
-      executionError,
-      12345
-    )
-
-    composable.reportJobError()
-
-    expect(showExecutionErrorDialog).toHaveBeenCalledTimes(1)
-    expect(showExecutionErrorDialog).toHaveBeenCalledWith(executionError)
   })
 
   it('does nothing when no error message and no execution_error', () => {
