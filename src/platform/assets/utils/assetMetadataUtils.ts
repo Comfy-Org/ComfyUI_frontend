@@ -32,20 +32,29 @@ export function getAssetBaseModel(asset: AssetItem): string | null {
  * @returns The display name or filename
  */
 export function getAssetDisplayName(asset: AssetItem): string {
-  return typeof asset.user_metadata?.display_name === 'string'
-    ? asset.user_metadata.display_name
+  return typeof asset.user_metadata?.name === 'string'
+    ? asset.user_metadata.name
     : asset.name
 }
 
 /**
- * Safely extracts source URL from asset metadata
+ * Constructs source URL from asset's source_arn
  * @param asset - The asset to extract source URL from
- * @returns The source URL or null if not present
+ * @returns The source URL or null if not present/parseable
  */
 export function getAssetSourceUrl(asset: AssetItem): string | null {
-  return typeof asset.user_metadata?.source_url === 'string'
-    ? asset.user_metadata.source_url
-    : null
+  const sourceArn = asset.user_metadata?.source_arn
+  if (typeof sourceArn !== 'string') return null
+
+  const civitaiMatch = sourceArn.match(
+    /^civitai:model:(\d+):version:(\d+)(?::file:\d+)?$/
+  )
+  if (civitaiMatch) {
+    const [, modelId, versionId] = civitaiMatch
+    return `https://civitai.com/models/${modelId}?modelVersionId=${versionId}`
+  }
+
+  return null
 }
 
 /**
@@ -54,7 +63,7 @@ export function getAssetSourceUrl(asset: AssetItem): string | null {
  * @returns Array of trigger phrases
  */
 export function getAssetTriggerPhrases(asset: AssetItem): string[] {
-  const phrases = asset.user_metadata?.trigger_phrases
+  const phrases = asset.user_metadata?.trained_words
   if (Array.isArray(phrases)) {
     return phrases.filter((p): p is string => typeof p === 'string')
   }

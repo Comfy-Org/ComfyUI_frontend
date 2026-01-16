@@ -10,6 +10,7 @@ import type {
   AssetItem,
   AssetMetadata,
   AssetResponse,
+  AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
   ModelFolder
@@ -298,7 +299,7 @@ function createAssetService() {
    */
   async function updateAsset(
     id: string,
-    newData: Partial<AssetMetadata>
+    newData: AssetUpdatePayload
   ): Promise<AssetItem> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'PUT',
