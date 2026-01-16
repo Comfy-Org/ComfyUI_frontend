@@ -339,12 +339,58 @@ export const useAssetsStore = defineStore('assets', () => {
         return updateModelsForKey(key, () => assetService.getAssetsByTag(tag))
       }
 
+      /**
+       * Optimistically update an asset in the cache
+       * @param assetId The asset ID to update
+       * @param updates Partial asset data to merge
+       * @param cacheKey Optional cache key to target (nodeType or 'tag:xxx')
+       */
+      function updateAssetInCache(
+        assetId: string,
+        updates: Partial<AssetItem>,
+        cacheKey?: string
+      ) {
+        const keysToCheck = cacheKey
+          ? [cacheKey]
+          : Array.from(modelAssetsByNodeType.keys())
+
+        for (const key of keysToCheck) {
+          const assets = modelAssetsByNodeType.get(key)
+          if (!assets) continue
+
+          const index = assets.findIndex((a) => a.id === assetId)
+          if (index !== -1) {
+            const updatedAsset = { ...assets[index], ...updates }
+            const newAssets = [...assets]
+            newAssets[index] = updatedAsset
+            modelAssetsByNodeType.set(key, newAssets)
+            if (cacheKey) return
+          }
+        }
+      }
+
+      /**
+       * Update asset metadata with optimistic cache update
+       * @param assetId The asset ID to update
+       * @param userMetadata The user_metadata to save
+       * @param cacheKey Optional cache key to target for optimistic update
+       */
+      async function updateAssetMetadata(
+        assetId: string,
+        userMetadata: Record<string, unknown>,
+        cacheKey?: string
+      ) {
+        updateAssetInCache(assetId, { user_metadata: userMetadata }, cacheKey)
+        await assetService.updateAsset(assetId, { user_metadata: userMetadata })
+      }
+
       return {
         modelAssetsByNodeType,
         modelLoadingByNodeType,
         modelErrorByNodeType,
         updateModelsForNodeType,
-        updateModelsForTag
+        updateModelsForTag,
+        updateAssetMetadata
       }
     }
 
@@ -353,7 +399,8 @@ export const useAssetsStore = defineStore('assets', () => {
       modelLoadingByNodeType: shallowReactive(new Map<string, boolean>()),
       modelErrorByNodeType: shallowReactive(new Map<string, Error | null>()),
       updateModelsForNodeType: async () => [],
-      updateModelsForTag: async () => []
+      updateModelsForTag: async () => [],
+      updateAssetMetadata: async () => {}
     }
   }
 
@@ -362,7 +409,8 @@ export const useAssetsStore = defineStore('assets', () => {
     modelLoadingByNodeType,
     modelErrorByNodeType,
     updateModelsForNodeType,
-    updateModelsForTag
+    updateModelsForTag,
+    updateAssetMetadata
   } = getModelState()
 
   // Watch for completed downloads and refresh model caches
@@ -427,6 +475,7 @@ export const useAssetsStore = defineStore('assets', () => {
     modelLoadingByNodeType,
     modelErrorByNodeType,
     updateModelsForNodeType,
-    updateModelsForTag
+    updateModelsForTag,
+    updateAssetMetadata
   }
 })

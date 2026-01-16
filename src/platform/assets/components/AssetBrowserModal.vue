@@ -68,7 +68,7 @@
     </template>
 
     <template #rightPanel>
-      <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" />
+      <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
     </template>
   </BaseModalLayout>
 </template>

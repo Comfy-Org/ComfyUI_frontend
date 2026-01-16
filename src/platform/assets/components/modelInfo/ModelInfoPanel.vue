@@ -130,6 +130,7 @@
 </template>
 
 <script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
@@ -148,13 +149,15 @@ import {
   getAssetTriggerPhrases,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 import ModelInfoField from './ModelInfoField.vue'
 
 const accordionClass = 'bg-transparent border-t border-border-default'
 
-const { asset } = defineProps<{
+const { asset, cacheKey } = defineProps<{
   asset: AssetDisplayItem
+  cacheKey?: string
 }>()
 
 const displayName = computed(() => getAssetDisplayName(asset))
@@ -180,4 +183,23 @@ const modelType = computed(() => {
   if (!typeTag) return null
   return typeTag.includes('/') ? typeTag.split('/').pop() : typeTag
 })
+
+const assetsStore = useAssetsStore()
+
+async function saveMetadata() {
+  if (isImmutable.value) return
+
+  await assetsStore.updateAssetMetadata(
+    asset.id,
+    {
+      ...asset.user_metadata,
+      base_model: baseModels.value,
+      additional_tags: additionalTags.value
+    },
+    cacheKey
+  )
+}
+
+watchDebounced(baseModels, saveMetadata, { debounce: 500 })
+watchDebounced(additionalTags, saveMetadata, { debounce: 500 })
 </script>
