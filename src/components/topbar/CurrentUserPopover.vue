@@ -104,7 +104,7 @@
 
       <!-- OWNER unsubscribed: Show Subscribe button (primary) -->
       <div
-        v-else-if="workspaceRole === 'OWNER' && !isWorkspaceSubscribed"
+        v-else-if="workspaceRole === 'owner' && !isWorkspaceSubscribed"
         class="flex justify-center px-4 py-2"
       >
         <Button
@@ -298,13 +298,13 @@ const canUpgrade = computed(() => {
 // OWNER (unsubscribed): Plans & pricing, Partner nodes, Divider, Workspace settings, Account settings, Divider, Log out
 // OWNER (subscribed): Plans & pricing, Manage plan, Partner nodes, Divider, Workspace settings, Account settings, Divider, Log out
 const showPlansAndPricing = computed(
-  () => isPersonalWorkspace.value || workspaceRole.value === 'OWNER'
+  () => isPersonalWorkspace.value || workspaceRole.value === 'owner'
 )
 const showManagePlan = computed(
   () => showPlansAndPricing.value && isActiveSubscription.value
 )
 const showCreditsSection = computed(
-  () => isPersonalWorkspace.value || workspaceRole.value === 'OWNER'
+  () => isPersonalWorkspace.value || workspaceRole.value === 'owner'
 )
 
 const handleOpenUserSettings = () => {
@@ -358,9 +358,7 @@ const handleSubscribed = async () => {
 
 const handleCreateWorkspace = () => {
   workspaceSwitcherPopover.value?.hide()
-  dialogService.showCreateWorkspaceDialog(() => {
-    // TODO: Implement actual create workspace API call
-  })
+  dialogService.showCreateWorkspaceDialog()
   emit('close')
 }
 

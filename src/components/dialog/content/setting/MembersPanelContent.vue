@@ -457,9 +457,7 @@ function handleRevokeInvite(invite: PendingInvite) {
 }
 
 function handleCreateWorkspace() {
-  showCreateWorkspaceDialog(() => {
-    // TODO: Implement actual create workspace API call
-  })
+  showCreateWorkspaceDialog()
 }
 
 function handleRemoveMember(_member: WorkspaceMember) {

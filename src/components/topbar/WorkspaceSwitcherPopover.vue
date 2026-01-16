@@ -25,7 +25,7 @@
                 {{ workspace.name }}
               </span>
               <span
-                v-if="workspace.role !== 'PERSONAL'"
+                v-if="workspace.type !== 'personal'"
                 class="text-sm text-muted-foreground"
               >
                 {{ getRoleLabel(workspace.role) }}
@@ -107,8 +107,8 @@ function isCurrentWorkspace(workspace: AvailableWorkspace): boolean {
 }
 
 function getRoleLabel(role: AvailableWorkspace['role']): string {
-  if (role === 'OWNER') return t('workspaceSwitcher.roleOwner')
-  if (role === 'MEMBER') return t('workspaceSwitcher.roleMember')
+  if (role === 'owner') return t('workspaceSwitcher.roleOwner')
+  if (role === 'member') return t('workspaceSwitcher.roleMember')
   return ''
 }
 

@@ -609,7 +609,7 @@ export const useDialogService = () => {
   }
 
   function showCreateWorkspaceDialog(
-    onConfirm: (name: string) => void | Promise<void>
+    onConfirm?: (name: string) => void | Promise<void>
   ) {
     return dialogStore.showDialog({
       key: 'create-workspace',

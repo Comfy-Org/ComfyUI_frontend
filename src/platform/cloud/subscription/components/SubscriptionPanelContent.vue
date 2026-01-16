@@ -264,7 +264,7 @@ const { t, n } = useI18n()
 
 // OWNER with unsubscribed workspace
 const isOwnerUnsubscribed = computed(
-  () => workspaceRole.value === 'OWNER' && !isWorkspaceSubscribed.value
+  () => workspaceRole.value === 'owner' && !isWorkspaceSubscribed.value
 )
 
 const {

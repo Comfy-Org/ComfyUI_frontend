@@ -1,4 +1,4 @@
-<!-- A button that shows current authenticated user's avatar -->
+<!-- A button that shows current workspace's profile picture -->
 <template>
   <div>
     <Button
@@ -16,7 +16,10 @@
           )
         "
       >
-        <UserAvatar :photo-url="photoURL" :class="compact && 'size-full'" />
+        <WorkspaceProfilePic
+          :workspace-name="workspaceName"
+          :class="compact && 'size-full'"
+        />
 
         <i v-if="showArrow" class="icon-[lucide--chevron-down] size-3 px-1" />
       </div>
@@ -38,11 +41,12 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
-import UserAvatar from '@/components/common/UserAvatar.vue'
+import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
 import { cn } from '@/utils/tailwindUtil'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
@@ -52,12 +56,10 @@ const { showArrow = true, compact = false } = defineProps<{
   compact?: boolean
 }>()
 
-const { isLoggedIn, userPhotoUrl } = useCurrentUser()
+const { isLoggedIn } = useCurrentUser()
+const { workspaceName } = useWorkspace()
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
-const photoURL = computed<string | undefined>(
-  () => userPhotoUrl.value ?? undefined
-)
 
 const closePopover = () => {
   popover.value?.hide()
