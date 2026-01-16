@@ -65,8 +65,10 @@ describe('EditableText', () => {
     })
     await wrapper.findComponent(InputText).trigger('blur')
     expect(wrapper.emitted('edit')).toBeTruthy()
-    // @ts-expect-error fixme ts strict error
-    expect(wrapper.emitted('edit')[0]).toEqual(['Test Text'])
+    expect(wrapper.emitted('edit')?.[0]).toEqual(['Test Text'])
+
+    // Should exit edit mode via v-model
+    expect(wrapper.emitted('update:isEditing')?.at(-1)).toEqual([false])
   })
 
   it('cancels editing on escape key', async () => {
@@ -87,10 +89,12 @@ describe('EditableText', () => {
     // Should NOT emit edit event
     expect(wrapper.emitted('edit')).toBeFalsy()
 
-    // Input value should be reset to original
-    expect(wrapper.findComponent(InputText).props()['modelValue']).toBe(
-      'Original Text'
-    )
+    // Should exit edit mode (isEditing set to false via v-model)
+    expect(wrapper.emitted('update:isEditing')).toBeTruthy()
+    expect(wrapper.emitted('update:isEditing')?.at(-1)).toEqual([false])
+
+    // Text should be reset to original value (now displayed in span)
+    expect(wrapper.find('span').text()).toBe('Original Text')
   })
 
   it('does not save changes when escape is pressed and blur occurs', async () => {
@@ -102,15 +106,15 @@ describe('EditableText', () => {
     // Change the input value
     await wrapper.findComponent(InputText).setValue('Modified Text')
 
-    // Press escape (which triggers blur internally)
+    // Press escape (which triggers blur internally and sets isEditing to false)
     await wrapper.findComponent(InputText).trigger('keyup.escape')
-
-    // Manually trigger blur to simulate the blur that happens after escape
-    await wrapper.findComponent(InputText).trigger('blur')
 
     // Should emit cancel but not edit
     expect(wrapper.emitted('cancel')).toBeTruthy()
     expect(wrapper.emitted('edit')).toBeFalsy()
+
+    // Should exit edit mode
+    expect(wrapper.emitted('update:isEditing')?.at(-1)).toEqual([false])
   })
 
   it('saves changes on enter but not on escape', async () => {
@@ -124,8 +128,7 @@ describe('EditableText', () => {
     // Trigger blur that happens after enter
     await enterWrapper.findComponent(InputText).trigger('blur')
     expect(enterWrapper.emitted('edit')).toBeTruthy()
-    // @ts-expect-error fixme ts strict error
-    expect(enterWrapper.emitted('edit')[0]).toEqual(['Saved Text'])
+    expect(enterWrapper.emitted('edit')?.[0]).toEqual(['Saved Text'])
 
     // Test Escape key cancels changes with a fresh wrapper
     const escapeWrapper = mountComponent({
@@ -136,5 +139,43 @@ describe('EditableText', () => {
     await escapeWrapper.findComponent(InputText).trigger('keyup.escape')
     expect(escapeWrapper.emitted('cancel')).toBeTruthy()
     expect(escapeWrapper.emitted('edit')).toBeFalsy()
+  })
+
+  describe('doubleClickToEdit', () => {
+    it('enters edit mode on double-click when doubleClickToEdit is true', async () => {
+      const wrapper = mountComponent({
+        modelValue: 'Test Text',
+        isEditing: false,
+        doubleClickToEdit: true
+      })
+
+      expect(wrapper.find('span').exists()).toBe(true)
+      await wrapper.find('span').trigger('dblclick')
+
+      expect(wrapper.emitted('update:isEditing')?.[0]).toEqual([true])
+    })
+
+    it('does not enter edit mode on double-click when doubleClickToEdit is false', async () => {
+      const wrapper = mountComponent({
+        modelValue: 'Test Text',
+        isEditing: false,
+        doubleClickToEdit: false
+      })
+
+      await wrapper.find('span').trigger('dblclick')
+
+      expect(wrapper.emitted('update:isEditing')).toBeFalsy()
+    })
+
+    it('does not enter edit mode on double-click by default', async () => {
+      const wrapper = mountComponent({
+        modelValue: 'Test Text',
+        isEditing: false
+      })
+
+      await wrapper.find('span').trigger('dblclick')
+
+      expect(wrapper.emitted('update:isEditing')).toBeFalsy()
+    })
   })
 })

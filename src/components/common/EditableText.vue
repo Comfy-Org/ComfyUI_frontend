@@ -1,6 +1,6 @@
 <template>
   <div class="editable-text">
-    <span v-if="!isEditing">
+    <span v-if="!isEditing" @dblclick="handleDoubleClick">
       {{ modelValue }}
     </span>
     <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->
@@ -34,19 +34,26 @@ import { nextTick, ref, watch } from 'vue'
 
 const {
   modelValue,
-  isEditing = false,
-  inputAttrs = {}
+  inputAttrs = {},
+  doubleClickToEdit = false
 } = defineProps<{
   modelValue: string
-  isEditing?: boolean
   inputAttrs?: Record<string, string>
+  doubleClickToEdit?: boolean
 }>()
+
+const isEditing = defineModel<boolean>('isEditing', { default: false })
 
 const emit = defineEmits(['edit', 'cancel'])
 const inputValue = ref<string>(modelValue)
 const inputRef = ref<InstanceType<typeof InputText> | undefined>()
 const isCanceling = ref(false)
 
+const handleDoubleClick = () => {
+  if (doubleClickToEdit) {
+    isEditing.value = true
+  }
+}
 const blurInputElement = () => {
   // @ts-expect-error - $el is an internal property of the InputText component
   inputRef.value?.$el.blur()
@@ -57,6 +64,7 @@ const finishEditing = () => {
     emit('edit', inputValue.value)
   }
   isCanceling.value = false
+  isEditing.value = false
 }
 const cancelEditing = () => {
   // Set canceling flag to prevent blur from saving
@@ -65,11 +73,12 @@ const cancelEditing = () => {
   inputValue.value = modelValue
   // Emit cancel event
   emit('cancel')
+  isEditing.value = false
   // Blur the input to exit edit mode
   blurInputElement()
 }
 watch(
-  () => isEditing,
+  isEditing,
   async (newVal) => {
     if (newVal) {
       inputValue.value = modelValue
