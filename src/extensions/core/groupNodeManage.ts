@@ -67,7 +67,11 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
   draggable: DraggableList | undefined
 
   get selectedNodeInnerIndex(): number {
-    return +this.nodeItems[this.selectedNodeIndex!]!.dataset.nodeindex!
+    const index = this.selectedNodeIndex
+    if (index == null) throw new Error('No node selected')
+    const item = this.nodeItems[index]
+    if (!item?.dataset.nodeindex) throw new Error('Invalid node item')
+    return +item.dataset.nodeindex
   }
 
   constructor(app: ComfyApp) {
@@ -183,7 +187,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
   storeModification(props: {
     nodeIndex?: number
-    section: symbol
+    section: string | symbol
     prop: string
     value: unknown
   }) {
@@ -238,7 +242,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
         type: 'text',
         onchange: (e: Event) => {
           this.storeModification({
-            section: section as unknown as symbol,
+            section,
             prop: String(prop),
             value: { name: (e.target as HTMLInputElement).value }
           })
@@ -251,7 +255,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           disabled: !checkable,
           onchange: (e: Event) => {
             this.storeModification({
-              section: section as unknown as symbol,
+              section,
               prop: String(prop),
               value: { visible: !!(e.target as HTMLInputElement).checked }
             })
@@ -477,18 +481,22 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
                     }
 
                     // Rewrite links
+                    const nodesLen = groupNodeData.nodes.length
                     for (const l of groupNodeData.links) {
-                      if (l[0] != null)
-                        l[0] = groupNodeData.nodes[l[0] as number].index!
-                      if (l[2] != null)
-                        l[2] = groupNodeData.nodes[l[2] as number].index!
+                      const srcIdx = l[0] as number
+                      const dstIdx = l[2] as number
+                      if (srcIdx != null && srcIdx < nodesLen)
+                        l[0] = groupNodeData.nodes[srcIdx].index!
+                      if (dstIdx != null && dstIdx < nodesLen)
+                        l[2] = groupNodeData.nodes[dstIdx].index!
                     }
 
                     // Rewrite externals
                     if (groupNodeData.external) {
                       for (const ext of groupNodeData.external) {
-                        if (ext[0] != null) {
-                          ext[0] = groupNodeData.nodes[ext[0] as number].index!
+                        const extIdx = ext[0] as number
+                        if (extIdx != null && extIdx < nodesLen) {
+                          ext[0] = groupNodeData.nodes[extIdx].index!
                         }
                       }
                     }

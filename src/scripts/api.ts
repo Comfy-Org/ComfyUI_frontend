@@ -925,7 +925,10 @@ export class ComfyApi extends EventTarget {
       type RawQueuePrompt = V1RawPrompt | CloudRawPrompt
 
       const normalizeQueuePrompt = (prompt: RawQueuePrompt): TaskPrompt => {
-        if (!Array.isArray(prompt)) return prompt as TaskPrompt
+        if (!Array.isArray(prompt)) {
+          console.warn('Unexpected non-array queue prompt:', prompt)
+          return prompt as TaskPrompt
+        }
         const fourth = prompt[3]
         // Cloud shape: 4th is array (outputs), 5th is metadata object
         if (Array.isArray(fourth)) {

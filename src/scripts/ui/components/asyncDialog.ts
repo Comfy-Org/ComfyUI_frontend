@@ -6,7 +6,7 @@ type DialogAction<T> = string | { value?: T; text: string }
 export class ComfyAsyncDialog<
   T = string | null
 > extends ComfyDialog<HTMLDialogElement> {
-  #resolve!: (value: T | null) => void
+  #resolve: (value: T | null) => void = () => {}
 
   constructor(actions?: Array<DialogAction<T>>) {
     super(
