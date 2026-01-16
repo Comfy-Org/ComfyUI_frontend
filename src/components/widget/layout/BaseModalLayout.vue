@@ -2,7 +2,7 @@
   <div class="base-widget-layout rounded-2xl overflow-hidden relative">
     <Button
       v-show="!isRightPanelOpen && hasRightPanel"
-      size="icon"
+      size="lg"
       :class="
         cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
           'opacity-0 pointer-events-none': isRightPanelOpen || !hasRightPanel
@@ -10,7 +10,7 @@
       "
       @click="toggleRightPanel"
     >
-      <i class="icon-[lucide--panel-right] text-sm" />
+      <i class="icon-[lucide--panel-right]" />
     </Button>
     <Button
       size="lg"
@@ -64,7 +64,7 @@
             >
               <Button
                 v-if="isRightPanelOpen && hasRightPanel"
-                size="icon"
+                size="lg"
                 @click="toggleRightPanel"
               >
                 <i class="icon-[lucide--panel-right-close]" />
@@ -90,7 +90,7 @@
         </div>
         <aside
           v-if="hasRightPanel && isRightPanelOpen"
-          class="w-1/4 min-w-40 max-w-80"
+          class="w-1/4 min-w-40 max-w-80 pt-16 pb-8"
         >
           <slot name="rightPanel"></slot>
         </aside>
@@ -111,6 +111,10 @@ const { contentTitle } = defineProps<{
   contentTitle: string
 }>()
 
+const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
+  default: false
+})
+
 const BREAKPOINTS = { md: 880 }
 const PANEL_SIZES = {
   width: 'w-1/3',
@@ -125,7 +129,6 @@ const breakpoints = useBreakpoints(BREAKPOINTS)
 const notMobile = breakpoints.greater('md')
 
 const isLeftPanelOpen = ref<boolean>(true)
-const isRightPanelOpen = ref<boolean>(false)
 const mobileMenuOpen = ref<boolean>(false)
 
 const hasRightPanel = computed(() => !!slots.rightPanel)

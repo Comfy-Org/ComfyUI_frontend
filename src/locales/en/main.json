@@ -273,7 +273,7 @@
     "noItems": "No items"
   },
   "manager": {
-    "title": "Custom Nodes Manager",
+    "title": "Nodes Manager",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
