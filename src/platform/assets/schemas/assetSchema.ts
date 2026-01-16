@@ -90,6 +90,11 @@ export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>
 export type ModelFolder = z.infer<typeof zModelFolder>
 export type ModelFile = z.infer<typeof zModelFile>
 
+/** Payload for updating an asset via PUT /assets/:id */
+export type AssetUpdatePayload = Partial<
+  Pick<AssetItem, 'name' | 'tags' | 'user_metadata'>
+>
+
 // Legacy interface for backward compatibility (now aligned with Zod schema)
 export interface ModelFolderInfo {
   name: string

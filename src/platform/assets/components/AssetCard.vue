@@ -127,6 +127,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -181,7 +182,9 @@ const descId = useId()
 const isEditing = ref(false)
 const newNameRef = ref<string>()
 
-const displayName = computed(() => newNameRef.value ?? asset.name)
+const displayName = computed(
+  () => newNameRef.value ?? getAssetDisplayName(asset)
+)
 
 const showAssetOptions = computed(
   () =>
@@ -260,10 +263,10 @@ async function assetRename(newName?: string) {
     newNameRef.value = newName
     try {
       const result = await assetService.updateAsset(asset.id, {
-        name: newName
+        user_metadata: { name: newName }
       })
       // Update with the actual name once the server responds
-      newNameRef.value = result.name
+      newNameRef.value = getAssetDisplayName(result)
     } catch (err: unknown) {
       console.error(err)
       toastStore.add({
