@@ -168,8 +168,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return
     }
 
-    // Increment request ID to invalidate any in-flight stale refresh operations
-    refreshRequestId++
+    // Only increment request ID when switching to a different workspace
+    // This invalidates stale refresh operations for the old workspace
+    // but allows refresh operations for the same workspace to complete
+    if (currentWorkspace.value?.id !== workspaceId) {
+      refreshRequestId++
+    }
 
     isLoading.value = true
     error.value = null

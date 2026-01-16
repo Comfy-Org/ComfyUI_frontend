@@ -1,27 +1,33 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
+import type { WorkspaceWithRole } from '@/platform/auth/workspace/workspaceTypes'
 
 const mockSwitchWorkspace = vi.hoisted(() => vi.fn())
 const mockCurrentWorkspace = vi.hoisted(() => ({
-  value: null as { id: string } | null
+  value: null as WorkspaceWithRole | null
 }))
 
-vi.mock('@/platform/auth/workspace/useWorkspaceAuth', () => ({
-  useWorkspaceAuth: () => ({
-    currentWorkspace: mockCurrentWorkspace,
+vi.mock('@/stores/workspaceAuthStore', () => ({
+  useWorkspaceAuthStore: () => ({
     switchWorkspace: mockSwitchWorkspace
   })
 }))
 
-const mockActiveWorkflow = vi.hoisted(() => ({
-  value: null as { isModified: boolean } | null
+vi.mock('pinia', () => ({
+  storeToRefs: () => ({
+    currentWorkspace: mockCurrentWorkspace
+  })
 }))
+
+const mockModifiedWorkflows = vi.hoisted(
+  () => [] as Array<{ isModified: boolean }>
+)
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
-    get activeWorkflow() {
-      return mockActiveWorkflow.value
+    get modifiedWorkflows() {
+      return mockModifiedWorkflows
     }
   })
 }))
@@ -45,8 +51,13 @@ const mockReload = vi.fn()
 describe('useWorkspaceSwitch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCurrentWorkspace.value = { id: 'workspace-1' }
-    mockActiveWorkflow.value = null
+    mockCurrentWorkspace.value = {
+      id: 'workspace-1',
+      name: 'Test Workspace',
+      type: 'personal',
+      role: 'owner'
+    }
+    mockModifiedWorkflows.length = 0
     vi.stubGlobal('location', { reload: mockReload })
   })
 
@@ -55,22 +66,22 @@ describe('useWorkspaceSwitch', () => {
   })
 
   describe('hasUnsavedChanges', () => {
-    it('returns true when activeWorkflow.isModified is true', () => {
-      mockActiveWorkflow.value = { isModified: true }
+    it('returns true when there are modified workflows', () => {
+      mockModifiedWorkflows.push({ isModified: true })
       const { hasUnsavedChanges } = useWorkspaceSwitch()
 
       expect(hasUnsavedChanges()).toBe(true)
     })
 
-    it('returns false when activeWorkflow.isModified is false', () => {
-      mockActiveWorkflow.value = { isModified: false }
+    it('returns true when multiple workflows are modified', () => {
+      mockModifiedWorkflows.push({ isModified: true }, { isModified: true })
       const { hasUnsavedChanges } = useWorkspaceSwitch()
 
-      expect(hasUnsavedChanges()).toBe(false)
+      expect(hasUnsavedChanges()).toBe(true)
     })
 
-    it('returns false when activeWorkflow is null', () => {
-      mockActiveWorkflow.value = null
+    it('returns false when no workflows are modified', () => {
+      mockModifiedWorkflows.length = 0
       const { hasUnsavedChanges } = useWorkspaceSwitch()
 
       expect(hasUnsavedChanges()).toBe(false)
@@ -79,7 +90,6 @@ describe('useWorkspaceSwitch', () => {
 
   describe('switchWithConfirmation', () => {
     it('returns true immediately if switching to the same workspace', async () => {
-      mockCurrentWorkspace.value = { id: 'workspace-1' }
       const { switchWithConfirmation } = useWorkspaceSwitch()
 
       const result = await switchWithConfirmation('workspace-1')
@@ -90,8 +100,7 @@ describe('useWorkspaceSwitch', () => {
     })
 
     it('switches directly without dialog when no unsaved changes', async () => {
-      mockCurrentWorkspace.value = { id: 'workspace-1' }
-      mockActiveWorkflow.value = { isModified: false }
+      mockModifiedWorkflows.length = 0
       mockSwitchWorkspace.mockResolvedValue(undefined)
       const { switchWithConfirmation } = useWorkspaceSwitch()
 
@@ -104,8 +113,7 @@ describe('useWorkspaceSwitch', () => {
     })
 
     it('shows confirmation dialog when there are unsaved changes', async () => {
-      mockCurrentWorkspace.value = { id: 'workspace-1' }
-      mockActiveWorkflow.value = { isModified: true }
+      mockModifiedWorkflows.push({ isModified: true })
       mockConfirm.mockResolvedValue(true)
       mockSwitchWorkspace.mockResolvedValue(undefined)
       const { switchWithConfirmation } = useWorkspaceSwitch()
@@ -120,8 +128,7 @@ describe('useWorkspaceSwitch', () => {
     })
 
     it('returns false if user cancels the confirmation dialog', async () => {
-      mockCurrentWorkspace.value = { id: 'workspace-1' }
-      mockActiveWorkflow.value = { isModified: true }
+      mockModifiedWorkflows.push({ isModified: true })
       mockConfirm.mockResolvedValue(false)
       const { switchWithConfirmation } = useWorkspaceSwitch()
 
@@ -133,8 +140,7 @@ describe('useWorkspaceSwitch', () => {
     })
 
     it('calls switchWorkspace and reloads page after user confirms', async () => {
-      mockCurrentWorkspace.value = { id: 'workspace-1' }
-      mockActiveWorkflow.value = { isModified: true }
+      mockModifiedWorkflows.push({ isModified: true })
       mockConfirm.mockResolvedValue(true)
       mockSwitchWorkspace.mockResolvedValue(undefined)
       const { switchWithConfirmation } = useWorkspaceSwitch()
@@ -147,8 +153,7 @@ describe('useWorkspaceSwitch', () => {
     })
 
     it('returns false if switchWorkspace throws an error', async () => {
-      mockCurrentWorkspace.value = { id: 'workspace-1' }
-      mockActiveWorkflow.value = { isModified: false }
+      mockModifiedWorkflows.length = 0
       mockSwitchWorkspace.mockRejectedValue(new Error('Switch failed'))
       const { switchWithConfirmation } = useWorkspaceSwitch()
 

@@ -13,7 +13,7 @@ export function useWorkspaceSwitch() {
   const dialogService = useDialogService()
 
   function hasUnsavedChanges(): boolean {
-    return workflowStore.activeWorkflow?.isModified ?? false
+    return workflowStore.modifiedWorkflows.length > 0
   }
 
   async function switchWithConfirmation(workspaceId: string): Promise<boolean> {
