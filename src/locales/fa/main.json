@@ -848,6 +848,7 @@
     "releaseTitle": "انتشار {package} نسخه {version}",
     "reloadToApplyChanges": "برای اعمال تغییرات بارگذاری مجدد کنید",
     "removeImage": "حذف تصویر",
+    "removeTag": "حذف برچسب",
     "removeVideo": "حذف ویدیو",
     "rename": "تغییر نام",
     "reportIssue": "ارسال گزارش",

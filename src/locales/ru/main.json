@@ -848,6 +848,7 @@
     "releaseTitle": "Релиз {package} {version}",
     "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
     "removeImage": "Удалить изображение",
+    "removeTag": "Удалить тег",
     "removeVideo": "Удалить видео",
     "rename": "Переименовать",
     "reportIssue": "Отправить отчёт",

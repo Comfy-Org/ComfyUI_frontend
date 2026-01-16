@@ -848,6 +848,7 @@
     "releaseTitle": "{package} {version} 릴리스",
     "reloadToApplyChanges": "변경 사항을 적용하려면 새로 고침하세요.",
     "removeImage": "이미지 제거",
+    "removeTag": "태그 제거",
     "removeVideo": "비디오 제거",
     "rename": "이름 바꾸기",
     "reportIssue": "보고서 보내기",

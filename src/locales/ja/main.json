@@ -848,6 +848,7 @@
     "releaseTitle": "{package} {version} リリース",
     "reloadToApplyChanges": "変更を適用するには再読み込みしてください",
     "removeImage": "画像を削除",
+    "removeTag": "タグを削除",
     "removeVideo": "ビデオを削除",
     "rename": "名前を変更",
     "reportIssue": "報告する",

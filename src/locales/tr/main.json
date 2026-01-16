@@ -848,6 +848,7 @@
     "releaseTitle": "{package} {version} Sürümü",
     "reloadToApplyChanges": "Değişiklikleri uygulamak için yeniden yükleyin",
     "removeImage": "Görüntüyü kaldır",
+    "removeTag": "Etiketi kaldır",
     "removeVideo": "Videoyu kaldır",
     "rename": "Yeniden Adlandır",
     "reportIssue": "Rapor Gönder",

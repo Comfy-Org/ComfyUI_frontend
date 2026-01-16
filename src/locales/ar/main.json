@@ -848,6 +848,7 @@
     "releaseTitle": "إصدار {package} {version}",
     "reloadToApplyChanges": "أعد التحميل لتطبيق التغييرات",
     "removeImage": "إزالة الصورة",
+    "removeTag": "إزالة الوسم",
     "removeVideo": "إزالة الفيديو",
     "rename": "إعادة تسمية",
     "reportIssue": "إرسال تقرير",

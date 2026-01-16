@@ -848,6 +848,7 @@
     "releaseTitle": "Lançamento {package} {version}",
     "reloadToApplyChanges": "Recarregue para aplicar as alterações",
     "removeImage": "Remover imagem",
+    "removeTag": "Remover tag",
     "removeVideo": "Remover vídeo",
     "rename": "Renomear",
     "reportIssue": "Enviar relatório",

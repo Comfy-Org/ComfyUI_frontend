@@ -848,6 +848,7 @@
     "releaseTitle": "{package} {version} 发布",
     "reloadToApplyChanges": "重新加载以应用更改",
     "removeImage": "移除图片",
+    "removeTag": "移除标签",
     "removeVideo": "移除视频",
     "rename": "重命名",
     "reportIssue": "发送报告",
