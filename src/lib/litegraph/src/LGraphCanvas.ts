@@ -8,6 +8,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
 import type { ContextMenu } from './ContextMenu'
@@ -80,7 +81,6 @@ import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import { forEachNode } from './subgraph/subgraphUtils'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
@@ -4058,9 +4058,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     layoutStore.batchUpdateNodeBounds(newPositions)
 
     this.selectItems(created)
-    const createdNodes = created.filter((p) => p instanceof LGraphNode)
-    forEachNode((n) => n.onGraphConfigured?.(), createdNodes)
-    forEachNode((n) => n.onAfterGraphConfigured?.(), createdNodes)
+    forEachNode(graph, (n) => n.onGraphConfigured?.())
+    forEachNode(graph, (n) => n.onAfterGraphConfigured?.())
 
     graph.afterChange()
     this.emitAfterChange()

@@ -499,15 +499,3 @@ export function isNodeSlot(
     ('link' in slot || 'links' in slot)
   )
 }
-export function forEachNode(
-  func: (node: LGraphNode) => void,
-  nodes: LGraphNode[],
-  visited = new Set()
-) {
-  for (const node of nodes) {
-    func(node)
-    if (!node.isSubgraphNode() || visited.has(node.type)) continue
-    visited.add(node.type)
-    forEachNode(func, node.subgraph.nodes, visited)
-  }
-}
