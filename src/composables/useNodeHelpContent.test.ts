@@ -3,6 +3,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+function createMockNode(
+  overrides: Partial<ComfyNodeDefImpl>
+): ComfyNodeDefImpl {
+  return {
+    name: 'TestNode',
+    display_name: 'Test Node',
+    description: 'A test node',
+    category: 'test',
+    python_module: 'comfy.test_node',
+    inputs: {},
+    outputs: [],
+    deprecated: false,
+    experimental: false,
+    output_node: false,
+    api_node: false,
+    ...overrides
+  } as ComfyNodeDefImpl
+}
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -63,24 +83,19 @@ vi.mock('marked', () => ({
 }))
 
 describe('useNodeHelpContent', () => {
-  // Define a mock node for testing
-  const mockCoreNode = {
+  const mockCoreNode = createMockNode({
     name: 'TestNode',
     display_name: 'Test Node',
     description: 'A test node',
-    inputs: {},
-    outputs: [],
     python_module: 'comfy.test_node'
-  }
+  })
 
-  const mockCustomNode = {
+  const mockCustomNode = createMockNode({
     name: 'CustomNode',
     display_name: 'Custom Node',
     description: 'A custom node',
-    inputs: {},
-    outputs: [],
     python_module: 'custom_nodes.test_module.custom@1.0.0'
-  }
+  })
 
   const mockFetch = vi.fn()
 
@@ -94,7 +109,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should generate correct baseUrl for core nodes', async () => {
-    const nodeRef = ref(mockCoreNode as any)
+    const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '# Test'
@@ -107,7 +122,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should generate correct baseUrl for custom nodes', async () => {
-    const nodeRef = ref(mockCustomNode as any)
+    const nodeRef = ref(mockCustomNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '# Test'
@@ -120,7 +135,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should render markdown content correctly', async () => {
-    const nodeRef = ref(mockCoreNode as any)
+    const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '# Test Help\nThis is test help content'
@@ -133,7 +148,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should handle fetch errors and fall back to description', async () => {
-    const nodeRef = ref(mockCoreNode as any)
+    const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: false,
       statusText: 'Not Found'
@@ -147,7 +162,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should include alt attribute for images', async () => {
-    const nodeRef = ref(mockCustomNode as any)
+    const nodeRef = ref(mockCustomNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '![image](test.jpg)'
@@ -160,7 +175,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should prefix relative video src in custom nodes', async () => {
-    const nodeRef = ref(mockCustomNode as any)
+    const nodeRef = ref(mockCustomNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '<video src="video.mp4"></video>'
@@ -175,7 +190,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should prefix relative video src for core nodes with node-specific base URL', async () => {
-    const nodeRef = ref(mockCoreNode as any)
+    const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '<video src="video.mp4"></video>'
@@ -190,7 +205,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should handle loading state', async () => {
-    const nodeRef = ref(mockCoreNode as any)
+    const nodeRef = ref(mockCoreNode)
     mockFetch.mockImplementationOnce(() => new Promise(() => {})) // Never resolves
 
     const { isLoading } = useNodeHelpContent(nodeRef)
@@ -200,7 +215,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should try fallback URL for custom nodes', async () => {
-    const nodeRef = ref(mockCustomNode as any)
+    const nodeRef = ref(mockCustomNode)
     mockFetch
       .mockResolvedValueOnce({
         ok: false,
@@ -224,7 +239,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should prefix relative source src in custom nodes', async () => {
-    const nodeRef = ref(mockCustomNode as any)
+    const nodeRef = ref(mockCustomNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () =>
@@ -240,7 +255,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should prefix relative source src for core nodes with node-specific base URL', async () => {
-    const nodeRef = ref(mockCoreNode as any)
+    const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () =>
@@ -256,7 +271,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should prefix relative img src in raw HTML for custom nodes', async () => {
-    const nodeRef = ref(mockCustomNode as any)
+    const nodeRef = ref(mockCustomNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '# Test\n<img src="image.png" alt="Test image">'
@@ -272,7 +287,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should prefix relative img src in raw HTML for core nodes', async () => {
-    const nodeRef = ref(mockCoreNode as any)
+    const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '# Test\n<img src="image.png" alt="Test image">'
@@ -288,7 +303,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should not prefix absolute img src in raw HTML', async () => {
-    const nodeRef = ref(mockCustomNode as any)
+    const nodeRef = ref(mockCustomNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => '<img src="/absolute/image.png" alt="Absolute">'
@@ -302,7 +317,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should not prefix external img src in raw HTML', async () => {
-    const nodeRef = ref(mockCustomNode as any)
+    const nodeRef = ref(mockCustomNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () =>
@@ -319,7 +334,7 @@ describe('useNodeHelpContent', () => {
   })
 
   it('should handle various quote styles in media src attributes', async () => {
-    const nodeRef = ref(mockCoreNode as any)
+    const nodeRef = ref(mockCoreNode)
     mockFetch.mockResolvedValueOnce({
       ok: true,
       text: async () => `# Media Test
