@@ -30,24 +30,30 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
+  ExtraData,
   FeatureFlagsWsMessage,
   HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
+  OutputsToExecute,
   PendingTaskItem,
+  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
+  PromptId,
+  PromptInputs,
   PromptResponse,
+  QueueIndex,
   RunningTaskItem,
   Settings,
   StatusWsMessage,
   StatusWsMessageStatus,
   SystemStats,
+  TaskPrompt,
   User,
-  UserDataFullInfo,
-  PreviewMethod
+  UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -899,42 +905,56 @@ export class ComfyApi extends EventTarget {
     try {
       const res = await this.fetchApi('/queue')
       const data = await res.json()
-      // Normalize queue tuple shape across backends:
-      // - Backend (V1): [idx, prompt_id, inputs, extra_data(object), outputs_to_execute(array)]
-      // - Cloud:        [idx, prompt_id, inputs, outputs_to_execute(array), metadata(object{create_time})]
-      const normalizeQueuePrompt = (prompt: any): any => {
-        if (!Array.isArray(prompt)) return prompt
-        // Ensure 5-tuple
-        const p = prompt.slice(0, 5)
-        const fourth = p[3]
-        const fifth = p[4]
-        // Cloud shape: 4th is array, 5th is metadata object
-        if (
-          Array.isArray(fourth) &&
-          fifth &&
-          typeof fifth === 'object' &&
-          !Array.isArray(fifth)
-        ) {
-          const meta: any = fifth
-          const extraData = { ...meta }
-          return [p[0], p[1], p[2], extraData, fourth]
+      // Raw queue prompt tuple types from different backends:
+      // - V1 Backend: [idx, prompt_id, inputs, extra_data, outputs_to_execute]
+      // - Cloud:      [idx, prompt_id, inputs, outputs_to_execute, metadata]
+      type V1RawPrompt = [
+        QueueIndex,
+        PromptId,
+        PromptInputs,
+        ExtraData,
+        OutputsToExecute
+      ]
+      type CloudRawPrompt = [
+        QueueIndex,
+        PromptId,
+        PromptInputs,
+        OutputsToExecute,
+        Record<string, unknown>
+      ]
+      type RawQueuePrompt = V1RawPrompt | CloudRawPrompt
+
+      const normalizeQueuePrompt = (prompt: RawQueuePrompt): TaskPrompt => {
+        if (!Array.isArray(prompt)) return prompt as TaskPrompt
+        const fourth = prompt[3]
+        // Cloud shape: 4th is array (outputs), 5th is metadata object
+        if (Array.isArray(fourth)) {
+          const cloudPrompt = prompt as CloudRawPrompt
+          const extraData: ExtraData = { ...cloudPrompt[4] }
+          return [
+            cloudPrompt[0],
+            cloudPrompt[1],
+            cloudPrompt[2],
+            extraData,
+            cloudPrompt[3]
+          ]
         }
-        // V1 shape already: return as-is
-        return p
+        // V1 shape already matches TaskPrompt
+        return prompt as V1RawPrompt
       }
       return {
         // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: any) => {
+        Running: data.queue_running.map((prompt: RawQueuePrompt) => {
           const np = normalizeQueuePrompt(prompt)
           return {
-            taskType: 'Running',
+            taskType: 'Running' as const,
             prompt: np,
             // prompt[1] is the prompt id
-            remove: { name: 'Cancel', cb: () => api.interrupt(np[1]) }
+            remove: { name: 'Cancel' as const, cb: () => api.interrupt(np[1]) }
           }
         }),
-        Pending: data.queue_pending.map((prompt: any) => ({
-          taskType: 'Pending',
+        Pending: data.queue_pending.map((prompt: RawQueuePrompt) => ({
+          taskType: 'Pending' as const,
           prompt: normalizeQueuePrompt(prompt)
         }))
       }
@@ -978,7 +998,7 @@ export class ComfyApi extends EventTarget {
    * @param {*} type The endpoint to post to
    * @param {*} body Optional POST data
    */
-  async #postItem(type: string, body: any) {
+  async #postItem(type: string, body?: Record<string, unknown>) {
     try {
       await this.fetchApi('/' + type, {
         method: 'POST',
@@ -1101,7 +1121,7 @@ export class ComfyApi extends EventTarget {
    */
   async storeUserData(
     file: string,
-    data: any,
+    data: BodyInit | Record<string, unknown> | null,
     options: RequestInit & {
       overwrite?: boolean
       stringify?: boolean
@@ -1118,7 +1138,7 @@ export class ComfyApi extends EventTarget {
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
-        body: options?.stringify ? JSON.stringify(data) : data,
+        body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
         ...options
       }
     )
@@ -1301,7 +1321,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<Record<string, any>> {
+  async getCustomNodesI18n(): Promise<Record<string, unknown>> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 

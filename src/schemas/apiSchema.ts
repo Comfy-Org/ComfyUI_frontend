@@ -296,6 +296,12 @@ export type TaskPrompt = z.infer<typeof zTaskPrompt>
 export type TaskStatus = z.infer<typeof zStatus>
 export type TaskOutput = z.infer<typeof zTaskOutput>
 
+// Individual TaskPrompt components for raw queue response handling
+export type QueueIndex = z.infer<typeof zQueueIndex>
+export type PromptInputs = z.infer<typeof zPromptInputs>
+export type ExtraData = z.infer<typeof zExtraData>
+export type OutputsToExecute = z.infer<typeof zOutputsToExecute>
+
 // `/queue`
 export type RunningTaskItem = z.infer<typeof zRunningTaskItem>
 export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
