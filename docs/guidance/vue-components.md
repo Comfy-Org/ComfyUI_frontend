@@ -36,12 +36,11 @@ Prefer Vue native options when available:
 
 ## Styling
 
-- Use Tailwind CSS only (no `<style>` blocks)
-- Use semantic tokens from the design system (e.g., `bg-node-component-surface`)
+- Use inline Tailwind CSS only (no `<style>` blocks)
 - Use `cn()` from `@/utils/tailwindUtil` for conditional classes
+- Refer to packages/design-system/src/css/style.css for design tokens and tailwind configuration
 
 ## Best Practices
 
 - Extract complex conditionals to `computed`
-- Implement cleanup for async operations
-- Use `vue-i18n` for ALL UI strings
+- In unmounted hooks, implement cleanup for async operations
