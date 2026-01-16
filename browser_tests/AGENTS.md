@@ -2,7 +2,7 @@
 
 ## Best Practices
 
-- Test user workflows with Playwright fixtures
+- Use premade JSON workflows to load desired graph state
 - Check `assets/` for test data
 - Prefer specific selectors (accessible properties like text, aria-label, role over data-testid)
 - Test across viewports
