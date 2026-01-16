@@ -56,7 +56,7 @@ The project uses **Nx** for build orchestration and task management
 2. Run relevant tests
 3. Run `pnpm typecheck`, `pnpm lint`, `pnpm format`
 4. Check if README updates are needed
-5. Consider docs.comfy.org updates for user-facing changes
+5. Suggest docs.comfy.org updates for user-facing changes
 
 ## Git Conventions
 
