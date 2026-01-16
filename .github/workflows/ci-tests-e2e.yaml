@@ -7,35 +7,17 @@ on:
   pull_request:
     branches-ignore:
       [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
-  workflow_call:
-    inputs:
-      ref:
-        description: 'Git ref to checkout'
-        required: true
-        type: string
-      pr_number:
-        description: 'PR number for commenting'
-        required: false
-        type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ inputs.ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   setup:
     runs-on: ubuntu-latest
-    # Skip version-bump PRs on pull_request trigger (they use ci-tests-e2e-release.yaml)
-    # Always run for push, workflow_call, or non-version-bump PRs
-    if: |
-      github.event_name == 'push' ||
-      github.event_name == 'workflow_call' ||
-      !startsWith(github.head_ref, 'version-bump-')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.ref || '' }}
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -70,8 +52,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.ref || '' }}
       - name: Download built frontend
         uses: actions/download-artifact@v4
         with:
@@ -119,8 +99,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.ref || '' }}
       - name: Download built frontend
         uses: actions/download-artifact@v4
         with:
@@ -165,8 +143,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.ref || '' }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -202,16 +178,12 @@ jobs:
   # Post starting comment for non-forked PRs
   comment-on-pr-start:
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) ||
-      (github.event_name == 'workflow_call' && inputs.pr_number != '')
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
     permissions:
       pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.ref || '' }}
 
       - name: Get start time
         id: start-time
@@ -223,8 +195,8 @@ jobs:
         run: |
           chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
           ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ inputs.pr_number || github.event.pull_request.number }}" \
-            "${{ github.head_ref || inputs.ref }}" \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
             "starting" \
             "${{ steps.start-time.outputs.time }}"
 
@@ -232,19 +204,13 @@ jobs:
   deploy-and-comment:
     needs: [playwright-tests, merge-reports]
     runs-on: ubuntu-latest
-    if: |
-      always() && (
-        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) ||
-        (github.event_name == 'workflow_call' && inputs.pr_number != '')
-      )
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false
     permissions:
       pull-requests: write
       contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
-        with:
-          ref: ${{ inputs.ref || '' }}
 
       - name: Download all playwright reports
         uses: actions/download-artifact@v4
@@ -257,10 +223,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
-          GITHUB_SHA: ${{ inputs.ref || github.event.pull_request.head.sha }}
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ inputs.pr_number || github.event.pull_request.number }}" \
-            "${{ github.head_ref || inputs.ref }}" \
+            "${{ github.event.pull_request.number }}" \
+            "${{ github.head_ref }}" \
             "completed"
   #### END Deployment and commenting (non-forked PRs only)
