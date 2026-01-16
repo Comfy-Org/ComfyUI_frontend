@@ -15,7 +15,11 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeOutputWith } from '@/schemas/apiSchema'
+
+type Load3dPreviewOutput = NodeOutputWith<{
+  result?: [string?, CameraState?, string?]
+}>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComfyApp, app } from '@/scripts/app'
@@ -496,13 +500,11 @@ useExtensionService().registerExtension({
           config.configure(settings)
         }
 
-        node.onExecuted = function (output: NodeExecutionOutput) {
+        node.onExecuted = function (output: Load3dPreviewOutput) {
           onExecuted?.call(this, output)
 
-          const result = (output as Record<string, unknown>).result as
-            | unknown[]
-            | undefined
-          const filePath = result?.[0] as string | undefined
+          const result = output.result
+          const filePath = result?.[0]
 
           if (!filePath) {
             const msg = t('toastMessages.unableToGetModelFilePath')
@@ -510,8 +512,8 @@ useExtensionService().registerExtension({
             useToastStore().addAlert(msg)
           }
 
-          const cameraState = result?.[1] as CameraState | undefined
-          const bgImagePath = result?.[2] as string | undefined
+          const cameraState = result?.[1]
+          const bgImagePath = result?.[2]
 
           modelWidget.value = filePath?.replaceAll('\\', '/')
 

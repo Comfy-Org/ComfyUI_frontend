@@ -4,6 +4,7 @@ import { defineComponent, nextTick } from 'vue'
 
 import JobGroupsList from '@/components/queue/job/JobGroupsList.vue'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import type { TaskItemImpl } from '@/stores/queueStore'
 
 const QueueJobItemStub = defineComponent({
   name: 'QueueJobItemStub',
@@ -25,20 +26,25 @@ const QueueJobItemStub = defineComponent({
   template: '<div class="queue-job-item-stub"></div>'
 })
 
-const createJobItem = (overrides: Partial<JobListItem> = {}): JobListItem => ({
-  id: 'job-id',
-  title: 'Example job',
-  meta: 'Meta text',
-  state: 'running',
-  iconName: 'icon',
-  iconImageUrl: 'https://example.com/icon.png',
-  showClear: true,
-  taskRef: { workflow: { id: 'workflow-id' } },
-  progressTotalPercent: 60,
-  progressCurrentPercent: 30,
-  runningNodeName: 'Node A',
-  ...overrides
-})
+const createJobItem = (overrides: Partial<JobListItem> = {}): JobListItem => {
+  const { taskRef, ...rest } = overrides
+  return {
+    id: 'job-id',
+    title: 'Example job',
+    meta: 'Meta text',
+    state: 'running',
+    iconName: 'icon',
+    iconImageUrl: 'https://example.com/icon.png',
+    showClear: true,
+    taskRef: (taskRef ?? {
+      workflow: { id: 'workflow-id' }
+    }) as TaskItemImpl,
+    progressTotalPercent: 60,
+    progressCurrentPercent: 30,
+    runningNodeName: 'Node A',
+    ...rest
+  }
+}
 
 const mountComponent = (groups: JobGroup[]) =>
   mount(JobGroupsList, {
