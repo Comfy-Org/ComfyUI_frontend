@@ -11,7 +11,6 @@
 - Prefer single line `if` syntax for concise expressions
 - Take advantage of `TypedArray` `subarray` when appropriate
 - The `size` and `pos` properties of `Rectangle` share the same array buffer
-- Do not replace `&&=` or `||=` without reason; comment if you do
 - Prefer returning `undefined` over `null`
 - Type assertions are a last resort (acceptable for legacy code interop)
 
