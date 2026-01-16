@@ -77,19 +77,25 @@
           />
         </TagsInput>
       </ModelInfoField>
-      <ModelInfoField
-        v-if="additionalTags.length > 0"
-        :label="$t('assetBrowser.modelInfo.additionalTags')"
-      >
-        <div class="flex flex-wrap gap-1">
-          <span
-            v-for="tag in additionalTags"
-            :key="tag"
-            class="rounded px-2 py-0.5 text-xs"
-          >
-            {{ tag }}
-          </span>
-        </div>
+      <ModelInfoField :label="$t('assetBrowser.modelInfo.additionalTags')">
+        <TagsInput
+          v-slot="{ isEmpty }"
+          v-model="additionalTags"
+          :disabled="isImmutable"
+        >
+          <TagsInputItem v-for="tag in additionalTags" :key="tag" :value="tag">
+            <TagsInputItemText />
+            <TagsInputItemDelete />
+          </TagsInputItem>
+          <TagsInputInput
+            :is-empty="isEmpty"
+            :placeholder="
+              isImmutable
+                ? $t('assetBrowser.modelInfo.noAdditionalTags')
+                : $t('assetBrowser.modelInfo.addTag')
+            "
+          />
+        </TagsInput>
       </ModelInfoField>
     </PropertiesAccordionItem>
 
@@ -134,11 +140,11 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import {
+  getAssetAdditionalTags,
   getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
   getAssetSourceUrl,
-  getAssetTags,
   getAssetTriggerPhrases,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -157,15 +163,16 @@ const sourceName = computed(() =>
   sourceUrl.value ? getSourceName(sourceUrl.value) : ''
 )
 const baseModels = ref<string[]>(getAssetBaseModels(asset))
+const additionalTags = ref<string[]>(getAssetAdditionalTags(asset))
 watch(
   () => asset,
   () => {
     baseModels.value = getAssetBaseModels(asset)
+    additionalTags.value = getAssetAdditionalTags(asset)
   }
 )
 const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
-const additionalTags = computed(() => getAssetTags(asset))
 const isImmutable = computed(() => asset.is_immutable ?? true)
 
 const modelType = computed(() => {

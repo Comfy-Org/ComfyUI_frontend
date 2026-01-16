@@ -2409,6 +2409,8 @@
       "addBaseModel": "Add base model...",
       "baseModelUnknown": "Base model unknown",
       "additionalTags": "Additional Tags",
+      "addTag": "Add tag...",
+      "noAdditionalTags": "No additional tags",
       "modelDescription": "Model Description",
       "triggerPhrases": "Trigger Phrases",
       "description": "Description"

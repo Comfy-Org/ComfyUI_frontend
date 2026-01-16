@@ -92,8 +92,8 @@ export function getAssetTriggerPhrases(asset: AssetItem): string[] {
  * @param asset - The asset to extract tags from
  * @returns Array of user-defined tags
  */
-export function getAssetTags(asset: AssetItem): string[] {
-  const tags = asset.user_metadata?.tags
+export function getAssetAdditionalTags(asset: AssetItem): string[] {
+  const tags = asset.user_metadata?.additional_tags
   if (Array.isArray(tags)) {
     return tags.filter((t): t is string => typeof t === 'string')
   }

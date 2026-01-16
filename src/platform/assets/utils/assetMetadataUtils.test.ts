@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
+  getAssetAdditionalTags,
   getAssetBaseModel,
   getAssetDescription,
   getAssetDisplayName,
   getAssetSourceUrl,
-  getAssetTags,
   getAssetTriggerPhrases,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -69,18 +69,18 @@ describe('assetMetadataUtils', () => {
   })
 
   describe('getAssetDisplayName', () => {
-    it('should return display_name when present', () => {
+    it('should return name from user_metadata when present', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { display_name: 'My Custom Name' }
+        user_metadata: { name: 'My Custom Name' }
       }
       expect(getAssetDisplayName(asset)).toBe('My Custom Name')
     })
 
-    it('should fall back to asset name when display_name is not a string', () => {
+    it('should fall back to asset name when user_metadata.name is not a string', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { display_name: 123 }
+        user_metadata: { name: 123 }
       }
       expect(getAssetDisplayName(asset)).toBe('test-model')
     })
@@ -91,18 +91,28 @@ describe('assetMetadataUtils', () => {
   })
 
   describe('getAssetSourceUrl', () => {
-    it('should return source_url when present', () => {
+    it('should construct URL from source_arn with civitai format', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { source_url: 'https://civitai.com/models/123' }
+        user_metadata: { source_arn: 'civitai:model:123:version:456' }
       }
-      expect(getAssetSourceUrl(asset)).toBe('https://civitai.com/models/123')
+      expect(getAssetSourceUrl(asset)).toBe(
+        'https://civitai.com/models/123?modelVersionId=456'
+      )
     })
 
-    it('should return null when source_url is not a string', () => {
+    it('should return null when source_arn is not a string', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { source_url: 123 }
+        user_metadata: { source_arn: 123 }
+      }
+      expect(getAssetSourceUrl(asset)).toBeNull()
+    })
+
+    it('should return null when source_arn format is not recognized', () => {
+      const asset = {
+        ...mockAsset,
+        user_metadata: { source_arn: 'unknown:format' }
       }
       expect(getAssetSourceUrl(asset)).toBeNull()
     })
@@ -116,7 +126,7 @@ describe('assetMetadataUtils', () => {
     it('should return array of trigger phrases when array present', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { trigger_phrases: ['phrase1', 'phrase2'] }
+        user_metadata: { trained_words: ['phrase1', 'phrase2'] }
       }
       expect(getAssetTriggerPhrases(asset)).toEqual(['phrase1', 'phrase2'])
     })
@@ -124,7 +134,7 @@ describe('assetMetadataUtils', () => {
     it('should wrap single string in array', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { trigger_phrases: 'single phrase' }
+        user_metadata: { trained_words: 'single phrase' }
       }
       expect(getAssetTriggerPhrases(asset)).toEqual(['single phrase'])
     })
@@ -132,7 +142,7 @@ describe('assetMetadataUtils', () => {
     it('should filter non-string values from array', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { trigger_phrases: ['valid', 123, 'also valid', null] }
+        user_metadata: { trained_words: ['valid', 123, 'also valid', null] }
       }
       expect(getAssetTriggerPhrases(asset)).toEqual(['valid', 'also valid'])
     })
@@ -142,33 +152,33 @@ describe('assetMetadataUtils', () => {
     })
   })
 
-  describe('getAssetTags', () => {
+  describe('getAssetAdditionalTags', () => {
     it('should return array of tags when present', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { tags: ['tag1', 'tag2'] }
+        user_metadata: { additional_tags: ['tag1', 'tag2'] }
       }
-      expect(getAssetTags(asset)).toEqual(['tag1', 'tag2'])
+      expect(getAssetAdditionalTags(asset)).toEqual(['tag1', 'tag2'])
     })
 
     it('should filter non-string values from array', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { tags: ['valid', 123, 'also valid'] }
+        user_metadata: { additional_tags: ['valid', 123, 'also valid'] }
       }
-      expect(getAssetTags(asset)).toEqual(['valid', 'also valid'])
+      expect(getAssetAdditionalTags(asset)).toEqual(['valid', 'also valid'])
     })
 
-    it('should return empty array when tags is not an array', () => {
+    it('should return empty array when additional_tags is not an array', () => {
       const asset = {
         ...mockAsset,
-        user_metadata: { tags: 'not an array' }
+        user_metadata: { additional_tags: 'not an array' }
       }
-      expect(getAssetTags(asset)).toEqual([])
+      expect(getAssetAdditionalTags(asset)).toEqual([])
     })
 
     it('should return empty array when no metadata', () => {
-      expect(getAssetTags(mockAsset)).toEqual([])
+      expect(getAssetAdditionalTags(mockAsset)).toEqual([])
     })
   })
 
