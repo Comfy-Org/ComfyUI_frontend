@@ -47,7 +47,7 @@ const transform = computed(() => {
 <template>
   <div
     ref="zoomPane"
-    class="contain-size flex place-content-center"
+    class="contain-size place-content-center"
     @wheel="handleWheel"
     @pointerdown.prevent="handleDown"
     @pointermove="handleMove"
