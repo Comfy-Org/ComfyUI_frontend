@@ -49,39 +49,6 @@ vi.mock('@/types/nodeSource', () => ({
   })
 }))
 
-vi.mock('dompurify', () => ({
-  default: {
-    sanitize: vi.fn((html) => html)
-  }
-}))
-
-vi.mock('marked', () => ({
-  marked: {
-    parse: vi.fn((markdown, options) => {
-      if (options?.renderer) {
-        if (markdown.includes('![')) {
-          const matches = markdown.match(/!\[(.*?)\]\((.*?)\)/)
-          if (matches) {
-            const [, text, href] = matches
-            return options.renderer.image({ href, text, title: '' })
-          }
-        }
-      }
-      return `<p>${markdown}</p>`
-    })
-  },
-  Renderer: class Renderer {
-    image = vi.fn(
-      ({ href, title, text }) =>
-        `<img src="${href}" alt="${text}"${title ? ` title="${title}"` : ''} />`
-    )
-    link = vi.fn(
-      ({ href, title, text }) =>
-        `<a href="${href}"${title ? ` title="${title}"` : ''}>${text}</a>`
-    )
-  }
-}))
-
 describe('useNodeHelpContent', () => {
   const mockCoreNode = createMockNode({
     name: 'TestNode',
@@ -357,27 +324,25 @@ The MEDIA_SRC_REGEX handles both single and double quotes in img, video and sour
     const { renderedHelpHtml } = useNodeHelpContent(nodeRef)
     await flushPromises()
 
-    // Check that all media elements with different quote styles are prefixed correctly
-    // Double quotes remain as double quotes
+    // All media src attributes should be prefixed correctly
+    // Note: marked normalizes quotes to double quotes in output
     expect(renderedHelpHtml.value).toContain(
       `src="/docs/${mockCoreNode.name}/video1.mp4"`
+    )
+    expect(renderedHelpHtml.value).toContain(
+      `src="/docs/${mockCoreNode.name}/video2.mp4"`
     )
     expect(renderedHelpHtml.value).toContain(
       `src="/docs/${mockCoreNode.name}/image1.png"`
     )
     expect(renderedHelpHtml.value).toContain(
+      `src="/docs/${mockCoreNode.name}/image2.png"`
+    )
+    expect(renderedHelpHtml.value).toContain(
       `src="/docs/${mockCoreNode.name}/video3.mp4"`
     )
-
-    // Single quotes remain as single quotes in the output
     expect(renderedHelpHtml.value).toContain(
-      `src='/docs/${mockCoreNode.name}/video2.mp4'`
-    )
-    expect(renderedHelpHtml.value).toContain(
-      `src='/docs/${mockCoreNode.name}/image2.png'`
-    )
-    expect(renderedHelpHtml.value).toContain(
-      `src='/docs/${mockCoreNode.name}/video3.webm'`
+      `src="/docs/${mockCoreNode.name}/video3.webm"`
     )
   })
 
