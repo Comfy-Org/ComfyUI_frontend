@@ -67,11 +67,11 @@
         </div>
         <aside
           v-if="hasRightPanel && isRightPanelOpen"
-          class="flex w-72 shrink-0 bg-modal-panel-background flex-col border-l border-border-default"
+          class="flex w-72 shrink-0 bg-modal-panel-background flex-col"
         >
           <header
             data-component-id="RightPanelHeader"
-            class="flex h-16 shrink-0 items-center gap-2 border-b border-border-default px-4"
+            class="flex h-16 shrink-0 items-center gap-2 px-4"
           >
             <h2 v-if="rightPanelTitle" class="flex-1 text-lg font-semibold">
               {{ rightPanelTitle }}
