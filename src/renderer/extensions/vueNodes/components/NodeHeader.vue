@@ -16,7 +16,6 @@
       opacity: useSettingStore().get('Comfy.Node.Opacity') ?? 1
     }"
     :data-testid="`node-header-${nodeData?.id || ''}`"
-    @dblclick="handleDoubleClick"
   >
     <div class="flex items-center justify-between gap-2.5 min-w-0">
       <!-- Collapse/Expand Button -->
@@ -53,11 +52,11 @@
         >
           <div class="truncate min-w-0 flex-1">
             <EditableText
+              v-model:is-editing="isEditing"
               :model-value="displayTitle"
-              :is-editing="isEditing"
               :input-attrs="{ 'data-testid': 'node-title-input' }"
+              double-click-to-edit
               @edit="handleTitleEdit"
-              @cancel="handleTitleCancel"
             />
           </div>
         </div>
@@ -242,21 +241,11 @@ const handleCollapse = () => {
   emit('collapse')
 }
 
-const handleDoubleClick = () => {
-  isEditing.value = true
-}
-
 const handleTitleEdit = (newTitle: string) => {
-  isEditing.value = false
   const trimmedTitle = newTitle.trim()
   if (trimmedTitle && trimmedTitle !== displayTitle.value) {
-    // Emit for litegraph sync
     emit('update:title', trimmedTitle)
   }
-}
-
-const handleTitleCancel = () => {
-  isEditing.value = false
 }
 
 const handleEnterSubgraph = () => {
