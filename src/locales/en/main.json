@@ -2496,7 +2496,7 @@
   },
   "linearMode": {
     "linearMode": "Simple Mode",
-    "beta": "Beta - Give Feedback",
+    "beta": "Simple Mode in Beta - Feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
     "runCount": "Run count:",
