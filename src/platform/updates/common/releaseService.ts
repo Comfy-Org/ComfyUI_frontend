@@ -6,9 +6,21 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
-// Use generated types from OpenAPI spec
-export type ReleaseNote = components['schemas']['ReleaseNote']
+// Base type from OpenAPI spec
+type BaseReleaseNote = components['schemas']['ReleaseNote']
 type GetReleasesParams = operations['getReleaseNotes']['parameters']['query']
+
+/**
+ * Extended ReleaseNote type with feature flag filtering fields.
+ * These fields are optional until the backend schema is updated.
+ * Once comfy-api schema includes these fields, this extension can be removed.
+ */
+export type ReleaseNote = BaseReleaseNote & {
+  /** Feature flags that must ALL be enabled for this release to be shown (AND logic) */
+  required_feature_flags?: string[]
+  /** Feature flags that must ALL be disabled for this release to be shown (AND logic) */
+  excluded_feature_flags?: string[]
+}
 
 // Use generated error response type
 type ErrorResponse = components['schemas']['ErrorResponse']
