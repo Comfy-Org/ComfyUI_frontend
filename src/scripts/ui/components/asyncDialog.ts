@@ -1,28 +1,28 @@
 import { $el } from '../../ui'
 import { ComfyDialog } from '../dialog'
 
-export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
-  // @ts-expect-error fixme ts strict error
-  #resolve: (value: any) => void
+type DialogAction<T> = string | { value?: T; text: string }
 
-  constructor(actions?: Array<string | { value?: any; text: string }>) {
+export class ComfyAsyncDialog<
+  T = string | null
+> extends ComfyDialog<HTMLDialogElement> {
+  #resolve!: (value: T | null) => void
+
+  constructor(actions?: Array<DialogAction<T>>) {
     super(
       'dialog.comfy-dialog.comfyui-dialog',
-      // @ts-expect-error fixme ts strict error
       actions?.map((opt) => {
-        if (typeof opt === 'string') {
-          opt = { text: opt }
-        }
+        const action = typeof opt === 'string' ? { text: opt } : opt
         return $el('button.comfyui-button', {
           type: 'button',
-          textContent: opt.text,
-          onclick: () => this.close(opt.value ?? opt.text)
-        })
+          textContent: action.text,
+          onclick: () => this.close((action.value ?? action.text) as T)
+        }) as HTMLButtonElement
       })
     )
   }
 
-  override show(html: string | HTMLElement | HTMLElement[]) {
+  override show(html: string | HTMLElement | HTMLElement[]): Promise<T | null> {
     this.element.addEventListener('close', () => {
       this.close()
     })
@@ -34,7 +34,7 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
     })
   }
 
-  showModal(html: string | HTMLElement | HTMLElement[]) {
+  showModal(html: string | HTMLElement | HTMLElement[]): Promise<T | null> {
     this.element.addEventListener('close', () => {
       this.close()
     })
@@ -47,22 +47,22 @@ export class ComfyAsyncDialog extends ComfyDialog<HTMLDialogElement> {
     })
   }
 
-  override close(result = null) {
+  override close(result: T | null = null) {
     this.#resolve(result)
     this.element.close()
     super.close()
   }
 
-  static async prompt({
+  static async prompt<U = string>({
     title = null,
     message,
     actions
   }: {
     title: string | null
     message: string
-    actions: Array<string | { value?: any; text: string }>
-  }) {
-    const dialog = new ComfyAsyncDialog(actions)
+    actions: Array<DialogAction<U>>
+  }): Promise<U | null> {
+    const dialog = new ComfyAsyncDialog<U>(actions)
     const content = [$el('span', message)]
     if (title) {
       content.unshift($el('h3', title))

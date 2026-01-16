@@ -340,7 +340,10 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
     return !!outputs.length
   }
 
-  override show(type?: string): void {
+  override show(groupNodeType?: string | HTMLElement | HTMLElement[]): void {
+    // Extract string type - this method repurposes the show signature
+    const nodeType =
+      typeof groupNodeType === 'string' ? groupNodeType : undefined
     const groupNodes = Object.keys(app.rootGraph.extra?.groupNodes ?? {}).sort(
       (a, b) => a.localeCompare(b)
     )
@@ -392,7 +395,7 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
           groupNodes.map((g) =>
             $el('option', {
               textContent: g,
-              selected: `${PREFIX}${SEPARATOR}${g}` === type,
+              selected: `${PREFIX}${SEPARATOR}${g}` === nodeType,
               value: g
             })
           )
@@ -551,8 +554,8 @@ export class ManageGroupDialog extends ComfyDialog<HTMLDialogElement> {
 
     this.element.replaceChildren(outer)
     this.changeGroup(
-      type
-        ? (groupNodes.find((g) => `${PREFIX}${SEPARATOR}${g}` === type) ??
+      nodeType
+        ? (groupNodes.find((g) => `${PREFIX}${SEPARATOR}${g}` === nodeType) ??
             groupNodes[0])
         : groupNodes[0]
     )
