@@ -44,7 +44,9 @@
         <SidebarBottomPanelToggleButton :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
-        <ModeToggle v-if="menuItemStore.hasSeenLinear || linearFeatureFlag" />
+        <ModeToggle
+          v-if="menuItemStore.hasSeenLinear || flags.linearToggleEnabled"
+        />
       </div>
     </div>
     <HelpCenterPopups :is-small="isSmall" />
@@ -88,11 +90,7 @@ const menuItemStore = useMenuItemStore()
 const sideToolbarRef = ref<HTMLElement>()
 const topToolbarRef = ref<HTMLElement>()
 const bottomToolbarRef = ref<HTMLElement>()
-
-const linearFeatureFlag = useFeatureFlags().featureFlag(
-  'linearToggleEnabled',
-  false
-)
+const { flags } = useFeatureFlags()
 
 const isSmall = computed(
   () => settingStore.get('Comfy.Sidebar.Size') === 'small'
