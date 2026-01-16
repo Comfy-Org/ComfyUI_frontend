@@ -249,7 +249,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       </section>
       <template v-for="(item, index) in outputs.media.value" :key="index">
         <div
-          class="border-border-subtle not-md:border-l md:border-t not-md:h-21 md:w-full m-3"
+          class="border-border-subtle not-md:border-l md:border-t first:border-none not-md:h-21 md:w-full m-3"
         />
         <template v-for="(output, key) in allOutputs(item)" :key>
           <img
