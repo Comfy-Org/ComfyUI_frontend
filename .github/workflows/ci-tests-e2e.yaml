@@ -250,13 +250,16 @@ jobs:
       - name: Post starting comment
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ needs.get-pr-info.outputs.pr_number }}
+          BRANCH: ${{ needs.get-pr-info.outputs.branch }}
+          START_TIME: ${{ steps.start-time.outputs.time }}
         run: |
           chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
           ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ needs.get-pr-info.outputs.pr_number }}" \
-            "${{ needs.get-pr-info.outputs.branch }}" \
+            "$PR_NUMBER" \
+            "$BRANCH" \
             "starting" \
-            "${{ steps.start-time.outputs.time }}"
+            "$START_TIME"
 
   # Deploy and comment for non-forked PRs only
   deploy-and-comment:
@@ -284,9 +287,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.event.workflow_run.head_sha }}
+          PR_NUMBER: ${{ needs.get-pr-info.outputs.pr_number }}
+          BRANCH: ${{ needs.get-pr-info.outputs.branch }}
         run: |
           bash ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
-            "${{ needs.get-pr-info.outputs.pr_number }}" \
-            "${{ needs.get-pr-info.outputs.branch }}" \
+            "$PR_NUMBER" \
+            "$BRANCH" \
             "completed"
   #### END Deployment and commenting (non-forked PRs only)
