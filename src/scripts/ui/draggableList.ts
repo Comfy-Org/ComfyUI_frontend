@@ -115,7 +115,7 @@ export class DraggableList extends EventTarget {
 
   // @ts-expect-error fixme ts strict error
   dragStart(e) {
-    if (e.button !== 0) return
+    if (e.button > 0) return
 
     if (e.target.classList.contains(this.handleClass)) {
       this.draggableItem = e.target.closest(this.itemSelector)
