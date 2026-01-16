@@ -1,10 +1,5 @@
 # Storybook Guidelines
 
-## Commands
-
-- `pnpm storybook`: Development server
-- `pnpm build-storybook`: Production build
-
 ## Story Structure
 
 Place `*.stories.ts` alongside components. See `docs/guidance/storybook.md` for patterns.
