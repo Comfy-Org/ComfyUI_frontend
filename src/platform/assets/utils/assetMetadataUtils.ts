@@ -27,6 +27,22 @@ export function getAssetBaseModel(asset: AssetItem): string | null {
 }
 
 /**
+ * Extracts base models as an array from asset metadata
+ * @param asset - The asset to extract base models from
+ * @returns Array of base model strings
+ */
+export function getAssetBaseModels(asset: AssetItem): string[] {
+  const baseModel = asset.user_metadata?.base_model
+  if (Array.isArray(baseModel)) {
+    return baseModel.filter((m): m is string => typeof m === 'string')
+  }
+  if (typeof baseModel === 'string' && baseModel) {
+    return [baseModel]
+  }
+  return []
+}
+
+/**
  * Gets the display name for an asset, falling back to filename
  * @param asset - The asset to get display name from
  * @returns The display name or filename

@@ -2406,6 +2406,8 @@
       "modelTagging": "Model Tagging",
       "modelType": "Model Type",
       "compatibleBaseModels": "Compatible Base Models",
+      "addBaseModel": "Add base model...",
+      "baseModelUnknown": "Base model unknown",
       "additionalTags": "Additional Tags",
       "modelDescription": "Model Description",
       "triggerPhrases": "Trigger Phrases",
