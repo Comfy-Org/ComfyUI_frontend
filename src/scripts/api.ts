@@ -10,6 +10,7 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { IFuseOptions } from 'fuse.js'
 import {
   type TemplateInfo,
   type WorkflowTemplates
@@ -30,37 +31,35 @@ import type {
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
-  ExtraData,
   FeatureFlagsWsMessage,
-  HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
-  OutputsToExecute,
-  PendingTaskItem,
   PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
-  PromptId,
-  PromptInputs,
   PromptResponse,
-  QueueIndex,
-  RunningTaskItem,
   Settings,
   StatusWsMessage,
   StatusWsMessageStatus,
   SystemStats,
-  TaskPrompt,
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
+import type {
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { fetchHistory } from '@/platform/remote/comfyui/history'
-import type { IFuseOptions } from 'fuse.js'
+import {
+  fetchHistory,
+  fetchJobDetail,
+  fetchQueue
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -676,7 +675,6 @@ export class ComfyApi extends EventTarget {
             case 'logs':
             case 'b_preview':
             case 'notification':
-            case 'asset_download':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
@@ -899,70 +897,13 @@ export class ComfyApi extends EventTarget {
    * @returns The currently running and queued items
    */
   async getQueue(): Promise<{
-    Running: RunningTaskItem[]
-    Pending: PendingTaskItem[]
+    Running: JobListItem[]
+    Pending: JobListItem[]
   }> {
     try {
-      const res = await this.fetchApi('/queue')
-      const data = await res.json()
-      // Raw queue prompt tuple types from different backends:
-      // - V1 Backend: [idx, prompt_id, inputs, extra_data, outputs_to_execute]
-      // - Cloud:      [idx, prompt_id, inputs, outputs_to_execute, metadata]
-      type V1RawPrompt = [
-        QueueIndex,
-        PromptId,
-        PromptInputs,
-        ExtraData,
-        OutputsToExecute
-      ]
-      type CloudRawPrompt = [
-        QueueIndex,
-        PromptId,
-        PromptInputs,
-        OutputsToExecute,
-        Record<string, unknown>
-      ]
-      type RawQueuePrompt = V1RawPrompt | CloudRawPrompt
-
-      const normalizeQueuePrompt = (prompt: RawQueuePrompt): TaskPrompt => {
-        if (!Array.isArray(prompt)) {
-          console.warn('Unexpected non-array queue prompt:', prompt)
-          return prompt as TaskPrompt
-        }
-        const fourth = prompt[3]
-        // Cloud shape: 4th is array (outputs), 5th is metadata object
-        if (Array.isArray(fourth)) {
-          const cloudPrompt = prompt as CloudRawPrompt
-          const extraData: ExtraData = { ...cloudPrompt[4] }
-          return [
-            cloudPrompt[0],
-            cloudPrompt[1],
-            cloudPrompt[2],
-            extraData,
-            cloudPrompt[3]
-          ]
-        }
-        // V1 shape already matches TaskPrompt
-        return prompt as V1RawPrompt
-      }
-      return {
-        // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: RawQueuePrompt) => {
-          const np = normalizeQueuePrompt(prompt)
-          return {
-            taskType: 'Running' as const,
-            prompt: np,
-            // prompt[1] is the prompt id
-            remove: { name: 'Cancel' as const, cb: () => api.interrupt(np[1]) }
-          }
-        }),
-        Pending: data.queue_pending.map((prompt: RawQueuePrompt) => ({
-          taskType: 'Pending' as const,
-          prompt: normalizeQueuePrompt(prompt)
-        }))
-      }
+      return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
-      console.error(error)
+      console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }
   }
@@ -974,7 +915,7 @@ export class ComfyApi extends EventTarget {
   async getHistory(
     max_items: number = 200,
     options?: { offset?: number }
-  ): Promise<{ History: HistoryTaskItem[] }> {
+  ): Promise<JobListItem[]> {
     try {
       return await fetchHistory(
         this.fetchApi.bind(this),
@@ -983,8 +924,17 @@ export class ComfyApi extends EventTarget {
       )
     } catch (error) {
       console.error(error)
-      return { History: [] }
+      return []
     }
+  }
+
+  /**
+   * Gets detailed job info including outputs and workflow
+   * @param jobId The job/prompt ID
+   * @returns Full job details or undefined if not found
+   */
+  async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
+    return fetchJobDetail(this.fetchApi.bind(this), jobId)
   }
 
   /**
@@ -1297,29 +1247,6 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Gets the Fuse options from the server.
-   *
-   * @returns The Fuse options, or null if not found or invalid
-   */
-  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
-    try {
-      const res = await axios.get(
-        this.fileURL('/templates/fuse_options.json'),
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-      const contentType = res.headers['content-type']
-      return contentType?.includes('application/json') ? res.data : null
-    } catch (error) {
-      console.error('Error loading fuse options:', error)
-      return null
-    }
-  }
-
-  /**
    * Gets the custom nodes i18n data from the server.
    *
    * @returns The custom nodes i18n data
@@ -1353,6 +1280,24 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
+  }
+
+  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
+    try {
+      const res = await axios.get(
+        this.fileURL('/templates/fuse_options.json'),
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : null
+    } catch (error) {
+      console.error('Error loading fuse options:', error)
+      return null
+    }
   }
 }
 

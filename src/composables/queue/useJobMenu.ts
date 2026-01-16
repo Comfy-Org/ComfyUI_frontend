@@ -9,15 +9,11 @@ import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAsse
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type {
-  ExecutionErrorWsMessage,
-  ResultItem,
-  ResultItemType,
-  TaskStatus
-} from '@/schemas/apiSchema'
+import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
+import { getJobWorkflow } from '@/services/jobOutputCache'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -59,7 +55,7 @@ export function useJobMenu(
   const openJobWorkflow = async (item?: JobListItem | null) => {
     const target = resolveItem(item)
     if (!target) return
-    const data = target.taskRef?.workflow
+    const data = await getJobWorkflow(target.id)
     if (!data) return
     const filename = `Job ${target.id}.json`
     const temp = workflowStore.createTemporary(filename, data)
@@ -83,37 +79,39 @@ export function useJobMenu(
     await queueStore.update()
   }
 
-  const findExecutionError = (
-    messages: TaskStatus['messages'] | undefined
-  ): ExecutionErrorWsMessage | undefined => {
-    const errMessage = messages?.find((m) => m[0] === 'execution_error')
-    if (errMessage && errMessage[0] === 'execution_error') {
-      return errMessage[1]
-    }
-    return undefined
-  }
-
   const copyErrorMessage = async (item?: JobListItem | null) => {
     const target = resolveItem(item)
-    if (!target) return
-    const err = findExecutionError(target.taskRef?.status?.messages)
-    const message = err?.exception_message
-    if (message) await copyToClipboard(String(message))
+    const message = target?.taskRef?.errorMessage
+    if (message) await copyToClipboard(message)
   }
 
   const reportError = (item?: JobListItem | null) => {
     const target = resolveItem(item)
     if (!target) return
-    const err = findExecutionError(target.taskRef?.status?.messages)
-    if (err) useDialogService().showExecutionErrorDialog(err)
+
+    // Use execution_error from list response if available
+    const executionError = target.taskRef?.executionError
+
+    if (executionError) {
+      useDialogService().showExecutionErrorDialog(executionError)
+      return
+    }
+
+    // Fall back to simple error dialog
+    const message = target.taskRef?.errorMessage
+    if (message) {
+      useDialogService().showErrorDialog(new Error(message), {
+        reportType: 'queueJobError'
+      })
+    }
   }
 
   // This is very magical only because it matches the respective backend implementation
   // There is or will be a better way to do this
-  const addOutputLoaderNode = async (item?: JobListItem | null) => {
-    const target = resolveItem(item)
-    if (!target) return
-    const result: ResultItemImpl | undefined = target.taskRef?.previewOutput
+  const addOutputLoaderNode = async () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
     if (!result) return
 
     let nodeType: 'LoadImage' | 'LoadVideo' | 'LoadAudio' | null = null
@@ -161,10 +159,10 @@ export function useJobMenu(
   /**
    * Trigger a download of the job's previewable output asset.
    */
-  const downloadPreviewAsset = (item?: JobListItem | null) => {
-    const target = resolveItem(item)
-    if (!target) return
-    const result: ResultItemImpl | undefined = target.taskRef?.previewOutput
+  const downloadPreviewAsset = () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const result: ResultItemImpl | undefined = item.taskRef?.previewOutput
     if (!result) return
     downloadFile(result.url)
   }
@@ -172,14 +170,14 @@ export function useJobMenu(
   /**
    * Export the workflow JSON attached to the job.
    */
-  const exportJobWorkflow = async (item?: JobListItem | null) => {
-    const target = resolveItem(item)
-    if (!target) return
-    const data = target.taskRef?.workflow
+  const exportJobWorkflow = async () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const data = await getJobWorkflow(item.id)
     if (!data) return
 
     const settingStore = useSettingStore()
-    let filename = `Job ${target.id}.json`
+    let filename = `Job ${item.id}.json`
 
     if (settingStore.get('Comfy.PromptFilename')) {
       const input = await useDialogService().prompt({
@@ -196,10 +194,10 @@ export function useJobMenu(
     downloadBlob(filename, blob)
   }
 
-  const deleteJobAsset = async (item?: JobListItem | null) => {
-    const target = resolveItem(item)
-    if (!target) return
-    const task = target.taskRef as TaskItemImpl | undefined
+  const deleteJobAsset = async () => {
+    const item = currentMenuItem()
+    if (!item) return
+    const task = item.taskRef as TaskItemImpl | undefined
     const preview = task?.previewOutput
     if (!task || !preview) return
 
@@ -210,8 +208,8 @@ export function useJobMenu(
     }
   }
 
-  const removeFailedJob = async (item?: JobListItem | null) => {
-    const task = resolveItem(item)?.taskRef as TaskItemImpl | undefined
+  const removeFailedJob = async () => {
+    const task = currentMenuItem()?.taskRef as TaskItemImpl | undefined
     if (!task) return
     await queueStore.delete(task)
   }
@@ -242,8 +240,8 @@ export function useJobMenu(
           icon: 'icon-[lucide--zoom-in]',
           onClick: onInspectAsset
             ? () => {
-                const current = resolveItem()
-                if (current) onInspectAsset(current)
+                const item = currentMenuItem()
+                if (item) onInspectAsset(item)
               }
             : undefined
         },
@@ -254,33 +252,33 @@ export function useJobMenu(
             'Add to current workflow'
           ),
           icon: 'icon-[comfy--node]',
-          onClick: () => addOutputLoaderNode(resolveItem())
+          onClick: addOutputLoaderNode
         },
         {
           key: 'download',
           label: st('queue.jobMenu.download', 'Download'),
           icon: 'icon-[lucide--download]',
-          onClick: () => downloadPreviewAsset(resolveItem())
+          onClick: downloadPreviewAsset
         },
         { kind: 'divider', key: 'd1' },
         {
           key: 'open-workflow',
           label: jobMenuOpenWorkflowLabel.value,
           icon: 'icon-[comfy--workflow]',
-          onClick: () => openJobWorkflow(resolveItem())
+          onClick: openJobWorkflow
         },
         {
           key: 'export-workflow',
           label: st('queue.jobMenu.exportWorkflow', 'Export workflow'),
           icon: 'icon-[comfy--file-output]',
-          onClick: () => exportJobWorkflow(resolveItem())
+          onClick: exportJobWorkflow
         },
         { kind: 'divider', key: 'd2' },
         {
           key: 'copy-id',
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
-          onClick: () => copyJobId(resolveItem())
+          onClick: copyJobId
         },
         { kind: 'divider', key: 'd3' },
         ...(hasDeletableAsset
@@ -289,7 +287,7 @@ export function useJobMenu(
                 key: 'delete',
                 label: st('queue.jobMenu.deleteAsset', 'Delete asset'),
                 icon: 'icon-[lucide--trash-2]',
-                onClick: () => deleteJobAsset(resolveItem())
+                onClick: deleteJobAsset
               }
             ]
           : [])
@@ -301,33 +299,33 @@ export function useJobMenu(
           key: 'open-workflow',
           label: jobMenuOpenWorkflowFailedLabel.value,
           icon: 'icon-[comfy--workflow]',
-          onClick: () => openJobWorkflow(resolveItem())
+          onClick: openJobWorkflow
         },
         { kind: 'divider', key: 'd1' },
         {
           key: 'copy-id',
           label: jobMenuCopyJobIdLabel.value,
           icon: 'icon-[lucide--copy]',
-          onClick: () => copyJobId(resolveItem())
+          onClick: copyJobId
         },
         {
           key: 'copy-error',
           label: st('queue.jobMenu.copyErrorMessage', 'Copy error message'),
           icon: 'icon-[lucide--copy]',
-          onClick: () => copyErrorMessage(resolveItem())
+          onClick: copyErrorMessage
         },
         {
           key: 'report-error',
           label: st('queue.jobMenu.reportError', 'Report error'),
           icon: 'icon-[lucide--message-circle-warning]',
-          onClick: () => reportError(resolveItem())
+          onClick: reportError
         },
         { kind: 'divider', key: 'd2' },
         {
           key: 'delete',
           label: st('queue.jobMenu.removeJob', 'Remove job'),
           icon: 'icon-[lucide--circle-minus]',
-          onClick: () => removeFailedJob(resolveItem())
+          onClick: removeFailedJob
         }
       ]
     }
@@ -336,21 +334,21 @@ export function useJobMenu(
         key: 'open-workflow',
         label: jobMenuOpenWorkflowLabel.value,
         icon: 'icon-[comfy--workflow]',
-        onClick: () => openJobWorkflow(resolveItem())
+        onClick: openJobWorkflow
       },
       { kind: 'divider', key: 'd1' },
       {
         key: 'copy-id',
         label: jobMenuCopyJobIdLabel.value,
         icon: 'icon-[lucide--copy]',
-        onClick: () => copyJobId(resolveItem())
+        onClick: copyJobId
       },
       { kind: 'divider', key: 'd2' },
       {
         key: 'cancel-job',
         label: jobMenuCancelLabel.value,
         icon: 'icon-[lucide--x]',
-        onClick: () => cancelJob(resolveItem())
+        onClick: cancelJob
       }
     ]
   })

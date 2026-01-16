@@ -21,7 +21,6 @@ import {
 import { Topbar } from './components/Topbar'
 import type { Position, Size } from './types'
 import { NodeReference, SubgraphSlotReference } from './utils/litegraphUtils'
-import TaskHistory from './utils/taskHistory'
 
 dotenv.config()
 
@@ -146,8 +145,6 @@ class ConfirmDialog {
 }
 
 export class ComfyPage {
-  private _history: TaskHistory | null = null
-
   public readonly url: string
   // All canvas position operations are based on default view of canvas.
   public readonly canvas: Locator
@@ -299,11 +296,6 @@ export class ComfyPage {
     if (resp.status() !== 200) {
       throw new Error(`Failed to setup settings: ${await resp.text()}`)
     }
-  }
-
-  setupHistory(): TaskHistory {
-    this._history ??= new TaskHistory(this)
-    return this._history
   }
 
   async setup({

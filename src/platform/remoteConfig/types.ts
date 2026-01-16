@@ -42,4 +42,5 @@ export type RemoteConfig = {
   huggingface_model_import_enabled?: boolean
   linear_toggle_enabled?: boolean
   async_model_upload_enabled?: boolean
+  team_workspaces_enabled?: boolean
 }
