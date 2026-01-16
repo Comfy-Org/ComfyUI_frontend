@@ -35,6 +35,9 @@ const zOutputs = z
 
 export type NodeExecutionOutput = z.infer<typeof zOutputs>
 
+export type NodeOutputWith<T extends Record<string, unknown>> =
+  NodeExecutionOutput & T
+
 // WS messages
 const zStatusWsMessageStatus = z.object({
   exec_info: z.object({
@@ -399,6 +402,7 @@ const zSettings = z.object({
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
+  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Integrated']),
   'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
@@ -467,6 +471,7 @@ const zSettings = z.object({
   'Comfy.Notification.ShowVersionUpdates': z.boolean(),
   'Comfy.QueueButton.BatchCountLimit': z.number(),
   'Comfy.Queue.MaxHistoryItems': z.number(),
+  'Comfy.Queue.History.Expanded': z.boolean(),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
   'Comfy.Extension.Disabled': z.array(z.string()),
@@ -552,7 +557,8 @@ const zSettings = z.object({
   'single.setting': z.any(),
   'LiteGraph.Node.DefaultPadding': z.boolean(),
   'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
-  'Comfy.VersionCompatibility.DisableWarnings': z.boolean()
+  'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
+  'Comfy.RightSidePanel.IsOpen': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

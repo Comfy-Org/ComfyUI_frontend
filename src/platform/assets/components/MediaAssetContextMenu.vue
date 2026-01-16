@@ -11,6 +11,7 @@
         )
       }
     }"
+    @hide="emit('hide')"
   >
     <template #item="{ item, props }">
       <Button
@@ -62,8 +63,13 @@ const {
 
 const emit = defineEmits<{
   zoom: []
+  hide: []
+  'asset-deleted': []
   'bulk-download': [assets: AssetItem[]]
   'bulk-delete': [assets: AssetItem[]]
+  'bulk-add-to-workflow': [assets: AssetItem[]]
+  'bulk-open-workflow': [assets: AssetItem[]]
+  'bulk-export-workflow': [assets: AssetItem[]]
 }>()
 
 const contextMenu = ref<InstanceType<typeof ContextMenu>>()
@@ -139,6 +145,27 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       disabled: true
     })
 
+    // Bulk Add to Workflow
+    items.push({
+      label: t('mediaAsset.selection.insertAllAssetsAsNodes'),
+      icon: 'icon-[comfy--node]',
+      command: () => emit('bulk-add-to-workflow', selectedAssets)
+    })
+
+    // Bulk Open Workflow
+    items.push({
+      label: t('mediaAsset.selection.openWorkflowAll'),
+      icon: 'icon-[comfy--workflow]',
+      command: () => emit('bulk-open-workflow', selectedAssets)
+    })
+
+    // Bulk Export Workflow
+    items.push({
+      label: t('mediaAsset.selection.exportWorkflowAll'),
+      icon: 'icon-[lucide--file-output]',
+      command: () => emit('bulk-export-workflow', selectedAssets)
+    })
+
     // Bulk Download
     items.push({
       label: t('mediaAsset.selection.downloadSelectedAll'),
@@ -172,7 +199,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   // Add to workflow (conditional)
   if (showAddToWorkflow.value) {
     items.push({
-      label: t('mediaAsset.actions.addToWorkflow'),
+      label: t('mediaAsset.actions.insertAsNodeInWorkflow'),
       icon: 'icon-[comfy--node]',
       command: () => actions.addWorkflow(asset)
     })
@@ -218,7 +245,12 @@ const contextMenuItems = computed<MenuItem[]>(() => {
     items.push({
       label: t('mediaAsset.actions.delete'),
       icon: 'icon-[lucide--trash-2]',
-      command: () => emit('bulk-delete', [asset])
+      command: async () => {
+        if (asset) {
+          await actions.deleteAssets(asset)
+          emit('asset-deleted')
+        }
+      }
     })
   }
 

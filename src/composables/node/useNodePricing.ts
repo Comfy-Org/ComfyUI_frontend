@@ -2,6 +2,17 @@ import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 
+/**
+ * Meshy credit pricing constant.
+ * 1 Meshy credit = $0.04 USD
+ * Change this value to update all Meshy node prices.
+ */
+const MESHY_CREDIT_PRICE_USD = 0.04
+
+/** Convert Meshy credits to USD */
+const meshyCreditsToUsd = (credits: number): number =>
+  credits * MESHY_CREDIT_PRICE_USD
+
 const DEFAULT_NUMBER_OPTIONS: Intl.NumberFormatOptions = {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0
@@ -209,13 +220,24 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
   const resolutionWidget = node.widgets?.find(
     (w) => w.name === 'resolution'
   ) as IComboWidget
+  const generateAudioWidget = node.widgets?.find(
+    (w) => w.name === 'generate_audio'
+  ) as IComboWidget | undefined
 
   if (!modelWidget || !durationWidget || !resolutionWidget) return 'Token-based'
 
   const model = String(modelWidget.value).toLowerCase()
   const resolution = String(resolutionWidget.value).toLowerCase()
   const seconds = parseFloat(String(durationWidget.value))
+  const generateAudio =
+    generateAudioWidget &&
+    String(generateAudioWidget.value).toLowerCase() === 'true'
   const priceByModel: Record<string, Record<string, [number, number]>> = {
+    'seedance-1-5-pro': {
+      '480p': [0.12, 0.12],
+      '720p': [0.26, 0.26],
+      '1080p': [0.58, 0.59]
+    },
     'seedance-1-0-pro': {
       '480p': [0.23, 0.24],
       '720p': [0.51, 0.56],
@@ -233,13 +255,15 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     }
   }
 
-  const modelKey = model.includes('seedance-1-0-pro-fast')
-    ? 'seedance-1-0-pro-fast'
-    : model.includes('seedance-1-0-pro')
-      ? 'seedance-1-0-pro'
-      : model.includes('seedance-1-0-lite')
-        ? 'seedance-1-0-lite'
-        : ''
+  const modelKey = model.includes('seedance-1-5-pro')
+    ? 'seedance-1-5-pro'
+    : model.includes('seedance-1-0-pro-fast')
+      ? 'seedance-1-0-pro-fast'
+      : model.includes('seedance-1-0-pro')
+        ? 'seedance-1-0-pro'
+        : model.includes('seedance-1-0-lite')
+          ? 'seedance-1-0-lite'
+          : ''
 
   const resKey = resolution.includes('1080')
     ? '1080p'
@@ -255,8 +279,10 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
 
   const [min10s, max10s] = baseRange
   const scale = seconds / 10
-  const minCost = min10s * scale
-  const maxCost = max10s * scale
+  const audioMultiplier =
+    modelKey === 'seedance-1-5-pro' && generateAudio ? 2 : 1
+  const minCost = min10s * scale * audioMultiplier
+  const maxCost = max10s * scale * audioMultiplier
 
   if (minCost === maxCost) return formatCreditsLabel(minCost)
   return formatCreditsRangeLabel(minCost, maxCost)
@@ -523,6 +549,54 @@ const calculateTripo3DGenerationPrice = (
 
   const dollars = credits * 0.01
   return formatCreditsLabel(dollars)
+}
+
+/**
+ * Meshy Image to 3D pricing calculator.
+ * Pricing based on should_texture widget:
+ *   - Without texture: 20 credits
+ *   - With texture: 30 credits
+ */
+const calculateMeshyImageToModelPrice = (node: LGraphNode): string => {
+  const shouldTextureWidget = node.widgets?.find(
+    (w) => w.name === 'should_texture'
+  ) as IComboWidget
+
+  if (!shouldTextureWidget) {
+    return formatCreditsRangeLabel(
+      meshyCreditsToUsd(20),
+      meshyCreditsToUsd(30),
+      { note: '(varies with texture)' }
+    )
+  }
+
+  const shouldTexture = String(shouldTextureWidget.value).toLowerCase()
+  const credits = shouldTexture === 'true' ? 30 : 20
+  return formatCreditsLabel(meshyCreditsToUsd(credits))
+}
+
+/**
+ * Meshy Multi-Image to 3D pricing calculator.
+ * Pricing based on should_texture widget:
+ *   - Without texture: 5 credits
+ *   - With texture: 15 credits
+ */
+const calculateMeshyMultiImageToModelPrice = (node: LGraphNode): string => {
+  const shouldTextureWidget = node.widgets?.find(
+    (w) => w.name === 'should_texture'
+  ) as IComboWidget
+
+  if (!shouldTextureWidget) {
+    return formatCreditsRangeLabel(
+      meshyCreditsToUsd(5),
+      meshyCreditsToUsd(15),
+      { note: '(varies with texture)' }
+    )
+  }
+
+  const shouldTexture = String(shouldTextureWidget.value).toLowerCase()
+  const credits = shouldTexture === 'true' ? 15 : 5
+  return formatCreditsLabel(meshyCreditsToUsd(credits))
 }
 
 /**
@@ -1812,6 +1886,27 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     TripoRefineNode: {
       displayPrice: formatCreditsLabel(0.3)
     },
+    MeshyTextToModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(20))
+    },
+    MeshyRefineNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(10))
+    },
+    MeshyImageToModelNode: {
+      displayPrice: calculateMeshyImageToModelPrice
+    },
+    MeshyMultiImageToModelNode: {
+      displayPrice: calculateMeshyMultiImageToModelPrice
+    },
+    MeshyRigModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(5))
+    },
+    MeshyAnimateModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(3))
+    },
+    MeshyTextureNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(10))
+    },
     // Google/Gemini nodes
     GeminiNode: {
       displayPrice: (node: LGraphNode): string => {
@@ -2161,6 +2256,238 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
 
         return formatCreditsRangeLabel(minTotal, maxTotal)
       }
+    },
+    Vidu2TextToVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!durationWidget || !resolutionWidget) {
+          return formatCreditsRangeLabel(0.075, 0.6, {
+            note: '(varies with duration & resolution)'
+          })
+        }
+
+        const duration = parseFloat(String(durationWidget.value))
+        const resolution = String(resolutionWidget.value).toLowerCase()
+
+        // Text-to-Video uses Q2 model only
+        // 720P: Starts at $0.075, +$0.025/sec
+        // 1080P: Starts at $0.10, +$0.05/sec
+        let basePrice: number
+        let pricePerSecond: number
+
+        if (resolution.includes('1080')) {
+          basePrice = 0.1
+          pricePerSecond = 0.05
+        } else {
+          // 720P default
+          basePrice = 0.075
+          pricePerSecond = 0.025
+        }
+
+        if (!Number.isFinite(duration) || duration <= 0) {
+          return formatCreditsRangeLabel(0.075, 0.6, {
+            note: '(varies with duration & resolution)'
+          })
+        }
+
+        const cost = basePrice + pricePerSecond * (duration - 1)
+        return formatCreditsLabel(cost)
+      }
+    },
+    Vidu2ImageToVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!modelWidget || !durationWidget || !resolutionWidget) {
+          return formatCreditsRangeLabel(0.04, 1.0, {
+            note: '(varies with model, duration & resolution)'
+          })
+        }
+
+        const model = String(modelWidget.value).toLowerCase()
+        const duration = parseFloat(String(durationWidget.value))
+        const resolution = String(resolutionWidget.value).toLowerCase()
+        const is1080p = resolution.includes('1080')
+
+        let basePrice: number
+        let pricePerSecond: number
+
+        if (model.includes('q2-pro-fast')) {
+          // Q2-pro-fast: 720P $0.04+$0.01/sec, 1080P $0.08+$0.02/sec
+          basePrice = is1080p ? 0.08 : 0.04
+          pricePerSecond = is1080p ? 0.02 : 0.01
+        } else if (model.includes('q2-pro')) {
+          // Q2-pro: 720P $0.075+$0.05/sec, 1080P $0.275+$0.075/sec
+          basePrice = is1080p ? 0.275 : 0.075
+          pricePerSecond = is1080p ? 0.075 : 0.05
+        } else if (model.includes('q2-turbo')) {
+          // Q2-turbo: 720P special pricing, 1080P $0.175+$0.05/sec
+          if (is1080p) {
+            basePrice = 0.175
+            pricePerSecond = 0.05
+          } else {
+            // 720P: $0.04 at 1s, $0.05 at 2s, +$0.05/sec beyond 2s
+            if (duration <= 1) {
+              return formatCreditsLabel(0.04)
+            }
+            if (duration <= 2) {
+              return formatCreditsLabel(0.05)
+            }
+            const cost = 0.05 + 0.05 * (duration - 2)
+            return formatCreditsLabel(cost)
+          }
+        } else {
+          return formatCreditsRangeLabel(0.04, 1.0, {
+            note: '(varies with model, duration & resolution)'
+          })
+        }
+
+        if (!Number.isFinite(duration) || duration <= 0) {
+          return formatCreditsRangeLabel(0.04, 1.0, {
+            note: '(varies with model, duration & resolution)'
+          })
+        }
+
+        const cost = basePrice + pricePerSecond * (duration - 1)
+        return formatCreditsLabel(cost)
+      }
+    },
+    Vidu2ReferenceVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+        const audioWidget = node.widgets?.find(
+          (w) => w.name === 'audio'
+        ) as IComboWidget
+
+        if (!durationWidget) {
+          return formatCreditsRangeLabel(0.125, 1.5, {
+            note: '(varies with duration, resolution & audio)'
+          })
+        }
+
+        const duration = parseFloat(String(durationWidget.value))
+        const resolution = String(resolutionWidget?.value ?? '').toLowerCase()
+        const is1080p = resolution.includes('1080')
+
+        // Check if audio is enabled (adds $0.75)
+        const audioValue = audioWidget?.value
+        const hasAudio =
+          audioValue !== undefined &&
+          audioValue !== null &&
+          String(audioValue).toLowerCase() !== 'false' &&
+          String(audioValue).toLowerCase() !== 'none' &&
+          audioValue !== ''
+
+        // Reference-to-Video uses Q2 model
+        // 720P: Starts at $0.125, +$0.025/sec
+        // 1080P: Starts at $0.375, +$0.05/sec
+        let basePrice: number
+        let pricePerSecond: number
+
+        if (is1080p) {
+          basePrice = 0.375
+          pricePerSecond = 0.05
+        } else {
+          // 720P default
+          basePrice = 0.125
+          pricePerSecond = 0.025
+        }
+
+        let cost = basePrice
+        if (Number.isFinite(duration) && duration > 0) {
+          cost = basePrice + pricePerSecond * (duration - 1)
+        }
+
+        // Audio adds $0.75 on top
+        if (hasAudio) {
+          cost += 0.075
+        }
+
+        return formatCreditsLabel(cost)
+      }
+    },
+    Vidu2StartEndToVideoNode: {
+      displayPrice: (node: LGraphNode): string => {
+        const modelWidget = node.widgets?.find(
+          (w) => w.name === 'model'
+        ) as IComboWidget
+        const durationWidget = node.widgets?.find(
+          (w) => w.name === 'duration'
+        ) as IComboWidget
+        const resolutionWidget = node.widgets?.find(
+          (w) => w.name === 'resolution'
+        ) as IComboWidget
+
+        if (!modelWidget || !durationWidget || !resolutionWidget) {
+          return formatCreditsRangeLabel(0.04, 1.0, {
+            note: '(varies with model, duration & resolution)'
+          })
+        }
+
+        const model = String(modelWidget.value).toLowerCase()
+        const duration = parseFloat(String(durationWidget.value))
+        const resolution = String(resolutionWidget.value).toLowerCase()
+        const is1080p = resolution.includes('1080')
+
+        let basePrice: number
+        let pricePerSecond: number
+
+        if (model.includes('q2-pro-fast')) {
+          // Q2-pro-fast: 720P $0.04+$0.01/sec, 1080P $0.08+$0.02/sec
+          basePrice = is1080p ? 0.08 : 0.04
+          pricePerSecond = is1080p ? 0.02 : 0.01
+        } else if (model.includes('q2-pro')) {
+          // Q2-pro: 720P $0.075+$0.05/sec, 1080P $0.275+$0.075/sec
+          basePrice = is1080p ? 0.275 : 0.075
+          pricePerSecond = is1080p ? 0.075 : 0.05
+        } else if (model.includes('q2-turbo')) {
+          // Q2-turbo: 720P special pricing, 1080P $0.175+$0.05/sec
+          if (is1080p) {
+            basePrice = 0.175
+            pricePerSecond = 0.05
+          } else {
+            // 720P: $0.04 at 1s, $0.05 at 2s, +$0.05/sec beyond 2s
+            if (!Number.isFinite(duration) || duration <= 1) {
+              return formatCreditsLabel(0.04)
+            }
+            if (duration <= 2) {
+              return formatCreditsLabel(0.05)
+            }
+            const cost = 0.05 + 0.05 * (duration - 2)
+            return formatCreditsLabel(cost)
+          }
+        } else {
+          return formatCreditsRangeLabel(0.04, 1.0, {
+            note: '(varies with model, duration & resolution)'
+          })
+        }
+
+        if (!Number.isFinite(duration) || duration <= 0) {
+          return formatCreditsLabel(basePrice)
+        }
+
+        const cost = basePrice + pricePerSecond * (duration - 1)
+        return formatCreditsLabel(cost)
+      }
     }
   }
 
@@ -2295,6 +2622,9 @@ export const useNodePricing = () => {
         'animate_in_place'
       ],
       TripoTextureNode: ['texture_quality'],
+      // Meshy nodes
+      MeshyImageToModelNode: ['should_texture'],
+      MeshyMultiImageToModelNode: ['should_texture'],
       // Google/Gemini nodes
       GeminiNode: ['model'],
       GeminiImage2Node: ['resolution'],
@@ -2308,15 +2638,34 @@ export const useNodePricing = () => {
         'sequential_image_generation',
         'max_images'
       ],
-      ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
-      ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
-      ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
+      ByteDanceTextToVideoNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
+      ByteDanceImageToVideoNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
+      ByteDanceFirstLastFrameNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
       ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
       WanTextToVideoApi: ['duration', 'size'],
       WanImageToVideoApi: ['duration', 'resolution'],
       WanReferenceVideoApi: ['duration', 'size'],
       LtxvApiTextToVideo: ['model', 'duration', 'resolution'],
-      LtxvApiImageToVideo: ['model', 'duration', 'resolution']
+      LtxvApiImageToVideo: ['model', 'duration', 'resolution'],
+      Vidu2TextToVideoNode: ['model', 'duration', 'resolution'],
+      Vidu2ImageToVideoNode: ['model', 'duration', 'resolution'],
+      Vidu2ReferenceVideoNode: ['audio', 'duration', 'resolution'],
+      Vidu2StartEndToVideoNode: ['model', 'duration', 'resolution']
     }
     return widgetMap[nodeType] || []
   }

@@ -7,7 +7,10 @@
       <div class="flex flex-col items-center">
         <div class="grid place-items-center">
           <div
-            class="col-start-1 row-start-1 h-12 w-12 animate-spin rounded-full border-4 border-muted-foreground border-t-base-foreground"
+            :class="[
+              'col-start-1 row-start-1 animate-spin rounded-full border-muted-foreground border-t-base-foreground',
+              spinnerSizeClass
+            ]"
           />
           <div class="col-start-1 row-start-1">
             <slot />
@@ -22,8 +25,21 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const { size = 'md' } = defineProps<{
   loading: boolean
   loadingMessage?: string
+  size?: 'sm' | 'md'
 }>()
+
+const spinnerSizeClass = computed(() => {
+  switch (size) {
+    case 'sm':
+      return 'h-6 w-6 border-2'
+    case 'md':
+    default:
+      return 'h-12 w-12 border-4'
+  }
+})
 </script>

@@ -410,7 +410,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'es', text: 'Español' },
       { value: 'ar', text: 'عربي' },
       { value: 'tr', text: 'Türkçe' },
-      { value: 'pt-BR', text: 'Português (BR)' }
+      { value: 'pt-BR', text: 'Português (BR)' },
+      { value: 'fa', text: 'فارسی' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -547,6 +548,16 @@ export const CORE_SETTINGS: SettingParams[] = [
         element.style.display = value ? 'flex' : 'none'
       }
     }
+  },
+  {
+    id: 'Comfy.UI.TabBarLayout',
+    category: ['Appearance', 'General'],
+    name: 'Tab Bar Layout',
+    type: 'combo',
+    options: ['Default', 'Integrated'],
+    tooltip:
+      'Controls the layout of the tab bar. "Integrated" moves Help and User controls into the tab bar area.',
+    defaultValue: 'Default'
   },
   {
     id: 'Comfy.UseNewMenu',
@@ -816,6 +827,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 64,
     versionAdded: '1.4.12'
+  },
+  {
+    id: 'Comfy.Queue.History.Expanded',
+    name: 'Queue history expanded',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.37.0'
   },
   {
     id: 'Comfy.Execution.PreviewMethod',
@@ -1139,6 +1157,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.34.1'
+  },
+  {
+    id: 'Comfy.RightSidePanel.IsOpen',
+    name: 'Right side panel open state',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.37.0'
   },
   {
     id: 'Comfy.Queue.QPOV2',

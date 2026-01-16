@@ -1,17 +1,29 @@
 import { ref, shallowRef } from 'vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
-import type { ResultItemImpl } from '@/stores/queueStore'
+
+/** Minimal preview item interface for gallery filtering. */
+interface PreviewItem {
+  url: string
+  supportsPreview: boolean
+}
+
+/** Minimal task interface for gallery preview. */
+interface TaskWithPreview<T extends PreviewItem = PreviewItem> {
+  previewOutput?: T
+}
 
 /**
  * Manages result gallery state and activation for queue items.
  */
-export function useResultGallery(getFilteredTasks: () => any[]) {
+export function useResultGallery<T extends PreviewItem>(
+  getFilteredTasks: () => TaskWithPreview<T>[]
+) {
   const galleryActiveIndex = ref(-1)
-  const galleryItems = shallowRef<ResultItemImpl[]>([])
+  const galleryItems = shallowRef<T[]>([])
 
   const onViewItem = (item: JobListItem) => {
-    const items: ResultItemImpl[] = getFilteredTasks().flatMap((t: any) => {
+    const items: T[] = getFilteredTasks().flatMap((t) => {
       const preview = t.previewOutput
       return preview && preview.supportsPreview ? [preview] : []
     })

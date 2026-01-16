@@ -1,16 +1,26 @@
+import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
 
 export const useMenuItemStore = defineStore('menuItem', () => {
+  const canvasStore = useCanvasStore()
   const commandStore = useCommandStore()
   const menuItems = ref<MenuItem[]>([])
   const menuItemHasActiveStateChildren = ref<Record<string, boolean>>({})
+  const hasSeenLinear = ref(false)
+
+  whenever(
+    () => canvasStore.linearMode,
+    () => (hasSeenLinear.value = true),
+    { immediate: true, once: true }
+  )
 
   const registerMenuGroup = (path: string[], items: MenuItem[]) => {
     let currentLevel = menuItems.value
@@ -103,6 +113,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerCommands,
     loadExtensionMenuCommands,
     registerCoreMenuCommands,
-    menuItemHasActiveStateChildren
+    menuItemHasActiveStateChildren,
+    hasSeenLinear
   }
 })

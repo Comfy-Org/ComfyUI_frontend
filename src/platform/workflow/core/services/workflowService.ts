@@ -11,6 +11,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -311,6 +312,11 @@ export const useWorkflowService = () => {
     workflowData: ComfyWorkflowJSON
   ) => {
     const workflowStore = useWorkspaceStore().workflow
+    if (
+      workflowData.extra?.linearMode !== undefined ||
+      !workflowData.nodes.length
+    )
+      useCanvasStore().linearMode = !!workflowData.extra?.linearMode
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
@@ -330,6 +336,11 @@ export const useWorkflowService = () => {
           loadedWorkflow.changeTracker.restore()
           return
         }
+      }
+
+      if (useCanvasStore().linearMode) {
+        app.rootGraph.extra ??= {}
+        app.rootGraph.extra.linearMode = true
       }
 
       const tempWorkflow = workflowStore.createNewTemporary(

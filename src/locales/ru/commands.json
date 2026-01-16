@@ -191,9 +191,6 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Проверить наличие обновлений"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Переключить диалоговое окно прогресса"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Уменьшить размер кисти в MaskEditor"
   },
@@ -203,8 +200,20 @@
   "Comfy_MaskEditor_ColorPicker": {
     "label": "Открыть палитру цветов в MaskEditor"
   },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Отразить по горизонтали в MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Отразить по вертикали в MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Открыть редактор масок для выбранной ноды"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Повернуть влево в MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Повернуть вправо в MaskEditor"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Выгрузить модели"
@@ -244,6 +253,9 @@
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "Обновить определения нод"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Переименовать рабочий процесс"
   },
   "Comfy_SaveWorkflow": {
     "label": "Сохранить рабочий процесс"

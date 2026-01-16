@@ -5,7 +5,7 @@
         {{ $t('assetBrowser.modelAssociatedWithLink') }}
       </p>
       <div
-        class="flex items-center gap-3 rounded-lg bg-secondary-background p-3"
+        class="flex items-center gap-3 rounded-lg bg-secondary-background px-4 py-2"
       >
         <img
           v-if="previewImage"
@@ -21,9 +21,15 @@
 
     <!-- Model Type Selection -->
     <div class="flex flex-col gap-2">
-      <label class="">
-        {{ $t('assetBrowser.modelTypeSelectorLabel') }}
-      </label>
+      <div class="flex items-center gap-2">
+        <label>
+          {{ $t('assetBrowser.modelTypeSelectorLabel') }}
+        </label>
+        <i class="icon-[lucide--circle-question-mark] text-muted-foreground" />
+        <span class="text-muted-foreground">
+          {{ $t('assetBrowser.notSureLeaveAsIs') }}
+        </span>
+      </div>
       <SingleSelect
         v-model="modelValue"
         :label="
@@ -35,10 +41,6 @@
         :disabled="isLoading"
         data-attr="upload-model-step2-type-selector"
       />
-      <div class="flex items-center gap-2">
-        <i class="icon-[lucide--circle-question-mark]" />
-        <span>{{ $t('assetBrowser.notSureLeaveAsIs') }}</span>
-      </div>
     </div>
   </div>
 </template>

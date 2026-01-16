@@ -200,8 +200,20 @@
   "Comfy_MaskEditor_ColorPicker": {
     "label": "Open Color Picker in MaskEditor"
   },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Mirror Horizontal in MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Mirror Vertical in MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Open Mask Editor for Selected Node"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Rotate Left in MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Rotate Right in MaskEditor"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Unload Models"
@@ -242,6 +254,9 @@
   "Comfy_RefreshNodeDefinitions": {
     "label": "Refresh Node Definitions"
   },
+  "Comfy_RenameWorkflow": {
+    "label": "Rename Workflow"
+  },
   "Comfy_SaveWorkflow": {
     "label": "Save Workflow"
   },
@@ -261,7 +276,7 @@
     "label": "Help Center"
   },
   "Comfy_ToggleLinear": {
-    "label": "toggle linear mode"
+    "label": "Toggle Simple Mode"
   },
   "Comfy_ToggleQPOV2": {
     "label": "Toggle Queue Panel V2"

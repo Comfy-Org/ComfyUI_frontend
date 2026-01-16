@@ -48,6 +48,7 @@
       @fetch-metadata="handleFetchMetadata"
       @upload="handleUploadModel"
       @close="handleClose"
+      @import-another="resetWizard"
     />
   </div>
 </template>
@@ -85,7 +86,8 @@ const {
   canUploadModel,
   fetchMetadata,
   uploadModel,
-  goToPreviousStep
+  goToPreviousStep,
+  resetWizard
 } = useUploadModelWizard(modelTypes)
 
 async function handleFetchMetadata() {

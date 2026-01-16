@@ -369,6 +369,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Ağaç gezgini öğe dolgusu"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Sekme Çubuğu Düzeni",
+    "options": {
+      "Default": "Varsayılan",
+      "Integrated": "Entegre"
+    },
+    "tooltip": "Sekme çubuğu düzenini kontrol eder. \"Entegre\" seçeneği, Yardım ve Kullanıcı kontrollerini sekme çubuğu alanına taşır."
+  },
   "Comfy_UseNewMenu": {
     "name": "Yeni menüyü kullan",
     "options": {

@@ -64,6 +64,9 @@ import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTyp
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useDialogStore } from '@/stores/dialogStore'
+
 const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
 
 const moveSelectedNodesVersionAdded = '1.22.2'
@@ -81,6 +84,9 @@ export function useCoreCommands(): ComfyCommand[] {
   const settingStore = useSettingStore()
 
   const bottomPanelStore = useBottomPanelStore()
+
+  const dialogStore = useDialogStore()
+  const maskEditorStore = useMaskEditorStore()
 
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
@@ -183,6 +189,26 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.RenameWorkflow',
+      icon: 'pi pi-pencil',
+      label: 'Rename Workflow',
+      menubarLabel: 'Rename',
+      function: async () => {
+        const workflow = workflowStore.activeWorkflow
+        if (!workflow || !workflow.isPersisted) return
+
+        const newName = await dialogService.prompt({
+          title: t('g.rename'),
+          message: t('workflowService.enterFilename') + ':',
+          defaultValue: workflow.filename
+        })
+        if (!newName || newName === workflow.filename) return
+
+        const newPath = workflow.directory + '/' + newName + '.json'
+        await workflowService.renameWorkflow(workflow, newPath)
+      }
+    },
+    {
       id: 'Comfy.ExportWorkflow',
       icon: 'pi pi-download',
       label: 'Export Workflow',
@@ -207,7 +233,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Undo',
       category: 'essentials' as const,
       function: async () => {
-        await getTracker()?.undo?.()
+        // If Mask Editor is open, use its history instead of the graph
+        if (dialogStore.isDialogOpen('global-mask-editor')) {
+          maskEditorStore.canvasHistory.undo()
+        } else {
+          await getTracker()?.undo?.()
+        }
       }
     },
     {
@@ -216,7 +247,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Redo',
       category: 'essentials' as const,
       function: async () => {
-        await getTracker()?.redo?.()
+        if (dialogStore.isDialogOpen('global-mask-editor')) {
+          maskEditorStore.canvasHistory.redo()
+        } else {
+          await getTracker()?.redo?.()
+        }
       }
     },
     {
@@ -1199,8 +1234,13 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
-      label: 'toggle linear mode',
-      function: () => (canvasStore.linearMode = !canvasStore.linearMode)
+      label: 'Toggle Simple Mode',
+      function: () => {
+        const newMode = !canvasStore.linearMode
+        app.rootGraph.extra.linearMode = newMode
+        workflowStore.activeWorkflow?.changeTracker?.checkState()
+        canvasStore.linearMode = newMode
+      }
     }
   ]
 

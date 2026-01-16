@@ -40,7 +40,7 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--component-node-background': nodeBodyBackgroundColor
+        '--component-node-background': applyLightThemeColor(nodeData.bgcolor)
       }
     ]"
     v-bind="remainingPointerHandlers"
@@ -119,6 +119,23 @@
         <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
           <LivePreview :image-url="latestPreviewUrl || null" />
         </div>
+
+        <!-- Show advanced inputs button for subgraph nodes -->
+        <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
+          <button
+            :class="
+              cn(
+                WidgetInputBaseClass,
+                'w-full h-7 flex justify-center items-center gap-2 text-sm px-3 outline-0 ring-0 truncate',
+                'transition-all cursor-pointer hover:bg-accent-background duration-150 active:scale-95'
+              )
+            "
+            @click.stop="handleShowAdvancedInputs"
+          >
+            <i class="icon-[lucide--settings-2] size-4" />
+            <span>{{ t('rightSidePanel.showAdvancedInputsButton') }}</span>
+          </button>
+        </div>
       </div>
     </template>
 
@@ -148,6 +165,7 @@ import {
   LiteGraph,
   RenderShape
 } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -168,7 +186,7 @@ import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeS
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isTransparent } from '@/utils/colorUtil'
 import {
   getLocatorIdFromNodeData,
@@ -177,6 +195,7 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import { useNodeResize } from '../interactions/resize/useNodeResize'
+import { WidgetInputBaseClass } from '../widgets/components/layout'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -227,19 +246,6 @@ const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
-
-const nodeBodyBackgroundColor = computed(() => {
-  const colorPaletteStore = useColorPaletteStore()
-
-  if (!nodeData.bgcolor) {
-    return ''
-  }
-
-  return applyLightThemeColor(
-    nodeData.bgcolor,
-    Boolean(colorPaletteStore.completedActivePalette.light_theme)
-  )
-})
 
 const nodeOpacity = computed(() => {
   const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
@@ -473,6 +479,22 @@ const lgraphNode = computed(() => {
   const locatorId = getLocatorIdFromNodeData(nodeData)
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
+
+const showAdvancedInputsButton = computed(() => {
+  const node = lgraphNode.value
+  if (!node || !(node instanceof SubgraphNode)) return false
+
+  // Check if there are hidden inputs (widgets not promoted)
+  const interiorNodes = node.subgraph.nodes
+  const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
+
+  return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+})
+
+function handleShowAdvancedInputs() {
+  const rightSidePanelStore = useRightSidePanelStore()
+  rightSidePanelStore.focusSection('advanced-inputs')
+}
 
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]

@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
 
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
+import { promoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas, SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -117,5 +118,24 @@ describe('Subgraph proxyWidgets', () => {
     innerNodes[0].widgets.push(poppedWidget!)
     subgraphNode.widgets[0].computedHeight = 10
     expect(subgraphNode.widgets[0].value).toBe('value')
+  })
+  test('Prevents duplicate promotion', () => {
+    const [subgraphNode, innerNodes] = setupSubgraph(1)
+    innerNodes[0].addWidget('text', 'stringWidget', 'value', () => {})
+
+    const widget = innerNodes[0].widgets![0]
+
+    // Promote once
+    promoteWidget(innerNodes[0], widget, [subgraphNode])
+    expect(subgraphNode.widgets.length).toBe(1)
+    expect(subgraphNode.properties.proxyWidgets).toHaveLength(1)
+
+    // Try to promote again - should not create duplicate
+    promoteWidget(innerNodes[0], widget, [subgraphNode])
+    expect(subgraphNode.widgets.length).toBe(1)
+    expect(subgraphNode.properties.proxyWidgets).toHaveLength(1)
+    expect(subgraphNode.properties.proxyWidgets).toStrictEqual([
+      ['1', 'stringWidget']
+    ])
   })
 })

@@ -123,7 +123,10 @@ export const useContextMenuTranslation = () => {
       }
 
       // for capture translation text of input and widget
-      const extraInfo: any = options.extra || options.parentMenu?.options?.extra
+      const extraInfo = (options.extra ||
+        options.parentMenu?.options?.extra) as
+        | { inputs?: INodeInputSlot[]; widgets?: IWidget[] }
+        | undefined
       // widgets and inputs
       const matchInput = value.content?.match(reInput)
       if (matchInput) {

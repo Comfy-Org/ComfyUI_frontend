@@ -191,9 +191,6 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Verificar Atualizações de Nós Personalizados"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Alternar Barra de Progresso do Gerenciador de Nós Personalizados"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Diminuir tamanho do pincel no Editor de Máscara"
   },
@@ -203,8 +200,20 @@
   "Comfy_MaskEditor_ColorPicker": {
     "label": "Abrir Seletor de Cores no Editor de Máscara"
   },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Espelhar horizontalmente no MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Espelhar verticalmente no MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Abrir Editor de Máscara para o nó selecionado"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Girar para a esquerda no MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Girar para a direita no MaskEditor"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Descarregar Modelos"
@@ -244,6 +253,9 @@
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "Atualizar Definições de Nós"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Renomear fluxo de trabalho"
   },
   "Comfy_SaveWorkflow": {
     "label": "Salvar Fluxo de Trabalho"
