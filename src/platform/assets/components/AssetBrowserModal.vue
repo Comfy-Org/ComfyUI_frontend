@@ -60,12 +60,16 @@
         @asset-deleted="refreshAssets"
       />
     </template>
+
+    <template v-if="selectedAsset" #rightPanel>
+      <ModelInfoPanel :asset="selectedAsset" />
+    </template>
   </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { computed, provide } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -74,6 +78,7 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
+import ModelInfoPanel from '@/platform/assets/components/modelInfo/ModelInfoPanel.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
@@ -145,6 +150,8 @@ const {
   updateFilters
 } = useAssetBrowser(fetchedAssets)
 
+const selectedAsset = ref<AssetDisplayItem | null>(null)
+
 const primaryCategoryTag = computed(() => {
   const assets = fetchedAssets.value ?? []
   const tagFromAssets = assets
@@ -187,6 +194,7 @@ function handleClose() {
 }
 
 function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
+  selectedAsset.value = asset
   emit('asset-select', asset)
   // onSelect callback is provided by dialog composable layer
   // It handles the appropriate transformation (filename extraction or full asset)

@@ -2412,6 +2412,21 @@
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
     },
+    "modelInfo": {
+      "title": "Model Info",
+      "basicInfo": "Basic Info",
+      "displayName": "Display Name",
+      "fileName": "File Name",
+      "source": "Source",
+      "viewOnSource": "View on {source}",
+      "modelTagging": "Model Tagging",
+      "modelType": "Model Type",
+      "compatibleBaseModels": "Compatible Base Models",
+      "additionalTags": "Additional Tags",
+      "modelDescription": "Model Description",
+      "triggerPhrases": "Trigger Phrases",
+      "description": "Description"
+    },
     "media": {
       "threeDModelPlaceholder": "3D Model",
       "audioPlaceholder": "Audio"
