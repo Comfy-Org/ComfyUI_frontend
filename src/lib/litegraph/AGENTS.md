@@ -14,13 +14,6 @@
 - Prefer returning `undefined` over `null`
 - Type assertions are a last resort (acceptable for legacy code interop)
 
-## ESLint
-
-Run ESLint instead of manually fixing style issues:
-```bash
-pnpm lint:fix
-```
-
 ## Circular Dependencies in Tests
 
 **CRITICAL**: Always import from the barrel export for subgraph code:
