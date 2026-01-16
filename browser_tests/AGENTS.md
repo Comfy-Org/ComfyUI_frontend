@@ -6,6 +6,9 @@
 - Check `assets/` for test data
 - Prefer specific selectors
 - Test across viewports
+- Do NOT use `waitForTimeout` - use Locator actions and retrying assertions
+- Follow naming conventions (`*.spec.ts`)
+- Use tags like `@mobile`, `@2x` for configuration-aware test selection
 
 ## Testing Process
 
