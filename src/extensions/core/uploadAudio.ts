@@ -15,6 +15,7 @@ import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
@@ -112,14 +113,17 @@ app.registerExtension({
           audioUIWidget.element.classList.add('empty-audio-widget')
           // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted
-          node.onExecuted = function (message: any) {
-            // @ts-expect-error fixme ts strict error
-            onExecuted?.apply(this, arguments)
-            const audios = message.audio
-            if (!audios) return
+          node.onExecuted = function (output: NodeExecutionOutput) {
+            onExecuted?.call(this, output)
+            const audios = output.audio
+            if (!audios?.length) return
             const audio = audios[0]
             audioUIWidget.element.src = api.apiURL(
-              getResourceURL(audio.subfolder, audio.filename, audio.type)
+              getResourceURL(
+                audio.subfolder ?? '',
+                audio.filename ?? '',
+                audio.type
+              )
             )
             audioUIWidget.element.classList.remove('empty-audio-widget')
           }
@@ -139,22 +143,23 @@ app.registerExtension({
       }
     }
   },
-  onNodeOutputsUpdated(nodeOutputs: Record<NodeLocatorId, any>) {
+  onNodeOutputsUpdated(
+    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
+  ) {
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
-      if ('audio' in output) {
-        const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
-        if (!node) continue
+      if (!output.audio?.length) continue
 
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
-          (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement, string>
-        const audio = output.audio[0]
-        audioUIWidget.element.src = api.apiURL(
-          getResourceURL(audio.subfolder, audio.filename, audio.type)
-        )
-        audioUIWidget.element.classList.remove('empty-audio-widget')
-      }
+      const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
+      if (!node) continue
+
+      const audioUIWidget = node.widgets?.find(
+        (w) => w.name === 'audioUI'
+      ) as unknown as DOMWidget<HTMLAudioElement, string>
+      const audio = output.audio[0]
+      audioUIWidget.element.src = api.apiURL(
+        getResourceURL(audio.subfolder ?? '', audio.filename ?? '', audio.type)
+      )
+      audioUIWidget.element.classList.remove('empty-audio-widget')
     }
   }
 })
