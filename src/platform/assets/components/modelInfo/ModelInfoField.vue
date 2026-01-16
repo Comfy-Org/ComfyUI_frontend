@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col gap-1 px-4 py-2">
-    <span class="text-xs text-muted-foreground">{{ label }}</span>
+  <div class="flex flex-col gap-1 px-4 py-2 text-sm text-muted-foreground">
+    <span>{{ label }}</span>
     <slot />
   </div>
 </template>
