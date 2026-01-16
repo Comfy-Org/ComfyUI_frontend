@@ -12,7 +12,7 @@ const MAX_EVICTION_ATTEMPTS = 3
 const PROTECTED_KEY_PREFIXES = ['workspace.', 'Workspace.']
 
 function isProtectedKey(key: string): boolean {
-  return PROTECTED_KEY_PREFIXES.some((prefix) => key.includes(prefix))
+  return PROTECTED_KEY_PREFIXES.some((prefix) => key.startsWith(prefix))
 }
 
 /**
