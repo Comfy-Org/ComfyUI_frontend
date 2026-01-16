@@ -93,7 +93,8 @@ const currentColor = computed(() =>
   currentColorOption.value
     ? isLightTheme.value
       ? colorOptions.value.find(
-          (option) => option.value.dark === currentColorOption.value?.bgcolor
+          (option: NodeColorOption) =>
+            option.value.dark === currentColorOption.value?.bgcolor
         )?.value.light
       : currentColorOption.value?.bgcolor
     : null
@@ -102,7 +103,7 @@ const currentColor = computed(() =>
 const localizedCurrentColorName = computed(() => {
   if (!currentColorOption.value?.bgcolor) return null
   const colorOption = colorOptions.value.find(
-    (option) =>
+    (option: NodeColorOption) =>
       option.value.dark === currentColorOption.value?.bgcolor ||
       option.value.light === currentColorOption.value?.bgcolor
   )

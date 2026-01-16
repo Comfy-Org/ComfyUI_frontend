@@ -1,4 +1,3 @@
-import type { ComputedRef } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -30,7 +29,7 @@ export interface NodeColorOption {
 /**
  * Configuration for useNodeColorOptions composable
  */
-export interface UseNodeColorOptionsConfig {
+interface UseNodeColorOptionsConfig {
   /**
    * Whether to include ring color variants for UI elements like borders
    * @default false
@@ -57,18 +56,6 @@ export interface UseNodeColorOptionsConfig {
 }
 
 /**
- * Return type for useNodeColorOptions composable
- */
-export interface UseNodeColorOptionsReturn {
-  colorOptions: ComputedRef<NodeColorOption[]>
-  NO_COLOR_OPTION: ComputedRef<NodeColorOption>
-  getColorValue: (color: string) => ColorVariants
-  applyColorToItems: (items: IColorable[], colorName: string) => void
-  getCurrentColorName: (items: IColorable[]) => string | null
-  isLightTheme: ComputedRef<boolean>
-}
-
-/**
  * Composable for managing node color options with flexible configuration.
  * Consolidates color picker logic across SetNodeColor, ColorPickerButton, and useNodeCustomization.
  *
@@ -87,9 +74,7 @@ export interface UseNodeColorOptionsReturn {
  * })
  * ```
  */
-export function useNodeColorOptions(
-  config: UseNodeColorOptionsConfig = {}
-): UseNodeColorOptionsReturn {
+export function useNodeColorOptions(config: UseNodeColorOptionsConfig = {}) {
   const {
     includeRingColors = false,
     lightnessAdjustments = {},

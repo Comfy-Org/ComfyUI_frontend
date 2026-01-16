@@ -7,6 +7,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
+import type { NodeColorOption } from './useNodeColorOptions'
 import type { MenuOption } from './useMoreOptionsMenu'
 import { useNodeCustomization } from './useNodeCustomization'
 
@@ -65,7 +66,7 @@ export function useGroupMenuOptions() {
     label: t('contextMenu.Color'),
     icon: 'icon-[lucide--palette]',
     hasSubmenu: true,
-    submenu: colorOptions.value.map((colorOption) => ({
+    submenu: colorOptions.value.map((colorOption: NodeColorOption) => ({
       label:
         typeof colorOption.localizedName === 'function'
           ? colorOption.localizedName()

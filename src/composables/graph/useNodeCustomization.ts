@@ -95,8 +95,9 @@ export function useNodeCustomization() {
     if (!currentColorName) return null
 
     return (
-      colorOptions.value.find((option) => option.name === currentColorName) ??
-      NO_COLOR_OPTION.value
+      colorOptions.value.find(
+        (option: NodeColorOption) => option.name === currentColorName
+      ) ?? NO_COLOR_OPTION.value
     )
   }
 
