@@ -1,27 +1,17 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useNodeColorOptions } from '@/composables/graph/useNodeColorOptions'
+import type { NodeColorOption } from '@/composables/graph/useNodeColorOptions'
+import type { IColorable } from '@/lib/litegraph/src/interfaces'
 import {
-  LGraphCanvas,
   LGraphNode,
-  LiteGraph,
   RenderShape,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
-
-interface ColorOption {
-  name: string
-  localizedName: string
-  value: {
-    dark: string
-    light: string
-  }
-}
 
 interface ShapeOption {
   name: string
@@ -35,36 +25,16 @@ interface ShapeOption {
 export function useNodeCustomization() {
   const { t } = useI18n()
   const canvasStore = useCanvasStore()
-  const colorPaletteStore = useColorPaletteStore()
   const canvasRefresh = useCanvasRefresh()
-  const isLightTheme = computed(
-    () => colorPaletteStore.completedActivePalette.light_theme
-  )
 
-  const toLightThemeColor = (color: string) =>
-    adjustColor(color, { lightness: 0.5 })
-
-  // Color options
-  const NO_COLOR_OPTION: ColorOption = {
-    name: 'noColor',
-    localizedName: t('color.noColor'),
-    value: {
-      dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
-      light: toLightThemeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
-    }
-  }
-
-  const colorOptions: ColorOption[] = [
+  // Use shared color options logic
+  const {
+    colorOptions,
     NO_COLOR_OPTION,
-    ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
-      name,
-      localizedName: t(`color.${name}`),
-      value: {
-        dark: color.bgcolor,
-        light: toLightThemeColor(color.bgcolor)
-      }
-    }))
-  ]
+    applyColorToItems,
+    getCurrentColorName,
+    isLightTheme
+  } = useNodeColorOptions()
 
   // Shape options
   const shapeOptions: ShapeOption[] = [
@@ -85,18 +55,13 @@ export function useNodeCustomization() {
     }
   ]
 
-  const applyColor = (colorOption: ColorOption | null) => {
-    const colorName = colorOption?.name ?? NO_COLOR_OPTION.name
-    const canvasColorOption =
-      colorName === NO_COLOR_OPTION.name
-        ? null
-        : LGraphCanvas.node_colors[colorName]
+  const applyColor = (colorOption: NodeColorOption | null) => {
+    const colorName = colorOption?.name ?? NO_COLOR_OPTION.value.name
 
-    for (const item of canvasStore.selectedItems) {
-      if (isColorable(item)) {
-        item.setColorOption(canvasColorOption)
-      }
-    }
+    const colorableItems = Array.from(canvasStore.selectedItems)
+      .filter(isColorable)
+      .map((item) => item as unknown as IColorable)
+    applyColorToItems(colorableItems, colorName)
 
     canvasRefresh.refreshCanvas()
   }
@@ -117,25 +82,21 @@ export function useNodeCustomization() {
     canvasRefresh.refreshCanvas()
   }
 
-  const getCurrentColor = (): ColorOption | null => {
+  const getCurrentColor = (): NodeColorOption | null => {
     const selectedItems = Array.from(canvasStore.selectedItems)
     if (selectedItems.length === 0) return null
 
-    // Get color from first colorable item
-    const firstColorableItem = selectedItems.find((item) => isColorable(item))
-    if (!firstColorableItem || !isColorable(firstColorableItem)) return null
+    const colorableItems = selectedItems
+      .filter(isColorable)
+      .map((item) => item as unknown as IColorable)
+    if (colorableItems.length === 0) return null
 
-    // Get the current color option from the colorable item
-    const currentColorOption = firstColorableItem.getColorOption()
-    const currentBgColor = currentColorOption?.bgcolor ?? null
+    const currentColorName = getCurrentColorName(colorableItems)
+    if (!currentColorName) return null
 
-    // Find matching color option
     return (
-      colorOptions.find(
-        (option) =>
-          option.value.dark === currentBgColor ||
-          option.value.light === currentBgColor
-      ) ?? NO_COLOR_OPTION
+      colorOptions.value.find((option) => option.name === currentColorName) ??
+      NO_COLOR_OPTION.value
     )
   }
 
@@ -156,7 +117,7 @@ export function useNodeCustomization() {
   }
 
   return {
-    colorOptions,
+    colorOptions: computed(() => colorOptions.value),
     shapeOptions,
     applyColor,
     applyShape,

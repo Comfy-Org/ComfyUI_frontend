@@ -28,7 +28,11 @@
       >
         <template #option="{ option }">
           <i
-            v-tooltip.top="option.localizedName"
+            v-tooltip.top="
+              typeof option.localizedName === 'function'
+                ? option.localizedName()
+                : option.localizedName
+            "
             class="pi pi-circle-fill"
             :style="{
               color: isLightTheme ? option.value.light : option.value.dark
@@ -48,78 +52,38 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { NodeColorOption } from '@/composables/graph/useNodeColorOptions'
+import { useNodeColorOptions } from '@/composables/graph/useNodeColorOptions'
+import type { IColorable } from '@/lib/litegraph/src/interfaces'
 import type {
   ColorOption as CanvasColorOption,
   Positionable
 } from '@/lib/litegraph/src/litegraph'
-import {
-  LGraphCanvas,
-  LiteGraph,
-  isColorable
-} from '@/lib/litegraph/src/litegraph'
+import { isColorable } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const colorPaletteStore = useColorPaletteStore()
 const workflowStore = useWorkflowStore()
-const isLightTheme = computed(
-  () => colorPaletteStore.completedActivePalette.light_theme
-)
-const toLightThemeColor = (color: string) =>
-  adjustColor(color, { lightness: 0.5 })
+
+const { colorOptions, NO_COLOR_OPTION, applyColorToItems, isLightTheme } =
+  useNodeColorOptions()
 
 const showColorPicker = ref(false)
 
-type ColorOption = {
-  name: string
-  localizedName: string
-  value: {
-    dark: string
-    light: string
-  }
-}
+const selectedColorOption = ref<NodeColorOption | null>(null)
+const applyColor = (colorOption: NodeColorOption | null) => {
+  const colorName = colorOption?.name ?? NO_COLOR_OPTION.value.name
 
-const NO_COLOR_OPTION: ColorOption = {
-  name: 'noColor',
-  localizedName: t('color.noColor'),
-  value: {
-    dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
-    light: toLightThemeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
-  }
-}
-const colorOptions: ColorOption[] = [
-  NO_COLOR_OPTION,
-  ...Object.entries(LGraphCanvas.node_colors).map(([name, color]) => ({
-    name,
-    localizedName: t(`color.${name}`),
-    value: {
-      dark: color.bgcolor,
-      light: toLightThemeColor(color.bgcolor)
-    }
-  }))
-]
-
-const selectedColorOption = ref<ColorOption | null>(null)
-const applyColor = (colorOption: ColorOption | null) => {
-  const colorName = colorOption?.name ?? NO_COLOR_OPTION.name
-  const canvasColorOption =
-    colorName === NO_COLOR_OPTION.name
-      ? null
-      : LGraphCanvas.node_colors[colorName]
-
-  for (const item of canvasStore.selectedItems) {
-    if (isColorable(item)) {
-      item.setColorOption(canvasColorOption)
-    }
-  }
+  const colorableItems = canvasStore.selectedItems
+    .filter(isColorable)
+    .map((item) => item as unknown as IColorable)
+  applyColorToItems(colorableItems, colorName)
 
   canvasStore.canvas?.setDirty(true, true)
-  currentColorOption.value = canvasColorOption
+  currentColorOption.value = getItemsColorOption(canvasStore.selectedItems)
   showColorPicker.value = false
   workflowStore.activeWorkflow?.changeTracker.checkState()
 }
@@ -128,20 +92,24 @@ const currentColorOption = ref<CanvasColorOption | null>(null)
 const currentColor = computed(() =>
   currentColorOption.value
     ? isLightTheme.value
-      ? toLightThemeColor(currentColorOption.value?.bgcolor)
+      ? colorOptions.value.find(
+          (option) => option.value.dark === currentColorOption.value?.bgcolor
+        )?.value.light
       : currentColorOption.value?.bgcolor
     : null
 )
 
 const localizedCurrentColorName = computed(() => {
   if (!currentColorOption.value?.bgcolor) return null
-  const colorOption = colorOptions.find(
+  const colorOption = colorOptions.value.find(
     (option) =>
       option.value.dark === currentColorOption.value?.bgcolor ||
       option.value.light === currentColorOption.value?.bgcolor
   )
-  return colorOption?.localizedName ?? NO_COLOR_OPTION.localizedName
+  const name = colorOption?.localizedName ?? NO_COLOR_OPTION.value.localizedName
+  return typeof name === 'function' ? name() : name
 })
+
 const updateColorSelectionFromNode = (
   newSelectedItems: Raw<Positionable[]>
 ) => {
@@ -149,6 +117,7 @@ const updateColorSelectionFromNode = (
   selectedColorOption.value = null
   currentColorOption.value = getItemsColorOption(newSelectedItems)
 }
+
 watch(
   () => canvasStore.selectedItems,
   (newSelectedItems) => {

@@ -29,8 +29,11 @@ export function useNodeMenuOptions() {
   )
 
   const colorSubmenu = computed(() => {
-    return colorOptions.map((colorOption) => ({
-      label: colorOption.localizedName,
+    return colorOptions.value.map((colorOption) => ({
+      label:
+        typeof colorOption.localizedName === 'function'
+          ? colorOption.localizedName()
+          : colorOption.localizedName,
       color: isLightTheme.value
         ? colorOption.value.light
         : colorOption.value.dark,

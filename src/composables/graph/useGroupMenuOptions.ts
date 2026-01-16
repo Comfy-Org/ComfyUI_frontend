@@ -65,8 +65,11 @@ export function useGroupMenuOptions() {
     label: t('contextMenu.Color'),
     icon: 'icon-[lucide--palette]',
     hasSubmenu: true,
-    submenu: colorOptions.map((colorOption) => ({
-      label: colorOption.localizedName,
+    submenu: colorOptions.value.map((colorOption) => ({
+      label:
+        typeof colorOption.localizedName === 'function'
+          ? colorOption.localizedName()
+          : colorOption.localizedName,
       color: isLightTheme.value
         ? colorOption.value.light
         : colorOption.value.dark,
