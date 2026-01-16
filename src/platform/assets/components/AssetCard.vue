@@ -115,7 +115,7 @@
 
 <script setup lang="ts">
 import { onClickOutside, useImage } from '@vueuse/core'
-import { computed, ref, toValue, useId, useTemplateRef, watch } from 'vue'
+import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -160,21 +160,19 @@ const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
   'dropdown-menu-button'
 )
 
-const stopClickOutside = ref<(() => void) | null>(null)
-
-watch(
-  () => focused,
-  (isFocused) => {
-    stopClickOutside.value?.()
-    stopClickOutside.value = null
-
-    if (isFocused && cardRef.value) {
-      stopClickOutside.value = onClickOutside(cardRef, () => {
-        emit('blur')
-      })
+onClickOutside(
+  cardRef,
+  () => {
+    if (focused) {
+      emit('blur')
     }
   },
-  { immediate: true }
+  {
+    ignore: [
+      '[data-component-id="ModelInfoPanel"]',
+      '[data-component-id="RightPanelHeader"]'
+    ]
+  }
 )
 
 const titleId = useId()
