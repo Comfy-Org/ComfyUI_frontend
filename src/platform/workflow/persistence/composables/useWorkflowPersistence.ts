@@ -11,10 +11,18 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
+import {
+  getStorageStats,
+  getWithLruTracking,
+  setWithLruEviction
+} from '@/platform/workflow/persistence/services/sessionStorageLruService'
 import { useCommandStore } from '@/stores/commandStore'
+
+const WORKFLOW_KEY_PATTERN = /^workflow:/
 
 export function useWorkflowPersistence() {
   const workflowStore = useWorkflowStore()
@@ -44,39 +52,45 @@ export function useWorkflowPersistence() {
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
-    const workflow = JSON.stringify(comfyApp.rootGraph.serialize())
+    const workflowData = comfyApp.rootGraph.serialize()
+    const workflowJson = JSON.stringify(workflowData)
 
     try {
-      localStorage.setItem('workflow', workflow)
-      if (api.clientId) {
-        sessionStorage.setItem(`workflow:${api.clientId}`, workflow)
-      }
+      localStorage.setItem('workflow', workflowJson)
     } catch (error) {
-      // Only log our own keys and aggregate stats
-      const ourKeys = Object.keys(sessionStorage).filter(
-        (key) => key.startsWith('workflow:') || key === 'workflow'
+      console.warn(
+        '[WorkflowPersistence] Failed to save to localStorage:',
+        error
       )
-      console.error('QuotaExceededError details:', {
-        workflowSizeKB: Math.round(workflow.length / 1024),
-        totalStorageItems: Object.keys(sessionStorage).length,
-        ourWorkflowKeys: ourKeys.length,
-        ourWorkflowSizes: ourKeys.map((key) => ({
-          key,
-          sizeKB: Math.round(sessionStorage[key].length / 1024)
-        })),
-        error: error instanceof Error ? error.message : String(error)
-      })
-      throw error
+    }
+
+    if (api.clientId) {
+      const key = `workflow:${api.clientId}`
+      const success = setWithLruEviction(
+        key,
+        workflowData,
+        WORKFLOW_KEY_PATTERN
+      )
+
+      if (!success) {
+        const stats = getStorageStats(WORKFLOW_KEY_PATTERN)
+        console.warn(
+          '[WorkflowPersistence] Failed to persist workflow after LRU eviction',
+          {
+            workflowSizeKB: Math.round(workflowJson.length / 1024),
+            ...stats
+          }
+        )
+      }
     }
   }
 
-  const loadWorkflowFromStorage = async (
-    json: string | null,
+  const loadWorkflowFromData = async (
+    workflowData: ComfyWorkflowJSON | null,
     workflowName: string | null
   ) => {
-    if (!json) return false
-    const workflow = JSON.parse(json)
-    await comfyApp.loadGraphData(workflow, true, true, workflowName)
+    if (!workflowData) return false
+    await comfyApp.loadGraphData(workflowData, true, true, workflowName)
     return true
   }
 
@@ -84,17 +98,30 @@ export function useWorkflowPersistence() {
     const workflowName = getStorageValue('Comfy.PreviousWorkflow')
     const clientId = api.initialClientId ?? api.clientId
 
-    // Try loading from session storage first
+    // Try loading from session storage first (uses LRU tracking)
     if (clientId) {
-      const sessionWorkflow = sessionStorage.getItem(`workflow:${clientId}`)
-      if (await loadWorkflowFromStorage(sessionWorkflow, workflowName)) {
+      const sessionWorkflow = getWithLruTracking<ComfyWorkflowJSON>(
+        `workflow:${clientId}`
+      )
+      if (await loadWorkflowFromData(sessionWorkflow, workflowName)) {
         return true
       }
     }
 
-    // Fall back to local storage
-    const localWorkflow = localStorage.getItem('workflow')
-    return await loadWorkflowFromStorage(localWorkflow, workflowName)
+    // Fall back to local storage (raw JSON, no LRU wrapper)
+    const localWorkflowJson = localStorage.getItem('workflow')
+    if (localWorkflowJson) {
+      try {
+        const localWorkflow = JSON.parse(localWorkflowJson) as ComfyWorkflowJSON
+        return await loadWorkflowFromData(localWorkflow, workflowName)
+      } catch {
+        console.warn(
+          '[WorkflowPersistence] Failed to parse localStorage workflow'
+        )
+      }
+    }
+
+    return false
   }
 
   const loadDefaultWorkflow = async () => {
