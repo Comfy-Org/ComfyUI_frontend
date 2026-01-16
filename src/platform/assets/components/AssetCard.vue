@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="card"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
@@ -12,22 +13,20 @@
           'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4'
       )
     "
+    @click.stop="interactive && $emit('focus', asset)"
+    @dblclick="interactive && $emit('select', asset)"
     @keydown.enter.self="interactive && $emit('select', asset)"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
       <div
         v-if="isLoading || error"
         class="flex size-full cursor-pointer items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
-        role="button"
-        @click.self="interactive && $emit('select', asset)"
       />
       <img
         v-else
         :src="asset.preview_url"
         :alt="displayName"
         class="size-full object-cover cursor-pointer"
-        role="button"
-        @click.self="interactive && $emit('select', asset)"
       />
 
       <AssetBadgeGroup :badges="asset.badges" />
@@ -115,8 +114,8 @@
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
-import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
+import { onClickOutside, useImage } from '@vueuse/core'
+import { computed, ref, toValue, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import IconGroup from '@/components/button/IconGroup.vue'
@@ -133,12 +132,19 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const { asset, interactive } = defineProps<{
+const {
+  asset,
+  interactive,
+  focused = false
+} = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
+  focused?: boolean
 }>()
 
 const emit = defineEmits<{
+  focus: [asset: AssetDisplayItem]
+  blur: []
   select: [asset: AssetDisplayItem]
   deleted: [asset: AssetDisplayItem]
 }>()
@@ -149,8 +155,26 @@ const { closeDialog } = useDialogStore()
 const { flags } = useFeatureFlags()
 const toastStore = useToastStore()
 
+const cardRef = useTemplateRef<HTMLDivElement>('card')
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
   'dropdown-menu-button'
+)
+
+const stopClickOutside = ref<(() => void) | null>(null)
+
+watch(
+  () => focused,
+  (isFocused) => {
+    stopClickOutside.value?.()
+    stopClickOutside.value = null
+
+    if (isFocused && cardRef.value) {
+      stopClickOutside.value = onClickOutside(cardRef, () => {
+        emit('blur')
+      })
+    }
+  },
+  { immediate: true }
 )
 
 const titleId = useId()
