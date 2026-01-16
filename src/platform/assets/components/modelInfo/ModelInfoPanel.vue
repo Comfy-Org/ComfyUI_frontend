@@ -10,10 +10,10 @@
         </span>
       </template>
       <ModelInfoField :label="$t('assetBrowser.modelInfo.displayName')">
-        <span class="text-sm break-all">{{ displayName }}</span>
+        <span class="break-all">{{ displayName }}</span>
       </ModelInfoField>
       <ModelInfoField :label="$t('assetBrowser.modelInfo.fileName')">
-        <span class="text-sm break-all">{{ asset.name }}</span>
+        <span class="break-all">{{ asset.name }}</span>
       </ModelInfoField>
       <ModelInfoField
         v-if="sourceUrl"
@@ -23,11 +23,18 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="text-sm text-link hover:underline"
+          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
+          <img
+            v-if="sourceName === 'Civitai'"
+            src="/assets/images/civitai.svg"
+            alt=""
+            class="size-4 shrink-0"
+          />
           {{
             $t('assetBrowser.modelInfo.viewOnSource', { source: sourceName })
           }}
+          <i class="icon-[lucide--external-link] size-4 shrink-0" />
         </a>
       </ModelInfoField>
     </PropertiesAccordionItem>
