@@ -34,6 +34,9 @@
         <AssetCard
           :asset="item"
           :interactive="true"
+          :focused="item.id === focusedAssetId"
+          @focus="$emit('assetFocus', $event)"
+          @blur="$emit('assetBlur')"
           @select="$emit('assetSelect', $event)"
           @deleted="$emit('assetDeleted', $event)"
         />
@@ -50,12 +53,15 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
-const { assets } = defineProps<{
+const { assets, focusedAssetId } = defineProps<{
   assets: AssetDisplayItem[]
   loading?: boolean
+  focusedAssetId?: string | null
 }>()
 
 defineEmits<{
+  assetFocus: [asset: AssetDisplayItem]
+  assetBlur: []
   assetSelect: [asset: AssetDisplayItem]
   assetDeleted: [asset: AssetDisplayItem]
 }>()
