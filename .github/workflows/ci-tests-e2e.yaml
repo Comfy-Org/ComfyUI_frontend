@@ -194,42 +194,24 @@ jobs:
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork == false) ||
       (github.event_name == 'workflow_run')
     outputs:
-      pr_number: ${{ steps.get-pr.outputs.result }}
-      branch: ${{ steps.get-branch.outputs.branch }}
+      pr_number: ${{ steps.get-pr.outputs.number }}
+      branch: ${{ steps.get-pr.outputs.branch }}
     steps:
       - name: Get PR number
         id: get-pr
-        uses: actions/github-script@v7
-        with:
-          script: |
-            if (context.eventName === 'pull_request') {
-              return context.payload.pull_request.number;
-            }
-
-            // First check pull_requests from payload (most reliable)
-            const prs = context.payload.workflow_run.pull_requests;
-            if (prs && prs.length > 0) {
-              return prs[0].number;
-            }
-
-            // Fallback: branch-based lookup with pagination
-            const head = `${context.repo.owner}:${context.payload.workflow_run.head_branch}`;
-
-            for await (const response of github.paginate.iterator(
-              github.rest.pulls.list,
-              { owner: context.repo.owner, repo: context.repo.repo, state: 'open', head, per_page: 100 }
-            )) {
-              if (response.data.length > 0) {
-                return response.data[0].number;
-              }
-            }
-
-            console.log('No PR found');
-            return '';
-
-      - name: Get branch name
-        id: get-branch
-        run: echo "branch=${{ github.head_ref || github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_TARGET_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_BRANCH: ${{ github.head_ref || github.event.workflow_run.head_branch }}
+        run: |
+          echo "branch=${PR_BRANCH}" >> $GITHUB_OUTPUT
+          if [ -n "$PR_NUMBER" ]; then
+            echo "number=${PR_NUMBER}" >> $GITHUB_OUTPUT
+          else
+            gh pr view --repo "${PR_TARGET_REPO}" "${PR_BRANCH}" \
+              --json 'number' --jq '"number=\(.number)"' >> $GITHUB_OUTPUT
+          fi
 
   # Post starting comment for non-forked PRs
   comment-on-pr-start:
