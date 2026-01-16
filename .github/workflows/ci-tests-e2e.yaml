@@ -6,7 +6,7 @@ on:
     branches: [main, master, core/*, desktop/*]
   pull_request:
     branches-ignore:
-      [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
+      [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*, version-bump-*]
   # Run after i18n workflow completes for version-bump PRs
   workflow_run:
     workflows: ['i18n: Update Core']
@@ -19,8 +19,6 @@ concurrency:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    # Skip version-bump PRs on pull_request (they run via workflow_run after i18n completes)
-    if: ${{ !(github.event_name == 'pull_request' && startsWith(github.head_ref, 'version-bump-')) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
