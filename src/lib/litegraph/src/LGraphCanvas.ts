@@ -80,7 +80,7 @@ import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphNode } from './subgraph/SubgraphNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import { mapAllNodes } from './subgraph/subgraphUtils'
+import { forEachNode } from './subgraph/subgraphUtils'
 import type {
   CanvasPointerEvent,
   CanvasPointerExtensions
@@ -4059,8 +4059,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.selectItems(created)
     const createdNodes = created.filter((p) => p instanceof LGraphNode)
-    mapAllNodes((n) => n.onGraphConfigured?.(), createdNodes)
-    mapAllNodes((n) => n.onAfterGraphConfigured?.(), createdNodes)
+    forEachNode((n) => n.onGraphConfigured?.(), createdNodes)
+    forEachNode((n) => n.onAfterGraphConfigured?.(), createdNodes)
 
     graph.afterChange()
     this.emitAfterChange()
