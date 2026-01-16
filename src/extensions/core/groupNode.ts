@@ -368,7 +368,7 @@ export class GroupNodeConfig {
   }
 
   getNodeDef(
-    node: GroupNodeData
+    node: GroupNodeData | GroupNodeWorkflowData['nodes'][number]
   ): GroupNodeDef | ComfyNodeDef | null | undefined {
     if (node.type) {
       const def = globalDefs[node.type]
@@ -386,7 +386,8 @@ export class GroupNodeConfig {
       let type: string | number | null = linksFrom[0]?.[0]?.[5] ?? null
       if (type === 'COMBO') {
         // Use the array items
-        const source = node.outputs?.[0]?.widget?.name
+        const output = node.outputs?.[0] as GroupNodeOutput | undefined
+        const source = output?.widget?.name
         const nodeIdx = linksFrom[0]?.[0]?.[2]
         if (source && nodeIdx != null) {
           const fromTypeName = this.nodeData.nodes[Number(nodeIdx)]?.type
