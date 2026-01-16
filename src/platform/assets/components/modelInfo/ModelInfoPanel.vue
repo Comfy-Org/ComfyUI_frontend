@@ -52,10 +52,30 @@
         <span class="text-sm">{{ modelType }}</span>
       </ModelInfoField>
       <ModelInfoField
-        v-if="baseModel"
         :label="$t('assetBrowser.modelInfo.compatibleBaseModels')"
       >
-        <span class="text-sm">{{ baseModel }}</span>
+        <TagsInput
+          v-slot="{ isEmpty }"
+          v-model="baseModels"
+          :disabled="isImmutable"
+        >
+          <TagsInputItem
+            v-for="model in baseModels"
+            :key="model"
+            :value="model"
+          >
+            <TagsInputItemText />
+            <TagsInputItemDelete />
+          </TagsInputItem>
+          <TagsInputInput
+            :is-empty="isEmpty"
+            :placeholder="
+              isImmutable
+                ? $t('assetBrowser.modelInfo.baseModelUnknown')
+                : $t('assetBrowser.modelInfo.addBaseModel')
+            "
+          />
+        </TagsInput>
       </ModelInfoField>
       <ModelInfoField
         v-if="additionalTags.length > 0"
@@ -104,12 +124,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
+import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
+import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
+import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
+import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import {
-  getAssetBaseModel,
+  getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
   getAssetSourceUrl,
@@ -131,10 +156,17 @@ const sourceUrl = computed(() => getAssetSourceUrl(asset))
 const sourceName = computed(() =>
   sourceUrl.value ? getSourceName(sourceUrl.value) : ''
 )
-const baseModel = computed(() => getAssetBaseModel(asset))
+const baseModels = ref<string[]>(getAssetBaseModels(asset))
+watch(
+  () => asset,
+  () => {
+    baseModels.value = getAssetBaseModels(asset)
+  }
+)
 const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
 const additionalTags = computed(() => getAssetTags(asset))
+const isImmutable = computed(() => asset.is_immutable ?? true)
 
 const modelType = computed(() => {
   const typeTag = asset.tags.find((tag) => tag !== 'models')
