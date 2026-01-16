@@ -848,6 +848,7 @@
     "releaseTitle": "{package} {version} 发布",
     "reloadToApplyChanges": "重新加载以应用更改",
     "removeImage": "移除图片",
+    "removeTag": "移除标签",
     "removeVideo": "移除视频",
     "rename": "重命名",
     "reportIssue": "发送报告",
@@ -2585,6 +2586,21 @@
     "enterFilename": "输入文件名",
     "exportWorkflow": "导出工作流",
     "saveWorkflow": "保存工作流"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "您有未保存的更改。是否要放弃这些更改并切换工作区？",
+      "title": "未保存的更改"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "您无权访问此工作区",
+      "invalidFirebaseToken": "身份验证失败。请重新登录。",
+      "notAuthenticated": "您必须登录才能访问工作区",
+      "tokenExchangeFailed": "与工作区认证失败：{error}",
+      "workspaceNotFound": "未找到工作区"
+    }
   },
   "zoomControls": {
     "hideMinimap": "隐藏小地图",
