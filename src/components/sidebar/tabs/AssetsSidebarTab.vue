@@ -605,8 +605,10 @@ const handleDownloadSelected = () => {
 }
 
 const handleDeleteSelected = async () => {
-  await deleteAssets(selectedAssets.value)
-  clearSelection()
+  const confirmed = await deleteAssets(selectedAssets.value)
+  if (confirmed) {
+    clearSelection()
+  }
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
@@ -615,8 +617,10 @@ const handleBulkDownload = (assets: AssetItem[]) => {
 }
 
 const handleBulkDelete = async (assets: AssetItem[]) => {
-  await deleteAssets(assets)
-  clearSelection()
+  const confirmed = await deleteAssets(assets)
+  if (confirmed) {
+    clearSelection()
+  }
 }
 
 const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {

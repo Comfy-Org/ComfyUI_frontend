@@ -247,8 +247,10 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       icon: 'icon-[lucide--trash-2]',
       command: async () => {
         if (asset) {
-          await actions.deleteAssets(asset)
-          emit('asset-deleted')
+          const confirmed = await actions.deleteAssets(asset)
+          if (confirmed) {
+            emit('asset-deleted')
+          }
         }
       }
     })
