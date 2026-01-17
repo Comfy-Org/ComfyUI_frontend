@@ -187,7 +187,7 @@ const sliderWidth = computed(() => {
     return 0
   const value = dragValue.value ?? modelValue.value
   const ratio = (value - min) / (max - min)
-  return (ratio * 100) | 0
+  return (ratio * 100).toFixed(0)
 })
 </script>
 
