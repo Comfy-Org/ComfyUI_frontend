@@ -95,6 +95,15 @@ export type AssetUpdatePayload = Partial<
   Pick<AssetItem, 'name' | 'tags' | 'user_metadata'>
 >
 
+/** User-editable metadata fields for model assets */
+export const zAssetUserMetadata = z.object({
+  base_model: z.array(z.string()).optional(),
+  additional_tags: z.array(z.string()).optional(),
+  user_description: z.string().optional()
+})
+
+export type AssetUserMetadata = z.infer<typeof zAssetUserMetadata>
+
 // Legacy interface for backward compatibility (now aligned with Zod schema)
 export interface ModelFolderInfo {
   name: string
