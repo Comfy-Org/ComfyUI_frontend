@@ -10,7 +10,14 @@
         </span>
       </template>
       <ModelInfoField :label="$t('assetBrowser.modelInfo.displayName')">
-        <span class="break-all">{{ displayName }}</span>
+        <EditableText
+          :model-value="displayName"
+          :is-editing="isEditingDisplayName"
+          class="break-all"
+          @dblclick="isEditingDisplayName = !isImmutable"
+          @edit="handleDisplayNameEdit"
+          @cancel="isEditingDisplayName = false"
+        />
       </ModelInfoField>
       <ModelInfoField :label="$t('assetBrowser.modelInfo.fileName')">
         <span class="break-all">{{ asset.name }}</span>
@@ -153,6 +160,7 @@
 import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
+import EditableText from '@/components/common/EditableText.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
 import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
@@ -194,6 +202,9 @@ const { asset, cacheKey } = defineProps<{
 const assetsStore = useAssetsStore()
 const { modelTypes } = useModelTypes()
 
+const pendingUpdates = ref<AssetUserMetadata>({})
+const isEditingDisplayName = ref(false)
+
 const isImmutable = computed(() => asset.is_immutable ?? true)
 const displayName = computed(() => getAssetDisplayName(asset))
 const sourceUrl = computed(() => getAssetSourceUrl(asset))
@@ -202,8 +213,6 @@ const sourceName = computed(() =>
 )
 const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
-
-const pendingUpdates = ref<AssetUserMetadata>({})
 
 watch(
   () => asset.user_metadata,
@@ -224,6 +233,13 @@ const debouncedFlushMetadata = useDebounceFn(() => {
 function queueMetadataUpdate(updates: AssetUserMetadata) {
   pendingUpdates.value = { ...pendingUpdates.value, ...updates }
   debouncedFlushMetadata()
+}
+
+function handleDisplayNameEdit(newName: string) {
+  isEditingDisplayName.value = false
+  if (newName && newName !== displayName.value) {
+    queueMetadataUpdate({ name: newName })
+  }
 }
 
 const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
