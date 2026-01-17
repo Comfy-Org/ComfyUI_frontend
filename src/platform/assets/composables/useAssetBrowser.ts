@@ -123,7 +123,9 @@ export function useAssetBrowser(
 
     // Create display stats from API data
     const stats = {
-      formattedDate: d(new Date(asset.created_at), { dateStyle: 'short' }),
+      formattedDate: asset.created_at
+        ? d(new Date(asset.created_at), { dateStyle: 'short' })
+        : undefined,
       downloadCount: undefined, // Not available in API
       stars: undefined // Not available in API
     }
@@ -214,7 +216,8 @@ export function useAssetBrowser(
           return b.name.localeCompare(a.name)
         case 'recent':
           return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            new Date(b.created_at ?? 0).getTime() -
+            new Date(a.created_at ?? 0).getTime()
           )
         case 'popular':
           return a.name.localeCompare(b.name)
