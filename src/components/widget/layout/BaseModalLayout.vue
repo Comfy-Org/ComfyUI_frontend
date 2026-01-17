@@ -1,5 +1,8 @@
 <template>
-  <div class="base-widget-layout rounded-2xl overflow-hidden relative">
+  <div
+    class="base-widget-layout rounded-2xl overflow-hidden relative"
+    @keydown.esc.capture="handleEscape"
+  >
     <div class="flex h-full w-full">
       <Transition name="slide-panel">
         <nav
@@ -165,6 +168,13 @@ const toggleLeftPanel = () => {
 
 const toggleRightPanel = () => {
   isRightPanelOpen.value = !isRightPanelOpen.value
+}
+
+function handleEscape(event: KeyboardEvent) {
+  if (isRightPanelOpen.value) {
+    event.stopPropagation()
+    isRightPanelOpen.value = false
+  }
 }
 </script>
 <style scoped>
