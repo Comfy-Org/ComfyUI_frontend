@@ -86,6 +86,10 @@ installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
     keys: ['template', 'source', 'mode']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
+    keys: ['invite']
   }
 ])
 
@@ -176,6 +180,32 @@ if (isCloud) {
         name: 'cloud-login',
         query
       })
+    }
+
+    // Initialize workspace context for logged-in users navigating to root
+    // This must happen before the app loads to ensure workspace context is ready
+    // and to handle invite URLs early in the lifecycle
+    // TODO: Use flags.teamWorkspacesEnabled when backend enables the flag
+    const teamWorkspacesEnabled = true
+    if (to.path === '/' && teamWorkspacesEnabled) {
+      const { useWorkspaceStore } =
+        await import('@/platform/workspace/stores/workspaceStore')
+      const workspaceStore = useWorkspaceStore()
+
+      if (workspaceStore.initState === 'uninitialized') {
+        try {
+          await workspaceStore.initialize()
+
+          // Handle invite URL if present (e.g., ?invite=TOKEN)
+          const { useInviteUrlLoader } =
+            await import('@/platform/workspace/composables/useInviteUrlLoader')
+          const { loadInviteFromUrl } = useInviteUrlLoader()
+          await loadInviteFromUrl(workspaceStore.acceptInvite)
+        } catch (error) {
+          console.error('Workspace initialization failed:', error)
+          // Continue anyway - workspace features will be degraded
+        }
+      }
     }
 
     // User is logged in - check if they need onboarding (when enabled)

@@ -117,7 +117,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { onConfirm } = defineProps<{
@@ -126,7 +126,7 @@ const { onConfirm } = defineProps<{
 
 const dialogStore = useDialogStore()
 const toast = useToast()
-const { createInviteLink } = useWorkspace()
+const workspaceStore = useWorkspaceStore()
 
 const loading = ref(false)
 const email = ref('')
@@ -146,7 +146,7 @@ async function onCreateLink() {
   if (!isValidEmail.value) return
   loading.value = true
   try {
-    generatedLink.value = await createInviteLink(email.value)
+    generatedLink.value = await workspaceStore.createInviteLink(email.value)
     step.value = 'link'
     await onConfirm(email.value)
   } finally {

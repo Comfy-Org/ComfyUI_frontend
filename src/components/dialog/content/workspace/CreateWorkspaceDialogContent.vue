@@ -60,16 +60,20 @@
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { onConfirm } = defineProps<{
-  onConfirm: (name: string) => void | Promise<void>
+  onConfirm?: (name: string) => void | Promise<void>
 }>()
 
+const { t } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
+const workspaceStore = useWorkspaceStore()
 const loading = ref(false)
 const workspaceName = ref('')
 
@@ -88,10 +92,19 @@ async function onCreate() {
   if (!isValidName.value) return
   loading.value = true
   try {
-    await onConfirm(workspaceName.value.trim())
+    const name = workspaceName.value.trim()
+    // Call optional callback if provided
+    await onConfirm?.(name)
     dialogStore.closeDialog({ key: 'create-workspace' })
+    // Create workspace and switch to it (triggers reload internally)
+    await workspaceStore.createWorkspace(name)
+  } catch (error) {
+    console.error('[CreateWorkspaceDialog] Failed to create workspace:', error)
     toast.add({
-      group: 'workspace-created'
+      severity: 'error',
+      summary: t('workspacePanel.toast.failedToCreateWorkspace'),
+      detail: error instanceof Error ? error.message : t('g.unknownError'),
+      life: 5000
     })
   } finally {
     loading.value = false

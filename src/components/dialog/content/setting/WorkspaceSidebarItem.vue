@@ -10,8 +10,10 @@
 </template>
 
 <script setup lang="ts">
-import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
+import { storeToRefs } from 'pinia'
 
-const { workspaceName } = useWorkspace()
+import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+
+const { workspaceName } = storeToRefs(useWorkspaceStore())
 </script>

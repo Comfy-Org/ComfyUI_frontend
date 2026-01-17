@@ -85,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import Menu from 'primevue/menu'
 import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
@@ -98,8 +99,8 @@ import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SubscriptionPanelContent from '@/platform/cloud/subscription/components/SubscriptionPanelContent.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 const { defaultTab = 'plan' } = defineProps<{
@@ -112,19 +113,12 @@ const {
   showDeleteWorkspaceDialog,
   showInviteMemberDialog
 } = useDialogService()
-const { isActiveSubscription } = useSubscription()
-const {
-  activeTab,
-  setActiveTab,
-  workspaceName,
-  workspaceRole,
-  members,
-  fetchMembers,
-  fetchPendingInvites,
-  permissions,
-  uiConfig,
-  isInviteLimitReached
-} = useWorkspace()
+const workspaceStore = useWorkspaceStore()
+const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
+  storeToRefs(workspaceStore)
+const { fetchMembers, fetchPendingInvites } = workspaceStore
+const { activeTab, setActiveTab, workspaceRole, permissions, uiConfig } =
+  useWorkspaceUI()
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -140,10 +134,12 @@ function handleDeleteWorkspace() {
   })
 }
 
+// Disable delete when workspace has an active subscription (to prevent accidental deletion)
+// Use workspace's own subscription status, not the global isActiveSubscription
 const isDeleteDisabled = computed(
   () =>
     uiConfig.value.workspaceMenuAction === 'delete' &&
-    isActiveSubscription.value
+    isWorkspaceSubscribed.value
 )
 
 const deleteTooltip = computed(() => {

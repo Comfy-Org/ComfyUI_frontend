@@ -52,16 +52,20 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
+const { t } = useI18n()
+const toast = useToast()
 const dialogStore = useDialogStore()
-const { workspaceName, updateWorkspaceName } = useWorkspace()
+const workspaceStore = useWorkspaceStore()
 const loading = ref(false)
-const newWorkspaceName = ref(workspaceName.value)
+const newWorkspaceName = ref(workspaceStore.workspaceName)
 
 const isValidName = computed(() => {
   const name = newWorkspaceName.value.trim()
@@ -77,8 +81,22 @@ async function onSave() {
   if (!isValidName.value) return
   loading.value = true
   try {
-    updateWorkspaceName(newWorkspaceName.value.trim())
+    await workspaceStore.updateWorkspaceName(newWorkspaceName.value.trim())
     dialogStore.closeDialog({ key: 'edit-workspace' })
+    toast.add({
+      severity: 'success',
+      summary: t('workspacePanel.toast.workspaceUpdated.title'),
+      detail: t('workspacePanel.toast.workspaceUpdated.message'),
+      life: 5000
+    })
+  } catch (error) {
+    console.error('[EditWorkspaceDialog] Failed to update workspace:', error)
+    toast.add({
+      severity: 'error',
+      summary: t('workspacePanel.toast.failedToUpdateWorkspace'),
+      detail: error instanceof Error ? error.message : t('g.unknownError'),
+      life: 5000
+    })
   } finally {
     loading.value = false
   }

@@ -21,7 +21,13 @@
     <!-- Body -->
     <div class="px-4 py-4">
       <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.deleteDialog.message') }}
+        {{
+          workspaceName
+            ? $t('workspacePanel.deleteDialog.messageWithName', {
+                name: workspaceName
+              })
+            : $t('workspacePanel.deleteDialog.message')
+        }}
       </p>
     </div>
 
@@ -38,16 +44,23 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { onConfirm } = defineProps<{
-  onConfirm: () => void | Promise<void>
+const { workspaceId, workspaceName } = defineProps<{
+  workspaceId?: string
+  workspaceName?: string
 }>()
 
+const { t } = useI18n()
+const toast = useToast()
 const dialogStore = useDialogStore()
+const workspaceStore = useWorkspaceStore()
 const loading = ref(false)
 
 function onCancel() {
@@ -57,8 +70,18 @@ function onCancel() {
 async function onDelete() {
   loading.value = true
   try {
-    await onConfirm()
+    // Delete workspace (uses workspaceId if provided, otherwise current workspace)
+    await workspaceStore.deleteWorkspace(workspaceId)
     dialogStore.closeDialog({ key: 'delete-workspace' })
+    window.location.reload()
+  } catch (error) {
+    console.error('[DeleteWorkspaceDialog] Failed to delete workspace:', error)
+    toast.add({
+      severity: 'error',
+      summary: t('workspacePanel.toast.failedToDeleteWorkspace'),
+      detail: error instanceof Error ? error.message : t('g.unknownError'),
+      life: 5000
+    })
   } finally {
     loading.value = false
   }

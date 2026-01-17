@@ -237,12 +237,12 @@
                 class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
               >
                 <span class="text-sm font-bold text-base-foreground">
-                  {{ invite.name.charAt(0).toUpperCase() }}
+                  {{ getInviteInitial(invite.email) }}
                 </span>
               </div>
               <div class="flex min-w-0 flex-1 flex-col gap-1">
                 <span class="text-sm text-base-foreground">
-                  {{ invite.name }}
+                  {{ getInviteDisplayName(invite.email) }}
                 </span>
                 <span class="text-sm text-muted-foreground">
                   {{ invite.email }}
@@ -310,7 +310,9 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import Menu from 'primevue/menu'
+import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -318,33 +320,31 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   PendingInvite,
   WorkspaceMember
-} from '@/platform/workspace/composables/useWorkspace'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
+} from '@/platform/workspace/stores/workspaceStore'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { cn } from '@/utils/tailwindUtil'
 
 const { d, t } = useI18n()
+const toast = useToast()
 const { userPhotoUrl, userEmail, userDisplayName } = useCurrentUser()
 const {
   showRemoveMemberDialog,
   showRevokeInviteDialog,
   showCreateWorkspaceDialog
 } = useDialogService()
+const workspaceStore = useWorkspaceStore()
 const {
   members,
   pendingInvites,
-  fetchMembers,
-  fetchPendingInvites,
-  copyInviteLink,
-  revokeInvite,
-  isPersonalWorkspace,
-  permissions,
-  uiConfig,
-  workspaceRole
-} = useWorkspace()
+  isInPersonalWorkspace: isPersonalWorkspace
+} = storeToRefs(workspaceStore)
+const { fetchMembers, fetchPendingInvites, copyInviteLink } = workspaceStore
+const { permissions, uiConfig, workspaceRole } = useWorkspaceUI()
 
 const searchQuery = ref('')
 const activeView = ref<'active' | 'pending'>('active')
@@ -353,6 +353,14 @@ const sortDirection = ref<'asc' | 'desc'>('desc')
 
 const memberMenu = ref<InstanceType<typeof Menu> | null>(null)
 const selectedMember = ref<WorkspaceMember | null>(null)
+
+function getInviteDisplayName(email: string): string {
+  return email.split('@')[0]
+}
+
+function getInviteInitial(email: string): string {
+  return email.charAt(0).toUpperCase()
+}
 
 const memberMenuItems = computed(() => [
   {
@@ -416,10 +424,8 @@ const filteredPendingInvites = computed(() => {
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    result = result.filter(
-      (invite) =>
-        invite.name.toLowerCase().includes(query) ||
-        invite.email.toLowerCase().includes(query)
+    result = result.filter((invite) =>
+      invite.email.toLowerCase().includes(query)
     )
   }
 
@@ -446,23 +452,32 @@ function formatDate(date: Date): string {
   return d(date, { dateStyle: 'medium' })
 }
 
-function handleCopyInviteLink(invite: PendingInvite) {
-  copyInviteLink(invite.id)
+async function handleCopyInviteLink(invite: PendingInvite) {
+  try {
+    await copyInviteLink(invite.id)
+    toast.add({
+      severity: 'success',
+      summary: t('g.copied'),
+      life: 2000
+    })
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      life: 3000
+    })
+  }
 }
 
 function handleRevokeInvite(invite: PendingInvite) {
-  showRevokeInviteDialog(() => {
-    revokeInvite(invite.id)
-  })
+  showRevokeInviteDialog(invite.id)
 }
 
 function handleCreateWorkspace() {
   showCreateWorkspaceDialog()
 }
 
-function handleRemoveMember(_member: WorkspaceMember) {
-  showRemoveMemberDialog(() => {
-    // TODO: Implement actual remove member API call
-  })
+function handleRemoveMember(member: WorkspaceMember) {
+  showRemoveMemberDialog(member.id)
 }
 </script>

@@ -90,6 +90,31 @@ vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
   }))
 }))
 
+// Mock toast store (needed by useWorkspace -> useInviteUrlLoader)
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({
+    add: vi.fn()
+  }))
+}))
+
+// Mock useWorkspace composable
+vi.mock('@/platform/workspace/composables/useWorkspace', () => ({
+  useWorkspace: vi.fn(() => ({
+    workspaceName: { value: 'Test Workspace' },
+    workspaceId: { value: 'test-workspace-id' },
+    workspaceType: { value: 'personal' },
+    workspaceRole: { value: 'owner' },
+    isPersonalWorkspace: { value: true },
+    isWorkspaceSubscribed: { value: true },
+    subscriptionPlan: { value: null },
+    permissions: { value: { canManageSubscription: true } },
+    availableWorkspaces: { value: [] },
+    fetchWorkspaces: vi.fn(),
+    switchWorkspace: vi.fn(),
+    subscribeWorkspace: vi.fn()
+  }))
+}))
+
 // Create i18n instance for testing
 const i18n = createI18n({
   legacy: false,

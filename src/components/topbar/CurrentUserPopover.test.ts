@@ -27,6 +27,27 @@ vi.mock('firebase/auth', () => ({
 // Mock pinia
 vi.mock('pinia')
 
+// Mock toast store (needed by useWorkspace -> useInviteUrlLoader)
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({
+    add: vi.fn()
+  }))
+}))
+
+// Mock useWorkspace composable
+vi.mock('@/platform/workspace/composables/useWorkspace', () => ({
+  useWorkspace: vi.fn(() => ({
+    workspaceName: { value: 'Test Workspace' },
+    workspaceId: { value: 'test-workspace-id' },
+    workspaceType: { value: 'personal' },
+    workspaceRole: { value: 'owner' },
+    isPersonalWorkspace: { value: true },
+    availableWorkspaces: { value: [] },
+    fetchWorkspaces: vi.fn(),
+    switchWorkspace: vi.fn()
+  }))
+}))
+
 // Mock showSettingsDialog and showTopUpCreditsDialog
 const mockShowSettingsDialog = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()

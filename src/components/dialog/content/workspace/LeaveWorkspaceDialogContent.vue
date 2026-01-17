@@ -38,16 +38,18 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { onConfirm } = defineProps<{
-  onConfirm: () => void | Promise<void>
-}>()
-
+const { t } = useI18n()
+const toast = useToast()
 const dialogStore = useDialogStore()
+const workspaceStore = useWorkspaceStore()
 const loading = ref(false)
 
 function onCancel() {
@@ -57,8 +59,18 @@ function onCancel() {
 async function onLeave() {
   loading.value = true
   try {
-    await onConfirm()
+    // leaveWorkspace() handles switching to personal workspace internally and reloads
+    await workspaceStore.leaveWorkspace()
     dialogStore.closeDialog({ key: 'leave-workspace' })
+    window.location.reload()
+  } catch (error) {
+    console.error('[LeaveWorkspaceDialog] Failed to leave workspace:', error)
+    toast.add({
+      severity: 'error',
+      summary: t('workspacePanel.toast.failedToLeaveWorkspace'),
+      detail: error instanceof Error ? error.message : t('g.unknownError'),
+      life: 5000
+    })
   } finally {
     loading.value = false
   }

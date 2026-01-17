@@ -40,13 +40,14 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
 import { ref } from 'vue'
 
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
@@ -57,7 +58,7 @@ const { showArrow = true, compact = false } = defineProps<{
 }>()
 
 const { isLoggedIn } = useCurrentUser()
-const { workspaceName } = useWorkspace()
+const { workspaceName } = storeToRefs(useWorkspaceStore())
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
 

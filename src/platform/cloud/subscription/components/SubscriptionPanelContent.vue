@@ -16,7 +16,7 @@
             <Button
               variant="primary"
               class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
-              @click="showSubscriptionDialog"
+              @click="handleSubscribeWorkspace"
             >
               {{ $t('subscription.subscribeNow') }}
             </Button>
@@ -236,6 +236,7 @@
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import Menu from 'primevue/menu'
 import Skeleton from 'primevue/skeleton'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -255,17 +256,26 @@ import {
   getTierFeatures,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useWorkspace } from '@/platform/workspace/composables/useWorkspace'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const authActions = useFirebaseAuthActions()
-const { permissions, isWorkspaceSubscribed, workspaceRole } = useWorkspace()
+const workspaceStore = useWorkspaceStore()
+const { isWorkspaceSubscribed } = storeToRefs(workspaceStore)
+const { subscribeWorkspace } = workspaceStore
+const { permissions, workspaceRole } = useWorkspaceUI()
 const { t, n } = useI18n()
 
 // OWNER with unsubscribed workspace
 const isOwnerUnsubscribed = computed(
   () => workspaceRole.value === 'owner' && !isWorkspaceSubscribed.value
 )
+
+// Demo: Subscribe workspace to PRO monthly plan
+function handleSubscribeWorkspace() {
+  subscribeWorkspace('PRO_MONTHLY')
+}
 
 const {
   isActiveSubscription,

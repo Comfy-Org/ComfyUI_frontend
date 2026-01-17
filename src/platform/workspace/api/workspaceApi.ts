@@ -1,12 +1,14 @@
 import type { AxiosResponse } from 'axios'
 import axios from 'axios'
 
-import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 
-// Types aligned with backend API (matching useWorkspaceAuth types)
+import { sessionManager } from '../services/sessionManager'
+
+// Types aligned with backend API
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
 
@@ -20,29 +22,50 @@ export interface WorkspaceWithRole extends Workspace {
   role: WorkspaceRole
 }
 
-export interface WorkspaceMember {
+// Member type from API
+export interface Member {
   id: string
   name: string
   email: string
-  role: WorkspaceRole
   joined_at: string
 }
 
+export interface PaginationInfo {
+  offset: number
+  limit: number
+  total: number
+}
+
+export interface ListMembersResponse {
+  members: Member[]
+  pagination: PaginationInfo
+}
+
+export interface ListMembersParams {
+  offset?: number
+  limit?: number
+}
+
+// Pending invite type from API
 export interface PendingInvite {
   id: string
   email: string
+  token: string
   invited_at: string
   expires_at: string
-  invite_link: string
 }
 
-export interface WorkspaceDetails extends WorkspaceWithRole {
-  members: WorkspaceMember[]
-  pending_invites: PendingInvite[]
-  subscription_status: {
-    is_active: boolean
-    plan: string | null
-  }
+export interface ListInvitesResponse {
+  invites: PendingInvite[]
+}
+
+export interface CreateInviteRequest {
+  email: string
+}
+
+export interface AcceptInviteResponse {
+  workspace_id: string
+  workspace_name: string
 }
 
 export interface CreateWorkspacePayload {
@@ -51,16 +74,6 @@ export interface CreateWorkspacePayload {
 
 export interface UpdateWorkspacePayload {
   name: string
-}
-
-export interface CreateInvitePayload {
-  email: string
-}
-
-export interface CreateInviteResponse {
-  id: string
-  invite_link: string
-  expires_at: string
 }
 
 // API responses
@@ -80,11 +93,12 @@ export class WorkspaceApiError extends Error {
 }
 
 const workspaceApiClient = axios.create({
-  baseURL: getComfyApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
 })
+
+type RequestHeaders = AuthHeader & { 'X-Workspace-ID'?: string }
 
 async function withAuth<T>(
   request: (headers: AuthHeader) => Promise<AxiosResponse<T>>
@@ -110,21 +124,57 @@ async function withAuth<T>(
   }
 }
 
+/**
+ * Wrapper that adds both auth header and workspace ID header.
+ * Use for workspace-scoped endpoints (e.g., /api/workspace/members).
+ */
+async function withWorkspaceAuth<T>(
+  request: (headers: RequestHeaders) => Promise<AxiosResponse<T>>
+): Promise<T> {
+  const authHeader = await useFirebaseAuthStore().getAuthHeader()
+  if (!authHeader) {
+    throw new WorkspaceApiError(
+      t('toastMessages.userNotAuthenticated'),
+      401,
+      'NOT_AUTHENTICATED'
+    )
+  }
+
+  const workspaceId = sessionManager.getCurrentWorkspaceId()
+  if (!workspaceId) {
+    throw new WorkspaceApiError(
+      'No active workspace',
+      400,
+      'NO_ACTIVE_WORKSPACE'
+    )
+  }
+
+  const headers: RequestHeaders = {
+    ...authHeader,
+    'X-Workspace-ID': workspaceId
+  }
+
+  try {
+    const response = await request(headers)
+    return response.data
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status
+      const message = err.response?.data?.message ?? err.message
+      throw new WorkspaceApiError(message, status)
+    }
+    throw err
+  }
+}
+
 export const workspaceApi = {
   /**
    * List all workspaces the user has access to
    * GET /api/workspaces
    */
   list: (): Promise<ListWorkspacesResponse> =>
-    withAuth((headers) => workspaceApiClient.get('/workspaces', { headers })),
-
-  /**
-   * Get workspace details including members and invites
-   * GET /api/workspaces/:id
-   */
-  get: (workspaceId: string): Promise<WorkspaceDetails> =>
     withAuth((headers) =>
-      workspaceApiClient.get(`/workspaces/${workspaceId}`, { headers })
+      workspaceApiClient.get(api.apiURL('/workspaces'), { headers })
     ),
 
   /**
@@ -133,7 +183,7 @@ export const workspaceApi = {
    */
   create: (payload: CreateWorkspacePayload): Promise<WorkspaceWithRole> =>
     withAuth((headers) =>
-      workspaceApiClient.post('/workspaces', payload, { headers })
+      workspaceApiClient.post(api.apiURL('/workspaces'), payload, { headers })
     ),
 
   /**
@@ -145,9 +195,11 @@ export const workspaceApi = {
     payload: UpdateWorkspacePayload
   ): Promise<WorkspaceWithRole> =>
     withAuth((headers) =>
-      workspaceApiClient.patch(`/workspaces/${workspaceId}`, payload, {
-        headers
-      })
+      workspaceApiClient.patch(
+        api.apiURL(`/workspaces/${workspaceId}`),
+        payload,
+        { headers }
+      )
     ),
 
   /**
@@ -156,55 +208,82 @@ export const workspaceApi = {
    */
   delete: (workspaceId: string): Promise<void> =>
     withAuth((headers) =>
-      workspaceApiClient.delete(`/workspaces/${workspaceId}`, { headers })
-    ),
-
-  /**
-   * Leave a workspace (member only)
-   * POST /api/workspaces/:id/leave
-   */
-  leave: (workspaceId: string): Promise<void> =>
-    withAuth((headers) =>
-      workspaceApiClient.post(`/workspaces/${workspaceId}/leave`, null, {
+      workspaceApiClient.delete(api.apiURL(`/workspaces/${workspaceId}`), {
         headers
       })
     ),
 
   /**
-   * Create an invite link for a workspace
-   * POST /api/workspaces/:id/invites
+   * Leave the current workspace.
+   * POST /api/workspace/leave
    */
-  createInvite: (
-    workspaceId: string,
-    payload: CreateInvitePayload
-  ): Promise<CreateInviteResponse> =>
-    withAuth((headers) =>
-      workspaceApiClient.post(`/workspaces/${workspaceId}/invites`, payload, {
+  leave: (): Promise<void> =>
+    withWorkspaceAuth((headers) =>
+      workspaceApiClient.post(api.apiURL('/workspace/leave'), null, { headers })
+    ),
+
+  /**
+   * List workspace members (paginated).
+   * GET /api/workspace/members
+   */
+  listMembers: (params?: ListMembersParams): Promise<ListMembersResponse> =>
+    withWorkspaceAuth((headers) =>
+      workspaceApiClient.get(api.apiURL('/workspace/members'), {
+        headers,
+        params
+      })
+    ),
+
+  /**
+   * Remove a member from the workspace.
+   * DELETE /api/workspace/members/:userId
+   */
+  removeMember: (userId: string): Promise<void> =>
+    withWorkspaceAuth((headers) =>
+      workspaceApiClient.delete(api.apiURL(`/workspace/members/${userId}`), {
         headers
       })
     ),
 
   /**
-   * Revoke a pending invite
-   * DELETE /api/workspaces/:id/invites/:inviteId
+   * List pending invites for the workspace.
+   * GET /api/workspace/invites
    */
-  revokeInvite: (workspaceId: string, inviteId: string): Promise<void> =>
-    withAuth((headers) =>
-      workspaceApiClient.delete(
-        `/workspaces/${workspaceId}/invites/${inviteId}`,
-        { headers }
-      )
+  listInvites: (): Promise<ListInvitesResponse> =>
+    withWorkspaceAuth((headers) =>
+      workspaceApiClient.get(api.apiURL('/workspace/invites'), { headers })
     ),
 
   /**
-   * Remove a member from workspace
-   * DELETE /api/workspaces/:id/members/:memberId
+   * Create an invite for the workspace.
+   * POST /api/workspace/invites
    */
-  removeMember: (workspaceId: string, memberId: string): Promise<void> =>
+  createInvite: (payload: CreateInviteRequest): Promise<PendingInvite> =>
+    withWorkspaceAuth((headers) =>
+      workspaceApiClient.post(api.apiURL('/workspace/invites'), payload, {
+        headers
+      })
+    ),
+
+  /**
+   * Revoke a pending invite.
+   * DELETE /api/workspace/invites/:inviteId
+   */
+  revokeInvite: (inviteId: string): Promise<void> =>
+    withWorkspaceAuth((headers) =>
+      workspaceApiClient.delete(api.apiURL(`/workspace/invites/${inviteId}`), {
+        headers
+      })
+    ),
+
+  /**
+   * Accept a workspace invite.
+   * POST /api/invites/:token/accept
+   */
+  acceptInvite: (token: string): Promise<AcceptInviteResponse> =>
     withAuth((headers) =>
-      workspaceApiClient.delete(
-        `/workspaces/${workspaceId}/members/${memberId}`,
-        { headers }
-      )
+      workspaceApiClient.post(api.apiURL(`/invites/${token}/accept`), null, {
+        headers
+      })
     )
 }

@@ -17,7 +17,7 @@ const { workspaceName } = defineProps<{
   workspaceName: string
 }>()
 
-const letter = computed(() => workspaceName.charAt(0).toUpperCase())
+const letter = computed(() => workspaceName?.charAt(0)?.toUpperCase() ?? '?')
 
 const gradient = computed(() => {
   const seed = letter.value.charCodeAt(0)
