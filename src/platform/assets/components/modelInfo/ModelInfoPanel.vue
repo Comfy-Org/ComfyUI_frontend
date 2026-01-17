@@ -206,7 +206,9 @@ const pendingUpdates = ref<AssetUserMetadata>({})
 const isEditingDisplayName = ref(false)
 
 const isImmutable = computed(() => asset.is_immutable ?? true)
-const displayName = computed(() => getAssetDisplayName(asset))
+const displayName = computed(
+  () => pendingUpdates.value.name ?? getAssetDisplayName(asset)
+)
 const sourceUrl = computed(() => getAssetSourceUrl(asset))
 const sourceName = computed(() =>
   sourceUrl.value ? getSourceName(sourceUrl.value) : ''
