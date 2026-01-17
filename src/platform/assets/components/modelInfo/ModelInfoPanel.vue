@@ -53,19 +53,22 @@
         </span>
       </template>
       <ModelInfoField :label="$t('assetBrowser.modelInfo.modelType')">
-        <select
-          v-model="selectedModelType"
-          :disabled="isImmutable"
-          class="w-full rounded-lg border-2 border-transparent bg-secondary-background px-3 py-2 text-sm text-base-foreground outline-none focus:border-node-component-border"
-        >
-          <option
-            v-for="option in modelTypes"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.name }}
-          </option>
-        </select>
+        <Select v-model="selectedModelType" :disabled="isImmutable">
+          <SelectTrigger class="w-full">
+            <SelectValue
+              :placeholder="$t('assetBrowser.modelInfo.selectModelType')"
+            />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem
+              v-for="option in modelTypes"
+              :key="option.value"
+              :value="option.value"
+            >
+              {{ option.name }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </ModelInfoField>
       <ModelInfoField
         :label="$t('assetBrowser.modelInfo.compatibleBaseModels')"
@@ -162,6 +165,11 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import Select from '@/components/ui/select/Select.vue'
+import SelectContent from '@/components/ui/select/SelectContent.vue'
+import SelectItem from '@/components/ui/select/SelectItem.vue'
+import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
+import SelectValue from '@/components/ui/select/SelectValue.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
 import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
 import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
