@@ -2413,7 +2413,8 @@
       "noAdditionalTags": "No additional tags",
       "modelDescription": "Model Description",
       "triggerPhrases": "Trigger Phrases",
-      "description": "Description"
+      "description": "Description",
+      "descriptionPlaceholder": "Add a description for this model..."
     },
     "media": {
       "threeDModelPlaceholder": "3D Model",
