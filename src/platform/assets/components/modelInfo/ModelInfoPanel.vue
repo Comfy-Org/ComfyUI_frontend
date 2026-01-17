@@ -172,10 +172,13 @@ import {
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import ModelInfoField from './ModelInfoField.vue'
 
-const accordionClass = 'bg-transparent border-t border-border-default'
+const accordionClass = cn(
+  'bg-modal-panel-background border-t border-border-default'
+)
 
 const { asset, cacheKey } = defineProps<{
   asset: AssetDisplayItem
