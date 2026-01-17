@@ -45,11 +45,20 @@
           {{ $t('assetBrowser.modelInfo.modelTagging') }}
         </span>
       </template>
-      <ModelInfoField
-        v-if="modelType"
-        :label="$t('assetBrowser.modelInfo.modelType')"
-      >
-        <span class="text-sm">{{ modelType }}</span>
+      <ModelInfoField :label="$t('assetBrowser.modelInfo.modelType')">
+        <select
+          v-model="selectedModelType"
+          :disabled="isImmutable"
+          class="w-full rounded-lg border-2 border-transparent bg-secondary-background px-3 py-2 text-sm text-base-foreground outline-none focus:border-node-component-border"
+        >
+          <option
+            v-for="option in modelTypes"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.name }}
+          </option>
+        </select>
       </ModelInfoField>
       <ModelInfoField
         :label="$t('assetBrowser.modelInfo.compatibleBaseModels')"
@@ -140,11 +149,13 @@ import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
 import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import {
   getAssetAdditionalTags,
   getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
+  getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
   getSourceName
@@ -167,22 +178,22 @@ const sourceName = computed(() =>
 )
 const baseModels = ref<string[]>(getAssetBaseModels(asset))
 const additionalTags = ref<string[]>(getAssetAdditionalTags(asset))
+const selectedModelType = ref<string | undefined>(
+  getAssetModelType(asset) ?? undefined
+)
 watch(
   () => asset,
   () => {
     baseModels.value = getAssetBaseModels(asset)
     additionalTags.value = getAssetAdditionalTags(asset)
+    selectedModelType.value = getAssetModelType(asset) ?? undefined
   }
 )
 const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
 const isImmutable = computed(() => asset.is_immutable ?? true)
 
-const modelType = computed(() => {
-  const typeTag = asset.tags.find((tag) => tag !== 'models')
-  if (!typeTag) return null
-  return typeTag.includes('/') ? typeTag.split('/').pop() : typeTag
-})
+const { modelTypes } = useModelTypes()
 
 const assetsStore = useAssetsStore()
 
@@ -200,6 +211,19 @@ async function saveMetadata() {
   )
 }
 
+async function saveModelType(newModelType: string | undefined) {
+  if (isImmutable.value || !newModelType) return
+
+  const currentModelType = getAssetModelType(asset)
+  if (currentModelType === newModelType) return
+
+  const newTags = asset.tags
+    .filter((tag) => tag !== currentModelType)
+    .concat(newModelType)
+  await assetsStore.updateAssetTags(asset.id, newTags, cacheKey)
+}
+
 watchDebounced(baseModels, saveMetadata, { debounce: 500 })
 watchDebounced(additionalTags, saveMetadata, { debounce: 500 })
+watchDebounced(selectedModelType, saveModelType, { debounce: 500 })
 </script>

@@ -464,6 +464,21 @@ export const useAssetsStore = defineStore('assets', () => {
         await assetService.updateAsset(assetId, { user_metadata: userMetadata })
       }
 
+      /**
+       * Update asset tags with optimistic cache update
+       * @param assetId The asset ID to update
+       * @param tags The tags array to save
+       * @param cacheKey Optional cache key to target for optimistic update
+       */
+      async function updateAssetTags(
+        assetId: string,
+        tags: string[],
+        cacheKey?: string
+      ) {
+        updateAssetInCache(assetId, { tags }, cacheKey)
+        await assetService.updateAsset(assetId, { tags })
+      }
+
       return {
         getAssets,
         isLoading,
@@ -471,7 +486,8 @@ export const useAssetsStore = defineStore('assets', () => {
         hasMore,
         updateModelsForNodeType,
         updateModelsForTag,
-        updateAssetMetadata
+        updateAssetMetadata,
+        updateAssetTags
       }
     }
 
@@ -483,7 +499,8 @@ export const useAssetsStore = defineStore('assets', () => {
       hasMore: () => false,
       updateModelsForNodeType: async () => {},
       updateModelsForTag: async () => {},
-      updateAssetMetadata: async () => {}
+      updateAssetMetadata: async () => {},
+      updateAssetTags: async () => {}
     }
   }
 
@@ -494,7 +511,8 @@ export const useAssetsStore = defineStore('assets', () => {
     hasMore,
     updateModelsForNodeType,
     updateModelsForTag,
-    updateAssetMetadata
+    updateAssetMetadata,
+    updateAssetTags
   } = getModelState()
 
   // Watch for completed downloads and refresh model caches
@@ -563,6 +581,7 @@ export const useAssetsStore = defineStore('assets', () => {
     // Model assets - actions
     updateModelsForNodeType,
     updateModelsForTag,
-    updateAssetMetadata
+    updateAssetMetadata,
+    updateAssetTags
   }
 })

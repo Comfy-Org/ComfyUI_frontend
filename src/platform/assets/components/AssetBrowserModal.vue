@@ -1,6 +1,6 @@
 <template>
   <BaseModalLayout
-    :hide-right-panel-button="true"
+    :hide-right-panel-button="!!focusedAsset"
     :right-panel-open="!!focusedAsset"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
@@ -87,6 +87,7 @@ import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
 import ModelInfoPanel from '@/platform/assets/components/modelInfo/ModelInfoPanel.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
+import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
@@ -142,6 +143,10 @@ async function refreshAssets(): Promise<void> {
 
 // Trigger background refresh on mount
 void refreshAssets()
+
+// Eagerly fetch model types so they're available when ModelInfoPanel loads
+const { fetchModelTypes } = useModelTypes()
+void fetchModelTypes()
 
 const { isUploadButtonEnabled, showUploadDialog } =
   useModelUpload(refreshAssets)

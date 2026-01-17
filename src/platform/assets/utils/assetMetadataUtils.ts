@@ -110,3 +110,14 @@ export function getSourceName(url: string): string {
   if (url.includes('huggingface.co')) return 'Hugging Face'
   return 'Source'
 }
+
+/**
+ * Extracts the model type from asset tags
+ * @param asset - The asset to extract model type from
+ * @returns The model type string or null if not present
+ */
+export function getAssetModelType(asset: AssetItem): string | null {
+  const typeTag = asset.tags?.find((tag) => tag !== 'models')
+  if (!typeTag) return null
+  return typeTag.includes('/') ? (typeTag.split('/').pop() ?? null) : typeTag
+}
