@@ -136,11 +136,13 @@
       </ModelInfoField>
       <ModelInfoField :label="$t('assetBrowser.modelInfo.description')">
         <textarea
+          ref="descriptionTextarea"
           v-model="userDescription"
           :disabled="isImmutable"
           :placeholder="$t('assetBrowser.modelInfo.descriptionPlaceholder')"
           rows="3"
           class="w-full resize-y rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground outline-none transition-colors focus:bg-component-node-widget-background disabled:pointer-events-none"
+          @keydown.escape.stop="descriptionTextarea?.blur()"
         />
       </ModelInfoField>
     </PropertiesAccordionItem>
@@ -149,7 +151,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
@@ -175,6 +177,10 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ModelInfoField from './ModelInfoField.vue'
+
+const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
+  'descriptionTextarea'
+)
 
 const accordionClass = cn(
   'bg-modal-panel-background border-t border-border-default'
