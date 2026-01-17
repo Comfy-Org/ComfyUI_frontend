@@ -7,8 +7,8 @@
       class="grid h-full w-full transition-[grid-template-columns] duration-300 ease-out"
       :style="gridStyle"
     >
-      <nav v-if="hasLeftPanel" class="overflow-hidden">
-        <div class="min-w-40 max-w-56">
+      <nav class="overflow-hidden">
+        <div v-if="hasLeftPanel" class="min-w-40 max-w-56">
           <slot name="leftPanel" />
         </div>
       </nav>
@@ -147,7 +147,7 @@ const showLeftPanel = computed(() => {
 })
 
 const gridStyle = computed(() => ({
-  gridTemplateColumns: `${hasLeftPanel.value && showLeftPanel.value ? 'minmax(10rem,14rem)' : '0fr'} 1fr ${isRightPanelOpen.value ? '18rem' : '0fr'}`
+  gridTemplateColumns: `${hasLeftPanel.value && showLeftPanel.value ? '14rem' : '0rem'} 1fr ${isRightPanelOpen.value ? '18rem' : '0rem'}`
 }))
 
 const toggleLeftPanel = () => {
