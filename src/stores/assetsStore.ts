@@ -78,7 +78,8 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(b.created_at ?? 0).getTime() -
+      new Date(a.created_at ?? 0).getTime()
   )
 }
 
@@ -145,9 +146,9 @@ export const useAssetsStore = defineStore('assets', () => {
         loadedIds.add(asset.id)
 
         // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at).getTime()
+        const assetTime = new Date(asset.created_at ?? 0).getTime()
         const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at).getTime() < assetTime
+          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
         )
 
         if (insertIndex === -1) {

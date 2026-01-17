@@ -10,7 +10,7 @@ const zAsset = z.object({
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
   preview_url: z.string().optional(),
-  created_at: z.string(),
+  created_at: z.string().optional(),
   updated_at: z.string().optional(),
   is_immutable: z.boolean().optional(),
   last_access_time: z.string().optional(),
