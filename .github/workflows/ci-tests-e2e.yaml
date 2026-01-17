@@ -6,7 +6,7 @@ on:
     branches: [main, master, core/*, desktop/*]
   pull_request:
     branches-ignore:
-      [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*, version-bump-*]
+      [wip/*, draft/*, temp/*, vue-nodes-migration, version-bump-*]
   # Run after i18n workflow completes for version-bump PRs
   workflow_run:
     workflows: ['i18n: Update Core']
