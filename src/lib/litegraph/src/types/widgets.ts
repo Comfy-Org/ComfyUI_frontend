@@ -55,7 +55,7 @@ interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
 }
 
 export interface IWidgetAssetOptions extends IWidgetOptions {
-  openModal: () => void
+  openModal: (widget: IBaseWidget) => void
 }
 
 /**
