@@ -260,6 +260,24 @@ export function groupResolvedByOutput(
 
   return groupedByOutput
 }
+function mapReroutes(
+  link: SerialisableLLink,
+  reroutes: Map<RerouteId, Reroute>
+) {
+  let child: SerialisableLLink | Reroute = link
+  let nextReroute =
+    child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+
+  while (child.parentId !== undefined && nextReroute) {
+    child = nextReroute
+    nextReroute =
+      child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+  }
+
+  const lastId = child.parentId
+  child.parentId = undefined
+  return lastId
+}
 
 export function mapSubgraphInputsAndLinks(
   resolvedInputLinks: ResolvedConnection[],
@@ -279,25 +297,12 @@ export function mapSubgraphInputsAndLinks(
     for (const resolved of connections) {
       const { link, input } = resolved
       if (!input) continue
+
       const linkData = link.asSerialisable()
-
-      let child: SerialisableLLink | Reroute = linkData
-      let nextReroute =
-        child.parentId === undefined ? undefined : reroutes.get(child.parentId)
-      while (child.parentId !== undefined && nextReroute) {
-        child = nextReroute
-        nextReroute =
-          child.parentId === undefined
-            ? undefined
-            : reroutes.get(child.parentId)
-      }
-      //set outside link to first remaining reroute OR undefined
-      link.parentId = child.parentId
-      //ensure end of chain is undefined
-      child.parentId = undefined
-
+      link.parentId = mapReroutes(link, reroutes)
       linkData.origin_id = SUBGRAPH_INPUT_ID
       linkData.origin_slot = inputs.length
+
       links.push(linkData)
       inputLinks.push(linkData)
     }
@@ -372,23 +377,12 @@ export function mapSubgraphOutputsAndLinks(
     for (const resolved of connections) {
       const { link, output } = resolved
       if (!output) continue
+
       const linkData = link.asSerialisable()
-
-      let child: SerialisableLLink | Reroute = link
-      let nextReroute =
-        child.parentId === undefined ? undefined : reroutes.get(child.parentId)
-      while (child.parentId !== undefined && nextReroute) {
-        child = nextReroute
-        nextReroute =
-          child.parentId === undefined
-            ? undefined
-            : reroutes.get(child.parentId)
-      }
-      linkData.parentId = child.parentId
-      child.parentId = undefined
-
+      linkData.parentId = mapReroutes(link, reroutes)
       linkData.target_id = SUBGRAPH_OUTPUT_ID
       linkData.target_slot = outputs.length
+
       links.push(linkData)
       outputLinks.push(linkData)
     }
