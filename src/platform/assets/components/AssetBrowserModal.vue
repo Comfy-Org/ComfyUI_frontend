@@ -7,6 +7,7 @@
     :content-title="displayTitle"
     :right-panel-title="$t('assetBrowser.modelInfo.title')"
     @close="handleClose"
+    @update:right-panel-open="handlePanelClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanel>
       <LeftSidePanel
@@ -224,5 +225,11 @@ function handleAssetFocus(asset: AssetDisplayItem) {
 function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   emit('asset-select', asset)
   props.onSelect?.(asset)
+}
+
+function handlePanelClose(isOpen: boolean) {
+  if (!isOpen) {
+    focusedAsset.value = null
+  }
 }
 </script>
