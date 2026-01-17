@@ -11,7 +11,7 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import type { ProxyOptions, UserConfig } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
@@ -511,5 +511,27 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@comfyorg/comfyui-electron-types'],
     entries: ['index.html']
+  },
+
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    setupFiles: ['./vitest.setup.ts'],
+    retry: process.env.CI ? 2 : 0,
+    include: [
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+    ],
+    coverage: {
+      reporter: ['text', 'json', 'html']
+    },
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*'
+    ],
+    silent: 'passed-only'
   }
 }) satisfies UserConfig as UserConfig
