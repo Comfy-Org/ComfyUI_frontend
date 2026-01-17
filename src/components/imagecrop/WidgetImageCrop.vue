@@ -66,14 +66,14 @@ import { useTemplateRef } from 'vue'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import { useImageCrop } from '@/composables/useImageCrop'
-import type { BoundingBoxValue } from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { Bounds } from '@/renderer/core/layout/types'
 
 const props = defineProps<{
   nodeId: NodeId
 }>()
 
-const modelValue = defineModel<BoundingBoxValue>({
+const modelValue = defineModel<Bounds>({
   default: () => ({ x: 0, y: 0, width: 512, height: 512 })
 })
 

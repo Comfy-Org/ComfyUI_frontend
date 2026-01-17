@@ -1,3 +1,5 @@
+import type { Bounds } from '@/renderer/core/layout/types'
+
 import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
@@ -261,30 +263,16 @@ export interface IAssetWidget extends IBaseWidget<
   value: string
 }
 
-/** Bounding box value with x, y, width, height */
-export interface BoundingBoxValue {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
 /** Image crop widget for cropping image */
-export interface IImageCropWidget extends IBaseWidget<
-  BoundingBoxValue,
-  'imagecrop'
-> {
+export interface IImageCropWidget extends IBaseWidget<Bounds, 'imagecrop'> {
   type: 'imagecrop'
-  value: BoundingBoxValue
+  value: Bounds
 }
 
 /** Bounding box widget for defining regions with numeric inputs */
-export interface IBoundingBoxWidget extends IBaseWidget<
-  BoundingBoxValue,
-  'boundingbox'
-> {
+export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   type: 'boundingbox'
-  value: BoundingBoxValue
+  value: Bounds
 }
 
 /**

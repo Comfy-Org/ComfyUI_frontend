@@ -3,7 +3,7 @@ import type { Ref } from 'vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { BoundingBoxValue } from '@/lib/litegraph/src/types/widgets'
+import type { Bounds } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
@@ -25,7 +25,7 @@ const CROP_BOX_BORDER = 2
 interface UseImageCropOptions {
   imageEl: Ref<HTMLImageElement | null>
   containerEl: Ref<HTMLDivElement | null>
-  modelValue: Ref<BoundingBoxValue>
+  modelValue: Ref<Bounds>
 }
 
 export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {

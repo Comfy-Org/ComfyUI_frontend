@@ -1,11 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
-  BoundingBoxValue,
   IBaseWidget,
   IBoundingBoxWidget,
   IImageCropWidget,
   INumericWidget
 } from '@/lib/litegraph/src/types/widgets'
+import type { Bounds } from '@/renderer/core/layout/types'
 import type {
   BoundingBoxInputSpec,
   InputSpec as InputSpecV2
@@ -29,7 +29,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
   ): IBoundingBoxWidget | IImageCropWidget => {
     const spec = inputSpec as BoundingBoxInputSpec
     const { name, component } = spec
-    const defaultValue: BoundingBoxValue = spec.default ?? {
+    const defaultValue: Bounds = spec.default ?? {
       x: 0,
       y: 0,
       width: 512,
@@ -38,7 +38,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
 
     const widgetType = component === 'ImageCrop' ? 'imagecrop' : 'boundingbox'
 
-    const fields: (keyof BoundingBoxValue)[] = ['x', 'y', 'width', 'height']
+    const fields: (keyof Bounds)[] = ['x', 'y', 'width', 'height']
     const subWidgets: INumericWidget[] = []
 
     const rawWidget = node.addWidget(

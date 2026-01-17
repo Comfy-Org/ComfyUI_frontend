@@ -14,7 +14,7 @@ export class BoundingBoxWidget
     const { width } = options
     const { y, height } = this
 
-    const { fillStyle, strokeStyle, textAlign, textBaseline, font } = ctx
+    ctx.save()
 
     ctx.fillStyle = this.background_color
     ctx.fillRect(15, y, width - 30, height)
@@ -30,13 +30,7 @@ export class BoundingBoxWidget
     const text = `BoundingBox: ${t('widgets.node2only')}`
     ctx.fillText(text, width / 2, y + height / 2)
 
-    Object.assign(ctx, {
-      fillStyle,
-      strokeStyle,
-      textAlign,
-      textBaseline,
-      font
-    })
+    ctx.restore()
   }
 
   onClick(_options: WidgetEventOptions): void {
