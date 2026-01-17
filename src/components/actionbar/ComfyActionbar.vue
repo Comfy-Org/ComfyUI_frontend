@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full items-center">
+  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -77,7 +77,6 @@ const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
 
-const tabContainer = document.querySelector('.workflow-tabs-container')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
@@ -88,14 +87,7 @@ const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
 const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
-  containerElement: document.body,
-  onMove: (event) => {
-    // Prevent dragging the menu over the top of the tabs
-    const minY = tabContainer?.getBoundingClientRect().bottom ?? 40
-    if (event.y < minY) {
-      event.y = minY
-    }
-  }
+  containerElement: document.body
 })
 
 // Update storedPosition when x or y changes

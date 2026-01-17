@@ -18,6 +18,7 @@ const height = ref('')
       ref="imageRef"
       :src
       v-bind="slotProps"
+      class="h-full object-contain w-full"
       @load="
         () => {
           if (!imageRef) return

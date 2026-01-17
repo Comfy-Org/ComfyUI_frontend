@@ -54,6 +54,10 @@ interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
   gradient_stops?: string
 }
 
+export interface IWidgetAssetOptions extends IWidgetOptions {
+  openModal: (widget: IBaseWidget) => void
+}
+
 /**
  * A widget for a node.
  * All types are based on IBaseWidget - additions can be made there or directly on individual types.
@@ -249,7 +253,7 @@ export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
 export interface IAssetWidget extends IBaseWidget<
   string,
   'asset',
-  IWidgetOptions<string[]>
+  IWidgetAssetOptions
 > {
   type: 'asset'
   value: string

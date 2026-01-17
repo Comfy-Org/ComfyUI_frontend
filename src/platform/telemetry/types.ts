@@ -413,6 +413,7 @@ export type ExecutionTriggerSource =
   | 'keybinding'
   | 'legacy_ui'
   | 'unknown'
+  | 'linear'
 
 /**
  * Union type for all possible telemetry event properties

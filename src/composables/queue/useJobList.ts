@@ -38,7 +38,7 @@ export type JobListItem = {
   iconName?: string
   iconImageUrl?: string
   showClear?: boolean
-  taskRef?: any
+  taskRef?: TaskItemImpl
   progressTotalPercent?: number
   progressCurrentPercent?: number
   runningNodeName?: string
@@ -238,7 +238,7 @@ export function useJobList() {
       const activeId = workflowStore.activeWorkflow?.activeState?.id
       if (!activeId) return []
       entries = entries.filter(({ task }) => {
-        const wid = task.workflow?.id
+        const wid = task.workflowId
         return !!wid && wid === activeId
       })
     }

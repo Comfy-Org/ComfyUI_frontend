@@ -351,6 +351,10 @@
         "name": "最初のフレーム",
         "tooltip": "動画に使用する最初のフレーム。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
+      },
       "last_frame": {
         "name": "最後のフレーム",
         "tooltip": "動画に使用する最後のフレーム。"
@@ -527,6 +531,10 @@
         "name": "duration",
         "tooltip": "出力動画の長さ（秒単位）。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
+      },
       "image": {
         "name": "image",
         "tooltip": "動画の最初のフレームとして使用する画像。"
@@ -633,6 +641,10 @@
       "duration": {
         "name": "長さ",
         "tooltip": "出力動画の長さ（秒単位）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
       },
       "model": {
         "name": "モデル"
@@ -6878,6 +6890,280 @@
       "0": {
         "name": "テキスト",
         "tooltip": "処理済みテキスト"
+      }
+    }
+  },
+  "MeshyAnimateModelNode": {
+    "description": "事前にリギングされたキャラクターに特定のアニメーションアクションを適用します。",
+    "display_name": "Meshy：アニメートモデル",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "利用可能な値の一覧は https://docs.meshy.ai/en/api/animation-library をご覧ください。"
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy：画像からモデルへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "生成されるモデルのポーズモードを指定します。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "falseに設定すると、未処理の三角メッシュが返されます。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "テクスチャを生成するかどうかを決定します。falseに設定するとテクスチャ工程をスキップし、テクスチャなしのメッシュが返されます。"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy：複数画像からモデルへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "生成されるモデルのポーズモードを指定します。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "falseに設定すると、未処理の三角メッシュが返されます。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "テクスチャを生成するかどうかを決定します。falseに設定するとテクスチャ工程をスキップし、テクスチャなしのメッシュが返されます。"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "以前に作成したドラフトモデルをリファインします。",
+    "display_name": "Meshy：ドラフトモデルのリファイン",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "ベースカラーに加えてPBRマップ（金属度、粗さ、法線）を生成します。注意：Sculptureスタイルを使用する場合はfalseに設定してください。Sculptureスタイルは独自のPBRマップを生成します。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "「texture_image」と「texture_prompt」は同時に使用できません。"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "テクスチャリングプロセスをガイドするテキストプロンプトを入力してください。最大600文字。「texture_image」と同時に使用することはできません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "標準フォーマットでリギング済みキャラクターを提供します。自動リギングは、テクスチャのないメッシュ、非ヒューマノイドアセット、または手足や体の構造が不明瞭なヒューマノイドアセットには適していません。",
+    "display_name": "Meshy：モデルのリギング",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "キャラクターモデルのおおよその高さ（メートル単位）。スケーリングやリギングの精度向上に役立ちます。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "モデルのUV展開されたベースカラーテクスチャ画像です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy：テキストからモデル生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "生成されるモデルのポーズモードを指定します。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "falseに設定すると、未処理の三角メッシュを返します。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy：テクスチャモデル",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "元のUVを使用",
+        "tooltip": "新しいUVを生成する代わりにモデルの元のUVを使用します。有効にすると、Meshyはアップロードされたモデルの既存のテクスチャを保持します。モデルに元のUVがない場合、出力の品質が低下する可能性があります。"
+      },
+      "image_style": {
+        "name": "イメージスタイル",
+        "tooltip": "テクスチャリングプロセスをガイドする2D画像です。'text_style_prompt'と同時に使用することはできません。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "text_style_prompt": {
+        "name": "テキストスタイルプロンプト",
+        "tooltip": "オブジェクトの希望するテクスチャスタイルをテキストで説明してください。最大600文字。'image_style'と同時に使用することはできません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
       }
     }
   },

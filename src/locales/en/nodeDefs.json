@@ -371,6 +371,10 @@
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -547,6 +551,10 @@
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -649,6 +657,10 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -6888,6 +6900,280 @@
       "0": {
         "name": "texts",
         "tooltip": "Processed texts"
+      }
+    }
+  },
+  "MeshyAnimateModelNode": {
+    "display_name": "Meshy: Animate Model",
+    "description": "Apply a specific animation action to a previously rigged character.",
+    "inputs": {
+      "rig_task_id": {
+        "name": "rig_task_id"
+      },
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "Visit https://docs.meshy.ai/en/api/animation-library for a list of available values."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: Image to Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "When set to false, returns an unprocessed triangular mesh."
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Determines whether textures are generated. Setting it to false skips the texture phase and returns a mesh without textures."
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Specify the pose mode for the generated model."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: Multi-Image to Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "images": {
+        "name": "images"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "When set to false, returns an unprocessed triangular mesh."
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Determines whether textures are generated. Setting it to false skips the texture phase and returns a mesh without textures."
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Specify the pose mode for the generated model."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "display_name": "Meshy: Refine Draft Model",
+    "description": "Refine a previously created draft model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "Generate PBR Maps (metallic, roughness, normal) in addition to the base color. Note: this should be set to false when using Sculpture style, as Sculpture style generates its own set of PBR maps."
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Provide a text prompt to guide the texturing process. Maximum 600 characters. Cannot be used at the same time as 'texture_image'."
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "Only one of 'texture_image' or 'texture_prompt' may be used at the same time."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "display_name": "Meshy: Rig Model",
+    "description": "Provides a rigged character in standard formats. Auto-rigging is currently not suitable for untextured meshes, non-humanoid assets, or humanoid assets with unclear limb and body structure.",
+    "inputs": {
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "The approximate height of the character model in meters. This aids in scaling and rigging accuracy."
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "The model's UV-unwrapped base color texture image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: Text to Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "style": {
+        "name": "style"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "When set to false, returns an unprocessed triangular mesh."
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Specify the pose mode for the generated model."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: Texture Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Use the original UV of the model instead of generating new UVs. When enabled, Meshy preserves existing textures from the uploaded model. If the model has no original UV, the quality of the output might not be as good."
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "text_style_prompt": {
+        "name": "text_style_prompt",
+        "tooltip": "Describe your desired texture style of the object using text. Maximum 600 characters.Maximum 600 characters. Cannot be used at the same time as 'image_style'."
+      },
+      "image_style": {
+        "name": "image_style",
+        "tooltip": "A 2d image to guide the texturing process. Can not be used at the same time with 'text_style_prompt'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
       }
     }
   },

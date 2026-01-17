@@ -298,6 +298,7 @@
     },
     "retry": "حاول مرة أخرى",
     "retrying": "إعادة المحاولة...",
+    "skipToCloudApp": "تخطي إلى تطبيق السحابة",
     "start": {
       "desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
       "download": "تنزيل ComfyUI",
@@ -432,6 +433,7 @@
     "Expand": "توسيع",
     "Expand Node": "توسيع العقدة",
     "Extensions": "الإضافات",
+    "FavoriteWidget": "إضافة إلى المفضلة",
     "Horizontal": "أفقي",
     "Inputs": "المدخلات",
     "Left": "يسار",
@@ -462,6 +464,7 @@
     "Shapes": "الأشكال",
     "Title": "العنوان",
     "Top": "أعلى",
+    "UnfavoriteWidget": "إزالة من المفضلة",
     "Unpack Subgraph": "فك الرسم البياني الفرعي",
     "Unpin": "إلغاء التثبيت",
     "Vertical": "عمودي",
@@ -565,6 +568,8 @@
     "LUMA_REF": "مرجع Luma",
     "MASK": "قناع",
     "MESH": "شبكة",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "نموذج",
     "MODEL_PATCH": "ترقيع النموذج",
     "MODEL_TASK_ID": "معرّف مهمة النموذج",
@@ -653,6 +658,7 @@
     "amount": "الكمية",
     "apply": "تطبيق",
     "architecture": "الهندسة المعمارية",
+    "asset": "{count} أصل | {count} أصل | {count} أصول",
     "audioFailedToLoad": "فشل تحميل الصوت",
     "audioProgress": "تقدم الصوت",
     "author": "المؤلف",
@@ -842,6 +848,7 @@
     "releaseTitle": "إصدار {package} {version}",
     "reloadToApplyChanges": "أعد التحميل لتطبيق التغييرات",
     "removeImage": "إزالة الصورة",
+    "removeTag": "إزالة الوسم",
     "removeVideo": "إزالة الفيديو",
     "rename": "إعادة تسمية",
     "reportIssue": "إرسال تقرير",
@@ -1097,8 +1104,14 @@
     "helpFix": "المساعدة في الإصلاح"
   },
   "linearMode": {
-    "openWorkflow": "فتح سير العمل",
-    "share": "مشاركة"
+    "beta": "تجريبي - أرسل ملاحظاتك",
+    "downloadAll": "تنزيل الكل",
+    "dragAndDropImage": "اسحب وأسقط صورة",
+    "graphMode": "وضع الرسم البياني",
+    "linearMode": "الوضع البسيط",
+    "rerun": "تشغيل مجدد",
+    "reuseParameters": "إعادة استخدام المعلمات",
+    "runCount": "عدد مرات التشغيل:"
   },
   "load3d": {
     "applyingTexture": "جارٍ تطبيق الخامة...",
@@ -1352,11 +1365,11 @@
   },
   "mediaAsset": {
     "actions": {
-      "addToWorkflow": "إضافة إلى سير العمل الحالي",
       "copyJobId": "نسخ معرف المهمة",
       "delete": "حذف",
       "download": "تنزيل",
       "exportWorkflow": "تصدير سير العمل",
+      "insertAsNodeInWorkflow": "إدراج كعقدة في سير العمل",
       "inspect": "تفقد الأصل",
       "more": "خيارات أخرى",
       "moreOptions": "خيارات أخرى",
@@ -1392,10 +1405,22 @@
       "downloadSelectedAll": "تحميل الكل",
       "downloadStarted": "جاري تحميل {count} ملف(ملفات)...",
       "downloadsStarted": "بدأ تنزيل {count} ملف(ملفات)",
+      "exportWorkflowAll": "تصدير جميع سير العمل",
+      "failedToAddNodes": "فشل في إضافة العقد إلى سير العمل",
       "failedToDeleteAssets": "فشل في حذف الأصول المحددة",
+      "insertAllAssetsAsNodes": "إدراج جميع الأصول كعقد",
       "multipleSelectedAssets": "تم تحديد عدة ملفات",
+      "noWorkflowsFound": "لم يتم العثور على بيانات سير العمل في الأصول المحددة",
+      "noWorkflowsToExport": "لم يتم العثور على بيانات سير العمل للتصدير",
+      "nodesAddedToWorkflow": "تمت إضافة {count} عقدة إلى سير العمل",
+      "openWorkflowAll": "فتح جميع سير العمل",
+      "partialAddNodesSuccess": "تمت إضافة {succeeded} بنجاح، وفشل {failed}",
       "partialDeleteSuccess": "{succeeded} تم حذفها بنجاح، {failed} فشلت",
-      "selectedCount": "الأصول المحددة: {count}"
+      "partialWorkflowsExported": "تم تصدير {succeeded} بنجاح، وفشل {failed}",
+      "partialWorkflowsOpened": "تم فتح {succeeded} سير عمل، وفشل {failed}",
+      "selectedCount": "الأصول المحددة: {count}",
+      "workflowsExported": "تم تصدير {count} سير عمل بنجاح",
+      "workflowsOpened": "تم فتح {count} سير عمل في علامات تبويب جديدة"
     },
     "unsupportedFileType": "نوع الملف غير مدعوم لعقدة التحميل",
     "workflowExportedSuccessfully": "تم تصدير سير العمل بنجاح",
@@ -1537,6 +1562,7 @@
     "Toggle Logs Bottom Panel": "تبديل لوحة السجلات السفلية",
     "Toggle Queue Panel V2": "تبديل لوحة قائمة الانتظار V2",
     "Toggle Search Box": "تبديل مربع البحث",
+    "Toggle Simple Mode": "تبديل وضع البسيط",
     "Toggle Terminal Bottom Panel": "تبديل لوحة الطرفية السفلية",
     "Toggle Theme (Dark/Light)": "تبديل السمة (داكن/فاتح)",
     "Toggle View Controls Bottom Panel": "تبديل لوحة عناصر التحكم في العرض السفلية",
@@ -1551,8 +1577,7 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب",
-    "toggle linear mode": "تبديل الوضع الخطي"
+    "Zoom to fit": "تكبير لتناسب"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",
@@ -1592,6 +1617,7 @@
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "مون فالي ماري",
     "OpenAI": "OpenAI",
@@ -1786,22 +1812,58 @@
     "whatsNew": "ما الجديد؟"
   },
   "rightSidePanel": {
+    "addFavorite": "إضافة إلى المفضلة",
+    "advancedInputs": "مدخلات متقدمة",
     "bypass": "تجاوز",
     "color": "لون العقدة",
+    "fallbackGroupTitle": "مجموعة",
+    "fallbackNodeTitle": "عقدة",
+    "favorites": "المدخلات المفضلة",
+    "favoritesNone": "لا توجد مدخلات مفضلة",
+    "favoritesNoneDesc": "ستظهر المدخلات التي تضعها في المفضلة هنا",
+    "favoritesNoneTooltip": "قم بوضع نجمة على الأدوات للوصول السريع إليها دون اختيار العقد",
+    "globalSettings": {
+      "canvas": "اللوحة",
+      "connectionLinks": "روابط الاتصال",
+      "gridSpacing": "تباعد الشبكة",
+      "linkShape": "شكل الرابط",
+      "nodes": "العقد",
+      "nodes2": "العقد 2.0",
+      "searchPlaceholder": "بحث في الإعدادات السريعة...",
+      "showAdvanced": "إظهار المعلمات المتقدمة",
+      "showAdvancedTooltip": "هذا إعداد مهم، عند تفعيله، يعرض جميع المعلمات المتقدمة للعقد",
+      "showConnectedLinks": "إظهار الروابط المتصلة",
+      "showInfoBadges": "إظهار شارات المعلومات",
+      "showToolbox": "إظهار صندوق الأدوات عند التحديد",
+      "snapNodesToGrid": "محاذاة العقد مع الشبكة",
+      "title": "الإعدادات العامة",
+      "viewAllSettings": "عرض جميع الإعدادات"
+    },
+    "groupSettings": "إعدادات المجموعة",
+    "groups": "المجموعات",
+    "hideInput": "إخفاء المدخل",
     "info": "معلومات",
     "inputs": "المدخلات",
     "inputsNone": "لا توجد مدخلات",
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
+    "locateNode": "تحديد موقع العقدة على اللوحة",
     "mute": "كتم",
     "noSelection": "حدد عقدة لعرض خصائصها ومعلوماتها.",
     "nodeState": "حالة العقدة",
+    "nodes": "العقد",
+    "nodesNoneDesc": "لا توجد عقد",
+    "noneSearchDesc": "لا توجد عناصر مطابقة لبحثك",
     "normal": "عادي",
     "parameters": "المعلمات",
     "pinned": "مثبت",
     "properties": "الخصائص",
+    "removeFavorite": "إزالة من المفضلة",
     "settings": "الإعدادات",
+    "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
+    "showInput": "إظهار المدخل",
     "title": "لا توجد عقد محددة | عقدة واحدة محددة | {count} عقد محددة",
-    "togglePanel": "تبديل لوحة الخصائص"
+    "togglePanel": "تبديل لوحة الخصائص",
+    "workflowOverview": "نظرة عامة على سير العمل"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "تجاوز عقد المجموعة",
@@ -2513,6 +2575,21 @@
     "enterFilename": "أدخل اسم الملف",
     "exportWorkflow": "تصدير سير العمل",
     "saveWorkflow": "حفظ سير العمل"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "لديك تغييرات غير محفوظة. هل تريد تجاهلها والانتقال إلى مساحة عمل أخرى؟",
+      "title": "تغييرات غير محفوظة"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "ليس لديك صلاحية الوصول إلى هذه مساحة العمل",
+      "invalidFirebaseToken": "فشل التحقق من الهوية. يرجى محاولة تسجيل الدخول مرة أخرى.",
+      "notAuthenticated": "يجب تسجيل الدخول للوصول إلى مساحات العمل",
+      "tokenExchangeFailed": "فشل التحقق من مساحة العمل: {error}",
+      "workspaceNotFound": "لم يتم العثور على مساحة العمل"
+    }
   },
   "zoomControls": {
     "hideMinimap": "إخفاء الخريطة المصغرة",

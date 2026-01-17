@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -7,7 +6,8 @@ import {
   onBeforeUnmount,
   onMounted,
   ref,
-  triggerRef
+  triggerRef,
+  watch
 } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -225,13 +225,10 @@ function setDraggableState() {
     activeWidgets.value = aw
   }
 }
-watchDebounced(
-  filteredActive,
-  () => {
-    setDraggableState()
-  },
-  { debounce: 100 }
-)
+watch(filteredActive, () => {
+  setDraggableState()
+})
+
 onMounted(() => {
   setDraggableState()
   if (activeNode.value) pruneDisconnected(activeNode.value)

@@ -351,6 +351,10 @@
         "name": "first_frame",
         "tooltip": "Первый кадр, который будет использоваться для видео."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Этот параметр игнорируется для всех моделей, кроме seedance-1-5-pro."
+      },
       "last_frame": {
         "name": "last_frame",
         "tooltip": "Последний кадр, который будет использоваться для видео."
@@ -527,6 +531,10 @@
         "name": "duration",
         "tooltip": "Продолжительность видео в секундах."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Этот параметр игнорируется для всех моделей, кроме seedance-1-5-pro."
+      },
       "image": {
         "name": "image",
         "tooltip": "Первый кадр, который будет использоваться для видео."
@@ -633,6 +641,10 @@
       "duration": {
         "name": "длительность",
         "tooltip": "Длительность выходного видео в секундах."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Этот параметр игнорируется для всех моделей, кроме seedance-1-5-pro."
       },
       "model": {
         "name": "модель"
@@ -6878,6 +6890,280 @@
       "0": {
         "name": "тексты",
         "tooltip": "Обработанные тексты"
+      }
+    }
+  },
+  "MeshyAnimateModelNode": {
+    "description": "Применить определённое анимационное действие к ранее скелетированной персонажу.",
+    "display_name": "Meshy: Анимировать модель",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "Посетите https://docs.meshy.ai/en/api/animation-library для списка доступных значений."
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: Изображение в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Укажите режим позы для создаваемой модели."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел запускаться повторно; результаты недетерминированы независимо от seed."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Если установлено в false, возвращается необработанная треугольная сетка."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Определяет, будут ли сгенерированы текстуры. Если установить в false, этап текстурирования пропускается и возвращается сетка без текстур."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: Мульти-изображение в модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Укажите режим позы для создаваемой модели."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел запускаться повторно; результаты недетерминированы независимо от seed."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Если установлено в false, возвращается необработанная треугольная сетка."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Определяет, будут ли сгенерированы текстуры. Если установить в false, этап текстурирования пропускается и возвращается сетка без текстур."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "Улучшить ранее созданную черновую модель.",
+    "display_name": "Meshy: Улучшить Черновую Модель",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "Генерировать PBR-карты (металличность, шероховатость, нормали) в дополнение к базовому цвету. Важно: установите значение false при использовании стиля Sculpture, так как стиль Sculpture создает собственные PBR-карты."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "Одновременно можно использовать только один из параметров: 'texture_image' или 'texture_prompt'."
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Введите текстовый запрос для управления процессом текстурирования. Максимум 600 символов. Не может использоваться одновременно с 'texture_image'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "Предоставляет персонажа с риггингом в стандартных форматах. Автоматический риггинг в настоящее время не подходит для моделей без текстур, не-гуманоидных объектов или гуманоидов с нечеткой структурой конечностей и тела.",
+    "display_name": "Meshy: Скелетная Анимация Модели",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "Примерная высота модели персонажа в метрах. Это помогает для масштабирования и точности риггинга."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "UV-развернутая текстура базового цвета модели."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: Текст в Модель",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Укажите режим позы для создаваемой модели."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Если установлено значение false, возвращается необработанная треугольная сетка."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: Модель текстуры",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Использовать оригинальные UV модели вместо генерации новых UV. При включении Meshy сохраняет существующие текстуры из загруженной модели. Если у модели нет оригинальных UV, качество результата может быть ниже."
+      },
+      "image_style": {
+        "name": "image_style",
+        "tooltip": "2D-изображение для направления процесса текстурирования. Нельзя использовать одновременно с 'text_style_prompt'."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "text_style_prompt": {
+        "name": "text_style_prompt",
+        "tooltip": "Опишите желаемый стиль текстуры объекта с помощью текста. Максимум 600 символов. Нельзя использовать одновременно с 'image_style'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
       }
     }
   },

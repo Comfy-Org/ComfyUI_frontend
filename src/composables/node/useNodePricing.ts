@@ -2,6 +2,17 @@ import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 
+/**
+ * Meshy credit pricing constant.
+ * 1 Meshy credit = $0.04 USD
+ * Change this value to update all Meshy node prices.
+ */
+const MESHY_CREDIT_PRICE_USD = 0.04
+
+/** Convert Meshy credits to USD */
+const meshyCreditsToUsd = (credits: number): number =>
+  credits * MESHY_CREDIT_PRICE_USD
+
 const DEFAULT_NUMBER_OPTIONS: Intl.NumberFormatOptions = {
   minimumFractionDigits: 0,
   maximumFractionDigits: 0
@@ -209,13 +220,24 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
   const resolutionWidget = node.widgets?.find(
     (w) => w.name === 'resolution'
   ) as IComboWidget
+  const generateAudioWidget = node.widgets?.find(
+    (w) => w.name === 'generate_audio'
+  ) as IComboWidget | undefined
 
   if (!modelWidget || !durationWidget || !resolutionWidget) return 'Token-based'
 
   const model = String(modelWidget.value).toLowerCase()
   const resolution = String(resolutionWidget.value).toLowerCase()
   const seconds = parseFloat(String(durationWidget.value))
+  const generateAudio =
+    generateAudioWidget &&
+    String(generateAudioWidget.value).toLowerCase() === 'true'
   const priceByModel: Record<string, Record<string, [number, number]>> = {
+    'seedance-1-5-pro': {
+      '480p': [0.12, 0.12],
+      '720p': [0.26, 0.26],
+      '1080p': [0.58, 0.59]
+    },
     'seedance-1-0-pro': {
       '480p': [0.23, 0.24],
       '720p': [0.51, 0.56],
@@ -233,13 +255,15 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
     }
   }
 
-  const modelKey = model.includes('seedance-1-0-pro-fast')
-    ? 'seedance-1-0-pro-fast'
-    : model.includes('seedance-1-0-pro')
-      ? 'seedance-1-0-pro'
-      : model.includes('seedance-1-0-lite')
-        ? 'seedance-1-0-lite'
-        : ''
+  const modelKey = model.includes('seedance-1-5-pro')
+    ? 'seedance-1-5-pro'
+    : model.includes('seedance-1-0-pro-fast')
+      ? 'seedance-1-0-pro-fast'
+      : model.includes('seedance-1-0-pro')
+        ? 'seedance-1-0-pro'
+        : model.includes('seedance-1-0-lite')
+          ? 'seedance-1-0-lite'
+          : ''
 
   const resKey = resolution.includes('1080')
     ? '1080p'
@@ -255,8 +279,10 @@ const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
 
   const [min10s, max10s] = baseRange
   const scale = seconds / 10
-  const minCost = min10s * scale
-  const maxCost = max10s * scale
+  const audioMultiplier =
+    modelKey === 'seedance-1-5-pro' && generateAudio ? 2 : 1
+  const minCost = min10s * scale * audioMultiplier
+  const maxCost = max10s * scale * audioMultiplier
 
   if (minCost === maxCost) return formatCreditsLabel(minCost)
   return formatCreditsRangeLabel(minCost, maxCost)
@@ -523,6 +549,54 @@ const calculateTripo3DGenerationPrice = (
 
   const dollars = credits * 0.01
   return formatCreditsLabel(dollars)
+}
+
+/**
+ * Meshy Image to 3D pricing calculator.
+ * Pricing based on should_texture widget:
+ *   - Without texture: 20 credits
+ *   - With texture: 30 credits
+ */
+const calculateMeshyImageToModelPrice = (node: LGraphNode): string => {
+  const shouldTextureWidget = node.widgets?.find(
+    (w) => w.name === 'should_texture'
+  ) as IComboWidget
+
+  if (!shouldTextureWidget) {
+    return formatCreditsRangeLabel(
+      meshyCreditsToUsd(20),
+      meshyCreditsToUsd(30),
+      { note: '(varies with texture)' }
+    )
+  }
+
+  const shouldTexture = String(shouldTextureWidget.value).toLowerCase()
+  const credits = shouldTexture === 'true' ? 30 : 20
+  return formatCreditsLabel(meshyCreditsToUsd(credits))
+}
+
+/**
+ * Meshy Multi-Image to 3D pricing calculator.
+ * Pricing based on should_texture widget:
+ *   - Without texture: 5 credits
+ *   - With texture: 15 credits
+ */
+const calculateMeshyMultiImageToModelPrice = (node: LGraphNode): string => {
+  const shouldTextureWidget = node.widgets?.find(
+    (w) => w.name === 'should_texture'
+  ) as IComboWidget
+
+  if (!shouldTextureWidget) {
+    return formatCreditsRangeLabel(
+      meshyCreditsToUsd(5),
+      meshyCreditsToUsd(15),
+      { note: '(varies with texture)' }
+    )
+  }
+
+  const shouldTexture = String(shouldTextureWidget.value).toLowerCase()
+  const credits = shouldTexture === 'true' ? 15 : 5
+  return formatCreditsLabel(meshyCreditsToUsd(credits))
 }
 
 /**
@@ -1812,6 +1886,27 @@ const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
     TripoRefineNode: {
       displayPrice: formatCreditsLabel(0.3)
     },
+    MeshyTextToModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(20))
+    },
+    MeshyRefineNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(10))
+    },
+    MeshyImageToModelNode: {
+      displayPrice: calculateMeshyImageToModelPrice
+    },
+    MeshyMultiImageToModelNode: {
+      displayPrice: calculateMeshyMultiImageToModelPrice
+    },
+    MeshyRigModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(5))
+    },
+    MeshyAnimateModelNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(3))
+    },
+    MeshyTextureNode: {
+      displayPrice: formatCreditsLabel(meshyCreditsToUsd(10))
+    },
     // Google/Gemini nodes
     GeminiNode: {
       displayPrice: (node: LGraphNode): string => {
@@ -2527,6 +2622,9 @@ export const useNodePricing = () => {
         'animate_in_place'
       ],
       TripoTextureNode: ['texture_quality'],
+      // Meshy nodes
+      MeshyImageToModelNode: ['should_texture'],
+      MeshyMultiImageToModelNode: ['should_texture'],
       // Google/Gemini nodes
       GeminiNode: ['model'],
       GeminiImage2Node: ['resolution'],
@@ -2540,9 +2638,24 @@ export const useNodePricing = () => {
         'sequential_image_generation',
         'max_images'
       ],
-      ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
-      ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
-      ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
+      ByteDanceTextToVideoNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
+      ByteDanceImageToVideoNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
+      ByteDanceFirstLastFrameNode: [
+        'model',
+        'duration',
+        'resolution',
+        'generate_audio'
+      ],
       ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
       WanTextToVideoApi: ['duration', 'size'],
       WanImageToVideoApi: ['duration', 'resolution'],

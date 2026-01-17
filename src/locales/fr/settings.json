@@ -332,6 +332,10 @@
     "name": "Taille de l'historique de la file d'attente",
     "tooltip": "Le nombre maximum de tâches qui s'affichent dans l'historique de la file d'attente."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Utiliser la file d’attente unifiée dans le panneau latéral des ressources",
+    "tooltip": "Remplace le panneau flottant de la file d’attente des tâches par une file d’attente équivalente intégrée dans le panneau latéral des ressources. Vous pouvez désactiver cette option pour revenir à la disposition du panneau flottant."
+  },
   "Comfy_Sidebar_Location": {
     "name": "Emplacement de la barre latérale",
     "options": {
