@@ -80,11 +80,7 @@
               <slot name="rightPanelHeaderTitle" />
             </div>
             <slot name="rightPanelHeaderActions" />
-            <Button
-              v-if="showRightPanelButton"
-              size="icon"
-              @click="toggleRightPanel"
-            >
+            <Button size="icon" @click="toggleRightPanel">
               <i class="icon-[lucide--panel-right-close] text-sm" />
             </Button>
             <Button size="icon" @click="closeDialog">

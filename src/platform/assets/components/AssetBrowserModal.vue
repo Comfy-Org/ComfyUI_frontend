@@ -1,6 +1,6 @@
 <template>
   <BaseModalLayout
-    :hide-right-panel-button="!!focusedAsset"
+    :hide-right-panel-button="true"
     :right-panel-open="!!focusedAsset"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
