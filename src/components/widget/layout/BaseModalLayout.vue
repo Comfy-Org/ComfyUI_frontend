@@ -64,7 +64,9 @@
       </div>
 
       <aside v-if="hasRightPanel" class="overflow-hidden">
-        <div class="w-72 flex flex-col bg-modal-panel-background h-full">
+        <div
+          class="min-w-72 w-72 flex flex-col bg-modal-panel-background h-full"
+        >
           <header
             data-component-id="RightPanelHeader"
             class="flex h-16 shrink-0 items-center gap-2 px-4"
