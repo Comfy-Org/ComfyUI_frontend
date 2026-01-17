@@ -399,7 +399,7 @@ function addAutogrowGroup(
     )
 
   const lastIndex = node.inputs.findLastIndex((inp) =>
-    inp.name.startsWith(groupName)
+    inp.name.startsWith(groupName + '.')
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   spliceInputs(node, insertionIndex, 0, ...newInputs)
@@ -428,7 +428,7 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const lastInput = node.inputs.findLast((inp) =>
-    inp.name.startsWith(groupName)
+    inp.name.startsWith(groupName + '.')
   )
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (
