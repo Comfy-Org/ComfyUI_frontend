@@ -13,7 +13,7 @@
         <EditableText
           :model-value="displayName"
           :is-editing="isEditingDisplayName"
-          class="break-all text-base-foreground"
+          :class="cn('break-all', !isImmutable && 'text-base-foreground')"
           @dblclick="isEditingDisplayName = !isImmutable"
           @edit="handleDisplayNameEdit"
           @cancel="isEditingDisplayName = false"
