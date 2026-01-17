@@ -2036,7 +2036,7 @@ export class LGraph
           parentId = instance.parentId
         }
       }
-      if (!instance) break
+      if (!instance) continue
       parentId = newLink.iparent
       while (parentId) {
         const migratedId = rerouteIdMap.get(parentId)
