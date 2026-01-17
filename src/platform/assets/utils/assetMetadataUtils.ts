@@ -121,3 +121,14 @@ export function getAssetModelType(asset: AssetItem): string | null {
   if (!typeTag) return null
   return typeTag.includes('/') ? (typeTag.split('/').pop() ?? null) : typeTag
 }
+
+/**
+ * Extracts user description from asset user_metadata
+ * @param asset - The asset to extract user description from
+ * @returns The user description string or empty string if not present
+ */
+export function getAssetUserDescription(asset: AssetItem): string {
+  return typeof asset.user_metadata?.user_description === 'string'
+    ? asset.user_metadata.user_description
+    : ''
+}

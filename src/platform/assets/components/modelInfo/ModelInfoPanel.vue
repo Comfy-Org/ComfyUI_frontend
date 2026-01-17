@@ -134,6 +134,15 @@
       >
         <p class="text-sm whitespace-pre-wrap">{{ description }}</p>
       </ModelInfoField>
+      <ModelInfoField :label="$t('assetBrowser.modelInfo.description')">
+        <textarea
+          v-model="userDescription"
+          :disabled="isImmutable"
+          :placeholder="$t('assetBrowser.modelInfo.descriptionPlaceholder')"
+          rows="3"
+          class="w-full resize-y rounded-lg border-2 border-transparent bg-secondary-background px-3 py-2 text-sm text-base-foreground outline-none focus:border-node-component-border disabled:cursor-not-allowed disabled:opacity-50"
+        />
+      </ModelInfoField>
     </PropertiesAccordionItem>
   </div>
 </template>
@@ -158,6 +167,7 @@ import {
   getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
+  getAssetUserDescription,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -181,12 +191,14 @@ const additionalTags = ref<string[]>(getAssetAdditionalTags(asset))
 const selectedModelType = ref<string | undefined>(
   getAssetModelType(asset) ?? undefined
 )
+const userDescription = ref<string>(getAssetUserDescription(asset))
 watch(
   () => asset,
   () => {
     baseModels.value = getAssetBaseModels(asset)
     additionalTags.value = getAssetAdditionalTags(asset)
     selectedModelType.value = getAssetModelType(asset) ?? undefined
+    userDescription.value = getAssetUserDescription(asset)
   }
 )
 const description = computed(() => getAssetDescription(asset))
@@ -205,7 +217,8 @@ async function saveMetadata() {
     {
       ...asset.user_metadata,
       base_model: baseModels.value,
-      additional_tags: additionalTags.value
+      additional_tags: additionalTags.value,
+      user_description: userDescription.value
     },
     cacheKey
   )
@@ -225,5 +238,6 @@ async function saveModelType(newModelType: string | undefined) {
 
 watchDebounced(baseModels, saveMetadata, { debounce: 500 })
 watchDebounced(additionalTags, saveMetadata, { debounce: 500 })
+watchDebounced(userDescription, saveMetadata, { debounce: 500 })
 watchDebounced(selectedModelType, saveModelType, { debounce: 500 })
 </script>
