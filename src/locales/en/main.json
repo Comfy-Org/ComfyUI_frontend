@@ -178,6 +178,7 @@
     "source": "Source",
     "filter": "Filter",
     "apply": "Apply",
+    "use": "Use",
     "enabled": "Enabled",
     "installed": "Installed",
     "restart": "Restart",
