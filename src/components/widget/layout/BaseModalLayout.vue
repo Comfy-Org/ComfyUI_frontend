@@ -14,7 +14,7 @@
         </nav>
       </Transition>
 
-      <div class="flex-1 flex bg-base-background">
+      <div class="flex-1 flex bg-base-background overflow-hidden">
         <div class="flex h-full w-full flex-col">
           <header
             v-if="$slots.header"
@@ -65,32 +65,35 @@
             </div>
           </main>
         </div>
-        <aside
-          v-if="hasRightPanel && isRightPanelOpen"
-          class="flex w-72 shrink-0 bg-modal-panel-background flex-col"
-        >
-          <header
-            data-component-id="RightPanelHeader"
-            class="flex h-16 shrink-0 items-center gap-2 px-4"
+        <Transition name="slide-panel-right">
+          <aside
+            v-if="hasRightPanel && isRightPanelOpen"
+            key="right-panel"
+            class="flex w-72 shrink-0 bg-modal-panel-background flex-col"
           >
-            <h2 v-if="rightPanelTitle" class="flex-1 text-lg font-semibold">
-              {{ rightPanelTitle }}
-            </h2>
-            <div v-else class="flex-1">
-              <slot name="rightPanelHeaderTitle" />
+            <header
+              data-component-id="RightPanelHeader"
+              class="flex h-16 shrink-0 items-center gap-2 px-4"
+            >
+              <h2 v-if="rightPanelTitle" class="flex-1 text-lg font-semibold">
+                {{ rightPanelTitle }}
+              </h2>
+              <div v-else class="flex-1">
+                <slot name="rightPanelHeaderTitle" />
+              </div>
+              <slot name="rightPanelHeaderActions" />
+              <Button size="icon" @click="toggleRightPanel">
+                <i class="icon-[lucide--panel-right-close] text-sm" />
+              </Button>
+              <Button size="icon" @click="closeDialog">
+                <i class="pi pi-times" />
+              </Button>
+            </header>
+            <div class="min-h-0 flex-1 overflow-y-auto">
+              <slot name="rightPanel" />
             </div>
-            <slot name="rightPanelHeaderActions" />
-            <Button size="icon" @click="toggleRightPanel">
-              <i class="icon-[lucide--panel-right-close] text-sm" />
-            </Button>
-            <Button size="icon" @click="closeDialog">
-              <i class="pi pi-times" />
-            </Button>
-          </header>
-          <div class="min-h-0 flex-1 overflow-y-auto">
-            <slot name="rightPanel" />
-          </div>
-        </aside>
+          </aside>
+        </Transition>
       </div>
     </div>
   </div>
@@ -200,5 +203,22 @@ const toggleRightPanel = () => {
 .slide-panel-enter-from,
 .slide-panel-leave-to {
   transform: translateX(-100%);
+}
+
+/* Slide transition for right panel */
+.slide-panel-right-enter-active,
+.slide-panel-right-leave-active {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.slide-panel-right-enter-from,
+.slide-panel-right-leave-to {
+  transform: translateX(100%);
 }
 </style>

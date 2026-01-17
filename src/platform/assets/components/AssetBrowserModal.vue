@@ -1,7 +1,7 @@
 <template>
   <BaseModalLayout
     :hide-right-panel-button="true"
-    :right-panel-open="!!focusedAsset"
+    :right-panel-open="isPanelOpen"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
     :content-title="displayTitle"
@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
+import { breakpointsTailwind, refDebounced, useBreakpoints } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -167,6 +167,14 @@ const {
 } = useAssetBrowser(fetchedAssets)
 
 const focusedAsset = ref<AssetDisplayItem | null>(null)
+
+// Debounce panel visibility to prevent flicker when switching between assets
+// (blur fires before focus when clicking a different card)
+const isPanelOpen = refDebounced(
+  computed(() => !!focusedAsset.value),
+  16,
+  { maxWait: 16 }
+)
 
 const primaryCategoryTag = computed(() => {
   const assets = fetchedAssets.value ?? []
