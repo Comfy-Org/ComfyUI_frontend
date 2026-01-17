@@ -3,7 +3,7 @@
     <span v-if="!isEditing">
       {{ modelValue }}
     </span>
-    <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->
+    <!-- Avoid double triggering finishEditing event when keydown.enter is triggered -->
     <InputText
       v-else
       ref="inputRef"
@@ -18,7 +18,7 @@
           ...inputAttrs
         }
       }"
-      @keyup.enter.capture.stop="blurInputElement"
+      @keydown.enter.capture.stop="blurInputElement"
       @keydown.escape.capture.stop="cancelEditing"
       @click.stop
       @contextmenu.stop
