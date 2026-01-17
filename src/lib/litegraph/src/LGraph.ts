@@ -1099,8 +1099,6 @@ export class LGraph
     y: number,
     nodeList?: LGraphNode[]
   ): LGraphNode | null {
-    if (LiteGraph.vueNodesMode) return null
-
     const nodes = nodeList || this._nodes
     let i = nodes.length
     while (--i >= 0) {
