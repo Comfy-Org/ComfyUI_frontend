@@ -198,23 +198,10 @@ function handleEscape(event: KeyboardEvent) {
   }
 }
 
-/* Fade transition for buttons */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 /* Slide transition for left panel */
 .slide-panel-enter-active,
 .slide-panel-leave-active {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-  backface-visibility: hidden;
 }
 
 .slide-panel-enter-from,
@@ -230,8 +217,6 @@ function handleEscape(event: KeyboardEvent) {
   top: 0;
   height: 100%;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-  backface-visibility: hidden;
 }
 
 .slide-panel-right-enter-from,
