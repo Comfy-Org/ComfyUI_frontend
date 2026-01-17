@@ -148,7 +148,7 @@
 </template>
 
 <script setup lang="ts">
-import { watchDebounced } from '@vueuse/core'
+import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
@@ -159,6 +159,7 @@ import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetAdditionalTags,
   getAssetBaseModels,
@@ -181,63 +182,72 @@ const { asset, cacheKey } = defineProps<{
   cacheKey?: string
 }>()
 
+const assetsStore = useAssetsStore()
+const { modelTypes } = useModelTypes()
+
+const isImmutable = computed(() => asset.is_immutable ?? true)
 const displayName = computed(() => getAssetDisplayName(asset))
 const sourceUrl = computed(() => getAssetSourceUrl(asset))
 const sourceName = computed(() =>
   sourceUrl.value ? getSourceName(sourceUrl.value) : ''
 )
-const baseModels = ref<string[]>(getAssetBaseModels(asset))
-const additionalTags = ref<string[]>(getAssetAdditionalTags(asset))
-const selectedModelType = ref<string | undefined>(
-  getAssetModelType(asset) ?? undefined
-)
-const userDescription = ref<string>(getAssetUserDescription(asset))
-watch(
-  () => asset,
-  () => {
-    baseModels.value = getAssetBaseModels(asset)
-    additionalTags.value = getAssetAdditionalTags(asset)
-    selectedModelType.value = getAssetModelType(asset) ?? undefined
-    userDescription.value = getAssetUserDescription(asset)
-  }
-)
 const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
-const isImmutable = computed(() => asset.is_immutable ?? true)
 
-const { modelTypes } = useModelTypes()
+const pendingUpdates = ref<AssetUserMetadata>({})
 
-const assetsStore = useAssetsStore()
+watch(
+  () => asset.user_metadata,
+  () => {
+    pendingUpdates.value = {}
+  }
+)
 
-async function saveMetadata() {
+const debouncedFlushMetadata = useDebounceFn(() => {
   if (isImmutable.value) return
-
-  await assetsStore.updateAssetMetadata(
+  assetsStore.updateAssetMetadata(
     asset.id,
-    {
-      ...asset.user_metadata,
-      base_model: baseModels.value,
-      additional_tags: additionalTags.value,
-      user_description: userDescription.value
-    },
+    { ...asset.user_metadata, ...pendingUpdates.value },
     cacheKey
   )
+}, 500)
+
+function queueMetadataUpdate(updates: AssetUserMetadata) {
+  pendingUpdates.value = { ...pendingUpdates.value, ...updates }
+  debouncedFlushMetadata()
 }
 
-async function saveModelType(newModelType: string | undefined) {
-  if (isImmutable.value || !newModelType) return
-
+const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
+  if (isImmutable.value) return
   const currentModelType = getAssetModelType(asset)
   if (currentModelType === newModelType) return
-
   const newTags = asset.tags
     .filter((tag) => tag !== currentModelType)
     .concat(newModelType)
-  await assetsStore.updateAssetTags(asset.id, newTags, cacheKey)
-}
+  assetsStore.updateAssetTags(asset.id, newTags, cacheKey)
+}, 500)
 
-watchDebounced(baseModels, saveMetadata, { debounce: 500 })
-watchDebounced(additionalTags, saveMetadata, { debounce: 500 })
-watchDebounced(userDescription, saveMetadata, { debounce: 500 })
-watchDebounced(selectedModelType, saveModelType, { debounce: 500 })
+const baseModels = computed({
+  get: () => pendingUpdates.value.base_model ?? getAssetBaseModels(asset),
+  set: (value: string[]) => queueMetadataUpdate({ base_model: value })
+})
+
+const additionalTags = computed({
+  get: () =>
+    pendingUpdates.value.additional_tags ?? getAssetAdditionalTags(asset),
+  set: (value: string[]) => queueMetadataUpdate({ additional_tags: value })
+})
+
+const userDescription = computed({
+  get: () =>
+    pendingUpdates.value.user_description ?? getAssetUserDescription(asset),
+  set: (value: string) => queueMetadataUpdate({ user_description: value })
+})
+
+const selectedModelType = computed({
+  get: () => getAssetModelType(asset) ?? undefined,
+  set: (value: string | undefined) => {
+    if (value) debouncedSaveModelType(value)
+  }
+})
 </script>
