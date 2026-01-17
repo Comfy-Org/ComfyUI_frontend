@@ -351,6 +351,10 @@
         "name": "first_frame",
         "tooltip": "Первый кадр, который будет использоваться для видео."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Этот параметр игнорируется для всех моделей, кроме seedance-1-5-pro."
+      },
       "last_frame": {
         "name": "last_frame",
         "tooltip": "Последний кадр, который будет использоваться для видео."
@@ -527,6 +531,10 @@
         "name": "duration",
         "tooltip": "Продолжительность видео в секундах."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Этот параметр игнорируется для всех моделей, кроме seedance-1-5-pro."
+      },
       "image": {
         "name": "image",
         "tooltip": "Первый кадр, который будет использоваться для видео."
@@ -633,6 +641,10 @@
       "duration": {
         "name": "длительность",
         "tooltip": "Длительность выходного видео в секундах."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Этот параметр игнорируется для всех моделей, кроме seedance-1-5-pro."
       },
       "model": {
         "name": "модель"
