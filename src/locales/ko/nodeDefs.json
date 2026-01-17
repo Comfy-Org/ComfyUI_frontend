@@ -351,6 +351,10 @@
         "name": "first_frame",
         "tooltip": "비디오에 사용될 첫 번째 프레임입니다."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "이 매개변수는 seedance-1-5-pro 모델을 제외한 모든 모델에서 무시됩니다."
+      },
       "last_frame": {
         "name": "last_frame",
         "tooltip": "비디오에 사용될 마지막 프레임입니다."
@@ -527,6 +531,10 @@
         "name": "지속 시간",
         "tooltip": "출력 비디오의 지속 시간(초)입니다."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "이 매개변수는 seedance-1-5-pro 모델을 제외한 모든 모델에서 무시됩니다."
+      },
       "image": {
         "name": "이미지",
         "tooltip": "비디오에 사용할 첫 번째 프레임입니다."
@@ -633,6 +641,10 @@
       "duration": {
         "name": "duration",
         "tooltip": "출력 비디오의 지속 시간(초)입니다."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "이 매개변수는 seedance-1-5-pro 모델을 제외한 모든 모델에서 무시됩니다."
       },
       "model": {
         "name": "model"

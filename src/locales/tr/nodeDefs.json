@@ -351,6 +351,10 @@
         "name": "ilk_kare",
         "tooltip": "Video için kullanılacak ilk kare."
       },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
+      },
       "last_frame": {
         "name": "son_kare",
         "tooltip": "Video için kullanılacak son kare."
@@ -527,6 +531,10 @@
         "name": "süre",
         "tooltip": "Oluşturulan videonun saniye cinsinden süresi."
       },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
+      },
       "image": {
         "name": "görüntü",
         "tooltip": "Video için kullanılacak ilk kare."
@@ -633,6 +641,10 @@
       "duration": {
         "name": "süre",
         "tooltip": "Çıktı videosunun saniye cinsinden süresi."
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
       },
       "model": {
         "name": "model"
