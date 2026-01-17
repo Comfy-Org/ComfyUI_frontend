@@ -12,7 +12,7 @@ import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
 import { defineConfig } from 'vitest/config'
-import type { ProxyOptions, UserConfig } from 'vite'
+import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
@@ -534,4 +534,4 @@ export default defineConfig({
     ],
     silent: 'passed-only'
   }
-}) satisfies UserConfig as UserConfig
+})
