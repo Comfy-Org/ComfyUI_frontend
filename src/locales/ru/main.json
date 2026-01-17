@@ -298,6 +298,7 @@
     },
     "retry": "Попробовать снова",
     "retrying": "Повторная попытка...",
+    "skipToCloudApp": "Перейти к облачному приложению",
     "start": {
       "desc": "Не требует настройки. Работает на любом устройстве.",
       "download": "Скачать ComfyUI",
@@ -432,6 +433,7 @@
     "Expand": "Развернуть",
     "Expand Node": "Развернуть ноду",
     "Extensions": "Расширения",
+    "FavoriteWidget": "Добавить в избранное",
     "Horizontal": "Горизонтально",
     "Inputs": "Входы",
     "Left": "Влево",
@@ -462,6 +464,7 @@
     "Shapes": "Формы",
     "Title": "Заголовок",
     "Top": "Верх",
+    "UnfavoriteWidget": "Удалить из избранного",
     "Unpack Subgraph": "Распаковать подграф",
     "Unpin": "Открепить",
     "Vertical": "Вертикально",
@@ -565,6 +568,8 @@
     "LUMA_REF": "LUMA_REF",
     "MASK": "МАСКА",
     "MESH": "СЕТКА",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "МОДЕЛЬ",
     "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
     "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
@@ -653,6 +658,7 @@
     "amount": "Количество",
     "apply": "Применить",
     "architecture": "Архитектура",
+    "asset": "{count} ресурсов | {count} ресурс | {count} ресурса",
     "audioFailedToLoad": "Не удалось загрузить аудио",
     "audioProgress": "Прогресс аудио",
     "author": "Автор",
@@ -842,6 +848,7 @@
     "releaseTitle": "Релиз {package} {version}",
     "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
     "removeImage": "Удалить изображение",
+    "removeTag": "Удалить тег",
     "removeVideo": "Удалить видео",
     "rename": "Переименовать",
     "reportIssue": "Отправить отчёт",
@@ -1097,8 +1104,14 @@
     "helpFix": "Помочь исправить это"
   },
   "linearMode": {
-    "openWorkflow": "Открыть рабочий процесс",
-    "share": "Поделиться"
+    "beta": "Бета - Оставить отзыв",
+    "downloadAll": "Скачать всё",
+    "dragAndDropImage": "Перетащите изображение",
+    "graphMode": "Графовый режим",
+    "linearMode": "Простой режим",
+    "rerun": "Перезапустить",
+    "reuseParameters": "Повторно использовать параметры",
+    "runCount": "Количество запусков:"
   },
   "load3d": {
     "applyingTexture": "Применение текстуры...",
@@ -1352,11 +1365,11 @@
   },
   "mediaAsset": {
     "actions": {
-      "addToWorkflow": "Добавить в текущий рабочий процесс",
       "copyJobId": "Скопировать ID задания",
       "delete": "Удалить",
       "download": "Скачать",
       "exportWorkflow": "Экспортировать рабочий процесс",
+      "insertAsNodeInWorkflow": "Вставить как узел в рабочий процесс",
       "inspect": "Просмотреть ресурс",
       "more": "Больше опций",
       "moreOptions": "Больше опций",
@@ -1392,10 +1405,22 @@
       "downloadSelectedAll": "Скачать все",
       "downloadStarted": "Скачивание {count} файлов...",
       "downloadsStarted": "Начато скачивание {count} файла(ов)",
+      "exportWorkflowAll": "Экспортировать все рабочие процессы",
+      "failedToAddNodes": "Не удалось добавить узлы в рабочий процесс",
       "failedToDeleteAssets": "Не удалось удалить выбранные ресурсы",
+      "insertAllAssetsAsNodes": "Вставить все ресурсы как узлы",
       "multipleSelectedAssets": "Выбрано несколько ресурсов",
+      "noWorkflowsFound": "В выбранных ресурсах не найдено данных рабочих процессов",
+      "noWorkflowsToExport": "Нет данных рабочих процессов для экспорта",
+      "nodesAddedToWorkflow": "{count} узел(ов) добавлено в рабочий процесс",
+      "openWorkflowAll": "Открыть все рабочие процессы",
+      "partialAddNodesSuccess": "{succeeded} успешно добавлено, {failed} не удалось",
       "partialDeleteSuccess": "{succeeded} успешно удалено, {failed} не удалось удалить",
-      "selectedCount": "Выбрано ресурсов: {count}"
+      "partialWorkflowsExported": "{succeeded} успешно экспортировано, {failed} не удалось",
+      "partialWorkflowsOpened": "{succeeded} рабочий(их) процесс(ов) открыт(ы), {failed} не удалось",
+      "selectedCount": "Выбрано ресурсов: {count}",
+      "workflowsExported": "{count} рабочий(их) процесс(ов) успешно экспортировано",
+      "workflowsOpened": "{count} рабочий(их) процесс(ов) открыт(ы) в новых вкладках"
     },
     "unsupportedFileType": "Неподдерживаемый тип файла для узла загрузки",
     "workflowExportedSuccessfully": "Рабочий процесс успешно экспортирован",
@@ -1537,6 +1562,7 @@
     "Toggle Logs Bottom Panel": "Показать/скрыть нижнюю панель логов",
     "Toggle Queue Panel V2": "Переключить панель очереди V2",
     "Toggle Search Box": "Переключить поисковую панель",
+    "Toggle Simple Mode": "Переключить простой режим",
     "Toggle Terminal Bottom Panel": "Показать/скрыть нижнюю панель терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
     "Toggle View Controls Bottom Panel": "Показать/скрыть нижнюю панель элементов управления",
@@ -1551,8 +1577,7 @@
     "Workflows": "Рабочие процессы",
     "Zoom In": "Увеличить",
     "Zoom Out": "Уменьшить",
-    "Zoom to fit": "Масштабировать по размеру",
-    "toggle linear mode": "Переключить линейный режим"
+    "Zoom to fit": "Масштабировать по размеру"
   },
   "minimap": {
     "nodeColors": "Цвета узлов",
@@ -1592,6 +1617,7 @@
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
@@ -1786,22 +1812,58 @@
     "whatsNew": "Что нового?"
   },
   "rightSidePanel": {
+    "addFavorite": "В избранное",
+    "advancedInputs": "РАСШИРЕННЫЕ ВХОДНЫЕ ДАННЫЕ",
     "bypass": "Обход",
     "color": "Цвет узла",
+    "fallbackGroupTitle": "Группа",
+    "fallbackNodeTitle": "Узел",
+    "favorites": "ИЗБРАННЫЕ ВХОДЫ",
+    "favoritesNone": "НЕТ ИЗБРАННЫХ ВХОДОВ",
+    "favoritesNoneDesc": "Здесь будут отображаться ваши избранные входы",
+    "favoritesNoneTooltip": "Отметьте виджеты звёздочкой для быстрого доступа без выбора узлов",
+    "globalSettings": {
+      "canvas": "ХОЛСТ",
+      "connectionLinks": "СВЯЗИ",
+      "gridSpacing": "Шаг сетки",
+      "linkShape": "Форма связи",
+      "nodes": "УЗЛЫ",
+      "nodes2": "Узлы 2.0",
+      "searchPlaceholder": "Поиск быстрых настроек...",
+      "showAdvanced": "Показать расширенные параметры",
+      "showAdvancedTooltip": "Это важная настройка, которая при включении отображает все расширенные параметры для узлов",
+      "showConnectedLinks": "Показывать соединённые связи",
+      "showInfoBadges": "Показывать информационные бейджи",
+      "showToolbox": "Показывать панель инструментов при выборе",
+      "snapNodesToGrid": "Привязывать узлы к сетке",
+      "title": "Глобальные настройки",
+      "viewAllSettings": "Просмотреть все настройки"
+    },
+    "groupSettings": "Настройки группы",
+    "groups": "Группы",
+    "hideInput": "Скрыть вход",
     "info": "Информация",
     "inputs": "ВХОДЫ",
     "inputsNone": "НЕТ ВХОДОВ",
     "inputsNoneTooltip": "Узел не имеет входов",
+    "locateNode": "Найти узел на холсте",
     "mute": "Отключить",
     "noSelection": "Выберите узел, чтобы увидеть его свойства и информацию.",
     "nodeState": "Состояние узла",
+    "nodes": "Узлы",
+    "nodesNoneDesc": "НЕТ УЗЛОВ",
+    "noneSearchDesc": "Нет элементов, соответствующих вашему поиску",
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
     "properties": "Свойства",
+    "removeFavorite": "Убрать из избранного",
     "settings": "Настройки",
+    "showAdvancedInputsButton": "Показать расширенные входные данные",
+    "showInput": "Показать вход",
     "title": "Нет выбранных узлов | 1 узел выбран | {count} узлов выбрано",
-    "togglePanel": "Показать/скрыть панель свойств"
+    "togglePanel": "Показать/скрыть панель свойств",
+    "workflowOverview": "Обзор рабочего процесса"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Обойти групповые узлы",
@@ -2513,6 +2575,21 @@
     "enterFilename": "Введите название файла",
     "exportWorkflow": "Экспорт рабочего процесса",
     "saveWorkflow": "Сохранить рабочий процесс"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "У вас есть несохранённые изменения. Хотите их отменить и переключиться на другое рабочее пространство?",
+      "title": "Несохранённые изменения"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "У вас нет доступа к этому рабочему пространству",
+      "invalidFirebaseToken": "Ошибка аутентификации. Пожалуйста, попробуйте войти снова.",
+      "notAuthenticated": "Вы должны войти в систему, чтобы получить доступ к рабочим пространствам",
+      "tokenExchangeFailed": "Не удалось выполнить аутентификацию с рабочим пространством: {error}",
+      "workspaceNotFound": "Рабочее пространство не найдено"
+    }
   },
   "zoomControls": {
     "hideMinimap": "Скрыть миникарту",

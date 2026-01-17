@@ -328,6 +328,10 @@
     "name": "Queue history size",
     "tooltip": "The maximum number of tasks that show in the queue history."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Use the unified job queue in the Assets side panel",
+    "tooltip": "Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout."
+  },
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "Batch count limit",
     "tooltip": "The maximum number of tasks added to the queue at one button click"

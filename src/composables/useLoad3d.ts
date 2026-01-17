@@ -9,6 +9,7 @@ import type {
   CameraConfig,
   CameraState,
   CameraType,
+  EventCallback,
   LightConfig,
   MaterialMode,
   ModelConfig,
@@ -564,7 +565,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   const handleEvents = (action: 'add' | 'remove') => {
     Object.entries(eventConfig).forEach(([event, handler]) => {
       const method = `${action}EventListener` as const
-      load3d?.[method](event, handler)
+      load3d?.[method](event, handler as EventCallback)
     })
   }
 

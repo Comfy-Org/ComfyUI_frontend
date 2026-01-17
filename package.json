@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.38.1",
+  "version": "1.38.4",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -192,5 +192,10 @@
     "yjs": "catalog:",
     "zod": "catalog:",
     "zod-validation-error": "catalog:"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "^8.0.0-beta.8"
+    }
   }
 }
