@@ -139,6 +139,9 @@ export function addValueControlWidgets(
     'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
+  Object.defineProperty(valueControl, 'disabled', {
+    get: () => targetWidget.computedDisabled
+  })
   const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
 
   const isCombo = isComboWidget(targetWidget)
@@ -160,6 +163,9 @@ export function addValueControlWidgets(
     updateControlWidgetLabel(comboFilter)
     comboFilter.tooltip =
       "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'."
+    Object.defineProperty(comboFilter, 'disabled', {
+      get: () => targetWidget.computedDisabled
+    })
 
     widgets.push(comboFilter)
   }
