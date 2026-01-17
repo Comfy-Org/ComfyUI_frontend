@@ -1167,6 +1167,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Queue.QPOV2',
+    category: ['Comfy', 'Queue', 'Layout'],
     name: 'Use the unified job queue in the Assets side panel',
     type: 'boolean',
     tooltip:
