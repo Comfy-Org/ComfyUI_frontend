@@ -2421,6 +2421,7 @@
       "viewOnSource": "View on {source}",
       "modelTagging": "Model Tagging",
       "modelType": "Model Type",
+      "selectModelType": "Select model type...",
       "compatibleBaseModels": "Compatible Base Models",
       "addBaseModel": "Add base model...",
       "baseModelUnknown": "Base model unknown",
