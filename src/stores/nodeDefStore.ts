@@ -3,6 +3,8 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { useSubgraphStore } from '@/stores/subgraphStore'
+
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -17,7 +19,6 @@ import type {
   ComfyOutputTypesSpec as ComfyOutputSpecV1
 } from '@/schemas/nodeDefSchema'
 import { NodeSearchService } from '@/services/nodeSearchService'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
