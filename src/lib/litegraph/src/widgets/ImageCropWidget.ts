@@ -1,12 +1,10 @@
-import { t } from '@/i18n'
-
 import type { IImageCropWidget } from '../types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 /**
- * Widget for displaying an image crop preview
- * This is a widget that only has a Vue widgets implementation
+ * Widget for displaying an image crop preview.
+ * This widget only has a Vue implementation.
  */
 export class ImageCropWidget
   extends BaseWidget<IImageCropWidget>
@@ -15,35 +13,10 @@ export class ImageCropWidget
   override type = 'imagecrop' as const
 
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
-    const { width } = options
-    const { y, height } = this
-
-    const { fillStyle, strokeStyle, textAlign, textBaseline, font } = ctx
-
-    ctx.fillStyle = this.background_color
-    ctx.fillRect(15, y, width - 30, height)
-
-    ctx.strokeStyle = this.outline_color
-    ctx.strokeRect(15, y, width - 30, height)
-
-    ctx.fillStyle = this.text_color
-    ctx.font = '11px monospace'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-
-    const text = `ImageCrop: ${t('widgets.node2only')}`
-    ctx.fillText(text, width / 2, y + height / 2)
-
-    Object.assign(ctx, {
-      fillStyle,
-      strokeStyle,
-      textAlign,
-      textBaseline,
-      font
-    })
+    this.drawVueOnlyWarning(ctx, options, 'ImageCrop')
   }
 
   onClick(_options: WidgetEventOptions): void {
-    // This is a widget that only has a Vue widgets implementation
+    // This widget only has a Vue implementation
   }
 }
