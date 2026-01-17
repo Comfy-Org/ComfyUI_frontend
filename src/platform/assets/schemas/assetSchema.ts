@@ -97,6 +97,7 @@ export type AssetUpdatePayload = Partial<
 
 /** User-editable metadata fields for model assets */
 const zAssetUserMetadata = z.object({
+  name: z.string().optional(),
   base_model: z.array(z.string()).optional(),
   additional_tags: z.array(z.string()).optional(),
   user_description: z.string().optional()

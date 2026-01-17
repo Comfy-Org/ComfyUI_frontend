@@ -19,7 +19,7 @@
         }
       }"
       @keyup.enter.capture.stop="blurInputElement"
-      @keyup.escape.stop="cancelEditing"
+      @keydown.escape.capture.stop="cancelEditing"
       @click.stop
       @contextmenu.stop
       @pointerdown.stop.capture

@@ -171,6 +171,13 @@ const toggleRightPanel = () => {
 }
 
 function handleEscape(event: KeyboardEvent) {
+  const target = event.target
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement
+  ) {
+    return
+  }
   if (isRightPanelOpen.value) {
     event.stopPropagation()
     isRightPanelOpen.value = false
