@@ -22,6 +22,7 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   AssetDownloadWsMessage,
+  CustomNodesI18n,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -1074,7 +1075,7 @@ export class ComfyApi extends EventTarget {
    */
   async storeUserData(
     file: string,
-    data: BodyInit | Record<string, unknown> | null,
+    data: unknown,
     options: RequestInit & {
       overwrite?: boolean
       stringify?: boolean
@@ -1251,7 +1252,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<Record<string, unknown>> {
+  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 
