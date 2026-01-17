@@ -19,7 +19,7 @@
   >
     <div
       v-if="hasSlotError"
-      class="absolute size-4 ring-2 ring-error rounded-full size-3 -translate-x-1/2"
+      class="absolute size-4 ring-2 ring-error rounded-full -translate-x-1/2"
     />
     <!-- Connection Dot -->
     <SlotConnectionDot
