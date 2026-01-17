@@ -39,7 +39,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       v-bind="{ ...forwarded, ...$attrs }"
       :class="
         cn(
-          'relative z-50 max-h-96 min-w-32 overflow-hidden',
+          'relative z-3000 max-h-96 min-w-32 overflow-hidden',
           'mt-2 rounded-lg p-2',
           'bg-base-background text-base-foreground',
           'border border-solid border-border-default',
