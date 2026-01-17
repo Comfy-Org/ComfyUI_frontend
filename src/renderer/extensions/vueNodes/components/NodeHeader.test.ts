@@ -154,7 +154,7 @@ describe('NodeHeader.vue', () => {
     // Edit and confirm (EditableText uses blur or enter to emit)
     const input = wrapper.get('[data-testid="node-title-input"]')
     await input.setValue('My Custom Sampler')
-    await input.trigger('keyup.enter')
+    await input.trigger('keydown.enter')
     await input.trigger('blur')
 
     // NodeHeader should emit update:title with trimmed value
