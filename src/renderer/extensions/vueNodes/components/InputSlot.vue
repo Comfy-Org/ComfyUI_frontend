@@ -6,7 +6,7 @@
     :class="
       cn(
         'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
-        'cursor-crosshair',
+        'cursor-crosshair relative',
         props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
           'lg-slot--connected': props.connected,
@@ -17,15 +17,14 @@
       )
     "
   >
+    <div
+      v-if="hasSlotError"
+      class="absolute size-4 ring-2 ring-error rounded-full size-3 -translate-x-1/2"
+    />
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
-      :class="
-        cn(
-          '-translate-x-1/2 w-3',
-          hasSlotError && 'ring-2 ring-error ring-offset-0 rounded-full'
-        )
-      "
+      class="-translate-x-1/2 w-3"
       :slot-data
       @click="onClick"
       @dblclick="onDoubleClick"
