@@ -165,6 +165,12 @@ onClickOutside(
   cardRef,
   () => {
     if (focused) {
+      const activeElement = document.activeElement
+      const isSelectInPanel =
+        activeElement?.tagName === 'SELECT' &&
+        activeElement.closest('[data-component-id="ModelInfoPanel"]')
+      if (isSelectInPanel) return
+
       emit('blur')
     }
   },

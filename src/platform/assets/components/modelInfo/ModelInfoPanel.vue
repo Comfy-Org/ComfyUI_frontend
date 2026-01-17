@@ -140,7 +140,7 @@
           :disabled="isImmutable"
           :placeholder="$t('assetBrowser.modelInfo.descriptionPlaceholder')"
           rows="3"
-          class="w-full resize-y rounded-lg border-2 border-transparent bg-secondary-background px-3 py-2 text-sm text-base-foreground outline-none focus:border-node-component-border disabled:cursor-not-allowed disabled:opacity-50"
+          class="w-full resize-y rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground outline-none transition-colors focus:bg-component-node-widget-background disabled:pointer-events-none"
         />
       </ModelInfoField>
     </PropertiesAccordionItem>
