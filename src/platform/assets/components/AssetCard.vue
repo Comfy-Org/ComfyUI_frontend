@@ -14,7 +14,6 @@
       )
     "
     @click.stop="interactive && $emit('focus', asset)"
-    @dblclick="interactive && $emit('select', asset)"
     @keydown.enter.self="interactive && $emit('select', asset)"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
@@ -95,19 +94,36 @@
       >
         {{ asset.description }}
       </p>
-      <div class="flex gap-4 text-xs text-muted-foreground mt-auto">
-        <span v-if="asset.stats.stars" class="flex items-center gap-1">
-          <i class="icon-[lucide--star] size-3" />
-          {{ asset.stats.stars }}
-        </span>
-        <span v-if="asset.stats.downloadCount" class="flex items-center gap-1">
-          <i class="icon-[lucide--download] size-3" />
-          {{ asset.stats.downloadCount }}
-        </span>
-        <span v-if="asset.stats.formattedDate" class="flex items-center gap-1">
-          <i class="icon-[lucide--clock] size-3" />
-          {{ asset.stats.formattedDate }}
-        </span>
+      <div class="flex items-center justify-between gap-2 mt-auto">
+        <div class="flex gap-3 text-xs text-muted-foreground">
+          <span v-if="asset.stats.stars" class="flex items-center gap-1">
+            <i class="icon-[lucide--star] size-3" />
+            {{ asset.stats.stars }}
+          </span>
+          <span
+            v-if="asset.stats.downloadCount"
+            class="flex items-center gap-1"
+          >
+            <i class="icon-[lucide--download] size-3" />
+            {{ asset.stats.downloadCount }}
+          </span>
+          <span
+            v-if="asset.stats.formattedDate"
+            class="flex items-center gap-1"
+          >
+            <i class="icon-[lucide--clock] size-3" />
+            {{ asset.stats.formattedDate }}
+          </span>
+        </div>
+        <Button
+          v-if="interactive"
+          variant="secondary"
+          size="lg"
+          class="shrink-0"
+          @click.stop="$emit('select', asset)"
+        >
+          {{ $t('g.use') }}
+        </Button>
       </div>
     </div>
   </div>
