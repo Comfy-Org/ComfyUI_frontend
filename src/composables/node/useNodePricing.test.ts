@@ -749,4 +749,108 @@ describe('useNodePricing', () => {
       expect(price).toBe(creditsLabel(0.1))
     })
   })
+
+  describe('decimal formatting', () => {
+    describe('shouldShowDecimal helper', () => {
+      it('should return true when first decimal digit is non-zero', () => {
+        expect(shouldShowDecimal(10.5)).toBe(true)
+        expect(shouldShowDecimal(10.1)).toBe(true)
+        expect(shouldShowDecimal(10.9)).toBe(true)
+        expect(shouldShowDecimal(1.5)).toBe(true)
+      })
+
+      it('should return false for whole numbers', () => {
+        expect(shouldShowDecimal(10)).toBe(false)
+        expect(shouldShowDecimal(10.0)).toBe(false)
+        expect(shouldShowDecimal(1)).toBe(false)
+        expect(shouldShowDecimal(100)).toBe(false)
+      })
+
+      it('should return false when decimal rounds to zero', () => {
+        // 10.04 rounds to 10.0, so no decimal shown
+        expect(shouldShowDecimal(10.04)).toBe(false)
+        expect(shouldShowDecimal(10.049)).toBe(false)
+      })
+
+      it('should return true when decimal rounds to non-zero', () => {
+        // 10.05 rounds to 10.1, so decimal shown
+        expect(shouldShowDecimal(10.05)).toBe(true)
+        expect(shouldShowDecimal(10.06)).toBe(true)
+        // 10.45 rounds to 10.5
+        expect(shouldShowDecimal(10.45)).toBe(true)
+      })
+    })
+
+    describe('credit value formatting', () => {
+      it('should show decimal for USD values that result in fractional credits', () => {
+        // $0.05 * 211 = 10.55 credits → "10.6"
+        const value1 = creditValue(0.05)
+        expect(value1).toBe('10.6')
+
+        // $0.10 * 211 = 21.1 credits → "21.1"
+        const value2 = creditValue(0.1)
+        expect(value2).toBe('21.1')
+      })
+
+      it('should not show decimal for USD values that result in whole credits', () => {
+        // $1.00 * 211 = 211 credits → "211"
+        const value = creditValue(1.0)
+        expect(value).toBe('211')
+      })
+
+      it('should not show decimal when credits round to whole number', () => {
+        // Find a USD value that results in credits close to a whole number
+        // $0.0473933... * 211 ≈ 10.0 credits
+        // Let's use a value that gives us ~10.02 credits which rounds to 10.0
+        const usd = 10.02 / CREDITS_PER_USD // ~0.0475 USD → ~10.02 credits
+        const value = creditValue(usd)
+        expect(value).toBe('10')
+      })
+    })
+
+    describe('integration with pricing display', () => {
+      it('should display decimal in badge for fractional credits', async () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        // $0.05 * 211 = 10.55 credits → "10.6 credits/Run"
+        const node = createMockNodeWithPriceBadge(
+          'TestDecimalNode',
+          priceBadge('{"type":"usd","usd":0.05}')
+        )
+
+        getNodeDisplayPrice(node)
+        await new Promise((r) => setTimeout(r, 50))
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('10.6 credits/Run')
+      })
+
+      it('should not display decimal in badge for whole credits', async () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        // $1.00 * 211 = 211 credits → "211 credits/Run"
+        const node = createMockNodeWithPriceBadge(
+          'TestWholeCreditsNode',
+          priceBadge('{"type":"usd","usd":1.00}')
+        )
+
+        getNodeDisplayPrice(node)
+        await new Promise((r) => setTimeout(r, 50))
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('211 credits/Run')
+      })
+
+      it('should handle range with mixed decimal display', async () => {
+        const { getNodeDisplayPrice } = useNodePricing()
+        // min: $0.05 * 211 = 10.55 → 10.6
+        // max: $1.00 * 211 = 211 → 211
+        const node = createMockNodeWithPriceBadge(
+          'TestMixedRangeNode',
+          priceBadge('{"type":"range_usd","min_usd":0.05,"max_usd":1.00}')
+        )
+
+        getNodeDisplayPrice(node)
+        await new Promise((r) => setTimeout(r, 50))
+        const price = getNodeDisplayPrice(node)
+        expect(price).toBe('10.6-211 credits/Run')
+      })
+    })
+  })
 })
