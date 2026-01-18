@@ -3187,7 +3187,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // get node over
-    const node = graph.getNodeOnPos(x, y, this.visible_nodes)
+    const node = LiteGraph.vueNodesMode
+      ? null
+      : graph.getNodeOnPos(x, y, this.visible_nodes)
 
     const dragRect = this.dragging_rectangle
     if (dragRect) {
