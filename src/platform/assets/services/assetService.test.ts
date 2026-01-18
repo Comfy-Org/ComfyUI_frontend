@@ -231,9 +231,9 @@ describe('assetService', () => {
       )
       expect(result).toEqual(testAssets)
 
-      // Verify API call includes correct category
+      // Verify API call includes correct category (comma is URL-encoded by URLSearchParams)
       expect(api.fetchApi).toHaveBeenCalledWith(
-        '/assets?include_tags=models,checkpoints&limit=500'
+        '/assets?include_tags=models%2Ccheckpoints&limit=500'
       )
     })
 
