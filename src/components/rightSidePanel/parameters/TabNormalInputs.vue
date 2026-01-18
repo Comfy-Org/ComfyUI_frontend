@@ -21,15 +21,35 @@ const { t } = useI18n()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
+const advancedInputsCollapsed = ref(true)
+
 const widgetsSectionDataList = computed((): NodeWidgetsListList => {
   return nodes.map((node) => {
     const { widgets = [] } = node
     const shownWidgets = widgets
-      .filter((w) => !(w.options?.canvasOnly || w.options?.hidden))
+      .filter(
+        (w) =>
+          !(w.options?.canvasOnly || w.options?.hidden || w.options?.advanced)
+      )
       .map((widget) => ({ node, widget }))
 
     return { widgets: shownWidgets, node }
   })
+})
+
+const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
+  return nodes
+    .map((node) => {
+      const { widgets = [] } = node
+      const advancedWidgets = widgets
+        .filter(
+          (w) =>
+            !(w.options?.canvasOnly || w.options?.hidden) && w.options?.advanced
+        )
+        .map((widget) => ({ node, widget }))
+      return { widgets: advancedWidgets, node }
+    })
+    .filter(({ widgets }) => widgets.length > 0)
 })
 
 const isMultipleNodesSelected = computed(
@@ -93,4 +113,17 @@ const label = computed(() => {
       class="border-b border-interface-stroke"
     />
   </TransitionGroup>
+  <template
+    v-if="advancedWidgetsSectionDataList.some(({ widgets }) => widgets.length > 0)"
+  >
+    <SectionWidgets
+      v-for="{ widgets, node } in advancedWidgetsSectionDataList"
+      :key="`advanced-${node.id}`"
+      v-model:collapse="advancedInputsCollapsed"
+      :node
+      :label="t('rightSidePanel.advancedInputs')"
+      :widgets
+      class="border-b border-interface-stroke"
+    />
+  </template>
 </template>
