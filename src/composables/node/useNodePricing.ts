@@ -12,7 +12,7 @@
 
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
@@ -26,10 +26,19 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { Expression } from 'jsonata'
 import jsonata from 'jsonata'
 
-const DEFAULT_NUMBER_OPTIONS: Intl.NumberFormatOptions = {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
+/**
+ * Determine if a number should display 1 decimal place.
+ * Shows decimal only when the first decimal digit is non-zero.
+ */
+const shouldShowDecimal = (value: number): boolean => {
+  const rounded = Math.round(value * 10) / 10
+  return rounded % 1 !== 0
 }
+
+const getNumberOptions = (credits: number): Intl.NumberFormatOptions => ({
+  minimumFractionDigits: 0,
+  maximumFractionDigits: shouldShowDecimal(credits) ? 1 : 0
+})
 
 type CreditFormatOptions = {
   suffix?: string
@@ -38,11 +47,14 @@ type CreditFormatOptions = {
   separator?: string
 }
 
-const formatCreditsValue = (usd: number): string =>
-  formatCreditsFromUsd({
-    usd,
-    numberOptions: DEFAULT_NUMBER_OPTIONS
+const formatCreditsValue = (usd: number): string => {
+  // Use raw credits value (before rounding) to determine decimal display
+  const rawCredits = usd * CREDITS_PER_USD
+  return formatCredits({
+    value: rawCredits,
+    numberOptions: getNumberOptions(rawCredits)
   })
+}
 
 const makePrefix = (approximate?: boolean) => (approximate ? '~' : '')
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { PriceBadge } from '@/schemas/nodeDefSchema'
@@ -9,13 +9,25 @@ import type { PriceBadge } from '@/schemas/nodeDefSchema'
 // Test Helpers
 // -----------------------------------------------------------------------------
 
-const CREDIT_NUMBER_OPTIONS: Intl.NumberFormatOptions = {
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
+/**
+ * Determine if a number should display 1 decimal place.
+ * Shows decimal only when the first decimal digit is non-zero.
+ */
+const shouldShowDecimal = (value: number): boolean => {
+  const rounded = Math.round(value * 10) / 10
+  return rounded % 1 !== 0
 }
 
-const creditValue = (usd: number): string =>
-  formatCreditsFromUsd({ usd, numberOptions: CREDIT_NUMBER_OPTIONS })
+const creditValue = (usd: number): string => {
+  const rawCredits = usd * CREDITS_PER_USD
+  return formatCredits({
+    value: rawCredits,
+    numberOptions: {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: shouldShowDecimal(rawCredits) ? 1 : 0
+    }
+  })
+}
 
 const creditsLabel = (usd: number, suffix = '/Run'): string =>
   `${creditValue(usd)} credits${suffix}`
@@ -287,7 +299,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/\d+-\d+ credits\/Run/)
+      expect(price).toMatch(/\d+\.?\d*-\d+\.?\d* credits\/Run/)
     })
 
     it('should format list_usd result', async () => {
@@ -300,7 +312,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/\d+\/\d+\/\d+ credits\/Run/)
+      expect(price).toMatch(/\d+\.?\d*\/\d+\.?\d*\/\d+\.?\d* credits\/Run/)
     })
 
     it('should respect custom suffix in format options', async () => {
@@ -326,7 +338,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/^~\d+ credits\/Run$/)
+      expect(price).toMatch(/^~\d+\.?\d* credits\/Run$/)
     })
 
     it('should add note suffix when specified', async () => {
@@ -354,7 +366,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/^~\d+ credits\/image \(beta\)$/)
+      expect(price).toMatch(/^~\d+\.?\d* credits\/image \(beta\)$/)
     })
 
     it('should use custom separator for list_usd', async () => {
@@ -369,7 +381,7 @@ describe('useNodePricing', () => {
       getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
       const price = getNodeDisplayPrice(node)
-      expect(price).toMatch(/\d+ or \d+ credits\/Run/)
+      expect(price).toMatch(/\d+\.?\d* or \d+\.?\d* credits\/Run/)
     })
   })
 
