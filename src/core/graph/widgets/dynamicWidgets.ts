@@ -593,5 +593,6 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
     prefix,
     inputSpecs: inputsV2
   }
-  for (let i = 0; i < min; i++) addAutogrowGroup(i, inputSpecV2.name, node)
+  for (let i = 0; i === 0 || i < min; i++)
+    addAutogrowGroup(i, inputSpecV2.name, node)
 }
