@@ -26,9 +26,10 @@
     <VirtualGrid
       v-else
       :items="assetsWithKey"
-      :grid-style="gridStyle"
+      :grid-style
       :default-item-height="320"
       :default-item-width="240"
+      :max-columns
     >
       <template #item="{ item }">
         <AssetCard
@@ -46,6 +47,7 @@
 </template>
 
 <script setup lang="ts">
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
@@ -70,7 +72,20 @@ const assetsWithKey = computed(() =>
   assets.map((asset) => ({ ...asset, key: asset.id }))
 )
 
-const gridStyle: Partial<CSSProperties> = {
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const is2Xl = breakpoints.greaterOrEqual('2xl')
+const isXl = breakpoints.greaterOrEqual('xl')
+const isLg = breakpoints.greaterOrEqual('lg')
+const isMd = breakpoints.greaterOrEqual('md')
+const maxColumns = computed(() => {
+  if (is2Xl.value) return 5
+  if (isXl.value) return 4
+  if (isLg.value) return 3
+  if (isMd.value) return 2
+  return 1
+})
+
+const gridStyle: CSSProperties = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(15rem, 1fr))',
   gap: '1rem',
