@@ -238,6 +238,12 @@
       "title": "계정 생성"
     }
   },
+  "boundingBox": {
+    "height": "높이",
+    "width": "너비",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "워크플로 내용 지우기",
     "deleteBlueprint": "블루프린트 삭제",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "비교할 이미지가 없습니다"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "자르기 미리보기",
+    "loading": "로딩 중...",
+    "noInputImage": "입력 이미지가 연결되지 않았습니다"
   },
   "importFailed": {
     "copyError": "복사 오류",
