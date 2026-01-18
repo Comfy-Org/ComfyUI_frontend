@@ -25,7 +25,7 @@
       :key="`widget-${index}-${widget.name}`"
     >
       <div
-        v-if="!widget.simplified.options?.hidden"
+        v-if="!widget.simplified.options?.hidden && (!widget.simplified.options?.advanced || nodeData?.showAdvanced)"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
         <!-- Widget Input Slot Dot -->
@@ -206,7 +206,7 @@ const gridTemplateRows = computed((): string => {
   if (!nodeData?.widgets) return ''
   const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
   return nodeData.widgets
-    .filter((w) => processedNames.has(w.name) && !w.options?.hidden)
+    .filter((w) => processedNames.has(w.name) && !w.options?.hidden && (!w.options?.advanced || nodeData?.showAdvanced))
     .map((w) =>
       shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
     )
