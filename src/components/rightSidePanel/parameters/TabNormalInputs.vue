@@ -114,7 +114,9 @@ const label = computed(() => {
     />
   </TransitionGroup>
   <template
-    v-if="advancedWidgetsSectionDataList.some(({ widgets }) => widgets.length > 0)"
+    v-if="
+      advancedWidgetsSectionDataList.some(({ widgets }) => widgets.length > 0)
+    "
   >
     <SectionWidgets
       v-for="{ widgets, node } in advancedWidgetsSectionDataList"
