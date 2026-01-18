@@ -386,20 +386,32 @@ function addAutogrowGroup(
     ...autogrowOrdinalToName(ordinal, input.name, groupName, node)
   }))
 
-  const newInputs = namedSpecs
-    .map((namedSpec) => {
-      addNodeInput(node, namedSpec)
-      const input = spliceInputs(node, node.inputs.length - 1, 1)[0]
-      if (inputSpecs.length !== 1 || (INLINE_INPUTS && !input.widget))
-        ensureWidgetForInput(node, input)
-      return input
-    })
-    .filter(
-      (newInput) => !node.inputs.some((inp) => inp.name === newInput.name)
-    )
+  const newInputs = namedSpecs.map((namedSpec) => {
+    addNodeInput(node, namedSpec)
+    const input = spliceInputs(node, node.inputs.length - 1, 1)[0]
+    if (inputSpecs.length !== 1 || (INLINE_INPUTS && !input.widget))
+      ensureWidgetForInput(node, input)
+    return input
+  })
 
+  for (const newInput of newInputs) {
+    for (const existingInput of remove(
+      node.inputs,
+      (inp) => inp.name === newInput.name
+    )) {
+      //NOTE: link.target_slot is updated on spliceInputCall
+      newInput.link ??= existingInput.link
+    }
+  }
+
+  const targetName = autogrowOrdinalToName(
+    ordinal - 1,
+    inputSpecs.at(-1)!.name,
+    groupName,
+    node
+  ).name
   const lastIndex = node.inputs.findLastIndex((inp) =>
-    inp.name.startsWith(groupName + '.')
+    inp.name.startsWith(targetName)
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   spliceInputs(node, insertionIndex, 0, ...newInputs)
