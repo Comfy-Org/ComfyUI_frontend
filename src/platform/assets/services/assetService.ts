@@ -1,6 +1,11 @@
 import { fromZodError } from 'zod-validation-error'
 
 import { st } from '@/i18n'
+
+export interface PaginationOptions {
+  limit?: number
+  offset?: number
+}
 import {
   assetItemSchema,
   assetResponseSchema,
@@ -170,9 +175,15 @@ function createAssetService() {
    * and fetching all assets with that category tag
    *
    * @param nodeType - The ComfyUI node type (e.g., 'CheckpointLoaderSimple')
+   * @param options - Pagination options
+   * @param options.limit - Maximum number of assets to return (default: 500)
+   * @param options.offset - Number of assets to skip (default: 0)
    * @returns Promise<AssetItem[]> - Full asset objects with preserved metadata
    */
-  async function getAssetsForNodeType(nodeType: string): Promise<AssetItem[]> {
+  async function getAssetsForNodeType(
+    nodeType: string,
+    { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
+  ): Promise<AssetItem[]> {
     if (!nodeType || typeof nodeType !== 'string') {
       return []
     }
@@ -185,9 +196,18 @@ function createAssetService() {
       return []
     }
 
+    const queryParams = new URLSearchParams({
+      include_tags: `${MODELS_TAG},${category}`,
+      limit: limit.toString()
+    })
+
+    if (offset > 0) {
+      queryParams.set('offset', offset.toString())
+    }
+
     // Fetch assets for this category using same API pattern as getAssetModels
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${category}&limit=${DEFAULT_LIMIT}`,
+      `${ASSETS_ENDPOINT}?${queryParams.toString()}`,
       `assets for ${nodeType}`
     )
 
@@ -243,10 +263,7 @@ function createAssetService() {
   async function getAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    {
-      limit = DEFAULT_LIMIT,
-      offset = 0
-    }: { limit?: number; offset?: number } = {}
+    { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
   ): Promise<AssetItem[]> {
     const queryParams = new URLSearchParams({
       include_tags: tag,

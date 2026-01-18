@@ -1,13 +1,13 @@
 import { useAsyncState, whenever } from '@vueuse/core'
-import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, shallowReactive, ref } from 'vue'
+import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -252,6 +252,16 @@ export const useAssetsStore = defineStore('assets', () => {
     return inputAssetsByFilename.value.get(filename)?.name ?? filename
   }
 
+  const MODEL_BATCH_SIZE = 500
+
+  interface ModelPaginationState {
+    assets: Map<string, AssetItem>
+    offset: number
+    hasMore: boolean
+    isLoading: boolean
+    error?: Error
+  }
+
   /**
    * Model assets cached by node type (e.g., 'CheckpointLoaderSimple', 'LoraLoader')
    * Used by multiple loader nodes to avoid duplicate fetches
@@ -259,62 +269,116 @@ export const useAssetsStore = defineStore('assets', () => {
    */
   const getModelState = () => {
     if (isCloud) {
-      const modelAssetsByNodeType = shallowReactive(
-        new Map<string, AssetItem[]>()
-      )
-      const modelLoadingByNodeType = shallowReactive(new Map<string, boolean>())
-      const modelErrorByNodeType = shallowReactive(
-        new Map<string, Error | null>()
-      )
+      const modelStateByKey = ref(new Map<string, ModelPaginationState>())
 
-      const stateByNodeType = shallowReactive(
-        new Map<string, ReturnType<typeof useAsyncState<AssetItem[]>>>()
-      )
+      function createInitialState(): ModelPaginationState {
+        const state: ModelPaginationState = {
+          assets: new Map(),
+          offset: 0,
+          hasMore: true,
+          isLoading: false
+        }
+        return reactive(state)
+      }
+
+      function getOrCreateState(key: string): ModelPaginationState {
+        if (!modelStateByKey.value.has(key)) {
+          modelStateByKey.value.set(key, createInitialState())
+        }
+        return modelStateByKey.value.get(key)!
+      }
+
+      function resetPaginationForKey(key: string) {
+        const state = getOrCreateState(key)
+        state.assets = new Map()
+        state.offset = 0
+        state.hasMore = true
+        delete state.error
+      }
+
+      function getAssets(key: string): AssetItem[] {
+        return Array.from(modelStateByKey.value.get(key)?.assets.values() ?? [])
+      }
+
+      function isLoading(key: string): boolean {
+        return modelStateByKey.value.get(key)?.isLoading ?? false
+      }
+
+      function getError(key: string): Error | undefined {
+        return modelStateByKey.value.get(key)?.error
+      }
+
+      function hasMore(key: string): boolean {
+        return modelStateByKey.value.get(key)?.hasMore ?? false
+      }
 
       /**
-       * Internal helper to fetch and cache assets with a given key and fetcher
+       * Internal helper to fetch and cache assets with a given key and fetcher.
+       * Loads first batch immediately, then progressively loads remaining batches.
        */
       async function updateModelsForKey(
         key: string,
-        fetcher: () => Promise<AssetItem[]>
+        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
       ): Promise<AssetItem[]> {
-        if (!stateByNodeType.has(key)) {
-          stateByNodeType.set(
-            key,
-            useAsyncState(fetcher, [], {
-              immediate: false,
-              resetOnExecute: false,
-              onError: (err) => {
-                console.error(`Error fetching model assets for ${key}:`, err)
-              }
-            })
-          )
-        }
+        const state = getOrCreateState(key)
 
-        const state = stateByNodeType.get(key)!
-
-        modelLoadingByNodeType.set(key, true)
-        modelErrorByNodeType.set(key, null)
+        resetPaginationForKey(key)
+        state.isLoading = true
 
         try {
-          await state.execute()
+          const assets = await fetcher({
+            limit: MODEL_BATCH_SIZE,
+            offset: 0
+          })
+
+          state.assets = new Map(assets.map((a) => [a.id, a]))
+          state.offset = assets.length
+          state.hasMore = assets.length === MODEL_BATCH_SIZE
+
+          if (state.hasMore) {
+            void loadRemainingBatches(key, fetcher)
+          }
+
+          return assets
+        } catch (err) {
+          state.error = err instanceof Error ? err : new Error(String(err))
+          console.error(`Error fetching model assets for ${key}:`, err)
+          return []
         } finally {
-          modelLoadingByNodeType.set(key, state.isLoading.value)
+          state.isLoading = false
         }
+      }
 
-        const assets = state.state.value
-        const existingAssets = modelAssetsByNodeType.get(key)
+      /**
+       * Progressively load remaining batches until complete
+       */
+      async function loadRemainingBatches(
+        key: string,
+        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
+      ): Promise<void> {
+        const state = modelStateByKey.value.get(key)
+        if (!state) return
 
-        if (!isEqual(existingAssets, assets)) {
-          modelAssetsByNodeType.set(key, assets)
+        while (state.hasMore) {
+          try {
+            const newAssets = await fetcher({
+              limit: MODEL_BATCH_SIZE,
+              offset: state.offset
+            })
+
+            for (const asset of newAssets) {
+              if (!state.assets.has(asset.id)) {
+                state.assets.set(asset.id, asset)
+              }
+            }
+
+            state.offset += newAssets.length
+            state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+          } catch (err) {
+            console.error(`Error loading batch for ${key}:`, err)
+            break
+          }
         }
-
-        modelErrorByNodeType.set(
-          key,
-          state.error.value instanceof Error ? state.error.value : null
-        )
-
-        return assets
       }
 
       /**
@@ -325,8 +389,8 @@ export const useAssetsStore = defineStore('assets', () => {
       async function updateModelsForNodeType(
         nodeType: string
       ): Promise<AssetItem[]> {
-        return updateModelsForKey(nodeType, () =>
-          assetService.getAssetsForNodeType(nodeType)
+        return updateModelsForKey(nodeType, (opts) =>
+          assetService.getAssetsForNodeType(nodeType, opts)
         )
       }
 
@@ -337,7 +401,9 @@ export const useAssetsStore = defineStore('assets', () => {
        */
       async function updateModelsForTag(tag: string): Promise<AssetItem[]> {
         const key = `tag:${tag}`
-        return updateModelsForKey(key, () => assetService.getAssetsByTag(tag))
+        return updateModelsForKey(key, (opts) =>
+          assetService.getAssetsByTag(tag, true, opts)
+        )
       }
 
       /**
@@ -353,18 +419,15 @@ export const useAssetsStore = defineStore('assets', () => {
       ) {
         const keysToCheck = cacheKey
           ? [cacheKey]
-          : Array.from(modelAssetsByNodeType.keys())
+          : Array.from(modelStateByKey.value.keys())
 
         for (const key of keysToCheck) {
-          const assets = modelAssetsByNodeType.get(key)
-          if (!assets) continue
+          const state = modelStateByKey.value.get(key)
+          if (!state) continue
 
-          const index = assets.findIndex((a) => a.id === assetId)
-          if (index !== -1) {
-            const updatedAsset = { ...assets[index], ...updates }
-            const newAssets = [...assets]
-            newAssets[index] = updatedAsset
-            modelAssetsByNodeType.set(key, newAssets)
+          const existingAsset = state.assets.get(assetId)
+          if (existingAsset) {
+            state.assets.set(assetId, { ...existingAsset, ...updates })
             if (cacheKey) return
           }
         }
@@ -401,9 +464,10 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       return {
-        modelAssetsByNodeType,
-        modelLoadingByNodeType,
-        modelErrorByNodeType,
+        getAssets,
+        isLoading,
+        getError,
+        hasMore,
         updateModelsForNodeType,
         updateModelsForTag,
         updateAssetMetadata,
@@ -411,21 +475,24 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     }
 
+    const emptyAssets: AssetItem[] = []
     return {
-      modelAssetsByNodeType: shallowReactive(new Map<string, AssetItem[]>()),
-      modelLoadingByNodeType: shallowReactive(new Map<string, boolean>()),
-      modelErrorByNodeType: shallowReactive(new Map<string, Error | null>()),
-      updateModelsForNodeType: async () => [],
-      updateModelsForTag: async () => [],
+      getAssets: () => emptyAssets,
+      isLoading: () => false,
+      getError: () => undefined,
+      hasMore: () => false,
+      updateModelsForNodeType: async () => emptyAssets,
+      updateModelsForTag: async () => emptyAssets,
       updateAssetMetadata: async () => {},
       updateAssetTags: async () => {}
     }
   }
 
   const {
-    modelAssetsByNodeType,
-    modelLoadingByNodeType,
-    modelErrorByNodeType,
+    getAssets,
+    isLoading: isModelLoading,
+    getError,
+    hasMore,
     updateModelsForNodeType,
     updateModelsForTag,
     updateAssetMetadata,
@@ -489,10 +556,13 @@ export const useAssetsStore = defineStore('assets', () => {
     inputAssetsByFilename,
     getInputName,
 
-    // Model assets
-    modelAssetsByNodeType,
-    modelLoadingByNodeType,
-    modelErrorByNodeType,
+    // Model assets - accessors
+    getAssets,
+    isModelLoading,
+    getError,
+    hasMore,
+
+    // Model assets - actions
     updateModelsForNodeType,
     updateModelsForTag,
     updateAssetMetadata,

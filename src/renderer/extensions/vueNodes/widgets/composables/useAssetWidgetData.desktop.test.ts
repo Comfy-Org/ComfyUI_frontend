@@ -12,9 +12,9 @@ const mockGetCategoryForNodeType = vi.fn()
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
-    modelAssetsByNodeType: new Map(),
-    modelLoadingByNodeType: new Map(),
-    modelErrorByNodeType: new Map(),
+    getAssets: () => [],
+    isModelLoading: () => false,
+    getError: () => undefined,
     updateModelsForNodeType: mockUpdateModelsForNodeType
   })
 }))
