@@ -64,6 +64,21 @@ const zImageCompareInputSpec = zBaseInputOptions.extend({
   options: z.record(z.unknown()).optional()
 })
 
+const zBoundingBoxInputSpec = zBaseInputOptions.extend({
+  type: z.literal('BOUNDINGBOX'),
+  name: z.string(),
+  isOptional: z.boolean().optional(),
+  component: z.enum(['ImageCrop']).optional(),
+  default: z
+    .object({
+      x: z.number(),
+      y: z.number(),
+      width: z.number(),
+      height: z.number()
+    })
+    .optional()
+})
+
 const zMarkdownInputSpec = zBaseInputOptions.extend({
   type: z.literal('MARKDOWN'),
   name: z.string(),
@@ -126,6 +141,7 @@ const zInputSpec = z.union([
   zColorInputSpec,
   zImageInputSpec,
   zImageCompareInputSpec,
+  zBoundingBoxInputSpec,
   zMarkdownInputSpec,
   zChartInputSpec,
   zGalleriaInputSpec,
@@ -169,6 +185,7 @@ type StringInputSpec = z.infer<typeof zStringInputSpec>
 export type ComboInputSpec = z.infer<typeof zComboInputSpec>
 export type ColorInputSpec = z.infer<typeof zColorInputSpec>
 export type ImageCompareInputSpec = z.infer<typeof zImageCompareInputSpec>
+export type BoundingBoxInputSpec = z.infer<typeof zBoundingBoxInputSpec>
 export type ChartInputSpec = z.infer<typeof zChartInputSpec>
 export type GalleriaInputSpec = z.infer<typeof zGalleriaInputSpec>
 export type TextareaInputSpec = z.infer<typeof zTextareaInputSpec>

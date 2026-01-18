@@ -238,6 +238,12 @@
       "title": "Создать аккаунт"
     }
   },
+  "boundingBox": {
+    "height": "Высота",
+    "width": "Ширина",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "Очистить рабочий процесс",
     "deleteBlueprint": "Удалить схему",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "Нет изображений для сравнения"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "Предпросмотр обрезки",
+    "loading": "Загрузка...",
+    "noInputImage": "Входное изображение не подключено"
   },
   "importFailed": {
     "copyError": "Ошибка копирования",

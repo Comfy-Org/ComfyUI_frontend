@@ -351,6 +351,10 @@
         "name": "第一帧",
         "tooltip": "用于视频的第一帧。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
+      },
       "last_frame": {
         "name": "最后一帧",
         "tooltip": "用于视频的最后一帧。"
@@ -527,6 +531,10 @@
         "name": "时长",
         "tooltip": "输出视频的时长（以秒为单位）。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
+      },
       "image": {
         "name": "图片",
         "tooltip": "用于视频的第一帧。"
@@ -633,6 +641,10 @@
       "duration": {
         "name": "时长",
         "tooltip": "输出视频的时长（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
       },
       "model": {
         "name": "模型"

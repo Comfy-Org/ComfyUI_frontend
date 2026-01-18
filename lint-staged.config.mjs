@@ -1,6 +1,8 @@
 import path from 'node:path'
 
 export default {
+  'tests-ui/**': () => 'echo "Files in tests-ui/ are deprecated. Colocate tests with source files." && exit 1',
+
   './**/*.js': (stagedFiles) => formatAndEslint(stagedFiles),
 
   './**/*.{ts,tsx,vue,mts}': (stagedFiles) => [

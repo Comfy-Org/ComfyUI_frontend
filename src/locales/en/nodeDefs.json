@@ -371,6 +371,10 @@
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -547,6 +551,10 @@
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -649,6 +657,10 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
       },
       "control_after_generate": {
         "name": "control after generate"

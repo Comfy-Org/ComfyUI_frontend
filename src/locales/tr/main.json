@@ -238,6 +238,12 @@
       "title": "Hesap oluşturun"
     }
   },
+  "boundingBox": {
+    "height": "Yükseklik",
+    "width": "Genişlik",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "İş Akışını Temizle",
     "deleteBlueprint": "Taslağı Sil",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "Karşılaştırılacak görsel yok"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "Kırpma önizlemesi",
+    "loading": "Yükleniyor...",
+    "noInputImage": "Bağlı giriş görseli yok"
   },
   "importFailed": {
     "copyError": "Kopyalama Hatası",
