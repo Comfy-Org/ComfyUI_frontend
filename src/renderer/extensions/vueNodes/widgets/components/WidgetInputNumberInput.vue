@@ -41,7 +41,8 @@ const modelValue = defineModel<number>({ default: 0 })
 
 const formattedValue = computed(() => {
   const unformattedValue = dragValue.value ?? modelValue.value
-  if (!isFinite(unformattedValue)) return `${unformattedValue}`
+  if ((unformattedValue as unknown) === '' || !isFinite(unformattedValue))
+    return `${unformattedValue}`
 
   return n(unformattedValue, {
     useGrouping: useGrouping.value,
