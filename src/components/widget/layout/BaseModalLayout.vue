@@ -35,11 +35,12 @@
           <slot name="header-right-area" />
           <template v-if="!isRightPanelOpen">
             <Button
-              v-if="showRightPanelButton"
-              size="icon"
+              v-if="hasRightPanel"
+              size="lg"
+              class="w-10 p-0"
               @click="toggleRightPanel"
             >
-              <i class="icon-[lucide--panel-right] text-sm" />
+              <i class="icon-[lucide--panel-right] size-4" />
             </Button>
             <Button size="lg" class="w-10" @click="closeDialog">
               <i class="pi pi-times" />
@@ -69,19 +70,19 @@
         >
           <header
             data-component-id="RightPanelHeader"
-            class="flex h-16 shrink-0 items-center gap-2 px-4"
+            class="flex h-18 shrink-0 items-center gap-2 px-6"
           >
-            <h2 v-if="rightPanelTitle" class="flex-1 text-lg font-semibold">
+            <h2 v-if="rightPanelTitle" class="flex-1 text-base font-semibold">
               {{ rightPanelTitle }}
             </h2>
             <div v-else class="flex-1">
               <slot name="rightPanelHeaderTitle" />
             </div>
             <slot name="rightPanelHeaderActions" />
-            <Button size="icon" @click="toggleRightPanel">
-              <i class="icon-[lucide--panel-right-close] text-sm" />
+            <Button size="lg" class="w-10 p-0" @click="toggleRightPanel">
+              <i class="icon-[lucide--panel-right-close] size-4" />
             </Button>
-            <Button size="icon" @click="closeDialog">
+            <Button size="lg" class="w-10 p-0" @click="closeDialog">
               <i class="pi pi-times" />
             </Button>
           </header>
@@ -114,14 +115,6 @@ const isRightPanelOpen = defineModel<boolean>('rightPanelOpen', {
 const slots = useSlots()
 const hasLeftPanel = computed(() => !!slots.leftPanel)
 const hasRightPanel = computed(() => !!slots.rightPanel)
-
-const hideRightPanelButton = defineModel<boolean>('hideRightPanelButton', {
-  default: false
-})
-
-const showRightPanelButton = computed(
-  () => hasRightPanel.value && !hideRightPanelButton.value
-)
 
 const BREAKPOINTS = { md: 880 }
 
