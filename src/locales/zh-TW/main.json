@@ -238,6 +238,12 @@
       "title": "建立帳戶"
     }
   },
+  "boundingBox": {
+    "height": "高度",
+    "width": "寬度",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "清除工作流程",
     "deleteBlueprint": "刪除藍圖",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "沒有可比較的圖像"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "裁切預覽",
+    "loading": "載入中...",
+    "noInputImage": "未連接輸入影像"
   },
   "importFailed": {
     "copyError": "複製錯誤",

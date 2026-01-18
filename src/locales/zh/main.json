@@ -238,6 +238,12 @@
       "title": "创建一个账户"
     }
   },
+  "boundingBox": {
+    "height": "高度",
+    "width": "宽度",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "清除工作流",
     "deleteBlueprint": "删除蓝图",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "没有可以对比的图像"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "裁剪预览",
+    "loading": "加载中...",
+    "noInputImage": "未连接输入图像"
   },
   "importFailed": {
     "copyError": "复制错误",
