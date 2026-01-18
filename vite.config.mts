@@ -412,77 +412,59 @@ export default defineConfig({
   ],
 
   build: {
-    minify: SHOULD_MINIFY ? 'esbuild' : false,
+    minify: SHOULD_MINIFY,
     target: 'es2022',
     sourcemap: GENERATE_SOURCEMAP,
-    rollupOptions: {
+    rolldownOptions: {
       treeshake: true,
       output: {
-        manualChunks: (id) => {
-          if (!id.includes('node_modules')) {
-            return undefined
-          }
-
-          if (id.includes('primevue') || id.includes('@primeuix')) {
-            return 'vendor-primevue'
-          }
-
-          if (id.includes('@tiptap')) {
-            return 'vendor-tiptap'
-          }
-
-          if (id.includes('chart.js')) {
-            return 'vendor-chart'
-          }
-
-          if (id.includes('three') || id.includes('@sparkjsdev')) {
-            return 'vendor-three'
-          }
-
-          if (id.includes('@xterm')) {
-            return 'vendor-xterm'
-          }
-
-          if (id.includes('/vue') || id.includes('pinia')) {
-            return 'vendor-vue'
-          }
-          if (id.includes('reka-ui')) {
-            return 'vendor-reka-ui'
-          }
-
-          return 'vendor-other'
+        keepNames: true,
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-primevue',
+              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-tiptap',
+              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-chart',
+              test: /[\\/]node_modules[\\/]chart\.js[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-three',
+              test: /[\\/]node_modules[\\/](three|@sparkjsdev)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-xterm',
+              test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-vue',
+              test: /[\\/]node_modules[\\/](vue|pinia)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-reka-ui',
+              test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-other',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 0
+            }
+          ]
         }
       }
     }
-  },
-
-  esbuild: {
-    minifyIdentifiers: SHOULD_MINIFY,
-    keepNames: true,
-    minifySyntax: SHOULD_MINIFY,
-    minifyWhitespace: SHOULD_MINIFY,
-    pure: SHOULD_MINIFY
-      ? [
-          'console.log',
-          'console.debug',
-          'console.info',
-          'console.trace',
-          'console.dir',
-          'console.dirxml',
-          'console.group',
-          'console.groupCollapsed',
-          'console.groupEnd',
-          'console.table',
-          'console.time',
-          'console.timeEnd',
-          'console.timeLog',
-          'console.count',
-          'console.countReset',
-          'console.profile',
-          'console.profileEnd',
-          'console.clear'
-        ]
-      : []
   },
 
   define: {
