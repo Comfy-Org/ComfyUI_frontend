@@ -1,13 +1,11 @@
 <template>
   <BaseModalLayout
-    :hide-right-panel-button="true"
-    :right-panel-open="isPanelOpen"
+    v-model:right-panel-open="isRightPanelOpen"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
     :content-title="displayTitle"
     :right-panel-title="$t('assetBrowser.modelInfo.title')"
     @close="handleClose"
-    @update:right-panel-open="handlePanelClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanel>
       <LeftSidePanel
@@ -75,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { breakpointsTailwind, refDebounced, useBreakpoints } from '@vueuse/core'
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -163,14 +161,7 @@ const {
 } = useAssetBrowser(fetchedAssets)
 
 const focusedAsset = ref<AssetDisplayItem | null>(null)
-
-// Debounce panel visibility to prevent flicker when switching between assets
-// (blur fires before focus when clicking a different card)
-const isPanelOpen = refDebounced(
-  computed(() => !!focusedAsset.value),
-  16,
-  { maxWait: 16 }
-)
+const isRightPanelOpen = ref(false)
 
 const primaryCategoryTag = computed(() => {
   const assets = fetchedAssets.value ?? []
@@ -220,11 +211,5 @@ function handleAssetFocus(asset: AssetDisplayItem) {
 function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   emit('asset-select', asset)
   props.onSelect?.(asset)
-}
-
-function handlePanelClose(isOpen: boolean) {
-  if (!isOpen) {
-    focusedAsset.value = null
-  }
 }
 </script>
