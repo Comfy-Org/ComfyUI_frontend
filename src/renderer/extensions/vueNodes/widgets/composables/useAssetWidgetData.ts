@@ -48,7 +48,7 @@ export function useAssetWidgetData(
     })
 
     const dropdownItems = computed<DropdownItem[]>(() => {
-      return assets.value.map((asset) => ({
+      return (assets.value ?? []).map((asset) => ({
         id: asset.id,
         name:
           (asset.user_metadata?.filename as string | undefined) ?? asset.name,
