@@ -68,6 +68,12 @@
 
     <template #rightPanel>
       <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
+      <div
+        v-else
+        class="flex h-full items-center justify-center break-words p-6 text-center text-muted"
+      >
+        {{ $t('assetBrowser.modelInfo.selectModelPrompt') }}
+      </div>
     </template>
   </BaseModalLayout>
 </template>

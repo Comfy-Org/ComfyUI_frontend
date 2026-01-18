@@ -2399,6 +2399,7 @@
     },
     "modelInfo": {
       "title": "Model Info",
+      "selectModelPrompt": "Select a model to see its information",
       "basicInfo": "Basic Info",
       "displayName": "Display Name",
       "fileName": "File Name",
