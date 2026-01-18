@@ -7,8 +7,8 @@
       class="grid h-full w-full transition-[grid-template-columns] duration-300 ease-out"
       :style="gridStyle"
     >
-      <nav class="overflow-hidden">
-        <div v-if="hasLeftPanel" class="min-w-40 max-w-56">
+      <nav class="h-full overflow-hidden">
+        <div v-if="hasLeftPanel" class="h-full min-w-40 max-w-56">
           <slot name="leftPanel" />
         </div>
       </nav>
