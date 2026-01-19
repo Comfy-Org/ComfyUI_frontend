@@ -10,10 +10,13 @@ import { useInviteUrlLoader } from './useInviteUrlLoader'
  * - Invalid/missing token is handled gracefully
  * - API errors show error toast
  * - URL is cleaned up after processing
+ * - Preserved query is restored after login redirect
  */
 
 const preservedQueryMocks = vi.hoisted(() => ({
-  clearPreservedQuery: vi.fn()
+  clearPreservedQuery: vi.fn(),
+  hydratePreservedQuery: vi.fn(),
+  mergePreservedQueryIntoQuery: vi.fn()
 }))
 
 vi.mock(
@@ -21,15 +24,27 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-// Mock toast store
-const mockToastAdd = vi.fn()
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
+const mockRouteQuery = vi.hoisted(() => ({
+  value: {} as Record<string, string>
+}))
+const mockRouterReplace = vi.hoisted(() => vi.fn())
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({
+    query: mockRouteQuery.value
+  }),
+  useRouter: () => ({
+    replace: mockRouterReplace
+  })
+}))
+
+const mockToastAdd = vi.hoisted(() => vi.fn())
+vi.mock('primevue/usetoast', () => ({
+  useToast: () => ({
     add: mockToastAdd
   })
 }))
 
-// Mock i18n
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: vi.fn((key: string, params?: Record<string, unknown>) => {
@@ -38,132 +53,73 @@ vi.mock('vue-i18n', () => ({
         return `You have been added to ${params?.workspaceName}`
       }
       if (key === 'workspace.inviteFailed') return 'Failed to Accept Invite'
-      if (key === 'g.error') return 'Error'
+      if (key === 'g.unknownError') return 'Unknown error'
       return key
     })
   })
 }))
 
-describe('useInviteUrlLoader', () => {
-  const mockReplaceState = vi.fn()
-  const mockLocation = {
-    search: '',
-    href: 'https://cloud.comfy.org/',
-    origin: 'https://cloud.comfy.org'
-  }
+const mockAcceptInvite = vi.hoisted(() => vi.fn())
+vi.mock('../stores/workspaceStore', () => ({
+  useWorkspaceStore: () => ({
+    acceptInvite: mockAcceptInvite
+  })
+}))
 
+describe('useInviteUrlLoader', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockLocation.search = ''
-    mockLocation.href = 'https://cloud.comfy.org/'
-
-    // Mock location using vi.stubGlobal
-    vi.stubGlobal('location', mockLocation)
-
-    // Mock history.replaceState
-    vi.spyOn(window.history, 'replaceState').mockImplementation(
-      mockReplaceState
-    )
+    mockRouteQuery.value = {}
+    preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
     vi.restoreAllMocks()
-  })
-
-  describe('getInviteTokenFromUrl', () => {
-    it('returns null when no invite param present', () => {
-      window.location.search = ''
-
-      const { getInviteTokenFromUrl } = useInviteUrlLoader()
-      const token = getInviteTokenFromUrl()
-
-      expect(token).toBeNull()
-    })
-
-    it('returns token when invite param is present', () => {
-      window.location.search = '?invite=test-token-123'
-
-      const { getInviteTokenFromUrl } = useInviteUrlLoader()
-      const token = getInviteTokenFromUrl()
-
-      expect(token).toBe('test-token-123')
-    })
-
-    it('returns null for empty invite param', () => {
-      window.location.search = '?invite='
-
-      const { getInviteTokenFromUrl } = useInviteUrlLoader()
-      const token = getInviteTokenFromUrl()
-
-      expect(token).toBeNull()
-    })
-
-    it('returns null for whitespace-only invite param', () => {
-      window.location.search = '?invite=%20%20'
-
-      const { getInviteTokenFromUrl } = useInviteUrlLoader()
-      const token = getInviteTokenFromUrl()
-
-      expect(token).toBeNull()
-    })
-  })
-
-  describe('clearInviteTokenFromUrl', () => {
-    it('removes invite param from URL', () => {
-      window.location.search = '?invite=test-token'
-      window.location.href = 'https://cloud.comfy.org/?invite=test-token'
-
-      const { clearInviteTokenFromUrl } = useInviteUrlLoader()
-      clearInviteTokenFromUrl()
-
-      expect(mockReplaceState).toHaveBeenCalledWith(
-        window.history.state,
-        '',
-        'https://cloud.comfy.org/'
-      )
-    })
-
-    it('preserves other query params when removing invite', () => {
-      window.location.search = '?invite=test-token&other=param'
-      window.location.href =
-        'https://cloud.comfy.org/?invite=test-token&other=param'
-
-      const { clearInviteTokenFromUrl } = useInviteUrlLoader()
-      clearInviteTokenFromUrl()
-
-      expect(mockReplaceState).toHaveBeenCalledWith(
-        window.history.state,
-        '',
-        'https://cloud.comfy.org/?other=param'
-      )
-    })
   })
 
   describe('loadInviteFromUrl', () => {
     it('does nothing when no invite param present', async () => {
-      window.location.search = ''
+      mockRouteQuery.value = {}
 
-      const mockAcceptInvite = vi.fn()
       const { loadInviteFromUrl } = useInviteUrlLoader()
-      await loadInviteFromUrl(mockAcceptInvite)
+      await loadInviteFromUrl()
 
       expect(mockAcceptInvite).not.toHaveBeenCalled()
       expect(mockToastAdd).not.toHaveBeenCalled()
-      expect(mockReplaceState).not.toHaveBeenCalled()
+      expect(mockRouterReplace).not.toHaveBeenCalled()
     })
 
-    it('accepts invite and shows success toast on success', async () => {
-      window.location.search = '?invite=valid-token'
-      window.location.href = 'https://cloud.comfy.org/?invite=valid-token'
-
-      const mockAcceptInvite = vi.fn().mockResolvedValue({
+    it('restores preserved query and processes invite', async () => {
+      mockRouteQuery.value = {}
+      preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
+        invite: 'preserved-token'
+      })
+      mockAcceptInvite.mockResolvedValue({
         workspaceId: 'ws-123',
         workspaceName: 'Test Workspace'
       })
 
       const { loadInviteFromUrl } = useInviteUrlLoader()
-      await loadInviteFromUrl(mockAcceptInvite)
+      await loadInviteFromUrl()
+
+      expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
+        'invite'
+      )
+      expect(mockRouterReplace).toHaveBeenCalledWith({
+        query: { invite: 'preserved-token' }
+      })
+      expect(mockAcceptInvite).toHaveBeenCalledWith('preserved-token')
+    })
+
+    it('accepts invite and shows success toast on success', async () => {
+      mockRouteQuery.value = { invite: 'valid-token' }
+      mockAcceptInvite.mockResolvedValue({
+        workspaceId: 'ws-123',
+        workspaceName: 'Test Workspace'
+      })
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
 
       expect(mockAcceptInvite).toHaveBeenCalledWith('valid-token')
       expect(mockToastAdd).toHaveBeenCalledWith({
@@ -172,64 +128,100 @@ describe('useInviteUrlLoader', () => {
         detail: 'You have been added to Test Workspace',
         life: 5000
       })
-      expect(mockReplaceState).toHaveBeenCalled()
-      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-        'invite'
-      )
     })
 
     it('shows error toast when invite acceptance fails', async () => {
-      window.location.search = '?invite=invalid-token'
-      window.location.href = 'https://cloud.comfy.org/?invite=invalid-token'
-
-      const mockAcceptInvite = vi
-        .fn()
-        .mockRejectedValue(new Error('Invalid invite'))
+      mockRouteQuery.value = { invite: 'invalid-token' }
+      mockAcceptInvite.mockRejectedValue(new Error('Invalid invite'))
 
       const { loadInviteFromUrl } = useInviteUrlLoader()
-      await loadInviteFromUrl(mockAcceptInvite)
+      await loadInviteFromUrl()
 
       expect(mockAcceptInvite).toHaveBeenCalledWith('invalid-token')
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'Failed to Accept Invite',
-        detail: 'Error',
+        detail: 'Invalid invite',
         life: 5000
       })
     })
 
-    it('cleans up URL even on error', async () => {
-      window.location.search = '?invite=invalid-token'
-      window.location.href = 'https://cloud.comfy.org/?invite=invalid-token'
-
-      const mockAcceptInvite = vi
-        .fn()
-        .mockRejectedValue(new Error('Invalid invite'))
-
-      const { loadInviteFromUrl } = useInviteUrlLoader()
-      await loadInviteFromUrl(mockAcceptInvite)
-
-      expect(mockReplaceState).toHaveBeenCalled()
-      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-        'invite'
-      )
-    })
-
-    it('clears preserved query on success', async () => {
-      window.location.search = '?invite=valid-token'
-      window.location.href = 'https://cloud.comfy.org/?invite=valid-token'
-
-      const mockAcceptInvite = vi.fn().mockResolvedValue({
+    it('cleans up URL after processing invite', async () => {
+      mockRouteQuery.value = { invite: 'valid-token', other: 'param' }
+      mockAcceptInvite.mockResolvedValue({
         workspaceId: 'ws-123',
         workspaceName: 'Test Workspace'
       })
 
       const { loadInviteFromUrl } = useInviteUrlLoader()
-      await loadInviteFromUrl(mockAcceptInvite)
+      await loadInviteFromUrl()
+
+      // Should replace with query without invite param
+      expect(mockRouterReplace).toHaveBeenCalledWith({
+        query: { other: 'param' }
+      })
+    })
+
+    it('clears preserved query after processing', async () => {
+      mockRouteQuery.value = { invite: 'valid-token' }
+      mockAcceptInvite.mockResolvedValue({
+        workspaceId: 'ws-123',
+        workspaceName: 'Test Workspace'
+      })
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
 
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
+    })
+
+    it('clears preserved query even on error', async () => {
+      mockRouteQuery.value = { invite: 'invalid-token' }
+      mockAcceptInvite.mockRejectedValue(new Error('Invalid invite'))
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
+
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'invite'
+      )
+    })
+
+    it('sends any token format to backend for validation', async () => {
+      mockRouteQuery.value = { invite: 'any-token-format==' }
+      mockAcceptInvite.mockRejectedValue(new Error('Invalid token'))
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
+
+      // Token is sent to backend, which validates and rejects
+      expect(mockAcceptInvite).toHaveBeenCalledWith('any-token-format==')
+      expect(mockToastAdd).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'Failed to Accept Invite',
+        detail: 'Invalid token',
+        life: 5000
+      })
+    })
+
+    it('ignores empty invite param', async () => {
+      mockRouteQuery.value = { invite: '' }
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
+
+      expect(mockAcceptInvite).not.toHaveBeenCalled()
+    })
+
+    it('ignores non-string invite param', async () => {
+      mockRouteQuery.value = { invite: ['array', 'value'] as unknown as string }
+
+      const { loadInviteFromUrl } = useInviteUrlLoader()
+      await loadInviteFromUrl()
+
+      expect(mockAcceptInvite).not.toHaveBeenCalled()
     })
   })
 })

@@ -1,5 +1,4 @@
 import { isCloud } from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
@@ -24,7 +23,10 @@ export const useSessionCookie = () => {
 
       let authHeader: Record<string, string>
 
-      if (remoteConfig.value.team_workspaces_enabled) {
+      // TODO: Use remoteConfig.value.team_workspaces_enabled when backend enables the flag
+      // Currently hardcoded to match router.ts behavior
+      const teamWorkspacesEnabled = true
+      if (teamWorkspacesEnabled) {
         const firebaseToken = await authStore.getIdToken()
         if (!firebaseToken) {
           console.warn(

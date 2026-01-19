@@ -1,14 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/auth/workspace/workspaceConstants'
+
 import { sessionManager } from '../services/sessionManager'
 import type {
+  ExchangeTokenResponse,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
   WorkspaceWithRole
 } from '../api/workspaceApi'
-import { workspaceApi } from '../api/workspaceApi'
+import { workspaceApi, WorkspaceApiError } from '../api/workspaceApi'
 
 // Extended member type for UI (adds joinDate as Date)
 export interface WorkspaceMember {
@@ -86,6 +89,11 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   const isDeleting = ref(false)
   const isSwitching = ref(false)
   const isFetchingWorkspaces = ref(false)
+
+  // Token refresh timer state
+  let refreshTimerId: ReturnType<typeof setTimeout> | null = null
+  // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
+  let tokenRefreshRequestId = 0
 
   // ════════════════════════════════════════════════════════════
   // COMPUTED
@@ -169,6 +177,150 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   // ════════════════════════════════════════════════════════════
+  // TOKEN MANAGEMENT
+  // ════════════════════════════════════════════════════════════
+
+  function stopRefreshTimer(): void {
+    if (refreshTimerId !== null) {
+      clearTimeout(refreshTimerId)
+      refreshTimerId = null
+    }
+  }
+
+  function scheduleTokenRefresh(expiresAt: number): void {
+    stopRefreshTimer()
+    const now = Date.now()
+    const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS
+    const delay = Math.max(0, refreshAt - now)
+
+    refreshTimerId = setTimeout(() => {
+      void refreshWorkspaceToken()
+    }, delay)
+  }
+
+  /**
+   * Exchange Firebase token for workspace-scoped token.
+   * Stores the token in sessionStorage and schedules refresh.
+   */
+  async function exchangeAndStoreToken(
+    workspaceId: string
+  ): Promise<ExchangeTokenResponse> {
+    const response = await workspaceApi.exchangeToken(workspaceId)
+    const expiresAt = new Date(response.expires_at).getTime()
+
+    if (isNaN(expiresAt)) {
+      throw new Error('Invalid token expiry timestamp from server')
+    }
+
+    // Store token in sessionStorage
+    sessionManager.setWorkspaceToken(response.token, expiresAt)
+
+    // Schedule refresh before expiry
+    scheduleTokenRefresh(expiresAt)
+
+    return response
+  }
+
+  /**
+   * Refresh the workspace token.
+   * Called automatically before token expires.
+   * Includes retry logic for transient failures.
+   */
+  async function refreshWorkspaceToken(): Promise<void> {
+    if (!activeWorkspaceId.value) return
+
+    const workspaceId = activeWorkspaceId.value
+    const capturedRequestId = tokenRefreshRequestId
+    const maxRetries = 3
+    const baseDelayMs = 1000
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Check if workspace context changed during refresh
+      if (capturedRequestId !== tokenRefreshRequestId) {
+        console.warn(
+          '[workspaceStore] Aborting stale token refresh: workspace context changed'
+        )
+        return
+      }
+
+      try {
+        await exchangeAndStoreToken(workspaceId)
+        return
+      } catch (err) {
+        const isApiError = err instanceof WorkspaceApiError
+
+        // Permanent errors - don't retry
+        const isPermanentError =
+          isApiError &&
+          (err.code === 'ACCESS_DENIED' ||
+            err.code === 'WORKSPACE_NOT_FOUND' ||
+            err.code === 'INVALID_FIREBASE_TOKEN' ||
+            err.code === 'NOT_AUTHENTICATED')
+
+        if (isPermanentError) {
+          if (capturedRequestId === tokenRefreshRequestId) {
+            console.error(
+              '[workspaceStore] Workspace access revoked or auth invalid:',
+              err
+            )
+            clearTokenContext()
+          }
+          return
+        }
+
+        // Transient errors - retry with backoff
+        if (attempt < maxRetries) {
+          const delay = baseDelayMs * Math.pow(2, attempt)
+          console.warn(
+            `[workspaceStore] Token refresh failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
+            err
+          )
+          await new Promise((resolve) => setTimeout(resolve, delay))
+          continue
+        }
+
+        // All retries exhausted
+        if (capturedRequestId === tokenRefreshRequestId) {
+          console.error(
+            '[workspaceStore] Failed to refresh token after retries:',
+            err
+          )
+          clearTokenContext()
+        }
+      }
+    }
+  }
+
+  /**
+   * Clear token context (on auth failure or workspace switch).
+   */
+  function clearTokenContext(): void {
+    tokenRefreshRequestId++
+    stopRefreshTimer()
+    sessionManager.clearWorkspaceToken()
+  }
+
+  /**
+   * Check if we have a valid token in sessionStorage (for page refresh).
+   * If valid, schedule refresh timer. If expired, return false.
+   */
+  function initializeTokenFromSession(): boolean {
+    const tokenData = sessionManager.getWorkspaceToken()
+    if (!tokenData) return false
+
+    const { expiresAt } = tokenData
+    if (Date.now() >= expiresAt) {
+      // Token expired, clear it
+      sessionManager.clearWorkspaceToken()
+      return false
+    }
+
+    // Token still valid, schedule refresh
+    scheduleTokenRefresh(expiresAt)
+    return true
+  }
+
+  // ════════════════════════════════════════════════════════════
   // INITIALIZATION
   // ════════════════════════════════════════════════════════════
 
@@ -180,6 +332,7 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   async function initialize(): Promise<void> {
     if (initState.value !== 'uninitialized') return
 
+    console.log('[workspaceStore] Initializing workspace store...')
     initState.value = 'loading'
     isFetchingWorkspaces.value = true
     error.value = null
@@ -187,6 +340,16 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
     try {
       // 1. Fetch all workspaces
       const response = await workspaceApi.list()
+      console.log('[workspaceStore] initialize API response:', response)
+      console.log(
+        '[workspaceStore] Workspaces from API:',
+        response.workspaces.map((w) => ({
+          id: w.id,
+          name: w.name,
+          type: w.type,
+          role: w.role
+        }))
+      )
       workspaces.value = response.workspaces.map(createWorkspaceState)
 
       if (workspaces.value.length === 0) {
@@ -221,6 +384,23 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
       sessionManager.setCurrentWorkspaceId(targetWorkspaceId)
       sessionManager.setLastWorkspaceId(targetWorkspaceId)
 
+      // 4. Initialize workspace token
+      // First check if we have a valid token from session (page refresh case)
+      const hasValidToken = initializeTokenFromSession()
+
+      if (!hasValidToken) {
+        // No valid token - exchange Firebase token for workspace token
+        try {
+          await exchangeAndStoreToken(targetWorkspaceId)
+        } catch (tokenError) {
+          // Log but don't fail initialization - API calls will fall back to Firebase token
+          console.error(
+            '[workspaceStore] Token exchange failed during init:',
+            tokenError
+          )
+        }
+      }
+
       initState.value = 'ready'
     } catch (e) {
       error.value = e instanceof Error ? e : new Error('Unknown error')
@@ -238,6 +418,15 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
     isFetchingWorkspaces.value = true
     try {
       const response = await workspaceApi.list()
+      console.log('[workspaceStore] refreshWorkspaces API response:', response)
+      console.log(
+        '[workspaceStore] Workspace IDs:',
+        response.workspaces.map((w) => w.id)
+      )
+      console.log(
+        '[workspaceStore] Workspace names:',
+        response.workspaces.map((w) => w.name)
+      )
       workspaces.value = response.workspaces.map(createWorkspaceState)
     } finally {
       isFetchingWorkspaces.value = false
@@ -254,6 +443,9 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
    */
   async function switchWorkspace(workspaceId: string): Promise<void> {
     if (workspaceId === activeWorkspaceId.value) return
+
+    // Invalidate any in-flight token refresh for the old workspace
+    clearTokenContext()
 
     isSwitching.value = true
 
@@ -396,10 +588,23 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   async function fetchMembers(
     params?: ListMembersParams
   ): Promise<WorkspaceMember[]> {
+    const sessionWorkspaceId = sessionManager.getCurrentWorkspaceId()
+    console.log('[workspaceStore] fetchMembers called')
+    console.log(
+      '[workspaceStore] activeWorkspaceId (store):',
+      activeWorkspaceId.value
+    )
+    console.log('[workspaceStore] sessionWorkspaceId:', sessionWorkspaceId)
+    console.log(
+      '[workspaceStore] IDs match:',
+      activeWorkspaceId.value === sessionWorkspaceId
+    )
+    console.log('[workspaceStore] activeWorkspace:', activeWorkspace.value)
     if (!activeWorkspaceId.value) return []
     if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listMembers(params)
+    console.log('[workspaceStore] fetchMembers response:', response)
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     updateActiveWorkspace({ members })
     return members
@@ -426,10 +631,23 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
    * Fetch pending invites for the current workspace.
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
+    const sessionWorkspaceId = sessionManager.getCurrentWorkspaceId()
+    console.log('[workspaceStore] fetchPendingInvites called')
+    console.log(
+      '[workspaceStore] activeWorkspaceId (store):',
+      activeWorkspaceId.value
+    )
+    console.log('[workspaceStore] sessionWorkspaceId:', sessionWorkspaceId)
+    console.log(
+      '[workspaceStore] IDs match:',
+      activeWorkspaceId.value === sessionWorkspaceId
+    )
+    console.log('[workspaceStore] activeWorkspace:', activeWorkspace.value)
     if (!activeWorkspaceId.value) return []
     if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listInvites()
+    console.log('[workspaceStore] fetchPendingInvites response:', response)
     const invites = response.invites.map(mapApiInviteToPendingInvite)
     updateActiveWorkspace({ pendingInvites: invites })
     return invites
@@ -472,10 +690,22 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   async function acceptInvite(
     token: string
   ): Promise<{ workspaceId: string; workspaceName: string }> {
+    console.log('[workspaceStore] acceptInvite called with token:', token)
+    console.log(
+      '[workspaceStore] Workspaces BEFORE accept:',
+      workspaces.value.map((w) => ({ id: w.id, name: w.name, type: w.type }))
+    )
+
     const response = await workspaceApi.acceptInvite(token)
+    console.log('[workspaceStore] acceptInvite API response:', response)
 
     // Refresh workspace list to include newly joined workspace
     await refreshWorkspaces()
+
+    console.log(
+      '[workspaceStore] Workspaces AFTER refresh:',
+      workspaces.value.map((w) => ({ id: w.id, name: w.name, type: w.type }))
+    )
 
     return {
       workspaceId: response.workspace_id,
@@ -537,6 +767,18 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   // ════════════════════════════════════════════════════════════
+  // CLEANUP
+  // ════════════════════════════════════════════════════════════
+
+  /**
+   * Clean up store resources (timers, etc.).
+   * Call when the store is no longer needed.
+   */
+  function destroy(): void {
+    clearTokenContext()
+  }
+
+  // ════════════════════════════════════════════════════════════
   // DEV HELPERS
   // ════════════════════════════════════════════════════════════
 
@@ -583,8 +825,9 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
     isWorkspaceSubscribed,
     subscriptionPlan,
 
-    // Initialization
+    // Initialization & Cleanup
     initialize,
+    destroy,
     refreshWorkspaces,
 
     // Workspace Actions

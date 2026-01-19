@@ -18,10 +18,7 @@
 
       <!-- Workspace list -->
       <template v-else>
-        <template
-          v-for="workspace in availableWorkspaces"
-          :key="workspace.id ?? 'personal'"
-        >
+        <template v-for="workspace in availableWorkspaces" :key="workspace.id">
           <div class="border-b border-border-default p-2">
             <div
               :class="
@@ -170,10 +167,6 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
 }
 
 async function handleSelectWorkspace(workspace: AvailableWorkspace) {
-  if (!workspace.id) {
-    // Personal workspace doesn't have an ID in this context
-    return
-  }
   const success = await switchWithConfirmation(workspace.id)
   if (success) {
     emit('select', workspace)
@@ -190,7 +183,6 @@ function canDeleteWorkspace(workspace: AvailableWorkspace): boolean {
 }
 
 function handleDeleteWorkspace(workspace: AvailableWorkspace) {
-  if (!workspace.id) return
   showDeleteWorkspaceDialog({
     workspaceId: workspace.id,
     workspaceName: workspace.name

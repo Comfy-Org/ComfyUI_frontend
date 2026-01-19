@@ -6,8 +6,6 @@ import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 
-import { sessionManager } from '../services/sessionManager'
-
 // Types aligned with backend API
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
@@ -68,6 +66,15 @@ export interface AcceptInviteResponse {
   workspace_name: string
 }
 
+// Billing types (POST /api/billing/portal)
+export interface BillingPortalRequest {
+  return_url: string
+}
+
+export interface BillingPortalResponse {
+  billing_portal_url: string
+}
+
 export interface CreateWorkspacePayload {
   name: string
 }
@@ -79,6 +86,19 @@ export interface UpdateWorkspacePayload {
 // API responses
 export interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
+}
+
+// Token exchange types (POST /api/auth/token)
+export interface ExchangeTokenRequest {
+  workspace_id: string
+}
+
+export interface ExchangeTokenResponse {
+  token: string
+  expires_at: string
+  workspace: Workspace
+  role: WorkspaceRole
+  permissions: string[]
 }
 
 export class WorkspaceApiError extends Error {
@@ -97,8 +117,6 @@ const workspaceApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
-
-type RequestHeaders = AuthHeader & { 'X-Workspace-ID'?: string }
 
 async function withAuth<T>(
   request: (headers: AuthHeader) => Promise<AxiosResponse<T>>
@@ -125,35 +143,27 @@ async function withAuth<T>(
 }
 
 /**
- * Wrapper that adds both auth header and workspace ID header.
- * Use for workspace-scoped endpoints (e.g., /api/workspace/members).
+ * Wrapper for workspace-scoped endpoints (e.g., /api/workspace/members).
+ * The workspace context is determined from the Bearer token.
  */
-async function withWorkspaceAuth<T>(
-  request: (headers: RequestHeaders) => Promise<AxiosResponse<T>>
+const withWorkspaceAuth = withAuth
+
+/**
+ * Wrapper that uses Firebase ID token directly (not workspace token).
+ * Used for token exchange where we need the Firebase token to get a workspace token.
+ */
+async function withFirebaseAuth<T>(
+  request: (headers: AuthHeader) => Promise<AxiosResponse<T>>
 ): Promise<T> {
-  const authHeader = await useFirebaseAuthStore().getAuthHeader()
-  if (!authHeader) {
+  const firebaseToken = await useFirebaseAuthStore().getIdToken()
+  if (!firebaseToken) {
     throw new WorkspaceApiError(
       t('toastMessages.userNotAuthenticated'),
       401,
       'NOT_AUTHENTICATED'
     )
   }
-
-  const workspaceId = sessionManager.getCurrentWorkspaceId()
-  if (!workspaceId) {
-    throw new WorkspaceApiError(
-      'No active workspace',
-      400,
-      'NO_ACTIVE_WORKSPACE'
-    )
-  }
-
-  const headers: RequestHeaders = {
-    ...authHeader,
-    'X-Workspace-ID': workspaceId
-  }
-
+  const headers: AuthHeader = { Authorization: `Bearer ${firebaseToken}` }
   try {
     const response = await request(headers)
     return response.data
@@ -161,7 +171,15 @@ async function withWorkspaceAuth<T>(
     if (axios.isAxiosError(err)) {
       const status = err.response?.status
       const message = err.response?.data?.message ?? err.message
-      throw new WorkspaceApiError(message, status)
+      const code =
+        status === 401
+          ? 'INVALID_FIREBASE_TOKEN'
+          : status === 403
+            ? 'ACCESS_DENIED'
+            : status === 404
+              ? 'WORKSPACE_NOT_FOUND'
+              : 'TOKEN_EXCHANGE_FAILED'
+      throw new WorkspaceApiError(message, status, code)
     }
     throw err
   }
@@ -285,5 +303,36 @@ export const workspaceApi = {
       workspaceApiClient.post(api.apiURL(`/invites/${token}/accept`), null, {
         headers
       })
+    ),
+
+  /**
+   * Exchange Firebase JWT for workspace-scoped Cloud JWT.
+   * POST /api/auth/token
+   *
+   * Uses Firebase ID token directly (not getAuthHeader) since we're
+   * exchanging it for a workspace-scoped token.
+   */
+  exchangeToken: (workspaceId: string): Promise<ExchangeTokenResponse> =>
+    withFirebaseAuth((headers) =>
+      workspaceApiClient.post(
+        api.apiURL('/auth/token'),
+        { workspace_id: workspaceId } satisfies ExchangeTokenRequest,
+        { headers }
+      )
+    ),
+
+  /**
+   * Access the billing portal for the current workspace.
+   * POST /api/billing/portal
+   *
+   * Uses workspace-scoped token to get billing portal URL.
+   */
+  accessBillingPortal: (returnUrl?: string): Promise<BillingPortalResponse> =>
+    withWorkspaceAuth((headers) =>
+      workspaceApiClient.post(
+        api.apiURL('/billing/portal'),
+        { return_url: returnUrl ?? window.location.href } satisfies BillingPortalRequest,
+        { headers }
+      )
     )
 }

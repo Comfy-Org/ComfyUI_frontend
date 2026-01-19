@@ -184,7 +184,6 @@ if (isCloud) {
 
     // Initialize workspace context for logged-in users navigating to root
     // This must happen before the app loads to ensure workspace context is ready
-    // and to handle invite URLs early in the lifecycle
     // TODO: Use flags.teamWorkspacesEnabled when backend enables the flag
     const teamWorkspacesEnabled = true
     if (to.path === '/' && teamWorkspacesEnabled) {
@@ -195,12 +194,6 @@ if (isCloud) {
       if (workspaceStore.initState === 'uninitialized') {
         try {
           await workspaceStore.initialize()
-
-          // Handle invite URL if present (e.g., ?invite=TOKEN)
-          const { useInviteUrlLoader } =
-            await import('@/platform/workspace/composables/useInviteUrlLoader')
-          const { loadInviteFromUrl } = useInviteUrlLoader()
-          await loadInviteFromUrl(workspaceStore.acceptInvite)
         } catch (error) {
           console.error('Workspace initialization failed:', error)
           // Continue anyway - workspace features will be degraded

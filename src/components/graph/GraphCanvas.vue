@@ -139,6 +139,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
+import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
@@ -394,6 +395,7 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+const inviteUrlLoader = useInviteUrlLoader()
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
@@ -458,6 +460,9 @@ onMounted(async () => {
 
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
+
+  // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
+  await inviteUrlLoader.loadInviteFromUrl()
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =

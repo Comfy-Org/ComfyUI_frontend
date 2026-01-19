@@ -123,15 +123,11 @@ const { activeTab, setActiveTab, workspaceRole, permissions, uiConfig } =
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
 function handleLeaveWorkspace() {
-  showLeaveWorkspaceDialog(() => {
-    // TODO: Implement actual leave workspace API call
-  })
+  showLeaveWorkspaceDialog()
 }
 
 function handleDeleteWorkspace() {
-  showDeleteWorkspaceDialog(() => {
-    // TODO: Implement actual delete workspace API call
-  })
+  showDeleteWorkspaceDialog()
 }
 
 // Disable delete when workspace has an active subscription (to prevent accidental deletion)
