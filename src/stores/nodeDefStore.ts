@@ -299,9 +299,10 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
   const nodeDefs = computed(() => {
     const subgraphStore = useSubgraphStore()
+    // Blueprints first for discoverability in the node library sidebar
     return [
-      ...Object.values(nodeDefsByName.value),
-      ...subgraphStore.subgraphBlueprints
+      ...subgraphStore.subgraphBlueprints,
+      ...Object.values(nodeDefsByName.value)
     ]
   })
   const nodeDataTypes = computed(() => {

@@ -238,6 +238,12 @@
       "title": "Criar uma conta"
     }
   },
+  "boundingBox": {
+    "height": "Altura",
+    "width": "Largura",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "Limpar Fluxo de Trabalho",
     "deleteBlueprint": "Excluir Blueprint",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "Nenhuma imagem para comparar"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "Pré-visualização do recorte",
+    "loading": "Carregando...",
+    "noInputImage": "Nenhuma imagem de entrada conectada"
   },
   "importFailed": {
     "copyError": "Erro ao Copiar",

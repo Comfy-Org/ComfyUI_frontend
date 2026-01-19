@@ -511,6 +511,22 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
       // Reset skeleton visibility when loading new model
       modelConfig.value.showSkeleton = false
+
+      if (load3d) {
+        const node = nodeRef.value
+
+        const modelWidget = node?.widgets?.find(
+          (w) => w.name === 'model_file' || w.name === 'image'
+        )
+        const value = modelWidget?.value
+        if (typeof value === 'string') {
+          void Load3dUtils.generateThumbnailIfNeeded(
+            load3d,
+            value,
+            isPreview.value ? 'output' : 'input'
+          )
+        }
+      }
     },
     skeletonVisibilityChange: (value: boolean) => {
       modelConfig.value.showSkeleton = value

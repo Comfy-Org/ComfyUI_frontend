@@ -238,6 +238,12 @@
       "title": "إنشاء حساب"
     }
   },
+  "boundingBox": {
+    "height": "الارتفاع",
+    "width": "العرض",
+    "x": "س",
+    "y": "ص"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "مسح سير العمل",
     "deleteBlueprint": "حذف المخطط",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "لا توجد صور للمقارنة"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "معاينة الاقتصاص",
+    "loading": "جارٍ التحميل...",
+    "noInputImage": "لا توجد صورة إدخال متصلة"
   },
   "importFailed": {
     "copyError": "خطأ في النسخ",
