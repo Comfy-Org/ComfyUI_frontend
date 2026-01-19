@@ -28,20 +28,17 @@ describe('assetMetadataUtils', () => {
   }
 
   describe('getAssetDescription', () => {
-    it('should return string description when present', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { description: 'A test model' }
-      }
-      expect(getAssetDescription(asset)).toBe('A test model')
-    })
-
-    it('should return null when description is not a string', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { description: 123 }
-      }
-      expect(getAssetDescription(asset)).toBeNull()
+    it.for([
+      {
+        name: 'returns string description when present',
+        description: 'A test model',
+        expected: 'A test model'
+      },
+      { name: 'returns null for non-string', description: 123, expected: null },
+      { name: 'returns null for null', description: null, expected: null }
+    ])('$name', ({ description, expected }) => {
+      const asset = { ...mockAsset, user_metadata: { description } }
+      expect(getAssetDescription(asset)).toBe(expected)
     })
 
     it('should return null when no metadata', () => {
@@ -50,20 +47,17 @@ describe('assetMetadataUtils', () => {
   })
 
   describe('getAssetBaseModel', () => {
-    it('should return string base_model when present', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { base_model: 'SDXL' }
-      }
-      expect(getAssetBaseModel(asset)).toBe('SDXL')
-    })
-
-    it('should return null when base_model is not a string', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { base_model: 123 }
-      }
-      expect(getAssetBaseModel(asset)).toBeNull()
+    it.for([
+      {
+        name: 'returns string base_model when present',
+        base_model: 'SDXL',
+        expected: 'SDXL'
+      },
+      { name: 'returns null for non-string', base_model: 123, expected: null },
+      { name: 'returns null for null', base_model: null, expected: null }
+    ])('$name', ({ base_model, expected }) => {
+      const asset = { ...mockAsset, user_metadata: { base_model } }
+      expect(getAssetBaseModel(asset)).toBe(expected)
     })
 
     it('should return null when no metadata', () => {
@@ -72,52 +66,44 @@ describe('assetMetadataUtils', () => {
   })
 
   describe('getAssetDisplayName', () => {
-    it('should return name from user_metadata when present', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { name: 'My Custom Name' }
+    it.for([
+      {
+        name: 'returns name from user_metadata when present',
+        user_metadata: { name: 'My Custom Name' },
+        expected: 'My Custom Name'
+      },
+      {
+        name: 'falls back to asset name for non-string',
+        user_metadata: { name: 123 },
+        expected: 'test-model'
+      },
+      {
+        name: 'falls back to asset name for undefined',
+        user_metadata: undefined,
+        expected: 'test-model'
       }
-      expect(getAssetDisplayName(asset)).toBe('My Custom Name')
-    })
-
-    it('should fall back to asset name when user_metadata.name is not a string', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { name: 123 }
-      }
-      expect(getAssetDisplayName(asset)).toBe('test-model')
-    })
-
-    it('should fall back to asset name when no metadata', () => {
-      expect(getAssetDisplayName(mockAsset)).toBe('test-model')
+    ])('$name', ({ user_metadata, expected }) => {
+      const asset = { ...mockAsset, user_metadata }
+      expect(getAssetDisplayName(asset)).toBe(expected)
     })
   })
 
   describe('getAssetSourceUrl', () => {
-    it('should construct URL from source_arn with civitai format', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { source_arn: 'civitai:model:123:version:456' }
+    it.for([
+      {
+        name: 'constructs URL from civitai format',
+        source_arn: 'civitai:model:123:version:456',
+        expected: 'https://civitai.com/models/123?modelVersionId=456'
+      },
+      { name: 'returns null for non-string', source_arn: 123, expected: null },
+      {
+        name: 'returns null for unrecognized format',
+        source_arn: 'unknown:format',
+        expected: null
       }
-      expect(getAssetSourceUrl(asset)).toBe(
-        'https://civitai.com/models/123?modelVersionId=456'
-      )
-    })
-
-    it('should return null when source_arn is not a string', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { source_arn: 123 }
-      }
-      expect(getAssetSourceUrl(asset)).toBeNull()
-    })
-
-    it('should return null when source_arn format is not recognized', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { source_arn: 'unknown:format' }
-      }
-      expect(getAssetSourceUrl(asset)).toBeNull()
+    ])('$name', ({ source_arn, expected }) => {
+      const asset = { ...mockAsset, user_metadata: { source_arn } }
+      expect(getAssetSourceUrl(asset)).toBe(expected)
     })
 
     it('should return null when no metadata', () => {
@@ -126,28 +112,25 @@ describe('assetMetadataUtils', () => {
   })
 
   describe('getAssetTriggerPhrases', () => {
-    it('should return array of trigger phrases when array present', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { trained_words: ['phrase1', 'phrase2'] }
+    it.for([
+      {
+        name: 'returns array when array present',
+        trained_words: ['phrase1', 'phrase2'],
+        expected: ['phrase1', 'phrase2']
+      },
+      {
+        name: 'wraps single string in array',
+        trained_words: 'single phrase',
+        expected: ['single phrase']
+      },
+      {
+        name: 'filters non-string values from array',
+        trained_words: ['valid', 123, 'also valid', null],
+        expected: ['valid', 'also valid']
       }
-      expect(getAssetTriggerPhrases(asset)).toEqual(['phrase1', 'phrase2'])
-    })
-
-    it('should wrap single string in array', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { trained_words: 'single phrase' }
-      }
-      expect(getAssetTriggerPhrases(asset)).toEqual(['single phrase'])
-    })
-
-    it('should filter non-string values from array', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { trained_words: ['valid', 123, 'also valid', null] }
-      }
-      expect(getAssetTriggerPhrases(asset)).toEqual(['valid', 'also valid'])
+    ])('$name', ({ trained_words, expected }) => {
+      const asset = { ...mockAsset, user_metadata: { trained_words } }
+      expect(getAssetTriggerPhrases(asset)).toEqual(expected)
     })
 
     it('should return empty array when no metadata', () => {
@@ -156,28 +139,25 @@ describe('assetMetadataUtils', () => {
   })
 
   describe('getAssetAdditionalTags', () => {
-    it('should return array of tags when present', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { additional_tags: ['tag1', 'tag2'] }
+    it.for([
+      {
+        name: 'returns array of tags when present',
+        additional_tags: ['tag1', 'tag2'],
+        expected: ['tag1', 'tag2']
+      },
+      {
+        name: 'filters non-string values from array',
+        additional_tags: ['valid', 123, 'also valid'],
+        expected: ['valid', 'also valid']
+      },
+      {
+        name: 'returns empty array for non-array',
+        additional_tags: 'not an array',
+        expected: []
       }
-      expect(getAssetAdditionalTags(asset)).toEqual(['tag1', 'tag2'])
-    })
-
-    it('should filter non-string values from array', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { additional_tags: ['valid', 123, 'also valid'] }
-      }
-      expect(getAssetAdditionalTags(asset)).toEqual(['valid', 'also valid'])
-    })
-
-    it('should return empty array when additional_tags is not an array', () => {
-      const asset = {
-        ...mockAsset,
-        user_metadata: { additional_tags: 'not an array' }
-      }
-      expect(getAssetAdditionalTags(asset)).toEqual([])
+    ])('$name', ({ additional_tags, expected }) => {
+      const asset = { ...mockAsset, user_metadata: { additional_tags } }
+      expect(getAssetAdditionalTags(asset)).toEqual(expected)
     })
 
     it('should return empty array when no metadata', () => {
@@ -186,18 +166,24 @@ describe('assetMetadataUtils', () => {
   })
 
   describe('getSourceName', () => {
-    it('should return Civitai for civitai.com URLs', () => {
-      expect(getSourceName('https://civitai.com/models/123')).toBe('Civitai')
-    })
-
-    it('should return Hugging Face for huggingface.co URLs', () => {
-      expect(getSourceName('https://huggingface.co/org/model')).toBe(
-        'Hugging Face'
-      )
-    })
-
-    it('should return Source for unknown URLs', () => {
-      expect(getSourceName('https://example.com/model')).toBe('Source')
+    it.for([
+      {
+        name: 'returns Civitai for civitai.com',
+        url: 'https://civitai.com/models/123',
+        expected: 'Civitai'
+      },
+      {
+        name: 'returns Hugging Face for huggingface.co',
+        url: 'https://huggingface.co/org/model',
+        expected: 'Hugging Face'
+      },
+      {
+        name: 'returns Source for unknown URLs',
+        url: 'https://example.com/model',
+        expected: 'Source'
+      }
+    ])('$name', ({ url, expected }) => {
+      expect(getSourceName(url)).toBe(expected)
     })
   })
 
