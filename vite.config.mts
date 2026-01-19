@@ -416,7 +416,28 @@ export default defineConfig({
     target: 'es2022',
     sourcemap: GENERATE_SOURCEMAP,
     rolldownOptions: {
-      treeshake: true,
+      treeshake: {
+        manualPureFunctions: [
+          'console.clear',
+          'console.count',
+          'console.countReset',
+          'console.debug',
+          'console.dir',
+          'console.dirxml',
+          'console.group',
+          'console.groupCollapsed',
+          'console.groupEnd',
+          'console.info',
+          'console.log',
+          'console.profile',
+          'console.profileEnd',
+          'console.table',
+          'console.time',
+          'console.timeEnd',
+          'console.timeLog',
+          'console.trace'
+        ]
+      },
       experimental: {
         strictExecutionOrder: true
       },
