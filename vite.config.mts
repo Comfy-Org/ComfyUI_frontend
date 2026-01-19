@@ -417,6 +417,9 @@ export default defineConfig({
     sourcemap: GENERATE_SOURCEMAP,
     rolldownOptions: {
       treeshake: true,
+      experimental: {
+        strictExecutionOrder: true
+      },
       output: {
         keepNames: true,
         codeSplitting: {
