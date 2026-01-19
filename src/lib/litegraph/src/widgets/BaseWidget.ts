@@ -141,6 +141,7 @@ export abstract class BaseWidget<
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
       promoted,
+      linkedWidgets,
       ...safeValues
     } = widget
 
