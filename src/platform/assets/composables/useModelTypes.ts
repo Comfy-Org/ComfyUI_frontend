@@ -75,9 +75,9 @@ export const useModelTypes = createSharedComposable(() => {
     }
   )
 
-  function fetchModelTypes() {
+  async function fetchModelTypes() {
     if (isReady.value || isLoading.value) return
-    return execute()
+    await execute()
   }
 
   return {
