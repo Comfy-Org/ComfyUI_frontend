@@ -2540,6 +2540,7 @@ export class Subgraph
 
     this.inputNode.configure(data.inputNode)
     this.outputNode.configure(data.outputNode)
+    for (const node of this.nodes) node.updateComputedDisabled()
   }
 
   override configure(
