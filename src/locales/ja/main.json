@@ -238,6 +238,12 @@
       "title": "アカウントを作成する"
     }
   },
+  "boundingBox": {
+    "height": "高さ",
+    "width": "幅",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "ワークフローをクリア",
     "deleteBlueprint": "ブループリントを削除",
@@ -848,6 +854,7 @@
     "releaseTitle": "{package} {version} リリース",
     "reloadToApplyChanges": "変更を適用するには再読み込みしてください",
     "removeImage": "画像を削除",
+    "removeTag": "タグを削除",
     "removeVideo": "ビデオを削除",
     "rename": "名前を変更",
     "reportIssue": "報告する",
@@ -980,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "比較する画像がありません"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "切り抜きプレビュー",
+    "loading": "読み込み中...",
+    "noInputImage": "入力画像が接続されていません"
   },
   "importFailed": {
     "copyError": "コピーエラー",
@@ -2574,6 +2586,21 @@
     "enterFilename": "ファイル名を入力",
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
+      "title": "未保存の変更"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "このワークスペースへのアクセス権がありません",
+      "invalidFirebaseToken": "認証に失敗しました。もう一度ログインしてください。",
+      "notAuthenticated": "ワークスペースにアクセスするにはログインが必要です",
+      "tokenExchangeFailed": "ワークスペースの認証に失敗しました: {error}",
+      "workspaceNotFound": "ワークスペースが見つかりません"
+    }
   },
   "zoomControls": {
     "hideMinimap": "ミニマップを非表示",

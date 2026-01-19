@@ -238,6 +238,12 @@
       "title": "계정 생성"
     }
   },
+  "boundingBox": {
+    "height": "높이",
+    "width": "너비",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "워크플로 내용 지우기",
     "deleteBlueprint": "블루프린트 삭제",
@@ -848,6 +854,7 @@
     "releaseTitle": "{package} {version} 릴리스",
     "reloadToApplyChanges": "변경 사항을 적용하려면 새로 고침하세요.",
     "removeImage": "이미지 제거",
+    "removeTag": "태그 제거",
     "removeVideo": "비디오 제거",
     "rename": "이름 바꾸기",
     "reportIssue": "보고서 보내기",
@@ -980,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "비교할 이미지가 없습니다"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "자르기 미리보기",
+    "loading": "로딩 중...",
+    "noInputImage": "입력 이미지가 연결되지 않았습니다"
   },
   "importFailed": {
     "copyError": "복사 오류",
@@ -2574,6 +2586,21 @@
     "enterFilename": "파일 이름 입력",
     "exportWorkflow": "워크플로 내보내기",
     "saveWorkflow": "워크플로 저장"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "저장되지 않은 변경 사항이 있습니다. 변경 사항을 취소하고 워크스페이스를 전환하시겠습니까?",
+      "title": "저장되지 않은 변경 사항"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "이 워크스페이스에 접근할 수 없습니다.",
+      "invalidFirebaseToken": "인증에 실패했습니다. 다시 로그인해 주세요.",
+      "notAuthenticated": "워크스페이스에 접근하려면 로그인해야 합니다.",
+      "tokenExchangeFailed": "워크스페이스 인증에 실패했습니다: {error}",
+      "workspaceNotFound": "워크스페이스를 찾을 수 없습니다."
+    }
   },
   "zoomControls": {
     "hideMinimap": "미니맵 숨기기",

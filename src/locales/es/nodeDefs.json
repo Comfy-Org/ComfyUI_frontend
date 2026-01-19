@@ -351,6 +351,10 @@
         "name": "primer_fotograma",
         "tooltip": "Primer fotograma que se utilizará para el video."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parámetro se ignora para cualquier modelo excepto seedance-1-5-pro."
+      },
       "last_frame": {
         "name": "último_fotograma",
         "tooltip": "Último fotograma que se utilizará para el video."
@@ -527,6 +531,10 @@
         "name": "duración",
         "tooltip": "La duración del video de salida en segundos."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parámetro se ignora para cualquier modelo excepto seedance-1-5-pro."
+      },
       "image": {
         "name": "imagen",
         "tooltip": "Primer fotograma a usar para el video."
@@ -633,6 +641,10 @@
       "duration": {
         "name": "duración",
         "tooltip": "La duración del video de salida en segundos."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parámetro se ignora para cualquier modelo excepto seedance-1-5-pro."
       },
       "model": {
         "name": "modelo"

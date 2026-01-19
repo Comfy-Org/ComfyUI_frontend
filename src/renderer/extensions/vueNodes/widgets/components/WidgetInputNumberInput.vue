@@ -41,7 +41,8 @@ const modelValue = defineModel<number>({ default: 0 })
 
 const formattedValue = computed(() => {
   const unformattedValue = dragValue.value ?? modelValue.value
-  if (!isFinite(unformattedValue)) return `${unformattedValue}`
+  if ((unformattedValue as unknown) === '' || !isFinite(unformattedValue))
+    return `${unformattedValue}`
 
   return n(unformattedValue, {
     useGrouping: useGrouping.value,
@@ -175,6 +176,20 @@ const buttonTooltip = computed(() => {
   }
   return null
 })
+
+const sliderWidth = computed(() => {
+  const { max, min, step } = filteredProps.value
+  if (
+    min === undefined ||
+    max === undefined ||
+    step === undefined ||
+    (max - min) / step >= 100
+  )
+    return 0
+  const value = dragValue.value ?? modelValue.value
+  const ratio = (value - min) / (max - min)
+  return (ratio * 100).toFixed(0)
+})
 </script>
 
 <template>
@@ -184,8 +199,12 @@ const buttonTooltip = computed(() => {
       v-tooltip="buttonTooltip"
       v-bind="filteredProps"
       :aria-label="widget.name"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7')"
+      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
     >
+      <div
+        class="bg-primary-background/15 absolute left-0 bottom-0 h-full rounded-lg pointer-events-none"
+        :style="{ width: `${sliderWidth}%` }"
+      />
       <button
         v-if="!buttonsDisabled"
         data-testid="decrement"

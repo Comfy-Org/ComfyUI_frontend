@@ -238,6 +238,12 @@
       "title": "ایجاد حساب کاربری"
     }
   },
+  "boundingBox": {
+    "height": "ارتفاع",
+    "width": "عرض",
+    "x": "ایکس",
+    "y": "وای"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "پاک‌سازی workflow",
     "deleteBlueprint": "حذف blueprint",
@@ -848,6 +854,7 @@
     "releaseTitle": "انتشار {package} نسخه {version}",
     "reloadToApplyChanges": "برای اعمال تغییرات بارگذاری مجدد کنید",
     "removeImage": "حذف تصویر",
+    "removeTag": "حذف برچسب",
     "removeVideo": "حذف ویدیو",
     "rename": "تغییر نام",
     "reportIssue": "ارسال گزارش",
@@ -980,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "تصویری برای مقایسه وجود ندارد"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "پیش‌نمایش برش",
+    "loading": "در حال بارگذاری...",
+    "noInputImage": "هیچ تصویر ورودی متصل نیست"
   },
   "importFailed": {
     "copyError": "خطا در کپی",
@@ -2585,6 +2597,21 @@
     "enterFilename": "نام فایل را وارد کنید",
     "exportWorkflow": "خروجی گرفتن از workflow",
     "saveWorkflow": "ذخیره workflow"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
+      "title": "تغییرات ذخیره‌نشده"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "شما به این فضای کاری دسترسی ندارید.",
+      "invalidFirebaseToken": "احراز هویت ناموفق بود. لطفاً دوباره وارد شوید.",
+      "notAuthenticated": "برای دسترسی به فضاهای کاری باید وارد شوید.",
+      "tokenExchangeFailed": "احراز هویت با فضای کاری ناموفق بود: {error}",
+      "workspaceNotFound": "فضای کاری پیدا نشد."
+    }
   },
   "zoomControls": {
     "hideMinimap": "مخفی‌سازی نقشه کوچک",

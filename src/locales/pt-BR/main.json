@@ -238,6 +238,12 @@
       "title": "Criar uma conta"
     }
   },
+  "boundingBox": {
+    "height": "Altura",
+    "width": "Largura",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "Limpar Fluxo de Trabalho",
     "deleteBlueprint": "Excluir Blueprint",
@@ -848,6 +854,7 @@
     "releaseTitle": "Lançamento {package} {version}",
     "reloadToApplyChanges": "Recarregue para aplicar as alterações",
     "removeImage": "Remover imagem",
+    "removeTag": "Remover tag",
     "removeVideo": "Remover vídeo",
     "rename": "Renomear",
     "reportIssue": "Enviar relatório",
@@ -980,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "Nenhuma imagem para comparar"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "Pré-visualização do recorte",
+    "loading": "Carregando...",
+    "noInputImage": "Nenhuma imagem de entrada conectada"
   },
   "importFailed": {
     "copyError": "Erro ao Copiar",
@@ -2585,6 +2597,21 @@
     "enterFilename": "Digite o nome do arquivo",
     "exportWorkflow": "Exportar Fluxo de Trabalho",
     "saveWorkflow": "Salvar fluxo de trabalho"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "Você tem alterações não salvas. Deseja descartá-las e trocar de espaço de trabalho?",
+      "title": "Alterações não salvas"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "Você não tem acesso a este espaço de trabalho",
+      "invalidFirebaseToken": "Falha na autenticação. Por favor, tente fazer login novamente.",
+      "notAuthenticated": "Você precisa estar logado para acessar os espaços de trabalho",
+      "tokenExchangeFailed": "Falha ao autenticar com o espaço de trabalho: {error}",
+      "workspaceNotFound": "Espaço de trabalho não encontrado"
+    }
   },
   "zoomControls": {
     "hideMinimap": "Ocultar Minimapa",

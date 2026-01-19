@@ -238,6 +238,12 @@
       "title": "建立帳戶"
     }
   },
+  "boundingBox": {
+    "height": "高度",
+    "width": "寬度",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "清除工作流程",
     "deleteBlueprint": "刪除藍圖",
@@ -848,6 +854,7 @@
     "releaseTitle": "{package} {version} 版本發佈",
     "reloadToApplyChanges": "重新載入以套用變更",
     "removeImage": "移除圖片",
+    "removeTag": "移除標籤",
     "removeVideo": "移除影片",
     "rename": "重新命名",
     "reportIssue": "送出回報",
@@ -980,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "沒有可比較的圖像"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "裁切預覽",
+    "loading": "載入中...",
+    "noInputImage": "未連接輸入影像"
   },
   "importFailed": {
     "copyError": "複製錯誤",
@@ -2574,6 +2586,21 @@
     "enterFilename": "輸入檔案名稱",
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
+      "title": "未儲存的變更"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "您沒有存取此工作區的權限",
+      "invalidFirebaseToken": "驗證失敗。請重新登入。",
+      "notAuthenticated": "您必須登入才能存取工作區",
+      "tokenExchangeFailed": "與工作區驗證失敗：{error}",
+      "workspaceNotFound": "找不到工作區"
+    }
   },
   "zoomControls": {
     "hideMinimap": "隱藏小地圖",

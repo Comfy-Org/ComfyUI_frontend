@@ -273,7 +273,7 @@
     "noItems": "No items"
   },
   "manager": {
-    "title": "Custom Nodes Manager",
+    "title": "Nodes Manager",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
@@ -1718,6 +1718,17 @@
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
     "uploadingModel": "Uploading 3D model..."
   },
+  "imageCrop": {
+    "loading": "Loading...",
+    "noInputImage": "No input image connected",
+    "cropPreviewAlt": "Crop preview"
+  },
+  "boundingBox": {
+    "x": "X",
+    "y": "Y",
+    "width": "Width",
+    "height": "Height"
+  },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
@@ -2496,7 +2507,7 @@
   },
   "linearMode": {
     "linearMode": "Simple Mode",
-    "beta": "Beta - Give Feedback",
+    "beta": "Simple Mode in Beta - Feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
     "runCount": "Run count:",
@@ -2591,6 +2602,21 @@
       "all": "All",
       "completed": "Completed",
       "failed": "Failed"
+    }
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "title": "Unsaved Changes",
+      "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "notAuthenticated": "You must be logged in to access workspaces",
+      "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
+      "accessDenied": "You do not have access to this workspace",
+      "workspaceNotFound": "Workspace not found",
+      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
     }
   }
 }

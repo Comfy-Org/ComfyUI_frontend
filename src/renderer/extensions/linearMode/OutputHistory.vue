@@ -217,7 +217,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       <ModeToggle />
     </div>
     <div class="border-border-subtle md:border-r" />
-    <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-50" />
+    <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-50 grow-1" />
     <article
       v-else
       ref="outputsRef"
@@ -247,18 +247,16 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
           "
         />
       </section>
-      <section
-        v-for="(item, index) in outputs.media.value"
-        :key="index"
-        data-testid="linear-job"
-        class="py-3 not-md:h-24 border-border-subtle flex md:flex-col md:w-full px-1 first:border-t-0 first:border-l-0 md:border-t-2 not-md:border-l-2"
-      >
+      <template v-for="(item, index) in outputs.media.value" :key="index">
+        <div
+          class="border-border-subtle not-md:border-l md:border-t first:border-none not-md:h-21 md:w-full m-3"
+        />
         <template v-for="(output, key) in allOutputs(item)" :key>
           <img
             v-if="getMediaType(output) === 'images'"
             :class="
               cn(
-                'p-1 rounded-lg aspect-square object-cover',
+                'p-1 rounded-lg aspect-square object-cover not-md:h-20 md:w-full',
                 index === selectedIndex[0] &&
                   key === selectedIndex[1] &&
                   'border-2'
@@ -286,7 +284,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             />
           </div>
         </template>
-      </section>
+      </template>
     </article>
   </div>
   <Teleport

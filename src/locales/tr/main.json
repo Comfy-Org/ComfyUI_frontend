@@ -238,6 +238,12 @@
       "title": "Hesap oluşturun"
     }
   },
+  "boundingBox": {
+    "height": "Yükseklik",
+    "width": "Genişlik",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "İş Akışını Temizle",
     "deleteBlueprint": "Taslağı Sil",
@@ -848,6 +854,7 @@
     "releaseTitle": "{package} {version} Sürümü",
     "reloadToApplyChanges": "Değişiklikleri uygulamak için yeniden yükleyin",
     "removeImage": "Görüntüyü kaldır",
+    "removeTag": "Etiketi kaldır",
     "removeVideo": "Videoyu kaldır",
     "rename": "Yeniden Adlandır",
     "reportIssue": "Rapor Gönder",
@@ -980,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "Karşılaştırılacak görsel yok"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "Kırpma önizlemesi",
+    "loading": "Yükleniyor...",
+    "noInputImage": "Bağlı giriş görseli yok"
   },
   "importFailed": {
     "copyError": "Kopyalama Hatası",
@@ -2574,6 +2586,21 @@
     "enterFilename": "Dosya adını girin",
     "exportWorkflow": "İş Akışını Dışa Aktar",
     "saveWorkflow": "İş akışını kaydet"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
+      "title": "Kaydedilmemiş Değişiklikler"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "Bu çalışma alanına erişiminiz yok",
+      "invalidFirebaseToken": "Kimlik doğrulama başarısız oldu. Lütfen tekrar giriş yapmayı deneyin.",
+      "notAuthenticated": "Çalışma alanlarına erişmek için giriş yapmalısınız",
+      "tokenExchangeFailed": "Çalışma alanı ile kimlik doğrulama başarısız oldu: {error}",
+      "workspaceNotFound": "Çalışma alanı bulunamadı"
+    }
   },
   "zoomControls": {
     "hideMinimap": "Mini Haritayı Gizle",

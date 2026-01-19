@@ -351,6 +351,10 @@
         "name": "最初のフレーム",
         "tooltip": "動画に使用する最初のフレーム。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
+      },
       "last_frame": {
         "name": "最後のフレーム",
         "tooltip": "動画に使用する最後のフレーム。"
@@ -527,6 +531,10 @@
         "name": "duration",
         "tooltip": "出力動画の長さ（秒単位）。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
+      },
       "image": {
         "name": "image",
         "tooltip": "動画の最初のフレームとして使用する画像。"
@@ -633,6 +641,10 @@
       "duration": {
         "name": "長さ",
         "tooltip": "出力動画の長さ（秒単位）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
       },
       "model": {
         "name": "モデル"

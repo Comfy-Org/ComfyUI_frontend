@@ -238,6 +238,12 @@
       "title": "Создать аккаунт"
     }
   },
+  "boundingBox": {
+    "height": "Высота",
+    "width": "Ширина",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "Очистить рабочий процесс",
     "deleteBlueprint": "Удалить схему",
@@ -848,6 +854,7 @@
     "releaseTitle": "Релиз {package} {version}",
     "reloadToApplyChanges": "Перезагрузите, чтобы применить изменения",
     "removeImage": "Удалить изображение",
+    "removeTag": "Удалить тег",
     "removeVideo": "Удалить видео",
     "rename": "Переименовать",
     "reportIssue": "Отправить отчёт",
@@ -980,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "Нет изображений для сравнения"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "Предпросмотр обрезки",
+    "loading": "Загрузка...",
+    "noInputImage": "Входное изображение не подключено"
   },
   "importFailed": {
     "copyError": "Ошибка копирования",
@@ -2574,6 +2586,21 @@
     "enterFilename": "Введите название файла",
     "exportWorkflow": "Экспорт рабочего процесса",
     "saveWorkflow": "Сохранить рабочий процесс"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "У вас есть несохранённые изменения. Хотите их отменить и переключиться на другое рабочее пространство?",
+      "title": "Несохранённые изменения"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "У вас нет доступа к этому рабочему пространству",
+      "invalidFirebaseToken": "Ошибка аутентификации. Пожалуйста, попробуйте войти снова.",
+      "notAuthenticated": "Вы должны войти в систему, чтобы получить доступ к рабочим пространствам",
+      "tokenExchangeFailed": "Не удалось выполнить аутентификацию с рабочим пространством: {error}",
+      "workspaceNotFound": "Рабочее пространство не найдено"
+    }
   },
   "zoomControls": {
     "hideMinimap": "Скрыть миникарту",

@@ -8,17 +8,18 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { getJobWorkflow } from '@/services/jobOutputCache'
 
 /**
- * Extract workflow from AssetItem (async - may need file fetch)
- * Tries metadata first (for output assets), then falls back to extracting from file
- * This supports both output assets (with embedded metadata) and input assets (PNG with workflow)
+ * Extract workflow from AssetItem using jobs API
+ * For output assets: uses jobs API (getJobWorkflow)
+ * For input assets: extracts from file metadata
  *
  * @param asset The asset item to extract workflow from
  * @returns WorkflowSource with workflow and generated filename
  *
  * @example
- * const asset = { name: 'output.png', user_metadata: { workflow: {...} } }
+ * const asset = { name: 'output.png', user_metadata: { promptId: '123' } }
  * const { workflow, filename } = await extractWorkflowFromAsset(asset)
  */
 export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
@@ -27,17 +28,14 @@ export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
 }> {
   const baseFilename = asset.name.replace(/\.[^/.]+$/, '.json')
 
-  // Strategy 1: Try metadata first (for output assets)
+  // For output assets: use jobs API (with caching and validation)
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  if (metadata?.workflow) {
-    return {
-      workflow: metadata.workflow as ComfyWorkflowJSON,
-      filename: baseFilename
-    }
+  if (metadata?.promptId) {
+    const workflow = await getJobWorkflow(metadata.promptId)
+    return { workflow: workflow ?? null, filename: baseFilename }
   }
 
-  // Strategy 2: Try extracting from file (for input assets with embedded workflow)
-  // This supports PNG, WEBP, FLAC, and other formats with metadata
+  // For input assets: extract from file metadata (PNG/WEBP/FLAC with embedded workflow)
   try {
     const fileUrl = getAssetUrl(asset)
     const response = await fetch(fileUrl)

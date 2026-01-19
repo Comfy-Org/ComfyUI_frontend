@@ -404,8 +404,9 @@ export function useBrushDrawing(initialSettings?: {
       device = root.device
       console.warn('✅ TypeGPU initialized! Root:', root)
       console.warn('Device info:', root.device.limits)
-    } catch (error: any) {
-      console.warn('Failed to initialize TypeGPU:', error.message)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn('Failed to initialize TypeGPU:', message)
     }
   }
 

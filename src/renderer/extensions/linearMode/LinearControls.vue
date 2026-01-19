@@ -18,6 +18,7 @@ import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -50,15 +51,26 @@ useEventListener(
   () => (graphNodes.value = app.rootGraph.nodes)
 )
 
+function getDropIndicator(node: LGraphNode) {
+  if (node.type !== 'LoadImage') return undefined
+
+  const filename = node.widgets?.[0]?.value
+  const resultItem = { type: 'input', filename: `${filename}` }
+
+  return {
+    iconClass: 'icon-[lucide--image]',
+    imageUrl: filename
+      ? api.apiURL(
+          `/view?${new URLSearchParams(resultItem)}${app.getPreviewFormatParam()}`
+        )
+      : undefined,
+    label: t('linearMode.dragAndDropImage'),
+    onClick: () => node.widgets?.[1]?.callback?.(undefined)
+  }
+}
+
 function nodeToNodeData(node: LGraphNode) {
-  const dropIndicator =
-    node.type !== 'LoadImage'
-      ? undefined
-      : {
-          iconClass: 'icon-[lucide--image]',
-          label: t('linearMode.dragAndDropImage'),
-          onClick: () => node.widgets?.[1]?.callback?.(undefined)
-        }
+  const dropIndicator = getDropIndicator(node)
   const nodeData = extractVueNodeData(node)
   for (const widget of nodeData.widgets ?? []) widget.slotMetadata = undefined
 
@@ -106,9 +118,6 @@ async function runButtonClick(e: Event) {
       ? 'Comfy.QueuePromptFront'
       : 'Comfy.QueuePrompt'
 
-    useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_linear'
-    })
     if (batchCount.value > 1) {
       useTelemetry()?.trackUiButtonClicked({
         button_id: 'queue_run_multiple_batches_submitted'
@@ -117,7 +126,7 @@ async function runButtonClick(e: Event) {
     await commandStore.execute(commandId, {
       metadata: {
         subscribe_to_run: false,
-        trigger_source: 'button'
+        trigger_source: 'linear'
       }
     })
   } finally {
@@ -196,7 +205,7 @@ defineExpose({ runButtonClick })
             <NodeWidgets
               :node-data
               :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
-              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg"
+              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg max-w-100"
             />
           </template>
         </div>

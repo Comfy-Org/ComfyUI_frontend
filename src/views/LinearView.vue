@@ -139,8 +139,8 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :selected-item
           :selected-output
         />
-        <div ref="topLeftRef" class="absolute z-20 top-4 left-4" />
-        <div ref="topRightRef" class="absolute z-20 top-4 right-4" />
+        <div ref="topLeftRef" class="absolute z-21 top-4 left-4" />
+        <div ref="topRightRef" class="absolute z-21 top-4 right-4" />
         <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
         <div ref="bottomRightRef" class="absolute z-20 bottom-24 right-4" />
         <div

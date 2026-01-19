@@ -238,6 +238,12 @@
       "title": "Créer un compte"
     }
   },
+  "boundingBox": {
+    "height": "Hauteur",
+    "width": "Largeur",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "Effacer le workflow",
     "deleteBlueprint": "Supprimer le plan",
@@ -848,6 +854,7 @@
     "releaseTitle": "Publication de {package} {version}",
     "reloadToApplyChanges": "Recharger pour appliquer les modifications",
     "removeImage": "Supprimer l'image",
+    "removeTag": "Supprimer le tag",
     "removeVideo": "Supprimer la vidéo",
     "rename": "Renommer",
     "reportIssue": "Envoyer le rapport",
@@ -980,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "Aucune image à comparer"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "Aperçu du recadrage",
+    "loading": "Chargement...",
+    "noInputImage": "Aucune image d'entrée connectée"
   },
   "importFailed": {
     "copyError": "Erreur de copie",
@@ -2574,6 +2586,21 @@
     "enterFilename": "Entrez le nom du fichier",
     "exportWorkflow": "Exporter le flux de travail",
     "saveWorkflow": "Enregistrer le flux de travail"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "Vous avez des modifications non enregistrées. Voulez-vous les abandonner et changer d’espace de travail ?",
+      "title": "Modifications non enregistrées"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "Vous n’avez pas accès à cet espace de travail",
+      "invalidFirebaseToken": "Échec de l’authentification. Veuillez vous reconnecter.",
+      "notAuthenticated": "Vous devez être connecté pour accéder aux espaces de travail",
+      "tokenExchangeFailed": "Échec de l’authentification avec l’espace de travail : {error}",
+      "workspaceNotFound": "Espace de travail introuvable"
+    }
   },
   "zoomControls": {
     "hideMinimap": "Masquer la mini-carte",
