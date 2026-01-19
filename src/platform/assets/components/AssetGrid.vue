@@ -79,7 +79,7 @@ const isLg = breakpoints.greaterOrEqual('lg')
 const isMd = breakpoints.greaterOrEqual('md')
 const maxColumns = computed(() => {
   if (is2Xl.value) return 5
-  if (isXl.value) return 4
+  if (isXl.value) return 3
   if (isLg.value) return 3
   if (isMd.value) return 2
   return 1

@@ -41,16 +41,6 @@
         <MoreButton ref="dropdown-menu-button" size="sm">
           <template #default>
             <Button
-              v-if="flags.assetRenameEnabled"
-              variant="secondary"
-              size="md"
-              class="justify-start"
-              @click="startAssetRename"
-            >
-              <i class="icon-[lucide--pencil]" />
-              <span>{{ $t('g.rename') }}</span>
-            </Button>
-            <Button
               v-if="flags.assetDeletionEnabled"
               variant="secondary"
               size="md"
@@ -70,25 +60,19 @@
         v-tooltip.top="{ value: displayName, showDelay: tooltipDelay }"
         :class="
           cn(
-            'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
+            'm-0 text-sm font-semibold line-clamp-2 wrap-anywhere',
             'text-base-foreground'
           )
         "
       >
-        <EditableText
-          :model-value="displayName"
-          :is-editing="isEditing"
-          :input-attrs="{ 'data-testid': 'asset-name-input' }"
-          @edit="assetRename"
-          @cancel="assetRename()"
-        />
+        {{ displayName }}
       </h3>
       <p
         :id="descId"
         v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
         :class="
           cn(
-            'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box] text-muted-foreground'
+            'm-0 text-sm line-clamp-2 [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box] text-muted-foreground'
           )
         "
       >
@@ -136,7 +120,6 @@ import { useI18n } from 'vue-i18n'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
-import EditableText from '@/components/common/EditableText.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -145,7 +128,6 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import { assetService } from '@/platform/assets/services/assetService'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -170,7 +152,6 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { flags } = useFeatureFlags()
-const toastStore = useToastStore()
 
 const cardRef = useTemplateRef<HTMLDivElement>('card')
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
@@ -201,12 +182,7 @@ onClickOutside(
 const titleId = useId()
 const descId = useId()
 
-const isEditing = ref(false)
-const newNameRef = ref<string>()
-
-const displayName = computed(
-  () => newNameRef.value ?? getAssetDisplayName(asset)
-)
+const displayName = computed(() => getAssetDisplayName(asset))
 
 const showAssetOptions = computed(
   () =>
@@ -271,33 +247,5 @@ function confirmDeletion() {
       }
     }
   })
-}
-
-function startAssetRename() {
-  dropdownMenuButton.value?.hide()
-  isEditing.value = true
-}
-
-async function assetRename(newName?: string) {
-  isEditing.value = false
-  if (newName) {
-    // Optimistic update
-    newNameRef.value = newName
-    try {
-      const result = await assetService.updateAsset(asset.id, {
-        user_metadata: { name: newName }
-      })
-      // Update with the actual name once the server responds
-      newNameRef.value = getAssetDisplayName(result)
-    } catch (err: unknown) {
-      console.error(err)
-      toastStore.add({
-        severity: 'error',
-        summary: t('assetBrowser.rename.failed'),
-        life: 10_000
-      })
-      newNameRef.value = undefined
-    }
-  }
 }
 </script>
