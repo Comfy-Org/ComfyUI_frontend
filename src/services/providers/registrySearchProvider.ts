@@ -34,16 +34,10 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
       }
 
       const listResult = await registryStore.listAllPacks.call(listParams)
-
-      if (!listResult || !listResult.nodes) {
-        return {
-          nodePacks: [],
-          querySuggestions: []
-        }
-      }
+      const nodePacks = listResult?.nodes ?? []
 
       return {
-        nodePacks: listResult.nodes,
+        nodePacks,
         querySuggestions: []
       }
     }
@@ -59,16 +53,10 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
     }
 
     const searchResult = await registryStore.search.call(searchParams)
-
-    if (!searchResult || !searchResult.nodes) {
-      return {
-        nodePacks: [],
-        querySuggestions: []
-      }
-    }
+    const nodePacks = searchResult?.nodes ?? []
 
     return {
-      nodePacks: searchResult.nodes,
+      nodePacks,
       querySuggestions: [] // Registry doesn't support query suggestions
     }
   }
