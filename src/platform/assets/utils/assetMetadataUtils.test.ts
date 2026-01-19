@@ -4,10 +4,13 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetAdditionalTags,
   getAssetBaseModel,
+  getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
+  getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
+  getAssetUserDescription,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
 
@@ -195,6 +198,91 @@ describe('assetMetadataUtils', () => {
 
     it('should return Source for unknown URLs', () => {
       expect(getSourceName('https://example.com/model')).toBe('Source')
+    })
+  })
+
+  describe('getAssetBaseModels', () => {
+    it.for([
+      {
+        name: 'array of strings',
+        base_model: ['SDXL', 'SD1.5', 'Flux'],
+        expected: ['SDXL', 'SD1.5', 'Flux']
+      },
+      {
+        name: 'filters non-string entries',
+        base_model: ['SDXL', 123, 'SD1.5', null, undefined],
+        expected: ['SDXL', 'SD1.5']
+      },
+      {
+        name: 'single string wrapped in array',
+        base_model: 'SDXL',
+        expected: ['SDXL']
+      },
+      {
+        name: 'non-array/string returns empty',
+        base_model: 123,
+        expected: []
+      },
+      { name: 'undefined returns empty', base_model: undefined, expected: [] }
+    ])('$name', ({ base_model, expected }) => {
+      const asset = { ...mockAsset, user_metadata: { base_model } }
+      expect(getAssetBaseModels(asset)).toEqual(expected)
+    })
+
+    it('should return empty array when no metadata', () => {
+      expect(getAssetBaseModels(mockAsset)).toEqual([])
+    })
+  })
+
+  describe('getAssetModelType', () => {
+    it.for([
+      {
+        name: 'returns model type from tags',
+        tags: ['models', 'checkpoints'],
+        expected: 'checkpoints'
+      },
+      {
+        name: 'extracts last segment from path-style tags',
+        tags: ['models', 'models/loras'],
+        expected: 'loras'
+      },
+      {
+        name: 'returns null when only models tag',
+        tags: ['models'],
+        expected: null
+      },
+      { name: 'returns null when tags empty', tags: [], expected: null }
+    ])('$name', ({ tags, expected }) => {
+      const asset = { ...mockAsset, tags }
+      expect(getAssetModelType(asset)).toBe(expected)
+    })
+  })
+
+  describe('getAssetUserDescription', () => {
+    it.for([
+      {
+        name: 'returns description when present',
+        user_description: 'A custom user description',
+        expected: 'A custom user description'
+      },
+      {
+        name: 'returns empty for non-string',
+        user_description: 123,
+        expected: ''
+      },
+      { name: 'returns empty for null', user_description: null, expected: '' },
+      {
+        name: 'returns empty for undefined',
+        user_description: undefined,
+        expected: ''
+      }
+    ])('$name', ({ user_description, expected }) => {
+      const asset = { ...mockAsset, user_metadata: { user_description } }
+      expect(getAssetUserDescription(asset)).toBe(expected)
+    })
+
+    it('should return empty string when no metadata', () => {
+      expect(getAssetUserDescription(mockAsset)).toBe('')
     })
   })
 })
