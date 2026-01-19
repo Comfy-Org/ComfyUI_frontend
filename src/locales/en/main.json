@@ -2433,6 +2433,7 @@
       "modelDescription": "Model Description",
       "triggerPhrases": "Trigger Phrases",
       "description": "Description",
+      "descriptionNotSet": "No description set",
       "descriptionPlaceholder": "Add a description for this model..."
     },
     "media": {

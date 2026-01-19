@@ -149,9 +149,18 @@
           ref="descriptionTextarea"
           v-model="userDescription"
           :disabled="isImmutable"
-          :placeholder="$t('assetBrowser.modelInfo.descriptionPlaceholder')"
+          :placeholder="
+            isImmutable
+              ? $t('assetBrowser.modelInfo.descriptionNotSet')
+              : $t('assetBrowser.modelInfo.descriptionPlaceholder')
+          "
           rows="3"
-          class="w-full resize-y rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground outline-none transition-colors focus:bg-component-node-widget-background disabled:pointer-events-none"
+          :class="
+            cn(
+              'w-full resize-y rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground outline-none transition-colors focus:bg-component-node-widget-background',
+              isImmutable && 'cursor-not-allowed'
+            )
+          "
           @keydown.escape.stop="descriptionTextarea?.blur()"
         />
       </ModelInfoField>
