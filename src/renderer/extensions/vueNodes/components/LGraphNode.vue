@@ -505,7 +505,6 @@ function handleShowAdvancedInputs() {
     rightSidePanelStore.focusSection('advanced-inputs')
   } else {
     node.showAdvanced = true
-    useCanvasStore().canvas?.setDirty(true, true)
   }
 }
 
