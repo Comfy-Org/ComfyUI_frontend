@@ -5,7 +5,7 @@ import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /** Permission flags for workspace actions */
-export interface WorkspacePermissions {
+interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
   canInviteMembers: boolean
@@ -17,7 +17,7 @@ export interface WorkspacePermissions {
 }
 
 /** UI configuration for workspace role */
-export interface WorkspaceUIConfig {
+interface WorkspaceUIConfig {
   showMembersList: boolean
   showPendingTab: boolean
   showSearch: boolean

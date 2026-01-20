@@ -10,7 +10,7 @@ import type { AuthHeader } from '@/types/authTypes'
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
 
-export interface Workspace {
+interface Workspace {
   id: string
   name: string
   type: WorkspaceType
@@ -28,13 +28,13 @@ export interface Member {
   joined_at: string
 }
 
-export interface PaginationInfo {
+interface PaginationInfo {
   offset: number
   limit: number
   total: number
 }
 
-export interface ListMembersResponse {
+interface ListMembersResponse {
   members: Member[]
   pagination: PaginationInfo
 }
@@ -53,43 +53,43 @@ export interface PendingInvite {
   expires_at: string
 }
 
-export interface ListInvitesResponse {
+interface ListInvitesResponse {
   invites: PendingInvite[]
 }
 
-export interface CreateInviteRequest {
+interface CreateInviteRequest {
   email: string
 }
 
-export interface AcceptInviteResponse {
+interface AcceptInviteResponse {
   workspace_id: string
   workspace_name: string
 }
 
 // Billing types (POST /api/billing/portal)
-export interface BillingPortalRequest {
+interface BillingPortalRequest {
   return_url: string
 }
 
-export interface BillingPortalResponse {
+interface BillingPortalResponse {
   billing_portal_url: string
 }
 
-export interface CreateWorkspacePayload {
+interface CreateWorkspacePayload {
   name: string
 }
 
-export interface UpdateWorkspacePayload {
+interface UpdateWorkspacePayload {
   name: string
 }
 
 // API responses
-export interface ListWorkspacesResponse {
+interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
 }
 
 // Token exchange types (POST /api/auth/token)
-export interface ExchangeTokenRequest {
+interface ExchangeTokenRequest {
   workspace_id: string
 }
 

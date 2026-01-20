@@ -39,7 +39,7 @@ interface WorkspaceState extends WorkspaceWithRole {
   pendingInvites: PendingInvite[]
 }
 
-export type InitState = 'uninitialized' | 'loading' | 'ready' | 'error'
+type InitState = 'uninitialized' | 'loading' | 'ready' | 'error'
 
 function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
   return {
