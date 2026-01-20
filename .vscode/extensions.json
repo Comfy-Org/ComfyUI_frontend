@@ -1,25 +1,23 @@
 {
   "recommendations": [
+    "antfu.vite",
     "austenc.tailwind-docs",
     "bradlc.vscode-tailwindcss",
     "davidanson.vscode-markdownlint",
     "dbaeumer.vscode-eslint",
+    "donjayamanne.githistory",
     "eamodio.gitlens",
-    "esbenp.prettier-vscode",
-    "figma.figma-vscode-extension",
     "github.vscode-github-actions",
     "github.vscode-pull-request-github",
     "hbenl.vscode-test-explorer",
+    "kisstkondoros.vscode-codemetrics",
     "lokalise.i18n-ally",
     "ms-playwright.playwright",
+    "oxc.oxc-vscode",
+    "prograhammer.tslint-vue",
+    "sonarsource.sonarlint-vscode",
     "vitest.explorer",
     "vue.volar",
-    "sonarsource.sonarlint-vscode",
-    "deque-systems.vscode-axe-linter",
-    "kisstkondoros.vscode-codemetrics",
-    "donjayamanne.githistory",
-    "wix.vscode-import-cost",
-    "prograhammer.tslint-vue",
-    "antfu.vite"
+    "wix.vscode-import-cost"
   ]
 }

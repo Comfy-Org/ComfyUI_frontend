@@ -27,10 +27,10 @@ See @docs/guidance/*.md for file-type-specific conventions (auto-loaded by glob)
 - Build output: `dist/`
 - Configs
   - `vite.config.mts`
-  - `vitest.config.ts`
   - `playwright.config.ts`
   - `eslint.config.ts`
-  - `.prettierrc`
+  - `.oxfmtrc.json`
+  - `.oxlintrc.json`
   - etc.
 
 ## Monorepo Architecture
