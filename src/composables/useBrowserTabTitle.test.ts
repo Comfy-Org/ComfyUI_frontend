@@ -11,13 +11,28 @@ vi.mock('@/i18n', () => ({
 }))
 
 // Mock the execution store
-const executionStore = reactive({
+const executionStore = reactive<{
+  isIdle: boolean
+  executionProgress: number
+  executingNode: unknown
+  executingNodeProgress: number
+  nodeProgressStates: Record<string, unknown>
+  activePrompt: {
+    workflow: {
+      changeTracker: {
+        activeState: {
+          nodes: { id: number; type: string }[]
+        }
+      }
+    }
+  } | null
+}>({
   isIdle: true,
   executionProgress: 0,
-  executingNode: null as any,
+  executingNode: null,
   executingNodeProgress: 0,
-  nodeProgressStates: {} as any,
-  activePrompt: null as any
+  nodeProgressStates: {},
+  activePrompt: null
 })
 vi.mock('@/stores/executionStore', () => ({
   useExecutionStore: () => executionStore
@@ -25,15 +40,21 @@ vi.mock('@/stores/executionStore', () => ({
 
 // Mock the setting store
 const settingStore = reactive({
-  get: vi.fn(() => 'Enabled')
+  get: vi.fn((_key: string) => 'Enabled' as string)
 })
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => settingStore
 }))
 
 // Mock the workflow store
-const workflowStore = reactive({
-  activeWorkflow: null as any
+const workflowStore = reactive<{
+  activeWorkflow: {
+    filename: string
+    isModified: boolean
+    isPersisted: boolean
+  } | null
+}>({
+  activeWorkflow: null
 })
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => workflowStore
@@ -52,13 +73,13 @@ describe('useBrowserTabTitle', () => {
     // reset execution store
     executionStore.isIdle = true
     executionStore.executionProgress = 0
-    executionStore.executingNode = null as any
+    executionStore.executingNode = null
     executionStore.executingNodeProgress = 0
     executionStore.nodeProgressStates = {}
     executionStore.activePrompt = null
 
     // reset setting and workflow stores
-    ;(settingStore.get as any).mockReturnValue('Enabled')
+    vi.mocked(settingStore.get).mockReturnValue('Enabled')
     workflowStore.activeWorkflow = null
     workspaceStore.shiftDown = false
 
@@ -74,7 +95,7 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('sets workflow name as title when workflow exists and menu enabled', async () => {
-    ;(settingStore.get as any).mockReturnValue('Enabled')
+    vi.mocked(settingStore.get).mockReturnValue('Enabled')
     workflowStore.activeWorkflow = {
       filename: 'myFlow',
       isModified: false,
@@ -88,7 +109,7 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('adds asterisk for unsaved workflow', async () => {
-    ;(settingStore.get as any).mockReturnValue('Enabled')
+    vi.mocked(settingStore.get).mockReturnValue('Enabled')
     workflowStore.activeWorkflow = {
       filename: 'myFlow',
       isModified: true,
@@ -102,7 +123,7 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('hides asterisk when autosave is enabled', async () => {
-    ;(settingStore.get as any).mockImplementation((key: string) => {
+    vi.mocked(settingStore.get).mockImplementation((key: string) => {
       if (key === 'Comfy.Workflow.AutoSave') return 'after delay'
       if (key === 'Comfy.UseNewMenu') return 'Enabled'
       return 'Enabled'
@@ -118,7 +139,7 @@ describe('useBrowserTabTitle', () => {
   })
 
   it('hides asterisk while Shift key is held', async () => {
-    ;(settingStore.get as any).mockImplementation((key: string) => {
+    vi.mocked(settingStore.get).mockImplementation((key: string) => {
       if (key === 'Comfy.Workflow.AutoSave') return 'off'
       if (key === 'Comfy.UseNewMenu') return 'Enabled'
       return 'Enabled'
@@ -137,7 +158,7 @@ describe('useBrowserTabTitle', () => {
   // Fails when run together with other tests. Suspect to be caused by leaked
   // state from previous tests.
   it.skip('disables workflow title when menu disabled', async () => {
-    ;(settingStore.get as any).mockReturnValue('Disabled')
+    vi.mocked(settingStore.get).mockReturnValue('Disabled')
     workflowStore.activeWorkflow = {
       filename: 'myFlow',
       isModified: false,
