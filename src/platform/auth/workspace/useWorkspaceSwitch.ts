@@ -2,12 +2,12 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 export function useWorkspaceSwitch() {
   const { t } = useI18n()
-  const workspaceStore = useWorkspaceStore()
+  const workspaceStore = useTeamWorkspaceStore()
   const { activeWorkspace } = storeToRefs(workspaceStore)
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()

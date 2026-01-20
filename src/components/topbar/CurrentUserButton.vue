@@ -47,7 +47,7 @@ import { ref } from 'vue'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
@@ -58,7 +58,7 @@ const { showArrow = true, compact = false } = defineProps<{
 }>()
 
 const { isLoggedIn } = useCurrentUser()
-const { workspaceName } = storeToRefs(useWorkspaceStore())
+const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
 

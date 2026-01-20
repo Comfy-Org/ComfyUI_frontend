@@ -63,7 +63,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { onConfirm } = defineProps<{
@@ -73,7 +73,7 @@ const { onConfirm } = defineProps<{
 const { t } = useI18n()
 const dialogStore = useDialogStore()
 const toast = useToast()
-const workspaceStore = useWorkspaceStore()
+const workspaceStore = useTeamWorkspaceStore()
 const loading = ref(false)
 const workspaceName = ref('')
 

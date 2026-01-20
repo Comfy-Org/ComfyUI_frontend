@@ -100,7 +100,7 @@ import MembersPanelContent from '@/components/dialog/content/setting/MembersPane
 import Button from '@/components/ui/button/Button.vue'
 import SubscriptionPanelContent from '@/platform/cloud/subscription/components/SubscriptionPanelContent.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 const { defaultTab = 'plan' } = defineProps<{
@@ -113,7 +113,7 @@ const {
   showDeleteWorkspaceDialog,
   showInviteMemberDialog
 } = useDialogService()
-const workspaceStore = useWorkspaceStore()
+const workspaceStore = useTeamWorkspaceStore()
 const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
   storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore

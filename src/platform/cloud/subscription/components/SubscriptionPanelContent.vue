@@ -257,11 +257,11 @@ import {
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const authActions = useFirebaseAuthActions()
-const workspaceStore = useWorkspaceStore()
+const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed } = storeToRefs(workspaceStore)
 const { subscribeWorkspace } = workspaceStore
 const { permissions, workspaceRole } = useWorkspaceUI()

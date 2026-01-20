@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
-import { useWorkspaceStore } from '../stores/workspaceStore'
+import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /** Permission flags for workspace actions */
 export interface WorkspacePermissions {
@@ -131,7 +131,7 @@ function getUIConfig(
  * Internal implementation of UI configuration composable.
  */
 function useWorkspaceUIInternal() {
-  const store = useWorkspaceStore()
+  const store = useTeamWorkspaceStore()
 
   // Tab management (shared UI state)
   const activeTab = ref<string>('plan')

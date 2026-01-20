@@ -143,12 +143,6 @@ async function withAuth<T>(
 }
 
 /**
- * Wrapper for workspace-scoped endpoints (e.g., /api/workspace/members).
- * The workspace context is determined from the Bearer token.
- */
-const withWorkspaceAuth = withAuth
-
-/**
  * Wrapper that uses Firebase ID token directly (not workspace token).
  * Used for token exchange where we need the Firebase token to get a workspace token.
  */
@@ -236,7 +230,7 @@ export const workspaceApi = {
    * POST /api/workspace/leave
    */
   leave: (): Promise<void> =>
-    withWorkspaceAuth((headers) =>
+    withAuth((headers) =>
       workspaceApiClient.post(api.apiURL('/workspace/leave'), null, { headers })
     ),
 
@@ -245,7 +239,7 @@ export const workspaceApi = {
    * GET /api/workspace/members
    */
   listMembers: (params?: ListMembersParams): Promise<ListMembersResponse> =>
-    withWorkspaceAuth((headers) =>
+    withAuth((headers) =>
       workspaceApiClient.get(api.apiURL('/workspace/members'), {
         headers,
         params
@@ -257,7 +251,7 @@ export const workspaceApi = {
    * DELETE /api/workspace/members/:userId
    */
   removeMember: (userId: string): Promise<void> =>
-    withWorkspaceAuth((headers) =>
+    withAuth((headers) =>
       workspaceApiClient.delete(api.apiURL(`/workspace/members/${userId}`), {
         headers
       })
@@ -268,7 +262,7 @@ export const workspaceApi = {
    * GET /api/workspace/invites
    */
   listInvites: (): Promise<ListInvitesResponse> =>
-    withWorkspaceAuth((headers) =>
+    withAuth((headers) =>
       workspaceApiClient.get(api.apiURL('/workspace/invites'), { headers })
     ),
 
@@ -277,7 +271,7 @@ export const workspaceApi = {
    * POST /api/workspace/invites
    */
   createInvite: (payload: CreateInviteRequest): Promise<PendingInvite> =>
-    withWorkspaceAuth((headers) =>
+    withAuth((headers) =>
       workspaceApiClient.post(api.apiURL('/workspace/invites'), payload, {
         headers
       })
@@ -288,7 +282,7 @@ export const workspaceApi = {
    * DELETE /api/workspace/invites/:inviteId
    */
   revokeInvite: (inviteId: string): Promise<void> =>
-    withWorkspaceAuth((headers) =>
+    withAuth((headers) =>
       workspaceApiClient.delete(api.apiURL(`/workspace/invites/${inviteId}`), {
         headers
       })
@@ -328,10 +322,12 @@ export const workspaceApi = {
    * Uses workspace-scoped token to get billing portal URL.
    */
   accessBillingPortal: (returnUrl?: string): Promise<BillingPortalResponse> =>
-    withWorkspaceAuth((headers) =>
+    withAuth((headers) =>
       workspaceApiClient.post(
         api.apiURL('/billing/portal'),
-        { return_url: returnUrl ?? window.location.href } satisfies BillingPortalRequest,
+        {
+          return_url: returnUrl ?? window.location.href
+        } satisfies BillingPortalRequest,
         { headers }
       )
     )

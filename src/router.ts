@@ -187,9 +187,9 @@ if (isCloud) {
     // TODO: Use flags.teamWorkspacesEnabled when backend enables the flag
     const teamWorkspacesEnabled = true
     if (to.path === '/' && teamWorkspacesEnabled) {
-      const { useWorkspaceStore } =
-        await import('@/platform/workspace/stores/workspaceStore')
-      const workspaceStore = useWorkspaceStore()
+      const { useTeamWorkspaceStore } =
+        await import('@/platform/workspace/stores/teamWorkspaceStore')
+      const workspaceStore = useTeamWorkspaceStore()
 
       if (workspaceStore.initState === 'uninitialized') {
         try {

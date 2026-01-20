@@ -41,7 +41,7 @@
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { inviteId } = defineProps<{
@@ -49,7 +49,7 @@ const { inviteId } = defineProps<{
 }>()
 
 const dialogStore = useDialogStore()
-const workspaceStore = useWorkspaceStore()
+const workspaceStore = useTeamWorkspaceStore()
 const loading = ref(false)
 
 function onCancel() {

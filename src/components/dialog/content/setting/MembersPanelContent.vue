@@ -324,8 +324,8 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   PendingInvite,
   WorkspaceMember
-} from '@/platform/workspace/stores/workspaceStore'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+} from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -337,7 +337,7 @@ const {
   showRevokeInviteDialog,
   showCreateWorkspaceDialog
 } = useDialogService()
-const workspaceStore = useWorkspaceStore()
+const workspaceStore = useTeamWorkspaceStore()
 const {
   members,
   pendingInvites,

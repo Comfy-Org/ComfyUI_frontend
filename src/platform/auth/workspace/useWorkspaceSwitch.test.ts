@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
-import type { WorkspaceWithRole } from '@/platform/auth/workspace/workspaceTypes'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 const mockSwitchWorkspace = vi.hoisted(() => vi.fn())
 const mockActiveWorkspace = vi.hoisted(() => ({
   value: null as WorkspaceWithRole | null
 }))
 
-vi.mock('@/platform/workspace/stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
     switchWorkspace: mockSwitchWorkspace
   })
 }))

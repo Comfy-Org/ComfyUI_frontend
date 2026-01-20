@@ -9,9 +9,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
-import { useWorkspaceStore } from '../stores/workspaceStore'
-
-const LOG_PREFIX = '[useInviteUrlLoader]'
+import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /**
  * Composable for loading workspace invites from URL query parameters
@@ -28,7 +26,7 @@ export function useInviteUrlLoader() {
   const router = useRouter()
   const { t } = useI18n()
   const toast = useToast()
-  const workspaceStore = useWorkspaceStore()
+  const workspaceStore = useTeamWorkspaceStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
 
   /**
@@ -70,32 +68,16 @@ export function useInviteUrlLoader() {
    * 5. Clean up URL and preserved query
    */
   const loadInviteFromUrl = async () => {
-    console.log(LOG_PREFIX, 'Starting invite URL loading')
-    console.log(LOG_PREFIX, 'Current route.query:', route.query)
-
     // Restore preserved query from sessionStorage (handles login redirect case)
     const query = await ensureInviteQueryFromIntent()
-    console.log(LOG_PREFIX, 'Query after hydration:', query)
 
     const inviteParam = query.invite
-    console.log(
-      LOG_PREFIX,
-      'Invite param:',
-      inviteParam,
-      'type:',
-      typeof inviteParam
-    )
-
     if (!inviteParam || typeof inviteParam !== 'string') {
-      console.log(LOG_PREFIX, 'No valid invite param found, skipping')
       return
     }
 
-    console.log(LOG_PREFIX, 'Accepting invite with token:', inviteParam)
-
     try {
       const result = await workspaceStore.acceptInvite(inviteParam)
-      console.log(LOG_PREFIX, 'Invite accepted successfully:', result)
 
       toast.add({
         severity: 'success',
@@ -106,7 +88,6 @@ export function useInviteUrlLoader() {
         life: 5000
       })
     } catch (error) {
-      console.error(LOG_PREFIX, 'Failed to accept invite:', error)
       toast.add({
         severity: 'error',
         summary: t('workspace.inviteFailed'),

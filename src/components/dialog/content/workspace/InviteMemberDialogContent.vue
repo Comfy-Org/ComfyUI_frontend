@@ -117,7 +117,7 @@ import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { onConfirm } = defineProps<{
@@ -126,7 +126,7 @@ const { onConfirm } = defineProps<{
 
 const dialogStore = useDialogStore()
 const toast = useToast()
-const workspaceStore = useWorkspaceStore()
+const workspaceStore = useTeamWorkspaceStore()
 
 const loading = ref(false)
 const email = ref('')

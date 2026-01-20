@@ -120,7 +120,7 @@ import type {
   WorkspaceRole,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -140,7 +140,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { switchWithConfirmation } = useWorkspaceSwitch()
 const { showDeleteWorkspaceDialog } = useDialogService()
-const workspaceStore = useWorkspaceStore()
+const workspaceStore = useTeamWorkspaceStore()
 const { workspaceId, workspaces, canCreateWorkspace, isFetchingWorkspaces } =
   storeToRefs(workspaceStore)
 

@@ -13,7 +13,7 @@
 import { storeToRefs } from 'pinia'
 
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
-import { useWorkspaceStore } from '@/platform/workspace/stores/workspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { workspaceName } = storeToRefs(useWorkspaceStore())
+const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
 </script>

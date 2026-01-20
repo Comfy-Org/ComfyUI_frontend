@@ -74,7 +74,7 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
 const MAX_OWNED_WORKSPACES = 10
 const MAX_WORKSPACE_MEMBERS = 50
 
-export const useWorkspaceStore = defineStore('teamWorkspace', () => {
+export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   // ════════════════════════════════════════════════════════════
   // STATE
   // ════════════════════════════════════════════════════════════
@@ -332,7 +332,6 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   async function initialize(): Promise<void> {
     if (initState.value !== 'uninitialized') return
 
-    console.log('[workspaceStore] Initializing workspace store...')
     initState.value = 'loading'
     isFetchingWorkspaces.value = true
     error.value = null
@@ -340,16 +339,6 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
     try {
       // 1. Fetch all workspaces
       const response = await workspaceApi.list()
-      console.log('[workspaceStore] initialize API response:', response)
-      console.log(
-        '[workspaceStore] Workspaces from API:',
-        response.workspaces.map((w) => ({
-          id: w.id,
-          name: w.name,
-          type: w.type,
-          role: w.role
-        }))
-      )
       workspaces.value = response.workspaces.map(createWorkspaceState)
 
       if (workspaces.value.length === 0) {
@@ -418,15 +407,6 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
     isFetchingWorkspaces.value = true
     try {
       const response = await workspaceApi.list()
-      console.log('[workspaceStore] refreshWorkspaces API response:', response)
-      console.log(
-        '[workspaceStore] Workspace IDs:',
-        response.workspaces.map((w) => w.id)
-      )
-      console.log(
-        '[workspaceStore] Workspace names:',
-        response.workspaces.map((w) => w.name)
-      )
       workspaces.value = response.workspaces.map(createWorkspaceState)
     } finally {
       isFetchingWorkspaces.value = false
@@ -588,23 +568,10 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   async function fetchMembers(
     params?: ListMembersParams
   ): Promise<WorkspaceMember[]> {
-    const sessionWorkspaceId = sessionManager.getCurrentWorkspaceId()
-    console.log('[workspaceStore] fetchMembers called')
-    console.log(
-      '[workspaceStore] activeWorkspaceId (store):',
-      activeWorkspaceId.value
-    )
-    console.log('[workspaceStore] sessionWorkspaceId:', sessionWorkspaceId)
-    console.log(
-      '[workspaceStore] IDs match:',
-      activeWorkspaceId.value === sessionWorkspaceId
-    )
-    console.log('[workspaceStore] activeWorkspace:', activeWorkspace.value)
     if (!activeWorkspaceId.value) return []
     if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listMembers(params)
-    console.log('[workspaceStore] fetchMembers response:', response)
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     updateActiveWorkspace({ members })
     return members
@@ -631,23 +598,10 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
    * Fetch pending invites for the current workspace.
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
-    const sessionWorkspaceId = sessionManager.getCurrentWorkspaceId()
-    console.log('[workspaceStore] fetchPendingInvites called')
-    console.log(
-      '[workspaceStore] activeWorkspaceId (store):',
-      activeWorkspaceId.value
-    )
-    console.log('[workspaceStore] sessionWorkspaceId:', sessionWorkspaceId)
-    console.log(
-      '[workspaceStore] IDs match:',
-      activeWorkspaceId.value === sessionWorkspaceId
-    )
-    console.log('[workspaceStore] activeWorkspace:', activeWorkspace.value)
     if (!activeWorkspaceId.value) return []
     if (activeWorkspace.value?.type === 'personal') return []
 
     const response = await workspaceApi.listInvites()
-    console.log('[workspaceStore] fetchPendingInvites response:', response)
     const invites = response.invites.map(mapApiInviteToPendingInvite)
     updateActiveWorkspace({ pendingInvites: invites })
     return invites
@@ -690,22 +644,10 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   async function acceptInvite(
     token: string
   ): Promise<{ workspaceId: string; workspaceName: string }> {
-    console.log('[workspaceStore] acceptInvite called with token:', token)
-    console.log(
-      '[workspaceStore] Workspaces BEFORE accept:',
-      workspaces.value.map((w) => ({ id: w.id, name: w.name, type: w.type }))
-    )
-
     const response = await workspaceApi.acceptInvite(token)
-    console.log('[workspaceStore] acceptInvite API response:', response)
 
     // Refresh workspace list to include newly joined workspace
     await refreshWorkspaces()
-
-    console.log(
-      '[workspaceStore] Workspaces AFTER refresh:',
-      workspaces.value.map((w) => ({ id: w.id, name: w.name, type: w.type }))
-    )
 
     return {
       workspaceId: response.workspace_id,
@@ -779,22 +721,6 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   // ════════════════════════════════════════════════════════════
-  // DEV HELPERS
-  // ════════════════════════════════════════════════════════════
-
-  function setMockRole(role: 'owner' | 'member') {
-    updateActiveWorkspace({ role })
-  }
-
-  function setMockSubscribed(subscribed: boolean) {
-    updateActiveWorkspace({ isSubscribed: subscribed })
-  }
-
-  function setMockType(type: 'personal' | 'team') {
-    updateActiveWorkspace({ type })
-  }
-
-  // ════════════════════════════════════════════════════════════
   // RETURN
   // ════════════════════════════════════════════════════════════
 
@@ -852,11 +778,6 @@ export const useWorkspaceStore = defineStore('teamWorkspace', () => {
     copyInviteLink,
 
     // Subscription
-    subscribeWorkspace,
-
-    // Dev helpers
-    setMockRole,
-    setMockSubscribed,
-    setMockType
+    subscribeWorkspace
   }
 })
