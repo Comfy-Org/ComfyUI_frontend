@@ -5,7 +5,10 @@
     class="manager-dialog"
   >
     <template #leftPanel>
-      <LeftSidePanel v-model="selectedNavId" :nav-items="navItems">
+      <LeftSidePanel
+        v-model="selectedNavId"
+        :nav-items="navItems"
+      >
         <template #header-icon>
           <i class="icon-[lucide--puzzle]" />
         </template>
@@ -29,7 +32,7 @@
           :complete-on-focus="false"
           :delay="8"
           option-label="query"
-          class="w-full min-w-md max-w-lg"
+          class="w-full max-w-lg min-w-md"
           :pt="{
             pcInputText: {
               root: {
@@ -75,7 +78,7 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-base-foreground"></i>
+          <i class="pi pi-times text-xs text-base-foreground" />
         </Button>
       </div>
 
@@ -114,8 +117,14 @@
     </template>
 
     <template #content>
-      <div v-if="isLoading" class="scrollbar-hide h-full w-full overflow-auto">
-        <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
+      <div
+        v-if="isLoading"
+        class="h-full scrollbar-hide w-full overflow-auto"
+      >
+        <GridSkeleton
+          :grid-style="GRID_STYLE"
+          :skeleton-card-count
+        />
       </div>
       <NoResultsPlaceholder
         v-else-if="searchResults.length === 0"
@@ -130,7 +139,11 @@
             : $t('manager.tryDifferentSearch')
         "
       />
-      <div v-else class="h-full" @click="handleGridContainerClick">
+      <div
+        v-else
+        class="h-full"
+        @click="handleGridContainerClick"
+      >
         <VirtualGrid
           id="results-grid"
           :items="resultsWithKeys"
@@ -156,7 +169,10 @@
         v-if="!hasMultipleSelections && selectedNodePack"
         :node-pack="selectedNodePack"
       />
-      <InfoPanelMultiItem v-else :node-packs="selectedNodePacks" />
+      <InfoPanelMultiItem
+        v-else
+        :node-packs="selectedNodePacks"
+      />
     </template>
   </BaseModalLayout>
 </template>

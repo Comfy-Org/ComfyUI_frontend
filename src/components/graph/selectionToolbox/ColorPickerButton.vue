@@ -11,7 +11,10 @@
       @click="() => (showColorPicker = !showColorPicker)"
     >
       <div class="flex items-center gap-1 px-0">
-        <i class="pi pi-circle-fill" :style="{ color: currentColor ?? '' }" />
+        <i
+          class="pi pi-circle-fill"
+          :style="{ color: currentColor ?? '' }"
+        />
         <i class="icon-[lucide--chevron-down]" />
       </div>
     </Button>
@@ -166,6 +169,6 @@ watch(
 }
 
 :deep(.p-togglebutton) {
-  @apply py-2 px-1;
+  @apply px-1 py-2;
 }
 </style>

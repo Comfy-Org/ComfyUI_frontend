@@ -7,9 +7,9 @@
     :tabindex="interactive ? 0 : -1"
     :class="
       cn(
-        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
+        'flex h-full flex-col gap-2 overflow-hidden rounded-2xl bg-modal-card-background p-2 transition-all duration-200',
         interactive &&
-          'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4'
+          'group m-0 appearance-none border-none bg-transparent text-left outline-4 outline-base-foreground outline-none hover:bg-secondary-background focus:bg-secondary-background focus:outline-solid'
       )
     "
     @keydown.enter.self="interactive && $emit('select', asset)"
@@ -25,22 +25,25 @@
         v-else
         :src="asset.preview_url"
         :alt="displayName"
-        class="size-full object-cover cursor-pointer"
+        class="size-full cursor-pointer object-cover"
         role="button"
         @click.self="interactive && $emit('select', asset)"
-      />
+      >
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
         v-if="showAssetOptions"
         :class="
           cn(
-            'absolute top-2 right-2 invisible group-hover:visible',
+            'invisible absolute top-2 right-2 group-hover:visible',
             dropdownMenuButton?.isOpen && 'visible'
           )
         "
       >
-        <MoreButton ref="dropdown-menu-button" size="sm">
+        <MoreButton
+          ref="dropdown-menu-button"
+          size="sm"
+        >
           <template #default>
             <Button
               v-if="flags.assetRenameEnabled"
@@ -66,13 +69,13 @@
         </MoreButton>
       </IconGroup>
     </div>
-    <div class="max-h-32 flex flex-col gap-2 justify-between flex-auto">
+    <div class="flex max-h-32 flex-auto flex-col justify-between gap-2">
       <h3
         :id="titleId"
         v-tooltip.top="{ value: displayName, showDelay: tooltipDelay }"
         :class="
           cn(
-            'mb-2 m-0 text-base font-semibold line-clamp-2 wrap-anywhere',
+            'm-0 mb-2 line-clamp-2 text-base font-semibold wrap-anywhere',
             'text-base-foreground'
           )
         "
@@ -90,22 +93,31 @@
         v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
         :class="
           cn(
-            'm-0 text-sm leading-6 overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box] text-muted-foreground'
+            'm-0 [display:-webkit-box] overflow-hidden text-sm leading-6 text-muted-foreground [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
           )
         "
       >
         {{ asset.description }}
       </p>
-      <div class="flex gap-4 text-xs text-muted-foreground mt-auto">
-        <span v-if="asset.stats.stars" class="flex items-center gap-1">
+      <div class="mt-auto flex gap-4 text-xs text-muted-foreground">
+        <span
+          v-if="asset.stats.stars"
+          class="flex items-center gap-1"
+        >
           <i class="icon-[lucide--star] size-3" />
           {{ asset.stats.stars }}
         </span>
-        <span v-if="asset.stats.downloadCount" class="flex items-center gap-1">
+        <span
+          v-if="asset.stats.downloadCount"
+          class="flex items-center gap-1"
+        >
           <i class="icon-[lucide--download] size-3" />
           {{ asset.stats.downloadCount }}
         </span>
-        <span v-if="asset.stats.formattedDate" class="flex items-center gap-1">
+        <span
+          v-if="asset.stats.formattedDate"
+          class="flex items-center gap-1"
+        >
           <i class="icon-[lucide--clock] size-3" />
           {{ asset.stats.formattedDate }}
         </span>
@@ -192,7 +204,7 @@ function confirmDeletion() {
       confirmText: t('g.delete'),
       // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-danger-200 text-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring ring-base-foreground'
+        'bg-danger-200 text-base-foreground ring-base-foreground hover:bg-danger-200/80 focus:bg-danger-200/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {

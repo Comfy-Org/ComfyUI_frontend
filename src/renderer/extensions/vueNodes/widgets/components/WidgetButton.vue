@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-1">
     <Button
-      class="text-base-foreground w-full border-0 bg-component-node-widget-background p-2"
+      class="w-full border-0 bg-component-node-widget-background p-2 text-base-foreground"
       :aria-label="widget.label"
       size="sm"
       variant="textonly"
@@ -9,7 +9,10 @@
       @click="handleClick"
     >
       {{ widget.label ?? widget.name }}
-      <i v-if="widget.options?.iconClass" :class="widget.options.iconClass" />
+      <i
+        v-if="widget.options?.iconClass"
+        :class="widget.options.iconClass"
+      />
     </Button>
   </div>
 </template>

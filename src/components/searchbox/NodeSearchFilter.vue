@@ -17,7 +17,12 @@
     />
   </div>
   <div class="_footer">
-    <Button type="button" @click="submit">{{ $t('g.add') }}</Button>
+    <Button
+      type="button"
+      @click="submit"
+    >
+      {{ $t('g.add') }}
+    </Button>
   </div>
 </template>
 
@@ -76,6 +81,6 @@ const submit = () => {
 }
 
 ._footer {
-  @apply flex flex-col pt-4 items-end;
+  @apply flex flex-col items-end pt-4;
 }
 </style>

@@ -18,7 +18,7 @@
       }"
       data-capture-wheel="true"
     />
-    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5 flex">
+    <div class="absolute top-5 right-8 flex h-4 w-7 -translate-y-4/5">
       <slot />
     </div>
   </WidgetLayoutField>

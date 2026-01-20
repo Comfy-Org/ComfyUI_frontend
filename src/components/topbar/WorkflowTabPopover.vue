@@ -2,7 +2,7 @@
   <div
     ref="positionRef"
     class="absolute bottom-0 left-1/2 -translate-x-1/2"
-  ></div>
+  />
   <Popover
     ref="popoverRef"
     append-to="body"
@@ -24,7 +24,7 @@
           :src="thumbnailUrl"
           class="block h-[200px] rounded-lg object-cover p-2"
           :style="{ width: `${POPOVER_WIDTH}px` }"
-        />
+        >
       </div>
       <div class="workflow-preview-footer">
         <span class="workflow-preview-name">{{ workflowFilename }}</span>
@@ -143,7 +143,7 @@ defineExpose({
 @reference '../../assets/css/style.css';
 
 .workflow-preview-content {
-  @apply flex flex-col rounded-xl overflow-hidden;
+  @apply flex flex-col overflow-hidden rounded-xl;
   max-width: var(--popover-width);
   background-color: var(--comfy-menu-bg);
   color: var(--fg-color);
@@ -163,11 +163,11 @@ defineExpose({
 }
 
 .workflow-preview-footer {
-  @apply pt-1 pb-2 px-3;
+  @apply px-3 pt-1 pb-2;
 }
 
 .workflow-preview-name {
-  @apply block text-sm font-medium overflow-hidden text-ellipsis whitespace-nowrap;
+  @apply block overflow-hidden text-sm font-medium text-ellipsis whitespace-nowrap;
   color: var(--fg-color);
 }
 </style>
@@ -178,7 +178,7 @@ defineExpose({
 .workflow-popover-fade {
   --p-popover-background: transparent;
   --p-popover-content-padding: 0;
-  @apply bg-transparent rounded-xl shadow-lg;
+  @apply rounded-xl bg-transparent shadow-lg;
   transition: opacity 0.15s ease-out !important;
 }
 

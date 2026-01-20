@@ -1,11 +1,17 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div
+    v-if="renderError"
+    class="node-error p-2 text-sm text-red-500"
+  >
     {{ st('nodeErrors.slots', 'Node Slots Error') }}
   </div>
-  <div v-else :class="cn('flex justify-between min-w-0', unifiedWrapperClass)">
+  <div
+    v-else
+    :class="cn('flex min-w-0 justify-between', unifiedWrapperClass)"
+  >
     <div
       v-if="filteredInputs.length"
-      :class="cn('flex flex-col min-w-0', unifiedDotsClass)"
+      :class="cn('flex min-w-0 flex-col', unifiedDotsClass)"
     >
       <InputSlot
         v-for="(input, index) in filteredInputs"
@@ -19,7 +25,7 @@
 
     <div
       v-if="nodeData?.outputs?.length"
-      :class="cn('ml-auto flex flex-col min-w-0', unifiedDotsClass)"
+      :class="cn('ml-auto flex min-w-0 flex-col', unifiedDotsClass)"
     >
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"
@@ -68,13 +74,13 @@ const filteredInputs = computed(() => [
 const unifiedWrapperClass = computed((): string =>
   cn(
     unified &&
-      'absolute inset-0 items-center pointer-events-none opacity-0 z-30'
+      'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
   )
 )
 const unifiedDotsClass = computed((): string =>
   cn(
     unified &&
-      'grid grid-cols-1 grid-rows-1 gap-0 [&>*]:row-span-full [&>*]:col-span-full place-items-center'
+      'grid grid-cols-1 grid-rows-1 place-items-center gap-0 [&>*]:col-span-full [&>*]:row-span-full'
   )
 )
 

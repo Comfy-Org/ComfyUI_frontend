@@ -9,7 +9,7 @@
 
     <div class="flex items-center justify-between px-3">
       <Button
-        class="grow gap-1 justify-center"
+        class="grow justify-center gap-1"
         variant="secondary"
         size="sm"
         @click="$emit('showAssets')"
@@ -51,7 +51,7 @@
       @update:selected-sort-mode="$emit('update:selectedSortMode', $event)"
     />
 
-    <div class="flex-1 min-h-0 overflow-y-auto">
+    <div class="min-h-0 flex-1 overflow-y-auto">
       <JobGroupsList
         :displayed-job-groups="displayedJobGroups"
         @cancel-item="onCancelItemEvent"

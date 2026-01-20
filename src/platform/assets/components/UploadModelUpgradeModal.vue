@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col justify-between gap-10 p-4 border-t border-border-default w-auto max-w-[min(500px,90vw)]"
+    class="flex w-auto max-w-[min(500px,90vw)] flex-col justify-between gap-10 border-t border-border-default p-4"
   >
     <UploadModelUpgradeModalBody />
 

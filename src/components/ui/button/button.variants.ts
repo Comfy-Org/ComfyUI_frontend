@@ -2,11 +2,11 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const buttonVariants = cva({
-  base: 'relative inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap appearance-none border-none rounded-md text-sm font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  base: 'focus-visible:ring-ring relative inline-flex cursor-pointer appearance-none items-center justify-center gap-2 rounded-md border-none font-inter text-sm font-medium whitespace-nowrap transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   variants: {
     variant: {
       secondary:
-        'bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover',
+        'text-secondary-foreground bg-secondary-background hover:bg-secondary-background-hover',
       primary:
         'bg-primary-background text-base-foreground hover:bg-primary-background-hover',
       inverted:
@@ -14,11 +14,11 @@ export const buttonVariants = cva({
       destructive:
         'bg-destructive-background text-base-foreground hover:bg-destructive-background-hover',
       textonly:
-        'text-base-foreground bg-transparent hover:bg-secondary-background-hover',
+        'bg-transparent text-base-foreground hover:bg-secondary-background-hover',
       'muted-textonly':
-        'text-muted-foreground bg-transparent hover:bg-secondary-background-hover',
+        'bg-transparent text-muted-foreground hover:bg-secondary-background-hover',
       'destructive-textonly':
-        'text-destructive-background bg-transparent hover:bg-destructive-background/10',
+        'bg-transparent text-destructive-background hover:bg-destructive-background/10',
       'overlay-white': 'bg-white text-gray-600 hover:bg-white/90'
     },
     size: {

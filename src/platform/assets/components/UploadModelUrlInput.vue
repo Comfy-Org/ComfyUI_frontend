@@ -1,36 +1,35 @@
 <template>
-  <div class="flex flex-col justify-between h-full gap-6 text-sm">
+  <div class="flex h-full flex-col justify-between gap-6 text-sm">
     <div class="flex flex-col gap-6">
       <div class="flex flex-col gap-2">
-        <p class="m-0 text-foreground">
+        <p class="text-foreground m-0">
           {{ $t('assetBrowser.uploadModelDescription1Generic') }}
         </p>
         <div class="m-0">
           <p class="m-0 text-muted-foreground">
             {{ $t('assetBrowser.uploadModelDescription2Generic') }}
           </p>
-          <span class="inline-flex items-center gap-1 flex-wrap mt-2">
+          <span class="mt-2 inline-flex flex-wrap items-center gap-1">
             <span class="inline-flex items-center gap-1">
               <img
                 :src="civitaiIcon"
                 :alt="$t('assetBrowser.providerCivitai')"
-                class="w-4 h-4"
-              />
+                class="h-4 w-4"
+              >
               <a
                 :href="civitaiUrl"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="text-muted-foreground underline"
               >
-                {{ $t('assetBrowser.providerCivitai') }}</a
-              ><span>,</span>
+                {{ $t('assetBrowser.providerCivitai') }}</a><span>,</span>
             </span>
             <span class="inline-flex items-center gap-1">
               <img
                 :src="huggingFaceIcon"
                 :alt="$t('assetBrowser.providerHuggingFace')"
-                class="w-4 h-4"
-              />
+                class="h-4 w-4"
+              >
               <a
                 :href="huggingFaceUrl"
                 target="_blank"
@@ -55,14 +54,23 @@
           />
           <i
             v-if="isValidUrl"
-            class="icon-[lucide--circle-check-big] absolute top-1/2 right-3 size-5 -translate-y-1/2 text-green-500"
+            class="absolute top-1/2 right-3 icon-[lucide--circle-check-big] size-5 -translate-y-1/2 text-green-500"
           />
         </div>
-        <p v-if="error" class="text-sm text-error">
+        <p
+          v-if="error"
+          class="text-sm text-error"
+        >
           {{ error }}
         </p>
-        <p v-else-if="!flags.asyncModelUploadEnabled" class="text-foreground">
-          <i18n-t keypath="assetBrowser.maxFileSize" tag="span">
+        <p
+          v-else-if="!flags.asyncModelUploadEnabled"
+          class="text-foreground"
+        >
+          <i18n-t
+            keypath="assetBrowser.maxFileSize"
+            tag="span"
+          >
             <template #size>
               <span class="font-bold italic">{{
                 $t('assetBrowser.maxFileSizeValue')

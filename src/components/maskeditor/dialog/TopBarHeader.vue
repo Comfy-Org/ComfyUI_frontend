@@ -1,7 +1,9 @@
 <template>
   <div class="flex w-full items-center justify-between gap-3">
     <div class="flex items-center gap-3">
-      <h3 class="m-0 text-lg font-semibold">{{ t('maskEditor.title') }}</h3>
+      <h3 class="m-0 text-lg font-semibold">
+        {{ t('maskEditor.title') }}
+      </h3>
 
       <div class="flex items-center gap-4">
         <button
@@ -11,7 +13,7 @@
         >
           <svg
             viewBox="0 0 15 15"
-            class="h-6.25 w-6.25 pointer-events-none fill-current"
+            class="pointer-events-none h-6.25 w-6.25 fill-current"
           >
             <path
               d="M8.77,12.18c-.25,0-.46-.2-.46-.46s.2-.46.46-.46c1.47,0,2.67-1.2,2.67-2.67,0-1.57-1.34-2.67-3.26-2.67h-3.98l1.43,1.43c.18.18.18.47,0,.64-.18.18-.47.18-.64,0l-2.21-2.21c-.18-.18-.18-.47,0-.64l2.21-2.21c.18-.18.47-.18.64,0,.18.18.18.47,0,.64l-1.43,1.43h3.98c2.45,0,4.17,1.47,4.17,3.58,0,1.97-1.61,3.58-3.58,3.58Z"
@@ -26,7 +28,7 @@
         >
           <svg
             viewBox="0 0 15 15"
-            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+            class="pointer-events-none h-6.25 w-6.25 fill-[var(--input-text)]"
           >
             <path
               class="cls-1"
@@ -35,7 +37,7 @@
           </svg>
         </button>
 
-        <div class="h-5 border-l border-border" />
+        <div class="border-border h-5 border-l" />
 
         <button
           :class="iconButtonClass"
@@ -44,7 +46,7 @@
         >
           <svg
             viewBox="-6 -7 15 15"
-            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+            class="pointer-events-none h-6.25 w-6.25 fill-[var(--input-text)]"
           >
             <path
               d="m2.25-2.625c.3452 0 .625.2798.625.625v5c0 .3452-.2798.625-.625.625h-5c-.3452 0-.625-.2798-.625-.625v-5c0-.3452.2798-.625.625-.625h5zm1.25.625v5c0 .6904-.5596 1.25-1.25 1.25h-5c-.6904 0-1.25-.5596-1.25-1.25v-5c0-.6904.5596-1.25 1.25-1.25h5c.6904 0 1.25.5596 1.25 1.25zm-.1673-2.3757-.4419.4419-1.5246-1.5246 1.5416-1.5417.442.4419-.7871.7872h.9373c1.3807 0 2.5 1.1193 2.5 2.5h-.625c0-1.0355-.8395-1.875-1.875-1.875h-.9375l.7702.7702z"
@@ -59,7 +61,7 @@
         >
           <svg
             viewBox="-9 -7 15 15"
-            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+            class="pointer-events-none h-6.25 w-6.25 fill-[var(--input-text)]"
           >
             <g transform="scale(-1, 1)">
               <path
@@ -76,7 +78,7 @@
         >
           <svg
             viewBox="0 0 15 15"
-            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+            class="pointer-events-none h-6.25 w-6.25 fill-[var(--input-text)]"
           >
             <path
               d="M7.5,1.5c-.28,0-.5.22-.5.5v11c0,.28.22.5.5.5s.5-.22.5-.5v-11c0-.28-.22-.5-.5-.5Z"
@@ -92,7 +94,7 @@
         >
           <svg
             viewBox="0 0 15 15"
-            class="h-6.25 w-6.25 pointer-events-none fill-[var(--input-text)]"
+            class="pointer-events-none h-6.25 w-6.25 fill-[var(--input-text)]"
           >
             <path
               d="M2,7.5c0-.28.22-.5.5-.5h11c.28,0,.5.22.5.5s-.22.5-.5.5h-11c-.28,0-.5-.22-.5-.5Z"
@@ -103,22 +105,35 @@
 
         <div class="h-5 w-px bg-[var(--p-form-field-border-color)]" />
 
-        <button :class="textButtonClass" @click="onInvert">
+        <button
+          :class="textButtonClass"
+          @click="onInvert"
+        >
           {{ t('maskEditor.invert') }}
         </button>
 
-        <button :class="textButtonClass" @click="onClear">
+        <button
+          :class="textButtonClass"
+          @click="onClear"
+        >
           {{ t('maskEditor.clear') }}
         </button>
       </div>
     </div>
 
     <div class="flex gap-3">
-      <Button variant="primary" :disabled="!saveEnabled" @click="handleSave">
+      <Button
+        variant="primary"
+        :disabled="!saveEnabled"
+        @click="handleSave"
+      >
         <i class="pi pi-check" />
         {{ saveButtonText }}
       </Button>
-      <Button variant="secondary" @click="handleCancel">
+      <Button
+        variant="secondary"
+        @click="handleCancel"
+      >
         <i class="pi pi-times" />
         {{ t('g.cancel') }}
       </Button>

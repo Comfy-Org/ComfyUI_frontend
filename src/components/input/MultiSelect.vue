@@ -121,7 +121,7 @@
             {{ $t('g.clearAll') }}
           </Button>
         </div>
-        <div class="my-4 h-px bg-border-default"></div>
+        <div class="my-4 h-px bg-border-default" />
       </div>
     </template>
 
@@ -147,7 +147,7 @@
     <template #option="slotProps">
       <div
         role="button"
-        class="flex items-center gap-2 cursor-pointer"
+        class="flex cursor-pointer items-center gap-2"
         :style="popoverStyle"
       >
         <div

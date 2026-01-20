@@ -1,11 +1,11 @@
 <template>
   <section
-    class="w-[360px] rounded-2xl border border-interface-stroke bg-interface-panel-surface text-text-primary shadow-interface font-inter"
+    class="w-[360px] rounded-2xl border border-interface-stroke bg-interface-panel-surface font-inter text-text-primary shadow-interface"
   >
     <header
       class="flex items-center justify-between border-b border-interface-stroke px-4 py-4"
     >
-      <p class="m-0 text-[14px] font-normal leading-none">
+      <p class="m-0 text-[14px] leading-none font-normal">
         {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
       </p>
       <Button
@@ -31,7 +31,11 @@
 
     <footer class="flex items-center justify-end px-4 py-4">
       <div class="flex items-center gap-4 leading-none">
-        <Button variant="muted-textonly" size="lg" @click="onCancel">
+        <Button
+          variant="muted-textonly"
+          size="lg"
+          @click="onCancel"
+        >
           {{ t('g.cancel') }}
         </Button>
         <Button
@@ -39,8 +43,9 @@
           size="lg"
           :disabled="isClearing"
           @click="onConfirm"
-          >{{ t('g.clear') }}</Button
         >
+          {{ t('g.clear') }}
+        </Button>
       </div>
     </footer>
   </section>

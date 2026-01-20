@@ -50,17 +50,21 @@ async function searcher(query: string) {
 </script>
 
 <template>
-  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+  <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
     <FormSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsSectionDataList"
     />
   </div>
-  <TransitionGroup tag="div" name="list-scale" class="relative">
+  <TransitionGroup
+    tag="div"
+    name="list-scale"
+    class="relative"
+  >
     <div
       v-if="isSearching && searchedWidgetsSectionDataList.length === 0"
-      class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15"
+      class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground"
     >
       {{ $t('rightSidePanel.noneSearchDesc') }}
     </div>

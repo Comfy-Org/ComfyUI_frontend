@@ -4,9 +4,12 @@
       <p class="m-0">
         {{ $t('assetBrowser.uploadModelDescription1') }}
       </p>
-      <ul class="list-disc space-y-1 pl-5 mt-0">
+      <ul class="mt-0 list-disc space-y-1 pl-5">
         <li>
-          <i18n-t keypath="assetBrowser.uploadModelDescription2" tag="span">
+          <i18n-t
+            keypath="assetBrowser.uploadModelDescription2"
+            tag="span"
+          >
             <template #link>
               <a
                 href="https://civitai.com/models"
@@ -19,7 +22,10 @@
           </i18n-t>
         </li>
         <li v-if="!flags.asyncModelUploadEnabled">
-          <i18n-t keypath="assetBrowser.uploadModelDescription3" tag="span">
+          <i18n-t
+            keypath="assetBrowser.uploadModelDescription3"
+            tag="span"
+          >
             <template #size>
               <span class="font-bold italic">{{
                 $t('assetBrowser.maxFileSizeValue')
@@ -31,7 +37,11 @@
     </div>
 
     <div class="flex flex-col gap-2">
-      <i18n-t keypath="assetBrowser.civitaiLinkLabel" tag="label" class="mb-0">
+      <i18n-t
+        keypath="assetBrowser.civitaiLinkLabel"
+        tag="label"
+        class="mb-0"
+      >
         <template #download>
           <span class="font-bold italic">{{
             $t('assetBrowser.civitaiLinkLabelDownload')
@@ -48,10 +58,13 @@
         />
         <i
           v-if="isValidUrl"
-          class="icon-[lucide--circle-check-big] absolute top-1/2 right-3 size-5 -translate-y-1/2 text-green-500"
+          class="absolute top-1/2 right-3 icon-[lucide--circle-check-big] size-5 -translate-y-1/2 text-green-500"
         />
       </div>
-      <p v-if="error" class="text-sm text-error">
+      <p
+        v-if="error"
+        class="text-sm text-error"
+      >
         {{ error }}
       </p>
       <i18n-t

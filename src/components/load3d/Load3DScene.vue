@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="relative h-full w-full min-h-[200px]"
+    class="relative h-full min-h-[200px] w-full"
     data-capture-wheel="true"
     @pointerdown.stop
     @pointermove.stop
@@ -14,7 +14,10 @@
     @dragleave.stop="handleDragLeave"
     @drop.prevent.stop="handleDrop"
   >
-    <LoadingOverlay :loading="loading" :loading-message="loadingMessage" />
+    <LoadingOverlay
+      :loading="loading"
+      :loading-message="loadingMessage"
+    />
     <div
       v-if="!isPreview && isDragging"
       class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"

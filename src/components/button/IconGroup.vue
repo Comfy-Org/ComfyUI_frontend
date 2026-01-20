@@ -2,12 +2,12 @@
   <div
     :class="
       cn(
-        'flex justify-center items-center shrink-0 outline-hidden border-none p-0 rounded-lg shadow-sm transition-all duration-200 cursor-pointer bg-secondary-background',
+        'flex shrink-0 cursor-pointer items-center justify-center rounded-lg border-none bg-secondary-background p-0 shadow-sm outline-hidden transition-all duration-200',
         backgroundClass
       )
     "
   >
-    <slot></slot>
+    <slot />
   </div>
 </template>
 

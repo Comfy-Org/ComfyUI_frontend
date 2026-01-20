@@ -56,11 +56,11 @@ const searchQuery = defineModel<string>('searchQuery')
       :searcher
     />
     <!-- List -->
-    <div class="relative flex h-full mt-2 overflow-y-scroll">
+    <div class="relative mt-2 flex h-full overflow-y-scroll">
       <div
         :class="
           cn(
-            'h-full max-h-full grid gap-x-2 gap-y-4 overflow-y-auto px-4 pt-4 pb-4 w-full',
+            'grid h-full max-h-full w-full gap-x-2 gap-y-4 overflow-y-auto px-4 pt-4 pb-4',
             {
               'grid-cols-4': layoutMode === 'grid',
               'grid-cols-1 gap-y-2': layoutMode === 'list',
@@ -72,7 +72,7 @@ const searchQuery = defineModel<string>('searchQuery')
         <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
         <div
           v-if="items.length === 0"
-          class="h-50 col-span-full flex items-center justify-center"
+          class="col-span-full flex h-50 items-center justify-center"
         >
           <i
             :title="$t('g.noItems')"

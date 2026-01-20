@@ -14,10 +14,13 @@
       :class="
         isOverflowing
           ? 'side-tool-bar-container overflow-y-auto'
-          : 'flex flex-col h-full'
+          : 'flex h-full flex-col'
       "
     >
-      <div ref="topToolbarRef" :class="groupClasses">
+      <div
+        ref="topToolbarRef"
+        :class="groupClasses"
+      >
         <ComfyMenuButton />
         <SidebarIcon
           v-for="tab in tabs"
@@ -35,12 +38,19 @@
         <SidebarTemplatesButton />
       </div>
 
-      <div ref="bottomToolbarRef" class="mt-auto" :class="groupClasses">
+      <div
+        ref="bottomToolbarRef"
+        class="mt-auto"
+        :class="groupClasses"
+      >
         <SidebarLogoutIcon
           v-if="userStore.isMultiUserServer"
           :is-small="isSmall"
         />
-        <SidebarHelpCenterIcon v-if="!isIntegratedTabBar" :is-small="isSmall" />
+        <SidebarHelpCenterIcon
+          v-if="!isIntegratedTabBar"
+          :is-small="isSmall"
+        />
         <SidebarBottomPanelToggleButton :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
@@ -158,8 +168,8 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
 const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
-    'sidebar-item-group flex flex-col items-center overflow-hidden flex-shrink-0',
-    !isConnected.value && 'rounded-lg shadow-interface pointer-events-auto'
+    'sidebar-item-group flex flex-shrink-0 flex-col items-center overflow-hidden',
+    !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
   )
 )
 

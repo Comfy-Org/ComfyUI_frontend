@@ -1,6 +1,11 @@
 <template>
-  <section class="w-full flex gap-2 justify-end px-2 pb-2">
-    <Button :disabled variant="textonly" autofocus @click="$emit('cancel')">
+  <section class="flex w-full justify-end gap-2 px-2 pb-2">
+    <Button
+      :disabled
+      variant="textonly"
+      autofocus
+      @click="$emit('cancel')"
+    >
       {{ cancelTextX }}
     </Button>
     <Button

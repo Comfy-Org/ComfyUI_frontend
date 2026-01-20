@@ -21,7 +21,7 @@
       <div
         v-if="videoError"
         role="alert"
-        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
+        class="flex size-full flex-col items-center justify-center bg-muted-background py-8 text-center text-base-foreground"
       >
         <i
           class="mb-2 icon-[lucide--video-off] h-12 w-12 text-base-foreground"
@@ -103,10 +103,16 @@
 
     <!-- Video Dimensions -->
     <div class="mt-2 text-center text-xs text-muted-foreground">
-      <span v-if="videoError" class="text-red-400">
+      <span
+        v-if="videoError"
+        class="text-red-400"
+      >
         {{ $t('g.errorLoadingVideo') }}
       </span>
-      <span v-else-if="showLoader" class="text-smoke-400">
+      <span
+        v-else-if="showLoader"
+        class="text-smoke-400"
+      >
         {{ $t('g.loading') }}...
       </span>
       <span v-else>

@@ -3,7 +3,7 @@
     variant="in"
     :class="
       cn(
-        'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        'space-y-1 rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
         widget.borderStyle
       )
     "
@@ -12,7 +12,7 @@
       v-bind="filteredProps"
       :id
       v-model="modelValue"
-      :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
+      :class="cn(WidgetInputBaseClass, 'size-full resize-none text-xs')"
       :placeholder
       :readonly="widget.options?.read_only"
       :disabled="widget.options?.read_only"

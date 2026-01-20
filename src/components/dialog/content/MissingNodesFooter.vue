@@ -2,7 +2,7 @@
   <!-- Cloud mode: Learn More + Got It buttons -->
   <div
     v-if="isCloud"
-    class="flex w-full items-center justify-between gap-2 py-2 px-4"
+    class="flex w-full items-center justify-between gap-2 px-4 py-2"
   >
     <Button
       variant="textonly"
@@ -12,19 +12,33 @@
       target="_blank"
       rel="noopener noreferrer"
     >
-      <i class="icon-[lucide--info]"></i>
+      <i class="icon-[lucide--info]" />
       <span>{{ $t('missingNodes.cloud.learnMore') }}</span>
     </Button>
-    <Button variant="secondary" size="md" @click="handleGotItClick">{{
-      $t('missingNodes.cloud.gotIt')
-    }}</Button>
+    <Button
+      variant="secondary"
+      size="md"
+      @click="handleGotItClick"
+    >
+      {{
+        $t('missingNodes.cloud.gotIt')
+      }}
+    </Button>
   </div>
 
   <!-- OSS mode: Open Manager + Install All buttons -->
-  <div v-else-if="showManagerButtons" class="flex justify-end gap-1 py-2 px-4">
-    <Button variant="textonly" @click="openManager">{{
-      $t('g.openManager')
-    }}</Button>
+  <div
+    v-else-if="showManagerButtons"
+    class="flex justify-end gap-1 px-4 py-2"
+  >
+    <Button
+      variant="textonly"
+      @click="openManager"
+    >
+      {{
+        $t('g.openManager')
+      }}
+    </Button>
     <PackInstallButton
       v-if="showInstallAllButton"
       type="secondary"

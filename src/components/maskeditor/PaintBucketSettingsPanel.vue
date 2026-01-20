@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
     <h3
-      class="text-center text-[15px] font-sans text-[var(--descrip-text)] mt-2.5"
+      class="mt-2.5 text-center font-sans text-[15px] text-[var(--descrip-text)]"
     >
       {{ t('maskEditor.paintBucketSettings') }}
     </h3>

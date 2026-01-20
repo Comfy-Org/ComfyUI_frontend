@@ -1,9 +1,21 @@
 <template>
-  <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
-    <div class="relative h-full flex items-center min-w-0">
+  <div
+    v-if="renderError"
+    class="node-error p-1 text-xs text-red-500"
+  >
+    ⚠️
+  </div>
+  <div
+    v-else
+    v-tooltip.right="tooltipConfig"
+    :class="slotWrapperClass"
+  >
+    <div class="relative flex h-full min-w-0 items-center">
       <!-- Slot Name -->
-      <span v-if="!dotOnly" class="truncate text-node-component-slot-text">
+      <span
+        v-if="!dotOnly"
+        class="truncate text-node-component-slot-text"
+      >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
     </div>
@@ -77,7 +89,7 @@ const shouldDim = computed(() => {
 
 const slotWrapperClass = computed(() =>
   cn(
-    'lg-slot lg-slot--output flex items-center justify-end group rounded-l-lg h-6',
+    'lg-slot lg-slot--output group flex h-6 items-center justify-end rounded-l-lg',
     'cursor-crosshair',
     props.dotOnly ? 'lg-slot--dot-only justify-center' : 'pl-6',
     {

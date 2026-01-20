@@ -1,8 +1,12 @@
 <template>
   <div
-    class="w-full col-span-2 widget-expands grid grid-cols-[minmax(80px,max-content)_minmax(125px,auto)] gap-y-3 p-3"
+    class="widget-expands col-span-2 grid w-full grid-cols-[minmax(80px,max-content)_minmax(125px,auto)] gap-y-3 p-3"
   >
-    <WidgetSelect v-model="modelValue" :widget class="col-span-2" />
+    <WidgetSelect
+      v-model="modelValue"
+      :widget
+      class="col-span-2"
+    />
     <AudioPreviewPlayer
       class="col-span-2"
       :audio-url="audioUrlFromWidget"

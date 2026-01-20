@@ -4,7 +4,10 @@
     class="relative h-full w-full overflow-hidden bg-neutral-900"
   >
     <div class="p-terminal h-full w-full rounded-none p-2">
-      <div ref="terminalEl" class="terminal-host h-full" />
+      <div
+        ref="terminalEl"
+        class="terminal-host h-full"
+      />
     </div>
     <Button
       v-tooltip.left="{
@@ -15,7 +18,7 @@
       size="sm"
       :class="
         cn('absolute top-2 right-8 transition-opacity', {
-          'opacity-0 pointer-events-none select-none': !isHovered
+          'pointer-events-none opacity-0 select-none': !isHovered
         })
       "
       :aria-label="tooltipText"
@@ -109,6 +112,6 @@ onUnmounted(() => {
 }
 
 :deep(.p-terminal) .xterm-screen {
-  @apply bg-neutral-900 overflow-hidden;
+  @apply overflow-hidden bg-neutral-900;
 }
 </style>

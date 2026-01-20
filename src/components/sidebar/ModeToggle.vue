@@ -7,7 +7,7 @@ import { useCommandStore } from '@/stores/commandStore'
 const canvasStore = useCanvasStore()
 </script>
 <template>
-  <div class="p-1 bg-secondary-background rounded-lg w-10">
+  <div class="w-10 rounded-lg bg-secondary-background p-1">
     <Button
       size="icon"
       :title="t('linearMode.linearMode')"

@@ -1,13 +1,16 @@
 <template>
-  <div v-if="renderError" class="node-error p-4 text-red-500">
+  <div
+    v-if="renderError"
+    class="node-error p-4 text-red-500"
+  >
     {{ st('nodeErrors.header', 'Node Header Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
-        'lg-node-header text-sm py-2 pl-2 pr-3 w-full min-w-0',
-        'text-node-component-header bg-node-component-header-surface',
+        'lg-node-header w-full min-w-0 py-2 pr-3 pl-2 text-sm',
+        'bg-node-component-header-surface text-node-component-header',
         headerShapeClass
       )
     "
@@ -18,9 +21,9 @@
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex items-center justify-between gap-2.5 min-w-0">
+    <div class="flex min-w-0 items-center justify-between gap-2.5">
       <!-- Collapse/Expand Button -->
-      <div class="relative grow-1 flex items-center gap-2.5 min-w-0 flex-1">
+      <div class="relative flex min-w-0 flex-1 grow-1 items-center gap-2.5">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
@@ -42,8 +45,14 @@
           </Button>
         </div>
 
-        <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
-        <div v-if="isApiNode" class="icon-[lucide--component] size-4" />
+        <div
+          v-if="isSubgraphNode"
+          class="icon-[comfy--workflow] size-4"
+        />
+        <div
+          v-if="isApiNode"
+          class="icon-[lucide--component] size-4"
+        />
 
         <!-- Node Title -->
         <div
@@ -51,7 +60,7 @@
           class="flex min-w-0 flex-1 items-center gap-2"
           data-testid="node-title"
         >
-          <div class="truncate min-w-0 flex-1">
+          <div class="min-w-0 flex-1 truncate">
             <EditableText
               :model-value="displayTitle"
               :is-editing="isEditing"
@@ -69,7 +78,10 @@
           :key="badge.text"
           v-bind="badge"
         />
-        <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
+        <NodeBadge
+          v-if="statusBadge"
+          v-bind="statusBadge"
+        />
         <i-comfy:pin
           v-if="isPinned"
           class="size-5"
@@ -81,7 +93,7 @@
           variant="textonly"
           size="sm"
           data-testid="subgraph-enter-button"
-          class="text-node-component-header h-5 px-0.5"
+          class="h-5 px-0.5 text-node-component-header"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >

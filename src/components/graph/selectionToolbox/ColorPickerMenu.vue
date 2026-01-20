@@ -23,7 +23,7 @@
       :class="
         isColorSubmenu
           ? 'flex flex-col gap-1 p-2'
-          : 'flex flex-col p-2 min-w-40'
+          : 'flex min-w-40 flex-col p-2'
       "
     >
       <div
@@ -31,12 +31,12 @@
         :key="subOption.label"
         :class="
           cn(
-            'hover:bg-secondary-background-hover rounded cursor-pointer',
+            'cursor-pointer rounded hover:bg-secondary-background-hover',
             isColorSubmenu
-              ? 'w-7 h-7 flex items-center justify-center'
+              ? 'flex h-7 w-7 items-center justify-center'
               : 'flex items-center gap-2 px-3 py-1.5 text-sm',
             subOption.disabled
-              ? 'cursor-not-allowed pointer-events-none text-node-icon-disabled'
+              ? 'pointer-events-none cursor-not-allowed text-node-icon-disabled'
               : 'hover:bg-secondary-background-hover'
           )
         "
@@ -53,7 +53,10 @@
             v-if="isShapeSelected(subOption)"
             class="icon-[lucide--check] size-4 flex-shrink-0"
           />
-          <div v-else class="w-4 flex-shrink-0" />
+          <div
+            v-else
+            class="w-4 flex-shrink-0"
+          />
           <span>{{ subOption.label }}</span>
         </template>
       </div>

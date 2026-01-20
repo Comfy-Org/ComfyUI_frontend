@@ -20,10 +20,17 @@ whenever(feedbackRef, () => {
 <template>
   <Popover>
     <template #button>
-      <Button variant="inverted" class="rounded-full size-12">
+      <Button
+        variant="inverted"
+        class="size-12 rounded-full"
+      >
         <i class="icon-[lucide--circle-question-mark] size-6" />
       </Button>
     </template>
-    <div ref="feedbackRef" data-tf-auto-resize :data-tf-widget />
+    <div
+      ref="feedbackRef"
+      data-tf-auto-resize
+      :data-tf-widget
+    />
   </Popover>
 </template>

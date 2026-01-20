@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
     <h3
-      class="text-center text-[15px] font-sans text-[var(--descrip-text)] mt-2.5"
+      class="mt-2.5 text-center font-sans text-[15px] text-[var(--descrip-text)]"
     >
       {{ t('maskEditor.layers') }}
     </h3>
@@ -15,29 +15,35 @@
       @update:model-value="onMaskOpacityChange"
     />
 
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-[var(--descrip-text)]">{{
       t('maskEditor.maskBlendingOptions')
     }}</span>
 
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] -mt-2 -mb-1.5"
+      class="relative -mt-2 -mb-1.5 flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px]"
     >
       <select
         class="maskEditor_sidePanelDropdown"
         :value="store.maskBlendMode"
         @change="onBlendModeChange"
       >
-        <option value="black">{{ t('maskEditor.black') }}</option>
-        <option value="white">{{ t('maskEditor.white') }}</option>
-        <option value="negative">{{ t('maskEditor.negative') }}</option>
+        <option value="black">
+          {{ t('maskEditor.black') }}
+        </option>
+        <option value="white">
+          {{ t('maskEditor.white') }}
+        </option>
+        <option value="negative">
+          {{ t('maskEditor.negative') }}
+        </option>
       </select>
     </div>
 
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-[var(--descrip-text)]">{{
       t('maskEditor.maskLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'mask' ? '2px solid #007acc' : 'none'
       }"
@@ -47,9 +53,12 @@
         class="maskEditor_sidePanelLayerCheckbox"
         :checked="maskLayerVisible"
         @change="onMaskLayerVisibilityChange"
-      />
+      >
       <div class="maskEditor_sidePanelLayerPreviewContainer">
-        <svg viewBox="0 0 20 20" style="">
+        <svg
+          viewBox="0 0 20 20"
+          style=""
+        >
           <path
             class="cls-1"
             d="M1.31,5.32v9.36c0,.55.45,1,1,1h15.38c.55,0,1-.45,1-1V5.32c0-.55-.45-1-1-1H2.31c-.55,0-1,.45-1,1ZM11.19,13.44c-2.91.94-5.57-1.72-4.63-4.63.34-1.05,1.19-1.9,2.24-2.24,2.91-.94,5.57,1.72,4.63,4.63-.34,1.05-1.19-1.9-2.24,2.24Z"
@@ -66,11 +75,11 @@
       </button>
     </div>
 
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-[var(--descrip-text)]">{{
       t('maskEditor.paintLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       :style="{
         border: store.activeLayer === 'rgb' ? '2px solid #007acc' : 'none'
       }"
@@ -80,7 +89,7 @@
         class="maskEditor_sidePanelLayerCheckbox"
         :checked="paintLayerVisible"
         @change="onPaintLayerVisibilityChange"
-      />
+      >
       <div class="maskEditor_sidePanelLayerPreviewContainer">
         <svg viewBox="0 0 20 20">
           <path
@@ -106,24 +115,24 @@
       </button>
     </div>
 
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+    <span class="text-left font-sans text-xs text-[var(--descrip-text)]">{{
       t('maskEditor.baseImageLayer')
     }}</span>
     <div
-      class="flex flex-row gap-2.5 items-center min-h-6 relative h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
+      class="relative flex h-[50px] min-h-6 w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
     >
       <input
         type="checkbox"
         class="maskEditor_sidePanelLayerCheckbox"
         :checked="baseImageLayerVisible"
         @change="onBaseImageLayerVisibilityChange"
-      />
+      >
       <div class="maskEditor_sidePanelLayerPreviewContainer">
         <img
           class="maskEditor_sidePanelImageLayerImage"
           :src="baseImageSrc"
           :alt="t('maskEditor.baseLayerPreview')"
-        />
+        >
       </div>
     </div>
   </div>

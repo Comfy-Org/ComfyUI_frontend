@@ -17,12 +17,19 @@
   >
     <div class="side-bar-button-content">
       <slot name="icon">
-        <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
+        <OverlayBadge
+          v-if="shouldShowBadge"
+          :value="overlayValue"
+        >
           <i
             v-if="typeof icon === 'string'"
             :class="icon + ' side-bar-button-icon'"
           />
-          <component :is="icon" v-else class="side-bar-button-icon" />
+          <component
+            :is="icon"
+            v-else
+            class="side-bar-button-icon"
+          />
         </OverlayBadge>
         <i
           v-else-if="typeof icon === 'string'"
@@ -34,7 +41,10 @@
           class="side-bar-button-icon"
         />
       </slot>
-      <span v-if="label && !isSmall" class="side-bar-button-label">{{
+      <span
+        v-if="label && !isSmall"
+        class="side-bar-button-label"
+      >{{
         t(label)
       }}</span>
     </div>
@@ -117,7 +127,7 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 }
 
 .side-bar-button-label {
-  @apply text-[10px] text-center;
+  @apply text-center text-[10px];
   line-height: 1;
 }
 

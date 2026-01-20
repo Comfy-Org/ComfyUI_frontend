@@ -4,7 +4,7 @@
     :class="['flex', 'justify-end', 'w-full', 'pointer-events-none']"
   >
     <div
-      class="pointer-events-auto flex w-[350px] min-w-[310px] max-h-[60vh] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
+      class="pointer-events-auto flex max-h-[60vh] w-[350px] min-w-[310px] flex-col overflow-hidden rounded-lg border font-inter transition-colors duration-200 ease-in-out"
       :class="containerClass"
       @mouseenter="isHovered = true"
       @mouseleave="isHovered = false"
@@ -15,7 +15,7 @@
         v-model:selected-job-tab="selectedJobTab"
         v-model:selected-workflow-filter="selectedWorkflowFilter"
         v-model:selected-sort-mode="selectedSortMode"
-        class="flex-1 min-h-0"
+        class="min-h-0 flex-1"
         :header-title="headerTitle"
         :show-concurrent-indicator="showConcurrentIndicator"
         :concurrent-workflow-count="concurrentWorkflowCount"

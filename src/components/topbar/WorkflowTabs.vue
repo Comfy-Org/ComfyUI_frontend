@@ -8,7 +8,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-left h-full w-auto aspect-square"
+      class="overflow-arrow overflow-arrow-left aspect-square h-full w-auto"
       :aria-label="$t('g.scrollLeft')"
       :disabled="!leftArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(-1))"
@@ -45,7 +45,7 @@
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
-      class="overflow-arrow overflow-arrow-right h-full w-auto aspect-square"
+      class="overflow-arrow overflow-arrow-right aspect-square h-full w-auto"
       :aria-label="$t('g.scrollRight')"
       :disabled="!rightArrowEnabled"
       @mousedown="whileMouseDown($event, () => scroll(1))"
@@ -59,7 +59,7 @@
     />
     <Button
       v-tooltip="{ value: $t('sideToolbar.newBlankWorkflow'), showDelay: 300 }"
-      class="new-blank-workflow-button no-drag shrink-0 rounded-none h-full w-auto aspect-square"
+      class="new-blank-workflow-button no-drag aspect-square h-full w-auto shrink-0 rounded-none"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
@@ -78,15 +78,30 @@
         compact
         class="shrink-0 p-1"
       />
-      <LoginButton v-else-if="isDesktop" class="p-1" />
+      <LoginButton
+        v-else-if="isDesktop"
+        class="p-1"
+      />
     </div>
-    <ContextMenu ref="menu" :model="contextMenuItems">
+    <ContextMenu
+      ref="menu"
+      :model="contextMenuItems"
+    >
       <template #itemicon="{ item }">
-        <OverlayIcon v-if="item.overlayIcon" v-bind="item.overlayIcon" />
-        <i v-else-if="item.icon" :class="item.icon" />
+        <OverlayIcon
+          v-if="item.overlayIcon"
+          v-bind="item.overlayIcon"
+        />
+        <i
+          v-else-if="item.icon"
+          :class="item.icon"
+        />
       </template>
     </ContextMenu>
-    <div v-if="isDesktop" class="window-actions-spacer app-drag shrink-0" />
+    <div
+      v-if="isDesktop"
+      class="window-actions-spacer app-drag shrink-0"
+    />
   </div>
 </template>
 
@@ -383,13 +398,13 @@ onUpdated(() => {
 }
 
 :deep(.p-togglebutton) {
-  @apply p-0 bg-transparent rounded-none shrink relative border-0 border-r border-solid;
+  @apply relative shrink rounded-none border-0 border-r border-solid bg-transparent p-0;
   border-right-color: var(--border-color);
   min-width: 90px;
 }
 
 .overflow-arrow {
-  @apply px-2 rounded-none;
+  @apply rounded-none px-2;
 }
 
 .overflow-arrow[disabled] {
@@ -418,7 +433,7 @@ onUpdated(() => {
 }
 
 :deep(.p-togglebutton.p-togglebutton-checked) {
-  @apply border-b border-solid h-full;
+  @apply h-full border-b border-solid;
   border-bottom-color: var(--p-button-text-primary-color);
 }
 
@@ -446,7 +461,7 @@ onUpdated(() => {
 }
 
 :deep(.p-selectbutton) {
-  @apply rounded-none h-full;
+  @apply h-full rounded-none;
 }
 
 .workflow-tabs-container-desktop {

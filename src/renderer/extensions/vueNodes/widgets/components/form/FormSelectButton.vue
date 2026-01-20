@@ -3,7 +3,7 @@
     :class="
       cn(
         WidgetInputBaseClass,
-        'p-1 inline-flex justify-center items-center gap-1'
+        'inline-flex items-center justify-center gap-1 p-1'
       )
     "
   >
@@ -12,15 +12,15 @@
       :key="getOptionValue(option, index)"
       :class="
         cn(
-          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate min-w-[4ch]',
-          'bg-transparent border-none',
+          'flex h-6 min-w-[4ch] flex-1 items-center justify-center gap-1 truncate rounded px-5 py-[5px] transition-all duration-150 ease-in-out',
+          'border-none bg-transparent',
           'text-center text-xs font-normal',
           {
             'bg-interface-menu-component-surface-selected':
               isSelected(index) && !disabled,
             'hover:bg-interface-menu-component-surface-selected/50':
               !isSelected(index) && !disabled,
-            'opacity-50 cursor-not-allowed': disabled,
+            'cursor-not-allowed opacity-50': disabled,
             'cursor-pointer': !disabled
           },
           isSelected(index) && !disabled

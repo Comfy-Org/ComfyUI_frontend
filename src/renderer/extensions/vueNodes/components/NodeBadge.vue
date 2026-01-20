@@ -1,14 +1,17 @@
 <template>
   <div
     v-if="text"
-    class="min-w-max rounded-sm bg-node-component-surface px-1 py-0.5 text-xs flex items-center gap-1"
+    class="flex min-w-max items-center gap-1 rounded-sm bg-node-component-surface px-1 py-0.5 text-xs"
     :style="{
       color: fgColor,
       backgroundColor: bgColor
     }"
   >
     {{ text }}
-    <i v-if="cssIcon" :class="cn(cssIcon)" />
+    <i
+      v-if="cssIcon"
+      :class="cn(cssIcon)"
+    />
   </div>
 </template>
 <script setup lang="ts">

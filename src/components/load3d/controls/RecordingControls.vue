@@ -13,7 +13,7 @@
         :class="
           cn(
             'rounded-full',
-            isRecording && 'text-red-500 recording-button-blink'
+            isRecording && 'recording-button-blink text-red-500'
           )
         "
         :aria-label="

@@ -1,11 +1,11 @@
 <template>
   <div
-    class="flex flex-col gap-3 pb-3 h-full !items-stretch bg-[var(--comfy-menu-bg)] overflow-y-auto w-55 px-2.5"
+    class="flex h-full w-55 flex-col !items-stretch gap-3 overflow-y-auto bg-[var(--comfy-menu-bg)] px-2.5 pb-3"
   >
-    <div class="w-full min-h-full">
+    <div class="min-h-full w-full">
       <SettingsPanelContainer />
 
-      <div class="w-full h-0.5 bg-[var(--border-color)] mt-6 mb-1.5" />
+      <div class="mt-6 mb-1.5 h-0.5 w-full bg-[var(--border-color)]" />
 
       <ImageLayerSettingsPanel :tool-manager="toolManager" />
     </div>

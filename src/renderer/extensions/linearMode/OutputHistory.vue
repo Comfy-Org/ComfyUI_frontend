@@ -188,7 +188,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
   <div
     :class="
       cn(
-        'min-w-38 flex bg-comfy-menu-bg md:h-full border-border-subtle',
+        'flex min-w-38 border-border-subtle bg-comfy-menu-bg md:h-full',
         settingStore.get('Comfy.Sidebar.Location') === 'right'
           ? 'flex-row-reverse border-l'
           : 'md:border-r'
@@ -198,7 +198,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
   >
     <div
       v-if="!mobile"
-      class="h-full flex flex-col w-14 shrink-0 overflow-hidden items-center p-2"
+      class="flex h-full w-14 shrink-0 flex-col items-center overflow-hidden p-2"
     >
       <template v-if="workflowTab">
         <SidebarIcon
@@ -217,46 +217,58 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
       <ModeToggle />
     </div>
     <div class="border-border-subtle md:border-r" />
-    <WorkflowsSidebarTab v-if="displayWorkflows" class="min-w-50 grow-1" />
+    <WorkflowsSidebarTab
+      v-if="displayWorkflows"
+      class="min-w-50 grow-1"
+    />
     <article
       v-else
       ref="outputsRef"
       data-testid="linear-outputs"
-      class="h-24 md:h-full min-w-24 grow-1 p-3 overflow-x-auto overflow-y-clip md:overflow-y-auto md:overflow-x-clip md:border-r-1 border-node-component-border flex md:flex-col items-center contain-size"
+      class="flex h-24 min-w-24 grow-1 items-center overflow-x-auto overflow-y-clip border-node-component-border p-3 contain-size md:h-full md:flex-col md:overflow-x-clip md:overflow-y-auto md:border-r-1"
     >
       <section
         v-if="
           queueStore.runningTasks.length > 0 ||
-          queueStore.pendingTasks.length > 0
+            queueStore.pendingTasks.length > 0
         "
         data-testid="linear-job"
-        class="py-3 not-md:h-24 md:w-full aspect-square px-1 relative"
+        class="relative aspect-square px-1 py-3 not-md:h-24 md:w-full"
       >
         <i
           v-if="queueStore.runningTasks.length > 0"
           class="icon-[lucide--loader-circle] size-full animate-spin"
         />
-        <i v-else class="icon-[lucide--ellipsis] size-full animate-pulse" />
+        <i
+          v-else
+          class="icon-[lucide--ellipsis] size-full animate-pulse"
+        />
         <div
           v-if="
             queueStore.runningTasks.length + queueStore.pendingTasks.length > 1
           "
-          class="absolute top-0 right-0 p-1 min-w-5 h-5 flex justify-center items-center rounded-full bg-primary-background text-text-primary"
+          class="absolute top-0 right-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary-background p-1 text-text-primary"
           v-text="
             queueStore.runningTasks.length + queueStore.pendingTasks.length
           "
         />
       </section>
-      <template v-for="(item, index) in outputs.media.value" :key="index">
+      <template
+        v-for="(item, index) in outputs.media.value"
+        :key="index"
+      >
         <div
-          class="border-border-subtle not-md:border-l md:border-t first:border-none not-md:h-21 md:w-full m-3"
+          class="m-3 border-border-subtle not-md:h-21 not-md:border-l first:border-none md:w-full md:border-t"
         />
-        <template v-for="(output, key) in allOutputs(item)" :key>
+        <template
+          v-for="(output, key) in allOutputs(item)"
+          :key
+        >
           <img
             v-if="getMediaType(output) === 'images'"
             :class="
               cn(
-                'p-1 rounded-lg aspect-square object-cover not-md:h-20 md:w-full',
+                'aspect-square rounded-lg object-cover p-1 not-md:h-20 md:w-full',
                 index === selectedIndex[0] &&
                   key === selectedIndex[1] &&
                   'border-2'
@@ -264,12 +276,12 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             "
             :src="output.url"
             @click="selectedIndex = [index, key]"
-          />
+          >
           <div
             v-else
             :class="
               cn(
-                'p-1 rounded-lg aspect-square w-full',
+                'aspect-square w-full rounded-lg p-1',
                 index === selectedIndex[0] &&
                   key === selectedIndex[1] &&
                   'border-2'
@@ -294,7 +306,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     <Button
       :class="
         cn(
-          'p-3 size-10 bg-base-foreground',
+          'size-10 bg-base-foreground p-3',
           settingStore.get('Comfy.Sidebar.Location') === 'left'
             ? 'left-4'
             : 'right-4'

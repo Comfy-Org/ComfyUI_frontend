@@ -50,10 +50,10 @@
       <div
         v-if="
           props.state === 'running' &&
-          hasAnyProgressPercent(
-            props.progressTotalPercent,
-            props.progressCurrentPercent
-          )
+            hasAnyProgressPercent(
+              props.progressTotalPercent,
+              props.progressCurrentPercent
+            )
         "
         :class="progressBarContainerClass"
       >
@@ -72,7 +72,7 @@
       <div class="relative z-1 flex items-center gap-1">
         <div class="relative inline-flex items-center justify-center">
           <div
-            class="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
+            class="absolute top-1/2 left-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
             @mouseenter.stop="onIconEnter"
             @mouseleave.stop="onIconLeave"
           />
@@ -83,7 +83,7 @@
               v-if="iconImageUrl"
               :src="iconImageUrl"
               class="h-full w-full object-cover"
-            />
+            >
             <i
               v-else
               :class="cn(iconClass, 'size-4', shouldSpin && 'animate-spin')"
@@ -93,8 +93,13 @@
       </div>
 
       <div class="relative z-1 min-w-0 flex-1">
-        <div class="truncate opacity-90" :title="props.title">
-          <slot name="primary">{{ props.title }}</slot>
+        <div
+          class="truncate opacity-90"
+          :title="props.title"
+        >
+          <slot name="primary">
+            {{ props.title }}
+          </slot>
         </div>
       </div>
 
@@ -143,8 +148,8 @@
             <Button
               v-else-if="
                 props.state !== 'completed' &&
-                props.state !== 'running' &&
-                computedShowClear
+                  props.state !== 'running' &&
+                  computedShowClear
               "
               v-tooltip.top="cancelTooltipConfig"
               variant="destructive"
@@ -159,8 +164,9 @@
               variant="textonly"
               size="sm"
               @click.stop="emit('view')"
-              >{{ t('menuLabels.View') }}</Button
             >
+              {{ t('menuLabels.View') }}
+            </Button>
             <Button
               v-if="props.showMenu !== undefined ? props.showMenu : true"
               v-tooltip.top="moreTooltipConfig"
@@ -177,7 +183,9 @@
             key="secondary"
             class="pr-2"
           >
-            <slot name="secondary">{{ props.rightText }}</slot>
+            <slot name="secondary">
+              {{ props.rightText }}
+            </slot>
           </div>
         </Transition>
         <!-- Running job cancel button - always visible -->

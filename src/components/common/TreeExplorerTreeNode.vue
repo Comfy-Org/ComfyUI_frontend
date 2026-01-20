@@ -12,13 +12,19 @@
   >
     <div class="node-content">
       <span class="node-label">
-        <slot name="before-label" :node="props.node" />
+        <slot
+          name="before-label"
+          :node="props.node"
+        />
         <EditableText
           :model-value="node.label"
           :is-editing="isEditing"
           @edit="handleRename"
         />
-        <slot name="after-label" :node="props.node" />
+        <slot
+          name="after-label"
+          :node="props.node"
+        />
       </span>
       <Badge
         v-if="showNodeBadgeText"
@@ -28,9 +34,12 @@
       />
     </div>
     <div
-      class="node-actions touch:opacity-100 motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
+      class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100 touch:opacity-100"
     >
-      <slot name="actions" :node="props.node" />
+      <slot
+        name="actions"
+        :node="props.node"
+      />
     </div>
   </div>
 </template>

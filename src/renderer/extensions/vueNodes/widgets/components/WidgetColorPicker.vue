@@ -3,7 +3,7 @@
   <WidgetLayoutField :widget="widget">
     <label
       :class="
-        cn(WidgetInputBaseClass, 'flex items-center gap-2 w-full px-4 py-2')
+        cn(WidgetInputBaseClass, 'flex w-full items-center gap-2 px-4 py-2')
       "
     >
       <ColorPicker
@@ -17,10 +17,9 @@
         @update:model-value="onPickerUpdate"
       />
       <span
-        class="text-xs truncate min-w-[4ch]"
+        class="min-w-[4ch] truncate text-xs"
         data-testid="widget-color-text"
-        >{{ toHexFromFormat(localValue, format) }}</span
-      >
+      >{{ toHexFromFormat(localValue, format) }}</span>
     </label>
   </WidgetLayoutField>
 </template>

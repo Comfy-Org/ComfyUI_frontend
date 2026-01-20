@@ -32,14 +32,14 @@
         </div>
 
         <div
-          class="actionbar-container pointer-events-auto flex gap-2 h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+          class="actionbar-container pointer-events-auto flex h-12 items-center gap-2 rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
         >
           <ActionBarButtons />
           <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
           <div
             ref="legacyCommandsContainerRef"
             class="[&:not(:has(*>*:not(:empty)))]:hidden"
-          ></div>
+          />
           <ComfyActionbar />
           <Button
             v-tooltip.bottom="queueHistoryTooltipConfig"
@@ -54,7 +54,7 @@
             <i class="icon-[lucide--history] size-4" />
             <span
               v-if="queuedCount > 0"
-              class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground"
+              class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] leading-[14px] font-medium text-base-foreground"
             >
               {{ queuedCount }}
             </span>

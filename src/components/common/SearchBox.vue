@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'relative flex w-full items-center gap-2 bg-comfy-input cursor-text text-comfy-input-foreground',
+        'relative flex w-full cursor-text items-center gap-2 bg-comfy-input text-comfy-input-foreground',
         customClass,
         wrapperStyle
       )
@@ -14,19 +14,22 @@
       :placeholder
       :autofocus
       unstyled
-      class="absolute inset-0 size-full pl-11 border-none outline-none bg-transparent text-sm"
+      class="absolute inset-0 size-full border-none bg-transparent pl-11 text-sm outline-none"
       :aria-label="placeholder"
     />
     <Button
       v-if="filterIcon"
       size="icon"
       variant="textonly"
-      class="filter-button absolute right-0 inset-y-0 m-0 p-0"
+      class="filter-button absolute inset-y-0 right-0 m-0 p-0"
       @click="$emit('showFilter', $event)"
     >
       <i :class="filterIcon" />
     </Button>
-    <InputIcon v-if="!modelValue" :class="icon" />
+    <InputIcon
+      v-if="!modelValue"
+      :class="icon"
+    />
     <Button
       v-if="modelValue"
       class="clear-button absolute left-0"
@@ -37,7 +40,10 @@
       <i class="icon-[lucide--x] size-4" />
     </Button>
   </div>
-  <div v-if="filters?.length" class="search-filters flex flex-wrap gap-2 pt-2">
+  <div
+    v-if="filters?.length"
+    class="search-filters flex flex-wrap gap-2 pt-2"
+  >
     <SearchFilterChip
       v-for="filter in filters"
       :key="filter.id"
@@ -109,7 +115,7 @@ watchDebounced(
 
 const wrapperStyle = computed(() => {
   if (showBorder) {
-    return cn('rounded p-2 border border-solid border-border-default')
+    return cn('rounded border border-solid border-border-default p-2')
   }
 
   // Size-specific classes matching button sizes for consistency

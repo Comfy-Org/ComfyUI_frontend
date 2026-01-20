@@ -10,7 +10,10 @@
       ref="containerEl"
       class="relative min-h-0 flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
     >
-      <div v-if="isLoading" class="flex size-full items-center justify-center">
+      <div
+        v-if="isLoading"
+        class="flex size-full items-center justify-center"
+      >
         <span class="text-sm">{{ $t('imageCrop.loading') }}</span>
       </div>
 
@@ -19,7 +22,9 @@
         class="flex size-full flex-col items-center justify-center text-center"
       >
         <i class="mb-2 icon-[lucide--image] h-12 w-12" />
-        <p class="text-sm">{{ $t('imageCrop.noInputImage') }}</p>
+        <p class="text-sm">
+          {{ $t('imageCrop.noInputImage') }}
+        </p>
       </div>
 
       <img
@@ -28,11 +33,11 @@
         :src="imageUrl"
         :alt="$t('imageCrop.cropPreviewAlt')"
         draggable="false"
-        class="block size-full object-contain select-none brightness-50"
+        class="block size-full object-contain brightness-50 select-none"
         @load="handleImageLoad"
         @error="handleImageError"
         @dragstart.prevent
-      />
+      >
 
       <div
         v-if="imageUrl && !isLoading"
@@ -42,7 +47,10 @@
         @pointermove="handleDragMove"
         @pointerup="handleDragEnd"
       >
-        <div class="pointer-events-none size-full" :style="cropImageStyle" />
+        <div
+          class="pointer-events-none size-full"
+          :style="cropImageStyle"
+        />
       </div>
 
       <div
@@ -57,7 +65,10 @@
       />
     </div>
 
-    <WidgetBoundingBox v-model="modelValue" class="shrink-0" />
+    <WidgetBoundingBox
+      v-model="modelValue"
+      class="shrink-0"
+    />
   </div>
 </template>
 

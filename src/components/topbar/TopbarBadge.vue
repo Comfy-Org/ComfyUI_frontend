@@ -18,7 +18,11 @@
     >
       {{ badge.label }}
     </div>
-    <div v-else class="size-2 shrink-0 rounded-full" :class="dotClasses" />
+    <div
+      v-else
+      class="size-2 shrink-0 rounded-full"
+      :class="dotClasses"
+    />
     <Popover
       ref="popover"
       append-to="body"
@@ -37,8 +41,13 @@
         >
           {{ badge.label }}
         </div>
-        <div class="text-sm font-inter">{{ badge.text }}</div>
-        <div v-if="badge.tooltip" class="text-xs">
+        <div class="font-inter text-sm">
+          {{ badge.text }}
+        </div>
+        <div
+          v-if="badge.tooltip"
+          class="text-xs"
+        >
           {{ badge.tooltip }}
         </div>
       </div>
@@ -90,8 +99,13 @@
         >
           {{ badge.label }}
         </div>
-        <div class="text-sm font-inter">{{ badge.text }}</div>
-        <div v-if="badge.tooltip" class="text-xs">
+        <div class="font-inter text-sm">
+          {{ badge.text }}
+        </div>
+        <div
+          v-if="badge.tooltip"
+          class="text-xs"
+        >
           {{ badge.tooltip }}
         </div>
       </div>
@@ -117,7 +131,10 @@
     >
       {{ badge.label }}
     </div>
-    <div class="font-inter text-sm" :class="textClasses">
+    <div
+      class="font-inter text-sm"
+      :class="textClasses"
+    >
       {{ badge.text }}
     </div>
   </div>

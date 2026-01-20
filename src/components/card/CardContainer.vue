@@ -1,7 +1,7 @@
 <template>
   <div :class="containerClasses">
-    <slot name="top"></slot>
-    <slot name="bottom"></slot>
+    <slot name="top" />
+    <slot name="bottom" />
   </div>
 </template>
 
@@ -59,7 +59,7 @@ const containerClasses = computed(() => {
     outline: cn(
       hasBorder && 'border-2 border-border-subtle',
       hasCursor && 'cursor-pointer',
-      'hover:border-border-subtle/50 transition-colors'
+      'transition-colors hover:border-border-subtle/50'
     )
   }
 

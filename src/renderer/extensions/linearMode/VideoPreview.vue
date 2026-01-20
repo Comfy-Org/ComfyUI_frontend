@@ -23,5 +23,8 @@ const height = ref('')
       }
     "
   />
-  <span class="self-center z-10" v-text="`${width} x ${height}`" />
+  <span
+    class="z-10 self-center"
+    v-text="`${width} x ${height}`"
+  />
 </template>

@@ -125,7 +125,7 @@ function openFullSettings() {
         <LayoutField :label="t('rightSidePanel.globalSettings.gridSpacing')">
           <div
             :class="
-              cn(WidgetInputBaseClass, 'flex items-center gap-2 pl-3 pr-2')
+              cn(WidgetInputBaseClass, 'flex items-center gap-2 pr-2 pl-3')
             "
           >
             <Slider
@@ -189,7 +189,7 @@ function openFullSettings() {
 
     <!-- View all settings button -->
     <div
-      class="flex items-center justify-center p-4 border-b border-interface-stroke"
+      class="flex items-center justify-center border-b border-interface-stroke p-4"
     >
       <Button
         variant="muted-textonly"

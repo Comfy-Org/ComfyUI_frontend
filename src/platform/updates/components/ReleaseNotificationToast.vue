@@ -1,25 +1,28 @@
 <template>
-  <div v-if="shouldShow" class="release-toast-popup">
+  <div
+    v-if="shouldShow"
+    class="release-toast-popup"
+  >
     <div
-      class="w-96 max-h-96 bg-base-background border border-border-default rounded-lg shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)] flex flex-col"
+      class="flex max-h-96 w-96 flex-col rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
     >
       <!-- Main content -->
-      <div class="p-4 flex flex-col gap-4 flex-1 min-h-0">
+      <div class="flex min-h-0 flex-1 flex-col gap-4 p-4">
         <!-- Header section with icon and text -->
         <div class="flex items-center gap-4">
           <div
-            class="p-3 bg-primary-background-hover rounded-lg flex items-center justify-center shrink-0"
+            class="flex shrink-0 items-center justify-center rounded-lg bg-primary-background-hover p-3"
           >
-            <i class="icon-[lucide--rocket] w-4 h-4 text-white" />
+            <i class="icon-[lucide--rocket] h-4 w-4 text-white" />
           </div>
           <div class="flex flex-col gap-1">
             <div
-              class="text-sm font-normal text-base-foreground leading-[1.429]"
+              class="text-sm leading-[1.429] font-normal text-base-foreground"
             >
               {{ $t('releaseToast.newVersionAvailable') }}
             </div>
             <div
-              class="text-sm font-normal text-muted-foreground leading-[1.21]"
+              class="text-sm leading-[1.21] font-normal text-muted-foreground"
             >
               {{ latestRelease?.version }}
             </div>
@@ -28,32 +31,32 @@
 
         <!-- Description section -->
         <div
-          class="pl-14 text-sm font-normal text-muted-foreground leading-[1.21] overflow-y-auto flex-1 min-h-0"
+          class="min-h-0 flex-1 overflow-y-auto pl-14 text-sm leading-[1.21] font-normal text-muted-foreground"
           v-html="formattedContent"
-        ></div>
+        />
       </div>
 
       <!-- Footer section -->
-      <div class="flex justify-between items-center px-4 pb-4">
+      <div class="flex items-center justify-between px-4 pb-4">
         <a
-          class="flex items-center gap-2 text-sm font-normal py-1 text-muted-foreground hover:text-base-foreground"
+          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-base-foreground"
           :href="changelogUrl"
           target="_blank"
           rel="noopener noreferrer"
           @click="handleLearnMore"
         >
-          <i class="icon-[lucide--external-link] w-4 h-4"></i>
+          <i class="icon-[lucide--external-link] h-4 w-4" />
           {{ $t('releaseToast.whatsNew') }}
         </a>
         <div class="flex items-center gap-4">
           <button
-            class="h-6 px-0 bg-transparent border-none text-sm font-normal text-muted-foreground hover:text-base-foreground cursor-pointer"
+            class="h-6 cursor-pointer border-none bg-transparent px-0 text-sm font-normal text-muted-foreground hover:text-base-foreground"
             @click="handleSkip"
           >
             {{ $t('releaseToast.skip') }}
           </button>
           <button
-            class="h-10 px-4 bg-secondary-background hover:bg-secondary-background-hover rounded-lg border-none text-sm font-normal text-base-foreground cursor-pointer"
+            class="h-10 cursor-pointer rounded-lg border-none bg-secondary-background px-4 text-sm font-normal text-base-foreground hover:bg-secondary-background-hover"
             @click="handleUpdate"
           >
             {{ $t('releaseToast.update') }}

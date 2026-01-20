@@ -138,19 +138,25 @@ async function runButtonClick(e: Event) {
 defineExpose({ runButtonClick })
 </script>
 <template>
-  <div class="flex flex-col min-w-80 md:h-full">
+  <div class="flex min-w-80 flex-col md:h-full">
     <section
       v-if="mobile"
       data-testid="linear-run-button"
-      class="p-4 pb-6 border-t border-node-component-border"
+      class="border-t border-node-component-border p-4 pb-6"
     >
       <WidgetInputNumberInput
         v-model="batchCount"
         :widget="batchCountWidget"
-        class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+        class="grid-cols-[auto_96px]! *:[.min-w-0]:w-24"
       />
-      <SubscribeToRunButton v-if="!isActiveSubscription" class="w-full mt-4" />
-      <div v-else class="flex mt-4 gap-2">
+      <SubscribeToRunButton
+        v-if="!isActiveSubscription"
+        class="mt-4 w-full"
+      />
+      <div
+        v-else
+        class="mt-4 flex gap-2"
+      >
         <Button
           variant="primary"
           class="grow-1"
@@ -173,17 +179,17 @@ defineExpose({ runButtonClick })
     </section>
     <section
       data-testid="linear-workflow-info"
-      class="h-12 border-x border-border-subtle py-2 px-4 gap-2 bg-comfy-menu-bg flex items-center md:contain-size"
+      class="flex h-12 items-center gap-2 border-x border-border-subtle bg-comfy-menu-bg px-4 py-2 md:contain-size"
     >
       <span
-        class="font-bold truncate"
+        class="truncate font-bold"
         v-text="workflowStore.activeWorkflow?.filename"
       />
       <div class="flex-1" />
       <Popover
         v-if="partitionedNodes[0].length"
         align="start"
-        class="overflow-y-auto overflow-x-clip max-h-(--reka-popover-content-available-height) z-100"
+        class="z-100 max-h-(--reka-popover-content-available-height) overflow-x-clip overflow-y-auto"
         :reference="notesTo"
         side="left"
         :to="notesTo"
@@ -205,15 +211,17 @@ defineExpose({ runButtonClick })
             <NodeWidgets
               :node-data
               :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
-              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg max-w-100"
+              class="max-w-100 gap-y-3 rounded-lg py-3 not-has-[textarea]:flex-0 **:[.col-span-2]:grid-cols-1"
             />
           </template>
         </div>
       </Popover>
-      <Button v-if="false"> {{ t('menuLabels.publish') }} </Button>
+      <Button v-if="false">
+        {{ t('menuLabels.publish') }}
+      </Button>
     </section>
     <div
-      class="border gap-2 md:h-full border-[var(--interface-stroke)] bg-comfy-menu-bg flex flex-col px-2"
+      class="flex flex-col gap-2 border border-[var(--interface-stroke)] bg-comfy-menu-bg px-2 md:h-full"
     >
       <section
         data-testid="linear-widgets"
@@ -237,9 +245,9 @@ defineExpose({ runButtonClick })
               :node-data
               :class="
                 cn(
-                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg',
+                  'gap-y-3 rounded-lg py-3 not-has-[textarea]:flex-0 **:[.col-span-2]:grid-cols-1',
                   nodeData.hasErrors &&
-                    'ring-2 ring-inset ring-node-stroke-error'
+                    'ring-2 ring-node-stroke-error ring-inset'
                 )
               "
               :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
@@ -250,18 +258,21 @@ defineExpose({ runButtonClick })
       <section
         v-if="!mobile"
         data-testid="linear-run-button"
-        class="p-4 pb-6 border-t border-node-component-border"
+        class="border-t border-node-component-border p-4 pb-6"
       >
         <WidgetInputNumberInput
           v-model="batchCount"
           :widget="batchCountWidget"
-          class="*:[.min-w-0]:w-24 grid-cols-[auto_96px]!"
+          class="grid-cols-[auto_96px]! *:[.min-w-0]:w-24"
         />
         <SubscribeToRunButton
           v-if="!isActiveSubscription"
-          class="w-full mt-4"
+          class="mt-4 w-full"
         />
-        <div v-else class="flex mt-4 gap-2">
+        <div
+          v-else
+          class="mt-4 flex gap-2"
+        >
           <Button
             variant="primary"
             class="grow-1"
@@ -290,19 +301,26 @@ defineExpose({ runButtonClick })
     :to="toastTo"
   >
     <div
-      class="bg-base-foreground text-base-background rounded-sm flex h-8 p-1 pr-2 gap-2 items-center"
+      class="flex h-8 items-center gap-2 rounded-sm bg-base-foreground p-1 pr-2 text-base-background"
     >
       <i
         v-if="jobFinishedQueue"
         class="icon-[lucide--check] size-5 bg-success-background"
       />
-      <i v-else class="icon-[lucide--loader-circle] size-4 animate-spin" />
+      <i
+        v-else
+        class="icon-[lucide--loader-circle] size-4 animate-spin"
+      />
       <span v-text="t('queue.jobAddedToQueue')" />
     </div>
   </Teleport>
-  <Teleport v-if="false" defer :to="notesTo">
+  <Teleport
+    v-if="false"
+    defer
+    :to="notesTo"
+  >
     <div
-      class="bg-base-background text-muted-foreground flex flex-col w-90 gap-2 rounded-2xl border-1 border-border-subtle py-3"
-    ></div>
+      class="flex w-90 flex-col gap-2 rounded-2xl border-1 border-border-subtle bg-base-background py-3 text-muted-foreground"
+    />
   </Teleport>
 </template>

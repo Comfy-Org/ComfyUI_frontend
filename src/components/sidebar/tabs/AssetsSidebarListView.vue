@@ -25,7 +25,10 @@
         @mouseleave="onJobLeave(job.id)"
         @click.stop
       >
-        <template v-if="hoveredJobId === job.id" #actions>
+        <template
+          v-if="hoveredJobId === job.id"
+          #actions
+        >
           <Button
             v-if="canCancelJob"
             :variant="cancelAction.variant"
@@ -33,7 +36,10 @@
             :aria-label="cancelAction.label"
             @click.stop="runCancelJob()"
           >
-            <i :class="cancelAction.icon" class="size-4" />
+            <i
+              :class="cancelAction.icon"
+              class="size-4"
+            />
           </Button>
         </template>
       </AssetsListItem>
@@ -44,7 +50,7 @@
       :class="cn('px-2', activeJobItems.length && 'mt-2')"
     >
       <div
-        class="flex items-center py-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
+        class="flex items-center py-2 font-inter text-sm leading-normal font-normal text-muted-foreground"
       >
         {{ t('sideToolbar.generatedAssetsHeader') }}
       </div>
@@ -79,7 +85,10 @@
           @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
           @click.stop="emit('select-asset', item.asset)"
         >
-          <template v-if="hoveredAssetId === item.asset.id" #actions>
+          <template
+            v-if="hoveredAssetId === item.asset.id"
+            #actions
+          >
             <Button
               variant="secondary"
               size="icon"
@@ -194,7 +203,7 @@ function getAssetCardClass(selected: boolean): string {
     'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
     'cursor-pointer',
     selected &&
-      'bg-secondary-background-hover ring-1 ring-inset ring-modal-card-border-highlighted'
+      'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
   )
 }
 

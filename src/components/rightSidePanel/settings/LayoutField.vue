@@ -18,14 +18,14 @@ defineProps<{
       v-tooltip.left="
         tooltip
           ? {
-              value: tooltip,
-              showDelay: 300
-            }
+            value: tooltip,
+            showDelay: 300
+          }
           : null
       "
       :class="
         cn(
-          'text-sm text-muted-foreground truncate',
+          'truncate text-sm text-muted-foreground',
           tooltip ? 'cursor-help' : '',
           singleline ? 'flex-1' : ''
         )

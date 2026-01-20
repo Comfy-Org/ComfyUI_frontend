@@ -1,13 +1,13 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2 justify-center"
+    class="image-preview group relative flex size-full min-h-16 min-w-16 flex-col justify-center px-2"
     @keydown="handleKeyDown"
   >
     <!-- Image Wrapper -->
     <div
       ref="imageWrapperEl"
-      class="h-full w-full overflow-hidden rounded-[5px] bg-muted-background relative"
+      class="relative h-full w-full overflow-hidden rounded-[5px] bg-muted-background"
       tabindex="0"
       role="img"
       :aria-label="$t('g.imagePreview')"
@@ -21,7 +21,7 @@
       <div
         v-if="imageError"
         role="alert"
-        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
+        class="flex size-full flex-col items-center justify-center bg-muted-background py-8 text-center text-base-foreground"
       >
         <i
           class="mb-2 icon-[lucide--image-off] h-12 w-12 text-base-foreground"
@@ -34,8 +34,15 @@
         </p>
       </div>
       <!-- Loading State -->
-      <div v-if="showLoader && !imageError" class="size-full">
-        <Skeleton border-radius="5px" width="100%" height="100%" />
+      <div
+        v-if="showLoader && !imageError"
+        class="size-full"
+      >
+        <Skeleton
+          border-radius="5px"
+          width="100%"
+          height="100%"
+        />
       </div>
       <!-- Main Image -->
       <img
@@ -43,10 +50,10 @@
         ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
-        class="block size-full object-contain pointer-events-none"
+        class="pointer-events-none block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
-      />
+      >
 
       <!-- Floating Action Buttons (appear on hover and focus) -->
       <div
@@ -88,10 +95,16 @@
 
     <!-- Image Dimensions -->
     <div class="pt-2 text-center text-xs text-base-foreground">
-      <span v-if="imageError" class="text-red-400">
+      <span
+        v-if="imageError"
+        class="text-red-400"
+      >
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="showLoader" class="text-base-foreground">
+      <span
+        v-else-if="showLoader"
+        class="text-base-foreground"
+      >
         {{ $t('g.loading') }}...
       </span>
       <span v-else>

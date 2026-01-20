@@ -95,17 +95,17 @@ onMounted(() => {
 
 <template>
   <div
-    class="flex h-full w-full items-center justify-center bg-comfy-menu-secondary-bg"
+    class="bg-comfy-menu-secondary-bg flex h-full w-full items-center justify-center"
   >
     <div class="flex flex-col items-center gap-4">
       <img
         src="/assets/images/comfy-logo-single.svg"
         :alt="t('g.comfyOrgLogoAlt')"
         class="h-16 w-16"
-      />
+      >
       <p
         v-if="selectedTierKey"
-        class="font-inter text-base font-normal leading-normal text-base-foreground"
+        class="font-inter text-base leading-normal font-normal text-base-foreground"
       >
         {{
           t('subscription.subscribeTo', {

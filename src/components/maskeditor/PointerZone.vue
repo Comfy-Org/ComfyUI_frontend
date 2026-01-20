@@ -1,7 +1,7 @@
 <template>
   <div
     ref="pointerZoneRef"
-    class="w-[calc(100%-4rem-220px)] h-full"
+    class="h-full w-[calc(100%-4rem-220px)]"
     @pointerdown="handlePointerDown"
     @pointermove="handlePointerMove"
     @pointerup="handlePointerUp"

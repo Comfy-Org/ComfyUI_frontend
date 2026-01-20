@@ -1,5 +1,5 @@
 <template>
-  <div class="relative show-slider">
+  <div class="show-slider relative">
     <Button
       v-tooltip.right="{ value: tooltipText, showDelay: 300 }"
       size="icon"
@@ -12,7 +12,7 @@
     </Button>
     <div
       v-show="showSlider"
-      class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface p-4 shadow-lg w-[150px]"
+      class="absolute top-0 left-12 w-[150px] rounded-lg bg-interface-menu-surface p-4 shadow-lg"
     >
       <Slider
         v-model="value"

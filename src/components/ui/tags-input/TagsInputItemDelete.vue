@@ -24,7 +24,7 @@ const { t } = useI18n()
     :aria-label="t('g.removeTag')"
     :class="
       cn(
-        'opacity-60 hover:bg-transparent hover:opacity-100 transition-[opacity,width] duration-150 w-4 data-[disabled]:w-0 data-[disabled]:opacity-0 data-[disabled]:pointer-events-none overflow-hidden',
+        'w-4 overflow-hidden opacity-60 transition-[opacity,width] duration-150 hover:bg-transparent hover:opacity-100 data-[disabled]:pointer-events-none data-[disabled]:w-0 data-[disabled]:opacity-0',
         className
       )
     "

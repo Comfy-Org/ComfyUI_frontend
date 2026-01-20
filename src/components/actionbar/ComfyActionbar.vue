@@ -1,5 +1,8 @@
 <template>
-  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
+  <div
+    class="flex h-full items-center"
+    :class="cn(!isDocked && '-ml-2')"
+  >
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -18,12 +21,15 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none gap-2">
+      <div
+        ref="panelRef"
+        class="flex items-center gap-2 select-none"
+      >
         <span
           ref="dragHandleRef"
           :class="
             cn(
-              'drag-handle cursor-grab w-3 h-max',
+              'drag-handle h-max w-3 cursor-grab',
               isDragging && 'cursor-grabbing'
             )
           "
@@ -282,18 +288,18 @@ const actionbarClass = computed(() =>
   cn(
     'w-[200px] border-dashed border-blue-500 opacity-80',
     'm-1.5 flex items-center justify-center self-stretch',
-    'rounded-md before:w-50 before:-ml-50 before:h-full',
+    'rounded-md before:-ml-50 before:h-full before:w-50',
     'pointer-events-auto',
     isMouseOverDropZone.value &&
-      'border-[3px] opacity-100 scale-105 shadow-[0_0_20px] shadow-blue-500'
+      'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
   )
 )
 const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto z-1300',
-    isDragging.value && 'select-none pointer-events-none',
+    isDragging.value && 'pointer-events-none select-none',
     isDocked.value
-      ? 'p-0 static border-none bg-transparent'
+      ? 'static border-none bg-transparent p-0'
       : 'fixed shadow-interface'
   )
 )

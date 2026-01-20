@@ -7,7 +7,10 @@
   >
     <!-- Email Field -->
     <div class="flex flex-col gap-2">
-      <label class="mb-2 text-base font-medium opacity-80" :for="emailInputId">
+      <label
+        class="mb-2 text-base font-medium opacity-80"
+        :for="emailInputId"
+      >
         {{ t('auth.login.emailLabel') }}
       </label>
       <InputText
@@ -19,7 +22,10 @@
         :placeholder="t('auth.login.emailPlaceholder')"
         :invalid="$form.email?.invalid"
       />
-      <small v-if="$form.email?.invalid" class="text-red-500">{{
+      <small
+        v-if="$form.email?.invalid"
+        class="text-red-500"
+      >{{
         $form.email.error.message
       }}</small>
     </div>
@@ -54,13 +60,19 @@
         fluid
         class="h-10"
       />
-      <small v-if="$form.password?.invalid" class="text-red-500">{{
+      <small
+        v-if="$form.password?.invalid"
+        class="text-red-500"
+      >{{
         $form.password.error.message
       }}</small>
     </div>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="mx-auto h-8 w-8" />
+    <ProgressSpinner
+      v-if="loading"
+      class="mx-auto h-8 w-8"
+    />
     <Button
       v-else
       type="submit"
@@ -131,6 +143,6 @@ const handleForgotPassword = async (
 @reference '../../../../assets/css/style.css';
 
 .text-link-disabled {
-  @apply opacity-50 cursor-not-allowed;
+  @apply cursor-not-allowed opacity-50;
 }
 </style>

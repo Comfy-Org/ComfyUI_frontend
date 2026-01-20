@@ -3,7 +3,7 @@
     v-if="!isLoggedIn"
     variant="textonly"
     size="icon"
-    :class="cn('group rounded-full text-base-foreground p-0', className)"
+    :class="cn('group rounded-full p-0 text-base-foreground', className)"
     :aria-label="t('g.login')"
     @click="handleSignIn()"
     @mouseenter="showPopover"
@@ -22,13 +22,14 @@
     @mouseover="cancelHidePopover"
   >
     <div>
-      <div class="mb-1">{{ t('auth.loginButton.tooltipHelp') }}</div>
+      <div class="mb-1">
+        {{ t('auth.loginButton.tooltipHelp') }}
+      </div>
       <a
         :href="apiNodesOverviewUrl"
         target="_blank"
         class="text-neutral-500 hover:text-primary"
-        >{{ t('auth.loginButton.tooltipLearnMore') }}</a
-      >
+      >{{ t('auth.loginButton.tooltipLearnMore') }}</a>
     </div>
   </Popover>
 </template>

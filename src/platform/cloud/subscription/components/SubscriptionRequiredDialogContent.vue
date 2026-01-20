@@ -1,19 +1,19 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex flex-col p-4 pt-8 md:p-16 !overflow-y-auto h-full gap-8"
+    class="relative flex h-full flex-col gap-8 !overflow-y-auto p-4 pt-8 md:p-16"
   >
     <Button
       size="icon"
       variant="muted-textonly"
-      class="rounded-full shrink-0 text-text-secondary hover:bg-white/10 absolute right-2.5 top-2.5"
+      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
       <i class="pi pi-times text-xl" />
     </Button>
     <div class="text-center">
-      <h2 class="text-xl lg:text-2xl text-muted-foreground m-0">
+      <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
         {{ $t('subscription.description') }}
       </h2>
     </div>
@@ -22,7 +22,7 @@
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
-      <p class="text-sm text-text-secondary m-0">
+      <p class="m-0 text-sm text-text-secondary">
         {{ $t('subscription.haveQuestions') }}
       </p>
       <div class="flex items-center gap-1.5">
@@ -46,12 +46,15 @@
       </div>
     </div>
   </div>
-  <div v-else class="legacy-dialog relative grid h-full grid-cols-5">
+  <div
+    v-else
+    class="legacy-dialog relative grid h-full grid-cols-5"
+  >
     <!-- Custom close button -->
     <Button
       size="icon"
       variant="muted-textonly"
-      class="rounded-full absolute top-2.5 right-2.5 z-10 h-8 w-8 p-0 text-white hover:bg-white/20"
+      class="absolute top-2.5 right-2.5 z-10 h-8 w-8 rounded-full p-0 text-white hover:bg-white/20"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
@@ -72,7 +75,7 @@
         <source
           src="/assets/images/cloud-subscription.webm"
           type="video/webm"
-        />
+        >
       </video>
     </div>
 
@@ -102,7 +105,7 @@
 
       <div class="flex flex-col pt-8">
         <SubscribeButton
-          class="py-2 px-4 rounded-lg"
+          class="rounded-lg px-4 py-2"
           :pt="{
             root: {
               style: 'background: var(--color-accent-blue, #0B8CE9);'

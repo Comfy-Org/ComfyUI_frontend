@@ -11,14 +11,20 @@
       <div
         :class="
           cn(
-            'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
-            compact && 'size-full aspect-square'
+            'flex items-center justify-center gap-1 rounded-full hover:bg-interface-button-hover-surface',
+            compact && 'aspect-square size-full'
           )
         "
       >
-        <UserAvatar :photo-url="photoURL" :class="compact && 'size-full'" />
+        <UserAvatar
+          :photo-url="photoURL"
+          :class="compact && 'size-full'"
+        />
 
-        <i v-if="showArrow" class="icon-[lucide--chevron-down] size-3 px-1" />
+        <i
+          v-if="showArrow"
+          class="icon-[lucide--chevron-down] size-3 px-1"
+        />
       </div>
     </Button>
 

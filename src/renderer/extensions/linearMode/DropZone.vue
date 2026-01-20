@@ -21,8 +21,8 @@ const canAcceptDrop = ref(false)
     v-if="onDragOver && onDragDrop"
     :class="
       cn(
-        'rounded-lg ring-inset ring-primary-500',
-        canAcceptDrop && 'ring-4 bg-primary-500/10'
+        'rounded-lg ring-primary-500 ring-inset',
+        canAcceptDrop && 'bg-primary-500/10 ring-4'
       )
     "
     @dragover.prevent="canAcceptDrop = onDragOver?.($event)"
@@ -39,7 +39,7 @@ const canAcceptDrop = ref(false)
       v-if="dropIndicator"
       :class="
         cn(
-          'flex flex-col items-center justify-center gap-2 border-dashed rounded-lg border h-25 border-border-subtle m-3 py-2',
+          'm-3 flex h-25 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border-subtle py-2',
           dropIndicator?.onClick && 'cursor-pointer'
         )
       "
@@ -49,10 +49,16 @@ const canAcceptDrop = ref(false)
         v-if="dropIndicator?.imageUrl"
         class="h-23"
         :src="dropIndicator?.imageUrl"
-      />
+      >
       <template v-else>
-        <span v-if="dropIndicator.label" v-text="dropIndicator.label" />
-        <i v-if="dropIndicator.iconClass" :class="dropIndicator.iconClass" />
+        <span
+          v-if="dropIndicator.label"
+          v-text="dropIndicator.label"
+        />
+        <i
+          v-if="dropIndicator.iconClass"
+          :class="dropIndicator.iconClass"
+        />
       </template>
     </div>
   </div>

@@ -20,7 +20,7 @@ const searchQuery = defineModel<string>('searchQuery')
 const sortSelected = defineModel<OptionId>('sortSelected')
 
 const actionButtonStyle = cn(
-  'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-node-component-border transition-all duration-150'
+  'h-8 rounded-lg bg-zinc-500/20 outline outline-1 outline-offset-[-1px] outline-node-component-border transition-all duration-150'
 )
 
 const resetInputStyle = 'bg-transparent border-0 outline-0 ring-0 text-left'
@@ -57,7 +57,7 @@ function handleSortSelected(item: SortOption) {
         cn(
           actionButtonStyle,
           'hover:outline-component-node-widget-background-highlighted/80',
-          'focus-within:outline-component-node-widget-background-highlighted/80 focus-within:ring-0'
+          'focus-within:ring-0 focus-within:outline-component-node-widget-background-highlighted/80'
         )
       "
     />
@@ -68,7 +68,7 @@ function handleSortSelected(item: SortOption) {
         cn(
           resetInputStyle,
           actionButtonStyle,
-          'relative w-8 flex justify-center items-center cursor-pointer',
+          'relative flex w-8 cursor-pointer items-center justify-center',
           'hover:outline-component-node-widget-background-highlighted',
           'active:!scale-95'
         )
@@ -100,7 +100,7 @@ function handleSortSelected(item: SortOption) {
       <div
         :class="
           cn(
-            'flex flex-col gap-2 p-2 min-w-32',
+            'flex min-w-32 flex-col gap-2 p-2',
             'bg-component-node-background',
             'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
           )
@@ -112,7 +112,7 @@ function handleSortSelected(item: SortOption) {
           :class="
             cn(
               resetInputStyle,
-              'flex justify-between items-center h-6 cursor-pointer',
+              'flex h-6 cursor-pointer items-center justify-between',
               'hover:!text-blue-500'
             )
           "
@@ -132,7 +132,7 @@ function handleSortSelected(item: SortOption) {
       :class="
         cn(
           actionButtonStyle,
-          'flex justify-center items-center p-1 gap-1 hover:outline-component-node-widget-background-highlighted'
+          'flex items-center justify-center gap-1 p-1 hover:outline-component-node-widget-background-highlighted'
         )
       "
     >

@@ -1,6 +1,6 @@
 <template>
   <div :class="containerClasses">
-    <slot></slot>
+    <slot />
   </div>
 </template>
 
@@ -14,6 +14,6 @@ const { fullHeight = true } = defineProps<{
 }>()
 
 const containerClasses = computed(() =>
-  cn('flex-1 w-full', fullHeight && 'h-full')
+  cn('w-full flex-1', fullHeight && 'h-full')
 )
 </script>

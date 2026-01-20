@@ -83,7 +83,10 @@ function closeDialog() {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <HoneyToast
+    v-model:expanded="isExpanded"
+    :visible
+  >
     <template #default>
       <div
         class="flex h-12 items-center justify-between border-b border-border-default px-4"
@@ -143,7 +146,7 @@ function closeDialog() {
       <div class="relative max-h-75 overflow-y-auto px-4 py-4">
         <div
           v-if="filteredJobs.length > 3"
-          class="absolute right-1 top-4 h-12 w-1 rounded-full bg-muted-foreground"
+          class="absolute top-4 right-1 h-12 w-1 rounded-full bg-muted-foreground"
         />
 
         <div class="flex flex-col gap-2">
@@ -209,7 +212,7 @@ function closeDialog() {
         <div class="flex flex-shrink-0 items-center gap-2">
           <span
             v-if="isInProgress"
-            class="whitespace-nowrap text-sm text-muted-foreground"
+            class="text-sm whitespace-nowrap text-muted-foreground"
           >
             {{
               t('progressToast.progressCount', {

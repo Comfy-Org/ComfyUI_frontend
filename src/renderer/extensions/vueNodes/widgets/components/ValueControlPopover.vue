@@ -59,12 +59,12 @@ const controlMode = defineModel<ControlOptions>()
 <template>
   <Popover
     ref="popover"
-    class="bg-interface-panel-surface border border-interface-stroke rounded-lg"
+    class="rounded-lg border border-interface-stroke bg-interface-panel-surface"
   >
-    <div class="w-113 max-w-md p-4 space-y-4">
-      <div class="text-sm text-muted-foreground leading-tight">
+    <div class="w-113 max-w-md space-y-4 p-4">
+      <div class="text-sm leading-tight text-muted-foreground">
         {{ $t('widgets.valueControl.header.prefix') }}
-        <span class="text-base-foreground font-medium">
+        <span class="font-medium text-base-foreground">
           {{
             widgetControlMode === 'before'
               ? $t('widgets.valueControl.header.before')
@@ -78,11 +78,11 @@ const controlMode = defineModel<ControlOptions>()
         <div
           v-for="option in controlOptions"
           :key="option.mode"
-          class="flex items-center justify-between py-2 gap-7"
+          class="flex items-center justify-between gap-7 py-2"
         >
-          <div class="flex items-center gap-2 flex-1 min-w-0">
+          <div class="flex min-w-0 flex-1 items-center gap-2">
             <div
-              class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
+              class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-secondary-background"
             >
               <i
                 v-if="option.icon"
@@ -97,16 +97,16 @@ const controlMode = defineModel<ControlOptions>()
               </span>
             </div>
 
-            <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+            <div class="flex min-w-0 flex-1 flex-col gap-0.5">
               <div
-                class="text-sm font-normal text-base-foreground leading-tight"
+                class="text-sm leading-tight font-normal text-base-foreground"
               >
                 <span>
                   {{ $t(`widgets.valueControl.${option.title}`) }}
                 </span>
               </div>
               <div
-                class="text-sm font-normal text-muted-foreground leading-tight"
+                class="text-sm leading-tight font-normal text-muted-foreground"
               >
                 {{ $t(`widgets.valueControl.${option.description}`) }}
               </div>

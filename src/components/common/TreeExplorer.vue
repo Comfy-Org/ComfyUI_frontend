@@ -2,7 +2,7 @@
   <Tree
     v-model:expanded-keys="expandedKeys"
     v-model:selection-keys="selectionKeys"
-    class="tree-explorer px-2 py-0 2xl:px-4 bg-transparent"
+    class="tree-explorer bg-transparent px-2 py-0 2xl:px-4"
     :class="props.class"
     :value="renderedRoot.children"
     selection-mode="single"
@@ -23,17 +23,26 @@
     }"
   >
     <template #folder="{ node }">
-      <slot name="folder" :node="node">
+      <slot
+        name="folder"
+        :node="node"
+      >
         <TreeExplorerTreeNode :node="node" />
       </slot>
     </template>
     <template #node="{ node }">
-      <slot name="node" :node="node">
+      <slot
+        name="node"
+        :node="node"
+      >
         <TreeExplorerTreeNode :node="node" />
       </slot>
     </template>
   </Tree>
-  <ContextMenu ref="menu" :model="menuItems" />
+  <ContextMenu
+    ref="menu"
+    :model="menuItems"
+  />
 </template>
 <script setup lang="ts">
 import ContextMenu from 'primevue/contextmenu'

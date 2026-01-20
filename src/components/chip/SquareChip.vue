@@ -1,6 +1,6 @@
 <template>
   <div :class="chipClasses">
-    <slot name="icon"></slot>
+    <slot name="icon" />
     <span>{{ label }}</span>
   </div>
 </template>
@@ -19,9 +19,9 @@ const baseClasses =
 
 const variantStyles = {
   dark: 'bg-zinc-500/40 text-white/90',
-  light: cn('backdrop-blur-[2px] bg-base-background/50 text-base-foreground'),
+  light: cn('bg-base-background/50 text-base-foreground backdrop-blur-[2px]'),
   gray: cn(
-    'backdrop-blur-[2px] bg-modal-card-tag-background text-base-foreground'
+    'bg-modal-card-tag-background text-base-foreground backdrop-blur-[2px]'
   )
 }
 

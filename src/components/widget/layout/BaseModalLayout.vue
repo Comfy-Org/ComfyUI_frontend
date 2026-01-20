@@ -1,11 +1,11 @@
 <template>
-  <div class="base-widget-layout rounded-2xl overflow-hidden relative">
+  <div class="base-widget-layout relative overflow-hidden rounded-2xl">
     <Button
       v-show="!isRightPanelOpen && hasRightPanel"
       size="lg"
       :class="
         cn('absolute top-4 right-18 z-10', 'transition-opacity duration-200', {
-          'opacity-0 pointer-events-none': isRightPanelOpen || !hasRightPanel
+          'pointer-events-none opacity-0': isRightPanelOpen || !hasRightPanel
         })
       "
       @click="toggleRightPanel"
@@ -14,7 +14,7 @@
     </Button>
     <Button
       size="lg"
-      class="absolute top-4 right-6 z-10 transition-opacity duration-200 w-10"
+      class="absolute top-4 right-6 z-10 w-10 transition-opacity duration-200"
       @click="closeDialog"
     >
       <i class="pi pi-times" />
@@ -29,18 +29,22 @@
             PANEL_SIZES.maxWidth
           ]"
         >
-          <slot name="leftPanel"></slot>
+          <slot name="leftPanel" />
         </nav>
       </Transition>
 
-      <div class="flex-1 flex bg-base-background">
+      <div class="flex flex-1 bg-base-background">
         <div class="flex h-full w-full flex-col">
           <header
             v-if="$slots.header"
-            class="w-full h-18 px-6 flex items-center justify-between gap-2"
+            class="flex h-18 w-full items-center justify-between gap-2 px-6"
           >
             <div class="flex flex-1 shrink-0 gap-2">
-              <Button v-if="!notMobile" size="icon" @click="toggleLeftPanel">
+              <Button
+                v-if="!notMobile"
+                size="icon"
+                @click="toggleLeftPanel"
+              >
                 <i
                   :class="
                     cn(
@@ -51,13 +55,13 @@
                   "
                 />
               </Button>
-              <slot name="header"></slot>
+              <slot name="header" />
             </div>
-            <slot name="header-right-area"></slot>
+            <slot name="header-right-area" />
             <div
               :class="
                 cn(
-                  'flex justify-end gap-2 w-0',
+                  'flex w-0 justify-end gap-2',
                   hasRightPanel && !isRightPanelOpen ? 'min-w-22' : 'min-w-10'
                 )
               "
@@ -74,7 +78,7 @@
 
           <main class="flex min-h-0 flex-1 flex-col">
             <!-- Fallback title bar when no leftPanel is provided -->
-            <slot name="contentFilter"></slot>
+            <slot name="contentFilter" />
             <h2
               v-if="!$slots.leftPanel"
               class="text-xxl m-0 px-6 pt-2 pb-6 capitalize"
@@ -82,17 +86,17 @@
               {{ contentTitle }}
             </h2>
             <div
-              class="min-h-0 flex-1 px-6 pt-0 pb-10 overflow-y-auto scrollbar-custom"
+              class="scrollbar-custom min-h-0 flex-1 overflow-y-auto px-6 pt-0 pb-10"
             >
-              <slot name="content"></slot>
+              <slot name="content" />
             </div>
           </main>
         </div>
         <aside
           v-if="hasRightPanel && isRightPanelOpen"
-          class="w-1/4 min-w-40 max-w-80 pt-16 pb-8"
+          class="w-1/4 max-w-80 min-w-40 pt-16 pb-8"
         >
-          <slot name="rightPanel"></slot>
+          <slot name="rightPanel" />
         </aside>
       </div>
     </div>

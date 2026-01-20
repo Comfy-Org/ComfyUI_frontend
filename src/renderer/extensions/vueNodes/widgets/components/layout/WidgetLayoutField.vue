@@ -16,9 +16,12 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
 
 <template>
   <div
-    class="grid grid-cols-subgrid min-w-0 justify-between gap-1 text-node-component-slot-text"
+    class="grid min-w-0 grid-cols-subgrid justify-between gap-1 text-node-component-slot-text"
   >
-    <div v-if="!hideLayoutField" class="truncate content-center-safe">
+    <div
+      v-if="!hideLayoutField"
+      class="content-center-safe truncate"
+    >
       <template v-if="widget.name">
         {{ widget.label || widget.name }}
       </template>
@@ -28,7 +31,7 @@ const hideLayoutField = inject<boolean>('hideLayoutField', false)
       <div
         :class="
           cn(
-            'cursor-default min-w-0 rounded-lg focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+            'min-w-0 cursor-default rounded-lg transition-all focus-within:ring focus-within:ring-component-node-widget-background-highlighted',
             widget.borderStyle
           )
         "

@@ -226,8 +226,8 @@ In this project, only the `<i class="icon-[lucide--folder]" />` syntax from unpl
 <script setup lang="ts"></script>
 
 <template>
-  <i class="icon-[lucide--trophy] text-neutral size-4" />
-  <i class="icon-[lucide--settings] text-neutral size-4" />
+  <i class="text-neutral icon-[lucide--trophy] size-4" />
+  <i class="text-neutral icon-[lucide--settings] size-4" />
 </template>
 ```
 

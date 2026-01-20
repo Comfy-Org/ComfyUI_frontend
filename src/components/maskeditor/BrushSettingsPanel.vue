@@ -1,75 +1,78 @@
 <template>
   <div class="flex flex-col gap-3 pb-3">
-    <h3 class="text-center text-[15px] font-sans text-descrip-text mt-2.5">
+    <h3 class="text-descrip-text mt-2.5 text-center font-sans text-[15px]">
       {{ t('maskEditor.brushSettings') }}
     </h3>
 
-    <button :class="textButtonClass" @click="resetToDefault">
+    <button
+      :class="textButtonClass"
+      @click="resetToDefault"
+    >
       {{ t('maskEditor.resetToDefault') }}
     </button>
 
     <!-- Brush Shape -->
     <div class="flex flex-col gap-3 pb-3">
-      <span class="text-left text-xs font-sans text-descrip-text">
+      <span class="text-descrip-text text-left font-sans text-xs">
         {{ t('maskEditor.brushShape') }}
       </span>
 
       <div
-        class="flex flex-row gap-2.5 items-center h-[50px] w-full rounded-[10px] bg-secondary-background-hover"
+        class="flex h-[50px] w-full flex-row items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
       >
         <div
           class="maskEditor_sidePanelBrushShapeCircle hover:bg-comfy-menu-bg"
           :class="
             cn(
               store.brushSettings.type === BrushShape.Arc
-                ? 'bg-[var(--p-button-text-primary-color)] active'
+                ? 'active bg-[var(--p-button-text-primary-color)]'
                 : 'bg-transparent'
             )
           "
           @click="setBrushShape(BrushShape.Arc)"
-        ></div>
+        />
 
         <div
           class="maskEditor_sidePanelBrushShapeSquare hover:bg-comfy-menu-bg"
           :class="
             cn(
               store.brushSettings.type === BrushShape.Rect
-                ? 'bg-[var(--p-button-text-primary-color)] active'
+                ? 'active bg-[var(--p-button-text-primary-color)]'
                 : 'bg-transparent'
             )
           "
           @click="setBrushShape(BrushShape.Rect)"
-        ></div>
+        />
       </div>
     </div>
 
     <!-- Color -->
     <div class="flex flex-col gap-3 pb-3">
-      <span class="text-left text-xs font-sans text-descrip-text">
+      <span class="text-descrip-text text-left font-sans text-xs">
         {{ t('maskEditor.colorSelector') }}
       </span>
       <input
         ref="colorInputRef"
         v-model="store.rgbColor"
         type="color"
-        class="h-10 rounded-md cursor-pointer"
-      />
+        class="h-10 cursor-pointer rounded-md"
+      >
     </div>
 
     <!-- Thickness -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-left text-xs font-sans text-descrip-text">
+        <span class="text-descrip-text text-left font-sans text-xs">
           {{ t('maskEditor.thickness') }}
         </span>
         <input
           v-model.number="brushSize"
           type="number"
-          class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-comfy-menu-bg border-p-form-field-border-color text-input-text"
+          class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
           :min="1"
           :max="250"
           :step="1"
-        />
+        >
       </div>
       <SliderControl
         v-model="brushSize"
@@ -84,17 +87,17 @@
     <!-- Opacity -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-left text-xs font-sans text-descrip-text">
+        <span class="text-descrip-text text-left font-sans text-xs">
           {{ t('maskEditor.opacity') }}
         </span>
         <input
           v-model.number="brushOpacity"
           type="number"
-          class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-comfy-menu-bg border-p-form-field-border-color text-input-text"
+          class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
           :min="0"
           :max="1"
           :step="0.01"
-        />
+        >
       </div>
       <SliderControl
         v-model="brushOpacity"
@@ -109,17 +112,17 @@
     <!-- Hardness -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-left text-xs font-sans text-descrip-text">
+        <span class="text-descrip-text text-left font-sans text-xs">
           {{ t('maskEditor.hardness') }}
         </span>
         <input
           v-model.number="brushHardness"
           type="number"
-          class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-comfy-menu-bg border-p-form-field-border-color text-input-text"
+          class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
           :min="0"
           :max="1"
           :step="0.01"
-        />
+        >
       </div>
       <SliderControl
         v-model="brushHardness"
@@ -134,17 +137,17 @@
     <!-- Step Size -->
     <div class="flex flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-left text-xs font-sans text-descrip-text">
+        <span class="text-descrip-text text-left font-sans text-xs">
           {{ t('maskEditor.stepSize') }}
         </span>
         <input
           v-model.number="brushStepSize"
           type="number"
-          class="w-16 px-2 py-1 text-sm text-center border rounded-md bg-comfy-menu-bg border-p-form-field-border-color text-input-text"
+          class="border-p-form-field-border-color text-input-text w-16 rounded-md border bg-comfy-menu-bg px-2 py-1 text-center text-sm"
           :min="1"
           :max="100"
           :step="1"
-        />
+        >
       </div>
       <SliderControl
         v-model="brushStepSize"

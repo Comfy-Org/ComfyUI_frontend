@@ -15,7 +15,7 @@
             role="button"
             @click="copyJobId"
           >
-            <i class="icon-[lucide--copy] text-sm"></i>
+            <i class="icon-[lucide--copy] text-sm" />
           </button>
         </div>
         <div>
@@ -25,19 +25,39 @@
     </template>
     <template #tool-buttons>
       <!-- Normal Tab View -->
-      <TabList v-if="!isInFolderView" v-model="activeTab">
-        <Tab class="font-inter" value="output">{{
-          $t('sideToolbar.labels.generated')
-        }}</Tab>
-        <Tab class="font-inter" value="input">{{
-          $t('sideToolbar.labels.imported')
-        }}</Tab>
+      <TabList
+        v-if="!isInFolderView"
+        v-model="activeTab"
+      >
+        <Tab
+          class="font-inter"
+          value="output"
+        >
+          {{
+            $t('sideToolbar.labels.generated')
+          }}
+        </Tab>
+        <Tab
+          class="font-inter"
+          value="input"
+        >
+          {{
+            $t('sideToolbar.labels.imported')
+          }}
+        </Tab>
       </TabList>
     </template>
     <template #header>
       <!-- Job Detail View Header -->
-      <div v-if="isInFolderView" class="px-2 2xl:px-4">
-        <Button variant="secondary" size="lg" @click="exitFolderView">
+      <div
+        v-if="isInFolderView"
+        class="px-2 2xl:px-4"
+      >
+        <Button
+          variant="secondary"
+          size="lg"
+          @click="exitFolderView"
+        >
           <i class="icon-[lucide--arrow-left] size-4" />
           <span>{{ $t('sideToolbar.backToAssets') }}</span>
         </Button>
@@ -49,7 +69,7 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
-        class="pb-1 px-2 2xl:px-4"
+        class="px-2 pb-1 2xl:px-4"
         :show-generation-time-sort="activeTab === 'output'"
       />
       <div
@@ -76,7 +96,11 @@
           </Button>
         </div>
       </div>
-      <Divider v-else type="dashed" class="my-2" />
+      <Divider
+        v-else
+        type="dashed"
+        class="my-2"
+      />
     </template>
     <template #body>
       <div v-if="showLoadingState">
@@ -95,7 +119,11 @@
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
-      <div v-else class="relative size-full" @click="handleEmptySpaceClick">
+      <div
+        v-else
+        class="relative size-full"
+        @click="handleEmptySpaceClick"
+      >
         <AssetsSidebarListView
           v-if="isListView"
           :assets="displayAssets"
@@ -134,10 +162,13 @@
       <div
         v-if="hasSelection"
         ref="footerRef"
-        class="flex gap-1 h-18 w-full items-center justify-between"
+        class="flex h-18 w-full items-center justify-between gap-1"
       >
         <div class="flex-1 pl-4">
-          <div ref="selectionCountButtonRef" class="inline-flex w-48">
+          <div
+            ref="selectionCountButtonRef"
+            class="inline-flex w-48"
+          >
             <Button
               variant="secondary"
               :class="cn(isCompact && 'text-left')"
@@ -147,13 +178,13 @@
                 isHoveringSelectionCount
                   ? $t('mediaAsset.selection.deselectAll')
                   : $t('mediaAsset.selection.selectedCount', {
-                      count: totalOutputCount
-                    })
+                    count: totalOutputCount
+                  })
               }}
             </Button>
           </div>
         </div>
-        <div class="flex shrink gap-2 pr-4 items-center-safe justify-end-safe">
+        <div class="flex shrink items-center-safe justify-end-safe gap-2 pr-4">
           <template v-if="isCompact">
             <!-- Compact mode: Icon only -->
             <Button
@@ -163,7 +194,10 @@
             >
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button size="icon" @click="handleDownloadSelected">
+            <Button
+              size="icon"
+              @click="handleDownloadSelected"
+            >
               <i class="icon-[lucide--download] size-4" />
             </Button>
           </template>
@@ -177,7 +211,10 @@
               <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
               <i class="icon-[lucide--trash-2] size-4" />
             </Button>
-            <Button variant="secondary" @click="handleDownloadSelected">
+            <Button
+              variant="secondary"
+              @click="handleDownloadSelected"
+            >
               <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
               <i class="icon-[lucide--download] size-4" />
             </Button>

@@ -1,10 +1,10 @@
 <template>
   <div
-    class="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-200"
+    class="flex cursor-pointer items-center justify-between rounded-lg p-2 transition-all duration-200"
     :class="[
       selected
-        ? 'bg-secondary-background border-2 border-border-default'
-        : 'bg-component-node-disabled hover:bg-secondary-background border-2 border-transparent'
+        ? 'border-2 border-border-default bg-secondary-background'
+        : 'bg-component-node-disabled border-2 border-transparent hover:bg-secondary-background'
     ]"
     @click="$emit('select')"
   >

@@ -2,7 +2,7 @@
   <div class="relative">
     <div class="mb-4">
       <Button
-        class="text-base-foreground w-full border-0 bg-secondary-background hover:bg-secondary-background-hover"
+        class="w-full border-0 bg-secondary-background text-base-foreground hover:bg-secondary-background-hover"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg px-3 bg-node-component-surface text-text-secondary"
+      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg bg-node-component-surface px-3 text-text-secondary"
     >
       <!-- Recording Status -->
       <div class="flex shrink-0 items-center gap-1">
@@ -45,7 +45,7 @@
       <button
         v-if="isRecording"
         :title="t('g.stopRecording', 'Stop Recording')"
-        class="flex shrink-0 size-8 animate-pulse items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
+        class="flex size-8 shrink-0 animate-pulse items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopRecording"
       >
         <div class="size-2.5 rounded-sm bg-danger-100" />
@@ -54,19 +54,19 @@
       <button
         v-else-if="!isRecording && recordedURL && !isPlaying"
         :title="t('g.playRecording') || 'Play Recording'"
-        class="flex shrink-0 size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
+        class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i class="text-text-secondary icon-[lucide--play] size-4" />
+        <i class="icon-[lucide--play] size-4 text-text-secondary" />
       </button>
 
       <button
         v-else-if="isPlaying"
         :title="t('g.stopPlayback') || 'Stop Playback'"
-        class="flex shrink-0 size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
+        class="flex size-8 shrink-0 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i class="text-text-secondary icon-[lucide--square] size-4" />
+        <i class="icon-[lucide--square] size-4 text-text-secondary" />
       </button>
     </div>
     <audio

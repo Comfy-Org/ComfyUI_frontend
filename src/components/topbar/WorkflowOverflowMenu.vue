@@ -2,7 +2,7 @@
   <div>
     <Button
       v-tooltip="{ value: $t('g.moreWorkflows'), showDelay: 300 }"
-      class="rounded-none h-full w-auto aspect-square"
+      class="aspect-square h-full w-auto rounded-none"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('g.moreWorkflows')"

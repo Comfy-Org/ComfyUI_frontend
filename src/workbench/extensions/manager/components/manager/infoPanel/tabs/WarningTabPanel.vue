@@ -9,9 +9,9 @@
       <template v-if="conflict.type === 'import_failed'">
         <div
           v-if="conflict.required_value"
-          class="max-h-64 overflow-x-hidden scrollbar-custom overflow-y-auto rounded px-2"
+          class="scrollbar-custom max-h-64 overflow-x-hidden overflow-y-auto rounded px-2"
         >
-          <p class="text-xs text-muted-foreground break-all font-mono">
+          <p class="font-mono text-xs break-all text-muted-foreground">
             {{ conflict.required_value }}
           </p>
         </div>

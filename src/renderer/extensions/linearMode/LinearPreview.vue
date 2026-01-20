@@ -99,7 +99,7 @@ async function rerun(e: Event) {
   <section
     v-if="selectedItem"
     data-testid="linear-output-info"
-    class="flex flex-wrap gap-2 p-1 w-full md:z-10 tabular-nums justify-between text-sm"
+    class="flex w-full flex-wrap justify-between gap-2 p-1 text-sm tabular-nums md:z-10"
   >
     <div class="flex gap-3 text-nowrap">
       <div
@@ -107,20 +107,29 @@ async function rerun(e: Event) {
         :key="index"
         class="flex items-center justify-items-center gap-1 tabular-nums"
       >
-        <i v-if="iconClass" :class="iconClass" />
+        <i
+          v-if="iconClass"
+          :class="iconClass"
+        />
         {{ content }}
       </div>
     </div>
     <div class="flex gap-3 justify-self-end">
-      <Button size="md" @click="rerun">
+      <Button
+        size="md"
+        @click="rerun"
+      >
         {{ t('linearMode.rerun') }}
         <i class="icon-[lucide--refresh-cw]" />
       </Button>
-      <Button size="md" @click="() => loadWorkflow(selectedItem)">
+      <Button
+        size="md"
+        @click="() => loadWorkflow(selectedItem)"
+      >
         {{ t('linearMode.reuseParameters') }}
         <i class="icon-[lucide--list-restart]" />
       </Button>
-      <div class="border-r border-border-subtle mx-1" />
+      <div class="mx-1 border-r border-border-subtle" />
       <Button
         size="icon"
         @click="
@@ -159,17 +168,17 @@ async function rerun(e: Event) {
   <VideoPreview
     v-else-if="getMediaType(selectedOutput) === 'video'"
     :src="selectedOutput!.url"
-    class="object-contain flex-1 md:contain-size"
+    class="flex-1 object-contain md:contain-size"
   />
   <audio
     v-else-if="getMediaType(selectedOutput) === 'audio'"
-    class="w-full m-auto"
+    class="m-auto w-full"
     controls
     :src="selectedOutput!.url"
   />
   <article
     v-else-if="getMediaType(selectedOutput) === 'text'"
-    class="w-full max-w-128 m-auto my-12 overflow-y-auto"
+    class="m-auto my-12 w-full max-w-128 overflow-y-auto"
     v-text="selectedOutput!.url"
   />
   <Preview3d
@@ -178,7 +187,7 @@ async function rerun(e: Event) {
   />
   <img
     v-else
-    class="pointer-events-none flex-1 max-h-full md:contain-size brightness-50 opacity-10"
+    class="pointer-events-none max-h-full flex-1 opacity-10 brightness-50 md:contain-size"
     src="/assets/images/comfy-logo-mono.svg"
-  />
+  >
 </template>

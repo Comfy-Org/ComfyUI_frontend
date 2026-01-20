@@ -36,21 +36,21 @@ defineProps<{
         :side-offset="5"
         :collision-padding="10"
         v-bind="$attrs"
-        class="rounded-lg p-2 bg-base-background shadow-sm border border-border-subtle will-change-[transform,opacity] data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade"
+        class="data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity]"
       >
         <slot>
           <div class="flex flex-col p-1">
             <section
               v-for="(entryGroup, index) in entries ?? []"
               :key="index"
-              class="flex flex-col border-b-2 last:border-none border-border-subtle"
+              class="flex flex-col border-b-2 border-border-subtle last:border-none"
             >
               <div
                 v-for="{ label, action, icon } in entryGroup"
                 :key="label"
                 :class="
                   cn(
-                    'flex flex-row gap-4 p-2 rounded-sm my-1',
+                    'my-1 flex flex-row gap-4 rounded-sm p-2',
                     action &&
                       'cursor-pointer hover:bg-secondary-background-hover'
                   )
@@ -63,7 +63,10 @@ defineProps<{
                   }
                 "
               >
-                <i v-if="icon" :class="icon" />
+                <i
+                  v-if="icon"
+                  :class="icon"
+                />
                 {{ label }}
               </div>
             </section>

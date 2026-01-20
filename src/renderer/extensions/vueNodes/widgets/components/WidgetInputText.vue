@@ -3,7 +3,7 @@
     <InputText
       v-model="modelValue"
       v-bind="filteredProps"
-      :class="cn(WidgetInputBaseClass, 'w-full text-xs py-2 px-4')"
+      :class="cn(WidgetInputBaseClass, 'w-full px-4 py-2 text-xs')"
       :aria-label="widget.name"
       size="small"
       :pt="{ root: 'truncate min-w-[4ch]' }"

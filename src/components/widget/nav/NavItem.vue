@@ -5,7 +5,7 @@
       disabled: !isOverflowing,
       pt: { text: { class: 'whitespace-nowrap' } }
     }"
-    class="flex cursor-pointer items-start gap-2 rounded-md px-4 py-3 text-sm transition-colors text-base-foreground"
+    class="flex cursor-pointer items-start gap-2 rounded-md px-4 py-3 text-sm text-base-foreground transition-colors"
     :class="
       active
         ? 'bg-interface-menu-component-surface-selected'
@@ -15,12 +15,21 @@
     @mouseenter="checkOverflow"
     @click="onClick"
   >
-    <div v-if="icon" class="pt-0.5">
+    <div
+      v-if="icon"
+      class="pt-0.5"
+    >
       <NavIcon :icon="icon" />
     </div>
-    <i v-else class="text-neutral icon-[lucide--folder] text-xs shrink-0" />
-    <span ref="textRef" class="min-w-0 truncate">
-      <slot></slot>
+    <i
+      v-else
+      class="text-neutral icon-[lucide--folder] shrink-0 text-xs"
+    />
+    <span
+      ref="textRef"
+      class="min-w-0 truncate"
+    >
+      <slot />
     </span>
   </div>
 </template>

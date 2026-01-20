@@ -1,10 +1,10 @@
 <template>
   <div
-    class="flex gap-4 items-center justify-between px-6 pt-2 pb-6"
+    class="flex items-center justify-between gap-4 px-6 pt-2 pb-6"
     data-component-id="asset-filter-bar"
   >
     <div
-      class="flex gap-4 items-center"
+      class="flex items-center gap-4"
       data-component-id="asset-filter-bar-left"
     >
       <MultiSelect
@@ -38,7 +38,10 @@
       />
     </div>
 
-    <div class="flex items-center" data-component-id="asset-filter-bar-right">
+    <div
+      class="flex items-center"
+      data-component-id="asset-filter-bar-right"
+    >
       <SingleSelect
         v-model="sortBy"
         :label="$t('assetBrowser.sortBy')"

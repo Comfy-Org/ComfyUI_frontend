@@ -194,8 +194,8 @@ function handleTitleCancel() {
   >
     <!-- Panel Header -->
     <section class="pt-1">
-      <div class="flex items-center justify-between pl-4 pr-3">
-        <h3 class="my-3.5 text-sm font-semibold line-clamp-2 cursor-default">
+      <div class="flex items-center justify-between pr-3 pl-4">
+        <h3 class="my-3.5 line-clamp-2 cursor-default text-sm font-semibold">
           <template v-if="allowTitleEdit">
             <EditableText
               :model-value="panelTitle"
@@ -208,7 +208,7 @@ function handleTitleCancel() {
             />
             <i
               v-if="!isEditing"
-              class="icon-[lucide--pencil] size-4 text-muted-foreground ml-2 content-center relative top-[2px] hover:text-base-foreground cursor-pointer shrink-0"
+              class="relative top-[2px] ml-2 icon-[lucide--pencil] size-4 shrink-0 cursor-pointer content-center text-muted-foreground hover:text-base-foreground"
               @click="isEditing = true"
             />
           </template>
@@ -242,7 +242,7 @@ function handleTitleCancel() {
           </Button>
         </div>
       </div>
-      <nav class="px-4 pb-2 pt-1 overflow-x-auto">
+      <nav class="overflow-x-auto px-4 pt-1 pb-2">
         <TabList
           :model-value="activeTab"
           @update:model-value="
@@ -254,7 +254,7 @@ function handleTitleCancel() {
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
-            class="text-sm py-1 px-2 font-inter transition-all active:scale-95"
+            class="px-2 py-1 font-inter text-sm transition-all active:scale-95"
             :value="tab.value"
           >
             {{ tab.label() }}
@@ -284,7 +284,10 @@ function handleTitleCancel() {
           :nodes="selectedNodes"
           :must-show-node-title="selectedGroups.length > 0"
         />
-        <TabInfo v-else-if="activeTab === 'info'" :nodes="selectedNodes" />
+        <TabInfo
+          v-else-if="activeTab === 'info'"
+          :nodes="selectedNodes"
+        />
         <TabSettings
           v-else-if="activeTab === 'settings'"
           :nodes="flattedItems"

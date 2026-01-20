@@ -1,6 +1,10 @@
 <template>
   <div class="relative inline-flex items-center">
-    <Button variant="secondary" size="icon" @click="toggle">
+    <Button
+      variant="secondary"
+      size="icon"
+      @click="toggle"
+    >
       <i class="icon-[lucide--list-filter]" />
     </Button>
 
@@ -51,7 +55,7 @@ const pt = computed(() => ({
   },
   content: {
     class: cn(
-      'mt-1 rounded-lg bg-base-background text-base-foreground border border-border-default shadow-lg'
+      'mt-1 rounded-lg border border-border-default bg-base-background text-base-foreground shadow-lg'
     )
   }
 }))

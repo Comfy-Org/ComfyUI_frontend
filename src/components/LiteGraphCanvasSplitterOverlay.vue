@@ -1,6 +1,6 @@
 <template>
   <div
-    class="w-full h-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
+    class="pointer-events-none absolute top-0 left-0 z-999 flex h-full w-full flex-col"
   >
     <slot name="workflow-tabs" />
 
@@ -17,7 +17,7 @@
 
       <Splitter
         :key="splitterRefreshKey"
-        class="bg-transparent pointer-events-none border-none flex-1 overflow-hidden"
+        class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
         :state-key="sidebarStateKey"
         state-storage="local"
         @resizestart="onResizestart"
@@ -30,10 +30,10 @@
           :class="
             sidebarLocation === 'left'
               ? cn(
-                  'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
-                  sidebarPanelVisible && 'min-w-78'
-                )
-              : 'bg-comfy-menu-bg pointer-events-auto'
+                'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
+                sidebarPanelVisible && 'min-w-78'
+              )
+              : 'pointer-events-auto bg-comfy-menu-bg'
           "
           :min-size="sidebarLocation === 'left' ? 10 : 15"
           :size="20"
@@ -54,11 +54,17 @@
         </SplitterPanel>
 
         <!-- Main panel (always present) -->
-        <SplitterPanel :size="80" class="flex flex-col">
-          <slot name="topmenu" :sidebar-panel-visible />
+        <SplitterPanel
+          :size="80"
+          class="flex flex-col"
+        >
+          <slot
+            name="topmenu"
+            :sidebar-panel-visible
+          />
 
           <Splitter
-            class="bg-transparent pointer-events-none border-none splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
+            class="splitter-overlay-bottom pointer-events-none mr-1 mb-1 ml-1 flex-1 border-none bg-transparent"
             layout="vertical"
             :pt:gutter="
               cn(
@@ -75,7 +81,7 @@
             </SplitterPanel>
             <SplitterPanel
               v-show="bottomPanelVisible && !focusMode"
-              class="bottom-panel border border-(--p-panel-border-color) max-w-full overflow-x-auto bg-comfy-menu-bg pointer-events-auto rounded-lg"
+              class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg"
             >
               <slot name="bottom-panel" />
             </SplitterPanel>
@@ -90,10 +96,10 @@
           :class="
             sidebarLocation === 'right'
               ? cn(
-                  'side-bar-panel bg-comfy-menu-bg pointer-events-auto',
-                  sidebarPanelVisible && 'min-w-78'
-                )
-              : 'bg-comfy-menu-bg pointer-events-auto'
+                'side-bar-panel pointer-events-auto bg-comfy-menu-bg',
+                sidebarPanelVisible && 'min-w-78'
+              )
+              : 'pointer-events-auto bg-comfy-menu-bg'
           "
           :min-size="sidebarLocation === 'right' ? 10 : 15"
           :size="20"
@@ -103,7 +109,10 @@
             sidebarLocation === 'right' ? t('sideToolbar.sidebar') : undefined
           "
         >
-          <slot v-if="sidebarLocation === 'left'" name="right-side-panel" />
+          <slot
+            v-if="sidebarLocation === 'left'"
+            name="right-side-panel"
+          />
           <slot
             v-else-if="sidebarLocation === 'right' && sidebarPanelVisible"
             name="side-bar-panel"

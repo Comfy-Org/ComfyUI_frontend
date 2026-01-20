@@ -4,7 +4,7 @@
       v-if="!hidden"
       :class="
         cn(
-          'bg-component-node-widget-background box-border flex gap-4 items-center justify-start relative rounded-lg w-full h-16 px-4 py-0',
+          'relative box-border flex h-16 w-full items-center justify-start gap-4 rounded-lg bg-component-node-widget-background px-4 py-0',
           { hidden: hideWhenEmpty && !hasAudio }
         )
       "
@@ -31,7 +31,10 @@
             v-if="!isPlaying"
             class="text-secondary icon-[lucide--play] size-4"
           />
-          <i v-else class="text-secondary icon-[lucide--pause] size-4" />
+          <i
+            v-else
+            class="text-secondary icon-[lucide--pause] size-4"
+          />
         </div>
 
         <!-- Time Display -->
@@ -55,7 +58,7 @@
           :aria-label="$t('g.audioProgress')"
           class="absolute inset-0 w-full cursor-pointer opacity-0"
           @input="handleSeek"
-        />
+        >
       </div>
 
       <!-- Right Actions -->
@@ -76,7 +79,10 @@
             v-else-if="showVolumeOne"
             class="text-secondary icon-[lucide--volume-1] size-4"
           />
-          <i v-else class="text-secondary icon-[lucide--volume-x] size-4" />
+          <i
+            v-else
+            class="text-secondary icon-[lucide--volume-x] size-4"
+          />
         </div>
 
         <!-- Options Button -->
@@ -104,7 +110,10 @@
         :pt:submenu:class="cn('bg-component-node-widget-background')"
       >
         <template #item="{ item }">
-          <div v-if="item.key === 'volume'" class="w-48 px-4 py-2">
+          <div
+            v-if="item.key === 'volume'"
+            class="w-48 px-4 py-2"
+          >
             <label class="mb-2 block text-xs text-base-foreground">{{
               item.label
             }}</label>

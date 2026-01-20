@@ -27,19 +27,21 @@ function getIcon() {
   <div
     :class="
       cn(
-        'flex py-1 px-2 break-all rounded items-center gap-1',
+        'flex items-center gap-1 rounded px-2 py-1 break-all',
         'bg-node-component-surface',
         props.isDraggable &&
-          'draggable-item drag-handle cursor-grab [&.is-draggable]:cursor-grabbing hover:ring-1 ring-accent-background',
+          'draggable-item drag-handle cursor-grab ring-accent-background hover:ring-1 [&.is-draggable]:cursor-grabbing',
         props.class
       )
     "
   >
     <div class="pointer-events-none flex-1">
-      <div class="text-xs text-text-secondary line-clamp-1">
+      <div class="line-clamp-1 text-xs text-text-secondary">
         {{ nodeTitle }}
       </div>
-      <div class="text-sm line-clamp-1 leading-8">{{ widgetName }}</div>
+      <div class="line-clamp-1 text-sm leading-8">
+        {{ widgetName }}
+      </div>
     </div>
     <Button
       variant="muted-textonly"
@@ -51,7 +53,7 @@ function getIcon() {
     </Button>
     <div
       v-if="isDraggable"
-      class="size-4 pointer-events-none icon-[lucide--grip-vertical]"
+      class="pointer-events-none icon-[lucide--grip-vertical] size-4"
     />
   </div>
 </template>

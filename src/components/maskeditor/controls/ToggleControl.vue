@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-row gap-2.5 items-center min-h-6 relative">
-    <span class="text-left text-xs font-sans text-[var(--descrip-text)]">{{
+  <div class="relative flex min-h-6 flex-row items-center gap-2.5">
+    <span class="text-left font-sans text-xs text-[var(--descrip-text)]">{{
       label
     }}</span>
     <label class="maskEditor_sidePanelToggleContainer">
@@ -9,8 +9,8 @@
         class="maskEditor_sidePanelToggleCheckbox"
         :checked="modelValue"
         @change="onChange"
-      />
-      <div class="maskEditor_sidePanelToggleSwitch"></div>
+      >
+      <div class="maskEditor_sidePanelToggleSwitch" />
     </label>
   </div>
 </template>

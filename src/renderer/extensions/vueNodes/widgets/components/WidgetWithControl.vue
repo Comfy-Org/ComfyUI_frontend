@@ -45,16 +45,24 @@ const togglePopover = (event: Event) => {
 
 <template>
   <div class="relative grid grid-cols-subgrid">
-    <component :is="component" v-bind="$attrs" v-model="modelValue" :widget>
+    <component
+      :is="component"
+      v-bind="$attrs"
+      v-model="modelValue"
+      :widget
+    >
       <Button
         variant="textonly"
         size="sm"
         class="h-4 w-7 self-center rounded-xl bg-blue-100/30 p-0"
         @click.stop.prevent="togglePopover"
       >
-        <i :class="`${controlButtonIcon} text-blue-100 text-xs size-3.5`" />
+        <i :class="`${controlButtonIcon} size-3.5 text-xs text-blue-100`" />
       </Button>
     </component>
-    <ValueControlPopover ref="popover" v-model="controlModel" />
+    <ValueControlPopover
+      ref="popover"
+      v-model="controlModel"
+    />
   </div>
 </template>

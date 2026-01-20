@@ -39,7 +39,7 @@ onUnmounted(() => {
     v-bind="forwardedProps"
     :class="
       cn(
-        'min-h-6 flex-1 bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground focus:outline-none appearance-none border-none',
+        'min-h-6 flex-1 appearance-none border-none bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground focus:outline-none',
         !isEditing && 'pointer-events-none',
         className
       )

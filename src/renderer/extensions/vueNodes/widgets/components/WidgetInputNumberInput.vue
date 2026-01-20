@@ -199,10 +199,10 @@ const sliderWidth = computed(() => {
       v-tooltip="buttonTooltip"
       v-bind="filteredProps"
       :aria-label="widget.name"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
+      :class="cn(WidgetInputBaseClass, 'relative flex h-7 grow text-xs')"
     >
       <div
-        class="bg-primary-background/15 absolute left-0 bottom-0 h-full rounded-lg pointer-events-none"
+        class="pointer-events-none absolute bottom-0 left-0 h-full rounded-lg bg-primary-background/15"
         :style="{ width: `${sliderWidth}%` }"
       />
       <button
@@ -215,7 +215,7 @@ const sliderWidth = computed(() => {
         tabindex="-1"
         @click="modelValue -= stepValue"
       />
-      <div class="relative min-w-[4ch] flex-1 py-1.5 my-0.25">
+      <div class="relative my-0.25 min-w-[4ch] flex-1 py-1.5">
         <input
           ref="inputField"
           :aria-valuenow="dragValue ?? modelValue"
@@ -223,7 +223,7 @@ const sliderWidth = computed(() => {
           :aria-valuemax="filteredProps.max"
           :class="
             cn(
-              'bg-transparent border-0 focus:outline-0 p-1 truncate text-sm absolute inset-0'
+              'absolute inset-0 truncate border-0 bg-transparent p-1 text-sm focus:outline-0'
             )
           "
           inputmode="decimal"
@@ -241,12 +241,12 @@ const sliderWidth = computed(() => {
           @keydown.page-up.prevent="updateValueBy(10 * stepValue)"
           @keydown.page-down.prevent="updateValueBy(-10 * stepValue)"
           @dragstart.prevent
-        />
+        >
         <div
           :class="
             cn(
               'absolute inset-0 z-10 cursor-ew-resize',
-              textEdit && 'hidden pointer-events-none'
+              textEdit && 'pointer-events-none hidden'
             )
           "
           @pointerdown="handleMouseDown"

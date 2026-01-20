@@ -14,21 +14,27 @@
           }}
         </p>
       </div>
-      <MissingCoreNodesMessage v-if="!isCloud" :missing-core-nodes />
+      <MissingCoreNodesMessage
+        v-if="!isCloud"
+        :missing-core-nodes
+      />
 
       <!-- Missing Nodes List Wrapper -->
       <div
-        class="comfy-missing-nodes flex flex-col max-h-[256px] rounded-lg py-2 scrollbar-custom bg-secondary-background"
+        class="comfy-missing-nodes flex scrollbar-custom max-h-[256px] flex-col rounded-lg bg-secondary-background py-2"
       >
         <div
           v-for="(node, i) in uniqueNodes"
           :key="i"
-          class="flex min-h-8 items-center justify-between px-4 py-2 bg-secondary-background text-muted-foreground"
+          class="flex min-h-8 items-center justify-between bg-secondary-background px-4 py-2 text-muted-foreground"
         >
           <span class="text-xs">
             {{ node.label }}
           </span>
-          <span v-if="node.hint" class="text-xs">{{ node.hint }}</span>
+          <span
+            v-if="node.hint"
+            class="text-xs"
+          >{{ node.hint }}</span>
         </div>
       </div>
 

@@ -63,9 +63,9 @@ function handleFocus(event: FocusEvent) {
     :class="
       cn(
         'group',
-        'bg-component-node-widget-background rounded-lg transition-all duration-150',
-        'flex-1 flex items-center',
-        'text-base-foreground border-0',
+        'rounded-lg bg-component-node-widget-background transition-all duration-150',
+        'flex flex-1 items-center',
+        'border-0 text-base-foreground',
         'focus-within:ring focus-within:ring-component-node-widget-background-highlighted/80',
         customClass
       )
@@ -74,27 +74,27 @@ function handleFocus(event: FocusEvent) {
     <i
       :class="
         cn(
-          'size-4 ml-2 shrink-0 transition-colors duration-150',
+          'ml-2 size-4 shrink-0 transition-colors duration-150',
           isQuerying
             ? 'icon-[lucide--loader-circle] animate-spin'
             : 'icon-[lucide--search]',
           searchQuery?.trim() !== ''
             ? 'text-base-foreground'
-            : 'text-muted-foreground group-hover:text-base-foreground group-focus-within:text-base-foreground'
+            : 'text-muted-foreground group-focus-within:text-base-foreground group-hover:text-base-foreground'
         )
       "
     />
     <input
       v-model="searchQuery"
       type="text"
-      class="bg-transparent border-0 outline-0 ring-0 h-5 w-full my-1.5 mx-2"
+      class="mx-2 my-1.5 h-5 w-full border-0 bg-transparent ring-0 outline-0"
       :placeholder="$t('g.searchPlaceholder')"
       :autofocus
       @focus="handleFocus"
-    />
+    >
     <button
       v-if="searchQuery.trim().length > 0"
-      class="text-muted-foreground hover:text-base-foreground bg-transparent shrink-0 border-0 outline-0 ring-0 p-0 m-0 pr-3 pl-1 flex items-center justify-center transition-all duration-150 hover:scale-108"
+      class="m-0 flex shrink-0 items-center justify-center border-0 bg-transparent p-0 pr-3 pl-1 text-muted-foreground ring-0 outline-0 transition-all duration-150 hover:scale-108 hover:text-base-foreground"
       :aria-label="$t('g.clear')"
       @click="searchQuery = ''"
     >

@@ -202,7 +202,7 @@ const label = computed(() => {
 </script>
 
 <template>
-  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+  <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
     <FormSearchInput
       v-model="searchQuery"
       :searcher
@@ -226,7 +226,7 @@ const label = computed(() => {
     @update:collapse="nextTick(setDraggableState)"
   >
     <template #empty>
-      <div class="text-sm text-muted-foreground px-4 text-center pt-5 pb-15">
+      <div class="px-4 pt-5 pb-15 text-center text-sm text-muted-foreground">
         {{ t('rightSidePanel.noneSearchDesc') }}
       </div>
     </template>

@@ -1,11 +1,16 @@
 <template>
-  <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
+  <div
+    v-if="renderError"
+    class="node-error p-1 text-xs text-red-500"
+  >
+    ⚠️
+  </div>
   <div
     v-else
     v-tooltip.left="tooltipConfig"
     :class="
       cn(
-        'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
+        'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
         'cursor-crosshair',
         props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
@@ -22,9 +27,9 @@
       ref="connectionDotRef"
       :class="
         cn(
-          '-translate-x-1/2 w-3',
+          'w-3 -translate-x-1/2',
           hasSlotError &&
-            'before:ring-2 before:ring-error before:ring-offset-0 before:size-4 before:absolute before:rounded-full before:pointer-events-none'
+            'before:pointer-events-none before:absolute before:size-4 before:rounded-full before:ring-2 before:ring-error before:ring-offset-0'
         )
       "
       :slot-data
@@ -34,21 +39,21 @@
     />
 
     <!-- Slot Name -->
-    <div class="h-full flex items-center min-w-0">
+    <div class="flex h-full min-w-0 items-center">
       <span
         v-if="!dotOnly"
         :class="
           cn(
             'truncate text-node-component-slot-text',
-            hasSlotError && 'text-error font-medium'
+            hasSlotError && 'font-medium text-error'
           )
         "
       >
         {{
           slotData.label ||
-          slotData.localized_name ||
-          slotData.name ||
-          `Input ${index}`
+            slotData.localized_name ||
+            slotData.name ||
+            `Input ${index}`
         }}
       </span>
     </div>

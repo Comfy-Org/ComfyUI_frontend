@@ -2,7 +2,7 @@
   <ContextMenu
     ref="contextMenu"
     :model="menuItems"
-    class="max-h-[80vh] md:max-h-none overflow-y-auto md:overflow-y-visible"
+    class="max-h-[80vh] overflow-y-auto md:max-h-none md:overflow-y-visible"
     @show="onMenuShow"
     @hide="onMenuHide"
   >
@@ -12,7 +12,10 @@
         class="flex items-center gap-2 px-3 py-1.5"
         @click="item.isColorSubmenu ? showColorPopover($event) : undefined"
       >
-        <i v-if="item.icon" :class="[item.icon, 'size-4']" />
+        <i
+          v-if="item.icon"
+          :class="[item.icon, 'size-4']"
+        />
         <span class="flex-1">{{ item.label }}</span>
         <span
           v-if="item.shortcut"

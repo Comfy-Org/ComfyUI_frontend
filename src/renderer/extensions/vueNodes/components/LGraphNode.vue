@@ -1,5 +1,8 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div
+    v-if="renderError"
+    class="node-error p-2 text-sm text-red-500"
+  >
     {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
   <div
@@ -9,30 +12,30 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute text-sm',
-        'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
+        'lg-node absolute bg-component-node-background text-sm',
+        'min-h-(--node-height) w-(--node-width) min-w-[225px] contain-layout contain-style',
         shapeClass,
-        'touch-none flex flex-col',
+        'flex touch-none flex-col',
         'border-1 border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
-          'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
+          'ring-node-component-ring hover:ring-7',
+        'outline-2 outline-transparent focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,
         {
-          [`${beforeShapeClass} before:pointer-events-none before:absolute before:bg-bypass/60 before:inset-0`]:
+          [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0 before:bg-bypass/60`]:
             bypassed,
           [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
             muted,
-          'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
+          'bg-primary-500/10 ring-4 ring-primary-500': isDraggingOver
         },
 
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none',
-        !isCollapsed && ' pb-1'
+        !isCollapsed && 'pb-1'
       )
     "
     :style="[
@@ -53,7 +56,7 @@
   >
     <div
       v-if="displayHeader"
-      class="flex flex-col justify-center items-center relative"
+      class="relative flex flex-col items-center justify-center"
     >
       <template v-if="isCollapsed">
         <SlotConnectionDot
@@ -66,7 +69,10 @@
           multi
           class="absolute right-0 translate-x-1/2"
         />
-        <NodeSlots :node-data="nodeData" unified />
+        <NodeSlots
+          :node-data="nodeData"
+          unified
+        />
       </template>
       <NodeHeader
         :node-data="nodeData"
@@ -110,24 +116,39 @@
       >
         <NodeSlots :node-data="nodeData" />
 
-        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+        <NodeWidgets
+          v-if="nodeData.widgets?.length"
+          :node-data="nodeData"
+        />
 
-        <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
-          <NodeContent :node-data="nodeData" :media="nodeMedia" />
+        <div
+          v-if="hasCustomContent"
+          class="flex min-h-0 flex-1"
+        >
+          <NodeContent
+            :node-data="nodeData"
+            :media="nodeMedia"
+          />
         </div>
         <!-- Live mid-execution preview images -->
-        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
+        <div
+          v-if="shouldShowPreviewImg"
+          class="min-h-0 flex-1 px-4"
+        >
           <LivePreview :image-url="latestPreviewUrl || null" />
         </div>
 
         <!-- Show advanced inputs button for subgraph nodes -->
-        <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
+        <div
+          v-if="showAdvancedInputsButton"
+          class="flex justify-center px-3"
+        >
           <button
             :class="
               cn(
                 WidgetInputBaseClass,
-                'w-full h-7 flex justify-center items-center gap-2 text-sm px-3 outline-0 ring-0 truncate',
-                'transition-all cursor-pointer hover:bg-accent-background duration-150 active:scale-95'
+                'flex h-7 w-full items-center justify-center gap-2 truncate px-3 text-sm ring-0 outline-0',
+                'cursor-pointer transition-all duration-150 hover:bg-accent-background active:scale-95'
               )
             "
             @click.stop="handleShowAdvancedInputs"

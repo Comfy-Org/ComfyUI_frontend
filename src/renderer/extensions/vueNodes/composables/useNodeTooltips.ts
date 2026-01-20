@@ -170,7 +170,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
           class: cn(
             context.top && 'border-t-node-component-tooltip-border',
             context.bottom && 'border-b-node-component-tooltip-border',
-            context.left && 'border-l-node-component-tooltip-border ',
+            context.left && 'border-l-node-component-tooltip-border',
             context.right && 'border-r-node-component-tooltip-border'
           )
         })

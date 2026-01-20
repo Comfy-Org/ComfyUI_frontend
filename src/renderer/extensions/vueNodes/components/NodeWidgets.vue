@@ -1,12 +1,15 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div
+    v-if="renderError"
+    class="node-error p-2 text-sm text-red-500"
+  >
     {{ st('nodeErrors.widgets', 'Node Widgets Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
-        'lg-node-widgets grid grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] flex-1 gap-y-1 pr-3',
+        'lg-node-widgets grid flex-1 grid-cols-[min-content_minmax(80px,max-content)_minmax(125px,auto)] gap-y-1 pr-3',
         shouldHandleNodePointerEvents
           ? 'pointer-events-auto'
           : 'pointer-events-none'
@@ -32,7 +35,7 @@
         <div
           :class="
             cn(
-              'z-10 w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 flex items-stretch',
+              'z-10 flex w-3 items-stretch opacity-0 transition-opacity duration-150 group-hover:opacity-100',
               widget.slotMetadata?.linked && 'opacity-100'
             )
           "

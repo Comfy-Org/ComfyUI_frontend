@@ -6,7 +6,7 @@
       <div v-if="showAfterWhatsNew">
         <p class="m-0 mb-4 text-sm leading-4 text-base-foreground">
           {{ $t('manager.conflicts.description') }}
-          <br /><br />
+          <br><br>
           {{ $t('manager.conflicts.info') }}
         </p>
       </div>
@@ -30,7 +30,10 @@
             }}</span>
           </div>
           <div>
-            <Button variant="textonly" class="bg-transparent text-muted">
+            <Button
+              variant="textonly"
+              class="bg-transparent text-muted"
+            >
               <i
                 :class="
                   importFailedExpanded
@@ -51,12 +54,12 @@
             v-for="(packageName, i) in importFailedConflicts"
             :key="i"
             :aria-label="`Import failed package: ${packageName}`"
-            class="flex min-h-6 shrink-0 hover:bg-node-component-surface-hovered items-center justify-between px-4 py-1"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
             <span class="text-xs text-muted">
               {{ packageName }}
             </span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <span class="pi pi-info-circle text-sm" />
           </div>
         </div>
       </div>
@@ -79,7 +82,10 @@
             }}</span>
           </div>
           <div>
-            <Button variant="textonly" class="bg-transparent text-muted">
+            <Button
+              variant="textonly"
+              class="bg-transparent text-muted"
+            >
               <i
                 :class="
                   conflictsExpanded
@@ -100,12 +106,12 @@
             v-for="(conflict, i) in allConflictDetails"
             :key="i"
             :aria-label="`Conflict: ${getConflictMessage(conflict, t)}`"
-            class="flex min-h-6 shrink-0 hover:bg-node-component-surface-hovered items-center justify-between px-4 py-1"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
             <span class="text-xs text-muted">{{
               getConflictMessage(conflict, t)
             }}</span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <span class="pi pi-info-circle text-sm" />
           </div>
         </div>
       </div>
@@ -128,7 +134,10 @@
             }}</span>
           </div>
           <div>
-            <Button variant="textonly" class="bg-transparent text-muted">
+            <Button
+              variant="textonly"
+              class="bg-transparent text-muted"
+            >
               <i
                 :class="
                   extensionsExpanded
@@ -148,12 +157,12 @@
           <div
             v-for="conflictResult in conflictData"
             :key="conflictResult.package_id"
-            class="flex min-h-6 shrink-0 hover:bg-node-component-surface-hovered items-center justify-between px-4 py-1"
+            class="flex min-h-6 shrink-0 items-center justify-between px-4 py-1 hover:bg-node-component-surface-hovered"
           >
             <span class="text-xs text-muted">
               {{ conflictResult.package_name }}
             </span>
-            <span class="pi pi-info-circle text-sm"></span>
+            <span class="pi pi-info-circle text-sm" />
           </div>
         </div>
       </div>

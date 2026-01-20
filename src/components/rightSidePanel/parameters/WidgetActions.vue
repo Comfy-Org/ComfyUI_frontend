@@ -99,7 +99,7 @@ function handleToggleFavorite() {
 
 const buttonClasses = cn([
   'border-none bg-transparent',
-  'w-full flex items-center gap-2 rounded px-3 py-2 text-sm',
+  'flex w-full items-center gap-2 rounded px-3 py-2 text-sm',
   'cursor-pointer transition-all hover:bg-secondary-background-hover active:scale-95'
 ])
 </script>
@@ -107,7 +107,7 @@ const buttonClasses = cn([
 <template>
   <MoreButton
     is-vertical
-    class="text-muted-foreground bg-transparent hover:text-base-foreground hover:bg-secondary-background-hover active:scale-95 transition-all"
+    class="bg-transparent text-muted-foreground transition-all hover:bg-secondary-background-hover hover:text-base-foreground active:scale-95"
   >
     <template #default="{ close }">
       <button

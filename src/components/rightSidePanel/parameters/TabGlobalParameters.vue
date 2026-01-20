@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="px-4 pt-1 pb-4 flex gap-2 border-b border-interface-stroke">
+  <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
     <FormSearchInput
       v-model="searchQuery"
       :searcher
@@ -130,7 +130,7 @@ onBeforeUnmount(() => {
     @update:collapse="nextTick(setDraggableState)"
   >
     <template #empty>
-      <div class="text-sm text-muted-foreground px-4 text-center py-10">
+      <div class="px-4 py-10 text-center text-sm text-muted-foreground">
         {{
           isSearching
             ? t('rightSidePanel.noneSearchDesc')

@@ -1,6 +1,6 @@
 <template>
   <p
-    class="m-0 line-clamp-2 text-sm text-base-foreground leading-tight break-all"
+    class="m-0 line-clamp-2 text-sm leading-tight break-all text-base-foreground"
     :title="fileName"
   >
     {{ fileName }}

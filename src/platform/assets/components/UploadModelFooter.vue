@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-end gap-2 w-full">
+  <div class="flex w-full justify-end gap-2">
     <div
       v-if="currentStep === 1 && flags.huggingfaceModelImportEnabled"
       class="mr-auto flex items-center gap-2"
@@ -77,13 +77,16 @@
       :disabled="!canUploadModel || isUploading"
       @click="emit('upload')"
     >
-      <i v-if="isUploading" class="icon-[lucide--loader-circle] animate-spin" />
+      <i
+        v-if="isUploading"
+        class="icon-[lucide--loader-circle] animate-spin"
+      />
       <span>{{ $t('assetBrowser.upload') }}</span>
     </Button>
     <template
       v-else-if="
         currentStep === 3 &&
-        (uploadStatus === 'success' || uploadStatus === 'processing')
+          (uploadStatus === 'success' || uploadStatus === 'processing')
       "
     >
       <Button

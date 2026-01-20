@@ -3,8 +3,8 @@
     class="flex min-w-[460px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
   >
     <!-- Header -->
-    <div class="flex py-8 items-center justify-between px-8">
-      <h2 class="text-lg font-bold text-base-foreground m-0">
+    <div class="flex items-center justify-between px-8 py-8">
+      <h2 class="m-0 text-lg font-bold text-base-foreground">
         {{
           isInsufficientCredits
             ? $t('credits.topUp.addMoreCreditsToRun')
@@ -12,7 +12,7 @@
         }}
       </h2>
       <button
-        class="cursor-pointer rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-secondary-foreground"
+        class="focus-visible:ring-secondary-foreground cursor-pointer rounded border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         @click="() => handleClose()"
       >
         <i class="icon-[lucide--x] size-6" />
@@ -20,7 +20,7 @@
     </div>
     <p
       v-if="isInsufficientCredits"
-      class="text-sm text-muted-foreground m-0 px-8"
+      class="m-0 px-8 text-sm text-muted-foreground"
     >
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
@@ -39,7 +39,7 @@
           size="lg"
           :class="
             cn(
-              'h-10 text-base font-medium w-full focus-visible:ring-secondary-foreground',
+              'focus-visible:ring-secondary-foreground h-10 w-full text-base font-medium',
               selectedPreset === amount && 'bg-secondary-background-selected'
             )
           "
@@ -65,9 +65,7 @@
           @max-reached="showCeilingWarning = true"
         >
           <template #prefix>
-            <span class="shrink-0 text-base font-semibold text-base-foreground"
-              >$</span
-            >
+            <span class="shrink-0 text-base font-semibold text-base-foreground">$</span>
           </template>
         </FormattedNumberStepper>
       </div>
@@ -95,7 +93,7 @@
 
     <p
       v-if="isBelowMin"
-      class="text-sm text-red-500 m-0 px-8 pt-4 text-center flex items-center justify-center gap-1"
+      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
     >
       <i class="icon-[lucide--component] size-4" />
       {{
@@ -106,7 +104,7 @@
     </p>
     <p
       v-if="showCeilingWarning"
-      class="text-sm text-gold-500 m-0 px-8 pt-4 text-center flex items-center justify-center gap-1"
+      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
     >
       <i class="icon-[lucide--component] size-4" />
       {{
@@ -119,11 +117,10 @@
         href="https://www.comfy.org/cloud/enterprise"
         target="_blank"
         class="ml-1 text-inherit"
-        >{{ $t('credits.topUp.contactUs') }}</a
-      >
+      >{{ $t('credits.topUp.contactUs') }}</a>
     </p>
 
-    <div class="pt-8 pb-8 flex flex-col gap-8 px-8">
+    <div class="flex flex-col gap-8 px-8 pt-8 pb-8">
       <Button
         :disabled="!isValidAmount || loading"
         :loading="loading"

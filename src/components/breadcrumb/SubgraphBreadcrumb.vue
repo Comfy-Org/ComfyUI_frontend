@@ -46,9 +46,9 @@
           :is-active="item.key === activeItemKey"
         />
       </template>
-      <template #separator
-        ><span style="transform: scale(1.5)"> / </span></template
-      >
+      <template #separator>
+        <span style="transform: scale(1.5)"> / </span>
+      </template>
     </Breadcrumb>
   </div>
 </template>
@@ -233,7 +233,7 @@ onUpdated(() => {
 }
 
 :deep(.p-breadcrumb-item) {
-  @apply flex items-center overflow-hidden h-8;
+  @apply flex h-8 items-center overflow-hidden;
   min-width: calc(var(--p-breadcrumb-item-min-width) + 1rem);
   border: 1px solid transparent;
   background-color: transparent;

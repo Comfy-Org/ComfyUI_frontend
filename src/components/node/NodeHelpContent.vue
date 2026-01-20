@@ -12,7 +12,10 @@
       v-html="renderedHelpHtml"
     />
     <!-- Fallback: markdown not found or fetch error -->
-    <div v-else class="fallback-content space-y-6 text-sm">
+    <div
+      v-else
+      class="fallback-content space-y-6 text-sm"
+    >
       <p v-if="node.description">
         <strong>{{ $t('g.description') }}:</strong> {{ node.description }}
       </p>
@@ -31,7 +34,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="input in inputList" :key="input.name">
+            <tr
+              v-for="input in inputList"
+              :key="input.name"
+            >
               <td>
                 <code>{{ input.name }}</code>
               </td>
@@ -55,7 +61,10 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="output in outputList" :key="output.name">
+            <tr
+              v-for="output in outputList"
+              :key="output.name"
+            >
               <td>
                 <code>{{ output.name }}</code>
               </td>
@@ -103,27 +112,27 @@ const outputList = computed(() =>
 @reference './../../assets/css/style.css';
 
 .node-help-content :deep(:is(img, video)) {
-  @apply max-w-full h-auto block mb-4;
+  @apply mb-4 block h-auto max-w-full;
 }
 
 .markdown-content,
 .fallback-content {
-  @apply text-sm overflow-visible;
+  @apply overflow-visible text-sm;
 }
 
 .markdown-content :deep(h1),
 .fallback-content h1 {
-  @apply text-[22px] font-bold mt-8 mb-4 first:mt-0;
+  @apply mt-8 mb-4 text-[22px] font-bold first:mt-0;
 }
 
 .markdown-content :deep(h2),
 .fallback-content h2 {
-  @apply text-[18px] font-bold mt-8 mb-4 first:mt-0;
+  @apply mt-8 mb-4 text-[18px] font-bold first:mt-0;
 }
 
 .markdown-content :deep(h3),
 .fallback-content h3 {
-  @apply text-[16px] font-bold mt-8 mb-4 first:mt-0;
+  @apply mt-8 mb-4 text-[16px] font-bold first:mt-0;
 }
 
 .markdown-content :deep(h4),
@@ -155,7 +164,7 @@ const outputList = computed(() =>
 .markdown-content :deep(ol),
 .fallback-content ul,
 .fallback-content ol {
-  @apply pl-8 my-2;
+  @apply my-2 pl-8;
 }
 
 .markdown-content :deep(ul ul),
@@ -166,7 +175,7 @@ const outputList = computed(() =>
 .fallback-content ol ol,
 .fallback-content ul ol,
 .fallback-content ol ul {
-  @apply pl-6 my-2;
+  @apply my-2 pl-6;
 }
 
 .markdown-content :deep(li),
@@ -215,7 +224,7 @@ const outputList = computed(() =>
 
 .markdown-content :deep(pre),
 .fallback-content pre {
-  @apply rounded p-4 my-4 overflow-x-auto;
+  @apply my-4 overflow-x-auto rounded p-4;
   background-color: var(--code-block-bg-color);
 
   code {

@@ -1,8 +1,11 @@
 <template>
-  <TabPanel value="PlanCredits" class="subscription-container h-full">
+  <TabPanel
+    value="PlanCredits"
+    class="subscription-container h-full"
+  >
     <div class="flex h-full flex-col gap-6">
       <div class="flex items-center gap-2">
-        <span class="text-2xl font-inter font-semibold leading-tight">
+        <span class="font-inter text-2xl leading-tight font-semibold">
           {{
             isActiveSubscription
               ? $t('subscription.title')
@@ -55,7 +58,7 @@
               <Button
                 v-if="isActiveSubscription"
                 variant="secondary"
-                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                class="ml-auto rounded-lg bg-interface-menu-component-surface-selected px-4 py-2 text-sm font-normal text-text-primary"
                 @click="
                   async () => {
                     await authActions.accessBillingPortal()
@@ -84,8 +87,8 @@
             </div>
           </div>
 
-          <div class="flex flex-col lg:flex-row gap-6 pt-9">
-            <div class="flex flex-col shrink-0">
+          <div class="flex flex-col gap-6 pt-9 lg:flex-row">
+            <div class="flex shrink-0 flex-col">
               <div class="flex flex-col gap-3">
                 <div
                   :class="
@@ -102,7 +105,7 @@
                     :loading="isLoadingBalance"
                     @click="handleRefresh"
                   >
-                    <i class="pi pi-sync text-text-secondary text-sm" />
+                    <i class="pi pi-sync text-sm text-text-secondary" />
                   </Button>
 
                   <div class="flex flex-col gap-2">
@@ -114,7 +117,10 @@
                       width="8rem"
                       height="2rem"
                     />
-                    <div v-else class="text-2xl font-bold">
+                    <div
+                      v-else
+                      class="text-2xl font-bold"
+                    >
                       {{ totalCredits }}
                     </div>
                   </div>
@@ -123,7 +129,7 @@
                   <table class="text-sm text-muted">
                     <tbody>
                       <tr>
-                        <td class="pr-4 font-bold text-left align-middle">
+                        <td class="pr-4 text-left align-middle font-bold">
                           <Skeleton
                             v-if="isLoadingBalance"
                             width="5rem"
@@ -131,12 +137,15 @@
                           />
                           <span v-else>{{ includedCreditsDisplay }}</span>
                         </td>
-                        <td class="align-middle" :title="creditsRemainingLabel">
+                        <td
+                          class="align-middle"
+                          :title="creditsRemainingLabel"
+                        >
                           {{ creditsRemainingLabel }}
                         </td>
                       </tr>
                       <tr>
-                        <td class="pr-4 font-bold text-left align-middle">
+                        <td class="pr-4 text-left align-middle font-bold">
                           <Skeleton
                             v-if="isLoadingBalance"
                             width="3rem"
@@ -159,14 +168,14 @@
                       :href="usageHistoryUrl"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="text-sm underline text-center text-muted"
+                      class="text-center text-sm text-muted underline"
                     >
                       {{ $t('subscription.viewUsageHistory') }}
                     </a>
                     <Button
                       v-if="isActiveSubscription"
                       variant="secondary"
-                      class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                      class="min-h-8 rounded-lg bg-interface-menu-component-surface-selected p-2 text-sm font-normal text-text-primary"
                       @click="handleAddApiCredits"
                     >
                       {{ $t('subscription.addCredits') }}
@@ -208,12 +217,12 @@
 
         <!-- View More Details - Outside main content -->
         <div class="flex items-center gap-2 py-4">
-          <i class="pi pi-external-link text-muted"></i>
+          <i class="pi pi-external-link text-muted" />
           <a
             href="https://www.comfy.org/cloud/pricing"
             target="_blank"
             rel="noopener noreferrer"
-            class="text-sm underline hover:opacity-80 text-muted"
+            class="text-sm text-muted underline hover:opacity-80"
           >
             {{ $t('subscription.viewMoreDetailsPlans') }}
           </a>
@@ -229,7 +238,7 @@
             class="text-xs text-text-secondary"
             @click="handleLearnMoreClick"
           >
-            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            <i class="pi pi-question-circle text-xs text-text-secondary" />
             {{ $t('subscription.learnMore') }}
           </Button>
           <Button
@@ -237,7 +246,7 @@
             class="text-xs text-text-secondary"
             @click="handleOpenPartnerNodesInfo"
           >
-            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            <i class="pi pi-question-circle text-xs text-text-secondary" />
             {{ $t('subscription.partnerNodesCredits') }}
           </Button>
           <Button
@@ -246,7 +255,7 @@
             :loading="isLoadingSupport"
             @click="handleMessageSupport"
           >
-            <i class="pi pi-comment text-text-secondary text-xs" />
+            <i class="pi pi-comment text-xs text-text-secondary" />
             {{ $t('subscription.messageSupport') }}
           </Button>
         </div>
@@ -257,7 +266,7 @@
           @click="handleInvoiceHistory"
         >
           {{ $t('subscription.invoiceHistory') }}
-          <i class="pi pi-external-link text-text-secondary text-xs" />
+          <i class="pi pi-external-link text-xs text-text-secondary" />
         </Button>
       </div>
     </div>

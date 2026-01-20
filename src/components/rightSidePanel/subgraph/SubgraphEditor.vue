@@ -239,8 +239,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="px-4 pb-4 pt-1 flex gap-2 border-b border-interface-stroke">
+  <div
+    v-if="activeNode"
+    class="subgraph-edit-section flex h-full flex-col"
+  >
+    <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
       <FormSearchInput v-model="searchQuery" />
     </div>
 
@@ -248,10 +251,10 @@ onBeforeUnmount(() => {
       <div
         v-if="
           searchQuery &&
-          filteredActive.length === 0 &&
-          filteredCandidates.length === 0
+            filteredActive.length === 0 &&
+            filteredCandidates.length === 0
         "
-        class="text-sm text-muted-foreground px-4 py-10 text-center"
+        class="px-4 py-10 text-center text-sm text-muted-foreground"
       >
         {{ $t('rightSidePanel.noneSearchDesc') }}
       </div>
@@ -261,19 +264,21 @@ onBeforeUnmount(() => {
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
-          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+          class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
         >
-          <div class="text-sm font-semibold uppercase line-clamp-1">
+          <div class="line-clamp-1 text-sm font-semibold uppercase">
             {{ $t('subgraphStore.shown') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
             @click.stop="hideAll"
           >
-            {{ $t('subgraphStore.hideAll') }}</a
-          >
+            {{ $t('subgraphStore.hideAll') }}</a>
         </div>
-        <div ref="draggableItems" class="pb-2 px-2 space-y-0.5 mt-0.5">
+        <div
+          ref="draggableItems"
+          class="mt-0.5 space-y-0.5 px-2 pb-2"
+        >
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredActive"
             :key="toKey([node, widget])"
@@ -293,19 +298,18 @@ onBeforeUnmount(() => {
         class="flex flex-col border-b border-interface-stroke"
       >
         <div
-          class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl min-h-12 px-4"
+          class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
         >
-          <div class="text-sm font-semibold uppercase line-clamp-1">
+          <div class="line-clamp-1 text-sm font-semibold uppercase">
             {{ $t('subgraphStore.hidden') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal text-text-secondary hover:text-azure-600 whitespace-nowrap"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
             @click.stop="showAll"
           >
-            {{ $t('subgraphStore.showAll') }}</a
-          >
+            {{ $t('subgraphStore.showAll') }}</a>
         </div>
-        <div class="pb-2 px-2 space-y-0.5 mt-0.5">
+        <div class="mt-0.5 space-y-0.5 px-2 pb-2">
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
             :key="toKey([node, widget])"

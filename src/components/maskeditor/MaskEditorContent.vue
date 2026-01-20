@@ -13,29 +13,32 @@
     >
       <canvas
         ref="imgCanvasRef"
-        class="absolute top-0 left-0 w-full h-full z-0"
+        class="absolute top-0 left-0 z-0 h-full w-full"
         @contextmenu.prevent
       />
       <canvas
         ref="rgbCanvasRef"
-        class="absolute top-0 left-0 w-full h-full z-10"
+        class="absolute top-0 left-0 z-10 h-full w-full"
         @contextmenu.prevent
       />
       <canvas
         ref="maskCanvasRef"
-        class="absolute top-0 left-0 w-full h-full z-30"
+        class="absolute top-0 left-0 z-30 h-full w-full"
         @contextmenu.prevent
       />
       <!-- GPU Preview Canvas -->
       <canvas
         ref="gpuCanvasRef"
-        class="absolute top-0 left-0 w-full h-full pointer-events-none"
+        class="pointer-events-none absolute top-0 left-0 h-full w-full"
         :class="{
           'z-20': store.activeLayer === 'rgb',
           'z-40': store.activeLayer === 'mask'
         }"
       />
-      <div ref="canvasBackgroundRef" class="bg-white w-full h-full" />
+      <div
+        ref="canvasBackgroundRef"
+        class="h-full w-full bg-white"
+      />
     </div>
 
     <div class="maskEditor-ui-container flex min-h-0 flex-1 flex-col">
@@ -60,7 +63,10 @@
       </div>
     </div>
 
-    <BrushCursor v-if="initialized" :container-ref="containerRef" />
+    <BrushCursor
+      v-if="initialized"
+      :container-ref="containerRef"
+    />
   </div>
 </template>
 

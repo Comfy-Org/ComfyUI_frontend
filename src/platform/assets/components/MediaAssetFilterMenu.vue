@@ -11,7 +11,7 @@ TODO: Extract checkbox pattern into reusable Checkbox component
 - Benefits: Consistent checkbox UI, better maintainability, reusable design system component
 -->
 <template>
-  <div class="flex flex-col gap-0 p-0 m-0">
+  <div class="m-0 flex flex-col gap-0 p-0">
     <div
       v-for="filter in filters"
       :key="filter.type"
@@ -27,7 +27,7 @@ TODO: Extract checkbox pattern into reusable Checkbox component
         class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
         :class="
           mediaTypeFilters.includes(filter.type)
-            ? 'bg-primary-background border-primary-background'
+            ? 'border-primary-background bg-primary-background'
             : 'bg-secondary-background'
         "
       >

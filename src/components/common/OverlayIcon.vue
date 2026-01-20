@@ -1,11 +1,14 @@
 <template>
-  <span class="relative inline-flex items-center justify-center size-[1em]">
-    <i :class="mainIcon" class="text-[1em]" />
+  <span class="relative inline-flex size-[1em] items-center justify-center">
+    <i
+      :class="mainIcon"
+      class="text-[1em]"
+    />
     <i
       :class="
         cn(
           subIcon,
-          'absolute leading-none pointer-events-none',
+          'pointer-events-none absolute leading-none',
           positionX === 'left' ? 'left-0' : 'right-0',
           positionY === 'top' ? 'top-0' : 'bottom-0'
         )

@@ -1,7 +1,7 @@
 <template>
   <div
     v-show="workspaceState.focusMode"
-    class="fixed z-9999 flex flex-row no-drag top-0 right-0"
+    class="no-drag fixed top-0 right-0 z-9999 flex flex-row"
   >
     <Button
       v-tooltip="{ value: $t('menu.showMenu'), showDelay: 300 }"

@@ -4,10 +4,10 @@
       v-if="!flags.huggingfaceModelImportEnabled"
       src="/assets/images/civitai.svg"
       class="size-4"
-    />
+    >
     <span>{{ $t(titleKey) }}</span>
     <span
-      class="rounded-full bg-white px-1.5 py-0 text-xxs font-inter font-semibold uppercase text-black"
+      class="rounded-full bg-white px-1.5 py-0 font-inter text-xxs font-semibold text-black uppercase"
     >
       {{ $t('g.beta') }}
     </span>

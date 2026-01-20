@@ -6,7 +6,10 @@
   >
     <!-- Main Menu Items -->
     <div class="w-full">
-      <nav class="flex w-full flex-col gap-2" role="menubar">
+      <nav
+        class="flex w-full flex-col gap-2"
+        role="menubar"
+      >
         <button
           v-for="menuItem in menuItems"
           v-show="menuItem.visible !== false"
@@ -26,14 +29,20 @@
                 v-if="typeof menuItem.icon === 'object'"
                 :size="16"
               />
-              <i v-else :class="menuItem.icon" />
+              <i
+                v-else
+                :class="menuItem.icon"
+              />
             </div>
-            <div v-if="menuItem.showRedDot" class="menu-red-dot" />
+            <div
+              v-if="menuItem.showRedDot"
+              class="menu-red-dot"
+            />
           </div>
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="icon-[lucide--external-link] text-primary w-4 h-4 ml-auto"
+            class="ml-auto icon-[lucide--external-link] h-4 w-4 text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -109,7 +118,10 @@
           @keydown.enter="onReleaseClick(release)"
           @keydown.space.prevent="onReleaseClick(release)"
         >
-          <i class="help-menu-icon icon-[lucide--package]" aria-hidden="true" />
+          <i
+            class="help-menu-icon icon-[lucide--package]"
+            aria-hidden="true"
+          />
           <div class="release-content">
             <span class="release-title">
               {{
@@ -119,7 +131,10 @@
                 })
               }}
             </span>
-            <time class="release-date" :datetime="release.published_at">
+            <time
+              class="release-date"
+              :datetime="release.published_at"
+            >
               <span class="normal-state">
                 {{ formatReleaseDate(release.published_at) }}
               </span>
@@ -138,13 +153,23 @@
         role="status"
         aria-live="polite"
       >
-        <i class="pi pi-spin pi-spinner help-menu-icon" aria-hidden="true" />
+        <i
+          class="pi pi-spin pi-spinner help-menu-icon"
+          aria-hidden="true"
+        />
         <span>{{ $t('helpCenter.loadingReleases') }}</span>
       </div>
 
       <!-- No Releases State -->
-      <div v-else class="help-menu-item" role="status">
-        <i class="pi pi-info-circle help-menu-icon" aria-hidden="true" />
+      <div
+        v-else
+        class="help-menu-item"
+        role="status"
+      >
+        <i
+          class="pi pi-info-circle help-menu-icon"
+          aria-hidden="true"
+        />
         <span>{{ $t('helpCenter.noRecentReleases') }}</span>
       </div>
     </section>

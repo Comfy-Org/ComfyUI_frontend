@@ -45,7 +45,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
 </script>
 <template>
   <div
-    class="absolute w-full h-full"
+    class="absolute h-full w-full"
     @wheel.capture="(e: WheelEvent) => outputHistoryRef?.onWheel(e)"
   >
     <div class="workflow-tabs-container pointer-events-auto h-9.5 w-full">
@@ -56,7 +56,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
     </div>
     <div
       v-if="mobileDisplay"
-      class="justify-center border-border-subtle border-t overflow-y-scroll h-[calc(100%-38px)] bg-comfy-menu-bg"
+      class="h-[calc(100%-38px)] justify-center overflow-y-scroll border-t border-border-subtle bg-comfy-menu-bg"
     >
       <div class="flex flex-col text-muted-foreground">
         <LinearPreview
@@ -83,8 +83,11 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           }
         "
       />
-      <LinearControls ref="linearWorkflowRef" mobile />
-      <div class="text-base-foreground flex items-center gap-4 justify-end m-4">
+      <LinearControls
+        ref="linearWorkflowRef"
+        mobile
+      />
+      <div class="m-4 flex items-center justify-end gap-4 text-base-foreground">
         <a
           href="https://form.typeform.com/to/gmVqFi8l"
           v-text="t('linearMode.beta')"
@@ -94,7 +97,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
     </div>
     <Splitter
       v-else
-      class="h-[calc(100%-38px)] w-full bg-comfy-menu-secondary-bg"
+      class="bg-comfy-menu-secondary-bg h-[calc(100%-38px)] w-full"
       :pt="{ gutter: { class: 'bg-transparent w-4 -mx-3' } }"
       @resizestart="({ originalEvent }) => originalEvent.preventDefault()"
     >
@@ -127,7 +130,7 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
       <SplitterPanel
         id="linearCenterPanel"
         :size="98"
-        class="flex flex-col min-w-min gap-4 mx-2 px-10 pt-8 pb-4 relative text-muted-foreground outline-none"
+        class="relative mx-2 flex min-w-min flex-col gap-4 px-10 pt-8 pb-4 text-muted-foreground outline-none"
       >
         <LinearPreview
           :latent-preview="
@@ -139,12 +142,24 @@ const linearWorkflowRef = useTemplateRef('linearWorkflowRef')
           :selected-item
           :selected-output
         />
-        <div ref="topLeftRef" class="absolute z-21 top-4 left-4" />
-        <div ref="topRightRef" class="absolute z-21 top-4 right-4" />
-        <div ref="bottomLeftRef" class="absolute z-20 bottom-4 left-4" />
-        <div ref="bottomRightRef" class="absolute z-20 bottom-24 right-4" />
         <div
-          class="absolute z-20 bottom-4 right-4 text-base-foreground flex items-center gap-4"
+          ref="topLeftRef"
+          class="absolute top-4 left-4 z-21"
+        />
+        <div
+          ref="topRightRef"
+          class="absolute top-4 right-4 z-21"
+        />
+        <div
+          ref="bottomLeftRef"
+          class="absolute bottom-4 left-4 z-20"
+        />
+        <div
+          ref="bottomRightRef"
+          class="absolute right-4 bottom-24 z-20"
+        />
+        <div
+          class="absolute right-4 bottom-4 z-20 flex items-center gap-4 text-base-foreground"
         >
           <div v-text="t('linearMode.beta')" />
           <TypeformPopoverButton
