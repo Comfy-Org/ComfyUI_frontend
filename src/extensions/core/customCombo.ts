@@ -115,78 +115,64 @@ function onCustomComboCreated(this: LGraphNode) {
 }
 
 function onCustomIntCreated(this: LGraphNode) {
-  const [valueWidget, , stepWidget, minWidget, maxWidget] = this.widgets ?? []
-  if (!maxWidget) return
-  if (typeof stepWidget.value === 'number')
-    valueWidget.options.step2 = stepWidget.value
-  if (typeof minWidget.value === 'number')
-    valueWidget.options.min = minWidget.value
-  if (typeof maxWidget.value === 'number')
-    valueWidget.options.max = maxWidget.value
-  Object.defineProperty(stepWidget, 'value', {
-    get() {
-      return valueWidget.options.step2
-    },
-    set(v: number) {
-      valueWidget.options.step2 = v
-      valueWidget.callback!(valueWidget.value)
+  const valueWidget = this.widgets?.[0]
+  if (!valueWidget) return
+
+  Object.defineProperty(valueWidget.options, 'min', {
+    get: () => this.properties.min ?? -(2 ** 63),
+    set: (v) => {
+      this.properties.min = v
+      valueWidget.callback?.(valueWidget.value)
     }
   })
-  Object.defineProperty(minWidget, 'value', {
-    get() {
-      return valueWidget.options.min
-    },
-    set(v: number) {
-      valueWidget.options.min = v
-      valueWidget.callback!(valueWidget.value)
+  Object.defineProperty(valueWidget.options, 'max', {
+    get: () => this.properties.max ?? 2 ** 63,
+    set: (v) => {
+      this.properties.max = v
+      valueWidget.callback?.(valueWidget.value)
     }
   })
-  Object.defineProperty(maxWidget, 'value', {
-    get() {
-      return valueWidget.options.max
-    },
-    set(v: number) {
-      valueWidget.options.max = v
-      valueWidget.callback!(valueWidget.value)
+  Object.defineProperty(valueWidget.options, 'step', {
+    get: () => this.properties.step ?? 1,
+    set: (v) => {
+      this.properties.step = v
+      valueWidget.callback?.(valueWidget.value) // for vue reactivity
     }
   })
 }
 function onCustomFloatCreated(this: LGraphNode) {
-  const [valueWidget, precisionWidget, minWidget, maxWidget] =
-    this.widgets ?? []
-  if (!maxWidget) return
-  if (typeof precisionWidget.value === 'number')
-    valueWidget.options.precision = precisionWidget.value
-  if (typeof minWidget.value === 'number')
-    valueWidget.options.min = minWidget.value
-  if (typeof maxWidget.value === 'number')
-    valueWidget.options.max = maxWidget.value
-  Object.defineProperty(precisionWidget, 'value', {
-    get() {
-      return valueWidget.options.precision
-    },
-    set(v: number) {
-      valueWidget.options.precision = v
-      valueWidget.options.step2 = 10 ** v
+  const valueWidget = this.widgets?.[0]
+  if (!valueWidget) return
+
+  Object.defineProperty(valueWidget.options, 'min', {
+    get: () => this.properties.min ?? -Infinity,
+    set: (v) => {
+      this.properties.min = v
+      valueWidget.callback?.(valueWidget.value)
     }
   })
-  Object.defineProperty(minWidget, 'value', {
-    get() {
-      return valueWidget.options.min
-    },
-    set(v: number) {
-      valueWidget.options.min = v
-      valueWidget.callback!(valueWidget.value)
+  Object.defineProperty(valueWidget.options, 'max', {
+    get: () => this.properties.max ?? Infinity,
+    set: (v) => {
+      this.properties.max = v
+      valueWidget.callback?.(valueWidget.value)
     }
   })
-  Object.defineProperty(maxWidget, 'value', {
-    get() {
-      return valueWidget.options.max
-    },
-    set(v: number) {
-      valueWidget.options.max = v
-      valueWidget.callback!(valueWidget.value)
+  Object.defineProperty(valueWidget.options, 'precision', {
+    get: () => this.properties.precision ?? 1,
+    set: (v) => {
+      this.properties.precision = v
+      valueWidget.callback?.(valueWidget.value)
     }
+  })
+  Object.defineProperty(valueWidget.options, 'step2', {
+    get: () => {
+      if (this.properties.step) return this.properties.step
+
+      const { precision } = this.properties
+      return typeof precision === 'number' ? 10 ** precision : 1
+    },
+    set: (v) => (this.properties.step = v)
   })
 }
 
