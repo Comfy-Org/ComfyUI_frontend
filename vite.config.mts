@@ -51,6 +51,14 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
       ? 'cloud'
       : 'localhost'
 
+// Nightly builds are from main branch; RC/stable builds are from core/* branches
+// Can be overridden via IS_NIGHTLY env var for testing
+const IS_NIGHTLY =
+  process.env.IS_NIGHTLY === 'true' ||
+  (process.env.IS_NIGHTLY !== 'false' &&
+    process.env.CI === 'true' &&
+    process.env.GITHUB_REF_NAME === 'main')
+
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
@@ -412,77 +420,83 @@ export default defineConfig({
   ],
 
   build: {
-    minify: SHOULD_MINIFY ? 'esbuild' : false,
+    minify: SHOULD_MINIFY,
     target: 'es2022',
     sourcemap: GENERATE_SOURCEMAP,
-    rollupOptions: {
-      treeshake: true,
-      output: {
-        manualChunks: (id) => {
-          if (!id.includes('node_modules')) {
-            return undefined
-          }
-
-          if (id.includes('primevue') || id.includes('@primeuix')) {
-            return 'vendor-primevue'
-          }
-
-          if (id.includes('@tiptap')) {
-            return 'vendor-tiptap'
-          }
-
-          if (id.includes('chart.js')) {
-            return 'vendor-chart'
-          }
-
-          if (id.includes('three') || id.includes('@sparkjsdev')) {
-            return 'vendor-three'
-          }
-
-          if (id.includes('@xterm')) {
-            return 'vendor-xterm'
-          }
-
-          if (id.includes('/vue') || id.includes('pinia')) {
-            return 'vendor-vue'
-          }
-          if (id.includes('reka-ui')) {
-            return 'vendor-reka-ui'
-          }
-
-          return 'vendor-other'
-        }
-      }
-    }
-  },
-
-  esbuild: {
-    minifyIdentifiers: SHOULD_MINIFY,
-    keepNames: true,
-    minifySyntax: SHOULD_MINIFY,
-    minifyWhitespace: SHOULD_MINIFY,
-    pure: SHOULD_MINIFY
-      ? [
-          'console.log',
+    rolldownOptions: {
+      treeshake: {
+        manualPureFunctions: [
+          'console.clear',
+          'console.count',
+          'console.countReset',
           'console.debug',
-          'console.info',
-          'console.trace',
           'console.dir',
           'console.dirxml',
           'console.group',
           'console.groupCollapsed',
           'console.groupEnd',
+          'console.info',
+          'console.log',
+          'console.profile',
+          'console.profileEnd',
           'console.table',
           'console.time',
           'console.timeEnd',
           'console.timeLog',
-          'console.count',
-          'console.countReset',
-          'console.profile',
-          'console.profileEnd',
-          'console.clear'
+          'console.trace'
         ]
-      : []
+      },
+      experimental: {
+        strictExecutionOrder: true
+      },
+      output: {
+        keepNames: true,
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-primevue',
+              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-tiptap',
+              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-chart',
+              test: /[\\/]node_modules[\\/]chart\.js[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-three',
+              test: /[\\/]node_modules[\\/](three|@sparkjsdev)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-xterm',
+              test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-vue',
+              test: /[\\/]node_modules[\\/](vue|pinia)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-reka-ui',
+              test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-other',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 0
+            }
+          ]
+        }
+      }
+    }
   },
 
   define: {
@@ -496,7 +510,8 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
   },
 
   resolve: {

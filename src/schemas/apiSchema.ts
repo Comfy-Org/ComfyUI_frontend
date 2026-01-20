@@ -13,6 +13,9 @@ export type PromptId = z.infer<typeof zPromptId>
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
 
+const zCustomNodesI18n = z.record(z.string(), z.unknown())
+export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
+
 const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
