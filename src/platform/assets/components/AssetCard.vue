@@ -30,7 +30,6 @@
 
       <AssetBadgeGroup :badges="asset.badges" />
       <IconGroup
-        v-if="showAssetOptions"
         :class="
           cn(
             'absolute top-2 right-2 invisible group-hover:visible',
@@ -38,7 +37,19 @@
           )
         "
       >
-        <MoreButton ref="dropdown-menu-button" size="sm">
+        <Button
+          v-tooltip.bottom="$t('assetBrowser.modelInfo.title')"
+          variant="secondary"
+          size="sm"
+          @click.stop="$emit('showInfo', asset)"
+        >
+          <i class="icon-[lucide--info]" />
+        </Button>
+        <MoreButton
+          v-if="showAssetOptions"
+          ref="dropdown-menu-button"
+          size="sm"
+        >
           <template #default>
             <Button
               v-if="flags.assetDeletionEnabled"
@@ -146,6 +157,7 @@ const emit = defineEmits<{
   blur: []
   select: [asset: AssetDisplayItem]
   deleted: [asset: AssetDisplayItem]
+  showInfo: [asset: AssetDisplayItem]
 }>()
 
 const { t } = useI18n()

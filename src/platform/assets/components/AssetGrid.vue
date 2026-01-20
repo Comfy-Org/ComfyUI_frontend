@@ -40,6 +40,7 @@
           @blur="$emit('assetBlur')"
           @select="$emit('assetSelect', $event)"
           @deleted="$emit('assetDeleted', $event)"
+          @show-info="$emit('assetShowInfo', $event)"
         />
       </template>
     </VirtualGrid>
@@ -66,6 +67,7 @@ defineEmits<{
   assetBlur: []
   assetSelect: [asset: AssetDisplayItem]
   assetDeleted: [asset: AssetDisplayItem]
+  assetShowInfo: [asset: AssetDisplayItem]
 }>()
 
 const assetsWithKey = computed(() =>
