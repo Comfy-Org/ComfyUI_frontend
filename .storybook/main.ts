@@ -96,15 +96,15 @@ const config: StorybookConfig = {
           }
         ]
       },
-      esbuild: {
-        // Prevent minification of identifiers to preserve _sfc_main
-        minifyIdentifiers: false,
-        keepNames: true
-      },
       build: {
-        rollupOptions: {
-          // Disable tree-shaking for Storybook to prevent Vue SFC exports from being removed
+        rolldownOptions: {
+          experimental: {
+            strictExecutionOrder: true
+          },
           treeshake: false,
+          output: {
+            keepNames: true
+          },
           onwarn: (warning, warn) => {
             // Suppress specific warnings
             if (
