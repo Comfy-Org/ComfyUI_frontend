@@ -50,6 +50,7 @@
       </div>
     </div>
     <HelpCenterPopups :is-small="isSmall" />
+    <NightlySurveyController />
   </nav>
 </template>
 
@@ -66,6 +67,7 @@ import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vu
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import NightlySurveyController from '@/platform/surveys/NightlySurveyController.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
