@@ -1,7 +1,7 @@
 <template>
-  <div class="flex flex-col gap-4 text-neutral-400 text-sm">
+  <div class="flex flex-col gap-4 text-sm text-neutral-400">
     <div>
-      <h3 class="text-lg font-medium text-neutral-100 mb-3 mt-0">
+      <h3 class="mt-0 mb-3 text-lg font-medium text-neutral-100">
         {{ $t(`settings.${normalizedSettingId}.name`) }}
       </h3>
       <p class="my-1">
@@ -16,8 +16,14 @@
       "
       @state-change="validationState = $event"
     />
-    <div v-if="secondParagraph" class="mt-2">
-      <a href="#" @click.prevent="showDialog = true">
+    <div
+      v-if="secondParagraph"
+      class="mt-2"
+    >
+      <a
+        href="#"
+        @click.prevent="showDialog = true"
+      >
         {{ $t('g.learnMore') }}
       </a>
 
@@ -26,12 +32,14 @@
         modal
         dismissable-mask
         :header="$t(`settings.${normalizedSettingId}.urlFormatTitle`)"
-        class="select-none max-w-3xl"
+        class="max-w-3xl select-none"
       >
         <div class="text-neutral-300">
-          <p class="mt-1 whitespace-pre-wrap">{{ secondParagraph }}</p>
+          <p class="mt-1 whitespace-pre-wrap">
+            {{ secondParagraph }}
+          </p>
           <div class="mt-2 break-all">
-            <span class="text-neutral-300 font-semibold">
+            <span class="font-semibold text-neutral-300">
               {{ EXAMPLE_URL_FIRST_PART }}
             </span>
             <span>{{ EXAMPLE_URL_SECOND_PART }}</span>
@@ -40,7 +48,7 @@
           <p>
             {{ $t(`settings.${normalizedSettingId}.fileUrlDescription`) }}
           </p>
-          <span class="text-neutral-300 font-semibold">
+          <span class="font-semibold text-neutral-300">
             {{ FILE_URL_SCHEME }}
           </span>
           <span>

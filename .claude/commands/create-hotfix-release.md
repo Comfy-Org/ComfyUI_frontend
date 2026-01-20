@@ -353,6 +353,7 @@ python main.py --front-end-version Comfy-Org/ComfyUI_frontend@${NEW_VERSION}
 - Fix: [Brief description of hotfixes included]
   EOF
   )"
+
   ```
 
   ```

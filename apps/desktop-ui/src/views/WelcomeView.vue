@@ -1,6 +1,6 @@
 <template>
   <BaseViewTemplate dark>
-    <div class="flex items-center justify-center min-h-screen">
+    <div class="flex min-h-screen items-center justify-center">
       <div class="grid gap-8">
         <!-- Top container: Logo -->
         <div class="flex items-end justify-center">
@@ -8,13 +8,13 @@
             src="/assets/images/comfy-brand-mark.svg"
             :alt="$t('g.logoAlt')"
             class="w-60"
-          />
+          >
         </div>
         <!-- Bottom container: Title and button -->
         <div class="flex flex-col items-center justify-center gap-4">
           <Button
             :label="$t('welcome.getStarted')"
-            class="px-8 mt-4 bg-brand-yellow hover:bg-brand-yellow/90 border-0 rounded-lg transition-colors"
+            class="mt-4 rounded-lg border-0 bg-brand-yellow px-8 transition-colors hover:bg-brand-yellow/90"
             :pt="{
               label: { class: 'font-inter text-neutral-900 font-black' }
             }"

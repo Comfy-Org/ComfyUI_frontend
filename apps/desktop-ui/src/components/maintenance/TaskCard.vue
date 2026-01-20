@@ -18,7 +18,7 @@
           v-if="task.headerImg"
           :src="task.headerImg"
           class="h-full w-full object-contain px-4 pt-4 opacity-25"
-        />
+        >
       </template>
       <template #title>
         {{ task.name }}
@@ -89,7 +89,7 @@ const isExecuting = useMinLoadingDurationRef(reactiveExecuting, 250)
 @reference '../../assets/css/style.css';
 
 .task-card-ok {
-  @apply text-green-500 absolute -right-4 -bottom-4 opacity-100 row-span-full col-span-full transition-opacity;
+  @apply absolute -right-4 -bottom-4 col-span-full row-span-full text-green-500 opacity-100 transition-opacity;
 
   font-size: 4rem;
   text-shadow: 0.25rem 0 0.5rem black;

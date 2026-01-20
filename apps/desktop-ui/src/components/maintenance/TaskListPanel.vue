@@ -4,7 +4,7 @@
     <template v-if="filter.tasks.length === 0">
       <!-- Empty filter -->
       <Divider />
-      <p class="text-neutral-400 w-full text-center">
+      <p class="w-full text-center text-neutral-400">
         {{ $t('maintenance.allOk') }}
       </p>
     </template>
@@ -25,7 +25,7 @@
 
       <!-- Display: Cards -->
       <template v-else>
-        <div class="flex flex-wrap justify-evenly gap-8 pad-y my-4">
+        <div class="pad-y my-4 flex flex-wrap justify-evenly gap-8">
           <TaskCard
             v-for="task in filter.tasks"
             :key="task.id"

@@ -1,6 +1,6 @@
 <template>
-  <div class="w-full h-full flex flex-col rounded-lg p-6 justify-between">
-    <h1 class="font-inter font-semibold text-xl m-0 italic">
+  <div class="flex h-full w-full flex-col justify-between rounded-lg p-6">
+    <h1 class="m-0 font-inter text-xl font-semibold italic">
       {{ t(`desktopDialogs.${id}.title`, title) }}
     </h1>
     <p class="whitespace-pre-wrap">
@@ -46,7 +46,7 @@ const handleButtonClick = async (button: DialogAction) => {
 @reference '../assets/css/style.css';
 
 .p-button-secondary {
-  @apply text-white border-none bg-neutral-600;
+  @apply border-none bg-neutral-600 text-white;
 }
 
 .p-button-secondary:hover {

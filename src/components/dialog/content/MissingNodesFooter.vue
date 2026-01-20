@@ -20,9 +20,7 @@
       size="md"
       @click="handleGotItClick"
     >
-      {{
-        $t('missingNodes.cloud.gotIt')
-      }}
+      {{ $t('missingNodes.cloud.gotIt') }}
     </Button>
   </div>
 
@@ -35,9 +33,7 @@
       variant="textonly"
       @click="openManager"
     >
-      {{
-        $t('g.openManager')
-      }}
+      {{ $t('g.openManager') }}
     </Button>
     <PackInstallButton
       v-if="showInstallAllButton"

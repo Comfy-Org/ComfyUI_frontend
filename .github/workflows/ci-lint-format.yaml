@@ -42,7 +42,7 @@ jobs:
       - name: Run Stylelint with auto-fix
         run: pnpm stylelint:fix
 
-      - name: Run Prettier with auto-format
+      - name: Run oxfmt with auto-format
         run: pnpm format
 
       - name: Check for changes
@@ -60,7 +60,7 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m "[automated] Apply ESLint and Prettier fixes"
+          git commit -m "[automated] Apply ESLint and oxfmt fixes"
           git push
 
       - name: Final validation
@@ -80,7 +80,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## 🔧 Auto-fixes Applied\n\nThis PR has been automatically updated to fix linting and formatting issues.\n\n**⚠️ Important**: Your local branch is now behind. Run `git pull` before making additional changes to avoid conflicts.\n\n### Changes made:\n- ESLint auto-fixes\n- Prettier formatting'
+              body: '## 🔧 Auto-fixes Applied\n\nThis PR has been automatically updated to fix linting and formatting issues.\n\n**⚠️ Important**: Your local branch is now behind. Run `git pull` before making additional changes to avoid conflicts.\n\n### Changes made:\n- ESLint auto-fixes\n- oxfmt formatting'
             })
 
       - name: Comment on PR about manual fix needed

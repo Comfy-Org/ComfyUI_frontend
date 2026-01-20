@@ -1,22 +1,25 @@
 <template>
   <div
-    class="font-sans w-screen h-screen flex flex-col relative"
+    class="relative flex h-screen w-screen flex-col font-sans"
     :class="[
       dark
-        ? 'text-neutral-300 bg-neutral-900 dark-theme'
-        : 'text-neutral-900 bg-neutral-300'
+        ? 'dark-theme bg-neutral-900 text-neutral-300'
+        : 'bg-neutral-300 text-neutral-900'
     ]"
   >
-    <div v-if="showLanguageSelector" class="absolute top-6 right-6 z-10">
+    <div
+      v-if="showLanguageSelector"
+      class="absolute top-6 right-6 z-10"
+    >
       <LanguageSelector :variant="variant" />
     </div>
     <!-- Virtual top menu for native window (drag handle) -->
     <div
       v-show="isNativeWindow()"
       ref="topMenuRef"
-      class="app-drag w-full h-(--comfy-topbar-height)"
+      class="app-drag h-(--comfy-topbar-height) w-full"
     />
-    <div class="grow w-full flex items-center justify-center overflow-auto">
+    <div class="flex w-full grow items-center justify-center overflow-auto">
       <slot />
     </div>
   </div>

@@ -7,7 +7,7 @@
           src="/assets/images/comfy-brand-mark.svg"
           :alt="t('g.logoAlt')"
           class="w-60"
-        />
+        >
       </div>
       <!-- Bottom container: Progress and text -->
       <div class="flex flex-col items-center justify-center gap-4">
@@ -16,10 +16,13 @@
           :mode="progressMode"
           :value="progressPercentage ?? 0"
           :show-value="false"
-          class="w-90 h-2 mt-8"
+          class="mt-8 h-2 w-90"
           :pt="{ value: { class: 'bg-brand-yellow' } }"
         />
-        <h1 v-if="title" class="font-inter font-bold text-3xl text-neutral-300">
+        <h1
+          v-if="title"
+          class="font-inter text-3xl font-bold text-neutral-300"
+        >
           {{ title }}
         </h1>
         <p

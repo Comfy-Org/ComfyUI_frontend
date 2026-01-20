@@ -41,7 +41,7 @@ ComfyUI supports three types of icons that can be used throughout the interface.
   <!-- Carbon Icons -->
 
   <!-- With styling -->
-  <i class="icon-[lucide--save]" class="w-6 h-6 text-blue-500" />
+  <i class="icon-[lucide--save]" class="h-6 w-6 text-blue-500" />
 </template>
 ```
 
@@ -176,11 +176,11 @@ No imports needed - icons are auto-discovered!
 ```vue
 <template>
   <!-- Size with Tailwind classes -->
-  <i class="icon-[lucide--plus]" class="w-4 h-4" />
+  <i class="icon-[lucide--plus]" class="h-4 w-4" />
   <!-- 16px -->
-  <i class="icon-[lucide--plus]" class="w-6 h-6" />
+  <i class="icon-[lucide--plus]" class="h-6 w-6" />
   <!-- 24px (default) -->
-  <i class="icon-[lucide--plus]" class="w-8 h-8" />
+  <i class="icon-[lucide--plus]" class="h-8 w-8" />
   <!-- 32px -->
 
   <!-- Or text size -->
@@ -232,12 +232,12 @@ Always use `currentColor` in SVGs for automatic theme adaptation:
 ```vue
 <template>
   <!-- Before: Inline SVG -->
-  <svg class="w-6 h-6" viewBox="0 0 24 24">
+  <svg class="h-6 w-6" viewBox="0 0 24 24">
     <path d="..." />
   </svg>
 
   <!-- After: Save as custom/my-icon.svg and use -->
-  <i-comfy:my-icon class="w-6 h-6" />
+  <i-comfy:my-icon class="h-6 w-6" />
 </template>
 ```
 

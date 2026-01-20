@@ -1,8 +1,8 @@
 <template>
-  <div class="flex flex-col gap-6 w-[600px]">
+  <div class="flex w-[600px] flex-col gap-6">
     <!-- Source Location Section -->
     <div class="flex flex-col gap-4">
-      <p class="text-neutral-400 my-0">
+      <p class="my-0 text-neutral-400">
         {{ $t('install.migrationSourcePathDescription') }}
       </p>
 
@@ -14,17 +14,27 @@
           :class="{ 'p-invalid': pathError }"
           @update:model-value="validateSource"
         />
-        <Button icon="pi pi-folder" class="w-12" @click="browsePath" />
+        <Button
+          icon="pi pi-folder"
+          class="w-12"
+          @click="browsePath"
+        />
       </div>
 
-      <Message v-if="pathError" severity="error">
+      <Message
+        v-if="pathError"
+        severity="error"
+      >
         {{ pathError }}
       </Message>
     </div>
 
     <!-- Migration Options -->
-    <div v-if="isValidSource" class="flex flex-col gap-4 p-4 rounded-lg">
-      <h3 class="text-lg mt-0 font-medium text-neutral-100">
+    <div
+      v-if="isValidSource"
+      class="flex flex-col gap-4 rounded-lg p-4"
+    >
+      <h3 class="mt-0 text-lg font-medium text-neutral-100">
         {{ $t('install.selectItemsToMigrate') }}
       </h3>
 
@@ -32,7 +42,7 @@
         <div
           v-for="item in migrationItems"
           :key="item.id"
-          class="flex items-center gap-3 p-2 hover:bg-neutral-700 rounded"
+          class="flex items-center gap-3 rounded p-2 hover:bg-neutral-700"
           @click="item.selected = !item.selected"
         >
           <Checkbox
@@ -42,10 +52,13 @@
             @click.stop
           />
           <div>
-            <label :for="item.id" class="text-neutral-200 font-medium">
+            <label
+              :for="item.id"
+              class="font-medium text-neutral-200"
+            >
               {{ item.label }}
             </label>
-            <p class="text-sm text-neutral-400 my-1">
+            <p class="my-1 text-sm text-neutral-400">
               {{ item.description }}
             </p>
           </div>
@@ -54,7 +67,10 @@
     </div>
 
     <!-- Skip Migration -->
-    <div v-else class="text-neutral-400 italic">
+    <div
+      v-else
+      class="text-neutral-400 italic"
+    >
       {{ $t('install.migrationOptional') }}
     </div>
   </div>

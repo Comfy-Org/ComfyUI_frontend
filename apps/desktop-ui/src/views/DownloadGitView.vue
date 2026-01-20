@@ -1,7 +1,7 @@
 <template>
   <BaseViewTemplate>
     <div
-      class="max-w-(--breakpoint-sm) flex flex-col gap-8 p-8 bg-[url('/assets/images/Git-Logo-White.svg')] bg-no-repeat bg-top-right bg-origin-padding"
+      class="flex max-w-(--breakpoint-sm) flex-col gap-8 bg-[url('/assets/images/Git-Logo-White.svg')] bg-top-right bg-no-repeat bg-origin-padding p-8"
     >
       <!-- Header -->
       <h1 class="mt-24 text-4xl font-bold text-red-500">
@@ -22,7 +22,7 @@
       </div>
 
       <!-- Actions -->
-      <div class="flex gap-4 flex-row-reverse">
+      <div class="flex flex-row-reverse gap-4">
         <Button
           :label="$t('downloadGit.gitWebsite')"
           icon="pi pi-external-link"

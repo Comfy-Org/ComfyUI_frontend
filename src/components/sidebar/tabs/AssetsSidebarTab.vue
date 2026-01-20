@@ -33,17 +33,13 @@
           class="font-inter"
           value="output"
         >
-          {{
-            $t('sideToolbar.labels.generated')
-          }}
+          {{ $t('sideToolbar.labels.generated') }}
         </Tab>
         <Tab
           class="font-inter"
           value="input"
         >
-          {{
-            $t('sideToolbar.labels.imported')
-          }}
+          {{ $t('sideToolbar.labels.imported') }}
         </Tab>
       </TabList>
     </template>

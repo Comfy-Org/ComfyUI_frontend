@@ -6,20 +6,31 @@
       :label="$t('g.back')"
       severity="secondary"
       icon="pi pi-arrow-left"
-      class="font-inter rounded-lg border-0 px-6 py-2 justify-self-start"
+      class="justify-self-start rounded-lg border-0 px-6 py-2 font-inter"
       @click="$emit('previous')"
     />
-    <div v-else></div>
+    <div v-else />
 
     <!-- Step indicators in center -->
-    <StepList class="flex justify-center items-center gap-3 select-none">
-      <Step value="1" :pt="stepPassthrough">
+    <StepList class="flex items-center justify-center gap-3 select-none">
+      <Step
+        value="1"
+        :pt="stepPassthrough"
+      >
         {{ $t('install.gpu') }}
       </Step>
-      <Step value="2" :disabled="disableLocationStep" :pt="stepPassthrough">
+      <Step
+        value="2"
+        :disabled="disableLocationStep"
+        :pt="stepPassthrough"
+      >
         {{ $t('install.installLocation') }}
       </Step>
-      <Step value="3" :disabled="disableSettingsStep" :pt="stepPassthrough">
+      <Step
+        value="3"
+        :disabled="disableSettingsStep"
+        :pt="stepPassthrough"
+      >
         {{ $t('install.desktopSettings') }}
       </Step>
     </StepList>
@@ -27,7 +38,7 @@
     <!-- Next/Install button -->
     <Button
       :label="currentStep !== '3' ? $t('g.next') : $t('g.install')"
-      class="px-8 py-2 bg-brand-yellow hover:bg-brand-yellow/90 font-inter rounded-lg border-0 transition-colors justify-self-end"
+      class="justify-self-end rounded-lg border-0 bg-brand-yellow px-8 py-2 font-inter transition-colors hover:bg-brand-yellow/90"
       :pt="{
         label: { class: 'text-neutral-900 font-inter font-black' }
       }"

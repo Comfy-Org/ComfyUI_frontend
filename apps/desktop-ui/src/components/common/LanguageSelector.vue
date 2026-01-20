@@ -13,13 +13,19 @@
   >
     <template #value="{ value }">
       <span :class="valueClass">
-        <i class="pi pi-language" :class="iconClass" />
+        <i
+          class="pi pi-language"
+          :class="iconClass"
+        />
         <span>{{ displayLabel(value as SupportedLocale) }}</span>
       </span>
     </template>
     <template #option="{ option }">
       <span :class="optionClass">
-        <i class="pi pi-language" :class="iconClass" />
+        <i
+          class="pi pi-language"
+          :class="iconClass"
+        />
         <span class="leading-none">{{ option.label }}</span>
       </span>
     </template>
@@ -202,6 +208,6 @@ async function onLocaleChange(event: SelectChangeEvent) {
 }
 
 :deep(.p-dropdown) {
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow/60 focus-visible:ring-offset-2;
+  @apply focus-visible:ring-2 focus-visible:ring-brand-yellow/60 focus-visible:ring-offset-2 focus-visible:outline-none;
 }
 </style>

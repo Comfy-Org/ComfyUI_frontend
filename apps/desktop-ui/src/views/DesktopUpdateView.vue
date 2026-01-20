@@ -1,7 +1,7 @@
 <template>
   <BaseViewTemplate dark>
     <div
-      class="h-screen w-screen grid items-center justify-around overflow-y-auto"
+      class="grid h-screen w-screen items-center justify-around overflow-y-auto"
     >
       <div class="relative m-8 text-center">
         <!-- Header -->
@@ -13,7 +13,7 @@
           <span>{{ t('desktopUpdate.description') }}</span>
         </div>
 
-        <ProgressSpinner class="m-8 w-48 h-48" />
+        <ProgressSpinner class="m-8 h-48 w-48" />
 
         <!-- Console button -->
         <Button
@@ -64,7 +64,7 @@ onUnmounted(() => electron.Validation.dispose())
 @reference '../assets/css/style.css';
 
 .download-bg::before {
-  @apply m-0 absolute text-muted;
+  @apply absolute m-0 text-muted;
   font-family: 'primeicons', sans-serif;
   top: -2rem;
   right: 2rem;

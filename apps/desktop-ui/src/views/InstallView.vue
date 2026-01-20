@@ -1,10 +1,10 @@
 <template>
   <BaseViewTemplate dark>
     <!-- Fixed height container with flexbox layout for proper content management -->
-    <div class="w-full h-full flex flex-col">
+    <div class="flex h-full w-full flex-col">
       <Stepper
         v-model:value="currentStep"
-        class="flex flex-col h-full"
+        class="flex h-full flex-col"
         @update:value="handleStepChange"
       >
         <!-- Main content area that grows to fill available space -->
@@ -12,7 +12,10 @@
           class="flex-1 overflow-auto"
           :style="{ scrollbarGutter: 'stable' }"
         >
-          <StepPanel value="1" class="flex">
+          <StepPanel
+            value="1"
+            class="flex"
+          >
             <GpuPicker v-model:device="device" />
           </StepPanel>
           <StepPanel value="2">
@@ -37,7 +40,7 @@
 
         <!-- Install footer with navigation -->
         <InstallFooter
-          class="w-full max-w-2xl my-6 mx-auto"
+          class="mx-auto my-6 w-full max-w-2xl"
           :current-step
           :can-proceed
           :disable-location-step="noGpu"
@@ -191,7 +194,7 @@ onMounted(async () => {
 
 /* Remove default padding/margin from StepPanels to make scrollbar flush */
 :deep(.p-steppanels) {
-  @apply p-0 m-0;
+  @apply m-0 p-0;
 }
 
 /* Ensure StepPanel content container has no top/bottom padding */
@@ -209,7 +212,7 @@ onMounted(async () => {
 }
 
 :deep(.p-steppanels::-webkit-scrollbar-thumb) {
-  @apply bg-white/20 rounded-lg border-[4px] border-transparent;
+  @apply rounded-lg border-[4px] border-transparent bg-white/20;
   background-clip: content-box;
 }
 </style>

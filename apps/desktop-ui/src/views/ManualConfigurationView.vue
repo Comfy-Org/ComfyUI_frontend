@@ -2,7 +2,7 @@
   <BaseViewTemplate dark>
     <!-- Installation Path Section -->
     <div
-      class="comfy-installer grow flex flex-col gap-4 text-neutral-300 max-w-110"
+      class="comfy-installer flex max-w-110 grow flex-col gap-4 text-neutral-300"
     >
       <h2 class="text-2xl font-semibold text-neutral-100">
         {{ $t('install.manualConfiguration.title') }}
@@ -29,7 +29,9 @@
         </ul>
       </div>
 
-      <p class="m-1">{{ $t('install.manualConfiguration.createVenv') }}:</p>
+      <p class="m-1">
+        {{ $t('install.manualConfiguration.createVenv') }}:
+      </p>
 
       <Panel :header="t('install.manualConfiguration.virtualEnvironmentPath')">
         <span class="font-mono">{{ `${basePath}${sep}.venv${sep}` }}</span>

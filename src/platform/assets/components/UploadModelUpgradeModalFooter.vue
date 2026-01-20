@@ -13,9 +13,7 @@
       variant="textonly"
       @click="emit('close')"
     >
-      {{
-        $t('g.close')
-      }}
+      {{ $t('g.close') }}
     </Button>
     <Button
       variant="secondary"

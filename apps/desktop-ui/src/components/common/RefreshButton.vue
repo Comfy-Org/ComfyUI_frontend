@@ -12,7 +12,7 @@
 -->
 <template>
   <Button
-    class="relative p-button-icon-only"
+    class="p-button-icon-only relative"
     :outlined="outlined"
     :severity="severity"
     :disabled="active || disabled"
@@ -23,8 +23,14 @@
       :class="{ 'opacity-0': active }"
       data-pc-section="icon"
     />
-    <span class="p-button-label" data-pc-section="label">&nbsp;</span>
-    <ProgressSpinner v-show="active" class="absolute w-1/2 h-1/2" />
+    <span
+      class="p-button-label"
+      data-pc-section="label"
+    >&nbsp;</span>
+    <ProgressSpinner
+      v-show="active"
+      class="absolute h-1/2 w-1/2"
+    />
   </Button>
 </template>
 
