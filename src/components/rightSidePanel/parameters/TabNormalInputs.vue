@@ -74,6 +74,12 @@ const label = computed(() => {
       : t('rightSidePanel.inputsNone')
     : undefined // SectionWidgets display node titles by default
 })
+
+const advancedLabel = computed(() => {
+  return isMultipleNodesSelected.value
+    ? undefined // SectionWidgets display node titles by default
+    : t('rightSidePanel.advancedInputs')
+})
 </script>
 
 <template>
@@ -117,8 +123,9 @@ const label = computed(() => {
       :key="`advanced-${node.id}`"
       :collapse="true"
       :node
-      :label="t('rightSidePanel.advancedInputs')"
+      :label="advancedLabel"
       :widgets
+      :show-locate-button="isMultipleNodesSelected"
       class="border-b border-interface-stroke"
     />
   </template>
