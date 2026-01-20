@@ -76,9 +76,9 @@ const label = computed(() => {
 })
 
 const advancedLabel = computed(() => {
-  return isMultipleNodesSelected.value
-    ? undefined // SectionWidgets display node titles by default
-    : t('rightSidePanel.advancedInputs')
+  return !mustShowNodeTitle && !isMultipleNodesSelected.value
+    ? t('rightSidePanel.advancedInputs')
+    : undefined // SectionWidgets display node titles by default
 })
 </script>
 
