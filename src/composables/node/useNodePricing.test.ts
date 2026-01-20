@@ -6,6 +6,34 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { PriceBadge } from '@/schemas/nodeDefSchema'
 
 // -----------------------------------------------------------------------------
+// Test Types
+// -----------------------------------------------------------------------------
+
+interface MockNodeWidget {
+  name: string
+  value: unknown
+  type: string
+}
+
+interface MockNodeInput {
+  name: string
+  link: number | null
+}
+
+interface MockNodeData {
+  name: string
+  api_node: boolean
+  price_badge?: PriceBadge
+}
+
+interface MockNode {
+  id: string
+  widgets: MockNodeWidget[]
+  inputs: MockNodeInput[]
+  constructor: { nodeData: MockNodeData }
+}
+
+// -----------------------------------------------------------------------------
 // Test Helpers
 // -----------------------------------------------------------------------------
 
@@ -47,12 +75,12 @@ function createMockNodeWithPriceBadge(
     type: 'combo'
   }))
 
-  const mockInputs = inputs.map(({ name, connected }) => ({
+  const mockInputs: MockNodeInput[] = inputs.map(({ name, connected }) => ({
     name,
     link: connected ? 1 : null
   }))
 
-  const node: any = {
+  const node: MockNode = {
     id: Math.random().toString(),
     widgets: mockWidgets,
     inputs: mockInputs,
@@ -65,7 +93,7 @@ function createMockNodeWithPriceBadge(
     }
   }
 
-  return node as LGraphNode
+  return node as unknown as LGraphNode
 }
 
 /** Helper to create a price badge with defaults */
@@ -428,9 +456,10 @@ describe('useNodePricing', () => {
   describe('edge cases', () => {
     it('should return empty string for non-API nodes', () => {
       const { getNodeDisplayPrice } = useNodePricing()
-      const node: any = {
+      const node: MockNode = {
         id: 'test',
         widgets: [],
+        inputs: [],
         constructor: {
           nodeData: {
             name: 'RegularNode',
@@ -439,15 +468,16 @@ describe('useNodePricing', () => {
         }
       }
 
-      const price = getNodeDisplayPrice(node)
+      const price = getNodeDisplayPrice(node as unknown as LGraphNode)
       expect(price).toBe('')
     })
 
     it('should return empty string for nodes without price_badge', () => {
       const { getNodeDisplayPrice } = useNodePricing()
-      const node: any = {
+      const node: MockNode = {
         id: 'test',
         widgets: [],
+        inputs: [],
         constructor: {
           nodeData: {
             name: 'ApiNodeNoPricing',
@@ -456,7 +486,7 @@ describe('useNodePricing', () => {
         }
       }
 
-      const price = getNodeDisplayPrice(node)
+      const price = getNodeDisplayPrice(node as unknown as LGraphNode)
       expect(price).toBe('')
     })
 
@@ -529,9 +559,10 @@ describe('useNodePricing', () => {
 
     it('should return undefined for nodes without price_badge', () => {
       const { getNodePricingConfig } = useNodePricing()
-      const node: any = {
+      const node: MockNode = {
         id: 'test',
         widgets: [],
+        inputs: [],
         constructor: {
           nodeData: {
             name: 'NoPricingNode',
@@ -540,15 +571,16 @@ describe('useNodePricing', () => {
         }
       }
 
-      const config = getNodePricingConfig(node)
+      const config = getNodePricingConfig(node as unknown as LGraphNode)
       expect(config).toBeUndefined()
     })
 
     it('should return undefined for non-API nodes', () => {
       const { getNodePricingConfig } = useNodePricing()
-      const node: any = {
+      const node: MockNode = {
         id: 'test',
         widgets: [],
+        inputs: [],
         constructor: {
           nodeData: {
             name: 'RegularNode',
@@ -557,7 +589,7 @@ describe('useNodePricing', () => {
         }
       }
 
-      const config = getNodePricingConfig(node)
+      const config = getNodePricingConfig(node as unknown as LGraphNode)
       expect(config).toBeUndefined()
     })
   })
@@ -610,9 +642,10 @@ describe('useNodePricing', () => {
 
     it('should not throw for non-API nodes', () => {
       const { triggerPriceRecalculation } = useNodePricing()
-      const node: any = {
+      const node: MockNode = {
         id: 'test',
         widgets: [],
+        inputs: [],
         constructor: {
           nodeData: {
             name: 'RegularNode',
@@ -621,7 +654,9 @@ describe('useNodePricing', () => {
         }
       }
 
-      expect(() => triggerPriceRecalculation(node)).not.toThrow()
+      expect(() =>
+        triggerPriceRecalculation(node as unknown as LGraphNode)
+      ).not.toThrow()
     })
   })
 
@@ -716,7 +751,7 @@ describe('useNodePricing', () => {
       const { getNodeDisplayPrice } = useNodePricing()
 
       // Create a node with autogrow-style inputs (group.input1, group.input2, etc.)
-      const node: any = {
+      const node: MockNode = {
         id: Math.random().toString(),
         widgets: [],
         inputs: [
@@ -742,9 +777,9 @@ describe('useNodePricing', () => {
         }
       }
 
-      getNodeDisplayPrice(node)
+      getNodeDisplayPrice(node as unknown as LGraphNode)
       await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node)
+      const price = getNodeDisplayPrice(node as unknown as LGraphNode)
       // 2 connected inputs in 'videos' group * 0.05 = 0.10
       expect(price).toBe(creditsLabel(0.1))
     })
