@@ -131,7 +131,7 @@ describe('TopMenuSection', () => {
 
     await nextTick()
 
-    const queueButton = wrapper.find('[aria-label="Expand collapsed queue"]')
+    const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
     expect(queueButton.text()).toContain('3 active')
   })
 })

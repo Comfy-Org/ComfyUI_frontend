@@ -50,6 +50,7 @@
               t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
             "
             class="px-3"
+            data-testid="queue-overlay-toggle"
             @click="toggleQueueOverlay"
           >
             <span class="text-sm font-normal tabular-nums">
