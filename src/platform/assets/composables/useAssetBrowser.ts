@@ -8,7 +8,7 @@ import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
-  getAssetBaseModel,
+  getAssetBaseModels,
   getAssetDescription
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -48,8 +48,8 @@ function filterByBaseModels(models: string[]) {
   return (asset: AssetItem) => {
     if (models.length === 0) return true
     const modelSet = new Set(models)
-    const baseModel = getAssetBaseModel(asset)
-    return baseModel ? modelSet.has(baseModel) : false
+    const assetBaseModels = getAssetBaseModels(asset)
+    return assetBaseModels.some((model) => modelSet.has(model))
   }
 }
 
@@ -135,13 +135,10 @@ export function useAssetBrowser(
       badges.push({ label: badgeLabel, type: 'type' })
     }
 
-    // Base model badge from metadata
-    const baseModel = getAssetBaseModel(asset)
-    if (baseModel) {
-      badges.push({
-        label: baseModel,
-        type: 'base'
-      })
+    // Base model badges from metadata
+    const baseModels = getAssetBaseModels(asset)
+    for (const model of baseModels) {
+      badges.push({ label: model, type: 'base' })
     }
 
     // Create display stats from API data
