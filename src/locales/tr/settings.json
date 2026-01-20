@@ -332,6 +332,10 @@
     "name": "Kuyruk geçmişi boyutu",
     "tooltip": "Kuyruk geçmişinde gösterilen maksimum görev sayısı."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Varlıklar yan panelinde birleşik iş kuyruğunu kullan",
+    "tooltip": "Kayan iş kuyruğu panelini, Varlıklar yan paneline gömülü eşdeğer bir iş kuyruğu ile değiştirir. Kayan panel düzenine dönmek için bunu devre dışı bırakabilirsiniz."
+  },
   "Comfy_Sidebar_Location": {
     "name": "Kenar çubuğu konumu",
     "options": {

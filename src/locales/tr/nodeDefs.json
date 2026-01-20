@@ -351,6 +351,10 @@
         "name": "ilk_kare",
         "tooltip": "Video için kullanılacak ilk kare."
       },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
+      },
       "last_frame": {
         "name": "son_kare",
         "tooltip": "Video için kullanılacak son kare."
@@ -527,6 +531,10 @@
         "name": "süre",
         "tooltip": "Oluşturulan videonun saniye cinsinden süresi."
       },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
+      },
       "image": {
         "name": "görüntü",
         "tooltip": "Video için kullanılacak ilk kare."
@@ -633,6 +641,10 @@
       "duration": {
         "name": "süre",
         "tooltip": "Çıktı videosunun saniye cinsinden süresi."
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
       },
       "model": {
         "name": "model"
@@ -6878,6 +6890,280 @@
       "0": {
         "name": "metinler",
         "tooltip": "İşlenmiş metinler"
+      }
+    }
+  },
+  "MeshyAnimateModelNode": {
+    "description": "Daha önce rig işlemi uygulanmış bir karaktere belirli bir animasyon hareketi uygula.",
+    "display_name": "Meshy: Modeli Canlandır",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "Mevcut değerlerin listesi için https://docs.meshy.ai/en/api/animation-library adresini ziyaret edin."
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: Görüntüden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Oluşturulan model için poz modunu belirtin."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Yanlış olarak ayarlanırsa, işlenmemiş üçgen ağ döndürülür."
+      },
+      "should_remesh_target_polycount": {
+        "name": "hedef_poligon_sayısı"
+      },
+      "should_remesh_topology": {
+        "name": "topoloji"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Doku oluşturulup oluşturulmayacağını belirler. Yanlış olarak ayarlanırsa doku aşaması atlanır ve dokusuz bir ağ döndürülür."
+      },
+      "should_texture_enable_pbr": {
+        "name": "pbr_aktif_et"
+      },
+      "should_texture_texture_prompt": {
+        "name": "doku_isteği"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: Çoklu Görüntüden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Oluşturulan model için poz modunu belirtin."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Yanlış olarak ayarlanırsa, işlenmemiş üçgen ağ döndürülür."
+      },
+      "should_remesh_target_polycount": {
+        "name": "hedef_poligon_sayısı"
+      },
+      "should_remesh_topology": {
+        "name": "topoloji"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Doku oluşturulup oluşturulmayacağını belirler. Yanlış olarak ayarlanırsa doku aşaması atlanır ve dokusuz bir ağ döndürülür."
+      },
+      "should_texture_enable_pbr": {
+        "name": "pbr_aktif_et"
+      },
+      "should_texture_texture_prompt": {
+        "name": "doku_isteği"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "Önceden oluşturulmuş bir taslak modeli iyileştirir.",
+    "display_name": "Meshy: Taslak Modeli İyileştir",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "Temel renge ek olarak PBR Haritaları (metalik, pürüzlülük, normal) oluşturur. Not: Heykel tarzı kullanıldığında bu seçenek kapalı olmalıdır, çünkü Heykel tarzı kendi PBR haritalarını üretir."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "'texture_image' veya 'texture_prompt' seçeneklerinden yalnızca biri aynı anda kullanılabilir."
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Kaplama sürecini yönlendirmek için bir metin istemi girin. Maksimum 600 karakter. 'texture_image' ile aynı anda kullanılamaz."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "Standart formatlarda riglenmiş bir karakter sağlar. Otomatik rigleme, şu anda dokusuz meshler, insan olmayan varlıklar veya uzuv ve vücut yapısı belirsiz olan insan benzeri varlıklar için uygun değildir.",
+    "display_name": "Meshy: Modeli Rigle",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "Karakter modelinin yaklaşık yüksekliği (metre cinsinden). Ölçekleme ve rigleme doğruluğu için yardımcı olur."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "Modelin UV-unwrap edilmiş temel renk doku görseli."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: Metinden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Oluşturulan model için poz modu belirtin."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, nodun tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Kapalı olarak ayarlanırsa, işlenmemiş üçgen mesh döndürülür."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: Doku Modeli",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "orijinal UV'yi etkinleştir",
+        "tooltip": "Modelin yeni UV'leri oluşturmak yerine orijinal UV'sini kullan. Etkinleştirildiğinde, Meshy yüklenen modeldeki mevcut dokuları korur. Modelin orijinal UV'si yoksa, çıktı kalitesi o kadar iyi olmayabilir."
+      },
+      "image_style": {
+        "name": "görsel stil",
+        "tooltip": "Dokulandırma sürecine rehberlik edecek 2D bir görsel. 'text_style_prompt' ile aynı anda kullanılamaz."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "text_style_prompt": {
+        "name": "metin stil istemi",
+        "tooltip": "Nesnenin istediğiniz doku stilini metinle tanımlayın. En fazla 600 karakter. 'image_style' ile aynı anda kullanılamaz."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
       }
     }
   },

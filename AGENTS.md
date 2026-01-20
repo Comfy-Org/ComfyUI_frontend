@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+See @docs/guidance/*.md for file-type-specific conventions (auto-loaded by glob).
+
 ## Project Structure & Module Organization
 
 - Source: `src/`
@@ -46,6 +48,21 @@ The project uses **Nx** for build orchestration and task management
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: Prettier
 - `pnpm typecheck`: Vue TSC type checking
+- `pnpm storybook`: Start Storybook development server
+
+## Development Workflow
+
+1. Make code changes
+2. Run relevant tests
+3. Run `pnpm typecheck`, `pnpm lint`, `pnpm format`
+4. Check if README updates are needed
+5. Suggest docs.comfy.org updates for user-facing changes
+
+## Git Conventions
+
+- Use `prefix:` format: `feat:`, `fix:`, `test:`
+- Add "Fixes #n" to PR descriptions
+- Never mention Claude/AI in commits
 
 ## Coding Style & Naming Conventions
 

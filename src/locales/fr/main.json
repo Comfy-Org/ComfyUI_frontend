@@ -238,6 +238,12 @@
       "title": "Créer un compte"
     }
   },
+  "boundingBox": {
+    "height": "Hauteur",
+    "width": "Largeur",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "Effacer le workflow",
     "deleteBlueprint": "Supprimer le plan",
@@ -298,6 +304,7 @@
     },
     "retry": "Réessayer",
     "retrying": "Nouvelle tentative...",
+    "skipToCloudApp": "Passer à l'application cloud",
     "start": {
       "desc": "Aucune configuration requise. Fonctionne sur tous les appareils.",
       "download": "Télécharger ComfyUI",
@@ -432,6 +439,7 @@
     "Expand": "Développer",
     "Expand Node": "Développer le nœud",
     "Extensions": "Extensions",
+    "FavoriteWidget": "Ajouter aux favoris",
     "Horizontal": "Horizontal",
     "Inputs": "Entrées",
     "Left": "Gauche",
@@ -462,6 +470,7 @@
     "Shapes": "Formes",
     "Title": "Titre",
     "Top": "Haut",
+    "UnfavoriteWidget": "Retirer des favoris",
     "Unpack Subgraph": "Décompresser le sous-graphe",
     "Unpin": "Désépingler",
     "Vertical": "Vertical",
@@ -565,6 +574,8 @@
     "LUMA_REF": "Référence Luma",
     "MASK": "MASQUE",
     "MESH": "MAILLAGE",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "MODÈLE",
     "MODEL_PATCH": "PATCH_MODÈLE",
     "MODEL_TASK_ID": "ID_TÂCHE_MODÈLE",
@@ -653,6 +664,7 @@
     "amount": "Quantité",
     "apply": "Appliquer",
     "architecture": "Architecture",
+    "asset": "{count} ressources | {count} ressource | {count} ressources",
     "audioFailedToLoad": "Échec du chargement de l'audio",
     "audioProgress": "Progression audio",
     "author": "Auteur",
@@ -842,6 +854,7 @@
     "releaseTitle": "Publication de {package} {version}",
     "reloadToApplyChanges": "Recharger pour appliquer les modifications",
     "removeImage": "Supprimer l'image",
+    "removeTag": "Supprimer le tag",
     "removeVideo": "Supprimer la vidéo",
     "rename": "Renommer",
     "reportIssue": "Envoyer le rapport",
@@ -975,6 +988,11 @@
   "imageCompare": {
     "noImages": "Aucune image à comparer"
   },
+  "imageCrop": {
+    "cropPreviewAlt": "Aperçu du recadrage",
+    "loading": "Chargement...",
+    "noInputImage": "Aucune image d'entrée connectée"
+  },
   "importFailed": {
     "copyError": "Erreur de copie",
     "title": "Échec de l’importation"
@@ -1097,8 +1115,14 @@
     "helpFix": "Aidez à résoudre cela"
   },
   "linearMode": {
-    "openWorkflow": "Ouvrir le flux de travail",
-    "share": "Partager"
+    "beta": "Bêta - Donnez votre avis",
+    "downloadAll": "Tout télécharger",
+    "dragAndDropImage": "Glissez-déposez une image",
+    "graphMode": "Mode graphique",
+    "linearMode": "Mode simple",
+    "rerun": "Relancer",
+    "reuseParameters": "Réutiliser les paramètres",
+    "runCount": "Nombre d’exécutions :"
   },
   "load3d": {
     "applyingTexture": "Application de la texture...",
@@ -1352,11 +1376,11 @@
   },
   "mediaAsset": {
     "actions": {
-      "addToWorkflow": "Ajouter au flux de travail actuel",
       "copyJobId": "Copier l’ID de tâche",
       "delete": "Supprimer",
       "download": "Télécharger",
       "exportWorkflow": "Exporter le flux de travail",
+      "insertAsNodeInWorkflow": "Insérer comme nœud dans le workflow",
       "inspect": "Inspecter l’actif",
       "more": "Plus d’options",
       "moreOptions": "Plus d’options",
@@ -1392,10 +1416,22 @@
       "downloadSelectedAll": "Tout télécharger",
       "downloadStarted": "Téléchargement de {count} fichier(s)...",
       "downloadsStarted": "Début du téléchargement de {count} fichier(s)",
+      "exportWorkflowAll": "Exporter tous les workflows",
+      "failedToAddNodes": "Échec de l’ajout des nœuds au workflow",
       "failedToDeleteAssets": "Échec de la suppression des éléments sélectionnés",
+      "insertAllAssetsAsNodes": "Insérer toutes les ressources comme nœuds",
       "multipleSelectedAssets": "Plusieurs ressources sélectionnées",
+      "noWorkflowsFound": "Aucune donnée de workflow trouvée dans les ressources sélectionnées",
+      "noWorkflowsToExport": "Aucune donnée de workflow à exporter",
+      "nodesAddedToWorkflow": "{count} nœud(s) ajouté(s) au workflow",
+      "openWorkflowAll": "Ouvrir tous les workflows",
+      "partialAddNodesSuccess": "{succeeded} ajouté(s) avec succès, {failed} échec(s)",
       "partialDeleteSuccess": "{succeeded} supprimé(s) avec succès, {failed} échec(s)",
-      "selectedCount": "Éléments sélectionnés : {count}"
+      "partialWorkflowsExported": "{succeeded} exporté(s) avec succès, {failed} échec(s)",
+      "partialWorkflowsOpened": "{succeeded} workflow(s) ouvert(s), {failed} échec(s)",
+      "selectedCount": "Éléments sélectionnés : {count}",
+      "workflowsExported": "{count} workflow(s) exporté(s) avec succès",
+      "workflowsOpened": "{count} workflow(s) ouvert(s) dans de nouveaux onglets"
     },
     "unsupportedFileType": "Type de fichier non pris en charge pour le nœud de chargement",
     "workflowExportedSuccessfully": "Flux de travail exporté avec succès",
@@ -1537,6 +1573,7 @@
     "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
     "Toggle Queue Panel V2": "Basculer le panneau de file d’attente V2",
     "Toggle Search Box": "Basculer la boîte de recherche",
+    "Toggle Simple Mode": "Basculer en mode simple",
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
     "Toggle View Controls Bottom Panel": "Basculer le panneau inférieur des contrôles d’affichage",
@@ -1551,8 +1588,7 @@
     "Workflows": "Flux de travail",
     "Zoom In": "Zoom avant",
     "Zoom Out": "Zoom arrière",
-    "Zoom to fit": "Ajuster à l'écran",
-    "toggle linear mode": "basculer en mode linéaire"
+    "Zoom to fit": "Ajuster à l'écran"
   },
   "minimap": {
     "nodeColors": "Couleurs des nœuds",
@@ -1592,6 +1628,7 @@
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
@@ -1786,22 +1823,58 @@
     "whatsNew": "Quoi de neuf ?"
   },
   "rightSidePanel": {
+    "addFavorite": "Favori",
+    "advancedInputs": "ENTRÉES AVANCÉES",
     "bypass": "Contourner",
     "color": "Couleur du nœud",
+    "fallbackGroupTitle": "Groupe",
+    "fallbackNodeTitle": "Nœud",
+    "favorites": "ENTRÉES FAVORITES",
+    "favoritesNone": "AUCUNE ENTRÉE FAVORITE",
+    "favoritesNoneDesc": "Les entrées que vous ajoutez en favori apparaîtront ici",
+    "favoritesNoneTooltip": "Étoilez les widgets pour y accéder rapidement sans sélectionner de nœud",
+    "globalSettings": {
+      "canvas": "CANEVA",
+      "connectionLinks": "LIENS DE CONNEXION",
+      "gridSpacing": "Espacement de la grille",
+      "linkShape": "Forme du lien",
+      "nodes": "NŒUDS",
+      "nodes2": "Nœuds 2.0",
+      "searchPlaceholder": "Rechercher dans les paramètres rapides...",
+      "showAdvanced": "Afficher les paramètres avancés",
+      "showAdvancedTooltip": "Ceci est un paramètre important qui, lorsqu’il est activé, affiche tous les paramètres avancés des nœuds",
+      "showConnectedLinks": "Afficher les liens connectés",
+      "showInfoBadges": "Afficher les badges d’information",
+      "showToolbox": "Afficher la boîte à outils à la sélection",
+      "snapNodesToGrid": "Aligner les nœuds sur la grille",
+      "title": "Paramètres globaux",
+      "viewAllSettings": "Voir tous les paramètres"
+    },
+    "groupSettings": "Paramètres du groupe",
+    "groups": "Groupes",
+    "hideInput": "Masquer l’entrée",
     "info": "Infos",
     "inputs": "ENTRÉES",
     "inputsNone": "AUCUNE ENTRÉE",
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
+    "locateNode": "Localiser le nœud sur le canevas",
     "mute": "Muet",
     "noSelection": "Sélectionnez un nœud pour voir ses propriétés et informations.",
     "nodeState": "État du nœud",
+    "nodes": "Nœuds",
+    "nodesNoneDesc": "AUCUN NŒUD",
+    "noneSearchDesc": "Aucun élément ne correspond à votre recherche",
     "normal": "Normal",
     "parameters": "Paramètres",
     "pinned": "Épinglé",
     "properties": "Propriétés",
+    "removeFavorite": "Retirer des favoris",
     "settings": "Paramètres",
+    "showAdvancedInputsButton": "Afficher les entrées avancées",
+    "showInput": "Afficher l’entrée",
     "title": "Aucun nœud sélectionné | 1 nœud sélectionné | {count} nœuds sélectionnés",
-    "togglePanel": "Afficher/masquer le panneau des propriétés"
+    "togglePanel": "Afficher/masquer le panneau des propriétés",
+    "workflowOverview": "Aperçu du workflow"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Contourner les nœuds de groupe",
@@ -2513,6 +2586,21 @@
     "enterFilename": "Entrez le nom du fichier",
     "exportWorkflow": "Exporter le flux de travail",
     "saveWorkflow": "Enregistrer le flux de travail"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "Vous avez des modifications non enregistrées. Voulez-vous les abandonner et changer d’espace de travail ?",
+      "title": "Modifications non enregistrées"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "Vous n’avez pas accès à cet espace de travail",
+      "invalidFirebaseToken": "Échec de l’authentification. Veuillez vous reconnecter.",
+      "notAuthenticated": "Vous devez être connecté pour accéder aux espaces de travail",
+      "tokenExchangeFailed": "Échec de l’authentification avec l’espace de travail : {error}",
+      "workspaceNotFound": "Espace de travail introuvable"
+    }
   },
   "zoomControls": {
     "hideMinimap": "Masquer la mini-carte",

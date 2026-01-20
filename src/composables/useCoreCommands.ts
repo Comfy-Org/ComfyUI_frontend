@@ -1234,7 +1234,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
-      label: 'toggle linear mode',
+      label: 'Toggle Simple Mode',
       function: () => {
         const newMode = !canvasStore.linearMode
         app.rootGraph.extra.linearMode = newMode

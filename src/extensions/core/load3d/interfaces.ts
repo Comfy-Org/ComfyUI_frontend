@@ -47,8 +47,8 @@ export interface LightConfig {
   intensity: number
 }
 
-export interface EventCallback {
-  (data?: any): void
+export interface EventCallback<T = unknown> {
+  (data: T): void
 }
 
 export interface Load3DOptions {
@@ -128,9 +128,9 @@ export interface ViewHelperManagerInterface extends BaseManager {
 }
 
 export interface EventManagerInterface {
-  addEventListener(event: string, callback: EventCallback): void
-  removeEventListener(event: string, callback: EventCallback): void
-  emitEvent(event: string, data?: any): void
+  addEventListener<T>(event: string, callback: EventCallback<T>): void
+  removeEventListener<T>(event: string, callback: EventCallback<T>): void
+  emitEvent<T>(event: string, data: T): void
 }
 
 export interface AnimationManagerInterface extends BaseManager {
@@ -141,7 +141,10 @@ export interface AnimationManagerInterface extends BaseManager {
   isAnimationPlaying: boolean
   animationSpeed: number
 
-  setupModelAnimations(model: THREE.Object3D, originalModel: any): void
+  setupModelAnimations(
+    model: THREE.Object3D,
+    originalModel: THREE.Object3D | THREE.BufferGeometry | GLTF | null
+  ): void
   updateAnimationList(): void
   setAnimationSpeed(speed: number): void
   updateSelectedAnimation(index: number): void

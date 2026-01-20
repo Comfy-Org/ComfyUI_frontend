@@ -3,6 +3,13 @@
   "short_name": "ComfyUI",
   "description": "ComfyUI: AI image generation platform",
   "start_url": "/",
+  "icons": [
+    {
+      "src": "/assets/images/comfy-logo-single.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000"

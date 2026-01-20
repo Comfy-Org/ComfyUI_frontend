@@ -139,7 +139,15 @@ import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import type { Ref } from 'vue'
-import { computed, h, nextTick, onMounted, ref, render } from 'vue'
+import {
+  computed,
+  getCurrentInstance,
+  h,
+  nextTick,
+  onMounted,
+  ref,
+  render
+} from 'vue'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import type { SearchFilter } from '@/components/common/SearchFilterChip.vue'
@@ -171,6 +179,8 @@ import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeBookmarkTreeExplorer from './nodeLibrary/NodeBookmarkTreeExplorer.vue'
 
+const instance = getCurrentInstance()!
+const appContext = instance.appContext
 const nodeDefStore = useNodeDefStore()
 const nodeBookmarkStore = useNodeBookmarkStore()
 const nodeHelpStore = useNodeHelpStore()
@@ -272,6 +282,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       draggable: node.leaf,
       renderDragPreview(container) {
         const vnode = h(NodePreview, { nodeDef: node.data })
+        vnode.appContext = appContext
         render(vnode, container)
         return () => {
           render(null, container)
