@@ -1,5 +1,6 @@
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import type { ImageRef } from '@/stores/maskEditorDataStore'
 
 interface UploadInput {
   source: File | Blob | string
@@ -14,10 +15,10 @@ interface UploadConfig {
   maxSizeMB?: number
 }
 
-interface ImageRef {
-  filename: string
-  subfolder: string
-  type: string
+interface UploadApiResponse {
+  name: string
+  subfolder?: string
+  type?: string
 }
 
 interface UploadResult {
@@ -26,7 +27,11 @@ interface UploadResult {
   name: string
   subfolder: string
   error?: string
-  response: any
+  response: UploadApiResponse | null
+}
+
+function isDataURL(str: string): boolean {
+  return typeof str === 'string' && str.startsWith('data:')
 }
 
 async function convertToFile(
@@ -45,9 +50,19 @@ async function convertToFile(
   }
 
   // dataURL string
-  const blob = await fetch(source).then((r) => r.blob())
-  const name = filename || `upload-${Date.now()}.png`
-  return new File([blob], name, { type: mimeType })
+  if (!isDataURL(source)) {
+    throw new Error(`Invalid data URL: ${source.substring(0, 50)}...`)
+  }
+
+  try {
+    const blob = await fetch(source).then((r) => r.blob())
+    const name = filename || `upload-${Date.now()}.png`
+    return new File([blob], name, { type: mimeType })
+  } catch (error) {
+    throw new Error(
+      `Failed to convert data URL to file: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
 }
 
 function validateFileSize(file: File, maxSizeMB?: number): string | null {
@@ -110,7 +125,7 @@ export async function uploadMedia(
       }
     }
 
-    const data = await resp.json()
+    const data: UploadApiResponse = await resp.json()
     const path = data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 
     return {
