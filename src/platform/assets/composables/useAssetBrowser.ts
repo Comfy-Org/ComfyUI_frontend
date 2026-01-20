@@ -233,7 +233,11 @@ export function useAssetBrowser(
     fuseOptions: {
       keys: [
         { name: 'name', weight: 0.4 },
-        { name: 'tags', weight: 0.3 }
+        { name: 'tags', weight: 0.3 },
+        { name: 'user_metadata.name', weight: 0.4 },
+        { name: 'user_metadata.additional_tags', weight: 0.3 },
+        { name: 'user_metadata.trained_words', weight: 0.3 },
+        { name: 'user_metadata.user_description', weight: 0.3 }
       ],
       threshold: 0.4, // Higher threshold for typo tolerance (0.0 = exact, 1.0 = match all)
       ignoreLocation: true, // Search anywhere in the string, not just at the beginning
