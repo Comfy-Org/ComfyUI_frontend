@@ -132,7 +132,7 @@ function onCustomIntCreated(this: LGraphNode) {
       valueWidget.callback?.(valueWidget.value)
     }
   })
-  Object.defineProperty(valueWidget.options, 'step', {
+  Object.defineProperty(valueWidget.options, 'step2', {
     get: () => this.properties.step ?? 1,
     set: (v) => {
       this.properties.step = v
