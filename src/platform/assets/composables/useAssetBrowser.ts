@@ -14,7 +14,7 @@ import {
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
-export type OwnershipOption = 'all' | 'my-models' | 'public-models'
+type OwnershipOption = 'all' | 'my-models' | 'public-models'
 
 type NavId = 'all' | 'imported' | (string & {})
 
@@ -95,8 +95,7 @@ export function useAssetBrowser(
   const filters = ref<FilterState>({
     sortBy: 'recent',
     fileFormats: [],
-    baseModels: [],
-    ownership: 'all'
+    baseModels: []
   })
 
   const selectedOwnership = computed<OwnershipOption>(() => {

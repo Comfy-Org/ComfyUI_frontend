@@ -49,7 +49,6 @@
     <template #contentFilter>
       <AssetFilterBar
         :assets="categoryFilteredAssets"
-        :all-assets="fetchedAssets"
         @filter-change="updateFilters"
       />
     </template>
@@ -59,6 +58,7 @@
         :assets="filteredAssets"
         :loading="isLoading"
         :focused-asset-id="focusedAsset?.id"
+        :empty-message
         @asset-focus="handleAssetFocus"
         @asset-blur="focusedAsset = null"
         @asset-select="handleAssetSelectAndEmit"
@@ -164,6 +164,7 @@ const {
   navItems,
   categoryFilteredAssets,
   filteredAssets,
+  isImportedSelected,
   updateFilters
 } = useAssetBrowser(fetchedAssets)
 
@@ -204,6 +205,14 @@ const displayTitle = computed(() => {
 
 const shouldShowLeftPanel = computed(() => {
   return props.showLeftPanel ?? true
+})
+
+const emptyMessage = computed(() => {
+  if (!isImportedSelected.value) return undefined
+
+  return isUploadButtonEnabled.value
+    ? t('assetBrowser.emptyImported.canImport')
+    : t('assetBrowser.emptyImported.restricted')
 })
 
 function handleClose() {

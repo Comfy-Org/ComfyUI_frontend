@@ -86,10 +86,6 @@ function findBaseModelsFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
   return wrapper.findComponent('[data-component-id="asset-filter-base-models"]')
 }
 
-function findOwnershipFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
-  return wrapper.findComponent('[data-component-id="asset-filter-ownership"]')
-}
-
 function findSortFilter(wrapper: ReturnType<typeof mountAssetFilterBar>) {
   return wrapper.findComponent('[data-component-id="asset-filter-sort"]')
 }
@@ -267,91 +263,6 @@ describe('AssetFilterBar', () => {
 
       expect(fileFormatSelect.exists()).toBe(false)
       expect(baseModelSelect.exists()).toBe(false)
-    })
-
-    it('hides ownership filter when no mutable assets', () => {
-      const assets = [
-        createAssetWithSpecificExtension('safetensors', true) // immutable
-      ]
-      const wrapper = mountAssetFilterBar({ assets })
-
-      const ownershipSelect = findOwnershipFilter(wrapper)
-      expect(ownershipSelect.exists()).toBe(false)
-    })
-
-    it('shows ownership filter when mutable assets exist', () => {
-      const assets = [
-        createAssetWithSpecificExtension('safetensors', false) // mutable
-      ]
-      const wrapper = mountAssetFilterBar({ assets })
-
-      const ownershipSelect = findOwnershipFilter(wrapper)
-      expect(ownershipSelect.exists()).toBe(true)
-    })
-
-    it('shows ownership filter when mixed assets exist', () => {
-      const assets = [
-        createAssetWithSpecificExtension('safetensors', true), // immutable
-        createAssetWithSpecificExtension('ckpt', false) // mutable
-      ]
-      const wrapper = mountAssetFilterBar({ assets })
-
-      const ownershipSelect = findOwnershipFilter(wrapper)
-      expect(ownershipSelect.exists()).toBe(true)
-    })
-
-    it('shows ownership filter with allAssets when provided', () => {
-      const assets = [
-        createAssetWithSpecificExtension('safetensors', true) // immutable
-      ]
-      const allAssets = [
-        createAssetWithSpecificExtension('safetensors', true), // immutable
-        createAssetWithSpecificExtension('ckpt', false) // mutable
-      ]
-      const wrapper = mountAssetFilterBar({ assets, allAssets })
-
-      const ownershipSelect = findOwnershipFilter(wrapper)
-      expect(ownershipSelect.exists()).toBe(true)
-    })
-  })
-
-  describe('Ownership Filter', () => {
-    it('emits ownership filter changes', async () => {
-      const assets = [
-        createAssetWithSpecificExtension('safetensors', false) // mutable
-      ]
-      const wrapper = mountAssetFilterBar({ assets })
-
-      const ownershipSelect = findOwnershipFilter(wrapper)
-      expect(ownershipSelect.exists()).toBe(true)
-
-      const ownershipSelectElement = ownershipSelect.find('select')
-      ownershipSelectElement.element.value = 'my-models'
-      await ownershipSelectElement.trigger('change')
-      await nextTick()
-
-      const emitted = wrapper.emitted('filterChange')
-      expect(emitted).toBeTruthy()
-
-      const filterState = emitted![emitted!.length - 1][0] as FilterState
-      expect(filterState.ownership).toBe('my-models')
-    })
-
-    it('ownership filter defaults to "all"', async () => {
-      const assets = [
-        createAssetWithSpecificExtension('safetensors', false) // mutable
-      ]
-      const wrapper = mountAssetFilterBar({ assets })
-
-      const sortSelect = findSortFilter(wrapper)
-      const sortSelectElement = sortSelect.find('select')
-      sortSelectElement.element.value = 'recent'
-      await sortSelectElement.trigger('change')
-      await nextTick()
-
-      const emitted = wrapper.emitted('filterChange')
-      const filterState = emitted![0][0] as FilterState
-      expect(filterState.ownership).toBe('all')
     })
   })
 })
