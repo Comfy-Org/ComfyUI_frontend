@@ -21,7 +21,8 @@ export type NodeWidgetsListList = Array<{
   widgets: NodeWidgetsList
 }>
 
-type WidgetSearchItem<T extends { widget: IBaseWidget }> = T & {
+interface WidgetSearchItem {
+  index: number
   searchableLabel: string
   searchableName: string
   searchableType: string
@@ -41,20 +42,18 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
     return list
   }
 
-  const searchableToOriginal = new Map<WidgetSearchItem<T[number]>, T[number]>()
-  const searchableList: WidgetSearchItem<T[number]>[] = list.map((item) => {
+  const searchableList: WidgetSearchItem[] = list.map((item, index) => {
     const searchableItem = {
-      ...item,
+      index,
       searchableLabel: item.widget.label?.toLowerCase() || '',
       searchableName: item.widget.name.toLowerCase(),
       searchableType: item.widget.type.toLowerCase(),
       searchableValue: item.widget.value?.toString().toLowerCase() || ''
     }
-    searchableToOriginal.set(searchableItem, item)
     return searchableItem
   })
 
-  const fuseOptions: IFuseOptions<WidgetSearchItem<T[number]>> = {
+  const fuseOptions: IFuseOptions<WidgetSearchItem> = {
     keys: [
       { name: 'searchableName', weight: 0.4 },
       { name: 'searchableLabel', weight: 0.3 },
@@ -68,7 +67,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
   const results = fuse.search(query.trim())
 
   const matchedItems = new Set(
-    results.map((result) => searchableToOriginal.get(result.item)!)
+    results.map((result) => list[result.item.index]!)
   )
 
   return list.filter((item) => matchedItems.has(item)) as T
