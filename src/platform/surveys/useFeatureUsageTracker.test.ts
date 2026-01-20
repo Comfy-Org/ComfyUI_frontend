@@ -94,16 +94,20 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('persists to localStorage', async () => {
-    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
-    const { trackUsage } = useFeatureUsageTracker('persisted-feature')
+    vi.useFakeTimers()
+    try {
+      const { useFeatureUsageTracker } =
+        await import('./useFeatureUsageTracker')
+      const { trackUsage } = useFeatureUsageTracker('persisted-feature')
 
-    trackUsage()
+      trackUsage()
+      await vi.runAllTimersAsync()
 
-    // useStorage flushes async, wait a tick
-    await new Promise((r) => setTimeout(r, 0))
-
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
-    expect(stored['persisted-feature']?.useCount).toBe(1)
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+      expect(stored['persisted-feature']?.useCount).toBe(1)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('loads existing data from localStorage', async () => {
