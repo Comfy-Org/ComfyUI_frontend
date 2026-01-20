@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed, onErrorCaptured, ref, toValue } from 'vue'
+import { computed, onErrorCaptured, provide, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
@@ -77,6 +77,7 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
@@ -88,7 +89,12 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { app } from '@/scripts/app'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
+import {
+  getLocatorIdFromNodeData,
+  getNodeByLocatorId
+} from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
@@ -102,6 +108,18 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
+
+// Get the actual LGraphNode for providing to child components
+const lgraphNode = computed((): LGraphNode | null => {
+  if (!nodeData) return null
+  const locatorId = getLocatorIdFromNodeData(nodeData)
+  const graph = app.rootGraph
+  if (!graph) return null
+  return getNodeByLocatorId(graph, locatorId) ?? null
+})
+
+// Provide node to child components for accessing advanced overrides
+provide<LGraphNode | null>('node', lgraphNode.value)
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -174,7 +192,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       label: widget.label,
       nodeType: widget.nodeType,
       options: widgetOptions,
-      spec: widget.spec
+      spec: widget.spec,
+      advanced: widget.options?.advanced,
+      hidden: widget.options?.hidden
     }
 
     function updateHandler(value: WidgetValue) {

@@ -52,6 +52,12 @@ export interface SimplifiedWidget<
 
   borderStyle?: string
 
+  /** Whether this is an advanced widget */
+  advanced?: boolean
+
+  /** Whether this widget is hidden */
+  hidden?: boolean
+
   /** Callback fired when value changes */
   callback?: (value: T) => void
 
