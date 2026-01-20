@@ -401,7 +401,7 @@ function addAutogrowGroup(
       node.inputs,
       (inp) => inp.name === newInput.name
     )) {
-      //NOTE: link.target_slot is updated on spliceInputCall
+      //NOTE: link.target_slot is updated on spliceInputs call
       newInput.link ??= existingInput.link
     }
   }

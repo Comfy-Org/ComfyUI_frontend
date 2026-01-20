@@ -65,13 +65,9 @@ const slotClass = computed(() =>
     <div
       v-if="types.length === 1 && slotData?.shape == undefined"
       ref="slot-el"
+      :style="{ backgroundColor: types.length === 1 ? types[0] : undefined }"
       :class="slotClass"
-    >
-      <div
-        :style="{ backgroundColor: types.length === 1 ? types[0] : undefined }"
-        class="size-full rounded-full"
-      />
-    </div>
+    />
     <svg
       v-else
       ref="slot-el"
