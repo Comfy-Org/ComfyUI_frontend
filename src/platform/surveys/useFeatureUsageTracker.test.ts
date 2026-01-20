@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const STORAGE_KEY = 'comfy.featureUsage'
+const STORAGE_KEY = 'Comfy.FeatureUsage'
 
 describe('useFeatureUsageTracker', () => {
   beforeEach(() => {

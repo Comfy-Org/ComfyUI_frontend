@@ -9,7 +9,7 @@ interface FeatureUsage {
 
 type FeatureUsageRecord = Record<string, FeatureUsage>
 
-const STORAGE_KEY = 'comfy.featureUsage'
+const STORAGE_KEY = 'Comfy.FeatureUsage'
 
 /**
  * Tracks feature usage for survey eligibility.
