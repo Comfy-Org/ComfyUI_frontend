@@ -212,6 +212,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
@@ -256,6 +257,7 @@ interface JobOutputItem {
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
+const { activeJobsCount } = storeToRefs(queueStore)
 const settingStore = useSettingStore()
 
 const activeTab = ref<'input' | 'output'>('output')
@@ -301,9 +303,6 @@ const formattedExecutionTime = computed(() => {
 })
 
 const queuedCount = computed(() => queueStore.pendingTasks.length)
-const activeJobsCount = computed(
-  () => queueStore.pendingTasks.length + queueStore.runningTasks.length
-)
 const activeJobsLabel = computed(() => {
   const count = activeJobsCount.value
   return t(
