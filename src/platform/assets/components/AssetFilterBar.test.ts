@@ -70,14 +70,7 @@ function mountAssetFilterBar(props = {}) {
   return mount(AssetFilterBar, {
     props,
     global: {
-function mountAssetFilterBar(props = {}) {
-  return mount(AssetFilterBar, {
-    props,
-    global: {
       plugins: [i18n]
-    }
-  })
-}
     }
   })
 }
