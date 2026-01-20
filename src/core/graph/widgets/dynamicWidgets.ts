@@ -1,4 +1,5 @@
 import { remove } from 'es-toolkit'
+import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type {
@@ -342,8 +343,9 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   //ensure outputs get updated
   const index = node.inputs.length - 1
   requestAnimationFrame(() => {
-    const input = node.inputs.at(index)
+    const input = node.inputs[index]
     if (!input) return
+    node.inputs[index] = shallowReactive(input)
     node.onConnectionsChange?.(
       LiteGraph.INPUT,
       index,
