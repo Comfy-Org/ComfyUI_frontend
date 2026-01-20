@@ -9,16 +9,24 @@ const canvasStore = useCanvasStore()
 <template>
   <div class="p-1 bg-secondary-background rounded-lg w-10">
     <Button
+      v-tooltip="{
+        value: t('linearMode.linearMode'),
+        showDelay: 300,
+        hideDelay: 300
+      }"
       size="icon"
-      :title="t('linearMode.linearMode')"
       :variant="canvasStore.linearMode ? 'inverted' : 'secondary'"
       @click="useCommandStore().execute('Comfy.ToggleLinear')"
     >
       <i class="icon-[lucide--panels-top-left]" />
     </Button>
     <Button
+      v-tooltip="{
+        value: t('linearMode.graphMode'),
+        showDelay: 300,
+        hideDelay: 300
+      }"
       size="icon"
-      :title="t('linearMode.graphMode')"
       :variant="canvasStore.linearMode ? 'secondary' : 'inverted'"
       @click="useCommandStore().execute('Comfy.ToggleLinear')"
     >
