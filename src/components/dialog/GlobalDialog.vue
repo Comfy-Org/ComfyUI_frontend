@@ -57,11 +57,12 @@ function handleEscapeKey(event: KeyboardEvent) {
   const activeDialog = dialogStore.dialogStack.find(
     (d) => d.key === dialogStore.activeKey
   )
-  if (!activeDialog?.dialogComponentProps.closable) return
+  if (!activeDialog || activeDialog.dialogComponentProps.closable === false)
+    return
 
   event.stopImmediatePropagation()
   event.preventDefault()
-  dialogStore.closeDialog({ key: dialogStore.activeKey! })
+  dialogStore.closeDialog({ key: activeDialog.key })
 }
 
 useEventListener(document, 'keydown', handleEscapeKey, { capture: true })
