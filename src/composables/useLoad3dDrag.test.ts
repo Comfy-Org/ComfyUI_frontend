@@ -34,7 +34,7 @@ function createMockDragEvent(
 }
 
 describe('useLoad3dDrag', () => {
-  let mockToastStore: any
+  let mockToastStore: ReturnType<typeof useToastStore>
   let mockOnModelDrop: (file: File) => void | Promise<void>
 
   beforeEach(() => {
@@ -42,7 +42,9 @@ describe('useLoad3dDrag', () => {
 
     mockToastStore = {
       addAlert: vi.fn()
-    }
+    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
+      typeof useToastStore
+    >
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
 
     mockOnModelDrop = vi.fn()
