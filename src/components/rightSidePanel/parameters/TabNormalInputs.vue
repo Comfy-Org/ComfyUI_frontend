@@ -117,7 +117,7 @@ const advancedLabel = computed(() => {
       class="border-b border-interface-stroke"
     />
   </TransitionGroup>
-  <template v-if="advancedWidgetsSectionDataList.length > 0">
+  <template v-if="advancedWidgetsSectionDataList.length > 0 && !isSearching">
     <SectionWidgets
       v-for="{ widgets, node } in advancedWidgetsSectionDataList"
       :key="`advanced-${node.id}`"
