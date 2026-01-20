@@ -59,21 +59,25 @@ describe('workflowSessionStorageService', () => {
     })
 
     it('returns false after max eviction attempts', () => {
-      vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
+      const spy = vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
         throw new DOMException('Quota exceeded', 'QuotaExceededError')
       })
 
       const result = setWithEviction('key', { test: 'data' })
       expect(result).toBe(false)
+
+      spy.mockRestore()
     })
 
     it('returns false on unexpected errors', () => {
-      vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
+      const spy = vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
         throw new Error('Unexpected error')
       })
 
       const result = setWithEviction('key', { test: 'data' })
       expect(result).toBe(false)
+
+      spy.mockRestore()
     })
   })
 
