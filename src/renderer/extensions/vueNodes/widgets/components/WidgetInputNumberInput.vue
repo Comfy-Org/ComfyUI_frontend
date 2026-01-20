@@ -159,14 +159,15 @@ function handleMouseMove(e: PointerEvent) {
 function handleMouseUp() {
   const newValue = dragValue.value
   if (newValue === undefined) return
-  modelValue.value = newValue
-  dragValue.value = undefined
 
-  if (dragDelta.value === 0) {
+  if (newValue === modelValue.value) {
     textEdit.value = true
     inputField.value?.focus()
     inputField.value?.setSelectionRange(0, -1)
   }
+
+  modelValue.value = newValue
+  dragValue.value = undefined
   dragDelta.value = 0
 }
 
