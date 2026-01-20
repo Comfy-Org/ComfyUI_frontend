@@ -1,0 +1,117 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const STORAGE_KEY = 'comfy.featureUsage'
+
+describe('useFeatureUsageTracker', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.resetModules()
+  })
+
+  afterEach(() => {
+    localStorage.clear()
+  })
+
+  it('initializes with zero count for new feature', async () => {
+    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
+    const { useCount } = useFeatureUsageTracker('test-feature')
+
+    expect(useCount.value).toBe(0)
+  })
+
+  it('increments count on trackUsage', async () => {
+    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
+    const { useCount, trackUsage } = useFeatureUsageTracker('test-feature')
+
+    expect(useCount.value).toBe(0)
+
+    trackUsage()
+    expect(useCount.value).toBe(1)
+
+    trackUsage()
+    expect(useCount.value).toBe(2)
+  })
+
+  it('sets firstUsed only on first use', async () => {
+    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
+    const { usage, trackUsage } = useFeatureUsageTracker('test-feature')
+
+    const beforeFirst = Date.now()
+    trackUsage()
+    const afterFirst = Date.now()
+
+    const firstUsed = usage.value?.firstUsed ?? 0
+    expect(firstUsed).toBeGreaterThanOrEqual(beforeFirst)
+    expect(firstUsed).toBeLessThanOrEqual(afterFirst)
+
+    trackUsage()
+    expect(usage.value?.firstUsed).toBe(firstUsed)
+  })
+
+  it('updates lastUsed on each use', async () => {
+    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
+    const { usage, trackUsage } = useFeatureUsageTracker('test-feature')
+
+    trackUsage()
+    const firstLastUsed = usage.value?.lastUsed ?? 0
+
+    await new Promise((r) => setTimeout(r, 10))
+    trackUsage()
+
+    expect(usage.value?.lastUsed).toBeGreaterThan(firstLastUsed)
+  })
+
+  it('reset clears feature data', async () => {
+    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
+    const { useCount, trackUsage, reset } =
+      useFeatureUsageTracker('test-feature')
+
+    trackUsage()
+    trackUsage()
+    expect(useCount.value).toBe(2)
+
+    reset()
+    expect(useCount.value).toBe(0)
+  })
+
+  it('tracks multiple features independently', async () => {
+    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
+    const featureA = useFeatureUsageTracker('feature-a')
+    const featureB = useFeatureUsageTracker('feature-b')
+
+    featureA.trackUsage()
+    featureA.trackUsage()
+    featureB.trackUsage()
+
+    expect(featureA.useCount.value).toBe(2)
+    expect(featureB.useCount.value).toBe(1)
+  })
+
+  it('persists to localStorage', async () => {
+    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
+    const { trackUsage } = useFeatureUsageTracker('persisted-feature')
+
+    trackUsage()
+
+    // useStorage flushes async, wait a tick
+    await new Promise((r) => setTimeout(r, 0))
+
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    expect(stored['persisted-feature']?.useCount).toBe(1)
+  })
+
+  it('loads existing data from localStorage', async () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        'existing-feature': { useCount: 5, firstUsed: 1000, lastUsed: 2000 }
+      })
+    )
+
+    vi.resetModules()
+    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
+    const { useCount } = useFeatureUsageTracker('existing-feature')
+
+    expect(useCount.value).toBe(5)
+  })
+})
