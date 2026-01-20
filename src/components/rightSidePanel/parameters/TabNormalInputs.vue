@@ -113,11 +113,7 @@ const label = computed(() => {
       class="border-b border-interface-stroke"
     />
   </TransitionGroup>
-  <template
-    v-if="
-      advancedWidgetsSectionDataList.some(({ widgets }) => widgets.length > 0)
-    "
-  >
+  <template v-if="advancedWidgetsSectionDataList.length > 0">
     <SectionWidgets
       v-for="{ widgets, node } in advancedWidgetsSectionDataList"
       :key="`advanced-${node.id}`"
