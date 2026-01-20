@@ -39,6 +39,7 @@
       >
         <Button
           v-tooltip.bottom="$t('assetBrowser.modelInfo.title')"
+          :aria-label="$t('assetBrowser.modelInfo.title')"
           variant="secondary"
           size="sm"
           @click.stop="$emit('showInfo', asset)"
