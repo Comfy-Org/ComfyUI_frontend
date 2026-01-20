@@ -351,6 +351,10 @@
         "name": "首幀",
         "tooltip": "用於影片的首幀。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此參數僅適用於 seedance-1-5-pro，其他模型將會忽略。"
+      },
       "last_frame": {
         "name": "尾幀",
         "tooltip": "用於影片的尾幀。"
@@ -527,6 +531,10 @@
         "name": "duration",
         "tooltip": "輸出影片的持續時間（以秒為單位）。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此參數僅適用於 seedance-1-5-pro，其他模型將會忽略。"
+      },
       "image": {
         "name": "image",
         "tooltip": "用於影片的第一幀圖片。"
@@ -633,6 +641,10 @@
       "duration": {
         "name": "持續時間",
         "tooltip": "輸出影片的持續時間（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此參數僅適用於 seedance-1-5-pro，其他模型將會忽略。"
       },
       "model": {
         "name": "模型"

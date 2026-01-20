@@ -238,6 +238,12 @@
       "title": "ایجاد حساب کاربری"
     }
   },
+  "boundingBox": {
+    "height": "ارتفاع",
+    "width": "عرض",
+    "x": "ایکس",
+    "y": "وای"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "پاک‌سازی workflow",
     "deleteBlueprint": "حذف blueprint",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "تصویری برای مقایسه وجود ندارد"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "پیش‌نمایش برش",
+    "loading": "در حال بارگذاری...",
+    "noInputImage": "هیچ تصویر ورودی متصل نیست"
   },
   "importFailed": {
     "copyError": "خطا در کپی",

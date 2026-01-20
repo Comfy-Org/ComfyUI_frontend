@@ -238,6 +238,12 @@
       "title": "アカウントを作成する"
     }
   },
+  "boundingBox": {
+    "height": "高さ",
+    "width": "幅",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "ワークフローをクリア",
     "deleteBlueprint": "ブループリントを削除",
@@ -981,6 +987,11 @@
   },
   "imageCompare": {
     "noImages": "比較する画像がありません"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "切り抜きプレビュー",
+    "loading": "読み込み中...",
+    "noInputImage": "入力画像が接続されていません"
   },
   "importFailed": {
     "copyError": "コピーエラー",

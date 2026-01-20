@@ -351,6 +351,10 @@
         "name": "first_frame",
         "tooltip": "Primeiro quadro a ser usado para o vídeo."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parâmetro é ignorado para qualquer modelo, exceto seedance-1-5-pro."
+      },
       "last_frame": {
         "name": "last_frame",
         "tooltip": "Último quadro a ser usado para o vídeo."
@@ -527,6 +531,10 @@
         "name": "duração",
         "tooltip": "A duração do vídeo de saída em segundos."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parâmetro é ignorado para qualquer modelo, exceto seedance-1-5-pro."
+      },
       "image": {
         "name": "imagem",
         "tooltip": "Primeiro quadro a ser usado para o vídeo."
@@ -633,6 +641,10 @@
       "duration": {
         "name": "duration",
         "tooltip": "A duração do vídeo de saída em segundos."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parâmetro é ignorado para qualquer modelo, exceto seedance-1-5-pro."
       },
       "model": {
         "name": "model"

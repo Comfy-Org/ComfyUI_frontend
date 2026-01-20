@@ -16,8 +16,8 @@ import {
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
+import { renameWidget } from '@/utils/widgetUtil'
 
-import { renameWidget } from '../shared'
 import WidgetActions from './WidgetActions.vue'
 
 const {

@@ -21,16 +21,16 @@ function merge(
   target: Record<string, unknown>,
   source: Record<string, unknown>
 ): Record<string, unknown> {
-  if (typeof target === 'object' && typeof source === 'object') {
-    for (const key in source) {
-      const sv = source[key]
-      if (typeof sv === 'object' && sv !== null) {
-        let tv = target[key] as Record<string, unknown> | undefined
-        if (!tv) tv = target[key] = {}
-        merge(tv as Record<string, unknown>, sv as Record<string, unknown>)
-      } else {
-        target[key] = sv
+  for (const key in source) {
+    const sv = source[key]
+    if (typeof sv === 'object' && sv !== null) {
+      let tv = target[key] as Record<string, unknown> | undefined
+      if (!tv) {
+        tv = target[key] = {}
       }
+      merge(tv, sv as Record<string, unknown>)
+    } else {
+      target[key] = sv
     }
   }
 

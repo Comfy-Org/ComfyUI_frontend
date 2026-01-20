@@ -1,3 +1,5 @@
+import type { Bounds } from '@/renderer/core/layout/types'
+
 import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
@@ -55,7 +57,7 @@ interface IWidgetKnobOptions extends IWidgetOptions<number[]> {
 }
 
 export interface IWidgetAssetOptions extends IWidgetOptions {
-  openModal: () => void
+  openModal: (widget: IBaseWidget) => void
 }
 
 /**
@@ -88,6 +90,8 @@ export type IWidget =
   | ISelectButtonWidget
   | ITextareaWidget
   | IAssetWidget
+  | IImageCropWidget
+  | IBoundingBoxWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
@@ -257,6 +261,18 @@ export interface IAssetWidget extends IBaseWidget<
 > {
   type: 'asset'
   value: string
+}
+
+/** Image crop widget for cropping image */
+export interface IImageCropWidget extends IBaseWidget<Bounds, 'imagecrop'> {
+  type: 'imagecrop'
+  value: Bounds
+}
+
+/** Bounding box widget for defining regions with numeric inputs */
+export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
+  type: 'boundingbox'
+  value: Bounds
 }
 
 /**
