@@ -102,16 +102,23 @@ export interface LGraphConfig {
   links_ontop?: boolean
 }
 
+export interface GroupNodeConfigEntry {
+  input?: Record<string, { name?: string; visible?: boolean }>
+  output?: Record<number, { name?: string; visible?: boolean }>
+}
+
 export interface GroupNodeWorkflowData {
   external: (number | string)[][]
   links: SerialisedLLinkArray[]
   nodes: {
     index?: number
     type?: string
+    title?: string
     inputs?: unknown[]
     outputs?: unknown[]
+    widgets_values?: unknown[]
   }[]
-  config?: Record<number, unknown>
+  config?: Record<number, GroupNodeConfigEntry>
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -2575,6 +2582,7 @@ export class Subgraph
 
     this.inputNode.configure(data.inputNode)
     this.outputNode.configure(data.outputNode)
+    for (const node of this.nodes) node.updateComputedDisabled()
   }
 
   override configure(

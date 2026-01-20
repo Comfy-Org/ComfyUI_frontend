@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import Popover from 'primevue/popover'
 import RadioButton from 'primevue/radiobutton'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ControlOptions } from '@/types/simplifiedWidget'
@@ -14,13 +13,7 @@ type ControlOption = {
   title: string
 }
 
-const popover = ref()
 const settingStore = useSettingStore()
-
-const toggle = (event: Event) => {
-  popover.value.toggle(event)
-}
-defineExpose({ toggle })
 
 const controlOptions: ControlOption[] = [
   {
@@ -57,70 +50,63 @@ const controlMode = defineModel<ControlOptions>()
 </script>
 
 <template>
-  <Popover
-    ref="popover"
-    class="bg-interface-panel-surface border border-interface-stroke rounded-lg"
-  >
-    <div class="w-113 max-w-md p-4 space-y-4">
-      <div class="text-sm text-muted-foreground leading-tight">
-        {{ $t('widgets.valueControl.header.prefix') }}
-        <span class="text-base-foreground font-medium">
-          {{
-            widgetControlMode === 'before'
-              ? $t('widgets.valueControl.header.before')
-              : $t('widgets.valueControl.header.after')
-          }}
-        </span>
-        {{ $t('widgets.valueControl.header.postfix') }}
-      </div>
+  <div class="w-113 max-w-md p-4 space-y-4">
+    <div class="text-sm text-muted-foreground leading-tight">
+      {{ $t('widgets.valueControl.header.prefix') }}
+      <span class="text-base-foreground font-medium">
+        {{
+          widgetControlMode === 'before'
+            ? $t('widgets.valueControl.header.before')
+            : $t('widgets.valueControl.header.after')
+        }}
+      </span>
+      {{ $t('widgets.valueControl.header.postfix') }}
+    </div>
 
-      <div class="space-y-2">
-        <div
-          v-for="option in controlOptions"
-          :key="option.mode"
-          class="flex items-center justify-between py-2 gap-7"
-        >
-          <div class="flex items-center gap-2 flex-1 min-w-0">
-            <div
-              class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
+    <div class="space-y-2">
+      <div
+        v-for="option in controlOptions"
+        :key="option.mode"
+        class="flex items-center justify-between py-2 gap-7"
+      >
+        <div class="flex items-center gap-2 flex-1 min-w-0">
+          <div
+            class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
+          >
+            <i
+              v-if="option.icon"
+              :class="option.icon"
+              class="text-base text-base-foreground"
+            />
+            <span
+              v-if="option.text"
+              class="text-xs font-normal text-base-foreground"
             >
-              <i
-                v-if="option.icon"
-                :class="option.icon"
-                class="text-base text-base-foreground"
-              />
-              <span
-                v-if="option.text"
-                class="text-xs font-normal text-base-foreground"
-              >
-                {{ option.text }}
-              </span>
-            </div>
-
-            <div class="flex flex-col gap-0.5 min-w-0 flex-1">
-              <div
-                class="text-sm font-normal text-base-foreground leading-tight"
-              >
-                <span>
-                  {{ $t(`widgets.valueControl.${option.title}`) }}
-                </span>
-              </div>
-              <div
-                class="text-sm font-normal text-muted-foreground leading-tight"
-              >
-                {{ $t(`widgets.valueControl.${option.description}`) }}
-              </div>
-            </div>
+              {{ option.text }}
+            </span>
           </div>
 
-          <RadioButton
-            v-model="controlMode"
-            class="flex-shrink-0"
-            :input-id="option.mode"
-            :value="option.mode"
-          />
+          <div class="flex flex-col gap-0.5 min-w-0 flex-1">
+            <div class="text-sm font-normal text-base-foreground leading-tight">
+              <span>
+                {{ $t(`widgets.valueControl.${option.title}`) }}
+              </span>
+            </div>
+            <div
+              class="text-sm font-normal text-muted-foreground leading-tight"
+            >
+              {{ $t(`widgets.valueControl.${option.description}`) }}
+            </div>
+          </div>
         </div>
+
+        <RadioButton
+          v-model="controlMode"
+          class="flex-shrink-0"
+          :input-id="option.mode"
+          :value="option.mode"
+        />
       </div>
     </div>
-  </Popover>
+  </div>
 </template>
