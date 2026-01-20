@@ -21,8 +21,6 @@ const { t } = useI18n()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
-const advancedInputsCollapsed = ref(true)
-
 const widgetsSectionDataList = computed((): NodeWidgetsListList => {
   return nodes.map((node) => {
     const { widgets = [] } = node
@@ -117,7 +115,7 @@ const label = computed(() => {
     <SectionWidgets
       v-for="{ widgets, node } in advancedWidgetsSectionDataList"
       :key="`advanced-${node.id}`"
-      v-model:collapse="advancedInputsCollapsed"
+      :collapse="true"
       :node
       :label="t('rightSidePanel.advancedInputs')"
       :widgets
