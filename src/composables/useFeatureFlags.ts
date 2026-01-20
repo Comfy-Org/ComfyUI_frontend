@@ -95,10 +95,11 @@ export function useFeatureFlags() {
       )
     },
     get teamWorkspacesEnabled() {
-      return (
-        remoteConfig.value.team_workspaces_enabled ??
-        api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
-      )
+      return true
+      // return (
+      //   remoteConfig.value.team_workspaces_enabled ??
+      //   api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
+      // )
     }
   })
 

@@ -30,6 +30,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -57,6 +58,8 @@ export class FirebaseAuthStoreError extends Error {
 }
 
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
+  const { flags } = useFeatureFlags()
+
   // State
   const loading = ref(false)
   const currentUser = ref<User | null>(null)
@@ -172,10 +175,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    // TODO: Use remoteConfig.value.team_workspaces_enabled when backend enables the flag
-    // Currently hardcoded to match router.ts behavior
-    const teamWorkspacesEnabled = true
-    if (teamWorkspacesEnabled) {
+    if (flags.teamWorkspacesEnabled) {
       const workspaceToken = sessionStorage.getItem(
         WORKSPACE_STORAGE_KEYS.TOKEN
       )

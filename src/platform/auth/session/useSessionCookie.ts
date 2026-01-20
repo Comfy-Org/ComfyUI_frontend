@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -18,15 +19,13 @@ export const useSessionCookie = () => {
   const createSession = async (): Promise<void> => {
     if (!isCloud) return
 
+    const { flags } = useFeatureFlags()
     try {
       const authStore = useFirebaseAuthStore()
 
       let authHeader: Record<string, string>
 
-      // TODO: Use remoteConfig.value.team_workspaces_enabled when backend enables the flag
-      // Currently hardcoded to match router.ts behavior
-      const teamWorkspacesEnabled = true
-      if (teamWorkspacesEnabled) {
+      if (flags.teamWorkspacesEnabled) {
         const firebaseToken = await authStore.getIdToken()
         if (!firebaseToken) {
           console.warn(

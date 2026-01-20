@@ -184,9 +184,8 @@ if (isCloud) {
 
     // Initialize workspace context for logged-in users navigating to root
     // This must happen before the app loads to ensure workspace context is ready
-    // TODO: Use flags.teamWorkspacesEnabled when backend enables the flag
-    const teamWorkspacesEnabled = true
-    if (to.path === '/' && teamWorkspacesEnabled) {
+
+    if (to.path === '/' && flags.teamWorkspacesEnabled) {
       const { useTeamWorkspaceStore } =
         await import('@/platform/workspace/stores/teamWorkspaceStore')
       const workspaceStore = useTeamWorkspaceStore()
