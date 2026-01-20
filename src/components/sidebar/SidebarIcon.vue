@@ -22,7 +22,8 @@
           <component :is="icon" v-else-if="typeof icon === 'object'" />
           <span
             v-if="shouldShowBadge"
-            class="absolute -top-2 -right-2 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground">
+            class="absolute -top-2 -right-2 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground"
+          >
             {{ overlayValue }}
           </span>
         </div>
