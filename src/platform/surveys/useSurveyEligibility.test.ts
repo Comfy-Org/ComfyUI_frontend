@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const SURVEY_STATE_KEY = 'Comfy.SurveyState'
 const FEATURE_USAGE_KEY = 'Comfy.FeatureUsage'
-const USER_SAMPLING_ID_KEY = 'Comfy.SurveyUserId'
 
 const mockIsNightly = vi.hoisted(() => ({ value: true }))
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
@@ -260,62 +259,6 @@ describe('useSurveyEligibility', () => {
       expect(hasSeenSurvey.value).toBe(false)
       expect(isInGlobalCooldown.value).toBe(false)
       expect(hasOptedOut.value).toBe(false)
-    })
-  })
-
-  describe('sampling', () => {
-    it('creates stable user sampling ID', async () => {
-      setFeatureUsage('test-feature', 5)
-
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible } = useSurveyEligibility({
-        ...defaultConfig,
-        sampleRate: 0.5
-      })
-
-      // Access isEligible to trigger sampling check
-      void isEligible.value
-
-      const userId = localStorage.getItem(USER_SAMPLING_ID_KEY)
-      expect(userId).toBeTruthy()
-      expect(userId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-      )
-    })
-
-    it('reuses existing user sampling ID', async () => {
-      const existingId = '12345678-1234-1234-1234-123456789012'
-      localStorage.setItem(USER_SAMPLING_ID_KEY, existingId)
-      setFeatureUsage('test-feature', 5)
-
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      useSurveyEligibility({ ...defaultConfig, sampleRate: 0.5 })
-
-      expect(localStorage.getItem(USER_SAMPLING_ID_KEY)).toBe(existingId)
-    })
-
-    it('sample rate of 0 excludes all users', async () => {
-      setFeatureUsage('test-feature', 5)
-
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible } = useSurveyEligibility({
-        ...defaultConfig,
-        sampleRate: 0
-      })
-
-      expect(isEligible.value).toBe(false)
-    })
-
-    it('sample rate of 1 includes all users', async () => {
-      setFeatureUsage('test-feature', 5)
-
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible } = useSurveyEligibility({
-        ...defaultConfig,
-        sampleRate: 1
-      })
-
-      expect(isEligible.value).toBe(true)
     })
   })
 

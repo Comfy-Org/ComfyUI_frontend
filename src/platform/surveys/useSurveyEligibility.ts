@@ -8,11 +8,11 @@ import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
 /** @public */
 export interface FeatureSurveyConfig {
+  /** Feature identifier. Must remain static after initialization. */
   featureId: string
   typeformId: string
   triggerThreshold?: number
   delayMs?: number
-  sampleRate?: number
   enabled?: boolean
 }
 
@@ -26,7 +26,6 @@ const STORAGE_KEY = 'Comfy.SurveyState'
 const GLOBAL_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000 // 14 days
 const DEFAULT_THRESHOLD = 3
 const DEFAULT_DELAY_MS = 5000
-const DEFAULT_SAMPLE_RATE = 1
 
 function getStorageState() {
   return useStorage<SurveyState>(STORAGE_KEY, {
@@ -49,9 +48,6 @@ export function useSurveyEligibility(
   )
   const delayMs = computed(
     () => resolvedConfig.value.delayMs ?? DEFAULT_DELAY_MS
-  )
-  const sampleRate = computed(
-    () => resolvedConfig.value.sampleRate ?? DEFAULT_SAMPLE_RATE
   )
   const enabled = computed(() => resolvedConfig.value.enabled ?? true)
 
@@ -77,11 +73,6 @@ export function useSurveyEligibility(
     if (hasSeenSurvey.value) return false
     if (isInGlobalCooldown.value) return false
     if (hasOptedOut.value) return false
-
-    if (sampleRate.value < 1) {
-      const userId = getUserSamplingId()
-      if (!isUserInSample(userId, sampleRate.value)) return false
-    }
 
     return true
   })
@@ -115,26 +106,4 @@ export function useSurveyEligibility(
     optOut,
     resetState
   }
-}
-
-const USER_SAMPLING_ID_KEY = 'Comfy.SurveyUserId'
-
-function getUserSamplingId(): string {
-  let id = localStorage.getItem(USER_SAMPLING_ID_KEY)
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem(USER_SAMPLING_ID_KEY, id)
-  }
-  return id
-}
-
-function isUserInSample(userId: string, sampleRate: number): boolean {
-  let hash = 0
-  for (let i = 0; i < userId.length; i++) {
-    const char = userId.charCodeAt(i)
-    hash = (hash << 5) - hash + char
-    hash = hash & hash
-  }
-  const normalized = Math.abs(hash) / 0x7fffffff
-  return normalized < sampleRate
 }
