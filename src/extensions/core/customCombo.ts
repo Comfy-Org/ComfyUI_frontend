@@ -170,7 +170,16 @@ function onCustomFloatCreated(this: LGraphNode) {
       if (this.properties.step) return this.properties.step
 
       const { precision } = this.properties
-      return typeof precision === 'number' ? 10 ** precision : 1
+      return typeof precision === 'number' ? 5 * 10 ** -precision : 1
+    },
+    set: (v) => (this.properties.step = v)
+  })
+  Object.defineProperty(valueWidget.options, 'round', {
+    get: () => {
+      if (this.properties.round) return this.properties.round
+
+      const { precision } = this.properties
+      return typeof precision === 'number' ? 10 ** -precision : 0.1
     },
     set: (v) => (this.properties.step = v)
   })
