@@ -9,7 +9,8 @@ import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vu
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetBaseModels,
-  getAssetDescription
+  getAssetDescription,
+  getAssetDisplayName
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -266,7 +267,7 @@ export function useAssetBrowser(
     sortedAssets.sort((a, b) => {
       switch (filters.value.sortBy) {
         case 'name-desc':
-          return b.name.localeCompare(a.name)
+          return getAssetDisplayName(b).localeCompare(getAssetDisplayName(a))
         case 'recent':
           return (
             new Date(b.created_at ?? 0).getTime() -
@@ -274,7 +275,7 @@ export function useAssetBrowser(
           )
         case 'name-asc':
         default:
-          return a.name.localeCompare(b.name)
+          return getAssetDisplayName(a).localeCompare(getAssetDisplayName(b))
       }
     })
 
