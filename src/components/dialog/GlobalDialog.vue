@@ -6,6 +6,7 @@
     v-model:visible="item.visible"
     class="global-dialog"
     v-bind="item.dialogComponentProps"
+    :close-on-escape="false"
     :pt="item.dialogComponentProps.pt"
     :aria-labelledby="item.key"
   >
@@ -36,11 +37,34 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import Dialog from 'primevue/dialog'
 
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
+
+/**
+ * Custom escape key handler that closes only the active dialog.
+ * Uses capture phase to intercept before PrimeVue's built-in handler.
+ * This fixes the issue where pressing Escape would close the wrong dialog
+ * when multiple dialogs are open (e.g., Settings + Sign In).
+ */
+function handleEscapeKey(event: KeyboardEvent) {
+  if (event.key !== 'Escape') return
+  if (dialogStore.dialogStack.length === 0) return
+
+  const activeDialog = dialogStore.dialogStack.find(
+    (d) => d.key === dialogStore.activeKey
+  )
+  if (!activeDialog?.dialogComponentProps.closable) return
+
+  event.stopImmediatePropagation()
+  event.preventDefault()
+  dialogStore.closeDialog({ key: dialogStore.activeKey! })
+}
+
+useEventListener(document, 'keydown', handleEscapeKey, { capture: true })
 </script>
 
 <style>
