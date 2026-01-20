@@ -126,11 +126,13 @@ import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { mergeCustomNodesI18n, t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -394,6 +396,7 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+const { flags } = useFeatureFlags()
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
@@ -458,6 +461,13 @@ onMounted(async () => {
 
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
+
+  // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
+  if (isCloud && flags.teamWorkspacesEnabled) {
+    const { useInviteUrlLoader } =
+      await import('@/platform/workspace/composables/useInviteUrlLoader')
+    await useInviteUrlLoader().loadInviteFromUrl()
+  }
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =

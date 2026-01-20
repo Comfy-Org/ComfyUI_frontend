@@ -86,6 +86,10 @@ installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
     keys: ['template', 'source', 'mode']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.INVITE,
+    keys: ['invite']
   }
 ])
 
@@ -176,6 +180,24 @@ if (isCloud) {
         name: 'cloud-login',
         query
       })
+    }
+
+    // Initialize workspace context for logged-in users navigating to root
+    // This must happen before the app loads to ensure workspace context is ready
+
+    if (to.path === '/' && flags.teamWorkspacesEnabled) {
+      const { useTeamWorkspaceStore } =
+        await import('@/platform/workspace/stores/teamWorkspaceStore')
+      const workspaceStore = useTeamWorkspaceStore()
+
+      if (workspaceStore.initState === 'uninitialized') {
+        try {
+          await workspaceStore.initialize()
+        } catch (error) {
+          console.error('Workspace initialization failed:', error)
+          // Continue anyway - workspace features will be degraded
+        }
+      }
     }
 
     // User is logged in - check if they need onboarding (when enabled)
