@@ -44,19 +44,16 @@
           <Button
             v-tooltip.bottom="queueHistoryTooltipConfig"
             type="destructive"
-            size="icon"
+            size="md"
             :aria-pressed="isQueueOverlayExpanded"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
             "
+            class="px-3"
             @click="toggleQueueOverlay"
           >
-            <i class="icon-[lucide--history] size-4" />
-            <span
-              v-if="queuedCount > 0"
-              class="absolute -top-1 -right-1 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground"
-            >
-              {{ queuedCount }}
+            <span class="text-sm font-normal tabular-nums">
+              {{ activeJobsLabel }}
             </span>
           </Button>
           <CurrentUserButton
@@ -117,7 +114,7 @@ const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
-const { t } = useI18n()
+const { t, n } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
@@ -128,7 +125,17 @@ const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
-const queuedCount = computed(() => queueStore.pendingTasks.length)
+const activeJobsCount = computed(
+  () => queueStore.pendingTasks.length + queueStore.runningTasks.length
+)
+const activeJobsLabel = computed(() => {
+  const count = activeJobsCount.value
+  return t(
+    'sideToolbar.queueProgressOverlay.activeJobsShort',
+    { count: n(count) },
+    count
+  )
+})
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
 )

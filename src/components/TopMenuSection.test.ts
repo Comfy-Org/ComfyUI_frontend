@@ -36,7 +36,8 @@ function createWrapper() {
         sideToolbar: {
           queueProgressOverlay: {
             viewJobHistory: 'View job history',
-            expandCollapsedQueue: 'Expand collapsed queue'
+            expandCollapsedQueue: 'Expand collapsed queue',
+            activeJobsShort: '{count} active'
           }
         }
       }
