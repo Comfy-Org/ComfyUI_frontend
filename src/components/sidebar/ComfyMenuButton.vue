@@ -64,7 +64,10 @@
         >
           {{ item.comfyCommand.keybinding.combo.toString() }}
         </span>
-        <i v-if="item.items" class="pi pi-angle-right ml-auto" />
+        <i
+          v-if="item.items"
+          class="pi pi-angle-right ml-auto"
+        />
       </a>
       <div
         v-else
@@ -72,7 +75,12 @@
         @click.stop="handleNodes2ToggleClick"
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
-        <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
+        <Tag
+          severity="info"
+          class="ml-2 text-xs"
+        >
+          {{ $t('g.beta') }}
+        </Tag>
         <ToggleSwitch
           v-model="nodes2Enabled"
           class="ml-4"

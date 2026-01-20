@@ -1,29 +1,47 @@
 <template>
   <div :class="topStyle">
-    <slot class="absolute top-0 left-0 h-full w-full"></slot>
+    <slot class="absolute top-0 left-0 h-full w-full" />
 
-    <div v-if="slots['top-left']" :class="slotClasses['top-left']">
-      <slot name="top-left"></slot>
+    <div
+      v-if="slots['top-left']"
+      :class="slotClasses['top-left']"
+    >
+      <slot name="top-left" />
     </div>
 
-    <div v-if="slots['top-right']" :class="slotClasses['top-right']">
-      <slot name="top-right"></slot>
+    <div
+      v-if="slots['top-right']"
+      :class="slotClasses['top-right']"
+    >
+      <slot name="top-right" />
     </div>
 
-    <div v-if="slots['center-left']" :class="slotClasses['center-left']">
-      <slot name="center-left"></slot>
+    <div
+      v-if="slots['center-left']"
+      :class="slotClasses['center-left']"
+    >
+      <slot name="center-left" />
     </div>
 
-    <div v-if="slots['center-right']" :class="slotClasses['center-right']">
-      <slot name="center-right"></slot>
+    <div
+      v-if="slots['center-right']"
+      :class="slotClasses['center-right']"
+    >
+      <slot name="center-right" />
     </div>
 
-    <div v-if="slots['bottom-left']" :class="slotClasses['bottom-left']">
-      <slot name="bottom-left"></slot>
+    <div
+      v-if="slots['bottom-left']"
+      :class="slotClasses['bottom-left']"
+    >
+      <slot name="bottom-left" />
     </div>
 
-    <div v-if="slots['bottom-right']" :class="slotClasses['bottom-right']">
-      <slot name="bottom-right"></slot>
+    <div
+      v-if="slots['bottom-right']"
+      :class="slotClasses['bottom-right']"
+    >
+      <slot name="bottom-right" />
     </div>
   </div>
 </template>

@@ -1,5 +1,8 @@
 <template>
-  <TabPanel value="Credits" class="credits-container h-full">
+  <TabPanel
+    value="Credits"
+    class="credits-container h-full"
+  >
     <!-- Legacy Design -->
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">
@@ -14,7 +17,11 @@
         </h3>
         <div class="flex items-center justify-between">
           <UserCredit text-class="text-3xl font-bold" />
-          <Skeleton v-if="loading" width="2rem" height="2rem" />
+          <Skeleton
+            v-if="loading"
+            width="2rem"
+            height="2rem"
+          />
           <Button
             v-else-if="isActiveSubscription"
             :loading="loading"
@@ -30,7 +37,10 @@
             height="1rem"
             class="text-xs"
           />
-          <div v-else-if="formattedLastUpdateTime" class="text-xs text-muted">
+          <div
+            v-else-if="formattedLastUpdateTime"
+            class="text-xs text-muted"
+          >
             {{ $t('credits.lastUpdated') }}: {{ formattedLastUpdateTime }}
           </div>
           <Button
@@ -58,14 +68,27 @@
 
       <template v-if="creditHistory.length > 0">
         <div class="grow">
-          <DataTable :value="creditHistory" :show-headers="false">
-            <Column field="title" :header="$t('g.name')">
+          <DataTable
+            :value="creditHistory"
+            :show-headers="false"
+          >
+            <Column
+              field="title"
+              :header="$t('g.name')"
+            >
               <template #body="{ data }">
-                <div class="text-sm font-medium">{{ data.title }}</div>
-                <div class="text-xs text-muted">{{ data.timestamp }}</div>
+                <div class="text-sm font-medium">
+                  {{ data.title }}
+                </div>
+                <div class="text-xs text-muted">
+                  {{ data.timestamp }}
+                </div>
               </template>
             </Column>
-            <Column field="amount" :header="$t('g.amount')">
+            <Column
+              field="amount"
+              :header="$t('g.amount')"
+            >
               <template #body="{ data }">
                 <div
                   :class="[
@@ -88,15 +111,24 @@
       <UsageLogsTable ref="usageLogsTableRef" />
 
       <div class="flex flex-row gap-2">
-        <Button variant="muted-textonly" @click="handleFaqClick">
+        <Button
+          variant="muted-textonly"
+          @click="handleFaqClick"
+        >
           <i class="pi pi-question-circle" />
           {{ $t('credits.faqs') }}
         </Button>
-        <Button variant="muted-textonly" @click="handleOpenPartnerNodesInfo">
+        <Button
+          variant="muted-textonly"
+          @click="handleOpenPartnerNodesInfo"
+        >
           <i class="pi pi-question-circle" />
           {{ $t('subscription.partnerNodesCredits') }}
         </Button>
-        <Button variant="muted-textonly" @click="handleMessageSupport">
+        <Button
+          variant="muted-textonly"
+          @click="handleMessageSupport"
+        >
           <i class="pi pi-comments" />
           {{ $t('credits.messageSupport') }}
         </Button>

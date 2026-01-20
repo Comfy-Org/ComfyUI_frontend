@@ -1,7 +1,10 @@
 <template>
   <BaseModalLayout :content-title="$t('assetBrowser.checkpoints')">
     <template #leftPanel>
-      <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
+      <LeftSidePanel
+        v-model="selectedNavItem"
+        :nav-items="tempNavigation"
+      >
         <template #header-icon>
           <i class="text-neutral icon-[lucide--puzzle]" />
         </template>
@@ -12,12 +15,19 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
+      <SearchBox
+        v-model="searchQuery"
+        size="lg"
+        class="max-w-[384px]"
+      />
     </template>
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <Button variant="primary" @click="() => {}">
+        <Button
+          variant="primary"
+          @click="() => {}"
+        >
           <i class="icon-[lucide--upload]" />
           <span>{{ $t('g.upload') }}</span>
         </Button>
@@ -83,11 +93,15 @@
     <template #content>
       <!-- Card Examples -->
       <div :style="gridStyle">
-        <CardContainer v-for="i in 100" :key="i" size="regular">
+        <CardContainer
+          v-for="i in 100"
+          :key="i"
+          size="regular"
+        >
           <template #top>
             <CardTop ratio="landscape">
               <template #default>
-                <div class="h-full w-full bg-blue-500"></div>
+                <div class="h-full w-full bg-blue-500" />
               </template>
               <template #top-right>
                 <Button
@@ -110,14 +124,14 @@
             </CardTop>
           </template>
           <template #bottom>
-            <CardBottom></CardBottom>
+            <CardBottom />
           </template>
         </CardContainer>
       </div>
     </template>
 
     <template #rightPanel>
-      <RightSidePanel></RightSidePanel>
+      <RightSidePanel />
     </template>
   </BaseModalLayout>
 </template>

@@ -12,7 +12,10 @@
       <ProgressSpinner class="mb-2 h-8 w-8" />
       {{ $t('manager.loadingVersions') }}
     </div>
-    <div v-else-if="versionOptions.length === 0" class="py-2">
+    <div
+      v-else-if="versionOptions.length === 0"
+      class="py-2"
+    >
       <NoResultsPlaceholder
         :title="$t('g.noResultsFound')"
         :message="$t('manager.tryAgainLater')"
@@ -36,7 +39,7 @@
         <div class="flex w-full items-center justify-between p-1">
           <div class="flex items-center gap-2">
             <template v-if="slotProps.option.value === 'nightly'">
-              <div class="w-4"></div>
+              <div class="w-4" />
             </template>
             <template v-else>
               <i
@@ -47,7 +50,11 @@
                 }"
                 class="icon-[lucide--triangle-alert] text-warning-background"
               />
-              <VerifiedIcon v-else :size="20" class="relative right-0.5" />
+              <VerifiedIcon
+                v-else
+                :size="20"
+                class="relative right-0.5"
+              />
             </template>
             <span>{{ slotProps.option.label }}</span>
           </div>

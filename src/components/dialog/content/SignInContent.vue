@@ -20,28 +20,45 @@
           <span
             class="ml-1 cursor-pointer text-blue-500"
             @click="toggleState"
-            >{{
-              isSignIn ? t('auth.login.signUp') : t('auth.signup.signIn')
-            }}</span
-          >
+          >{{
+            isSignIn ? t('auth.login.signUp') : t('auth.signup.signIn')
+          }}</span>
         </p>
       </div>
 
-      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      <Message
+        v-if="!isSecureContext"
+        severity="warn"
+        class="mb-4"
+      >
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
       <!-- Form -->
-      <SignInForm v-if="isSignIn" @submit="signInWithEmail" />
+      <SignInForm
+        v-if="isSignIn"
+        @submit="signInWithEmail"
+      />
       <template v-else>
-        <Message v-if="userIsInChina" severity="warn" class="mb-4">
+        <Message
+          v-if="userIsInChina"
+          severity="warn"
+          class="mb-4"
+        >
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
-        <SignUpForm v-else @submit="signUpWithEmail" />
+        <SignUpForm
+          v-else
+          @submit="signUpWithEmail"
+        />
       </template>
 
       <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
+      <Divider
+        align="center"
+        layout="horizontal"
+        class="my-8"
+      >
         <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
       </Divider>
 
@@ -54,7 +71,7 @@
             variant="secondary"
             @click="signInWithGoogle"
           >
-            <i class="pi pi-google mr-2"></i>
+            <i class="pi pi-google mr-2" />
             {{
               isSignIn
                 ? t('auth.login.loginWithGoogle')
@@ -68,7 +85,7 @@
             variant="secondary"
             @click="signInWithGithub"
           >
-            <i class="pi pi-github mr-2"></i>
+            <i class="pi pi-github mr-2" />
             {{
               isSignIn
                 ? t('auth.login.loginWithGithub')
@@ -87,7 +104,7 @@
             src="/assets/images/comfy-logo-mono.svg"
             class="mr-2 h-5 w-5"
             :alt="$t('g.comfy')"
-          />
+          >
           {{ t('auth.login.useApiKey') }}
         </Button>
         <small class="text-center text-muted">
@@ -127,12 +144,13 @@
           target="_blank"
           class="cursor-pointer text-blue-500"
         >
-          {{ t('auth.login.privacyLink') }} </a
-        >.
+          {{ t('auth.login.privacyLink') }} </a>.
         {{ t('auth.login.questionsContactPrefix') }}
-        <a href="mailto:hello@comfy.org" class="cursor-pointer text-blue-500">
-          hello@comfy.org</a
-        >.
+        <a
+          href="mailto:hello@comfy.org"
+          class="cursor-pointer text-blue-500"
+        >
+          hello@comfy.org</a>.
       </p>
     </template>
   </div>

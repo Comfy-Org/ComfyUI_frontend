@@ -9,11 +9,13 @@
         :options="cameras"
         option-label="title"
         option-value="value"
-      >
-      </Select>
+      />
     </div>
 
-    <div v-if="showFOVButton" class="space-y-4">
+    <div
+      v-if="showFOVButton"
+      class="space-y-4"
+    >
       <label>{{ t('load3d.fov') }}</label>
       <Slider
         v-model="fov"

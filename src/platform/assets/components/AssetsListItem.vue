@@ -40,8 +40,11 @@
           :src="previewUrl"
           :alt="previewAlt"
           class="size-full object-cover"
-        />
-        <div v-else class="flex size-full items-center justify-center">
+        >
+        <div
+          v-else
+          class="flex size-full items-center justify-center"
+        >
           <i
             aria-hidden="true"
             :class="
@@ -61,17 +64,24 @@
         v-if="$slots.primary || primaryText"
         class="text-xs leading-none text-text-primary"
       >
-        <slot name="primary">{{ primaryText }}</slot>
+        <slot name="primary">
+          {{ primaryText }}
+        </slot>
       </div>
       <div
         v-if="$slots.secondary || secondaryText"
         class="text-xs leading-none text-text-secondary"
       >
-        <slot name="secondary">{{ secondaryText }}</slot>
+        <slot name="secondary">
+          {{ secondaryText }}
+        </slot>
       </div>
     </div>
 
-    <div v-if="$slots.actions" class="relative z-1 flex items-center gap-2">
+    <div
+      v-if="$slots.actions"
+      class="relative z-1 flex items-center gap-2"
+    >
       <slot name="actions" />
     </div>
   </div>

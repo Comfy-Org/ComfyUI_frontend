@@ -4,8 +4,11 @@
   >
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
-        <span v-html="formattedText"></span>
-        <Skeleton v-if="isParentNodeExecuting" class="h-4! flex-1!" />
+        <span v-html="formattedText" />
+        <Skeleton
+          v-if="isParentNodeExecuting"
+          class="h-4! flex-1!"
+        />
       </div>
     </div>
   </div>

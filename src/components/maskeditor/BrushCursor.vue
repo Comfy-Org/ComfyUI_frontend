@@ -19,7 +19,7 @@
         display: gradientVisible ? 'block' : 'none',
         background: gradientBackground
       }"
-    ></div>
+    />
   </div>
 </template>
 

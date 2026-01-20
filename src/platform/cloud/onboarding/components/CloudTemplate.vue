@@ -1,6 +1,9 @@
 <template>
   <div class="flex">
-    <BaseViewTemplate dark class="flex-1">
+    <BaseViewTemplate
+      dark
+      class="flex-1"
+    >
       <template #header>
         <CloudLogo />
       </template>
@@ -19,10 +22,13 @@
         playsinline
         :poster="videoPoster"
       >
-        <source :src="videoSrc" type="video/mp4" />
+        <source
+          :src="videoSrc"
+          type="video/mp4"
+        >
       </video>
 
-      <div class="absolute inset-0 h-full w-full bg-black/30"></div>
+      <div class="absolute inset-0 h-full w-full bg-black/30" />
 
       <!-- Optional Overlay for better visual -->
       <div

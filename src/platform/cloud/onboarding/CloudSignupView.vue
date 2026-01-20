@@ -13,23 +13,38 @@
           <span
             class="ml-1 cursor-pointer text-blue-500"
             @click="navigateToLogin"
-            >{{ t('auth.signup.signIn') }}</span
-          >
+          >{{ t('auth.signup.signIn') }}</span>
         </p>
       </div>
 
-      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      <Message
+        v-if="!isSecureContext"
+        severity="warn"
+        class="mb-4"
+      >
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
       <!-- Form -->
-      <Message v-if="userIsInChina" severity="warn" class="mb-4">
+      <Message
+        v-if="userIsInChina"
+        severity="warn"
+        class="mb-4"
+      >
         {{ t('auth.signup.regionRestrictionChina') }}
       </Message>
-      <SignUpForm v-else :auth-error="authError" @submit="signUpWithEmail" />
+      <SignUpForm
+        v-else
+        :auth-error="authError"
+        @submit="signUpWithEmail"
+      />
 
       <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
+      <Divider
+        align="center"
+        layout="horizontal"
+        class="my-8"
+      >
         <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
       </Divider>
 
@@ -41,7 +56,7 @@
           variant="secondary"
           @click="signInWithGoogle"
         >
-          <i class="pi pi-google mr-2"></i>
+          <i class="pi pi-google mr-2" />
           {{ t('auth.signup.signUpWithGoogle') }}
         </Button>
 
@@ -51,7 +66,7 @@
           variant="secondary"
           @click="signInWithGithub"
         >
-          <i class="pi pi-github mr-2"></i>
+          <i class="pi pi-github mr-2" />
           {{ t('auth.signup.signUpWithGithub') }}
         </Button>
       </div>
@@ -72,8 +87,7 @@
           target="_blank"
           class="cursor-pointer text-blue-400 no-underline"
         >
-          {{ t('auth.login.privacyLink') }} </a
-        >.
+          {{ t('auth.login.privacyLink') }} </a>.
         <p class="mt-2">
           {{ t('cloudWaitlist_questionsText') }}
           <a
@@ -82,8 +96,7 @@
             target="_blank"
             rel="noopener noreferrer"
           >
-            {{ t('cloudWaitlist_contactLink') }}</a
-          >.
+            {{ t('cloudWaitlist_contactLink') }}</a>.
         </p>
       </div>
     </div>

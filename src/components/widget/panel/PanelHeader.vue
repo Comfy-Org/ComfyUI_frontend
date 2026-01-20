@@ -5,7 +5,7 @@
         <i class="text-neutral icon-[lucide--puzzle] text-base" />
       </slot>
       <h2 class="text-neutral text-base font-bold">
-        <slot></slot>
+        <slot />
       </h2>
     </div>
   </header>

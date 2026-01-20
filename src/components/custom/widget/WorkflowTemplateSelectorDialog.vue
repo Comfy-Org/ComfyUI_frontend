@@ -4,7 +4,10 @@
     class="workflow-template-selector-dialog"
   >
     <template #leftPanel>
-      <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems">
+      <LeftSidePanel
+        v-model="selectedNavItem"
+        :nav-items="navItems"
+      >
         <template #header-icon>
           <i class="icon-[comfy--template]" />
         </template>
@@ -17,7 +20,11 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
+      <SearchBox
+        v-model="searchQuery"
+        size="lg"
+        class="max-w-[384px]"
+      />
     </template>
 
     <template #header-right-area>
@@ -132,7 +139,7 @@
         <span
           v-if="isLoading"
           class="inline-block h-8 w-48 animate-pulse rounded bg-dialog-surface"
-        ></span>
+        />
 
         <!-- Template Cards Grid -->
         <div
@@ -152,9 +159,7 @@
             <template #top>
               <CardTop ratio="landscape">
                 <template #default>
-                  <div
-                    class="h-full w-full animate-pulse bg-dialog-surface"
-                  ></div>
+                  <div class="h-full w-full animate-pulse bg-dialog-surface" />
                 </template>
               </CardTop>
             </template>
@@ -163,10 +168,8 @@
                 <div class="px-4 py-3">
                   <div
                     class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
-                  ></div>
-                  <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
-                  ></div>
+                  />
+                  <div class="h-4 animate-pulse rounded bg-dialog-surface" />
                 </div>
               </CardBottom>
             </template>
@@ -212,7 +215,7 @@
                         :is-hovered="hoveredTemplate === template.name"
                         :is-video="
                           template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
+                            template.mediaSubtype === 'webp'
                         "
                       />
                     </template>
@@ -231,7 +234,7 @@
                         :is-hovered="hoveredTemplate === template.name"
                         :is-video="
                           template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
+                            template.mediaSubtype === 'webp'
                         "
                       />
                     </template>
@@ -247,7 +250,7 @@
                         :is-hovered="hoveredTemplate === template.name"
                         :is-video="
                           template.mediaType === 'video' ||
-                          template.mediaSubtype === 'webp'
+                            template.mediaSubtype === 'webp'
                         "
                         :hover-zoom="
                           template.thumbnailVariant === 'zoomHover' ? 16 : 5
@@ -332,9 +335,7 @@
             <template #top>
               <CardTop ratio="square">
                 <template #default>
-                  <div
-                    class="h-full w-full animate-pulse bg-dialog-surface"
-                  ></div>
+                  <div class="h-full w-full animate-pulse bg-dialog-surface" />
                 </template>
               </CardTop>
             </template>
@@ -343,10 +344,8 @@
                 <div class="px-4 py-3">
                   <div
                     class="mb-2 h-6 animate-pulse rounded bg-dialog-surface"
-                  ></div>
-                  <div
-                    class="h-4 animate-pulse rounded bg-dialog-surface"
-                  ></div>
+                  />
+                  <div class="h-4 animate-pulse rounded bg-dialog-surface" />
                 </div>
               </CardBottom>
             </template>
@@ -360,13 +359,19 @@
         ref="loadTrigger"
         class="mt-4 flex h-4 w-full items-center justify-center"
       >
-        <div v-if="isLoadingMore" class="text-sm text-muted">
+        <div
+          v-if="isLoadingMore"
+          class="text-sm text-muted"
+        >
           {{ $t('templateWorkflows.loadingMore', 'Loading more...') }}
         </div>
       </div>
 
       <!-- Results Summary -->
-      <div v-if="!isLoading" class="mt-6 px-6 text-sm text-muted">
+      <div
+        v-if="!isLoading"
+        class="mt-6 px-6 text-sm text-muted"
+      >
         {{
           $t('templateWorkflows.resultsCount', {
             count: filteredCount,

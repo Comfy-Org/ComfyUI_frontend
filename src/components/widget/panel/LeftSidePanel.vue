@@ -2,16 +2,22 @@
   <div class="flex h-full w-full flex-col bg-modal-panel-background">
     <PanelHeader>
       <template #icon>
-        <slot name="header-icon"></slot>
+        <slot name="header-icon" />
       </template>
-      <slot name="header-title"></slot>
+      <slot name="header-title" />
     </PanelHeader>
 
     <nav
       class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
     >
-      <template v-for="(item, index) in navItems" :key="index">
-        <div v-if="'items' in item" class="flex flex-col gap-2">
+      <template
+        v-for="(item, index) in navItems"
+        :key="index"
+      >
+        <div
+          v-if="'items' in item"
+          class="flex flex-col gap-2"
+        >
           <NavTitle
             v-model="collapsedGroups[item.title]"
             :title="item.title"
@@ -29,7 +35,10 @@
             </NavItem>
           </template>
         </div>
-        <div v-else class="flex flex-col gap-2">
+        <div
+          v-else
+          class="flex flex-col gap-2"
+        >
           <NavItem
             :icon="item.icon"
             :active="activeItem === item.id"

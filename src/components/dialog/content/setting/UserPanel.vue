@@ -1,11 +1,19 @@
 <template>
-  <TabPanel value="User" class="user-settings-container h-full">
+  <TabPanel
+    value="User"
+    class="user-settings-container h-full"
+  >
     <div class="flex h-full flex-col">
-      <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
+      <h2 class="mb-2 text-2xl font-bold">
+        {{ $t('userSettings.title') }}
+      </h2>
       <Divider class="mb-3" />
 
       <!-- Normal User Panel -->
-      <div v-if="isLoggedIn" class="flex flex-col gap-2">
+      <div
+        v-if="isLoggedIn"
+        class="flex flex-col gap-2"
+      >
         <UserAvatar
           v-if="userPhotoUrl"
           :photo-url="userPhotoUrl"
@@ -58,8 +66,15 @@
           class="mt-4 h-8 w-8"
           style="--pc-spinner-color: #000"
         />
-        <div v-else class="mt-4 flex flex-col gap-2">
-          <Button class="w-32" variant="secondary" @click="handleSignOut">
+        <div
+          v-else
+          class="mt-4 flex flex-col gap-2"
+        >
+          <Button
+            class="w-32"
+            variant="secondary"
+            @click="handleSignOut"
+          >
             <i class="pi pi-sign-out" />
             {{ $t('auth.signOut.signOut') }}
           </Button>
@@ -75,7 +90,10 @@
       </div>
 
       <!-- Login Section -->
-      <div v-else class="flex flex-col gap-4">
+      <div
+        v-else
+        class="flex flex-col gap-4"
+      >
         <p class="text-smoke-600">
           {{ $t('auth.login.title') }}
         </p>

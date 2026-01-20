@@ -8,7 +8,10 @@
     :aria-colcount="-1"
     :aria-setsize="assets.length"
   >
-    <div v-if="loading" class="flex h-full items-center justify-center py-20">
+    <div
+      v-if="loading"
+      class="flex h-full items-center justify-center py-20"
+    >
       <i
         class="icon-[lucide--loader] size-12 animate-spin text-muted-foreground"
       />
@@ -21,7 +24,9 @@
       <h3 class="mb-2 text-lg font-medium">
         {{ $t('assetBrowser.noAssetsFound') }}
       </h3>
-      <p class="text-sm">{{ $t('assetBrowser.tryAdjustingFilters') }}</p>
+      <p class="text-sm">
+        {{ $t('assetBrowser.tryAdjustingFilters') }}
+      </p>
     </div>
     <VirtualGrid
       v-else

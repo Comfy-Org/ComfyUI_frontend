@@ -5,8 +5,7 @@
       :options="exportFormats"
       option-label="label"
       option-value="value"
-    >
-    </Select>
+    />
 
     <Button
       variant="muted-textonly"

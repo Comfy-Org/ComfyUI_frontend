@@ -2,10 +2,19 @@
   <CloudLoginViewSkeleton v-if="skeletonType === 'login'" />
   <CloudSurveyViewSkeleton v-else-if="skeletonType === 'survey'" />
   <CloudWaitlistViewSkeleton v-else-if="skeletonType === 'waitlist'" />
-  <div v-else-if="error" class="flex h-full items-center justify-center p-8">
+  <div
+    v-else-if="error"
+    class="flex h-full items-center justify-center p-8"
+  >
     <div class="max-w-[100vw] p-2 text-center lg:w-96">
-      <p class="mb-4 text-red-500">{{ errorMessage }}</p>
-      <Button :loading="isRetrying" class="w-full" @click="handleRetry">
+      <p class="mb-4 text-red-500">
+        {{ errorMessage }}
+      </p>
+      <Button
+        :loading="isRetrying"
+        class="w-full"
+        @click="handleRetry"
+      >
         {{
           isRetrying
             ? $t('cloudOnboarding.retrying')
@@ -14,7 +23,10 @@
       </Button>
     </div>
   </div>
-  <div v-else class="flex items-center justify-center">
+  <div
+    v-else
+    class="flex items-center justify-center"
+  >
     <ProgressSpinner class="h-8 w-8" />
   </div>
 </template>

@@ -1,10 +1,21 @@
 <template>
   <div>
-    <div v-if="loading" class="flex items-center justify-center p-8">
+    <div
+      v-if="loading"
+      class="flex items-center justify-center p-8"
+    >
       <ProgressSpinner />
     </div>
-    <div v-else-if="error" class="p-4">
-      <Message severity="error" :closable="false">{{ error }}</Message>
+    <div
+      v-else-if="error"
+      class="p-4"
+    >
+      <Message
+        severity="error"
+        :closable="false"
+      >
+        {{ error }}
+      </Message>
     </div>
     <DataTable
       v-else
@@ -17,7 +28,10 @@
       class="p-datatable-sm custom-datatable"
       @page="onPageChange"
     >
-      <Column field="event_type" :header="$t('credits.eventType')">
+      <Column
+        field="event_type"
+        :header="$t('credits.eventType')"
+      >
         <template #body="{ data }">
           <Badge
             :value="customerEventService.formatEventType(data.event_type)"
@@ -25,7 +39,10 @@
           />
         </template>
       </Column>
-      <Column field="details" :header="$t('credits.details')">
+      <Column
+        field="details"
+        :header="$t('credits.details')"
+      >
         <template #body="{ data }">
           <div class="event-details">
             <!-- Credits Added -->
@@ -58,12 +75,18 @@
           </div>
         </template>
       </Column>
-      <Column field="createdAt" :header="$t('credits.time')">
+      <Column
+        field="createdAt"
+        :header="$t('credits.time')"
+      >
         <template #body="{ data }">
           {{ customerEventService.formatDate(data.createdAt) }}
         </template>
       </Column>
-      <Column field="params" :header="$t('credits.additionalInfo')">
+      <Column
+        field="params"
+        :header="$t('credits.additionalInfo')"
+      >
         <template #body="{ data }">
           <Button
             v-if="customerEventService.hasAdditionalInfo(data)"

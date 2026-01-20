@@ -4,7 +4,9 @@
       id="comfy-user-selection"
       class="relative min-w-84 rounded-lg bg-(--comfy-menu-bg) p-5 px-10 shadow-lg"
     >
-      <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
+      <h1 class="my-2.5 mb-7 font-normal">
+        ComfyUI
+      </h1>
       <div class="flex w-full flex-col items-center">
         <div class="flex w-full flex-col gap-2">
           <label for="new-user-input">{{ $t('userSelect.newUser') }}:</label>
@@ -17,9 +19,7 @@
         </div>
         <Divider />
         <div class="flex w-full flex-col gap-2">
-          <label for="existing-user-select"
-            >{{ $t('userSelect.existingUser') }}:</label
-          >
+          <label for="existing-user-select">{{ $t('userSelect.existingUser') }}:</label>
           <Select
             v-model="selectedUser"
             class="w-full"
@@ -29,12 +29,17 @@
             :placeholder="$t('userSelect.selectUser')"
             :disabled="createNewUser"
           />
-          <Message v-if="error" severity="error">
+          <Message
+            v-if="error"
+            severity="error"
+          >
             {{ error }}
           </Message>
         </div>
         <footer class="mt-5">
-          <Button @click="login">{{ $t('userSelect.next') }}</Button>
+          <Button @click="login">
+            {{ $t('userSelect.next') }}
+          </Button>
         </footer>
       </div>
     </main>

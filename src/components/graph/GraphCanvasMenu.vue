@@ -1,13 +1,16 @@
 <template>
   <div>
-    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
+    <ZoomControlsModal
+      :visible="isModalVisible"
+      @close="hideModal"
+    />
 
     <!-- Backdrop -->
     <div
       v-if="hasActivePopup"
       class="fixed inset-0 z-1200"
       @click="hideModal"
-    ></div>
+    />
 
     <ButtonGroup
       class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border-[1px] border-interface-stroke bg-comfy-menu-bg p-2"

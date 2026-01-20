@@ -11,20 +11,30 @@
           <span
             class="ml-1 cursor-pointer text-blue-500"
             @click="navigateToSignup"
-            >{{ t('auth.login.signUp') }}</span
-          >
+          >{{ t('auth.login.signUp') }}</span>
         </p>
       </div>
 
-      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      <Message
+        v-if="!isSecureContext"
+        severity="warn"
+        class="mb-4"
+      >
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
       <!-- Form -->
-      <CloudSignInForm :auth-error="authError" @submit="signInWithEmail" />
+      <CloudSignInForm
+        :auth-error="authError"
+        @submit="signInWithEmail"
+      />
 
       <!-- Divider -->
-      <Divider align="center" layout="horizontal" class="my-8">
+      <Divider
+        align="center"
+        layout="horizontal"
+        class="my-8"
+      >
         <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
       </Divider>
 
@@ -36,7 +46,7 @@
           variant="secondary"
           @click="signInWithGoogle"
         >
-          <i class="pi pi-google mr-2"></i>
+          <i class="pi pi-google mr-2" />
           {{ t('auth.login.loginWithGoogle') }}
         </Button>
 
@@ -46,7 +56,7 @@
           variant="secondary"
           @click="signInWithGithub"
         >
-          <i class="pi pi-github mr-2"></i>
+          <i class="pi pi-github mr-2" />
           {{ t('auth.login.loginWithGithub') }}
         </Button>
       </div>
@@ -67,8 +77,7 @@
           target="_blank"
           class="cursor-pointer text-blue-400 no-underline"
         >
-          {{ t('auth.login.privacyLink') }} </a
-        >.
+          {{ t('auth.login.privacyLink') }} </a>.
       </p>
     </div>
   </div>

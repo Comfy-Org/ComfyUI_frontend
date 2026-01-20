@@ -1,12 +1,25 @@
 <template>
-  <div v-if="balanceLoading" class="flex items-center gap-1">
+  <div
+    v-if="balanceLoading"
+    class="flex items-center gap-1"
+  >
     <div class="flex items-center gap-2">
-      <Skeleton shape="circle" width="1.5rem" height="1.5rem" />
+      <Skeleton
+        shape="circle"
+        width="1.5rem"
+        height="1.5rem"
+      />
     </div>
-    <div class="flex-1"></div>
-    <Skeleton width="8rem" height="2rem" />
+    <div class="flex-1" />
+    <Skeleton
+      width="8rem"
+      height="2rem"
+    />
   </div>
-  <div v-else class="flex items-center gap-1">
+  <div
+    v-else
+    class="flex items-center gap-1"
+  >
     <Tag
       v-if="!showCreditsOnly"
       severity="secondary"
