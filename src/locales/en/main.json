@@ -751,7 +751,7 @@
       "sortJobs": "Sort jobs",
       "sortBy": "Sort by",
       "activeJobs": "{count} active job | {count} active jobs",
-      "activeJobsShort": "{count} active",
+      "activeJobsShort": "{count} active | {count} active",
       "activeJobsSuffix": "active jobs",
       "jobQueue": "Job Queue",
       "expandCollapsedQueue": "Expand job queue",

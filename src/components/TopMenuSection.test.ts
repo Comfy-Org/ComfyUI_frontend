@@ -42,7 +42,7 @@ function createWrapper() {
           queueProgressOverlay: {
             viewJobHistory: 'View job history',
             expandCollapsedQueue: 'Expand collapsed queue',
-            activeJobsShort: '{count} active'
+            activeJobsShort: '{count} active | {count} active'
           }
         }
       }
