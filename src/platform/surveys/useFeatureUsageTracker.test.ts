@@ -49,16 +49,22 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('updates lastUsed on each use', async () => {
-    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
-    const { usage, trackUsage } = useFeatureUsageTracker('test-feature')
+    vi.useFakeTimers()
+    try {
+      const { useFeatureUsageTracker } =
+        await import('./useFeatureUsageTracker')
+      const { usage, trackUsage } = useFeatureUsageTracker('test-feature')
 
-    trackUsage()
-    const firstLastUsed = usage.value?.lastUsed ?? 0
+      trackUsage()
+      const firstLastUsed = usage.value?.lastUsed ?? 0
 
-    await new Promise((r) => setTimeout(r, 10))
-    trackUsage()
+      vi.advanceTimersByTime(10)
+      trackUsage()
 
-    expect(usage.value?.lastUsed).toBeGreaterThan(firstLastUsed)
+      expect(usage.value?.lastUsed).toBeGreaterThan(firstLastUsed)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('reset clears feature data', async () => {
