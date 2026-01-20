@@ -1,6 +1,7 @@
 {
   "g": {
     "user": "User",
+    "you": "You",
     "currentUser": "Current user",
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
@@ -1264,7 +1265,10 @@
     "Scene": "Scene",
     "3D": "3D",
     "Light": "Light",
-    "User": "User",
+    "Profile": "Profile",
+    "Workspace": "Workspace",
+    "WorkspacePlan": "Plan & Credits",
+    "WorkspaceMembers": "Members",
     "Credits": "Credits",
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
@@ -1997,6 +2001,8 @@
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
+    "managePayment": "Manage Payment",
+    "cancelSubscription": "Cancel Subscription",
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
     "totalCredits": "Total credits",
@@ -2051,6 +2057,9 @@
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
+    "workspaceNotSubscribed": "This workspace is not on a subscription",
+    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
+    "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
@@ -2086,11 +2095,131 @@
   "userSettings": {
     "title": "My Account Settings",
     "accountSettings": "Account settings",
+    "workspaceSettings": "Workspace settings",
     "name": "Name",
     "email": "Email",
     "provider": "Sign-in Provider",
     "notSet": "Not set",
     "updatePassword": "Update Password"
+  },
+  "workspacePanel": {
+    "invite": "Invite",
+    "inviteMember": "Invite member",
+    "inviteLimitReached": "You've reached the maximum of 50 members",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "planCredits": "Plan & Credits",
+      "membersCount": "Members ({count})"
+    },
+    "dashboard": {
+      "placeholder": "Dashboard workspace settings"
+    },
+    "members": {
+      "membersCount": "{count}/50 Members",
+      "pendingInvitesCount": "{count} pending invite | {count} pending invites",
+      "tabs": {
+        "active": "Active",
+        "pendingCount": "Pending ({count})"
+      },
+      "columns": {
+        "inviteDate": "Invite date",
+        "expiryDate": "Expiry date",
+        "joinDate": "Join date"
+      },
+      "actions": {
+        "copyLink": "Copy invite link",
+        "revokeInvite": "Revoke invite",
+        "removeMember": "Remove member"
+      },
+      "noInvites": "No pending invites",
+      "noMembers": "No members",
+      "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
+      "createNewWorkspace": "create a new one."
+    },
+    "menu": {
+      "editWorkspace": "Edit workspace details",
+      "leaveWorkspace": "Leave Workspace",
+      "deleteWorkspace": "Delete Workspace",
+      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+    },
+    "editWorkspaceDialog": {
+      "title": "Edit workspace details",
+      "nameLabel": "Workspace name",
+      "save": "Save"
+    },
+    "leaveDialog": {
+      "title": "Leave this workspace?",
+      "message": "You won't be able to join again unless you contact the workspace owner.",
+      "leave": "Leave"
+    },
+    "deleteDialog": {
+      "title": "Delete this workspace?",
+      "message": "Any unused credits or unsaved assets will be lost. This action cannot be undone.",
+      "messageWithName": "Delete \"{name}\"? Any unused credits or unsaved assets will be lost. This action cannot be undone."
+    },
+    "removeMemberDialog": {
+      "title": "Remove this member?",
+      "message": "This member will be removed from your workspace. Credits they've used will not be refunded.",
+      "remove": "Remove member"
+    },
+    "revokeInviteDialog": {
+      "title": "Uninvite this person?",
+      "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
+      "revoke": "Uninvite"
+    },
+    "inviteMemberDialog": {
+      "title": "Invite a person to this workspace",
+      "message": "Create a shareable invite link to send to someone",
+      "placeholder": "Enter the person's email",
+      "createLink": "Create link",
+      "linkStep": {
+        "title": "Send this link to the person",
+        "message": "Make sure their account uses this email.",
+        "copyLink": "Copy Link",
+        "done": "Done"
+      },
+      "linkCopied": "Copied",
+      "linkCopyFailed": "Failed to copy link"
+    },
+    "createWorkspaceDialog": {
+      "title": "Create a new workspace",
+      "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+      "nameLabel": "Workspace name*",
+      "namePlaceholder": "Enter workspace name",
+      "create": "Create"
+    },
+    "toast": {
+      "workspaceCreated": {
+        "title": "Workspace created",
+        "message": "Subscribe to a plan, invite teammates, and start collaborating.",
+        "subscribe": "Subscribe"
+      },
+      "workspaceUpdated": {
+        "title": "Workspace updated",
+        "message": "Workspace details have been saved."
+      },
+      "workspaceDeleted": {
+        "title": "Workspace deleted",
+        "message": "The workspace has been permanently deleted."
+      },
+      "workspaceLeft": {
+        "title": "Left workspace",
+        "message": "You have left the workspace."
+      },
+      "failedToUpdateWorkspace": "Failed to update workspace",
+      "failedToCreateWorkspace": "Failed to create workspace",
+      "failedToDeleteWorkspace": "Failed to delete workspace",
+      "failedToLeaveWorkspace": "Failed to leave workspace",
+      "failedToFetchWorkspaces": "Failed to load workspaces"
+    }
+  },
+  "workspaceSwitcher": {
+    "switchWorkspace": "Switch workspace",
+    "subscribe": "Subscribe",
+    "roleOwner": "Owner",
+    "roleMember": "Member",
+    "createWorkspace": "Create new workspace",
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -2608,7 +2737,10 @@
     "unsavedChanges": {
       "title": "Unsaved Changes",
       "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    }
+    },
+    "inviteAccepted": "Invite Accepted",
+    "addedToWorkspace": "You have been added to {workspaceName}",
+    "inviteFailed": "Failed to Accept Invite"
   },
   "workspaceAuth": {
     "errors": {

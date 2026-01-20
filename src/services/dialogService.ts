@@ -102,6 +102,7 @@ export const useDialogService = () => {
       | 'user'
       | 'credits'
       | 'subscription'
+      | 'workspace'
   ) {
     const props = panel ? { props: { defaultPanel: panel } } : undefined
 
@@ -519,6 +520,113 @@ export const useDialogService = () => {
     show()
   }
 
+  // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
+  const workspaceDialogPt = {
+    headless: true,
+    pt: {
+      header: { class: 'p-0! hidden' },
+      content: { class: 'p-0! m-0! rounded-2xl' },
+      root: { class: 'rounded-2xl' }
+    }
+  } as const
+
+  async function showLeaveWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/LeaveWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'leave-workspace',
+      component,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showDeleteWorkspaceDialog(options?: {
+    workspaceId?: string
+    workspaceName?: string
+  }) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/DeleteWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'delete-workspace',
+      component,
+      props: options,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showRemoveMemberDialog(memberId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RemoveMemberDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'remove-member',
+      component,
+      props: { memberId },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showRevokeInviteDialog(inviteId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RevokeInviteDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'revoke-invite',
+      component,
+      props: { inviteId },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showInviteMemberDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/InviteMemberDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-member',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[512px] w-full' }
+        }
+      }
+    })
+  }
+
+  async function showCreateWorkspaceDialog(
+    onConfirm?: (name: string) => void | Promise<void>
+  ) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/CreateWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'create-workspace',
+      component,
+      props: { onConfirm },
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
+  async function showEditWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/EditWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'edit-workspace',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -530,6 +638,13 @@ export const useDialogService = () => {
     showSubscriptionRequiredDialog,
     showTopUpCreditsDialog,
     showUpdatePasswordDialog,
+    showLeaveWorkspaceDialog,
+    showDeleteWorkspaceDialog,
+    showRemoveMemberDialog,
+    showRevokeInviteDialog,
+    showInviteMemberDialog,
+    showCreateWorkspaceDialog,
+    showEditWorkspaceDialog,
     showExtensionDialog,
     prompt,
     showErrorDialog,
