@@ -31,7 +31,7 @@ function setupSubgraph(
   const subgraph = createTestSubgraph()
   const subgraphNode = createTestSubgraphNode(subgraph)
   subgraphNode._internalConfigureAfterSlots()
-  const graph = subgraphNode.graph
+  const graph = subgraphNode.graph!
   graph.add(subgraphNode)
   const innerNodes = []
   for (let i = 0; i < innerNodeCount; i++) {
