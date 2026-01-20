@@ -46,15 +46,15 @@
             type="destructive"
             size="md"
             :aria-pressed="isQueueOverlayExpanded"
-            :aria-label="
-              t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-            "
             class="px-3"
             data-testid="queue-overlay-toggle"
             @click="toggleQueueOverlay"
           >
             <span class="text-sm font-normal tabular-nums">
               {{ activeJobsLabel }}
+            </span>
+            <span class="sr-only">
+              {{ t('sideToolbar.queueProgressOverlay.expandCollapsedQueue') }}
             </span>
           </Button>
           <CurrentUserButton
