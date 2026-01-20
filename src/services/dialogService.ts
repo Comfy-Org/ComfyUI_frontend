@@ -576,15 +576,12 @@ export const useDialogService = () => {
     })
   }
 
-  async function showInviteMemberDialog(
-    onConfirm: (email: string) => void | Promise<void>
-  ) {
+  async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/components/dialog/content/workspace/InviteMemberDialogContent.vue')
     return dialogStore.showDialog({
       key: 'invite-member',
       component,
-      props: { onConfirm },
       dialogComponentProps: {
         ...workspaceDialogPt,
         pt: {

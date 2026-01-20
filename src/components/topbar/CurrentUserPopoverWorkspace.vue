@@ -267,8 +267,9 @@ const workspaceTierName = computed(() => {
 })
 
 const canUpgrade = computed(() => {
-  // For workspace-based subscriptions, can upgrade if not on highest tier
-  return isWorkspaceSubscribed.value && subscriptionPlan.value !== null
+  // PRO is currently the only/highest tier, so no upgrades available
+  // This will need updating when additional tiers are added
+  return false
 })
 
 const showPlansAndPricing = computed(

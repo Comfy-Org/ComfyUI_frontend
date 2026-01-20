@@ -156,9 +156,7 @@ const inviteTooltip = computed(() => {
 
 function handleInviteMember() {
   if (isInviteLimitReached.value) return
-  showInviteMemberDialog((_email: string) => {
-    // TODO: Implement actual invite member API call
-  })
+  showInviteMemberDialog()
 }
 
 const menuItems = computed(() => {

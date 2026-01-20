@@ -2177,7 +2177,9 @@
         "message": "Make sure their account uses this email.",
         "copyLink": "Copy Link",
         "done": "Done"
-      }
+      },
+      "linkCopied": "Copied",
+      "linkCopyFailed": "Failed to copy link"
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",

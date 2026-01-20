@@ -115,17 +115,15 @@
 <script setup lang="ts">
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { onConfirm } = defineProps<{
-  onConfirm: (email: string) => void | Promise<void>
-}>()
-
 const dialogStore = useDialogStore()
 const toast = useToast()
+const { t } = useI18n()
 const workspaceStore = useTeamWorkspaceStore()
 
 const loading = ref(false)
@@ -148,7 +146,6 @@ async function onCreateLink() {
   try {
     generatedLink.value = await workspaceStore.createInviteLink(email.value)
     step.value = 'link'
-    await onConfirm(email.value)
   } finally {
     loading.value = false
   }
@@ -159,13 +156,13 @@ async function onCopyLink() {
     await navigator.clipboard.writeText(generatedLink.value)
     toast.add({
       severity: 'success',
-      summary: 'Copied',
+      summary: t('workspacePanel.inviteMemberDialog.linkCopied'),
       life: 2000
     })
   } catch {
     toast.add({
       severity: 'error',
-      summary: 'Failed to copy link',
+      summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed'),
       life: 3000
     })
   }
