@@ -4,6 +4,8 @@ import { nextTick } from 'vue'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useLoad3dService } from '@/services/load3dService'
 
@@ -30,11 +32,11 @@ vi.mock('@/extensions/core/load3d/Load3d', () => ({
 }))
 
 describe('useLoad3dViewer', () => {
-  let mockLoad3d: any
-  let mockSourceLoad3d: any
-  let mockLoad3dService: any
-  let mockToastStore: any
-  let mockNode: any
+  let mockLoad3d: Partial<Load3d>
+  let mockSourceLoad3d: Partial<Load3d>
+  let mockLoad3dService: ReturnType<typeof useLoad3dService>
+  let mockToastStore: ReturnType<typeof useToastStore>
+  let mockNode: LGraphNode
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -62,9 +64,9 @@ describe('useLoad3dViewer', () => {
       },
       graph: {
         setDirtyCanvas: vi.fn()
-      },
+      } as Partial<LGraph> as LGraph,
       widgets: []
-    } as any
+    } as unknown as LGraphNode
 
     mockLoad3d = {
       setBackgroundColor: vi.fn(),
@@ -104,17 +106,17 @@ describe('useLoad3dViewer', () => {
           type: 'color',
           value: '#282828'
         })
-      },
+      } as unknown as Load3d['sceneManager'],
       lightingManager: {
         lights: [null, { intensity: 1 }]
-      },
+      } as Partial<Load3d['lightingManager']> as Load3d['lightingManager'],
       cameraManager: {
         perspectiveCamera: { fov: 75 }
-      },
+      } as Partial<Load3d['cameraManager']> as Load3d['cameraManager'],
       modelManager: {
         currentUpDirection: 'original',
         materialMode: 'original'
-      },
+      } as Partial<Load3d['modelManager']> as Load3d['modelManager'],
       setBackgroundImage: vi.fn().mockResolvedValue(undefined),
       setBackgroundRenderMode: vi.fn(),
       forceRender: vi.fn()
@@ -128,12 +130,16 @@ describe('useLoad3dViewer', () => {
       copyLoad3dState: vi.fn().mockResolvedValue(undefined),
       handleViewportRefresh: vi.fn(),
       getLoad3d: vi.fn().mockReturnValue(mockSourceLoad3d)
-    }
+    } as Partial<ReturnType<typeof useLoad3dService>> as ReturnType<
+      typeof useLoad3dService
+    >
     vi.mocked(useLoad3dService).mockReturnValue(mockLoad3dService)
 
     mockToastStore = {
       addAlert: vi.fn()
-    }
+    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
+      typeof useToastStore
+    >
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
   })
 
@@ -160,7 +166,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(Load3d).toHaveBeenCalledWith(containerRef, {
         width: undefined,
@@ -184,16 +190,20 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle background image during initialization', async () => {
-      mockSourceLoad3d.sceneManager.getCurrentBackgroundInfo.mockReturnValue({
+      vi.mocked(
+        mockSourceLoad3d.sceneManager!.getCurrentBackgroundInfo
+      ).mockReturnValue({
         type: 'image',
         value: ''
       })
-      mockNode.properties['Scene Config'].backgroundImage = 'test-image.jpg'
+      ;(
+        mockNode.properties!['Scene Config'] as Record<string, unknown>
+      ).backgroundImage = 'test-image.jpg'
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(viewer.backgroundImage.value).toBe('test-image.jpg')
       expect(viewer.hasBackgroundImage.value).toBe(true)
@@ -207,7 +217,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(mockToastStore.addAlert).toHaveBeenCalledWith(
         'toastMessages.failedToInitializeLoad3dViewer'
@@ -220,7 +230,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.backgroundColor.value = '#ff0000'
       await nextTick()
@@ -232,7 +242,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.showGrid.value = false
       await nextTick()
@@ -244,7 +254,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.cameraType.value = 'orthographic'
       await nextTick()
@@ -256,7 +266,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.fov.value = 90
       await nextTick()
@@ -268,7 +278,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.lightIntensity.value = 2
       await nextTick()
@@ -280,7 +290,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.backgroundImage.value = 'new-bg.jpg'
       await nextTick()
@@ -293,7 +303,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.upDirection.value = '+y'
       await nextTick()
@@ -305,7 +315,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.materialMode.value = 'wireframe'
       await nextTick()
@@ -314,14 +324,16 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle watcher errors gracefully', async () => {
-      mockLoad3d.setBackgroundColor.mockImplementationOnce(function () {
-        throw new Error('Color update failed')
-      })
+      vi.mocked(mockLoad3d.setBackgroundColor!).mockImplementationOnce(
+        function () {
+          throw new Error('Color update failed')
+        }
+      )
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.backgroundColor.value = '#ff0000'
       await nextTick()
@@ -337,7 +349,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       await viewer.exportModel('glb')
 
@@ -345,12 +357,14 @@ describe('useLoad3dViewer', () => {
     })
 
     it('should handle export errors', async () => {
-      mockLoad3d.exportModel.mockRejectedValueOnce(new Error('Export failed'))
+      vi.mocked(mockLoad3d.exportModel!).mockRejectedValueOnce(
+        new Error('Export failed')
+      )
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       await viewer.exportModel('glb')
 
@@ -373,7 +387,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.handleResize()
 
@@ -384,7 +398,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.handleMouseEnter()
 
@@ -395,7 +409,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.handleMouseLeave()
 
@@ -408,22 +422,35 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
-
-      mockNode.properties['Scene Config'].backgroundColor = '#ff0000'
-      mockNode.properties['Scene Config'].showGrid = false
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
+      ;(
+        mockNode.properties!['Scene Config'] as Record<string, unknown>
+      ).backgroundColor = '#ff0000'
+      ;(
+        mockNode.properties!['Scene Config'] as Record<string, unknown>
+      ).showGrid = false
 
       viewer.restoreInitialState()
 
-      expect(mockNode.properties['Scene Config'].backgroundColor).toBe(
-        '#282828'
-      )
-      expect(mockNode.properties['Scene Config'].showGrid).toBe(true)
-      expect(mockNode.properties['Camera Config'].cameraType).toBe(
-        'perspective'
-      )
-      expect(mockNode.properties['Camera Config'].fov).toBe(75)
-      expect(mockNode.properties['Light Config'].intensity).toBe(1)
+      expect(
+        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+          .backgroundColor
+      ).toBe('#282828')
+      expect(
+        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+          .showGrid
+      ).toBe(true)
+      expect(
+        (mockNode.properties!['Camera Config'] as Record<string, unknown>)
+          .cameraType
+      ).toBe('perspective')
+      expect(
+        (mockNode.properties!['Camera Config'] as Record<string, unknown>).fov
+      ).toBe(75)
+      expect(
+        (mockNode.properties!['Light Config'] as Record<string, unknown>)
+          .intensity
+      ).toBe(1)
     })
   })
 
@@ -432,7 +459,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.backgroundColor.value = '#ff0000'
       viewer.showGrid.value = false
@@ -440,23 +467,27 @@ describe('useLoad3dViewer', () => {
       const result = await viewer.applyChanges()
 
       expect(result).toBe(true)
-      expect(mockNode.properties['Scene Config'].backgroundColor).toBe(
-        '#ff0000'
-      )
-      expect(mockNode.properties['Scene Config'].showGrid).toBe(false)
+      expect(
+        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+          .backgroundColor
+      ).toBe('#ff0000')
+      expect(
+        (mockNode.properties!['Scene Config'] as Record<string, unknown>)
+          .showGrid
+      ).toBe(false)
       expect(mockLoad3dService.copyLoad3dState).toHaveBeenCalledWith(
         mockLoad3d,
         mockSourceLoad3d
       )
       expect(mockSourceLoad3d.forceRender).toHaveBeenCalled()
-      expect(mockNode.graph.setDirtyCanvas).toHaveBeenCalledWith(true, true)
+      expect(mockNode.graph!.setDirtyCanvas).toHaveBeenCalledWith(true, true)
     })
 
     it('should handle background image during apply', async () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.backgroundImage.value = 'new-bg.jpg'
 
@@ -481,7 +512,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.refreshViewport()
 
@@ -498,7 +529,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
       await viewer.handleBackgroundImageUpdate(file)
@@ -515,7 +546,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
       await viewer.handleBackgroundImageUpdate(file)
@@ -527,7 +558,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.backgroundImage.value = 'existing.jpg'
       viewer.hasBackgroundImage.value = true
@@ -546,7 +577,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       const file = new File([''], 'test.jpg', { type: 'image/jpeg' })
       await viewer.handleBackgroundImageUpdate(file)
@@ -562,7 +593,7 @@ describe('useLoad3dViewer', () => {
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       viewer.cleanup()
 
@@ -580,33 +611,36 @@ describe('useLoad3dViewer', () => {
     it('should handle missing container ref', async () => {
       const viewer = useLoad3dViewer(mockNode)
 
-      await viewer.initializeViewer(null as any, mockSourceLoad3d)
+      await viewer.initializeViewer(null!, mockSourceLoad3d as Load3d)
 
       expect(Load3d).not.toHaveBeenCalled()
     })
 
     it('should handle orthographic camera', async () => {
-      mockSourceLoad3d.getCurrentCameraType.mockReturnValue('orthographic')
+      vi.mocked(mockSourceLoad3d.getCurrentCameraType!).mockReturnValue(
+        'orthographic'
+      )
       mockSourceLoad3d.cameraManager = {
         perspectiveCamera: { fov: 75 }
-      }
-      delete mockNode.properties['Camera Config'].cameraType
+      } as Partial<Load3d['cameraManager']> as Load3d['cameraManager']
+      delete (mockNode.properties!['Camera Config'] as Record<string, unknown>)
+        .cameraType
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(viewer.cameraType.value).toBe('orthographic')
     })
 
     it('should handle missing lights', async () => {
-      mockSourceLoad3d.lightingManager.lights = []
+      mockSourceLoad3d.lightingManager!.lights = []
 
       const viewer = useLoad3dViewer(mockNode)
       const containerRef = document.createElement('div')
 
-      await viewer.initializeViewer(containerRef, mockSourceLoad3d)
+      await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
       expect(viewer.lightIntensity.value).toBe(1) // Default value
     })
