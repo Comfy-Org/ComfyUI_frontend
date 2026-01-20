@@ -22,18 +22,25 @@
     <span ref="textRef" class="min-w-0 truncate">
       <slot></slot>
     </span>
+    <StatusBadge
+      v-if="badge !== undefined"
+      :label="String(badge)"
+      severity="contrast"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import type { NavItemData } from '@/types/navTypes'
 
 import NavIcon from './NavIcon.vue'
 
-const { icon, active, onClick } = defineProps<{
+const { icon, badge, active, onClick } = defineProps<{
   icon: NavItemData['icon']
+  badge?: NavItemData['badge']
   active?: boolean
   onClick: () => void
 }>()
