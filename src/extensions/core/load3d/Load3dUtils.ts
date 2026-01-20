@@ -108,12 +108,16 @@ class Load3dUtils {
     return `/view?${params}`
   }
 
-  static async uploadMultipleFiles(files: FileList, subfolder: string = '3d') {
+  static async uploadMultipleFiles(
+    files: FileList,
+    subfolder: string = '3d'
+  ): Promise<string[]> {
     const uploadPromises = Array.from(files).map((file) =>
       this.uploadFile(file, subfolder)
     )
 
-    await Promise.all(uploadPromises)
+    const results = await Promise.all(uploadPromises)
+    return results.filter((path): path is string => path !== undefined)
   }
 
   static getThumbnailFilename(modelFilename: string): string {
