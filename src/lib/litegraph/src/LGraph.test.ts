@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraphNode } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -206,6 +207,118 @@ describe('Graph Clearing and Callbacks', () => {
 
     // Verify nodes were actually removed
     expect(graph.nodes.length).toBe(0)
+  })
+})
+
+describe('Subgraph Definition Garbage Collection', () => {
+  function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
+    const subgraphData = {
+      version: 1 as const,
+      revision: 0,
+      state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
+      nodes: [] as [],
+      links: [] as [],
+      groups: [] as [],
+      config: {},
+      definitions: { subgraphs: [] as [] },
+      id: `test-subgraph-${Date.now()}-${Math.random()}` as `${string}-${string}-${string}-${string}-${string}`,
+      name: 'Test Subgraph',
+      inputNode: {
+        id: -10,
+        bounding: [10, 100, 150, 126] as [number, number, number, number],
+        pinned: false
+      },
+      outputNode: {
+        id: -20,
+        bounding: [400, 100, 140, 126] as [number, number, number, number],
+        pinned: false
+      },
+      inputs: [] as [],
+      outputs: [] as [],
+      widgets: [] as []
+    }
+
+    const subgraph = rootGraph.createSubgraph(subgraphData)
+
+    const innerNodes: LGraphNode[] = []
+    for (let i = 0; i < nodeCount; i++) {
+      const node = new LGraphNode(`Inner Node ${i}`)
+      subgraph.add(node)
+      innerNodes.push(node)
+    }
+
+    return { subgraph, innerNodes }
+  }
+
+  it('removing SubgraphNode fires onRemoved for inner nodes', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 2)
+    const removedNodeIds = new Set<string>()
+
+    for (const node of innerNodes) {
+      node.onRemoved = () => removedNodeIds.add(String(node.id))
+    }
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    expect(subgraph.nodes.length).toBe(2)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(removedNodeIds.size).toBe(2)
+  })
+
+  it('removing SubgraphNode fires onNodeRemoved callback', () => {
+    const rootGraph = new LGraph()
+    const { subgraph } = createSubgraphWithNodes(rootGraph, 2)
+    const graphRemovedNodeIds = new Set<string>()
+
+    subgraph.onNodeRemoved = (node) => graphRemovedNodeIds.add(String(node.id))
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(graphRemovedNodeIds.size).toBe(2)
+  })
+
+  it('subgraph definition is removed when last referencing node is removed', () => {
+    const rootGraph = new LGraph()
+    const { subgraph } = createSubgraphWithNodes(rootGraph, 1)
+    const subgraphId = subgraph.id
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    expect(rootGraph.subgraphs.has(subgraphId)).toBe(true)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
+  })
+
+  it('subgraph definition is retained when other nodes still reference it', () => {
+    const rootGraph = new LGraph()
+    const { subgraph } = createSubgraphWithNodes(rootGraph, 1)
+    const subgraphId = subgraph.id
+
+    const subgraphNode1 = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode1)
+
+    const subgraphNode2 = createTestSubgraphNode(subgraph, { pos: [300, 100] })
+    rootGraph.add(subgraphNode2)
+
+    expect(rootGraph.subgraphs.has(subgraphId)).toBe(true)
+
+    rootGraph.remove(subgraphNode1)
+
+    expect(rootGraph.subgraphs.has(subgraphId)).toBe(true)
+
+    rootGraph.remove(subgraphNode2)
+
+    expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
   })
 })
 
