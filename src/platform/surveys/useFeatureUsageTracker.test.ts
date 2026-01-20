@@ -33,19 +33,23 @@ describe('useFeatureUsageTracker', () => {
   })
 
   it('sets firstUsed only on first use', async () => {
-    const { useFeatureUsageTracker } = await import('./useFeatureUsageTracker')
-    const { usage, trackUsage } = useFeatureUsageTracker('test-feature')
+    vi.useFakeTimers()
+    const firstTs = 1000000
+    vi.setSystemTime(firstTs)
+    try {
+      const { useFeatureUsageTracker } =
+        await import('./useFeatureUsageTracker')
+      const { usage, trackUsage } = useFeatureUsageTracker('test-feature')
 
-    const beforeFirst = Date.now()
-    trackUsage()
-    const afterFirst = Date.now()
+      trackUsage()
+      expect(usage.value?.firstUsed).toBe(firstTs)
 
-    const firstUsed = usage.value?.firstUsed ?? 0
-    expect(firstUsed).toBeGreaterThanOrEqual(beforeFirst)
-    expect(firstUsed).toBeLessThanOrEqual(afterFirst)
-
-    trackUsage()
-    expect(usage.value?.firstUsed).toBe(firstUsed)
+      vi.setSystemTime(firstTs + 5000)
+      trackUsage()
+      expect(usage.value?.firstUsed).toBe(firstTs)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('updates lastUsed on each use', async () => {
