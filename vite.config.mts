@@ -51,6 +51,14 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
       ? 'cloud'
       : 'localhost'
 
+// Nightly builds are from main branch; RC/stable builds are from core/* branches
+// Can be overridden via IS_NIGHTLY env var for testing
+const IS_NIGHTLY =
+  process.env.IS_NIGHTLY === 'true' ||
+  (process.env.IS_NIGHTLY !== 'false' &&
+    process.env.CI === 'true' &&
+    process.env.GITHUB_REF_NAME === 'main')
+
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
@@ -502,7 +510,8 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
   },
 
   resolve: {
