@@ -202,9 +202,13 @@ const sliderWidth = computed(() => {
       :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
     >
       <div
-        class="bg-primary-background/15 absolute left-0 bottom-0 h-full rounded-lg pointer-events-none"
-        :style="{ width: `${sliderWidth}%` }"
-      />
+        class="absolute size-full rounded-lg pointer-events-none overflow-clip"
+      >
+        <div
+          class="bg-primary-background/15 size-full"
+          :style="{ width: `${sliderWidth}%` }"
+        />
+      </div>
       <Button
         v-if="!buttonsDisabled"
         data-testid="decrement"
