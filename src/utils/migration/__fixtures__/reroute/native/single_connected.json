@@ -5,14 +5,8 @@
     {
       "id": 4,
       "type": "CheckpointLoaderSimple",
-      "pos": [
-        160,
-        240
-      ],
-      "size": [
-        315,
-        98
-      ],
+      "pos": [160, 240],
+      "size": [315, 98],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -34,29 +28,19 @@
           "name": "VAE",
           "type": "VAE",
           "slot_index": 2,
-          "links": [
-            21
-          ]
+          "links": [21]
         }
       ],
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "v1-5-pruned-emaonly.safetensors"
-      ]
+      "widgets_values": ["v1-5-pruned-emaonly.safetensors"]
     },
     {
       "id": 12,
       "type": "VAEDecode",
-      "pos": [
-        620,
-        260
-      ],
-      "size": [
-        210,
-        46
-      ],
+      "pos": [620, 260],
+      "size": [210, 46],
       "flags": {},
       "order": 2,
       "mode": 0,
@@ -85,36 +69,19 @@
       "widgets_values": []
     }
   ],
-  "links": [
-    [
-      21,
-      4,
-      2,
-      12,
-      1,
-      "VAE"
-    ]
-  ],
+  "links": [[21, 4, 2, 12, 1, "VAE"]],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
       "scale": 2.7130434782608694,
-      "offset": [
-        -35,
-        -40.86698717948718
-      ]
+      "offset": [-35, -40.86698717948718]
     },
     "reroutes": [
       {
         "id": 1,
-        "pos": [
-          547.5,
-          293
-        ],
-        "linkIds": [
-          21
-        ]
+        "pos": [547.5, 293],
+        "linkIds": [21]
       }
     ],
     "linkExtensions": [

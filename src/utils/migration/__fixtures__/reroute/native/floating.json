@@ -5,14 +5,8 @@
     {
       "id": 4,
       "type": "CheckpointLoaderSimple",
-      "pos": [
-        47.948699951171875,
-        239.2628173828125
-      ],
-      "size": [
-        315,
-        98
-      ],
+      "pos": [47.948699951171875, 239.2628173828125],
+      "size": [315, 98],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -42,21 +36,13 @@
         "ver": "0.3.26",
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "v1-5-pruned-emaonly.safetensors"
-      ]
+      "widgets_values": ["v1-5-pruned-emaonly.safetensors"]
     },
     {
       "id": 12,
       "type": "VAEDecode",
-      "pos": [
-        620,
-        260
-      ],
-      "size": [
-        210,
-        46
-      ],
+      "pos": [620, 260],
+      "size": [210, 46],
       "flags": {},
       "order": 5,
       "mode": 0,
@@ -93,18 +79,12 @@
   "extra": {
     "ds": {
       "scale": 1.2526143885641918,
-      "offset": [
-        449.14488520559655,
-        200.06933385457722
-      ]
+      "offset": [449.14488520559655, 200.06933385457722]
     },
     "reroutes": [
       {
         "id": 1,
-        "pos": [
-          547.5,
-          293
-        ],
+        "pos": [547.5, 293],
         "linkIds": [],
         "floating": {
           "slotType": "input"
@@ -112,10 +92,7 @@
       },
       {
         "id": 2,
-        "pos": [
-          438.99267578125,
-          291.96600341796875
-        ],
+        "pos": [438.99267578125, 291.96600341796875],
         "linkIds": [],
         "floating": {
           "slotType": "output"

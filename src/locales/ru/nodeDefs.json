@@ -2031,8 +2031,7 @@
       "choice": {
         "name": "выбор"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -6179,8 +6178,7 @@
   "Load3D": {
     "display_name": "Загрузить 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "высота"
       },
@@ -6190,10 +6188,8 @@
       "model_file": {
         "name": "файл модели"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "ширина"
       }
@@ -6282,13 +6278,11 @@
     "description": "Загрузите изображение из папки вывода. При нажатии кнопки обновления, узел обновит список изображений и автоматически выберет первое изображение, что позволяет легко итерировать.",
     "display_name": "Загрузить изображение (из выходных данных)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "изображение"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "выберите файл для загрузки"
       }
@@ -10373,10 +10367,8 @@
   "PreviewAny": {
     "display_name": "Предпросмотр любого",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "источник"
       }
@@ -16149,8 +16141,7 @@
       "image": {
         "name": "изображение"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "ширина"
       }

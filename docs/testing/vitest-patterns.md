@@ -36,7 +36,7 @@ describe('MyStore', () => {
 
 ```typescript
 beforeEach(() => {
-  vi.resetAllMocks()  // Not individual mock.mockReset() calls
+  vi.resetAllMocks() // Not individual mock.mockReset() calls
 })
 ```
 
@@ -75,9 +75,9 @@ When a store registers event listeners at module load time:
 
 ```typescript
 function getEventHandler() {
-  const call = vi.mocked(api.addEventListener).mock.calls.find(
-    ([event]) => event === 'my_event'
-  )
+  const call = vi
+    .mocked(api.addEventListener)
+    .mock.calls.find(([event]) => event === 'my_event')
   return call?.[1] as (e: CustomEvent<MyEventType>) => void
 }
 

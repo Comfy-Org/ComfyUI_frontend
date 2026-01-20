@@ -2033,8 +2033,7 @@
       "choice": {
         "name": "选择"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -6188,8 +6187,7 @@
   "Load3D": {
     "display_name": "加载3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "高度"
       },
@@ -6199,10 +6197,8 @@
       "model_file": {
         "name": "模型文件"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "宽度"
       }
@@ -6297,13 +6293,11 @@
     "description": "从输出文件夹加载图像。当点击刷新按钮时，节点将更新图像列表并自动选择第一张图像，便于轻松迭代。",
     "display_name": "加载图像（来自输出）",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "图像"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "选择文件上传"
       }
@@ -10389,10 +10383,8 @@
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "源"
       }
@@ -16180,8 +16172,7 @@
       "image": {
         "name": "图像"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "宽度"
       }

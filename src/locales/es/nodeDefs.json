@@ -2031,8 +2031,7 @@
       "choice": {
         "name": "elección"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -6179,8 +6178,7 @@
   "Load3D": {
     "display_name": "Cargar 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "alto"
       },
@@ -6190,10 +6188,8 @@
       "model_file": {
         "name": "archivo_modelo"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "ancho"
       }
@@ -6282,13 +6278,11 @@
     "description": "Carga una imagen desde la carpeta de salida. Cuando se hace clic en el botón de actualizar, el nodo actualizará la lista de imágenes y seleccionará automáticamente la primera imagen, permitiendo una fácil iteración.",
     "display_name": "Cargar Imagen (desde Salidas)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "imagen"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "elige archivo para subir"
       }
@@ -10373,10 +10367,8 @@
   "PreviewAny": {
     "display_name": "Vista previa de cualquier",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "fuente"
       }
@@ -16149,8 +16141,7 @@
       "image": {
         "name": "imagen"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "ancho"
       }

@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-See @docs/guidance/*.md for file-type-specific conventions (auto-loaded by glob).
+See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob).
 
 ## Project Structure & Module Organization
 
@@ -93,7 +93,6 @@ The project uses **Nx** for build orchestration and task management
   - composables `useXyz.ts`
   - Pinia stores `*Store.ts`
 
-
 ## Commit & Pull Request Guidelines
 
 - PRs:
@@ -131,8 +130,8 @@ The project uses **Nx** for build orchestration and task management
 
     ```typescript
     const { nodes, showTotal = true } = defineProps<{
-    nodes: ApiNodeCost[]
-    showTotal?: boolean
+      nodes: ApiNodeCost[]
+      showTotal?: boolean
     }>()
     ```
 
@@ -178,7 +177,7 @@ The project uses **Nx** for build orchestration and task management
 
 ## Testing Guidelines
 
-See @docs/testing/*.md for detailed patterns.
+See @docs/testing/\*.md for detailed patterns.
 
 - Frameworks:
   - Vitest (unit/component, happy-dom)

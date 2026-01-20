@@ -2031,8 +2031,7 @@
       "choice": {
         "name": "choix"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -6179,8 +6178,7 @@
   "Load3D": {
     "display_name": "Charger 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "hauteur"
       },
@@ -6190,10 +6188,8 @@
       "model_file": {
         "name": "fichier_modèle"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "largeur"
       }
@@ -6282,13 +6278,11 @@
     "description": "Chargez une image à partir du dossier de sortie. Lorsque le bouton de rafraîchissement est cliqué, le nœud mettra à jour la liste des images et sélectionnera automatiquement la première image, permettant une itération facile.",
     "display_name": "Charger l'image (à partir des sorties)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "image"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "choisissez le fichier à télécharger"
       }
@@ -10373,10 +10367,8 @@
   "PreviewAny": {
     "display_name": "Aperçu de n'importe quel",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "source"
       }
@@ -16149,8 +16141,7 @@
       "image": {
         "name": "image"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "largeur"
       }

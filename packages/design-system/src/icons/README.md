@@ -100,7 +100,8 @@ ComfyUI supports three types of icons that can be used throughout the interface.
 
 ```vue
 <template>
-  <i class="icon-[lucide--info]"
+  <i
+    class="icon-[lucide--info]"
     v-tooltip="'Click for more information'"
     class="cursor-pointer"
   />
@@ -147,6 +148,7 @@ packages/design-system/src/icons/
 ```
 
 **Important:**
+
 - Use `viewBox` for proper scaling (24x24 is standard)
 - Don't include `width` or `height` attributes
 - Use `currentColor` for theme-aware icons
@@ -264,8 +266,8 @@ The icon system has two layers:
 export const iconCollection: IconifyCollection = {
   prefix: 'comfy',
   icons: {
-    'workflow': { body: '<svg>...</svg>' },
-    'node': { body: '<svg>...</svg>' }
+    workflow: { body: '<svg>...</svg>' },
+    node: { body: '<svg>...</svg>' }
   }
 }
 
@@ -289,6 +291,7 @@ Icons are fully typed. If TypeScript doesn't recognize a new custom icon:
 ## Troubleshooting
 
 ### Icon Not Showing
+
 1. **Check filename**: Must be kebab-case without special characters
 2. **Restart dev server**: Required after adding new icons
 3. **Verify SVG**: Ensure it's valid SVG syntax (build script validates automatically)
@@ -296,11 +299,13 @@ Icons are fully typed. If TypeScript doesn't recognize a new custom icon:
 5. **Build script errors**: Check console during build - malformed SVGs are logged but don't break builds
 
 ### Icon Wrong Color
+
 - Replace hardcoded colors with `currentColor`
 - Use `stroke="currentColor"` for outlines
 - Use `fill="currentColor"` for filled shapes
 
 ### Icon Wrong Size
+
 - Remove `width` and `height` from SVG
 - Ensure `viewBox` is present
 - Use CSS classes for sizing: `class="w-6 h-6"`

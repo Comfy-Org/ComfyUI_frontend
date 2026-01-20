@@ -2031,8 +2031,7 @@
       "choice": {
         "name": "선택"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -6179,8 +6178,7 @@
   "Load3D": {
     "display_name": "3D 불러오기",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "높이"
       },
@@ -6190,10 +6188,8 @@
       "model_file": {
         "name": "모델 파일"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "너비"
       }
@@ -6282,13 +6278,11 @@
     "description": "입력(input) 폴더 대신 출력(output) 폴더에서 이미지를 로드합니다. 새로 고침 버튼을 클릭하면 노드는 이미지 목록을 업데이트하고 자동으로 첫 번째 이미지를 선택하여 쉬운 반복을 가능하게 합니다.",
     "display_name": "이미지 로드 (출력에서)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "이미지"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "업로드할 파일 선택"
       }
@@ -10373,10 +10367,8 @@
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "소스"
       }
@@ -16149,8 +16141,7 @@
       "image": {
         "name": "이미지"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "너비"
       }

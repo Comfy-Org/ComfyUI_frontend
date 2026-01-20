@@ -2031,8 +2031,7 @@
       "choice": {
         "name": "選択"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -6179,8 +6178,7 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "高さ"
       },
@@ -6190,10 +6188,8 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "幅"
       }
@@ -6282,13 +6278,11 @@
     "description": "出力フォルダから画像を読み込みます。更新ボタンをクリックすると、ノードは画像リストを更新し、自動的に最初の画像を選択します。これにより、簡単に反復処理が可能になります。",
     "display_name": "画像の読み込み（出力から）",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "画像"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "アップロードするファイルを選択"
       }
@@ -10373,10 +10367,8 @@
   "PreviewAny": {
     "display_name": "プレビュー任意",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "ソース"
       }
@@ -16149,8 +16141,7 @@
       "image": {
         "name": "画像"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "幅"
       }

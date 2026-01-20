@@ -2031,8 +2031,7 @@
       "choice": {
         "name": "اختيار"
       },
-      "option0": {
-      }
+      "option0": {}
     },
     "outputs": {
       "0": {
@@ -6179,8 +6178,7 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "الارتفاع"
       },
@@ -6190,10 +6188,8 @@
       "model_file": {
         "name": "ملف النموذج"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "العرض"
       }
@@ -6282,13 +6278,11 @@
     "description": "تحميل صورة من مجلد المخرجات. عند الضغط على زر التحديث، سيقوم العقدة بتحديث قائمة الصور واختيار أول صورة تلقائياً لتسهيل التكرار.",
     "display_name": "تحميل صورة (من المخرجات)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "صورة"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "اختر ملف للتحميل"
       }
@@ -10373,10 +10367,8 @@
   "PreviewAny": {
     "display_name": "معاينة أي",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "المصدر"
       }
@@ -16149,8 +16141,7 @@
       "image": {
         "name": "صورة"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "العرض"
       }
