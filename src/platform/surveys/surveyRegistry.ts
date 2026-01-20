@@ -15,6 +15,7 @@ export const FEATURE_SURVEYS: Record<string, FeatureSurveyConfig> = {
   // }
 }
 
+/** @public */
 export type FeatureId = keyof typeof FEATURE_SURVEYS
 
 export function getSurveyConfig(
