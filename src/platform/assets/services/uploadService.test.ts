@@ -56,9 +56,9 @@ describe('uploadService', () => {
 
     it('uploads dataURL successfully', async () => {
       const dataURL = 'data:image/png;base64,iVBORw0KGgo='
-      global.fetch = vi.fn().mockResolvedValue({
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue({
         blob: () => Promise.resolve(new Blob(['content']))
-      })
+      } as Response)
 
       const mockResponse = {
         status: 200,
@@ -70,9 +70,21 @@ describe('uploadService', () => {
 
       vi.mocked(api.fetchApi).mockResolvedValue(mockResponse as any)
 
-      const result = await uploadMedia({ source: dataURL })
+      try {
+        const result = await uploadMedia({ source: dataURL })
+        expect(result.success).toBe(true)
+      } finally {
+        fetchSpy.mockRestore()
+      }
+    })
 
-      expect(result.success).toBe(true)
+    it('rejects invalid dataURL', async () => {
+      const invalidURL = 'not-a-data-url'
+
+      const result = await uploadMedia({ source: invalidURL })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Invalid data URL')
     })
 
     it('includes subfolder in FormData', async () => {
@@ -96,7 +108,12 @@ describe('uploadService', () => {
     })
 
     it('validates file size', async () => {
-      const largeFile = new File(['x'.repeat(200 * 1024 * 1024)], 'large.png')
+      // Create a file that reports as 200MB without actually allocating that much memory
+      const largeFile = new File(['content'], 'large.png')
+      Object.defineProperty(largeFile, 'size', {
+        value: 200 * 1024 * 1024,
+        writable: false
+      })
 
       const result = await uploadMedia(
         { source: largeFile },
@@ -166,15 +183,19 @@ describe('uploadService', () => {
         new File(['2'], 'file2.png')
       ]
 
-      const mockResponse = {
+      const mockResponse1 = {
         status: 200,
-        json: vi
-          .fn()
-          .mockResolvedValueOnce({ name: 'file1.png' })
-          .mockResolvedValueOnce({ name: 'file2.png' })
+        json: vi.fn().mockResolvedValue({ name: 'file1.png', subfolder: '' })
       }
 
-      vi.mocked(api.fetchApi).mockResolvedValue(mockResponse as any)
+      const mockResponse2 = {
+        status: 200,
+        json: vi.fn().mockResolvedValue({ name: 'file2.png', subfolder: '' })
+      }
+
+      vi.mocked(api.fetchApi)
+        .mockResolvedValueOnce(mockResponse1 as any)
+        .mockResolvedValueOnce(mockResponse2 as any)
 
       const results = await uploadMediaBatch(
         mockFiles.map((source) => ({ source }))
