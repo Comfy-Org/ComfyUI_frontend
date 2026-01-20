@@ -9,8 +9,8 @@
       <MediaAssetFilterButton v-if="isCloud" v-tooltip.top="{ value: $t('assetBrowser.filterBy') }" size="md">
         <template #default="{ close }">
           <MediaAssetFilterMenu
-            :media-type-filters="mediaTypeFilters"
-            :close="close"
+            :media-type-filters
+            :close
             @update:media-type-filters="handleMediaTypeFiltersChange" />
         </template>
       </MediaAssetFilterButton>
