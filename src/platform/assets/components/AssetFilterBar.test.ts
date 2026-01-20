@@ -10,11 +10,15 @@ import {
   createAssetWithoutBaseModel
 } from '@/platform/assets/fixtures/ui-mock-assets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { createI18n } from 'vue-i18n'
 
-// Mock @/i18n directly since component imports { t } from '@/i18n'
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
-}))
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {}
+  }
+})
 
 // Mock components with minimal functionality for business logic testing
 vi.mock('@/components/input/MultiSelect.vue', () => ({
@@ -66,6 +70,7 @@ function mountAssetFilterBar(props = {}) {
   return mount(AssetFilterBar, {
     props,
     global: {
+      plugins: [i18n],
       mocks: {
         $t: (key: string) => key
       }
