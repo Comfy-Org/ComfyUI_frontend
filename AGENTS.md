@@ -46,7 +46,7 @@ The project uses **Nx** for build orchestration and task management
 - `pnpm test:unit`: Run Vitest unit tests
 - `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`)
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
-- `pnpm format` / `pnpm format:check`: Prettier
+- `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
 - `pnpm storybook`: Start Storybook development server
 
@@ -72,7 +72,7 @@ The project uses **Nx** for build orchestration and task management
     - Composition API only
   - Tailwind 4 styling
     - Avoid `<style>` blocks
-- Style: (see `.prettierrc`)
+- Style: (see `.oxfmtrc.json`)
   - Indent 2 spaces
   - single quotes
   - no trailing semicolons
