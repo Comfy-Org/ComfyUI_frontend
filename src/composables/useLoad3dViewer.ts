@@ -630,6 +630,10 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     handleBackgroundImageUpdate,
     handleModelDrop,
     handleSeek,
-    cleanup
+    cleanup,
+
+    hasSkeleton: false,
+    intensity: lightIntensity,
+    showSkeleton: false
   }
 }
