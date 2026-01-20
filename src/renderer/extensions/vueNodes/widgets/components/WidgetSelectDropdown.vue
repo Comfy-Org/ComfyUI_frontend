@@ -4,6 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
+import { uploadMedia } from '@/platform/assets/services/uploadService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -16,7 +17,6 @@ import type {
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import type { ResultItemType } from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -307,44 +307,27 @@ function updateSelectedItems(selectedItems: Set<SelectedKey>) {
   modelValue.value = name
 }
 
-// Upload file function (copied from useNodeImageUpload.ts)
-const uploadFile = async (
-  file: File,
-  isPasted: boolean = false,
-  formFields: Partial<{ type: ResultItemType }> = {}
-) => {
-  const body = new FormData()
-  body.append('image', file)
-  if (isPasted) body.append('subfolder', 'pasted')
-  if (formFields.type) body.append('type', formFields.type)
-
-  const resp = await api.fetchApi('/upload/image', {
-    method: 'POST',
-    body
-  })
-
-  if (resp.status !== 200) {
-    toastStore.addAlert(resp.status + ' - ' + resp.statusText)
-    return null
-  }
-
-  const data = await resp.json()
-
-  // Update AssetsStore when uploading to input folder
-  if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
-    const assetsStore = useAssetsStore()
-    await assetsStore.updateInputs()
-  }
-
-  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
-}
-
-// Handle multiple file uploads
+// Handle multiple file uploads using shared uploadMedia service
 const uploadFiles = async (files: File[]): Promise<string[]> => {
   const folder = props.uploadFolder ?? 'input'
-  const uploadPromises = files.map((file) =>
-    uploadFile(file, false, { type: folder })
-  )
+  const assetsStore = useAssetsStore()
+
+  const uploadPromises = files.map(async (file) => {
+    const result = await uploadMedia({ source: file }, { type: folder })
+
+    if (!result.success) {
+      toastStore.addAlert(result.error || 'Upload failed')
+      return null
+    }
+
+    // Update AssetsStore when uploading to input folder
+    if (folder === 'input') {
+      await assetsStore.updateInputs()
+    }
+
+    return result.path
+  })
+
   const results = await Promise.all(uploadPromises)
   return results.filter((path): path is string => path !== null)
 }
