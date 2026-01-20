@@ -268,8 +268,6 @@ export function useAssetBrowser(
             new Date(b.created_at ?? 0).getTime() -
             new Date(a.created_at ?? 0).getTime()
           )
-        case 'popular':
-          return a.name.localeCompare(b.name)
         case 'name-asc':
         default:
           return a.name.localeCompare(b.name)

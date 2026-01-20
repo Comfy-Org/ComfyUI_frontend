@@ -384,7 +384,7 @@ describe('useAssetBrowser', () => {
       const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
 
       updateFilters({
-        sortBy: 'name',
+        sortBy: 'name-asc',
         fileFormats: [],
         baseModels: [],
         ownership: 'all'

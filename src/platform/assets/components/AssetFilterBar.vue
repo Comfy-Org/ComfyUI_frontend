@@ -68,7 +68,7 @@ const sortOptions = computed(() => [
 export interface FilterState {
   fileFormats: string[]
   baseModels: string[]
-  sortBy: string
+  sortBy: SortOption
 }
 
 const { assets = [] } = defineProps<{
