@@ -8,6 +8,11 @@
   "importOrder": ["^@core/(.*)$", "<THIRD_PARTY_MODULES>", "^@/(.*)$", "^[./]"],
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,
+  "experimentalTailwindcss": {
+    "attributes": ["class", ":class"],
+    "functions": ["cn", "cva", "tw"],
+    "stylesheet": "./packages/design-system/src/css/style.css"
+  },
   "ignorePatterns": [
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "src/types/generatedManagerTypes.ts"
