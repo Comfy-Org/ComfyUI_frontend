@@ -70,10 +70,14 @@ function mountAssetFilterBar(props = {}) {
   return mount(AssetFilterBar, {
     props,
     global: {
-      plugins: [i18n],
-      mocks: {
-        $t: (key: string) => key
-      }
+function mountAssetFilterBar(props = {}) {
+  return mount(AssetFilterBar, {
+    props,
+    global: {
+      plugins: [i18n]
+    }
+  })
+}
     }
   })
 }
