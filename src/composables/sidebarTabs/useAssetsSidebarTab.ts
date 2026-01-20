@@ -15,9 +15,8 @@ export const useAssetsSidebarTab = (): SidebarTabExtension => {
     type: 'vue',
     iconBadge: () => {
       const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
-      return queuePendingTaskCountStore.count > 0
-        ? queuePendingTaskCountStore.count.toString()
-        : null
+      const pendingCount = queuePendingTaskCountStore.count - 1
+      return pendingCount > 0 ? pendingCount.toString() : null
     }
   }
 }

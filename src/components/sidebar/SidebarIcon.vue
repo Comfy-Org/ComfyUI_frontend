@@ -17,16 +17,22 @@
   >
     <div class="side-bar-button-content">
       <slot name="icon">
-        <div class="sidebar-icon-wrapper relative">
-          <i v-if="typeof icon === 'string'" :class="icon" />
-          <component :is="icon" v-else-if="typeof icon === 'object'" />
-          <span
-            v-if="shouldShowBadge"
-            class="absolute -top-2 -right-2 min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground"
-          >
-            {{ overlayValue }}
-          </span>
-        </div>
+        <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
+          <i
+            v-if="typeof icon === 'string'"
+            :class="icon + ' side-bar-button-icon'"
+          />
+          <component :is="icon" v-else class="side-bar-button-icon" />
+        </OverlayBadge>
+        <i
+          v-else-if="typeof icon === 'string'"
+          :class="icon + ' side-bar-button-icon'"
+        />
+        <component
+          :is="icon"
+          v-else-if="typeof icon === 'object'"
+          class="side-bar-button-icon"
+        />
       </slot>
       <span v-if="label && !isSmall" class="side-bar-button-label">{{
         t(label)
@@ -36,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import OverlayBadge from 'primevue/overlaybadge'
 import { computed } from 'vue'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -73,9 +80,8 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 </script>
 
 <style>
-.sidebar-icon-wrapper > i,
-.sidebar-icon-wrapper > svg {
-  font-size: var(--sidebar-icon-size);
+.side-bar-button-icon {
+  font-size: var(--sidebar-icon-size) !important;
 }
 
 .side-bar-button-selected {
@@ -85,6 +91,10 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 .side-bar-button:hover {
   background-color: var(--interface-panel-hover-surface);
   color: var(--content-hover-fg);
+}
+
+.side-bar-button-selected .side-bar-button-icon {
+  font-size: var(--sidebar-icon-size) !important;
 }
 </style>
 
