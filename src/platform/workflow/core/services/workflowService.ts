@@ -6,6 +6,7 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -28,6 +29,7 @@ export const useWorkflowService = () => {
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
+  const workflowDraftStore = useWorkflowDraftStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
@@ -291,6 +293,18 @@ export const useWorkflowService = () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
       activeWorkflow.changeTracker.store()
+      if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
+        const activeState = activeWorkflow.activeState
+        if (activeState) {
+          const workflowJson = JSON.stringify(activeState)
+          workflowDraftStore.saveDraft(activeWorkflow.path, {
+            data: workflowJson,
+            updatedAt: Date.now(),
+            name: activeWorkflow.key,
+            isTemporary: activeWorkflow.isTemporary
+          })
+        }
+      }
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
