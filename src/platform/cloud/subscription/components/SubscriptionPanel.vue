@@ -17,7 +17,10 @@
         </div>
       </div>
 
-      <SubscriptionPanelContent />
+      <!-- Workspace mode: workspace-aware subscription content -->
+      <SubscriptionPanelContentWorkspace v-if="teamWorkspacesEnabled" />
+      <!-- Legacy mode: user-level subscription content -->
+      <SubscriptionPanelContentLegacy v-else />
 
       <div
         class="flex items-center justify-between border-t border-interface-stroke pt-3"
@@ -65,13 +68,24 @@
 
 <script setup lang="ts">
 import TabPanel from 'primevue/tabpanel'
+import { defineAsyncComponent } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import SubscriptionPanelContent from '@/platform/cloud/subscription/components/SubscriptionPanelContent.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import SubscriptionPanelContentLegacy from '@/platform/cloud/subscription/components/SubscriptionPanelContentLegacy.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { isCloud } from '@/platform/distribution/types'
+
+const SubscriptionPanelContentWorkspace = defineAsyncComponent(
+  () =>
+    import('@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue')
+)
+
+const { flags } = useFeatureFlags()
+const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 

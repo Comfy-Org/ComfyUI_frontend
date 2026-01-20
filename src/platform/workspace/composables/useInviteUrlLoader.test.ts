@@ -46,6 +46,11 @@ vi.mock('primevue/usetoast', () => ({
 }))
 
 vi.mock('vue-i18n', () => ({
+  createI18n: () => ({
+    global: {
+      t: (key: string) => key
+    }
+  }),
   useI18n: () => ({
     t: vi.fn((key: string, params?: Record<string, unknown>) => {
       if (key === 'workspace.inviteAccepted') return 'Invite Accepted'
@@ -60,8 +65,8 @@ vi.mock('vue-i18n', () => ({
 }))
 
 const mockAcceptInvite = vi.hoisted(() => vi.fn())
-vi.mock('../stores/workspaceStore', () => ({
-  useWorkspaceStore: () => ({
+vi.mock('../stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
     acceptInvite: mockAcceptInvite
   })
 }))

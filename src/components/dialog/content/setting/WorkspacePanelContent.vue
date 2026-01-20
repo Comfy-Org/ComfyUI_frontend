@@ -98,7 +98,7 @@ import { useI18n } from 'vue-i18n'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
-import SubscriptionPanelContent from '@/platform/cloud/subscription/components/SubscriptionPanelContent.vue'
+import SubscriptionPanelContent from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -111,7 +111,8 @@ const { t } = useI18n()
 const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
-  showInviteMemberDialog
+  showInviteMemberDialog,
+  showEditWorkspaceDialog
 } = useDialogService()
 const workspaceStore = useTeamWorkspaceStore()
 const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
@@ -128,6 +129,10 @@ function handleLeaveWorkspace() {
 
 function handleDeleteWorkspace() {
   showDeleteWorkspaceDialog()
+}
+
+function handleEditWorkspace() {
+  showEditWorkspaceDialog()
 }
 
 // Disable delete when workspace has an active subscription (to prevent accidental deletion)
@@ -157,30 +162,37 @@ function handleInviteMember() {
 }
 
 const menuItems = computed(() => {
-  const action = uiConfig.value.workspaceMenuAction
-  if (!action) return []
+  const items = []
 
-  if (action === 'delete') {
-    return [
-      {
-        label: t('workspacePanel.menu.deleteWorkspace'),
-        icon: 'pi pi-trash',
-        class: isDeleteDisabled.value
-          ? 'text-danger/50 cursor-not-allowed'
-          : 'text-danger',
-        disabled: isDeleteDisabled.value,
-        command: isDeleteDisabled.value ? undefined : handleDeleteWorkspace
-      }
-    ]
+  // Add edit option for owners
+  if (uiConfig.value.showEditWorkspaceMenuItem) {
+    items.push({
+      label: t('workspacePanel.menu.editWorkspace'),
+      icon: 'pi pi-pencil',
+      command: handleEditWorkspace
+    })
   }
 
-  return [
-    {
+  const action = uiConfig.value.workspaceMenuAction
+  if (action === 'delete') {
+    items.push({
+      label: t('workspacePanel.menu.deleteWorkspace'),
+      icon: 'pi pi-trash',
+      class: isDeleteDisabled.value
+        ? 'text-danger/50 cursor-not-allowed'
+        : 'text-danger',
+      disabled: isDeleteDisabled.value,
+      command: isDeleteDisabled.value ? undefined : handleDeleteWorkspace
+    })
+  } else if (action === 'leave') {
+    items.push({
       label: t('workspacePanel.menu.leaveWorkspace'),
       icon: 'pi pi-sign-out',
       command: handleLeaveWorkspace
-    }
-  ]
+    })
+  }
+
+  return items
 })
 
 onMounted(() => {

@@ -1,5 +1,6 @@
 import { computed, reactive, readonly } from 'vue'
 
+import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 
@@ -95,11 +96,12 @@ export function useFeatureFlags() {
       )
     },
     get teamWorkspacesEnabled() {
-      return true
-      // return (
-      //   remoteConfig.value.team_workspaces_enabled ??
-      //   api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
-      // )
+      if (!isCloud) return false
+
+      return (
+        remoteConfig.value.team_workspaces_enabled ??
+        api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
+      )
     }
   })
 

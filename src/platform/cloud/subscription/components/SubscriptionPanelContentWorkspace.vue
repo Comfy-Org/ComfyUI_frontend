@@ -22,7 +22,19 @@
             </Button>
           </template>
 
-          <!-- Normal Subscribed State -->
+          <!-- MEMBER View - read-only, no subscription data yet -->
+          <template v-else-if="isMemberView">
+            <div class="flex flex-col gap-2">
+              <div class="text-sm font-bold text-text-primary">
+                {{ $t('subscription.workspaceNotSubscribed') }}
+              </div>
+              <div class="text-sm text-text-secondary">
+                {{ $t('subscription.contactOwnerToSubscribe') }}
+              </div>
+            </div>
+          </template>
+
+          <!-- Normal Subscribed State (Owner with subscription) -->
           <template v-else>
             <div class="flex flex-col gap-2">
               <div class="text-sm font-bold text-text-primary">
@@ -85,15 +97,6 @@
               </Button>
               <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
             </template>
-
-            <SubscribeButton
-              v-if="!isActiveSubscription"
-              :label="$t('subscription.subscribeNow')"
-              size="sm"
-              :fluid="false"
-              class="text-xs"
-              @subscribed="handleRefresh"
-            />
           </template>
         </div>
       </div>
@@ -125,7 +128,7 @@
                 </div>
                 <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
                 <div v-else class="text-2xl font-bold">
-                  {{ isOwnerUnsubscribed ? '0' : totalCredits }}
+                  {{ showZeroState ? '0' : totalCredits }}
                 </div>
               </div>
 
@@ -140,7 +143,7 @@
                         height="1rem"
                       />
                       <span v-else>{{
-                        isOwnerUnsubscribed ? '0 / 0' : includedCreditsDisplay
+                        showZeroState ? '0 / 0' : includedCreditsDisplay
                       }}</span>
                     </td>
                     <td class="align-middle" :title="creditsRemainingLabel">
@@ -155,7 +158,7 @@
                         height="1rem"
                       />
                       <span v-else>{{
-                        isOwnerUnsubscribed ? '0' : prepaidCredits
+                        showZeroState ? '0' : prepaidCredits
                       }}</span>
                     </td>
                     <td
@@ -178,7 +181,7 @@
                   {{ $t('subscription.viewUsageHistory') }}
                 </a>
                 <Button
-                  v-if="isActiveSubscription && !isOwnerUnsubscribed"
+                  v-if="isActiveSubscription && !showZeroState"
                   variant="secondary"
                   class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                   @click="handleAddApiCredits"
@@ -244,7 +247,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
@@ -267,9 +269,17 @@ const { subscribeWorkspace } = workspaceStore
 const { permissions, workspaceRole } = useWorkspaceUI()
 const { t, n } = useI18n()
 
-// OWNER with unsubscribed workspace
+// OWNER with unsubscribed workspace - can see subscribe button
 const isOwnerUnsubscribed = computed(
   () => workspaceRole.value === 'owner' && !isWorkspaceSubscribed.value
+)
+
+// MEMBER view - members can't manage subscription, show read-only zero state
+const isMemberView = computed(() => !permissions.value.canManageSubscription)
+
+// Show zero state for credits (no real billing data yet)
+const showZeroState = computed(
+  () => isOwnerUnsubscribed.value || isMemberView.value
 )
 
 // Demo: Subscribe workspace to PRO monthly plan

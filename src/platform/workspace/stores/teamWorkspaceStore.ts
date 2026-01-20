@@ -702,10 +702,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   // ════════════════════════════════════════════════════════════
 
   function subscribeWorkspace(plan: SubscriptionPlan = 'PRO_MONTHLY') {
-    updateActiveWorkspace({
-      isSubscribed: true,
-      subscriptionPlan: plan
-    })
+    console.warn(plan, 'Billing endpoint has not been added yet.')
   }
 
   // ════════════════════════════════════════════════════════════

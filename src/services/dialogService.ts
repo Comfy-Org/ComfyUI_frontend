@@ -2,13 +2,6 @@ import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
 import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
-import CreateWorkspaceDialogContent from '@/components/dialog/content/workspace/CreateWorkspaceDialogContent.vue'
-import EditWorkspaceDialogContent from '@/components/dialog/content/workspace/EditWorkspaceDialogContent.vue'
-import DeleteWorkspaceDialogContent from '@/components/dialog/content/workspace/DeleteWorkspaceDialogContent.vue'
-import InviteMemberDialogContent from '@/components/dialog/content/workspace/InviteMemberDialogContent.vue'
-import LeaveWorkspaceDialogContent from '@/components/dialog/content/workspace/LeaveWorkspaceDialogContent.vue'
-import RemoveMemberDialogContent from '@/components/dialog/content/workspace/RemoveMemberDialogContent.vue'
-import RevokeInviteDialogContent from '@/components/dialog/content/workspace/RevokeInviteDialogContent.vue'
 import MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
 import MissingNodesFooter from '@/components/dialog/content/MissingNodesFooter.vue'
 import MissingNodesHeader from '@/components/dialog/content/MissingNodesHeader.vue'
@@ -527,117 +520,110 @@ export const useDialogService = () => {
     show()
   }
 
-  function showLeaveWorkspaceDialog() {
+  // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
+  const workspaceDialogPt = {
+    headless: true,
+    pt: {
+      header: { class: 'p-0! hidden' },
+      content: { class: 'p-0! m-0! rounded-2xl' },
+      root: { class: 'rounded-2xl' }
+    }
+  } as const
+
+  async function showLeaveWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/LeaveWorkspaceDialogContent.vue')
     return dialogStore.showDialog({
       key: 'leave-workspace',
-      component: LeaveWorkspaceDialogContent,
-      dialogComponentProps: {
-        headless: true,
-        pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
-          root: { class: 'rounded-2xl' }
-        }
-      }
+      component,
+      dialogComponentProps: workspaceDialogPt
     })
   }
 
-  function showDeleteWorkspaceDialog(options?: {
+  async function showDeleteWorkspaceDialog(options?: {
     workspaceId?: string
     workspaceName?: string
   }) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/DeleteWorkspaceDialogContent.vue')
     return dialogStore.showDialog({
       key: 'delete-workspace',
-      component: DeleteWorkspaceDialogContent,
+      component,
       props: options,
-      dialogComponentProps: {
-        headless: true,
-        pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
-          root: { class: 'rounded-2xl' }
-        }
-      }
+      dialogComponentProps: workspaceDialogPt
     })
   }
 
-  function showRemoveMemberDialog(memberId: string) {
+  async function showRemoveMemberDialog(memberId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RemoveMemberDialogContent.vue')
     return dialogStore.showDialog({
       key: 'remove-member',
-      component: RemoveMemberDialogContent,
+      component,
       props: { memberId },
-      dialogComponentProps: {
-        headless: true,
-        pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
-          root: { class: 'rounded-2xl' }
-        }
-      }
+      dialogComponentProps: workspaceDialogPt
     })
   }
 
-  function showRevokeInviteDialog(inviteId: string) {
+  async function showRevokeInviteDialog(inviteId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RevokeInviteDialogContent.vue')
     return dialogStore.showDialog({
       key: 'revoke-invite',
-      component: RevokeInviteDialogContent,
+      component,
       props: { inviteId },
-      dialogComponentProps: {
-        headless: true,
-        pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
-          root: { class: 'rounded-2xl' }
-        }
-      }
+      dialogComponentProps: workspaceDialogPt
     })
   }
 
-  function showInviteMemberDialog(
+  async function showInviteMemberDialog(
     onConfirm: (email: string) => void | Promise<void>
   ) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/InviteMemberDialogContent.vue')
     return dialogStore.showDialog({
       key: 'invite-member',
-      component: InviteMemberDialogContent,
+      component,
       props: { onConfirm },
       dialogComponentProps: {
-        headless: true,
+        ...workspaceDialogPt,
         pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
+          ...workspaceDialogPt.pt,
           root: { class: 'rounded-2xl max-w-[512px] w-full' }
         }
       }
     })
   }
 
-  function showCreateWorkspaceDialog(
+  async function showCreateWorkspaceDialog(
     onConfirm?: (name: string) => void | Promise<void>
   ) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/CreateWorkspaceDialogContent.vue')
     return dialogStore.showDialog({
       key: 'create-workspace',
-      component: CreateWorkspaceDialogContent,
+      component,
       props: { onConfirm },
       dialogComponentProps: {
-        headless: true,
+        ...workspaceDialogPt,
         pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
+          ...workspaceDialogPt.pt,
           root: { class: 'rounded-2xl max-w-[400px] w-full' }
         }
       }
     })
   }
 
-  function showEditWorkspaceDialog() {
+  async function showEditWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/EditWorkspaceDialogContent.vue')
     return dialogStore.showDialog({
       key: 'edit-workspace',
-      component: EditWorkspaceDialogContent,
+      component,
       dialogComponentProps: {
-        headless: true,
+        ...workspaceDialogPt,
         pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
+          ...workspaceDialogPt.pt,
           root: { class: 'rounded-2xl max-w-[400px] w-full' }
         }
       }

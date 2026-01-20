@@ -1,6 +1,18 @@
 <template>
-  <div class="flex h-[80vh] w-full overflow-hidden">
-    <ScrollPanel class="w-48 shrink-0 p-2 2xl:w-64">
+  <div
+    :class="
+      teamWorkspacesEnabled
+        ? 'flex h-[80vh] w-full overflow-hidden'
+        : 'settings-container'
+    "
+  >
+    <ScrollPanel
+      :class="
+        teamWorkspacesEnabled
+          ? 'w-48 shrink-0 p-2 2xl:w-64'
+          : 'settings-sidebar w-48 shrink-0 p-2 2xl:w-64'
+      "
+    >
       <SearchBox
         v-model:model-value="searchQuery"
         class="settings-search-box mb-2 w-full"
@@ -20,15 +32,24 @@
           (option: SettingTreeNode) =>
             !queryIsEmpty && !searchResultsCategories.has(option.label ?? '')
         "
-        class="w-full border-none bg-transparent"
+        :class="
+          teamWorkspacesEnabled
+            ? 'w-full border-none bg-transparent'
+            : 'w-full border-none'
+        "
       >
-        <template #optiongroup="{ option }">
-          <!-- <Divider v-if="option.key !== 'workspace'" class="my-2" /> -->
+        <!-- Workspace mode: custom group headers -->
+        <template v-if="teamWorkspacesEnabled" #optiongroup="{ option }">
           <h3 class="text-xs font-semibold uppercase text-muted m-0 pt-6 pb-2">
             {{ option.label }}
           </h3>
         </template>
-        <template #option="{ option }">
+        <!-- Legacy mode: divider between groups -->
+        <template v-else #optiongroup>
+          <Divider class="my-0" />
+        </template>
+        <!-- Workspace mode: custom workspace item -->
+        <template v-if="teamWorkspacesEnabled" #option="{ option }">
           <WorkspaceSidebarItem v-if="option.key === 'workspace'" />
           <span v-else>{{ option.translatedLabel }}</span>
         </template>
@@ -36,7 +57,15 @@
     </ScrollPanel>
     <Divider layout="vertical" class="mx-1 hidden md:flex 2xl:mx-4" />
     <Divider layout="horizontal" class="flex md:hidden" />
-    <Tabs :value="tabValue" :lazy="true" class="h-full flex-1 overflow-x-auto">
+    <Tabs
+      :value="tabValue"
+      :lazy="true"
+      :class="
+        teamWorkspacesEnabled
+          ? 'h-full flex-1 overflow-x-auto'
+          : 'settings-content h-full w-full'
+      "
+    >
       <TabPanels class="settings-tab-panels h-full w-full pr-0">
         <PanelTemplate value="Search Results">
           <SettingsPanel :setting-groups="searchResults" />
@@ -78,6 +107,8 @@ import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserM
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import WorkspaceSidebarItem from '@/components/dialog/content/setting/WorkspaceSidebarItem.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
@@ -97,6 +128,9 @@ const { defaultPanel } = defineProps<{
     | 'subscription'
     | 'workspace'
 }>()
+
+const { flags } = useFeatureFlags()
+const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
 
 const {
   activeCategory,
@@ -168,5 +202,41 @@ watch(activeCategory, (_, oldValue) => {
 <style>
 .settings-tab-panels {
   padding-top: 0 !important;
+}
+</style>
+
+<style scoped>
+/* Legacy mode styles (when teamWorkspacesEnabled is false) */
+.settings-container {
+  display: flex;
+  height: 70vh;
+  width: 60vw;
+  max-width: 64rem;
+  overflow: hidden;
+}
+
+.settings-content {
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  .settings-container {
+    flex-direction: column;
+    height: auto;
+    width: 80vw;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+  }
+
+  .settings-content {
+    height: 350px;
+  }
+}
+
+/* Hide the first group separator in legacy mode */
+.settings-sidebar :deep(.p-listbox-option-group:nth-child(1)) {
+  display: none;
 }
 </style>

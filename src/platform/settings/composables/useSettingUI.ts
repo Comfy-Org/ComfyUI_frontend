@@ -3,15 +3,16 @@ import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isElectron } from '@/utils/envUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { buildTree } from '@/utils/treeUtil'
-import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 
 interface SettingPanelItem {
   node: SettingTreeNode
@@ -35,8 +36,11 @@ export function useSettingUI(
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
+  const { flags } = useFeatureFlags()
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription } = useSubscription()
+
+  const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -139,7 +143,7 @@ export function useSettingUI(
   const userPanel: SettingPanelItem = {
     node: {
       key: 'user',
-      label: 'Profile',
+      label: 'User',
       children: []
     },
     component: defineAsyncComponent(
@@ -147,16 +151,24 @@ export function useSettingUI(
     )
   }
 
-  const workspacePanel: SettingPanelItem = {
-    node: {
-      key: 'workspace',
-      label: 'Workspace',
-      children: []
-    },
-    component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/WorkspacePanel.vue')
-    )
-  }
+  // Workspace panel: only available on cloud with team workspaces enabled
+  const workspacePanel: SettingPanelItem | null = !teamWorkspacesEnabled
+    ? null
+    : {
+        node: {
+          key: 'workspace',
+          label: 'Workspace',
+          children: []
+        },
+        component: defineAsyncComponent(
+          () => import('@/components/dialog/content/setting/WorkspacePanel.vue')
+        )
+      }
+
+  const shouldShowWorkspacePanel = computed(() => {
+    if (!workspacePanel) return false
+    return isLoggedIn.value
+  })
 
   const keybindingPanel: SettingPanelItem = {
     node: {
@@ -196,14 +208,16 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      workspacePanel,
+      ...(shouldShowWorkspacePanel.value && workspacePanel
+        ? [workspacePanel]
+        : []),
       keybindingPanel,
       extensionPanel,
       ...(isElectron() ? [serverConfigPanel] : []),
       ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
         ? [subscriptionPanel]
         : [])
-    ].filter((panel) => panel.component)
+    ].filter((panel) => panel !== null && panel.component)
   )
 
   /**
@@ -227,13 +241,16 @@ export function useSettingUI(
     )
   })
 
-  const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() => [
+  // Sidebar structure when team workspaces is enabled
+  const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Workspace settings
     {
       key: 'workspace',
       label: 'Workspace',
       children: [
-        workspacePanel.node,
+        ...(shouldShowWorkspacePanel.value && workspacePanel
+          ? [workspacePanel.node]
+          : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
@@ -264,6 +281,50 @@ export function useSettingUI(
         ]
       : [])
   ])
+
+  // Sidebar structure when team workspaces is disabled (legacy)
+  const legacyMenuTreeNodes = computed<SettingTreeNode[]>(() => [
+    // Account settings - show different panels based on distribution and auth state
+    {
+      key: 'account',
+      label: 'Account',
+      children: [
+        userPanel.node,
+        ...(isLoggedIn.value &&
+        shouldShowPlanCreditsPanel.value &&
+        subscriptionPanel
+          ? [subscriptionPanel.node]
+          : []),
+        ...(isLoggedIn.value &&
+        !(isCloud && window.__CONFIG__?.subscription_required)
+          ? [creditsPanel.node]
+          : [])
+      ].map(translateCategory)
+    },
+    // Normal settings stored in the settingStore
+    {
+      key: 'settings',
+      label: 'Application Settings',
+      children: settingCategories.value.map(translateCategory)
+    },
+    // Special settings such as about, keybinding, extension, server-config
+    {
+      key: 'specialSettings',
+      label: 'Special Settings',
+      children: [
+        keybindingPanel.node,
+        extensionPanel.node,
+        aboutPanel.node,
+        ...(isElectron() ? [serverConfigPanel.node] : [])
+      ].map(translateCategory)
+    }
+  ])
+
+  const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
+    teamWorkspacesEnabled
+      ? workspaceMenuTreeNodes.value
+      : legacyMenuTreeNodes.value
+  )
 
   onMounted(() => {
     activeCategory.value = defaultCategory.value

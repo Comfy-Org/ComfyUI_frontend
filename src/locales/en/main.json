@@ -2059,6 +2059,7 @@
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
     "workspaceNotSubscribed": "This workspace is not on a subscription",
     "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
+    "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
@@ -2136,9 +2137,15 @@
       "createNewWorkspace": "create a new one."
     },
     "menu": {
+      "editWorkspace": "Edit workspace details",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+    },
+    "editWorkspaceDialog": {
+      "title": "Edit workspace details",
+      "nameLabel": "Workspace name",
+      "save": "Save"
     },
     "leaveDialog": {
       "title": "Leave this workspace?",
