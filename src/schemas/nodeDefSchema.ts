@@ -224,7 +224,12 @@ export const zComfyNodeDef = z.object({
    * Used to ensure consistent widget ordering regardless of JSON serialization.
    * Keys are 'required', 'optional', etc., values are arrays of input names.
    */
-  input_order: z.record(z.array(z.string())).optional()
+  input_order: z.record(z.array(z.string())).optional(),
+  /**
+   * Alternative names for search. Useful for synonyms, abbreviations,
+   * or old names after renaming a node.
+   */
+  search_aliases: z.array(z.string()).optional()
 })
 
 export const zAutogrowOptions = z.object({
