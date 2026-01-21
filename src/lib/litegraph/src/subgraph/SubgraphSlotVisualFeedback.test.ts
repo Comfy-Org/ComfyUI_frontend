@@ -1,13 +1,21 @@
 // TODO: Fix these tests after migration
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { DefaultConnectionColors } from '@/lib/litegraph/src/interfaces'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createTestSubgraph } from './__fixtures__/subgraphHelpers'
 
+interface MockColorContext {
+  defaultInputColor: string
+  defaultOutputColor: string
+  getConnectedColor: ReturnType<typeof vi.fn>
+  getDisconnectedColor: ReturnType<typeof vi.fn>
+}
+
 describe.skip('SubgraphSlot visual feedback', () => {
   let mockCtx: CanvasRenderingContext2D
-  let mockColorContext: any
+  let mockColorContext: MockColorContext
   let globalAlphaValues: number[]
 
   beforeEach(() => {
@@ -42,7 +50,7 @@ describe.skip('SubgraphSlot visual feedback', () => {
       defaultOutputColor: '#00FF00',
       getConnectedColor: vi.fn().mockReturnValue('#0000FF'),
       getDisconnectedColor: vi.fn().mockReturnValue('#AAAAAA')
-    }
+    } as unknown as MockColorContext
   })
 
   it('should render SubgraphInput slots with full opacity when dragging from compatible slot', () => {
@@ -60,7 +68,7 @@ describe.skip('SubgraphSlot visual feedback', () => {
     // Draw the slot with a compatible fromSlot
     subgraphInput.draw({
       ctx: mockCtx,
-      colorContext: mockColorContext,
+      colorContext: mockColorContext as unknown as DefaultConnectionColors,
       fromSlot: nodeInput,
       editorAlpha: 1
     })
@@ -80,7 +88,7 @@ describe.skip('SubgraphSlot visual feedback', () => {
     // Draw subgraphInput2 while dragging from subgraphInput1 (incompatible - both are outputs inside subgraph)
     subgraphInput2.draw({
       ctx: mockCtx,
-      colorContext: mockColorContext,
+      colorContext: mockColorContext as unknown as DefaultConnectionColors,
       fromSlot: subgraphInput1,
       editorAlpha: 1
     })
@@ -105,7 +113,7 @@ describe.skip('SubgraphSlot visual feedback', () => {
     // Draw the slot with a compatible fromSlot
     subgraphOutput.draw({
       ctx: mockCtx,
-      colorContext: mockColorContext,
+      colorContext: mockColorContext as unknown as DefaultConnectionColors,
       fromSlot: nodeOutput,
       editorAlpha: 1
     })
@@ -125,7 +133,7 @@ describe.skip('SubgraphSlot visual feedback', () => {
     // Draw subgraphOutput2 while dragging from subgraphOutput1 (incompatible - both are inputs inside subgraph)
     subgraphOutput2.draw({
       ctx: mockCtx,
-      colorContext: mockColorContext,
+      colorContext: mockColorContext as unknown as DefaultConnectionColors,
       fromSlot: subgraphOutput1,
       editorAlpha: 1
     })
@@ -170,7 +178,7 @@ describe.skip('SubgraphSlot visual feedback', () => {
     // Draw the SubgraphOutput slot while dragging from a node output with incompatible type
     subgraphOutput.draw({
       ctx: mockCtx,
-      colorContext: mockColorContext,
+      colorContext: mockColorContext as unknown as DefaultConnectionColors,
       fromSlot: nodeStringOutput,
       editorAlpha: 1
     })
