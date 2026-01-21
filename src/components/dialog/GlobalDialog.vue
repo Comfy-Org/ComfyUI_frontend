@@ -46,9 +46,12 @@ import Dialog from 'primevue/dialog'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
+import { computed } from 'vue'
 
 const { flags } = useFeatureFlags()
-const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
+const teamWorkspacesEnabled = computed(
+  () => isCloud && flags.teamWorkspacesEnabled
+)
 
 const dialogStore = useDialogStore()
 </script>

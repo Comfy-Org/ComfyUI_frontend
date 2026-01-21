@@ -21,12 +21,6 @@
       <p v-if="userEmail" class="my-0 truncate text-sm text-muted">
         {{ userEmail }}
       </p>
-      <!-- <span
-        v-if="subscriptionTierName"
-        class="my-0 text-xs text-foreground bg-secondary-background-hover rounded-full uppercase px-2 py-0.5 font-bold mt-2"
-      >
-        {{ subscriptionTierName }}
-      </span> -->
     </div>
 
     <!-- Workspace Selector -->
@@ -98,14 +92,14 @@
         >
           {{ $t('subscription.addCredits') }}
         </Button>
-        <!-- Unsubscribed: Show Subscribe button -->
+        <!-- Unsubscribed: Show Subscribe button (disabled until billing is ready) -->
         <SubscribeButton
           v-else
+          disabled
           :fluid="false"
           :label="$t('workspaceSwitcher.subscribe')"
           size="sm"
           variant="gradient"
-          @subscribed="handleSubscribed"
         />
       </div>
 
@@ -243,7 +237,7 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription, fetchStatus } = useSubscription()
+const { isActiveSubscription } = useSubscription()
 const { totalCredits, isLoadingBalance } = useSubscriptionCredits()
 const subscriptionDialog = useSubscriptionDialog()
 const { t } = useI18n()
@@ -325,10 +319,6 @@ const handleOpenPartnerNodesInfo = () => {
 const handleLogout = async () => {
   await handleSignOut()
   emit('close')
-}
-
-const handleSubscribed = async () => {
-  await fetchStatus()
 }
 
 const handleCreateWorkspace = () => {
