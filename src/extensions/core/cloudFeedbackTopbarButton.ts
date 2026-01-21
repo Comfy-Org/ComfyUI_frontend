@@ -1,10 +1,20 @@
+import { computed } from 'vue'
+
 import { t } from '@/i18n'
+import { getDistribution, ZENDESK_FIELDS } from '@/platform/support/config'
 import { useExtensionService } from '@/services/extensionService'
 import type { ActionBarButton } from '@/types/comfy'
 
-// Zendesk feedback URL - update this with the actual URL
-const ZENDESK_FEEDBACK_URL =
-  'https://support.comfy.org/hc/en-us/requests/new?ticket_form_id=43066738713236'
+const ZENDESK_BASE_URL = 'https://support.comfy.org/hc/en-us/requests/new'
+const ZENDESK_FEEDBACK_FORM_ID = '43066738713236'
+
+const feedbackUrl = computed(() => {
+  const params = new URLSearchParams({
+    ticket_form_id: ZENDESK_FEEDBACK_FORM_ID,
+    [ZENDESK_FIELDS.DISTRIBUTION]: getDistribution()
+  })
+  return `${ZENDESK_BASE_URL}?${params.toString()}`
+})
 
 const buttons: ActionBarButton[] = [
   {
@@ -12,7 +22,7 @@ const buttons: ActionBarButton[] = [
     label: t('actionbar.feedback'),
     tooltip: t('actionbar.feedbackTooltip'),
     onClick: () => {
-      window.open(ZENDESK_FEEDBACK_URL, '_blank', 'noopener,noreferrer')
+      window.open(feedbackUrl.value, '_blank', 'noopener,noreferrer')
     }
   }
 ]
