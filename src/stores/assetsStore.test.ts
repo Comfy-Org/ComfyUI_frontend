@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
@@ -550,6 +551,28 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       // Verify the new asset is included (cache was properly invalidated before mutation)
       expect(secondArrayRef.map((a) => a.id)).toContain('new-asset')
+    })
+  })
+
+  describe('shallowReactive state reactivity', () => {
+    it('should trigger reactivity on isModelLoading change', async () => {
+      setActivePinia(createPinia())
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      const loadingStates: boolean[] = []
+      watch(
+        () => store.isModelLoading(nodeType),
+        (val) => loadingStates.push(val),
+        { immediate: true }
+      )
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
+      await store.updateModelsForNodeType(nodeType)
+      await nextTick()
+
+      expect(loadingStates).toContain(true)
+      expect(loadingStates).toContain(false)
     })
   })
 })

@@ -1,6 +1,6 @@
 import { useAsyncState, whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, reactive, ref, shallowReactive } from 'vue'
+import { computed, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
@@ -282,7 +282,7 @@ export const useAssetsStore = defineStore('assets', () => {
           hasMore: true,
           isLoading: false
         }
-        return reactive(state)
+        return shallowReactive(state)
       }
 
       function getOrCreateState(key: string): ModelPaginationState {
