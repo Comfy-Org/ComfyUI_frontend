@@ -1,10 +1,8 @@
-import type { AxiosResponse } from 'axios'
 import axios from 'axios'
 
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import type { AuthHeader } from '@/types/authTypes'
 
 type WorkspaceType = 'personal' | 'team'
 type WorkspaceRole = 'owner' | 'member'
@@ -83,19 +81,7 @@ interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
 }
 
-interface ExchangeTokenRequest {
-  workspace_id: string
-}
-
-export interface ExchangeTokenResponse {
-  token: string
-  expires_at: string
-  workspace: Workspace
-  role: WorkspaceRole
-  permissions: string[]
-}
-
-export class WorkspaceApiError extends Error {
+class WorkspaceApiError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
@@ -112,9 +98,7 @@ const workspaceApiClient = axios.create({
   }
 })
 
-async function withAuth<T>(
-  request: (headers: AuthHeader) => Promise<AxiosResponse<T>>
-): Promise<T> {
+async function getAuthHeaderOrThrow() {
   const authHeader = await useFirebaseAuthStore().getAuthHeader()
   if (!authHeader) {
     throw new WorkspaceApiError(
@@ -123,54 +107,16 @@ async function withAuth<T>(
       'NOT_AUTHENTICATED'
     )
   }
-  try {
-    const response = await request(authHeader)
-    return response.data
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      const status = err.response?.status
-      const message = err.response?.data?.message ?? err.message
-      throw new WorkspaceApiError(message, status)
-    }
-    throw err
-  }
+  return authHeader
 }
 
-/**
- * Wrapper that uses Firebase ID token directly (not workspace token).
- * Used for token exchange where we need the Firebase token to get a workspace token.
- */
-async function withFirebaseAuth<T>(
-  request: (headers: AuthHeader) => Promise<AxiosResponse<T>>
-): Promise<T> {
-  const firebaseToken = await useFirebaseAuthStore().getIdToken()
-  if (!firebaseToken) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
+function handleAxiosError(err: unknown): never {
+  if (axios.isAxiosError(err)) {
+    const status = err.response?.status
+    const message = err.response?.data?.message ?? err.message
+    throw new WorkspaceApiError(message, status)
   }
-  const headers: AuthHeader = { Authorization: `Bearer ${firebaseToken}` }
-  try {
-    const response = await request(headers)
-    return response.data
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      const status = err.response?.status
-      const message = err.response?.data?.message ?? err.message
-      const code =
-        status === 401
-          ? 'INVALID_FIREBASE_TOKEN'
-          : status === 403
-            ? 'ACCESS_DENIED'
-            : status === 404
-              ? 'WORKSPACE_NOT_FOUND'
-              : 'TOKEN_EXCHANGE_FAILED'
-      throw new WorkspaceApiError(message, status, code)
-    }
-    throw err
-  }
+  throw err
 }
 
 export const workspaceApi = {
@@ -178,153 +124,212 @@ export const workspaceApi = {
    * List all workspaces the user has access to
    * GET /api/workspaces
    */
-  list: (): Promise<ListWorkspacesResponse> =>
-    withAuth((headers) =>
-      workspaceApiClient.get(api.apiURL('/workspaces'), { headers })
-    ),
+  async list(): Promise<ListWorkspacesResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<ListWorkspacesResponse>(
+        api.apiURL('/workspaces'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Create a new workspace
    * POST /api/workspaces
    */
-  create: (payload: CreateWorkspacePayload): Promise<WorkspaceWithRole> =>
-    withAuth((headers) =>
-      workspaceApiClient.post(api.apiURL('/workspaces'), payload, { headers })
-    ),
+  async create(payload: CreateWorkspacePayload): Promise<WorkspaceWithRole> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<WorkspaceWithRole>(
+        api.apiURL('/workspaces'),
+        payload,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Update workspace name
    * PATCH /api/workspaces/:id
    */
-  update: (
+  async update(
     workspaceId: string,
     payload: UpdateWorkspacePayload
-  ): Promise<WorkspaceWithRole> =>
-    withAuth((headers) =>
-      workspaceApiClient.patch(
+  ): Promise<WorkspaceWithRole> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.patch<WorkspaceWithRole>(
         api.apiURL(`/workspaces/${workspaceId}`),
         payload,
         { headers }
       )
-    ),
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Delete a workspace (owner only)
    * DELETE /api/workspaces/:id
    */
-  delete: (workspaceId: string): Promise<void> =>
-    withAuth((headers) =>
-      workspaceApiClient.delete(api.apiURL(`/workspaces/${workspaceId}`), {
-        headers
-      })
-    ),
+  async delete(workspaceId: string): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.delete(
+        api.apiURL(`/workspaces/${workspaceId}`),
+        {
+          headers
+        }
+      )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Leave the current workspace.
    * POST /api/workspace/leave
    */
-  leave: (): Promise<void> =>
-    withAuth((headers) =>
-      workspaceApiClient.post(api.apiURL('/workspace/leave'), null, {
+  async leave(): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.post(api.apiURL('/workspace/leave'), null, {
         headers
       })
-    ),
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * List workspace members (paginated).
    * GET /api/workspace/members
    */
-  listMembers: (params?: ListMembersParams): Promise<ListMembersResponse> =>
-    withAuth((headers) =>
-      workspaceApiClient.get(api.apiURL('/workspace/members'), {
-        headers,
-        params
-      })
-    ),
+  async listMembers(params?: ListMembersParams): Promise<ListMembersResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<ListMembersResponse>(
+        api.apiURL('/workspace/members'),
+        { headers, params }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Remove a member from the workspace.
    * DELETE /api/workspace/members/:userId
    */
-  removeMember: (userId: string): Promise<void> =>
-    withAuth((headers) =>
-      workspaceApiClient.delete(api.apiURL(`/workspace/members/${userId}`), {
-        headers
-      })
-    ),
+  async removeMember(userId: string): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.delete(
+        api.apiURL(`/workspace/members/${userId}`),
+        { headers }
+      )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * List pending invites for the workspace.
    * GET /api/workspace/invites
    */
-  listInvites: (): Promise<ListInvitesResponse> =>
-    withAuth((headers) =>
-      workspaceApiClient.get(api.apiURL('/workspace/invites'), { headers })
-    ),
+  async listInvites(): Promise<ListInvitesResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<ListInvitesResponse>(
+        api.apiURL('/workspace/invites'),
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Create an invite for the workspace.
    * POST /api/workspace/invites
    */
-  createInvite: (payload: CreateInviteRequest): Promise<PendingInvite> =>
-    withAuth((headers) =>
-      workspaceApiClient.post(api.apiURL('/workspace/invites'), payload, {
-        headers
-      })
-    ),
+  async createInvite(payload: CreateInviteRequest): Promise<PendingInvite> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<PendingInvite>(
+        api.apiURL('/workspace/invites'),
+        payload,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Revoke a pending invite.
    * DELETE /api/workspace/invites/:inviteId
    */
-  revokeInvite: (inviteId: string): Promise<void> =>
-    withAuth((headers) =>
-      workspaceApiClient.delete(api.apiURL(`/workspace/invites/${inviteId}`), {
-        headers
-      })
-    ),
+  async revokeInvite(inviteId: string): Promise<void> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      await workspaceApiClient.delete(
+        api.apiURL(`/workspace/invites/${inviteId}`),
+        { headers }
+      )
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Accept a workspace invite.
    * POST /api/invites/:token/accept
    */
-  acceptInvite: (token: string): Promise<AcceptInviteResponse> =>
-    withAuth((headers) =>
-      workspaceApiClient.post(api.apiURL(`/invites/${token}/accept`), null, {
-        headers
-      })
-    ),
-
-  /**
-   * Exchange Firebase JWT for workspace-scoped Cloud JWT.
-   * POST /api/auth/token
-   *
-   * Uses Firebase ID token directly (not getAuthHeader) since we're
-   * exchanging it for a workspace-scoped token.
-   */
-  exchangeToken: (workspaceId: string): Promise<ExchangeTokenResponse> =>
-    withFirebaseAuth((headers) =>
-      workspaceApiClient.post(
-        api.apiURL('/auth/token'),
-        { workspace_id: workspaceId } satisfies ExchangeTokenRequest,
+  async acceptInvite(token: string): Promise<AcceptInviteResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<AcceptInviteResponse>(
+        api.apiURL(`/invites/${token}/accept`),
+        null,
         { headers }
       )
-    ),
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
 
   /**
    * Access the billing portal for the current workspace.
    * POST /api/billing/portal
-   *
-   * Uses workspace-scoped token to get billing portal URL.
    */
-  accessBillingPortal: (returnUrl?: string): Promise<BillingPortalResponse> =>
-    withAuth((headers) =>
-      workspaceApiClient.post(
+  async accessBillingPortal(
+    returnUrl?: string
+  ): Promise<BillingPortalResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<BillingPortalResponse>(
         api.apiURL('/billing/portal'),
         {
           return_url: returnUrl ?? window.location.href
         } satisfies BillingPortalRequest,
         { headers }
       )
-    )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  }
 }

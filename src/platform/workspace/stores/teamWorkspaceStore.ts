@@ -1,19 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/auth/workspace/workspaceConstants'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
+import { useWorkspaceAuthStore } from '@/stores/workspaceAuthStore'
 
-import { sessionManager } from '../services/sessionManager'
 import type {
-  ExchangeTokenResponse,
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
   WorkspaceWithRole
 } from '../api/workspaceApi'
-import { workspaceApi, WorkspaceApiError } from '../api/workspaceApi'
+import { workspaceApi } from '../api/workspaceApi'
 
-// Extended member type for UI (adds joinDate as Date)
 interface WorkspaceMember {
   id: string
   name: string
@@ -21,7 +19,6 @@ interface WorkspaceMember {
   joinDate: Date
 }
 
-// Extended invite type for UI (adds dates as Date objects)
 interface PendingInvite {
   id: string
   email: string
@@ -70,34 +67,35 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
   }
 }
 
-// Workspace limits
+function getLastWorkspaceId(): string | null {
+  try {
+    return localStorage.getItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
+  } catch {
+    return null
+  }
+}
+
+function setLastWorkspaceId(workspaceId: string): void {
+  try {
+    localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, workspaceId)
+  } catch {
+    console.warn('Failed to persist last workspace ID to localStorage')
+  }
+}
+
 const MAX_OWNED_WORKSPACES = 10
 const MAX_WORKSPACE_MEMBERS = 50
 
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
-  // ════════════════════════════════════════════════════════════
-  // STATE
-  // ════════════════════════════════════════════════════════════
-
   const initState = ref<InitState>('uninitialized')
   const workspaces = shallowRef<WorkspaceState[]>([])
   const activeWorkspaceId = ref<string | null>(null)
   const error = ref<Error | null>(null)
 
-  // Loading states for UI
   const isCreating = ref(false)
   const isDeleting = ref(false)
   const isSwitching = ref(false)
   const isFetchingWorkspaces = ref(false)
-
-  // Token refresh timer state
-  let refreshTimerId: ReturnType<typeof setTimeout> | null = null
-  // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
-  let tokenRefreshRequestId = 0
-
-  // ════════════════════════════════════════════════════════════
-  // COMPUTED
-  // ════════════════════════════════════════════════════════════
 
   const activeWorkspace = computed(
     () => workspaces.value.find((w) => w.id === activeWorkspaceId.value) ?? null
@@ -151,10 +149,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.subscriptionPlan ?? null
   )
 
-  // ════════════════════════════════════════════════════════════
-  // INTERNAL HELPERS
-  // ════════════════════════════════════════════════════════════
-
   function updateWorkspace(
     workspaceId: string,
     updates: Partial<WorkspaceState>
@@ -176,157 +170,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     updateWorkspace(activeWorkspaceId.value, updates)
   }
 
-  // ════════════════════════════════════════════════════════════
-  // TOKEN MANAGEMENT
-  // ════════════════════════════════════════════════════════════
-
-  function stopRefreshTimer(): void {
-    if (refreshTimerId !== null) {
-      clearTimeout(refreshTimerId)
-      refreshTimerId = null
-    }
-  }
-
-  function scheduleTokenRefresh(expiresAt: number): void {
-    stopRefreshTimer()
-    const now = Date.now()
-    const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS
-    const delay = Math.max(0, refreshAt - now)
-
-    refreshTimerId = setTimeout(() => {
-      void refreshWorkspaceToken()
-    }, delay)
-  }
-
-  /**
-   * Exchange Firebase token for workspace-scoped token.
-   * Stores the token in sessionStorage and schedules refresh.
-   */
-  async function exchangeAndStoreToken(
-    workspaceId: string
-  ): Promise<ExchangeTokenResponse> {
-    const response = await workspaceApi.exchangeToken(workspaceId)
-    const expiresAt = new Date(response.expires_at).getTime()
-
-    if (isNaN(expiresAt)) {
-      throw new Error('Invalid token expiry timestamp from server')
-    }
-
-    // Store token in sessionStorage
-    sessionManager.setWorkspaceToken(response.token, expiresAt)
-
-    // Schedule refresh before expiry
-    scheduleTokenRefresh(expiresAt)
-
-    return response
-  }
-
-  /**
-   * Refresh the workspace token.
-   * Called automatically before token expires.
-   * Includes retry logic for transient failures.
-   */
-  async function refreshWorkspaceToken(): Promise<void> {
-    if (!activeWorkspaceId.value) return
-
-    const workspaceId = activeWorkspaceId.value
-    const capturedRequestId = tokenRefreshRequestId
-    const maxRetries = 3
-    const baseDelayMs = 1000
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      // Check if workspace context changed during refresh
-      if (capturedRequestId !== tokenRefreshRequestId) {
-        console.warn(
-          '[workspaceStore] Aborting stale token refresh: workspace context changed'
-        )
-        return
-      }
-
-      try {
-        await exchangeAndStoreToken(workspaceId)
-        return
-      } catch (err) {
-        const isApiError = err instanceof WorkspaceApiError
-
-        // Permanent errors - don't retry
-        const isPermanentError =
-          isApiError &&
-          (err.code === 'ACCESS_DENIED' ||
-            err.code === 'WORKSPACE_NOT_FOUND' ||
-            err.code === 'INVALID_FIREBASE_TOKEN' ||
-            err.code === 'NOT_AUTHENTICATED')
-
-        if (isPermanentError) {
-          if (capturedRequestId === tokenRefreshRequestId) {
-            console.error(
-              '[workspaceStore] Workspace access revoked or auth invalid:',
-              err
-            )
-            clearTokenContext()
-          }
-          return
-        }
-
-        // Transient errors - retry with backoff
-        if (attempt < maxRetries) {
-          const delay = baseDelayMs * Math.pow(2, attempt)
-          console.warn(
-            `[workspaceStore] Token refresh failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
-            err
-          )
-          await new Promise((resolve) => setTimeout(resolve, delay))
-          continue
-        }
-
-        // All retries exhausted
-        if (capturedRequestId === tokenRefreshRequestId) {
-          console.error(
-            '[workspaceStore] Failed to refresh token after retries:',
-            err
-          )
-          clearTokenContext()
-        }
-      }
-    }
-  }
-
-  /**
-   * Clear token context (on auth failure or workspace switch).
-   */
-  function clearTokenContext(): void {
-    tokenRefreshRequestId++
-    stopRefreshTimer()
-    sessionManager.clearWorkspaceToken()
-  }
-
-  /**
-   * Check if we have a valid token in sessionStorage (for page refresh).
-   * If valid, schedule refresh timer. If expired, return false.
-   */
-  function initializeTokenFromSession(): boolean {
-    const tokenData = sessionManager.getWorkspaceToken()
-    if (!tokenData) return false
-
-    const { expiresAt } = tokenData
-    if (Date.now() >= expiresAt) {
-      // Token expired, clear it
-      sessionManager.clearWorkspaceToken()
-      return false
-    }
-
-    // Token still valid, schedule refresh
-    scheduleTokenRefresh(expiresAt)
-    return true
-  }
-
-  // ════════════════════════════════════════════════════════════
-  // INITIALIZATION
-  // ════════════════════════════════════════════════════════════
-
   /**
    * Initialize the workspace store.
    * Fetches workspaces and resolves the active workspace from session/localStorage.
+   * Delegates token management to workspaceAuthStore.
    * Call once on app boot.
    */
   async function initialize(): Promise<void> {
@@ -336,8 +183,22 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     isFetchingWorkspaces.value = true
     error.value = null
 
+    const workspaceAuthStore = useWorkspaceAuthStore()
+
     try {
-      // 1. Fetch all workspaces
+      // 1. Try to restore workspace context from session (page refresh case)
+      const hasValidSession = workspaceAuthStore.initializeFromSession()
+
+      if (hasValidSession && workspaceAuthStore.currentWorkspace) {
+        // Valid session exists - fetch workspace list and sync state
+        const response = await workspaceApi.list()
+        workspaces.value = response.workspaces.map(createWorkspaceState)
+        activeWorkspaceId.value = workspaceAuthStore.currentWorkspace.id
+        initState.value = 'ready'
+        return
+      }
+
+      // 2. No valid session - fetch workspaces and pick default
       const response = await workspaceApi.list()
       workspaces.value = response.workspaces.map(createWorkspaceState)
 
@@ -345,50 +206,33 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         throw new Error('No workspaces available')
       }
 
-      // 2. Determine active workspace (priority: sessionStorage > localStorage > personal)
+      // 3. Determine target workspace (priority: localStorage > personal)
       let targetWorkspaceId: string | null = null
 
-      // Try sessionStorage first (page refresh)
-      const sessionId = sessionManager.getCurrentWorkspaceId()
-      if (sessionId && workspaces.value.some((w) => w.id === sessionId)) {
-        targetWorkspaceId = sessionId
+      const lastId = getLastWorkspaceId()
+      if (lastId && workspaces.value.some((w) => w.id === lastId)) {
+        targetWorkspaceId = lastId
       }
 
-      // Try localStorage (cross-session persistence)
-      if (!targetWorkspaceId) {
-        const lastId = sessionManager.getLastWorkspaceId()
-        if (lastId && workspaces.value.some((w) => w.id === lastId)) {
-          targetWorkspaceId = lastId
-        }
-      }
-
-      // Fall back to personal workspace
       if (!targetWorkspaceId) {
         const personal = workspaces.value.find((w) => w.type === 'personal')
         targetWorkspaceId = personal?.id ?? workspaces.value[0].id
       }
 
-      // 3. Set active workspace
-      activeWorkspaceId.value = targetWorkspaceId
-      sessionManager.setCurrentWorkspaceId(targetWorkspaceId)
-      sessionManager.setLastWorkspaceId(targetWorkspaceId)
-
-      // 4. Initialize workspace token
-      // First check if we have a valid token from session (page refresh case)
-      const hasValidToken = initializeTokenFromSession()
-
-      if (!hasValidToken) {
-        // No valid token - exchange Firebase token for workspace token
-        try {
-          await exchangeAndStoreToken(targetWorkspaceId)
-        } catch (tokenError) {
-          // Log but don't fail initialization - API calls will fall back to Firebase token
-          console.error(
-            '[workspaceStore] Token exchange failed during init:',
-            tokenError
-          )
-        }
+      // 4. Exchange Firebase token for workspace token
+      try {
+        await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
+      } catch (tokenError) {
+        // Log but don't fail initialization - API calls will fall back to Firebase token
+        console.error(
+          '[teamWorkspaceStore] Token exchange failed during init:',
+          tokenError
+        )
       }
+
+      // 5. Set active workspace
+      activeWorkspaceId.value = targetWorkspaceId
+      setLastWorkspaceId(targetWorkspaceId)
 
       initState.value = 'ready'
     } catch (e) {
@@ -413,19 +257,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // WORKSPACE ACTIONS
-  // ════════════════════════════════════════════════════════════
-
   /**
    * Switch to a different workspace.
-   * Sets session storage and reloads the page.
+   * Clears workspace context and reloads the page.
    */
   async function switchWorkspace(workspaceId: string): Promise<void> {
     if (workspaceId === activeWorkspaceId.value) return
 
-    // Invalidate any in-flight token refresh for the old workspace
-    clearTokenContext()
+    const workspaceAuthStore = useWorkspaceAuthStore()
 
     isSwitching.value = true
 
@@ -443,8 +282,12 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         }
       }
 
-      // Success - switch and reload
-      sessionManager.switchWorkspaceAndReload(workspaceId)
+      // Clear current workspace context and persist new workspace ID
+      workspaceAuthStore.clearWorkspaceContext()
+      setLastWorkspaceId(workspaceId)
+
+      // Reload to reinitialize with new workspace
+      window.location.reload()
       // Code after this won't run (page reloads)
     } catch (e) {
       isSwitching.value = false
@@ -456,6 +299,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Create a new workspace and switch to it.
    */
   async function createWorkspace(name: string): Promise<WorkspaceState> {
+    const workspaceAuthStore = useWorkspaceAuthStore()
+
     isCreating.value = true
 
     try {
@@ -465,8 +310,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       // Add to local list
       workspaces.value = [...workspaces.value, workspaceState]
 
-      // Switch to new workspace (triggers reload)
-      sessionManager.switchWorkspaceAndReload(newWorkspace.id)
+      // Clear context and switch to new workspace
+      workspaceAuthStore.clearWorkspaceContext()
+      setLastWorkspaceId(newWorkspace.id)
+      window.location.reload()
 
       // Code after this won't run (page reloads)
       return workspaceState
@@ -490,6 +337,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       throw new Error('Cannot delete personal workspace')
     }
 
+    const workspaceAuthStore = useWorkspaceAuthStore()
+
     isDeleting.value = true
 
     try {
@@ -498,11 +347,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       if (targetId === activeWorkspaceId.value) {
         // Deleted active workspace - go to personal
         const personal = personalWorkspace.value
+        workspaceAuthStore.clearWorkspaceContext()
         if (personal) {
-          sessionManager.switchWorkspaceAndReload(personal.id)
-        } else {
-          sessionManager.clearAndReload()
+          setLastWorkspaceId(personal.id)
         }
+        window.location.reload()
         // Code after this won't run (page reloads)
       } else {
         // Deleted non-active workspace - just update local list
@@ -546,21 +395,19 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       throw new Error('Cannot leave personal workspace')
     }
 
+    const workspaceAuthStore = useWorkspaceAuthStore()
+
     await workspaceApi.leave()
 
     // Go to personal workspace
     const personal = personalWorkspace.value
+    workspaceAuthStore.clearWorkspaceContext()
     if (personal) {
-      sessionManager.switchWorkspaceAndReload(personal.id)
-    } else {
-      sessionManager.clearAndReload()
+      setLastWorkspaceId(personal.id)
     }
+    window.location.reload()
     // Code after this won't run (page reloads)
   }
-
-  // ════════════════════════════════════════════════════════════
-  // MEMBER ACTIONS
-  // ════════════════════════════════════════════════════════════
 
   /**
    * Fetch members for the current workspace.
@@ -589,10 +436,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       })
     }
   }
-
-  // ════════════════════════════════════════════════════════════
-  // INVITE ACTIONS
-  // ════════════════════════════════════════════════════════════
 
   /**
    * Fetch pending invites for the current workspace.
@@ -697,29 +540,19 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return inviteLink
   }
 
-  // ════════════════════════════════════════════════════════════
-  // SUBSCRIPTION (placeholder for future integration)
-  // ════════════════════════════════════════════════════════════
-
+  //TODO: when billing lands update this
   function subscribeWorkspace(plan: SubscriptionPlan = 'PRO_MONTHLY') {
     console.warn(plan, 'Billing endpoint has not been added yet.')
   }
 
-  // ════════════════════════════════════════════════════════════
-  // CLEANUP
-  // ════════════════════════════════════════════════════════════
-
   /**
-   * Clean up store resources (timers, etc.).
-   * Call when the store is no longer needed.
+   * Clean up store resources.
+   * Delegates to workspaceAuthStore for token cleanup.
    */
   function destroy(): void {
-    clearTokenContext()
+    const workspaceAuthStore = useWorkspaceAuthStore()
+    workspaceAuthStore.destroy()
   }
-
-  // ════════════════════════════════════════════════════════════
-  // RETURN
-  // ════════════════════════════════════════════════════════════
 
   return {
     // State
