@@ -79,48 +79,15 @@ export class SubgraphSlotReference {
 
         const node =
           type === 'input' ? currentGraph.inputNode : currentGraph.outputNode
-        const slots =
-          type === 'input' ? currentGraph.inputs : currentGraph.outputs
 
         if (!node) {
           throw new Error(`No ${type} node found in subgraph`)
         }
 
-        // Calculate position for next available slot
-        // const nextSlotIndex = slots?.length || 0
-        // const slotHeight = 20
-        // const slotY = node.pos[1] + 30 + nextSlotIndex * slotHeight
-
-        // Find last slot position
-        const lastSlot = slots.at(-1)
-        let slotX: number
-        let slotY: number
-
-        if (lastSlot) {
-          // If there are existing slots, position the new one below the last one
-          const gapHeight = 20
-          slotX = lastSlot.pos[0]
-          slotY = lastSlot.pos[1] + gapHeight
-        } else {
-          // No existing slots - use slotAnchorX if available, otherwise calculate from node position
-          if (currentGraph.slotAnchorX !== undefined) {
-            // The actual slot X position seems to be slotAnchorX - 10
-            slotX = currentGraph.slotAnchorX - 10
-          } else {
-            // Fallback: calculate from node edge
-            slotX =
-              type === 'input'
-                ? node.pos[0] + node.size[0] - 10 // Right edge for input node
-                : node.pos[0] + 10 // Left edge for output node
-          }
-          // For Y position when no slots exist, use middle of node
-          slotY = node.pos[1] + node.size[1] / 2
-        }
-
         // Convert from offset to canvas coordinates
         const canvasPos = window['app'].canvas.ds.convertOffsetToCanvas([
-          slotX,
-          slotY
+          node.emptySlot.pos[0],
+          node.emptySlot.pos[1]
         ])
         return canvasPos
       },
