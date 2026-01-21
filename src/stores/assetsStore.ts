@@ -270,6 +270,11 @@ export const useAssetsStore = defineStore('assets', () => {
     if (isCloud) {
       const modelStateByKey = ref(new Map<string, ModelPaginationState>())
 
+      const assetsArrayCache = new Map<
+        string,
+        { source: Map<string, AssetItem>; array: AssetItem[] }
+      >()
+
       function createInitialState(): ModelPaginationState {
         const state: ModelPaginationState = {
           assets: new Map(),
@@ -293,10 +298,22 @@ export const useAssetsStore = defineStore('assets', () => {
         state.offset = 0
         state.hasMore = true
         delete state.error
+        assetsArrayCache.delete(key)
       }
 
       function getAssets(key: string): AssetItem[] {
-        return Array.from(modelStateByKey.value.get(key)?.assets.values() ?? [])
+        const state = modelStateByKey.value.get(key)
+        const assetsMap = state?.assets
+        if (!assetsMap) return []
+
+        const cached = assetsArrayCache.get(key)
+        if (cached && cached.source === assetsMap) {
+          return cached.array
+        }
+
+        const array = Array.from(assetsMap.values())
+        assetsArrayCache.set(key, { source: assetsMap, array })
+        return array
       }
 
       function isLoading(key: string): boolean {
@@ -365,15 +382,26 @@ export const useAssetsStore = defineStore('assets', () => {
               offset: state.offset
             })
 
+            let addedAny = false
             for (const asset of newAssets) {
               if (!state.assets.has(asset.id)) {
                 state.assets.set(asset.id, asset)
+                addedAny = true
               }
+            }
+            if (addedAny) {
+              assetsArrayCache.delete(key)
             }
 
             state.offset += newAssets.length
             state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+
+            if (state.hasMore) {
+              await new Promise((resolve) => setTimeout(resolve, 50))
+            }
           } catch (err) {
+            state.error = err instanceof Error ? err : new Error(String(err))
+            state.hasMore = false
             console.error(`Error loading batch for ${key}:`, err)
             break
           }

@@ -2,10 +2,6 @@ import { fromZodError } from 'zod-validation-error'
 
 import { st } from '@/i18n'
 
-export interface PaginationOptions {
-  limit?: number
-  offset?: number
-}
 import {
   assetItemSchema,
   assetResponseSchema,
@@ -21,6 +17,11 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+
+export interface PaginationOptions {
+  limit?: number
+  offset?: number
+}
 
 /**
  * Maps CivitAI validation error codes to localized error messages
