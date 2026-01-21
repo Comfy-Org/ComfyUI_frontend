@@ -4,8 +4,8 @@ import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
-type WorkspaceType = 'personal' | 'team'
-type WorkspaceRole = 'owner' | 'member'
+export type WorkspaceType = 'personal' | 'team'
+export type WorkspaceRole = 'owner' | 'member'
 
 interface Workspace {
   id: string

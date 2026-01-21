@@ -52,6 +52,7 @@ import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -252,6 +253,38 @@ const onReconnected = () => {
   }
 }
 
+// Initialize workspace store when feature flag becomes available
+// Uses watch because remoteConfig loads asynchronously after component mount
+if (isCloud) {
+  const { flags } = useFeatureFlags()
+  let workspaceInitialized = false
+
+  watch(
+    () => flags.teamWorkspacesEnabled,
+    async (enabled) => {
+      if (
+        enabled &&
+        !workspaceInitialized &&
+        firebaseAuthStore.isAuthenticated
+      ) {
+        workspaceInitialized = true
+        try {
+          const { useTeamWorkspaceStore } =
+            await import('@/platform/workspace/stores/teamWorkspaceStore')
+          const workspaceStore = useTeamWorkspaceStore()
+          if (workspaceStore.initState === 'uninitialized') {
+            await workspaceStore.initialize()
+          }
+        } catch (error) {
+          console.error('Failed to initialize workspace store:', error)
+          workspaceInitialized = false // Allow retry on error
+        }
+      }
+    },
+    { immediate: true }
+  )
+}
+
 onMounted(() => {
   api.addEventListener('status', onStatus)
   api.addEventListener('execution_success', onExecutionSuccess)
@@ -352,7 +385,10 @@ const onGraphReady = () => {
         })
 
         // Broadcast our heartbeat
-        tabCountChannel?.postMessage({ type: 'heartbeat', tabId: currentTabId })
+        tabCountChannel?.postMessage({
+          type: 'heartbeat',
+          tabId: currentTabId
+        })
 
         // Track tab count (include current tab)
         const tabCount = activeTabs.size + 1

@@ -102,6 +102,7 @@ export const useDialogService = () => {
       | 'user'
       | 'credits'
       | 'subscription'
+      | 'workspace'
   ) {
     const props = panel ? { props: { defaultPanel: panel } } : undefined
 
@@ -519,6 +520,49 @@ export const useDialogService = () => {
     show()
   }
 
+  // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
+  const workspaceDialogPt = {
+    headless: true,
+    pt: {
+      header: { class: 'p-0! hidden' },
+      content: { class: 'p-0! m-0! rounded-2xl' },
+      root: { class: 'rounded-2xl' }
+    }
+  } as const
+
+  async function showDeleteWorkspaceDialog(options?: {
+    workspaceId?: string
+    workspaceName?: string
+  }) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/DeleteWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'delete-workspace',
+      component,
+      props: options,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showCreateWorkspaceDialog(
+    onConfirm?: (name: string) => void | Promise<void>
+  ) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/CreateWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'create-workspace',
+      component,
+      props: { onConfirm },
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -536,6 +580,8 @@ export const useDialogService = () => {
     confirm,
     showLayoutDialog,
     showImportFailedNodeDialog,
-    showNodeConflictDialog
+    showNodeConflictDialog,
+    showDeleteWorkspaceDialog,
+    showCreateWorkspaceDialog
   }
 }

@@ -2095,11 +2095,53 @@
   "userSettings": {
     "title": "My Account Settings",
     "accountSettings": "Account settings",
+    "workspaceSettings": "Workspace settings",
     "name": "Name",
     "email": "Email",
     "provider": "Sign-in Provider",
     "notSet": "Not set",
     "updatePassword": "Update Password"
+  },
+
+  "createWorkspaceDialog": {
+    "title": "Create a new workspace",
+    "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+    "nameLabel": "Workspace name*",
+    "namePlaceholder": "Enter workspace name",
+    "create": "Create"
+  },
+  "toast": {
+    "workspaceCreated": {
+      "title": "Workspace created",
+      "message": "Subscribe to a plan, invite teammates, and start collaborating.",
+      "subscribe": "Subscribe"
+    }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "title": "Create a new workspace",
+      "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+      "nameLabel": "Workspace name*",
+      "namePlaceholder": "Enter workspace name",
+      "create": "Create"
+    },
+    "toast": {
+      "workspaceCreated": {
+        "title": "Workspace created",
+        "message": "Subscribe to a plan, invite teammates, and start collaborating.",
+        "subscribe": "Subscribe"
+      },
+      "failedToCreateWorkspace": "Failed to create workspace",
+      "failedToFetchWorkspaces": "Failed to load workspaces"
+    }
+  },
+  "workspaceSwitcher": {
+    "switchWorkspace": "Switch workspace",
+    "subscribe": "Subscribe",
+    "roleOwner": "Owner",
+    "roleMember": "Member",
+    "createWorkspace": "Create new workspace",
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
   },
   "selectionToolbox": {
     "executeButton": {
