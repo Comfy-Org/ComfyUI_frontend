@@ -49,6 +49,7 @@
             class="px-3"
             data-testid="queue-overlay-toggle"
             @click="toggleQueueOverlay"
+            @contextmenu.stop.prevent="showQueueContextMenu"
           >
             <span class="text-sm font-normal tabular-nums">
               {{ activeJobsLabel }}
@@ -57,6 +58,35 @@
               {{ t('sideToolbar.queueProgressOverlay.expandCollapsedQueue') }}
             </span>
           </Button>
+          <ContextMenu
+            ref="queueContextMenu"
+            :model="queueContextMenuItems"
+            unstyled
+            :pt="{
+              root: {
+                class:
+                  'rounded-lg border border-border-default bg-base-background p-2 shadow-[0px_2px_12px_0_rgba(0,0,0,0.1)] font-inter'
+              },
+              rootList: { class: 'm-0 flex list-none flex-col gap-1 p-0' },
+              item: { class: 'm-0 p-0' }
+            }"
+          >
+            <template #item="{ item, props }">
+              <a
+                v-bind="props.action"
+                :class="
+                  cn(
+                    'flex h-8 w-full items-center gap-2 rounded-sm px-2 text-sm font-normal',
+                    item.class,
+                    item.disabled && 'opacity-50'
+                  )
+                "
+              >
+                <i v-if="item.icon" :class="cn(item.icon, 'size-4')" />
+                <span>{{ item.label }}</span>
+              </a>
+            </template>
+          </ContextMenu>
           <CurrentUserButton
             v-if="isLoggedIn && !isIntegratedTabBar"
             class="shrink-0"
@@ -84,6 +114,8 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import ContextMenu from 'primevue/contextmenu'
+import type { MenuItem } from 'primevue/menuitem'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -101,10 +133,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
+import { cn } from '@/utils/tailwindUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -119,6 +153,7 @@ const { t, n } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
+const executionStore = useExecutionStore()
 const queueUIStore = useQueueUIStore()
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const releaseStore = useReleaseStore()
@@ -146,6 +181,18 @@ const queueHistoryTooltipConfig = computed(() =>
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.customNodesManager'))
 )
+const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const queueContextMenuItems = computed<MenuItem[]>(() => [
+  {
+    label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
+    icon: 'icon-[lucide--list-x]',
+    class: 'text-destructive-background',
+    disabled: queueStore.pendingTasks.length === 0,
+    command: () => {
+      void handleClearQueue()
+    }
+  }
+])
 
 // Use either release red dot or conflict red dot
 const shouldShowRedDot = computed((): boolean => {
@@ -170,6 +217,19 @@ onMounted(() => {
 
 const toggleQueueOverlay = () => {
   commandStore.execute('Comfy.Queue.ToggleOverlay')
+}
+
+const showQueueContextMenu = (event: MouseEvent) => {
+  queueContextMenu.value?.show(event)
+}
+
+const handleClearQueue = async () => {
+  const pendingPromptIds = queueStore.pendingTasks
+    .map((task) => task.promptId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  await commandStore.execute('Comfy.ClearPendingTasks')
+  executionStore.clearInitializationByPromptIds(pendingPromptIds)
 }
 
 const openCustomNodeManager = async () => {

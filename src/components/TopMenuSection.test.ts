@@ -1,5 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
+import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -42,7 +43,8 @@ function createWrapper() {
           queueProgressOverlay: {
             viewJobHistory: 'View job history',
             expandCollapsedQueue: 'Expand collapsed queue',
-            activeJobsShort: '{count} active | {count} active'
+            activeJobsShort: '{count} active | {count} active',
+            clearQueueTooltip: 'Clear queue'
           }
         }
       }
@@ -56,7 +58,12 @@ function createWrapper() {
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
         CurrentUserButton: true,
-        LoginButton: true
+        LoginButton: true,
+        ContextMenu: {
+          name: 'ContextMenu',
+          props: ['model'],
+          template: '<div />'
+        }
       },
       directives: {
         tooltip: () => {}
@@ -133,5 +140,25 @@ describe('TopMenuSection', () => {
 
     const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
     expect(queueButton.text()).toContain('3 active')
+  })
+
+  it('disables the clear queue context menu item when no queued jobs exist', () => {
+    const wrapper = createWrapper()
+    const menu = wrapper.findComponent({ name: 'ContextMenu' })
+    const model = menu.props('model') as MenuItem[]
+    expect(model[0]?.label).toBe('Clear queue')
+    expect(model[0]?.disabled).toBe(true)
+  })
+
+  it('enables the clear queue context menu item when queued jobs exist', async () => {
+    const wrapper = createWrapper()
+    const queueStore = useQueueStore()
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+
+    await nextTick()
+
+    const menu = wrapper.findComponent({ name: 'ContextMenu' })
+    const model = menu.props('model') as MenuItem[]
+    expect(model[0]?.disabled).toBe(false)
   })
 })
