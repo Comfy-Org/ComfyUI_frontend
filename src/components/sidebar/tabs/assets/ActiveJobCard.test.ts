@@ -45,29 +45,60 @@ const mountComponent = (job: JobListItem) =>
   })
 
 describe('ActiveJobCard', () => {
-  it('renders status text from job title', () => {
-    const wrapper = mountComponent(createJob({ title: 'Processing...' }))
-
-    expect(wrapper.text()).toContain('Processing...')
-  })
-
-  it('displays progress bar when job is running with progress', () => {
+  it('displays percentage and progress bar when job is running', () => {
     const wrapper = mountComponent(
       createJob({ state: 'running', progressTotalPercent: 65 })
     )
 
+    expect(wrapper.text()).toContain('65%')
     const progressBar = wrapper.find('.bg-blue-500')
     expect(progressBar.exists()).toBe(true)
     expect(progressBar.attributes('style')).toContain('width: 65%')
   })
 
-  it('hides progress bar when job is pending', () => {
+  it('displays status text when job is pending', () => {
     const wrapper = mountComponent(
-      createJob({ state: 'pending', progressTotalPercent: undefined })
+      createJob({
+        state: 'pending',
+        title: 'In queue...',
+        progressTotalPercent: undefined
+      })
     )
 
+    expect(wrapper.text()).toContain('In queue...')
     const progressBar = wrapper.find('.bg-blue-500')
     expect(progressBar.exists()).toBe(false)
+  })
+
+  it('shows spinner for pending state', () => {
+    const wrapper = mountComponent(createJob({ state: 'pending' }))
+
+    const spinner = wrapper.find('.icon-\\[lucide--loader-circle\\]')
+    expect(spinner.exists()).toBe(true)
+    expect(spinner.classes()).toContain('animate-spin')
+  })
+
+  it('shows error icon for failed state', () => {
+    const wrapper = mountComponent(
+      createJob({ state: 'failed', title: 'Failed' })
+    )
+
+    const errorIcon = wrapper.find('.icon-\\[lucide--circle-alert\\]')
+    expect(errorIcon.exists()).toBe(true)
+    expect(wrapper.text()).toContain('Failed')
+  })
+
+  it('shows preview image when running with iconImageUrl', () => {
+    const wrapper = mountComponent(
+      createJob({
+        state: 'running',
+        iconImageUrl: 'https://example.com/preview.jpg'
+      })
+    )
+
+    const img = wrapper.find('img')
+    expect(img.exists()).toBe(true)
+    expect(img.attributes('src')).toBe('https://example.com/preview.jpg')
   })
 
   it('has proper accessibility attributes', () => {
@@ -76,13 +107,5 @@ describe('ActiveJobCard', () => {
     const container = wrapper.find('[role="status"]')
     expect(container.exists()).toBe(true)
     expect(container.attributes('aria-label')).toBe('Active job: Generating...')
-  })
-
-  it('displays spinner icon in thumbnail area', () => {
-    const wrapper = mountComponent(createJob())
-
-    const spinner = wrapper.find('.icon-\\[lucide--loader-circle\\]')
-    expect(spinner.exists()).toBe(true)
-    expect(spinner.classes()).toContain('animate-spin')
   })
 })
