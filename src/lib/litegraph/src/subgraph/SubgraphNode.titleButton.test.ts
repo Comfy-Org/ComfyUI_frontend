@@ -3,11 +3,17 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphButton } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from './__fixtures__/subgraphHelpers'
+
+interface MockPointerEvent {
+  canvasX: number
+  canvasY: number
+}
 
 describe.skip('SubgraphNode Title Button', () => {
   describe.skip('Constructor', () => {
@@ -125,10 +131,10 @@ describe.skip('SubgraphNode Title Button', () => {
       } as unknown as LGraphCanvas
 
       // Simulate click on the enter button
-      const event = {
+      const event: MockPointerEvent = {
         canvasX: 275, // Near right edge where button should be
         canvasY: 80 // In title area
-      } as any
+      }
 
       // Calculate node-relative position
       const clickPosRelativeToNode: [number, number] = [
@@ -138,7 +144,7 @@ describe.skip('SubgraphNode Title Button', () => {
 
       // @ts-expect-error onMouseDown possibly undefined
       const handled = subgraphNode.onMouseDown(
-        event,
+        event as unknown as CanvasPointerEvent,
         clickPosRelativeToNode,
         canvas
       )
@@ -162,10 +168,10 @@ describe.skip('SubgraphNode Title Button', () => {
       } as unknown as LGraphCanvas
 
       // Click in the body of the node, not on button
-      const event = {
+      const event: MockPointerEvent = {
         canvasX: 200, // Middle of node
         canvasY: 150 // Body area
-      } as any
+      }
 
       // Calculate node-relative position
       const clickPosRelativeToNode: [number, number] = [
@@ -175,7 +181,7 @@ describe.skip('SubgraphNode Title Button', () => {
 
       // @ts-expect-error onMouseDown possibly undefined
       const handled = subgraphNode.onMouseDown(
-        event,
+        event as unknown as CanvasPointerEvent,
         clickPosRelativeToNode,
         canvas
       )
@@ -210,10 +216,10 @@ describe.skip('SubgraphNode Title Button', () => {
       } as unknown as LGraphCanvas
 
       // Try to click on where the button would be
-      const event = {
+      const event: MockPointerEvent = {
         canvasX: 275,
         canvasY: 80
-      } as any
+      }
 
       const clickPosRelativeToNode: [number, number] = [
         275 - subgraphNode.pos[0], // 175
@@ -222,7 +228,7 @@ describe.skip('SubgraphNode Title Button', () => {
 
       // @ts-expect-error onMouseDown possibly undefined
       const handled = subgraphNode.onMouseDown(
-        event,
+        event as unknown as CanvasPointerEvent,
         clickPosRelativeToNode,
         canvas
       )
