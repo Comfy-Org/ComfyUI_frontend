@@ -1,4 +1,4 @@
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isNightly } from '@/platform/distribution/types'
 
 import './clipspace'
 import './contextMenuFilter'
@@ -37,4 +37,9 @@ if (isCloud) {
   if (window.__CONFIG__?.subscription_required) {
     await import('./cloudSubscription')
   }
+}
+
+// Nightly-only extensions
+if (isNightly) {
+  await import('./nightlyBadges')
 }
