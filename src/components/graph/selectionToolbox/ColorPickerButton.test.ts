@@ -9,8 +9,8 @@ import { createI18n } from 'vue-i18n'
 // Import after mocks
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore';
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore';
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 // Mock the litegraph module
