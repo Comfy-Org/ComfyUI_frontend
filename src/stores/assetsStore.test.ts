@@ -585,13 +585,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       const firstRequest = store.updateModelsForNodeType(nodeType)
       const secondRequest = store.updateModelsForNodeType(nodeType)
       resolveFirst!(firstBatch)
-      const [firstResult, secondResult] = await Promise.all([
-        firstRequest,
-        secondRequest
-      ])
+      await Promise.all([firstRequest, secondRequest])
 
-      expect(firstResult).toEqual([])
-      expect(secondResult).toHaveLength(10)
       expect(store.getAssets(nodeType)).toHaveLength(10)
       expect(
         store.getAssets(nodeType).every((a) => a.id.startsWith('second-'))

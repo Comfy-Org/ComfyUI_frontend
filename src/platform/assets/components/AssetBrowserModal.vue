@@ -121,14 +121,12 @@ const isLoading = computed(
   () => isStoreLoading.value && fetchedAssets.value.length === 0
 )
 
-async function refreshAssets(): Promise<AssetItem[]> {
+async function refreshAssets(): Promise<void> {
   if (props.nodeType) {
-    return await assetStore.updateModelsForNodeType(props.nodeType)
+    await assetStore.updateModelsForNodeType(props.nodeType)
+  } else if (props.assetType) {
+    await assetStore.updateModelsForTag(props.assetType)
   }
-  if (props.assetType) {
-    return await assetStore.updateModelsForTag(props.assetType)
-  }
-  return []
 }
 
 // Trigger background refresh on mount

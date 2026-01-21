@@ -330,90 +330,72 @@ export const useAssetsStore = defineStore('assets', () => {
       async function updateModelsForKey(
         key: string,
         fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
-      ): Promise<AssetItem[]> {
+      ): Promise<void> {
         const state = startNewRequest(key)
         assetsArrayCache.delete(key)
         state.isLoading = true
 
-        try {
-          const assets = await fetcher({
-            limit: MODEL_BATCH_SIZE,
-            offset: 0
-          })
+        async function loadBatches(): Promise<void> {
+          while (state.hasMore) {
+            try {
+              const newAssets = await fetcher({
+                limit: MODEL_BATCH_SIZE,
+                offset: state.offset
+              })
 
-          if (isStale(key, state)) return []
+              if (isStale(key, state)) return
 
-          state.assets = new Map(assets.map((a) => [a.id, a]))
-          state.offset = assets.length
-          state.hasMore = assets.length === MODEL_BATCH_SIZE
-
-          if (state.hasMore) {
-            void loadRemainingBatches(key, fetcher, state)
-          }
-
-          return assets
-        } catch (err) {
-          if (isStale(key, state)) return []
-          state.error = err instanceof Error ? err : new Error(String(err))
-          console.error(`Error fetching model assets for ${key}:`, err)
-          return []
-        } finally {
-          if (!isStale(key, state)) {
-            state.isLoading = false
-          }
-        }
-      }
-
-      /**
-       * Progressively load remaining batches until complete
-       */
-      async function loadRemainingBatches(
-        key: string,
-        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>,
-        state: ModelPaginationState
-      ): Promise<void> {
-        while (state.hasMore) {
-          try {
-            const newAssets = await fetcher({
-              limit: MODEL_BATCH_SIZE,
-              offset: state.offset
-            })
-
-            if (isStale(key, state)) return
-
-            const assetsToAdd = newAssets.filter((a) => !state.assets.has(a.id))
-            if (assetsToAdd.length > 0) {
-              assetsArrayCache.delete(key)
-              for (const asset of assetsToAdd) {
-                state.assets.set(asset.id, asset)
+              const isFirstBatch = state.offset === 0
+              if (isFirstBatch) {
+                state.assets = new Map(newAssets.map((a) => [a.id, a]))
+              } else {
+                const assetsToAdd = newAssets.filter(
+                  (a) => !state.assets.has(a.id)
+                )
+                if (assetsToAdd.length > 0) {
+                  assetsArrayCache.delete(key)
+                  for (const asset of assetsToAdd) {
+                    state.assets.set(asset.id, asset)
+                  }
+                }
               }
-            }
 
-            state.offset += newAssets.length
-            state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+              state.offset += newAssets.length
+              state.hasMore = newAssets.length === MODEL_BATCH_SIZE
 
-            if (state.hasMore) {
-              await new Promise((resolve) => setTimeout(resolve, 50))
+              if (isFirstBatch) {
+                state.isLoading = false
+                if (state.hasMore) {
+                  void loadBatches()
+                }
+                return
+              }
+
+              if (state.hasMore) {
+                await new Promise((resolve) => setTimeout(resolve, 50))
+              }
+            } catch (err) {
+              if (isStale(key, state)) return
+              state.error = err instanceof Error ? err : new Error(String(err))
+              state.hasMore = false
+              console.error(`Error loading batch for ${key}:`, err)
+              if (state.offset === 0) {
+                state.isLoading = false
+              }
+              return
             }
-          } catch (err) {
-            if (isStale(key, state)) return
-            state.error = err instanceof Error ? err : new Error(String(err))
-            state.hasMore = false
-            console.error(`Error loading batch for ${key}:`, err)
-            break
           }
         }
+
+        await loadBatches()
       }
 
       /**
        * Fetch and cache model assets for a specific node type
        * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
-       * @returns Promise resolving to the fetched assets
        */
-      async function updateModelsForNodeType(
-        nodeType: string
-      ): Promise<AssetItem[]> {
-        return updateModelsForKey(nodeType, (opts) =>
+      async function updateModelsForNodeType(nodeType: string): Promise<void> {
+        await updateModelsForKey(nodeType, (opts) =>
           assetService.getAssetsForNodeType(nodeType, opts)
         )
       }
@@ -421,11 +403,10 @@ export const useAssetsStore = defineStore('assets', () => {
       /**
        * Fetch and cache model assets for a specific tag
        * @param tag The tag to fetch assets for (e.g., 'models')
-       * @returns Promise resolving to the fetched assets
        */
-      async function updateModelsForTag(tag: string): Promise<AssetItem[]> {
+      async function updateModelsForTag(tag: string): Promise<void> {
         const key = `tag:${tag}`
-        return updateModelsForKey(key, (opts) =>
+        await updateModelsForKey(key, (opts) =>
           assetService.getAssetsByTag(tag, true, opts)
         )
       }
@@ -446,8 +427,8 @@ export const useAssetsStore = defineStore('assets', () => {
       isLoading: () => false,
       getError: () => undefined,
       hasMore: () => false,
-      updateModelsForNodeType: async () => emptyAssets,
-      updateModelsForTag: async () => emptyAssets
+      updateModelsForNodeType: async () => {},
+      updateModelsForTag: async () => {}
     }
   }
 
