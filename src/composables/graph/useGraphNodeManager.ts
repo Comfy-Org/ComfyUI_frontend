@@ -77,6 +77,7 @@ export interface VueNodeData {
   outputs?: INodeOutputSlot[]
   resizable?: boolean
   shape?: number
+  showAdvanced?: boolean
   subgraphId?: string | null
   titleMode?: TitleMode
   widgets?: SafeWidgetData[]
@@ -314,7 +315,8 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
     color: node.color || undefined,
     bgcolor: node.bgcolor || undefined,
     resizable: node.resizable,
-    shape: node.shape
+    shape: node.shape,
+    showAdvanced: node.showAdvanced
   }
 }
 
@@ -568,6 +570,13 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                     ? propertyEvent.newValue
                     : undefined
               })
+              break
+            case 'showAdvanced':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                showAdvanced: Boolean(propertyEvent.newValue)
+              })
+              break
           }
         }
       },
