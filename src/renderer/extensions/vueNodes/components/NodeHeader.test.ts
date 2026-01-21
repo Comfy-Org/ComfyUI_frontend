@@ -169,7 +169,7 @@ describe('NodeHeader.vue', () => {
     await wrapper.get('[data-testid="node-header-1"]').trigger('dblclick')
     const input = wrapper.get('[data-testid="node-title-input"]')
     await input.setValue('Should Not Save')
-    await input.trigger('keyup.escape')
+    await input.trigger('keydown.escape')
 
     // Should not emit update:title
     expect(wrapper.emitted('update:title')).toBeFalsy()
