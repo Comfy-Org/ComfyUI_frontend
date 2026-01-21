@@ -1,5 +1,5 @@
 import { FirebaseError } from 'firebase/app'
-import type { User } from 'firebase/auth'
+import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { createPinia, setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
@@ -12,6 +12,8 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 type MockUser = Omit<User, 'getIdToken'> & {
   getIdToken: Mock
 }
+
+type MockAuth = Record<string, unknown>
 
 // Mock fetch
 const mockFetch = vi.fn()
@@ -93,7 +95,7 @@ describe('useFirebaseAuthStore', () => {
   let authStateCallback: (user: User | null) => void
   let idTokenCallback: (user: User | null) => void
 
-  const mockAuth = {
+  const mockAuth: MockAuth = {
     /* mock Auth object */
   }
 
@@ -113,7 +115,9 @@ describe('useFirebaseAuthStore', () => {
     })
 
     // Mock useFirebaseAuth to return our mock auth object
-    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
+    vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+      mockAuth as unknown as ReturnType<typeof vuefire.useFirebaseAuth>
+    )
 
     // Mock onAuthStateChanged to capture the callback and simulate initial auth state
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
@@ -167,7 +171,9 @@ describe('useFirebaseAuthStore', () => {
         }
       )
 
-      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
+      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+        mockAuth as unknown as ReturnType<typeof vuefire.useFirebaseAuth>
+      )
 
       setActivePinia(createPinia())
       const storeModule = await import('@/stores/firebaseAuthStore')
@@ -241,7 +247,7 @@ describe('useFirebaseAuthStore', () => {
     it('should login with valid credentials', async () => {
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as unknown as UserCredential
       )
 
       const result = await store.login('test@example.com', 'password')
@@ -277,7 +283,7 @@ describe('useFirebaseAuthStore', () => {
       // Set up multiple login promises
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as unknown as UserCredential
       )
 
       const loginPromise1 = store.login('user1@example.com', 'password1')
@@ -295,7 +301,7 @@ describe('useFirebaseAuthStore', () => {
     it('should register a new user', async () => {
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as unknown as UserCredential
       )
 
       const result = await store.register('new@example.com', 'password')
@@ -372,7 +378,7 @@ describe('useFirebaseAuthStore', () => {
       // Setup mock for login
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as unknown as UserCredential
       )
 
       // Login
@@ -474,7 +480,7 @@ describe('useFirebaseAuthStore', () => {
       it('should sign in with Google', async () => {
         const mockUserCredential = { user: mockUser }
         vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-          mockUserCredential as any
+          mockUserCredential as unknown as UserCredential
         )
 
         const result = await store.loginWithGoogle()
@@ -507,7 +513,7 @@ describe('useFirebaseAuthStore', () => {
       it('should sign in with Github', async () => {
         const mockUserCredential = { user: mockUser }
         vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-          mockUserCredential as any
+          mockUserCredential as unknown as UserCredential
         )
 
         const result = await store.loginWithGithub()
@@ -539,7 +545,7 @@ describe('useFirebaseAuthStore', () => {
     it('should handle concurrent social login attempts correctly', async () => {
       const mockUserCredential = { user: mockUser }
       vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
-        mockUserCredential as any
+        mockUserCredential as unknown as UserCredential
       )
 
       const googleLoginPromise = store.loginWithGoogle()

@@ -17,7 +17,7 @@ describe('useMinimapSettings', () => {
   it('should return all minimap settings as computed refs', () => {
     const mockSettingStore = {
       get: vi.fn((key: string) => {
-        const settings: Record<string, any> = {
+        const settings: Record<string, unknown> = {
           'Comfy.Minimap.NodeColors': true,
           'Comfy.Minimap.ShowLinks': false,
           'Comfy.Minimap.ShowGroups': true,
@@ -28,10 +28,12 @@ describe('useMinimapSettings', () => {
       })
     }
 
-    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore as any)
+    vi.mocked(useSettingStore).mockReturnValue(
+      mockSettingStore as unknown as ReturnType<typeof useSettingStore>
+    )
     vi.mocked(useColorPaletteStore).mockReturnValue({
       completedActivePalette: { light_theme: false }
-    } as any)
+    } as unknown as ReturnType<typeof useColorPaletteStore>)
 
     const settings = useMinimapSettings()
 
@@ -47,9 +49,13 @@ describe('useMinimapSettings', () => {
       completedActivePalette: { light_theme: false }
     }
 
-    vi.mocked(useSettingStore).mockReturnValue({ get: vi.fn() } as any)
+    vi.mocked(useSettingStore).mockReturnValue({
+      get: vi.fn()
+    } as unknown as ReturnType<typeof useSettingStore>)
     vi.mocked(useColorPaletteStore).mockReturnValue(
-      mockColorPaletteStore as any
+      mockColorPaletteStore as unknown as ReturnType<
+        typeof useColorPaletteStore
+      >
     )
 
     const settings = useMinimapSettings()
@@ -66,9 +72,13 @@ describe('useMinimapSettings', () => {
       completedActivePalette: { light_theme: true }
     }
 
-    vi.mocked(useSettingStore).mockReturnValue({ get: vi.fn() } as any)
+    vi.mocked(useSettingStore).mockReturnValue({
+      get: vi.fn()
+    } as unknown as ReturnType<typeof useSettingStore>)
     vi.mocked(useColorPaletteStore).mockReturnValue(
-      mockColorPaletteStore as any
+      mockColorPaletteStore as unknown as ReturnType<
+        typeof useColorPaletteStore
+      >
     )
 
     const settings = useMinimapSettings()
@@ -85,9 +95,13 @@ describe('useMinimapSettings', () => {
       completedActivePalette: { light_theme: false }
     }
 
-    vi.mocked(useSettingStore).mockReturnValue({ get: vi.fn() } as any)
+    vi.mocked(useSettingStore).mockReturnValue({
+      get: vi.fn()
+    } as unknown as ReturnType<typeof useSettingStore>)
     vi.mocked(useColorPaletteStore).mockReturnValue(
-      mockColorPaletteStore as any
+      mockColorPaletteStore as unknown as ReturnType<
+        typeof useColorPaletteStore
+      >
     )
 
     const settings = useMinimapSettings()
@@ -107,10 +121,12 @@ describe('useMinimapSettings', () => {
     })
     const mockSettingStore = { get: mockGet }
 
-    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore as any)
+    vi.mocked(useSettingStore).mockReturnValue(
+      mockSettingStore as unknown as ReturnType<typeof useSettingStore>
+    )
     vi.mocked(useColorPaletteStore).mockReturnValue({
       completedActivePalette: { light_theme: false }
-    } as any)
+    } as unknown as ReturnType<typeof useColorPaletteStore>)
 
     const settings = useMinimapSettings()
 
