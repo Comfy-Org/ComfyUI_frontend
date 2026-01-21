@@ -56,7 +56,7 @@ describe('migrateWidgetsValues', () => {
   it('should handle empty widgets and values', () => {
     const inputDefs: Record<string, InputSpec> = {}
     const widgets: IWidget[] = []
-    const widgetValues: any[] = []
+    const widgetValues: unknown[] = []
 
     const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
     expect(result).toEqual([])
