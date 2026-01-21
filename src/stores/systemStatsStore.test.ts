@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { SystemStats } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
@@ -24,7 +25,9 @@ describe('useSystemStatsStore', () => {
 
   beforeEach(() => {
     // Mock API to prevent automatic fetch on store creation
-    vi.mocked(api.getSystemStats).mockResolvedValue(null as any)
+    vi.mocked(api.getSystemStats).mockResolvedValue(
+      null as unknown as SystemStats
+    )
     setActivePinia(createPinia())
     store = useSystemStatsStore()
     vi.clearAllMocks()
@@ -89,8 +92,8 @@ describe('useSystemStatsStore', () => {
     })
 
     it('should set loading state correctly', async () => {
-      let resolvePromise: (value: any) => void = () => {}
-      const promise = new Promise<any>((resolve) => {
+      let resolvePromise: (value: SystemStats) => void = () => {}
+      const promise = new Promise<SystemStats>((resolve) => {
         resolvePromise = resolve
       })
       vi.mocked(api.getSystemStats).mockReturnValue(promise)
@@ -98,7 +101,7 @@ describe('useSystemStatsStore', () => {
       const fetchPromise = store.refetchSystemStats()
       expect(store.isLoading).toBe(true)
 
-      resolvePromise({})
+      resolvePromise({} as unknown as SystemStats)
       await fetchPromise
 
       expect(store.isLoading).toBe(false)
@@ -152,7 +155,7 @@ describe('useSystemStatsStore', () => {
           argv: [],
           ram_total: 16000000000,
           ram_free: 8000000000
-        } as any,
+        } as unknown as SystemStats['system'],
         devices: []
       }
 
