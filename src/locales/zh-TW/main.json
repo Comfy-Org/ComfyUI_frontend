@@ -238,6 +238,12 @@
       "title": "建立帳戶"
     }
   },
+  "boundingBox": {
+    "height": "高度",
+    "width": "寬度",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "清除工作流程",
     "deleteBlueprint": "刪除藍圖",
@@ -811,6 +817,7 @@
     "nodeSlotsError": "節點插槽錯誤",
     "nodeWidgetsError": "節點小工具錯誤",
     "nodes": "節點",
+    "nodesCount": "{count} 個節點 | {count} 個節點 | {count} 個節點",
     "nodesRunning": "節點執行中",
     "none": "無",
     "nothingToCopy": "沒有可複製的項目",
@@ -981,6 +988,11 @@
   },
   "imageCompare": {
     "noImages": "沒有可比較的圖像"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "裁切預覽",
+    "loading": "載入中...",
+    "noInputImage": "未連接輸入影像"
   },
   "importFailed": {
     "copyError": "複製錯誤",
@@ -1611,6 +1623,7 @@
     "3d": "3D",
     "3d_models": "3D 模型",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Gemini": "雙子星",
     "Ideogram": "Ideogram",
@@ -1632,6 +1645,7 @@
     "Veo": "Veo",
     "Vidu": "維度",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_for_testing",
     "advanced": "進階",
     "animation": "動畫",

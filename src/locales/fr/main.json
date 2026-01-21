@@ -238,6 +238,12 @@
       "title": "Créer un compte"
     }
   },
+  "boundingBox": {
+    "height": "Hauteur",
+    "width": "Largeur",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "Effacer le workflow",
     "deleteBlueprint": "Supprimer le plan",
@@ -811,6 +817,7 @@
     "nodeSlotsError": "Erreur d'emplacements du nœud",
     "nodeWidgetsError": "Erreur de widgets du nœud",
     "nodes": "Nœuds",
+    "nodesCount": "{count} nœuds | {count} nœud | {count} nœuds",
     "nodesRunning": "nœuds en cours d’exécution",
     "none": "Aucun",
     "nothingToCopy": "Rien à copier",
@@ -981,6 +988,11 @@
   },
   "imageCompare": {
     "noImages": "Aucune image à comparer"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "Aperçu du recadrage",
+    "loading": "Chargement...",
+    "noInputImage": "Aucune image d'entrée connectée"
   },
   "importFailed": {
     "copyError": "Erreur de copie",
@@ -1611,6 +1623,7 @@
     "3d": "3d",
     "3d_models": "modèles_3d",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
@@ -1632,6 +1645,7 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_pour_test",
     "advanced": "avancé",
     "animation": "animation",

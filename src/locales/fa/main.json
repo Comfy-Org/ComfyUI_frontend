@@ -238,6 +238,12 @@
       "title": "ایجاد حساب کاربری"
     }
   },
+  "boundingBox": {
+    "height": "ارتفاع",
+    "width": "عرض",
+    "x": "ایکس",
+    "y": "وای"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "پاک‌سازی workflow",
     "deleteBlueprint": "حذف blueprint",
@@ -811,6 +817,7 @@
     "nodeSlotsError": "خطا در slotهای node",
     "nodeWidgetsError": "خطا در ابزارک‌های node",
     "nodes": "nodeها",
+    "nodesCount": "{count} نود | {count} نود | {count} نود",
     "nodesRunning": "nodeها در حال اجرا هستند",
     "none": "هیچ‌کدام",
     "nothingToCopy": "موردی برای کپی وجود ندارد",
@@ -981,6 +988,11 @@
   },
   "imageCompare": {
     "noImages": "تصویری برای مقایسه وجود ندارد"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "پیش‌نمایش برش",
+    "loading": "در حال بارگذاری...",
+    "noInputImage": "هیچ تصویر ورودی متصل نیست"
   },
   "importFailed": {
     "copyError": "خطا در کپی",
@@ -1611,6 +1623,7 @@
     "3d": "سه‌بعدی",
     "3d_models": "مدل‌های سه‌بعدی",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
@@ -1632,6 +1645,7 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_for_testing",
     "advanced": "پیشرفته",
     "animation": "انیمیشن",

@@ -238,6 +238,12 @@
       "title": "创建一个账户"
     }
   },
+  "boundingBox": {
+    "height": "高度",
+    "width": "宽度",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "清除工作流",
     "deleteBlueprint": "删除蓝图",
@@ -811,6 +817,7 @@
     "nodeSlotsError": "节点插槽错误",
     "nodeWidgetsError": "节点控件错误",
     "nodes": "节点",
+    "nodesCount": "{count} 个节点",
     "nodesRunning": "节点正在运行",
     "none": "无",
     "nothingToCopy": "没有可以复制的内容",
@@ -981,6 +988,11 @@
   },
   "imageCompare": {
     "noImages": "没有可以对比的图像"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "裁剪预览",
+    "loading": "加载中...",
+    "noInputImage": "未连接输入图像"
   },
   "importFailed": {
     "copyError": "复制错误",
@@ -1611,6 +1623,7 @@
     "3d": "3d",
     "3d_models": "3D模型",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "字节跳动",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
@@ -1632,6 +1645,7 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan万相",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_用于测试",
     "advanced": "高级",
     "animation": "动画",

@@ -44,9 +44,15 @@
       :class="cn('px-2', activeJobItems.length && 'mt-2')"
     >
       <div
-        class="flex items-center py-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
+        class="flex items-center p-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
       >
-        {{ t('sideToolbar.generatedAssetsHeader') }}
+        {{
+          t(
+            assetType === 'input'
+              ? 'sideToolbar.importedAssetsHeader'
+              : 'sideToolbar.generatedAssetsHeader'
+          )
+        }}
       </div>
     </div>
 
@@ -128,9 +134,14 @@ import {
 import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
-const { assets, isSelected } = defineProps<{
+const {
+  assets,
+  isSelected,
+  assetType = 'output'
+} = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  assetType?: 'input' | 'output'
 }>()
 
 const assetsStore = useAssetsStore()

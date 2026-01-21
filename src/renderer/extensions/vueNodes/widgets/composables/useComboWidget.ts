@@ -94,7 +94,7 @@ const createAssetBrowserWidget = (
   const displayLabel = currentValue ?? t('widgets.selectModel')
   const assetBrowserDialog = useAssetBrowserDialog()
 
-  async function openModal(this: IBaseWidget) {
+  async function openModal(widget: IBaseWidget) {
     if (!isAssetWidget(widget)) {
       throw new Error(`Expected asset widget but received ${widget.type}`)
     }
@@ -129,7 +129,7 @@ const createAssetBrowserWidget = (
         }
 
         const oldValue = widget.value
-        this.value = validatedFilename.data
+        widget.value = validatedFilename.data
         node.onWidgetChanged?.(
           widget.name,
           validatedFilename.data,

@@ -238,6 +238,12 @@
       "title": "إنشاء حساب"
     }
   },
+  "boundingBox": {
+    "height": "الارتفاع",
+    "width": "العرض",
+    "x": "س",
+    "y": "ص"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "مسح سير العمل",
     "deleteBlueprint": "حذف المخطط",
@@ -811,6 +817,7 @@
     "nodeSlotsError": "خطأ في فتحات العقدة",
     "nodeWidgetsError": "خطأ في عناصر واجهة العقدة",
     "nodes": "العُقَد",
+    "nodesCount": "{count} عقدة | {count} عقدة | {count} عقدة",
     "nodesRunning": "العُقَد قيد التشغيل",
     "none": "لا شيء",
     "nothingToCopy": "لا يوجد ما يمكن نسخه",
@@ -981,6 +988,11 @@
   },
   "imageCompare": {
     "noImages": "لا توجد صور للمقارنة"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "معاينة الاقتصاص",
+    "loading": "جارٍ التحميل...",
+    "noInputImage": "لا توجد صورة إدخال متصلة"
   },
   "importFailed": {
     "copyError": "خطأ في النسخ",
@@ -1611,6 +1623,7 @@
     "3d": "ثلاثي الأبعاد",
     "3d_models": "نماذج ثلاثية الأبعاد",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "Gemini": "جيميني",
     "Ideogram": "إيديوغرام",
@@ -1632,6 +1645,7 @@
     "Veo": "Veo",
     "Vidu": "فيدو",
     "Wan": "وان",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_للاختبار",
     "advanced": "متقدم",
     "animation": "الرسوم المتحركة",

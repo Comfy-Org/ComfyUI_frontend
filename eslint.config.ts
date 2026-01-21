@@ -4,9 +4,7 @@ import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
 import oxlint from 'eslint-plugin-oxlint'
-// WORKAROUND: eslint-plugin-prettier causes segfault on Node.js 24 + Windows
-// See: https://github.com/nodejs/node/issues/58690
-// Prettier is still run separately in lint-staged, so this is safe to disable
+// eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
 import eslintConfigPrettier from 'eslint-config-prettier'
 import { configs as storybookConfigs } from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
@@ -111,7 +109,7 @@ export default defineConfig([
   tseslintConfigs.recommended,
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
-  // Use eslint-config-prettier instead of eslint-plugin-prettier to avoid Node 24 segfault
+  // Disables ESLint rules that conflict with formatters
   eslintConfigPrettier,
   // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
   storybookConfigs['flat/recommended'],

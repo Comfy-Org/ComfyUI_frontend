@@ -158,6 +158,7 @@
     "choose_file_to_upload": "choose file to upload",
     "capture": "capture",
     "nodes": "Nodes",
+    "nodesCount": "{count} nodes | {count} node | {count} nodes",
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
@@ -702,6 +703,7 @@
     "noImportedFiles": "No imported files found",
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
+    "importedAssetsHeader": "Imported assets",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -1426,6 +1428,7 @@
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
+    "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
@@ -1506,6 +1509,7 @@
     "": "",
     "camera": "camera",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
   "dataTypes": {
@@ -1717,6 +1721,17 @@
     "dropToLoad": "Drop 3D model to load",
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
     "uploadingModel": "Uploading 3D model..."
+  },
+  "imageCrop": {
+    "loading": "Loading...",
+    "noInputImage": "No input image connected",
+    "cropPreviewAlt": "Crop preview"
+  },
+  "boundingBox": {
+    "x": "X",
+    "y": "Y",
+    "width": "Width",
+    "height": "Height"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",

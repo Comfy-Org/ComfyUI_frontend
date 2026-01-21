@@ -207,10 +207,17 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const assetType = getAssetType(targetAsset, 'input')
 
+    // In Cloud mode, use asset_hash (the actual stored filename)
+    // In OSS mode, use the original name
+    const filename =
+      isCloud && targetAsset.asset_hash
+        ? targetAsset.asset_hash
+        : targetAsset.name
+
     // Create annotated path for the asset
     const annotated = createAnnotatedPath(
       {
-        filename: targetAsset.name,
+        filename,
         subfolder: metadata?.subfolder || '',
         type: isResultItemType(assetType) ? assetType : undefined
       },
@@ -342,9 +349,14 @@ export function useMediaAssetActions() {
       const metadata = getOutputAssetMetadata(asset.user_metadata)
       const assetType = getAssetType(asset, 'input')
 
+      // In Cloud mode, use asset_hash (the actual stored filename)
+      // In OSS mode, use the original name
+      const filename =
+        isCloud && asset.asset_hash ? asset.asset_hash : asset.name
+
       const annotated = createAnnotatedPath(
         {
-          filename: asset.name,
+          filename,
           subfolder: metadata?.subfolder || '',
           type: isResultItemType(assetType) ? assetType : undefined
         },

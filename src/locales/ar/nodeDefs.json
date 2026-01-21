@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "حرر الصور باستخدام أحدث نموذج من Bria",
+    "display_name": "تحرير صورة Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "guidance_scale": {
+        "name": "مقياس التوجيه",
+        "tooltip": "القيمة الأعلى تجعل الصورة تتبع التوجيه بشكل أدق."
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "mask": {
+        "name": "القناع",
+        "tooltip": "إذا لم يتم تحديده، سيتم تطبيق التحرير على الصورة بالكامل."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "moderation": {
+        "name": "الإشراف",
+        "tooltip": "إعدادات الإشراف"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "إشراف محتوى التوجيه"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "إشراف الإدخال البصري"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "إشراف الإخراج البصري"
+      },
+      "negative_prompt": {
+        "name": "توجيه سلبي"
+      },
+      "prompt": {
+        "name": "التوجيه",
+        "tooltip": "تعليمات لتحرير الصورة"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "steps": {
+        "name": "الخطوات"
+      },
+      "structured_prompt": {
+        "name": "توجيه منظم",
+        "tooltip": "سلسلة نصية تحتوي على توجيه التحرير المنظم بصيغة JSON. استخدم هذا بدلاً من التوجيه المعتاد للتحكم الدقيق والبرمجي."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "توجيه منظم",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام المطالبة النصية والإطار الأول والأخير.",
     "display_name": "تحويل الإطار الأول-الأخير من ByteDance إلى فيديو",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "الإطار_الأول",
         "tooltip": "الإطار الأول الذي سيتم استخدامه للفيديو."
+      },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "يتم تجاهل هذا المعامل لجميع النماذج باستثناء seedance-1-5-pro."
       },
       "last_frame": {
         "name": "الإطار_الأخير",
@@ -527,6 +593,10 @@
         "name": "duration",
         "tooltip": "مدة الفيديو الناتج بالثواني."
       },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "يتم تجاهل هذا المعامل لجميع النماذج باستثناء seedance-1-5-pro."
+      },
       "image": {
         "name": "image",
         "tooltip": "الإطار الأول الذي سيتم استخدامه للفيديو."
@@ -633,6 +703,10 @@
       "duration": {
         "name": "المدة",
         "tooltip": "مدة الفيديو الناتج بالثواني."
+      },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "يتم تجاهل هذا المعامل لجميع النماذج باستثناء seedance-1-5-pro."
       },
       "model": {
         "name": "النموذج"
@@ -13438,6 +13512,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "تغيير حجم الصور تلقائياً"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "الصورة ١"
+      },
+      "image2": {
+        "name": "الصورة ٢"
+      },
+      "image3": {
+        "name": "الصورة ٣"
+      },
+      "image_encoder": {
+        "name": "مُرمّز الصورة"
+      },
+      "prompt": {
+        "name": "التوجيه"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "تحويل النص إلى أحرف صغيرة",
     "inputs": {
@@ -16121,6 +16229,43 @@
       },
       "3": {
         "name": "اقتطاع المضمر",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "مُرقّي فيديو سريع وعالي الجودة يعزز الدقة ويعيد الوضوح للمقاطع منخفضة الدقة أو الضبابية.",
+    "display_name": "ترقية فيديو FlashVSR",
+    "inputs": {
+      "target_resolution": {
+        "name": "الدقة المستهدفة"
+      },
+      "video": {
+        "name": "الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "عزز دقة وجودة الصورة، وارفع الصور إلى دقة 4K أو 8K للحصول على نتائج حادة ومفصلة.",
+    "display_name": "ترقية صورة WaveSpeed",
+    "inputs": {
+      "image": {
+        "name": "الصورة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "target_resolution": {
+        "name": "الدقة المستهدفة"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

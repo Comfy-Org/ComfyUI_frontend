@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+See @docs/guidance/*.md for file-type-specific conventions (auto-loaded by glob).
+
 ## Project Structure & Module Organization
 
 - Source: `src/`
@@ -25,10 +27,10 @@
 - Build output: `dist/`
 - Configs
   - `vite.config.mts`
-  - `vitest.config.ts`
   - `playwright.config.ts`
   - `eslint.config.ts`
-  - `.prettierrc`
+  - `.oxfmtrc.json`
+  - `.oxlintrc.json`
   - etc.
 
 ## Monorepo Architecture
@@ -44,8 +46,23 @@ The project uses **Nx** for build orchestration and task management
 - `pnpm test:unit`: Run Vitest unit tests
 - `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`)
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
-- `pnpm format` / `pnpm format:check`: Prettier
+- `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking
+- `pnpm storybook`: Start Storybook development server
+
+## Development Workflow
+
+1. Make code changes
+2. Run relevant tests
+3. Run `pnpm typecheck`, `pnpm lint`, `pnpm format`
+4. Check if README updates are needed
+5. Suggest docs.comfy.org updates for user-facing changes
+
+## Git Conventions
+
+- Use `prefix:` format: `feat:`, `fix:`, `test:`
+- Add "Fixes #n" to PR descriptions
+- Never mention Claude/AI in commits
 
 ## Coding Style & Naming Conventions
 
@@ -55,7 +72,7 @@ The project uses **Nx** for build orchestration and task management
     - Composition API only
   - Tailwind 4 styling
     - Avoid `<style>` blocks
-- Style: (see `.prettierrc`)
+- Style: (see `.oxfmtrc.json`)
   - Indent 2 spaces
   - single quotes
   - no trailing semicolons

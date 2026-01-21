@@ -238,6 +238,12 @@
       "title": "アカウントを作成する"
     }
   },
+  "boundingBox": {
+    "height": "高さ",
+    "width": "幅",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "ワークフローをクリア",
     "deleteBlueprint": "ブループリントを削除",
@@ -811,6 +817,7 @@
     "nodeSlotsError": "ノードスロットエラー",
     "nodeWidgetsError": "ノードウィジェットエラー",
     "nodes": "ノード",
+    "nodesCount": "{count} ノード | {count} ノード | {count} ノード",
     "nodesRunning": "ノードが実行中",
     "none": "なし",
     "nothingToCopy": "コピーするものがありません",
@@ -981,6 +988,11 @@
   },
   "imageCompare": {
     "noImages": "比較する画像がありません"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "切り抜きプレビュー",
+    "loading": "読み込み中...",
+    "noInputImage": "入力画像が接続されていません"
   },
   "importFailed": {
     "copyError": "コピーエラー",
@@ -1611,6 +1623,7 @@
     "3d": "3d",
     "3d_models": "3Dモデル",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
@@ -1632,6 +1645,7 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_テスト用",
     "advanced": "高度な機能",
     "animation": "アニメーション",

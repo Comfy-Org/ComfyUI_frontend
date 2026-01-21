@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Bria'nın en son modeliyle görüntüleri düzenleyin",
+    "display_name": "Bria Görüntü Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "guidance_scale": {
+        "name": "yönlendirme_ölçeği",
+        "tooltip": "Daha yüksek değer, görüntünün isteme daha yakın olmasını sağlar."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Atlanırsa, düzenleme tüm görüntüye uygulanır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "denetleme",
+        "tooltip": "Denetleme ayarları"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "istem_içeriği_denetleme"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "görsel_girdi_denetleme"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "görsel_çıktı_denetleme"
+      },
+      "negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntüyü düzenlemek için talimat"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "steps": {
+        "name": "adımlar"
+      },
+      "structured_prompt": {
+        "name": "yapılandırılmış_istem",
+        "tooltip": "JSON formatında yapılandırılmış düzenleme istemi içeren bir dize. Hassas ve programatik kontrol için normal istem yerine bunu kullanın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "İlk ve son kareleri kullanarak video oluşturun.",
     "display_name": "ByteDance İlk-Son-Kare'den Videoya",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "ilk_kare",
         "tooltip": "Video için kullanılacak ilk kare."
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
       },
       "last_frame": {
         "name": "son_kare",
@@ -527,6 +593,10 @@
         "name": "süre",
         "tooltip": "Oluşturulan videonun saniye cinsinden süresi."
       },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
+      },
       "image": {
         "name": "görüntü",
         "tooltip": "Video için kullanılacak ilk kare."
@@ -633,6 +703,10 @@
       "duration": {
         "name": "süre",
         "tooltip": "Çıktı videosunun saniye cinsinden süresi."
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
       },
       "model": {
         "name": "model"
@@ -13438,6 +13512,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "görüntüleri_otomatik_yeniden_boyutlandır"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "görüntü1"
+      },
+      "image2": {
+        "name": "görüntü2"
+      },
+      "image3": {
+        "name": "görüntü3"
+      },
+      "image_encoder": {
+        "name": "görüntü_kodlayıcı"
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Metni Küçük Harfe Çevir",
     "inputs": {
@@ -16121,6 +16229,43 @@
       },
       "3": {
         "name": "gizliyi_kırp",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Düşük çözünürlüklü veya bulanık videolar için hızlı, yüksek kaliteli video yükseltici; çözünürlüğü artırır ve netliği geri kazandırır.",
+    "display_name": "FlashVSR Video Yükseltme",
+    "inputs": {
+      "target_resolution": {
+        "name": "hedef_çözünürlük"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Görüntü çözünürlüğünü ve kalitesini artırın, fotoğrafları keskin ve ayrıntılı sonuçlar için 4K veya 8K'ya yükseltin.",
+    "display_name": "WaveSpeed Görüntü Yükseltme",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "hedef_çözünürlük"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

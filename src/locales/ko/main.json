@@ -238,6 +238,12 @@
       "title": "계정 생성"
     }
   },
+  "boundingBox": {
+    "height": "높이",
+    "width": "너비",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "워크플로 내용 지우기",
     "deleteBlueprint": "블루프린트 삭제",
@@ -811,6 +817,7 @@
     "nodeSlotsError": "노드 슬롯 오류",
     "nodeWidgetsError": "노드 위젯 오류",
     "nodes": "노드",
+    "nodesCount": "{count}개 노드 | {count}개 노드 | {count}개 노드",
     "nodesRunning": "노드 실행 중",
     "none": "없음",
     "nothingToCopy": "복사할 항목 없음",
@@ -981,6 +988,11 @@
   },
   "imageCompare": {
     "noImages": "비교할 이미지가 없습니다"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "자르기 미리보기",
+    "loading": "로딩 중...",
+    "noInputImage": "입력 이미지가 연결되지 않았습니다"
   },
   "importFailed": {
     "copyError": "복사 오류",
@@ -1611,6 +1623,7 @@
     "3d": "3d",
     "3d_models": "3D 모델",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
@@ -1632,6 +1645,7 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_테스트용",
     "advanced": "고급",
     "animation": "애니메이션",

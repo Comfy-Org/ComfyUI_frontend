@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Edite imagens usando o modelo mais recente da Bria",
+    "display_name": "Bria Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "guidance_scale": {
+        "name": "escala_de_guia",
+        "tooltip": "Um valor mais alto faz com que a imagem siga o prompt mais de perto."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Se omitido, a edição será aplicada à imagem inteira."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "moderation": {
+        "name": "moderação",
+        "tooltip": "Configurações de moderação"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "moderação_do_conteúdo_do_prompt"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "moderação_da_entrada_visual"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "moderação_da_saida_visual"
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Instrução para editar a imagem"
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "steps": {
+        "name": "passos"
+      },
+      "structured_prompt": {
+        "name": "prompt_estruturado",
+        "tooltip": "Uma string contendo o prompt de edição estruturado em formato JSON. Use isso em vez do prompt comum para controle preciso e programático."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt_estruturado",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Gere vídeo usando um prompt e os quadros inicial e final.",
     "display_name": "ByteDance Primeiro-Último-Frame para Vídeo",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "first_frame",
         "tooltip": "Primeiro quadro a ser usado para o vídeo."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parâmetro é ignorado para qualquer modelo, exceto seedance-1-5-pro."
       },
       "last_frame": {
         "name": "last_frame",
@@ -527,6 +593,10 @@
         "name": "duração",
         "tooltip": "A duração do vídeo de saída em segundos."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parâmetro é ignorado para qualquer modelo, exceto seedance-1-5-pro."
+      },
       "image": {
         "name": "imagem",
         "tooltip": "Primeiro quadro a ser usado para o vídeo."
@@ -633,6 +703,10 @@
       "duration": {
         "name": "duration",
         "tooltip": "A duração do vídeo de saída em segundos."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "Este parâmetro é ignorado para qualquer modelo, exceto seedance-1-5-pro."
       },
       "model": {
         "name": "model"
@@ -13465,6 +13539,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "redimensionar_imagens_automaticamente"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "imagem1"
+      },
+      "image2": {
+        "name": "imagem2"
+      },
+      "image3": {
+        "name": "imagem3"
+      },
+      "image_encoder": {
+        "name": "codificador_de_imagem"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Texto para minúsculas",
     "inputs": {
@@ -16152,6 +16260,43 @@
       },
       "3": {
         "name": "latente_recortado",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Aprimorador de vídeo rápido e de alta qualidade que aumenta a resolução e restaura a nitidez de vídeos de baixa resolução ou borrados.",
+    "display_name": "FlashVSR Video Upscale",
+    "inputs": {
+      "target_resolution": {
+        "name": "resolução_alvo"
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Aumente a resolução e a qualidade da imagem, ampliando fotos para 4K ou 8K para resultados nítidos e detalhados.",
+    "display_name": "WaveSpeed Image Upscale",
+    "inputs": {
+      "image": {
+        "name": "imagem"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "target_resolution": {
+        "name": "resolução_alvo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

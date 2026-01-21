@@ -23,7 +23,8 @@
       :class="
         cn(
           '-translate-x-1/2 w-3',
-          hasSlotError && 'ring-2 ring-error ring-offset-0 rounded-full'
+          hasSlotError &&
+            'before:ring-2 before:ring-error before:ring-offset-0 before:size-4 before:absolute before:rounded-full before:pointer-events-none'
         )
       "
       :slot-data

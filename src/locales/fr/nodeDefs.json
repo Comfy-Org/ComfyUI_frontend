@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Modifiez des images en utilisant le dernier modèle Bria",
+    "display_name": "Bria Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "guidance_scale": {
+        "name": "échelle de guidage",
+        "tooltip": "Une valeur plus élevée fait suivre l'image à l'invite de façon plus précise."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "masque",
+        "tooltip": "Si omis, la modification s'applique à l'image entière."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "moderation": {
+        "name": "modération",
+        "tooltip": "Paramètres de modération"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "modération_du_contenu_de_l'invite"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "modération_de_l'entrée_visuelle"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "modération_de_la_sortie_visuelle"
+      },
+      "negative_prompt": {
+        "name": "invite négative"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Instruction pour modifier l'image"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "steps": {
+        "name": "étapes"
+      },
+      "structured_prompt": {
+        "name": "invite structurée",
+        "tooltip": "Une chaîne contenant l'invite d'édition structurée au format JSON. Utilisez ceci à la place de l'invite habituelle pour un contrôle précis et programmatique."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "invite structurée",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Générer une vidéo en utilisant l'invite et les première et dernière images.",
     "display_name": "ByteDance Première-Dernière Image vers Vidéo",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "première_image",
         "tooltip": "Première image à utiliser pour la vidéo."
+      },
+      "generate_audio": {
+        "name": "générer_audio",
+        "tooltip": "Ce paramètre est ignoré pour tout modèle sauf seedance-1-5-pro."
       },
       "last_frame": {
         "name": "dernière_image",
@@ -527,6 +593,10 @@
         "name": "durée",
         "tooltip": "La durée de la vidéo en sortie en secondes."
       },
+      "generate_audio": {
+        "name": "générer_audio",
+        "tooltip": "Ce paramètre est ignoré pour tout modèle sauf seedance-1-5-pro."
+      },
       "image": {
         "name": "image",
         "tooltip": "Première image à utiliser pour la vidéo."
@@ -633,6 +703,10 @@
       "duration": {
         "name": "duration",
         "tooltip": "La durée de la vidéo de sortie en secondes."
+      },
+      "generate_audio": {
+        "name": "générer_audio",
+        "tooltip": "Ce paramètre est ignoré pour tout modèle sauf seedance-1-5-pro."
       },
       "model": {
         "name": "model"
@@ -13438,6 +13512,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "redimensionnement automatique des images"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      },
+      "image3": {
+        "name": "image3"
+      },
+      "image_encoder": {
+        "name": "encodeur d'image"
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Texte en minuscules",
     "inputs": {
@@ -16121,6 +16229,43 @@
       },
       "3": {
         "name": "latent_coupé",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Upscaler vidéo rapide et de haute qualité qui augmente la résolution et restaure la clarté des séquences basse résolution ou floues.",
+    "display_name": "FlashVSR Upscale Vidéo",
+    "inputs": {
+      "target_resolution": {
+        "name": "résolution cible"
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Augmentez la résolution et la qualité de l'image, en upscalant les photos en 4K ou 8K pour des résultats nets et détaillés.",
+    "display_name": "WaveSpeed Upscale Image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "target_resolution": {
+        "name": "résolution cible"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

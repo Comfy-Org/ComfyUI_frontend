@@ -1350,12 +1350,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     })
 
     function inner_clicked(
-      this: ContextMenu<string>,
+      this: ContextMenuDivElement,
       v?: string | IContextMenuValue<string>
     ) {
       if (!node || typeof v === 'string' || !v?.value) return
 
-      const rect = this.root.getBoundingClientRect()
+      const rect = this.getBoundingClientRect()
       canvas.showEditPropertyValue(node, v.value, {
         position: [rect.left, rect.top]
       })
@@ -3187,7 +3187,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // get node over
-    const node = graph.getNodeOnPos(x, y, this.visible_nodes)
+    const node = LiteGraph.vueNodesMode
+      ? null
+      : graph.getNodeOnPos(x, y, this.visible_nodes)
 
     const dragRect = this.dragging_rectangle
     if (dragRect) {

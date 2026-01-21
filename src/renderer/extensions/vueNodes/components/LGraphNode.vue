@@ -482,18 +482,30 @@ const lgraphNode = computed(() => {
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
-  if (!node || !(node instanceof SubgraphNode)) return false
+  if (!node) return false
 
-  // Check if there are hidden inputs (widgets not promoted)
-  const interiorNodes = node.subgraph.nodes
-  const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
+  // For subgraph nodes: check for unpromoted widgets
+  if (node instanceof SubgraphNode) {
+    const interiorNodes = node.subgraph.nodes
+    const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
+    return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+  }
 
-  return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+  // For regular nodes: show button if there are advanced widgets and they're currently hidden
+  const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
+  return hasAdvancedWidgets && !node.showAdvanced
 })
 
 function handleShowAdvancedInputs() {
-  const rightSidePanelStore = useRightSidePanelStore()
-  rightSidePanelStore.focusSection('advanced-inputs')
+  const node = lgraphNode.value
+  if (!node) return
+
+  if (node instanceof SubgraphNode) {
+    const rightSidePanelStore = useRightSidePanelStore()
+    rightSidePanelStore.focusSection('advanced-inputs')
+  } else {
+    node.showAdvanced = true
+  }
 }
 
 const nodeMedia = computed(() => {
