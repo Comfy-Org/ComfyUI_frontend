@@ -1,27 +1,33 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-type Severity = 'default' | 'secondary' | 'warn' | 'danger' | 'contrast'
+import { statusBadgeVariants } from './statusBadge.variants'
+import type { StatusBadgeVariants } from './statusBadge.variants'
 
-const { label, severity = 'default' } = defineProps<{
-  label: string
-  severity?: Severity
+const {
+  label,
+  severity = 'default',
+  variant,
+  class: customClass = ''
+} = defineProps<{
+  label?: string | number
+  severity?: StatusBadgeVariants['severity']
+  variant?: StatusBadgeVariants['variant']
+  class?: HTMLAttributes['class']
 }>()
 
-const baseClasses =
-  'inline-flex h-3.5 items-center justify-center rounded-full px-1 text-xxxs font-semibold uppercase'
-
-const severityClasses: Record<Severity, string> = {
-  default: 'bg-primary-background text-base-foreground',
-  secondary: 'bg-secondary-background text-base-foreground',
-  warn: 'bg-warning-background text-base-background',
-  danger: 'bg-destructive-background text-white',
-  contrast: 'bg-base-foreground text-base-background'
-}
-
-const badgeClasses = computed(() => cn(baseClasses, severityClasses[severity]))
+const badgeClasses = computed(() =>
+  cn(
+    statusBadgeVariants({
+      severity,
+      variant: variant ?? (label == null ? 'dot' : 'label')
+    }),
+    customClass
+  )
+)
 </script>
 
 <template>
