@@ -100,6 +100,7 @@
           v-if="isListView"
           :assets="displayAssets"
           :is-selected="isSelected"
+          :asset-type="activeTab"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
@@ -243,6 +244,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
@@ -256,6 +258,7 @@ interface JobOutputItem {
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
+const executionStore = useExecutionStore()
 const settingStore = useSettingStore()
 
 const activeTab = ref<'input' | 'output'>('output')
@@ -510,7 +513,13 @@ const handleBulkDelete = async (assets: AssetItem[]) => {
 }
 
 const handleClearQueue = async () => {
+  const pendingPromptIds = queueStore.pendingTasks
+    .map((task) => task.promptId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
   await commandStore.execute('Comfy.ClearPendingTasks')
+
+  executionStore.clearInitializationByPromptIds(pendingPromptIds)
 }
 
 const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
