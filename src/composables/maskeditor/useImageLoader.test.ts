@@ -7,17 +7,26 @@ const mockCanvasManager = {
   updateMaskColor: vi.fn().mockResolvedValue(undefined)
 }
 
-const mockStore = {
-  imgCanvas: null as any,
-  maskCanvas: null as any,
-  rgbCanvas: null as any,
-  imgCtx: null as any,
-  maskCtx: null as any,
-  image: null as any
+const mockStore: {
+  imgCanvas: unknown
+  maskCanvas: unknown
+  rgbCanvas: unknown
+  imgCtx: unknown
+  maskCtx: unknown
+  image: unknown
+} = {
+  imgCanvas: null,
+  maskCanvas: null,
+  rgbCanvas: null,
+  imgCtx: null,
+  maskCtx: null,
+  image: null
 }
 
-const mockDataStore = {
-  inputData: null as any
+const mockDataStore: {
+  inputData: unknown
+} = {
+  inputData: null
 }
 
 vi.mock('@/stores/maskEditorStore', () => ({
@@ -33,7 +42,8 @@ vi.mock('@/composables/maskeditor/useCanvasManager', () => ({
 }))
 
 vi.mock('@vueuse/core', () => ({
-  createSharedComposable: (fn: any) => fn
+  createSharedComposable: <T extends (...args: unknown[]) => unknown>(fn: T) =>
+    fn
 }))
 
 describe('useImageLoader', () => {
@@ -104,10 +114,10 @@ describe('useImageLoader', () => {
 
       await loader.loadImages()
 
-      expect(mockStore.maskCanvas.width).toBe(512)
-      expect(mockStore.maskCanvas.height).toBe(512)
-      expect(mockStore.rgbCanvas.width).toBe(512)
-      expect(mockStore.rgbCanvas.height).toBe(512)
+      expect((mockStore.maskCanvas as { width: number }).width).toBe(512)
+      expect((mockStore.maskCanvas as { height: number }).height).toBe(512)
+      expect((mockStore.rgbCanvas as { width: number }).width).toBe(512)
+      expect((mockStore.rgbCanvas as { height: number }).height).toBe(512)
     })
 
     it('should clear canvas contexts', async () => {
@@ -115,8 +125,12 @@ describe('useImageLoader', () => {
 
       await loader.loadImages()
 
-      expect(mockStore.imgCtx.clearRect).toHaveBeenCalledWith(0, 0, 0, 0)
-      expect(mockStore.maskCtx.clearRect).toHaveBeenCalledWith(0, 0, 0, 0)
+      expect(
+        (mockStore.imgCtx as { clearRect: ReturnType<typeof vi.fn> }).clearRect
+      ).toHaveBeenCalledWith(0, 0, 0, 0)
+      expect(
+        (mockStore.maskCtx as { clearRect: ReturnType<typeof vi.fn> }).clearRect
+      ).toHaveBeenCalledWith(0, 0, 0, 0)
     })
 
     it('should call canvasManager methods', async () => {
@@ -188,10 +202,10 @@ describe('useImageLoader', () => {
 
       await loader.loadImages()
 
-      expect(mockStore.maskCanvas.width).toBe(1024)
-      expect(mockStore.maskCanvas.height).toBe(768)
-      expect(mockStore.rgbCanvas.width).toBe(1024)
-      expect(mockStore.rgbCanvas.height).toBe(768)
+      expect((mockStore.maskCanvas as { width: number }).width).toBe(1024)
+      expect((mockStore.maskCanvas as { height: number }).height).toBe(768)
+      expect((mockStore.rgbCanvas as { width: number }).width).toBe(1024)
+      expect((mockStore.rgbCanvas as { height: number }).height).toBe(768)
     })
   })
 })

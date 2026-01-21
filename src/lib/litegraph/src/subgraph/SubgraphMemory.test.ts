@@ -10,6 +10,12 @@ import {
   createTestSubgraphNode
 } from './__fixtures__/subgraphHelpers'
 
+type InputWithWidget = {
+  _widget?: IWidget | { type: string; value: unknown; name: string }
+  _connection?: { id: number; type: string }
+  _listenerController?: AbortController
+}
+
 describe.skip('SubgraphNode Memory Management', () => {
   describe.skip('Event Listener Cleanup', () => {
     it('should register event listeners on construction', () => {
@@ -308,14 +314,14 @@ describe.skip('SubgraphMemory - Widget Reference Management', () => {
 
       // Set widget reference
       if (input && '_widget' in input) {
-        ;(input as any)._widget = mockWidget
-        expect((input as any)._widget).toBe(mockWidget)
+        ;(input as InputWithWidget)._widget = mockWidget
+        expect((input as InputWithWidget)._widget).toBe(mockWidget)
       }
 
       // Clear widget reference
       if (input && '_widget' in input) {
-        ;(input as any)._widget = undefined
-        expect((input as any)._widget).toBeUndefined()
+        ;(input as InputWithWidget)._widget = undefined
+        expect((input as InputWithWidget)._widget).toBeUndefined()
       }
     }
   )
@@ -360,30 +366,34 @@ describe.skip('SubgraphMemory - Widget Reference Management', () => {
 
       // Set up references that should be cleaned up
       const mockReferences = {
-        widget: { type: 'number', value: 42 },
+        widget: { type: 'number', value: 42, name: 'mock_widget' },
         connection: { id: 1, type: 'number' },
         listener: vi.fn()
       }
 
       // Set references
       if (input) {
-        ;(input as any)._widget = mockReferences.widget
-        ;(input as any)._connection = mockReferences.connection
+        ;(input as InputWithWidget)._widget = mockReferences.widget
+        ;(input as InputWithWidget)._connection = mockReferences.connection
       }
       if (output) {
-        ;(input as any)._connection = mockReferences.connection
+        ;(input as InputWithWidget)._connection = mockReferences.connection
       }
 
       // Verify references are set
-      expect((input as any)?._widget).toBe(mockReferences.widget)
-      expect((input as any)?._connection).toBe(mockReferences.connection)
+      expect((input as InputWithWidget)?._widget).toBe(mockReferences.widget)
+      expect((input as InputWithWidget)?._connection).toBe(
+        mockReferences.connection
+      )
 
       // Simulate proper cleanup (what onRemoved should do)
       subgraphNode.onRemoved()
 
       // Input-specific listeners should be cleaned up (this works)
       if (input && '_listenerController' in input) {
-        expect((input as any)._listenerController?.signal.aborted).toBe(true)
+        expect(
+          (input as InputWithWidget)._listenerController?.signal.aborted
+        ).toBe(true)
       }
     }
   )

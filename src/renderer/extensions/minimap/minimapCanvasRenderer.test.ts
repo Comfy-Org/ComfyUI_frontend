@@ -33,11 +33,11 @@ describe('minimapCanvasRenderer', () => {
       fillStyle: '',
       strokeStyle: '',
       lineWidth: 1
-    } as any
+    } as unknown as CanvasRenderingContext2D
 
     mockCanvas = {
       getContext: vi.fn().mockReturnValue(mockContext)
-    } as any
+    } as unknown as HTMLCanvasElement
 
     mockGraph = {
       _nodes: [
@@ -63,11 +63,11 @@ describe('minimapCanvasRenderer', () => {
       _groups: [],
       links: {},
       getNodeById: vi.fn()
-    } as any
+    } as unknown as LGraph
 
     vi.mocked(useColorPaletteStore).mockReturnValue({
       completedActivePalette: { light_theme: false }
-    } as any)
+    } as unknown as ReturnType<typeof useColorPaletteStore>)
   })
 
   it('should clear canvas and render nodes', () => {
@@ -203,7 +203,7 @@ describe('minimapCanvasRenderer', () => {
         size: [400, 300],
         color: '#0000FF'
       }
-    ] as any
+    ] as unknown as typeof mockGraph._groups
 
     const context: MinimapRenderContext = {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },
@@ -236,14 +236,14 @@ describe('minimapCanvasRenderer', () => {
       {
         links: [1]
       }
-    ] as any
+    ] as unknown as (typeof mockGraph._nodes)[0]['outputs']
 
     // Create a hybrid Map/Object for links as LiteGraph expects
     const linksMap = new Map([[1, { id: 1, target_id: 2 }]])
     const links = Object.assign(linksMap, {
       1: { id: 1, target_id: 2 }
     })
-    mockGraph.links = links as any
+    mockGraph.links = links as unknown as typeof mockGraph.links
 
     mockGraph.getNodeById = vi.fn().mockReturnValue(targetNode)
 
@@ -277,7 +277,7 @@ describe('minimapCanvasRenderer', () => {
   it('should handle light theme colors', () => {
     vi.mocked(useColorPaletteStore).mockReturnValue({
       completedActivePalette: { light_theme: true }
-    } as any)
+    } as unknown as ReturnType<typeof useColorPaletteStore>)
 
     const context: MinimapRenderContext = {
       bounds: { minX: 0, minY: 0, width: 500, height: 400 },
