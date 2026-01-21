@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import { uploadMedia } from '@/platform/assets/services/uploadService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
 class Load3dUtils {
@@ -15,7 +16,7 @@ class Load3dUtils {
       { subfolder: 'threed', type: 'temp' }
     )
 
-    if (!result.success) {
+    if (!result.success || !result.response) {
       const err = `Error uploading temp file: ${result.error}`
       useToastStore().addAlert(err)
       throw new Error(err)
