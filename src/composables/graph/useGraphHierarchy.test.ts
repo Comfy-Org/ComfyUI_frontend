@@ -26,7 +26,7 @@ describe('useGraphHierarchy', () => {
           groups: mockGroups
         }
       }
-    } as any
+    } as unknown as ReturnType<typeof useCanvasStore>
 
     vi.mocked(useCanvasStore).mockReturnValue(mockCanvasStore)
   })
@@ -113,7 +113,7 @@ describe('useGraphHierarchy', () => {
     })
 
     it('handles null canvas gracefully', () => {
-      mockCanvasStore.canvas = null as any
+      mockCanvasStore.canvas = null
 
       const { findParentGroup } = useGraphHierarchy()
       const result = findParentGroup(mockNode)
@@ -122,7 +122,7 @@ describe('useGraphHierarchy', () => {
     })
 
     it('handles null graph gracefully', () => {
-      mockCanvasStore.canvas!.graph = null as any
+      mockCanvasStore.canvas!.graph = null
 
       const { findParentGroup } = useGraphHierarchy()
       const result = findParentGroup(mockNode)
