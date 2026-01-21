@@ -197,13 +197,18 @@ export function useJobList() {
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
   const selectedSortMode = ref<JobSortMode>('mostRecent')
 
+  const mostRecentTimestamp = (task: TaskItemImpl) => task.createTime ?? 0
+
   const allTasksSorted = computed<TaskItemImpl[]>(() => {
     const all = [
       ...queueStore.pendingTasks,
       ...queueStore.runningTasks,
       ...queueStore.historyTasks
     ]
-    return all.sort((a, b) => b.queueIndex - a.queueIndex)
+    return all.sort((a, b) => {
+      const delta = mostRecentTimestamp(b) - mostRecentTimestamp(a)
+      return delta === 0 ? 0 : delta
+    })
   })
 
   const tasksWithJobState = computed<TaskWithState[]>(() =>
