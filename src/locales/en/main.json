@@ -2315,6 +2315,12 @@
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
+    "byType": "By type",
+    "emptyImported": {
+      "canImport": "No imported models yet. Click \"Import Model\" to add your own.",
+      "restricted": "Personal models are only available at Creator tier and above."
+    },
+    "imported": "Imported",
     "assetCollection": "Asset collection",
     "assets": "Assets",
     "baseModels": "Base models",
