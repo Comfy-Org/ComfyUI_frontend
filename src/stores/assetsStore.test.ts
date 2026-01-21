@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
@@ -121,7 +122,7 @@ describe('assetsStore - Refactored (Option A)', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAssetsStore()
     vi.clearAllMocks()
   })
@@ -462,6 +463,7 @@ describe('assetsStore - Refactored (Option A)', () => {
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     mockIsCloud.value = true
     vi.clearAllMocks()
   })
@@ -481,7 +483,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
   describe('getAssets cache invalidation', () => {
     it('should invalidate cache before mutating assets during batch loading', async () => {
-      setActivePinia(createPinia())
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
 
@@ -514,7 +515,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
 
     it('should not return stale cached array after background batch completes', async () => {
-      setActivePinia(createPinia())
       const store = useAssetsStore()
       const nodeType = 'LoraLoader'
 
@@ -556,7 +556,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
   describe('concurrent request handling', () => {
     it('should discard stale request when newer request starts', async () => {
-      setActivePinia(createPinia())
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
       const firstBatch = Array.from({ length: 5 }, (_, i) =>
@@ -599,7 +598,6 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
   describe('shallowReactive state reactivity', () => {
     it('should trigger reactivity on isModelLoading change', async () => {
-      setActivePinia(createPinia())
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
 
