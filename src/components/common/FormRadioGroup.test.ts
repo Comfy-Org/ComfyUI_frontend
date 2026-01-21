@@ -1,3 +1,5 @@
+import type { ComponentProps } from 'vue-component-type-helpers'
+
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import RadioButton from 'primevue/radiobutton'
@@ -14,13 +16,13 @@ describe('FormRadioGroup', () => {
     app.use(PrimeVue)
   })
 
-  const mountComponent = (props: any, options = {}) => {
+  const mountComponent = (props: Record<string, unknown>, options = {}) => {
     return mount(FormRadioGroup, {
       global: {
         plugins: [PrimeVue],
         components: { RadioButton }
       },
-      props,
+      props: props as unknown as ComponentProps<typeof FormRadioGroup>,
       ...options
     })
   }
