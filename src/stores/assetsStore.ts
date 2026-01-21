@@ -382,15 +382,12 @@ export const useAssetsStore = defineStore('assets', () => {
               offset: state.offset
             })
 
-            let addedAny = false
-            for (const asset of newAssets) {
-              if (!state.assets.has(asset.id)) {
-                state.assets.set(asset.id, asset)
-                addedAny = true
-              }
-            }
-            if (addedAny) {
+            const assetsToAdd = newAssets.filter((a) => !state.assets.has(a.id))
+            if (assetsToAdd.length > 0) {
               assetsArrayCache.delete(key)
+              for (const asset of assetsToAdd) {
+                state.assets.set(asset.id, asset)
+              }
             }
 
             state.offset += newAssets.length

@@ -1,9 +1,10 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { assetService } from '@/platform/assets/services/assetService'
 
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
@@ -20,13 +21,17 @@ vi.mock('@/scripts/api', () => ({
 // Mock the asset service
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    getAssetsByTag: vi.fn()
+    getAssetsByTag: vi.fn(),
+    getAssetsForNodeType: vi.fn()
   }
 }))
 
-// Mock distribution type
+// Mock distribution type - hoisted so it can be changed per test
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 // Mock TaskItemImpl
@@ -450,6 +455,101 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(asset.user_metadata).toHaveProperty('outputCount')
       expect(asset.user_metadata).toHaveProperty('allOutputs')
       expect(Array.isArray(asset.user_metadata!.allOutputs)).toBe(true)
+    })
+  })
+})
+
+describe('assetsStore - Model Assets Cache (Cloud)', () => {
+  beforeEach(() => {
+    mockIsCloud.value = true
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    mockIsCloud.value = false
+  })
+
+  const createMockAsset = (id: string) => ({
+    id,
+    name: `asset-${id}`,
+    size: 100,
+    created_at: new Date().toISOString(),
+    tags: ['models'],
+    preview_url: `http://test.com/${id}`
+  })
+
+  describe('getAssets cache invalidation', () => {
+    it('should invalidate cache before mutating assets during batch loading', async () => {
+      setActivePinia(createPinia())
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      const firstBatch = Array.from({ length: 500 }, (_, i) =>
+        createMockAsset(`asset-${i}`)
+      )
+      const secondBatch = Array.from({ length: 100 }, (_, i) =>
+        createMockAsset(`asset-${500 + i}`)
+      )
+
+      let callCount = 0
+      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
+        async () => {
+          callCount++
+          return callCount === 1 ? firstBatch : secondBatch
+        }
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      // Wait for background batch loading to complete
+      await vi.waitFor(() => {
+        expect(
+          vi.mocked(assetService.getAssetsForNodeType)
+        ).toHaveBeenCalledTimes(2)
+      })
+
+      const assets = store.getAssets(nodeType)
+      expect(assets).toHaveLength(600)
+    })
+
+    it('should not return stale cached array after background batch completes', async () => {
+      setActivePinia(createPinia())
+      const store = useAssetsStore()
+      const nodeType = 'LoraLoader'
+
+      // First batch must be exactly MODEL_BATCH_SIZE (500) to trigger hasMore
+      const firstBatch = Array.from({ length: 500 }, (_, i) =>
+        createMockAsset(`first-${i}`)
+      )
+      const secondBatch = [createMockAsset('new-asset')]
+
+      let callCount = 0
+      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
+        async () => {
+          callCount++
+          return callCount === 1 ? firstBatch : secondBatch
+        }
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      // Wait for background batch loading to complete
+      await vi.waitFor(() => {
+        expect(
+          vi.mocked(assetService.getAssetsForNodeType)
+        ).toHaveBeenCalledTimes(2)
+      })
+
+      // Cache the current array reference
+      const firstArrayRef = store.getAssets(nodeType)
+      expect(firstArrayRef).toHaveLength(501)
+
+      // Call getAssets again - should return same cached array (same reference)
+      const secondArrayRef = store.getAssets(nodeType)
+      expect(secondArrayRef).toBe(firstArrayRef)
+
+      // Verify the new asset is included (cache was properly invalidated before mutation)
+      expect(secondArrayRef.map((a) => a.id)).toContain('new-asset')
     })
   })
 })
