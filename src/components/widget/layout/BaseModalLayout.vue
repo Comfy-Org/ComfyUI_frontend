@@ -7,7 +7,11 @@
       class="grid h-full w-full transition-[grid-template-columns] duration-300 ease-out"
       :style="gridStyle"
     >
-      <nav class="h-full overflow-hidden">
+      <nav
+        class="h-full overflow-hidden"
+        :inert="!showLeftPanel"
+        :aria-hidden="!showLeftPanel"
+      >
         <div v-if="hasLeftPanel" class="h-full min-w-40 max-w-56">
           <slot name="leftPanel" />
         </div>
@@ -77,7 +81,12 @@
         </main>
       </div>
 
-      <aside v-if="hasRightPanel" class="overflow-hidden">
+      <aside
+        v-if="hasRightPanel"
+        class="overflow-hidden"
+        :inert="!isRightPanelOpen"
+        :aria-hidden="!isRightPanelOpen"
+      >
         <div
           class="min-w-72 w-72 flex flex-col bg-modal-panel-background h-full"
         >
