@@ -112,13 +112,9 @@ const cacheKey = computed(() => {
 })
 
 // Read directly from store cache - reactive to any store updates
-const fetchedAssets = computed(
-  () => assetStore.modelAssetsByNodeType.get(cacheKey.value) ?? []
-)
+const fetchedAssets = computed(() => assetStore.getAssets(cacheKey.value))
 
-const isStoreLoading = computed(
-  () => assetStore.modelLoadingByNodeType.get(cacheKey.value) ?? false
-)
+const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
 
 // Only show loading spinner when loading AND no cached data
 const isLoading = computed(
