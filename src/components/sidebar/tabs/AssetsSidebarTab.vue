@@ -100,6 +100,7 @@
           v-if="isListView"
           :assets="displayAssets"
           :is-selected="isSelected"
+          :asset-type="activeTab"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
