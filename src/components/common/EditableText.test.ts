@@ -51,7 +51,7 @@ describe('EditableText', () => {
       isEditing: true
     })
     await wrapper.findComponent(InputText).setValue('New Text')
-    await wrapper.findComponent(InputText).trigger('keyup.enter')
+    await wrapper.findComponent(InputText).trigger('keydown.enter')
     // Blur event should have been triggered
     expect(wrapper.findComponent(InputText).element).not.toBe(
       document.activeElement
@@ -79,7 +79,7 @@ describe('EditableText', () => {
     await wrapper.findComponent(InputText).setValue('Modified Text')
 
     // Press escape
-    await wrapper.findComponent(InputText).trigger('keyup.escape')
+    await wrapper.findComponent(InputText).trigger('keydown.escape')
 
     // Should emit cancel event
     expect(wrapper.emitted('cancel')).toBeTruthy()
@@ -103,7 +103,7 @@ describe('EditableText', () => {
     await wrapper.findComponent(InputText).setValue('Modified Text')
 
     // Press escape (which triggers blur internally)
-    await wrapper.findComponent(InputText).trigger('keyup.escape')
+    await wrapper.findComponent(InputText).trigger('keydown.escape')
 
     // Manually trigger blur to simulate the blur that happens after escape
     await wrapper.findComponent(InputText).trigger('blur')
@@ -120,7 +120,7 @@ describe('EditableText', () => {
       isEditing: true
     })
     await enterWrapper.findComponent(InputText).setValue('Saved Text')
-    await enterWrapper.findComponent(InputText).trigger('keyup.enter')
+    await enterWrapper.findComponent(InputText).trigger('keydown.enter')
     // Trigger blur that happens after enter
     await enterWrapper.findComponent(InputText).trigger('blur')
     expect(enterWrapper.emitted('edit')).toBeTruthy()
@@ -133,7 +133,7 @@ describe('EditableText', () => {
       isEditing: true
     })
     await escapeWrapper.findComponent(InputText).setValue('Cancelled Text')
-    await escapeWrapper.findComponent(InputText).trigger('keyup.escape')
+    await escapeWrapper.findComponent(InputText).trigger('keydown.escape')
     expect(escapeWrapper.emitted('cancel')).toBeTruthy()
     expect(escapeWrapper.emitted('edit')).toBeFalsy()
   })
