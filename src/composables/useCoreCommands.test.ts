@@ -144,7 +144,9 @@ describe('useCoreCommands', () => {
     // Mock settings store
     vi.mocked(useSettingStore).mockReturnValue({
       get: vi.fn().mockReturnValue(false) // Skip confirmation dialog
-    } as any)
+    } as Partial<ReturnType<typeof useSettingStore>> as ReturnType<
+      typeof useSettingStore
+    >)
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
@@ -167,7 +169,8 @@ describe('useCoreCommands', () => {
 
     it('should preserve input/output nodes when clearing subgraph', async () => {
       // Set up subgraph context
-      app.canvas.subgraph = mockSubgraph as any
+      app.canvas.subgraph =
+        mockSubgraph as unknown as typeof app.canvas.subgraph
 
       const commands = useCoreCommands()
       const clearCommand = commands.find(
@@ -198,7 +201,9 @@ describe('useCoreCommands', () => {
       // Mock confirmation required
       vi.mocked(useSettingStore).mockReturnValue({
         get: vi.fn().mockReturnValue(true) // Require confirmation
-      } as any)
+      } as Partial<ReturnType<typeof useSettingStore>> as ReturnType<
+        typeof useSettingStore
+      >)
 
       global.confirm = vi.fn().mockReturnValue(false) // User cancels
 
