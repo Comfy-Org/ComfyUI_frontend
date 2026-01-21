@@ -7,7 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 // Mock useChainCallback
 vi.mock('@/composables/functional/useChainCallback', () => ({
   useChainCallback: vi.fn((original, newCallback) => {
-    return function (this: any, ...args: any[]) {
+    return function (this: unknown, ...args: unknown[]) {
       original?.call(this, ...args)
       newCallback.call(this, ...args)
     }
@@ -18,8 +18,8 @@ describe('useComputedWithWidgetWatch', () => {
   const createMockNode = (
     widgets: Array<{
       name: string
-      value: any
-      callback?: (...args: any[]) => void
+      value: unknown
+      callback?: (...args: unknown[]) => void
     }> = []
   ) => {
     const mockNode = {

@@ -364,10 +364,11 @@ describe('useWorkflowStore', () => {
 
       // Mock super.rename
       vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
-        async function (this: any, newPath: string) {
-          this.path = newPath
-          return this
-        } as any
+        async function (this: unknown, ...args: unknown[]) {
+          const newPath = args[0] as string
+          ;(this as typeof workflow).path = newPath
+          return this as typeof workflow
+        }
       )
 
       // Perform rename
@@ -387,10 +388,11 @@ describe('useWorkflowStore', () => {
 
       // Mock super.rename
       vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
-        async function (this: any, newPath: string) {
-          this.path = newPath
-          return this
-        } as any
+        async function (this: unknown, ...args: unknown[]) {
+          const newPath = args[0] as string
+          ;(this as typeof workflow).path = newPath
+          return this as typeof workflow
+        }
       )
 
       // Perform rename

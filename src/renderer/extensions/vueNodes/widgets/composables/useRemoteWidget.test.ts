@@ -498,7 +498,7 @@ describe('useRemoteWidget', () => {
     })
 
     it('should handle rapid cache clearing during fetch', async () => {
-      let resolvePromise: (value: any) => void
+      let resolvePromise: (value: { data: unknown }) => void
       const delayedPromise = new Promise((resolve) => {
         resolvePromise = resolve
       })
@@ -519,7 +519,7 @@ describe('useRemoteWidget', () => {
     })
 
     it('should handle widget destroyed during fetch', async () => {
-      let resolvePromise: (value: any) => void
+      let resolvePromise: (value: { data: unknown }) => void
       const delayedPromise = new Promise((resolve) => {
         resolvePromise = resolve
       })
