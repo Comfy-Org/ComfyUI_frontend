@@ -10,10 +10,30 @@ Applies to all `.vue` files anywhere in the codebase.
 ## Vue 3 Composition API
 
 - Use `<script setup lang="ts">` for component logic
-- Destructure props (Vue 3.5 style with defaults) like `const { color = 'blue' } = defineProps<...>()`
-- Use `ref`/`reactive` for state
-- Use `computed()` for derived state
+- Destructure props (Vue 3.5 style with defaults):
+
+  ```typescript
+  const { nodes, showTotal = true } = defineProps<{
+    nodes: ApiNodeCost[]
+    showTotal?: boolean
+  }>()
+  ```
+
+- Do not use `withDefaults` or runtime props declaration
+- Do not import Vue macros unnecessarily
+- Prefer `defineModel` over separate prop/emit for v-model bindings
+- Define slots via template usage, not `defineSlots`
+- Use same-name shorthand for slot props: `:is-expanded` not `:is-expanded="isExpanded"`
+- Derive component types using `vue-component-type-helpers` (`ComponentProps`, `ComponentSlots`)
+
+## State Management
+
+- Use `ref`/`reactive` for state, `computed()` for derived state
 - Use lifecycle hooks: `onMounted`, `onUpdated`, etc.
+- Prefer `computed` over `watch` when possible
+- Prefer `watch`/`watchEffect` only for side effects
+- Be judicious with refs — if a prop suffices, don't add a ref
+- Use provide/inject only when a Store or shared composable won't work
 
 ## Component Communication
 
