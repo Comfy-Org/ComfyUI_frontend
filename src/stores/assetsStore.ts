@@ -332,7 +332,13 @@ export const useAssetsStore = defineStore('assets', () => {
       ): Promise<void> {
         const state = createState()
         state.isLoading = true
-        pendingRequestByKey.set(key, state)
+
+        const hasExistingData = modelStateByKey.value.has(key)
+        if (hasExistingData) {
+          pendingRequestByKey.set(key, state)
+        } else {
+          modelStateByKey.value.set(key, state)
+        }
 
         async function loadBatches(): Promise<void> {
           while (state.hasMore) {
@@ -347,8 +353,10 @@ export const useAssetsStore = defineStore('assets', () => {
               const isFirstBatch = state.offset === 0
               if (isFirstBatch) {
                 assetsArrayCache.delete(key)
-                pendingRequestByKey.delete(key)
-                modelStateByKey.value.set(key, state)
+                if (hasExistingData) {
+                  pendingRequestByKey.delete(key)
+                  modelStateByKey.value.set(key, state)
+                }
                 state.assets = new Map(newAssets.map((a) => [a.id, a]))
               } else {
                 const assetsToAdd = newAssets.filter(
