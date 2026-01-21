@@ -124,7 +124,11 @@ import {
 import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
-const { assets, isSelected, assetType = 'output' } = defineProps<{
+const {
+  assets,
+  isSelected,
+  assetType = 'output'
+} = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
   assetType?: 'input' | 'output'
