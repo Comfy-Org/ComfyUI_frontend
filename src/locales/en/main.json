@@ -1427,6 +1427,7 @@
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
+    "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
@@ -1507,6 +1508,7 @@
     "": "",
     "camera": "camera",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
   "dataTypes": {
