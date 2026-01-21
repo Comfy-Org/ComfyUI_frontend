@@ -1,6 +1,5 @@
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
@@ -142,15 +141,6 @@ app.registerExtension({
         audioUIWidget.options.getValue = () => value
         audioUIWidget.options.setValue = (v) => (value = v)
 
-        audioUIWidget.onRemove = useChainCallback(
-          audioUIWidget.onRemove,
-          () => {
-            if (!audioUIWidget.element) return
-            audioUIWidget.element.pause()
-            updateUIWidget(audioUIWidget)
-          }
-        )
-
         return { widget: audioUIWidget }
       }
     }
@@ -199,16 +189,16 @@ app.registerExtension({
         ) as unknown as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
-          if (typeof audioWidget.value !== 'string') return
           updateUIWidget(
             audioUIWidget,
-            api.apiURL(getResourceURL(...splitFilePath(audioWidget.value)))
+            api.apiURL(
+              getResourceURL(...splitFilePath(audioWidget.value ?? ''))
+            )
           )
         }
         // Initially load default audio file to audioUIWidget.
-        if (audioWidget.value) {
-          onAudioWidgetUpdate()
-        }
+        onAudioWidgetUpdate()
+
         audioWidget.callback = onAudioWidgetUpdate
 
         // Load saved audio file widget values if restoring from workflow
@@ -216,9 +206,7 @@ app.registerExtension({
         node.onGraphConfigured = function () {
           // @ts-expect-error fixme ts strict error
           onGraphConfigured?.apply(this, arguments)
-          if (audioWidget.value) {
-            onAudioWidgetUpdate()
-          }
+          onAudioWidgetUpdate()
         }
 
         const handleUpload = async (files: File[]) => {
