@@ -16,10 +16,17 @@ import { EventType } from '@/services/customerEventsService'
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
+interface MockEvent {
+  event_id: string
+  event_type: string
+  params: Record<string, unknown>
+  createdAt: string
+}
+
 type ComponentInstance = InstanceType<typeof UsageLogsTable> & {
   loading: boolean
   error: string | null
-  events: any[]
+  events: MockEvent[]
   pagination: {
     page: number
     limit: number
