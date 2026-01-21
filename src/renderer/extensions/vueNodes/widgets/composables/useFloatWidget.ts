@@ -72,7 +72,8 @@ export const useFloatWidget = () => {
         /** @deprecated Use step2 instead. The 10x value is a legacy implementation. */
         step: step * 10.0,
         step2: step,
-        precision
+        precision,
+        display: inputSpec.display
       }
     )
 

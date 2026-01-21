@@ -42,7 +42,12 @@ const zNumericInputOptions = zBaseInputOptions.extend({
   step: z.number().optional(),
   /** Note: Many node authors are using INT/FLOAT to pass list of INT/FLOAT. */
   default: z.union([z.number(), z.array(z.number())]).optional(),
-  display: z.enum(['slider', 'number', 'knob']).optional()
+  /**
+   * Display hint for widget rendering.
+   * Built-in values: 'slider', 'number', 'knob'
+   * Extensions can register custom values via getCustomVueWidgets hook.
+   */
+  display: z.string().optional()
 })
 
 export const zIntInputOptions = zNumericInputOptions.extend({
