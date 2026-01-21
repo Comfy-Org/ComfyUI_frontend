@@ -23,6 +23,11 @@ export interface PaginationOptions {
   offset?: number
 }
 
+export interface AssetRequestOptions extends PaginationOptions {
+  includeTags: string[]
+  includePublic?: boolean
+}
+
 /**
  * Maps CivitAI validation error codes to localized error messages
  */
@@ -83,9 +88,27 @@ function createAssetService() {
    * Handles API response with consistent error handling and Zod validation
    */
   async function handleAssetRequest(
-    url: string,
+    options: AssetRequestOptions,
     context: string
   ): Promise<AssetResponse> {
+    const {
+      includeTags,
+      limit = DEFAULT_LIMIT,
+      offset,
+      includePublic
+    } = options
+    const queryParams = new URLSearchParams({
+      include_tags: includeTags.join(','),
+      limit: limit.toString()
+    })
+    if (offset !== undefined && offset > 0) {
+      queryParams.set('offset', offset.toString())
+    }
+    if (includePublic !== undefined) {
+      queryParams.set('include_public', includePublic ? 'true' : 'false')
+    }
+
+    const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
     const res = await api.fetchApi(url)
     if (!res.ok) {
       throw new Error(
@@ -107,7 +130,7 @@ function createAssetService() {
    */
   async function getAssetModelFolders(): Promise<ModelFolder[]> {
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG}&limit=${DEFAULT_LIMIT}`,
+      { includeTags: [MODELS_TAG] },
       'model folders'
     )
 
@@ -136,7 +159,7 @@ function createAssetService() {
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?include_tags=${MODELS_TAG},${folder}&limit=${DEFAULT_LIMIT}`,
+      { includeTags: [MODELS_TAG, folder] },
       `models for ${folder}`
     )
 
@@ -196,18 +219,9 @@ function createAssetService() {
       return []
     }
 
-    const queryParams = new URLSearchParams({
-      include_tags: `${MODELS_TAG},${category}`,
-      limit: limit.toString()
-    })
-
-    if (offset > 0) {
-      queryParams.set('offset', offset.toString())
-    }
-
     // Fetch assets for this category using same API pattern as getAssetModels
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?${queryParams.toString()}`,
+      { includeTags: [MODELS_TAG, category], limit, offset },
       `assets for ${nodeType}`
     )
 
@@ -265,18 +279,8 @@ function createAssetService() {
     includePublic: boolean = true,
     { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
   ): Promise<AssetItem[]> {
-    const queryParams = new URLSearchParams({
-      include_tags: tag,
-      limit: limit.toString(),
-      include_public: includePublic ? 'true' : 'false'
-    })
-
-    if (offset > 0) {
-      queryParams.set('offset', offset.toString())
-    }
-
     const data = await handleAssetRequest(
-      `${ASSETS_ENDPOINT}?${queryParams.toString()}`,
+      { includeTags: [tag], limit, offset, includePublic },
       `assets for tag ${tag}`
     )
 
