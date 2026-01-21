@@ -1,126 +1,94 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex gap-x-0.5 pt-1"
+    class="ml-1 flex flex-col gap-1 pt-1"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
-    <div class="min-w-0 flex-1">
-      <SubgraphBreadcrumb />
+    <div class="flex gap-x-0.5">
+      <div class="min-w-0 flex-1">
+        <SubgraphBreadcrumb />
+      </div>
+
+      <div class="mx-1 flex flex-col items-end gap-1">
+        <div class="flex items-center gap-2">
+          <div
+            v-if="managerState.shouldShowManagerButtons.value"
+            class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+          >
+            <Button
+              v-tooltip.bottom="customNodesManagerTooltipConfig"
+              variant="secondary"
+              size="icon"
+              :aria-label="t('menu.customNodesManager')"
+              class="relative"
+              @click="openCustomNodeManager"
+            >
+              <i class="icon-[lucide--puzzle] size-4" />
+              <span
+                v-if="shouldShowRedDot"
+                class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+              />
+            </Button>
+          </div>
+
+          <div
+            ref="actionbarContainerRef"
+            class="actionbar-container pointer-events-auto relative flex h-12 items-center gap-2 overflow-hidden rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+          >
+            <ActionBarButtons />
+            <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+            <div
+              ref="legacyCommandsContainerRef"
+              class="[&:not(:has(*>*:not(:empty)))]:hidden"
+            ></div>
+            <ComfyActionbar
+              v-model:docked="isActionbarDocked"
+              v-model:queue-overlay-expanded="isQueueOverlayExpanded"
+              :top-menu-container="actionbarContainerRef"
+            />
+            <CurrentUserButton
+              v-if="isLoggedIn && !isIntegratedTabBar"
+              class="shrink-0"
+            />
+            <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+            <Button
+              v-if="!isRightSidePanelOpen"
+              v-tooltip.bottom="rightSidePanelTooltipConfig"
+              type="secondary"
+              size="icon"
+              :aria-label="t('rightSidePanel.togglePanel')"
+              @click="rightSidePanelStore.togglePanel"
+            >
+              <i class="icon-[lucide--panel-right] size-4" />
+            </Button>
+          </div>
+        </div>
+        <QueueProgressOverlay
+          v-model:expanded="isQueueOverlayExpanded"
+          :menu-hovered="isTopMenuHovered"
+        />
+      </div>
     </div>
 
-    <div class="mx-1 flex flex-col items-end gap-1">
-      <div class="flex items-center gap-2">
-        <div
-          v-if="managerState.shouldShowManagerButtons.value"
-          class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
-        >
-          <Button
-            v-tooltip.bottom="customNodesManagerTooltipConfig"
-            variant="secondary"
-            size="icon"
-            :aria-label="t('menu.customNodesManager')"
-            class="relative"
-            @click="openCustomNodeManager"
-          >
-            <i class="icon-[lucide--puzzle] size-4" />
-            <span
-              v-if="shouldShowRedDot"
-              class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
-            />
-          </Button>
-        </div>
-
-        <div
-          class="actionbar-container pointer-events-auto flex gap-2 h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
-        >
-          <ActionBarButtons />
-          <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
-          <div
-            ref="legacyCommandsContainerRef"
-            class="[&:not(:has(*>*:not(:empty)))]:hidden"
-          ></div>
-          <ComfyActionbar />
-          <Button
-            v-tooltip.bottom="queueHistoryTooltipConfig"
-            type="destructive"
-            size="md"
-            :aria-pressed="isQueueOverlayExpanded"
-            class="px-3"
-            data-testid="queue-overlay-toggle"
-            @click="toggleQueueOverlay"
-            @contextmenu.stop.prevent="showQueueContextMenu"
-          >
-            <span class="text-sm font-normal tabular-nums">
-              {{ activeJobsLabel }}
-            </span>
-            <span class="sr-only">
-              {{ t('sideToolbar.queueProgressOverlay.expandCollapsedQueue') }}
-            </span>
-          </Button>
-          <ContextMenu
-            ref="queueContextMenu"
-            :model="queueContextMenuItems"
-            unstyled
-            :pt="{
-              root: {
-                class:
-                  'rounded-lg border border-border-default bg-base-background p-2 shadow-[0px_2px_12px_0_rgba(0,0,0,0.1)] font-inter'
-              },
-              rootList: { class: 'm-0 flex list-none flex-col gap-1 p-0' },
-              item: { class: 'm-0 p-0' }
-            }"
-          >
-            <template #item="{ item, props }">
-              <a
-                v-bind="props.action"
-                :class="
-                  cn(
-                    'flex h-8 w-full items-center gap-2 rounded-sm px-2 text-sm font-normal',
-                    item.class,
-                    item.disabled && 'opacity-50'
-                  )
-                "
-              >
-                <i v-if="item.icon" :class="cn(item.icon, 'size-4')" />
-                <span>{{ item.label }}</span>
-              </a>
-            </template>
-          </ContextMenu>
-          <CurrentUserButton
-            v-if="isLoggedIn && !isIntegratedTabBar"
-            class="shrink-0"
-          />
-          <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
-          <Button
-            v-if="!isRightSidePanelOpen"
-            v-tooltip.bottom="rightSidePanelTooltipConfig"
-            type="secondary"
-            size="icon"
-            :aria-label="t('rightSidePanel.togglePanel')"
-            @click="rightSidePanelStore.togglePanel"
-          >
-            <i class="icon-[lucide--panel-right] size-4" />
-          </Button>
-        </div>
-      </div>
-      <QueueProgressOverlay
-        v-model:expanded="isQueueOverlayExpanded"
-        :menu-hovered="isTopMenuHovered"
+    <div v-if="isActionbarEnabled && !isActionbarFloating">
+      <QueueInlineProgressSummary
+        class="pr-1"
+        :hidden="isQueueOverlayExpanded"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import ContextMenu from 'primevue/contextmenu'
-import type { MenuItem } from 'primevue/menuitem'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -132,13 +100,10 @@ import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
+import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
-import { cn } from '@/utils/tailwindUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -149,11 +114,8 @@ const rightSidePanelStore = useRightSidePanelStore()
 const managerState = useManagerState()
 const { isLoggedIn } = useCurrentUser()
 const isDesktop = isElectron()
-const { t, n } = useI18n()
+const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
-const commandStore = useCommandStore()
-const queueStore = useQueueStore()
-const executionStore = useExecutionStore()
 const queueUIStore = useQueueUIStore()
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const releaseStore = useReleaseStore()
@@ -161,38 +123,21 @@ const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
-const activeJobsCount = computed(
-  () => queueStore.pendingTasks.length + queueStore.runningTasks.length
+const actionbarContainerRef = ref<HTMLElement>()
+const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
+const isActionbarEnabled = computed(
+  () => actionbarPosition.value !== 'Disabled'
 )
-const activeJobsLabel = computed(() => {
-  const count = activeJobsCount.value
-  return t(
-    'sideToolbar.queueProgressOverlay.activeJobsShort',
-    { count: n(count) },
-    count
-  )
-})
+const isActionbarFloating = computed(
+  () => isActionbarEnabled.value && !isActionbarDocked.value
+)
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
-)
-const queueHistoryTooltipConfig = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
 )
 const customNodesManagerTooltipConfig = computed(() =>
   buildTooltipConfig(t('menu.customNodesManager'))
 )
-const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
-const queueContextMenuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
-    icon: 'icon-[lucide--list-x]',
-    class: 'text-destructive-background',
-    disabled: queueStore.pendingTasks.length === 0,
-    command: () => {
-      void handleClearQueue()
-    }
-  }
-])
 
 // Use either release red dot or conflict red dot
 const shouldShowRedDot = computed((): boolean => {
@@ -214,23 +159,6 @@ onMounted(() => {
     legacyCommandsContainerRef.value.appendChild(app.menu.element)
   }
 })
-
-const toggleQueueOverlay = () => {
-  commandStore.execute('Comfy.Queue.ToggleOverlay')
-}
-
-const showQueueContextMenu = (event: MouseEvent) => {
-  queueContextMenu.value?.show(event)
-}
-
-const handleClearQueue = async () => {
-  const pendingPromptIds = queueStore.pendingTasks
-    .map((task) => task.promptId)
-    .filter((id): id is string => typeof id === 'string' && id.length > 0)
-
-  await commandStore.execute('Comfy.ClearPendingTasks')
-  executionStore.clearInitializationByPromptIds(pendingPromptIds)
-}
 
 const openCustomNodeManager = async () => {
   try {
