@@ -10,15 +10,22 @@ import type {
   RegistryPack
 } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
+const translateMock = vi.hoisted(() =>
+  vi.fn((key: string, choice?: number) =>
+    typeof choice === 'number' ? `${key}-${choice}` : key
+  )
+)
+const dateMock = vi.hoisted(() => vi.fn(() => '2024. 1. 1.'))
+
 // Mock dependencies
 vi.mock('vue-i18n', () => ({
   useI18n: vi.fn(() => ({
-    d: vi.fn(() => '2024. 1. 1.'),
-    t: vi.fn((key: string) => key)
+    d: dateMock,
+    t: translateMock
   })),
   createI18n: vi.fn(() => ({
     global: {
-      t: vi.fn((key: string) => key),
+      t: translateMock,
       te: vi.fn(() => true)
     }
   }))
@@ -186,6 +193,18 @@ describe('PackCard', () => {
 
       // Should still render without errors
       expect(wrapper.exists()).toBe(true)
+    })
+
+    it('should use localized singular/plural nodes label', () => {
+      const packWithNodes = {
+        ...mockNodePack,
+        comfy_nodes: ['node-a']
+      } as MergedNodePack
+
+      const wrapper = createWrapper({ nodePack: packWithNodes })
+
+      expect(wrapper.text()).toContain('g.nodesCount-1')
+      expect(translateMock).toHaveBeenCalledWith('g.nodesCount', 1)
     })
   })
 
