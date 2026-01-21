@@ -92,15 +92,15 @@ describe('useSelectionState', () => {
       selectedItems: mockSelectedItems,
       // Add minimal required properties for the store
       $id: 'canvas',
-      $state: {} as any,
+      $state: {},
       $patch: vi.fn(),
       $reset: vi.fn(),
       $subscribe: vi.fn(),
       $onAction: vi.fn(),
       $dispose: vi.fn(),
       _customProperties: new Set(),
-      _p: {} as any
-    } as any)
+      _p: {}
+    } as unknown as ReturnType<typeof useCanvasStore>)
 
     // Setup mock node def store
     vi.mocked(useNodeDefStore).mockReturnValue({
@@ -112,15 +112,15 @@ describe('useSelectionState', () => {
       }),
       // Add minimal required properties for the store
       $id: 'nodeDef',
-      $state: {} as any,
+      $state: {},
       $patch: vi.fn(),
       $reset: vi.fn(),
       $subscribe: vi.fn(),
       $onAction: vi.fn(),
       $dispose: vi.fn(),
       _customProperties: new Set(),
-      _p: {} as any
-    } as any)
+      _p: {}
+    } as unknown as ReturnType<typeof useNodeDefStore>)
 
     // Setup mock sidebar tab store
     const mockToggleSidebarTab = vi.fn()
@@ -129,15 +129,15 @@ describe('useSelectionState', () => {
       toggleSidebarTab: mockToggleSidebarTab,
       // Add minimal required properties for the store
       $id: 'sidebarTab',
-      $state: {} as any,
+      $state: {},
       $patch: vi.fn(),
       $reset: vi.fn(),
       $subscribe: vi.fn(),
       $onAction: vi.fn(),
       $dispose: vi.fn(),
       _customProperties: new Set(),
-      _p: {} as any
-    } as any)
+      _p: {}
+    } as unknown as ReturnType<typeof useSidebarTabStore>)
 
     // Setup mock node help store
     const mockOpenHelp = vi.fn()
@@ -149,16 +149,18 @@ describe('useSelectionState', () => {
       closeHelp: mockCloseHelp,
       // Add minimal required properties for the store
       $id: 'nodeHelp',
-      $state: {} as any,
+      $state: {},
       $patch: vi.fn(),
       $reset: vi.fn(),
       $subscribe: vi.fn(),
       $onAction: vi.fn(),
       $dispose: vi.fn(),
       _customProperties: new Set(),
-      _p: {} as any
+      _p: {}
     }
-    vi.mocked(useNodeHelpStore).mockReturnValue(mockNodeHelpStore as any)
+    vi.mocked(useNodeHelpStore).mockReturnValue(
+      mockNodeHelpStore as unknown as ReturnType<typeof useNodeHelpStore>
+    )
 
     // Setup mock composables
     vi.mocked(useNodeLibrarySidebarTab).mockReturnValue({
