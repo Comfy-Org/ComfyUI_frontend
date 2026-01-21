@@ -332,7 +332,6 @@ export const useAssetsStore = defineStore('assets', () => {
         fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
       ): Promise<void> {
         const state = startNewRequest(key)
-        assetsArrayCache.delete(key)
         state.isLoading = true
 
         async function loadBatches(): Promise<void> {
@@ -347,6 +346,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
               const isFirstBatch = state.offset === 0
               if (isFirstBatch) {
+                assetsArrayCache.delete(key)
                 state.assets = new Map(newAssets.map((a) => [a.id, a]))
               } else {
                 const assetsToAdd = newAssets.filter(

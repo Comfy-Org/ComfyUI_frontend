@@ -23,7 +23,7 @@ export interface PaginationOptions {
   offset?: number
 }
 
-export interface AssetRequestOptions extends PaginationOptions {
+interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   includePublic?: boolean
 }
