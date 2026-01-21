@@ -25,12 +25,12 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
@@ -58,6 +58,8 @@ export class FirebaseAuthStoreError extends Error {
 }
 
 export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
+  const { flags } = useFeatureFlags()
+
   // State
   const loading = ref(false)
   const currentUser = ref<User | null>(null)
@@ -173,7 +175,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
-    if (remoteConfig.value.team_workspaces_enabled) {
+    if (flags.teamWorkspacesEnabled) {
       const workspaceToken = sessionStorage.getItem(
         WORKSPACE_STORAGE_KEYS.TOKEN
       )
@@ -201,10 +203,19 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     return useApiKeyAuthStore().getAuthHeader()
   }
 
+  /**
+   * Returns Firebase auth header for user-scoped endpoints (e.g., /customers/*).
+   * Use this for endpoints that need user identity, not workspace context.
+   */
+  const getFirebaseAuthHeader = async (): Promise<AuthHeader | null> => {
+    const token = await getIdToken()
+    return token ? { Authorization: `Bearer ${token}` } : null
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     try {
-      const authHeader = await getAuthHeader()
+      const authHeader = await getFirebaseAuthHeader()
       if (!authHeader) {
         throw new FirebaseAuthStoreError(
           t('toastMessages.userNotAuthenticated')
@@ -242,7 +253,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   }
 
   const createCustomer = async (): Promise<CreateCustomerResponse> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -404,7 +415,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -444,12 +455,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const accessBillingPortal = async (
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
-
-    const requestBody = targetTier ? { target_tier: targetTier } : undefined
 
     const response = await fetch(buildApiUrl('/customers/billing'), {
       method: 'POST',
@@ -457,8 +466,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         ...authHeader,
         'Content-Type': 'application/json'
       },
-      ...(requestBody && {
-        body: JSON.stringify(requestBody)
+      ...(targetTier && {
+        body: JSON.stringify({ target_tier: targetTier })
       })
     })
 
