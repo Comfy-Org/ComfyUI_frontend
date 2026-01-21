@@ -40,6 +40,6 @@ if (isCloud) {
 }
 
 // Nightly-only extensions
-if (isNightly) {
+if (isNightly && !isCloud) {
   await import('./nightlyBadges')
 }
