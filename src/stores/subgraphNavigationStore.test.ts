@@ -36,7 +36,7 @@ vi.mock('@/scripts/app', () => {
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    getCanvas: () => (app as any).canvas
+    getCanvas: () => (app as { canvas: unknown }).canvas
   })
 }))
 
@@ -61,7 +61,8 @@ describe('useSubgraphNavigationStore', () => {
     } as ComfyWorkflow
 
     // Set the active workflow (cast to bypass TypeScript check in test)
-    workflowStore.activeWorkflow = mockWorkflow as any
+    workflowStore.activeWorkflow =
+      mockWorkflow as unknown as typeof workflowStore.activeWorkflow
 
     // Simulate being in a subgraph by restoring state
     navigationStore.restoreState(['subgraph-1', 'subgraph-2'])
@@ -70,7 +71,9 @@ describe('useSubgraphNavigationStore', () => {
 
     // Simulate a change to the workflow's internal state
     // (e.g., changeTracker.activeState being reassigned)
-    mockWorkflow.changeTracker = { activeState: {} } as any
+    mockWorkflow.changeTracker = {
+      activeState: {}
+    } as unknown as typeof mockWorkflow.changeTracker
 
     // The navigation stack should NOT be cleared because the path hasn't changed
     expect(navigationStore.exportState()).toHaveLength(2)
@@ -92,7 +95,8 @@ describe('useSubgraphNavigationStore', () => {
     } as unknown as ComfyWorkflow
 
     // Set the active workflow
-    workflowStore.activeWorkflow = workflow1 as any
+    workflowStore.activeWorkflow =
+      workflow1 as unknown as typeof workflowStore.activeWorkflow
 
     // Simulate the restore process that happens when loading a workflow
     // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
@@ -112,7 +116,8 @@ describe('useSubgraphNavigationStore', () => {
       }
     } as unknown as ComfyWorkflow
 
-    workflowStore.activeWorkflow = workflow2 as any
+    workflowStore.activeWorkflow =
+      workflow2 as unknown as typeof workflowStore.activeWorkflow
 
     // Simulate the restore process for workflow2
     // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
@@ -122,7 +127,8 @@ describe('useSubgraphNavigationStore', () => {
     expect(navigationStore.exportState()).toHaveLength(0)
 
     // Switch back to workflow1
-    workflowStore.activeWorkflow = workflow1 as any
+    workflowStore.activeWorkflow =
+      workflow1 as unknown as typeof workflowStore.activeWorkflow
 
     // Simulate the restore process for workflow1 again
     // Since subgraphState is private, we'll simulate the effect by directly restoring navigation
@@ -141,13 +147,16 @@ describe('useSubgraphNavigationStore', () => {
     // Create mock subgraph and graph structure
     const mockSubgraph = {
       id: 'subgraph-1',
-      rootGraph: (app as any).graph,
+      rootGraph: (app as { graph: unknown }).graph,
       _nodes: [],
       nodes: []
     }
 
     // Add the subgraph to the graph's subgraphs map
-    ;(app as any).graph.subgraphs.set('subgraph-1', mockSubgraph)
+    ;(
+      (app as { graph: { subgraphs: Map<string, unknown> } }).graph
+        .subgraphs as Map<string, unknown>
+    ).set('subgraph-1', mockSubgraph)
 
     // First set an active workflow
     const mockWorkflow = {
@@ -155,13 +164,14 @@ describe('useSubgraphNavigationStore', () => {
       filename: 'test-workflow.json'
     } as ComfyWorkflow
 
-    workflowStore.activeWorkflow = mockWorkflow as any
+    workflowStore.activeWorkflow =
+      mockWorkflow as unknown as typeof workflowStore.activeWorkflow
 
     // Mock findSubgraphPathById to return the correct path
     vi.mocked(findSubgraphPathById).mockReturnValue(['subgraph-1'])
 
     // Set canvas.subgraph and trigger update to set activeSubgraph
-    ;(app as any).canvas.subgraph = mockSubgraph
+    ;(app as { canvas: { subgraph: unknown } }).canvas.subgraph = mockSubgraph
     workflowStore.updateActiveGraph()
 
     // Wait for Vue's reactivity to process the change
@@ -172,7 +182,7 @@ describe('useSubgraphNavigationStore', () => {
     expect(navigationStore.exportState()).toEqual(['subgraph-1'])
 
     // Clear canvas.subgraph and trigger update (simulating navigating back to root)
-    ;(app as any).canvas.subgraph = null
+    ;(app as { canvas: { subgraph: unknown } }).canvas.subgraph = null
     workflowStore.updateActiveGraph()
 
     // Wait for Vue's reactivity to process the change
