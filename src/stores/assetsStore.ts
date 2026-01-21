@@ -275,6 +275,8 @@ export const useAssetsStore = defineStore('assets', () => {
         { source: Map<string, AssetItem>; array: AssetItem[] }
       >()
 
+      const pendingRequestByKey = new Map<string, ModelPaginationState>()
+
       function createState(): ModelPaginationState {
         return reactive({
           assets: new Map(),
@@ -284,14 +286,10 @@ export const useAssetsStore = defineStore('assets', () => {
         })
       }
 
-      function startNewRequest(key: string): ModelPaginationState {
-        const state = createState()
-        modelStateByKey.value.set(key, state)
-        return state
-      }
-
       function isStale(key: string, state: ModelPaginationState): boolean {
-        return modelStateByKey.value.get(key) !== state
+        const committed = modelStateByKey.value.get(key)
+        const pending = pendingRequestByKey.get(key)
+        return committed !== state && pending !== state
       }
 
       const EMPTY_ASSETS: AssetItem[] = []
@@ -326,13 +324,15 @@ export const useAssetsStore = defineStore('assets', () => {
       /**
        * Internal helper to fetch and cache assets with a given key and fetcher.
        * Loads first batch immediately, then progressively loads remaining batches.
+       * Keeps existing data visible until new data is successfully fetched.
        */
       async function updateModelsForKey(
         key: string,
         fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
       ): Promise<void> {
-        const state = startNewRequest(key)
+        const state = createState()
         state.isLoading = true
+        pendingRequestByKey.set(key, state)
 
         async function loadBatches(): Promise<void> {
           while (state.hasMore) {
@@ -347,6 +347,8 @@ export const useAssetsStore = defineStore('assets', () => {
               const isFirstBatch = state.offset === 0
               if (isFirstBatch) {
                 assetsArrayCache.delete(key)
+                pendingRequestByKey.delete(key)
+                modelStateByKey.value.set(key, state)
                 state.assets = new Map(newAssets.map((a) => [a.id, a]))
               } else {
                 const assetsToAdd = newAssets.filter(
