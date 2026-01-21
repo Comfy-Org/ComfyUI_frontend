@@ -328,9 +328,9 @@ describe('normalizeIndustry', () => {
     })
 
     it('should handle null and invalid inputs', () => {
-      expect(normalizeIndustry(null as any)).toBe('Other / Undefined')
-      expect(normalizeIndustry(undefined as any)).toBe('Other / Undefined')
-      expect(normalizeIndustry(123 as any)).toBe('Other / Undefined')
+      expect(normalizeIndustry(null)).toBe('Other / Undefined')
+      expect(normalizeIndustry(undefined)).toBe('Other / Undefined')
+      expect(normalizeIndustry(123)).toBe('Other / Undefined')
     })
   })
 
@@ -508,7 +508,7 @@ describe('normalizeUseCase', () => {
       expect(normalizeUseCase('none')).toBe('Other / Undefined')
       expect(normalizeUseCase('undefined')).toBe('Other / Undefined')
       expect(normalizeUseCase('')).toBe('Other / Undefined')
-      expect(normalizeUseCase(null as any)).toBe('Other / Undefined')
+      expect(normalizeUseCase(null)).toBe('Other / Undefined')
     })
   })
 
