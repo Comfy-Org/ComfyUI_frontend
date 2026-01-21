@@ -5,10 +5,16 @@ import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 
+interface MockNodeInput {
+  name: string
+  link?: number | null
+  links?: number[]
+}
+
 // Helper function to create a mock node
 function createMockNode(
   nodeTypeName: string,
-  widgets: Array<{ name: string; value: any }> = [],
+  widgets: Array<{ name: string; value: unknown }> = [],
   isApiNode = true,
   inputs: Array<{
     name: string
@@ -22,7 +28,7 @@ function createMockNode(
     type: 'combo'
   })) as IComboWidget[]
 
-  const mockInputs =
+  const mockInputs: MockNodeInput[] | undefined =
     inputs.length > 0
       ? inputs.map(({ name, connected, useLinksArray }) =>
           useLinksArray
@@ -31,7 +37,7 @@ function createMockNode(
         )
       : undefined
 
-  const node: any = {
+  const node = {
     id: Math.random().toString(),
     widgets: mockWidgets,
     constructor: {
@@ -43,21 +49,26 @@ function createMockNode(
   }
 
   if (mockInputs) {
-    node.inputs = mockInputs
-    // Provide the common helpers some frontend code may call
-    node.findInputSlot = function (portName: string) {
-      return this.inputs?.findIndex((i: any) => i.name === portName) ?? -1
-    }
-    node.isInputConnected = function (idx: number) {
-      const port = this.inputs?.[idx]
-      if (!port) return false
-      if (typeof port.link !== 'undefined') return port.link != null
-      if (Array.isArray(port.links)) return port.links.length > 0
-      return false
-    }
+    Object.assign(node, {
+      inputs: mockInputs,
+      // Provide the common helpers some frontend code may call
+      findInputSlot(portName: string) {
+        return (
+          this.inputs?.findIndex((i: MockNodeInput) => i.name === portName) ??
+          -1
+        )
+      },
+      isInputConnected(idx: number): boolean {
+        const port = this.inputs?.[idx]
+        if (!port) return false
+        if (typeof port.link !== 'undefined') return port.link != null
+        if (Array.isArray(port.links)) return port.links.length > 0
+        return false
+      }
+    })
   }
 
-  return node as LGraphNode
+  return node as unknown as LGraphNode
 }
 
 describe('useNodePricing', () => {
