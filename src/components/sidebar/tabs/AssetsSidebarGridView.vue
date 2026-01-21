@@ -1,7 +1,11 @@
 <template>
   <div class="flex h-full flex-col">
     <!-- Active Jobs Grid -->
-    <div v-if="activeJobItems.length" class="grid" :style="gridStyle">
+    <div
+      v-if="activeJobItems.length"
+      class="grid max-h-[50%] scrollbar-custom overflow-y-auto"
+      :style="gridStyle"
+    >
       <ActiveJobCard v-for="job in activeJobItems" :key="job.id" :job="job" />
     </div>
 

@@ -395,14 +395,14 @@ const showLoadingState = computed(
   () =>
     loading.value &&
     displayAssets.value.length === 0 &&
-    (!isListView.value || activeJobsCount.value === 0)
+    activeJobsCount.value === 0
 )
 
 const showEmptyState = computed(
   () =>
     !loading.value &&
     displayAssets.value.length === 0 &&
-    (!isListView.value || activeJobsCount.value === 0)
+    activeJobsCount.value === 0
 )
 
 watch(displayAssets, (newAssets) => {

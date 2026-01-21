@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <div
       v-if="activeJobItems.length"
-      class="flex max-h-[50%] flex-col gap-2 overflow-y-auto px-2"
+      class="flex max-h-[50%] scrollbar-custom flex-col gap-2 overflow-y-auto px-2"
     >
       <AssetsListItem
         v-for="job in activeJobItems"
