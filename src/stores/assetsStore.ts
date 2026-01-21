@@ -387,6 +387,8 @@ export const useAssetsStore = defineStore('assets', () => {
               console.error(`Error loading batch for ${key}:`, err)
               if (state.offset === 0) {
                 state.isLoading = false
+                pendingRequestByKey.delete(key)
+                // TODO: Add toast indicator for first-batch load failures
               }
               return
             }
