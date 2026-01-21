@@ -398,6 +398,9 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     vueNodeData.set(id, extractVueNodeData(node))
 
     const initializeVueNodeLayout = () => {
+      // Check if the node was removed mid-sequence
+      if (!nodeRefs.has(id)) return
+
       // Extract actual positions after configure() has potentially updated them
       const nodePosition = { x: node.pos[0], y: node.pos[1] }
       const nodeSize = { width: node.size[0], height: node.size[1] }
@@ -427,7 +430,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     } else {
       // Not during workflow loading - initialize layout immediately
       // This handles individual node additions during normal operation
-      initializeVueNodeLayout()
+      requestAnimationFrame(initializeVueNodeLayout)
     }
 
     // Call original callback if provided
