@@ -6,20 +6,36 @@
       @update:model-value="handleSearchChange"
     />
     <div class="flex gap-1.5 items-center">
-      <MediaAssetFilterButton v-if="isCloud" v-tooltip.top="{ value: $t('assetBrowser.filterBy') }" size="md">
+      <MediaAssetFilterButton
+        v-if="isCloud"
+        v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
+        size="md"
+      >
         <template #default="{ close }">
           <MediaAssetFilterMenu
             :media-type-filters
             :close
-            @update:media-type-filters="handleMediaTypeFiltersChange" />
+            @update:media-type-filters="handleMediaTypeFiltersChange"
+          />
         </template>
       </MediaAssetFilterButton>
-      <AssetSortButton v-if="isCloud" v-tooltip.top="{ value: $t('assetBrowser.sortBy') }" size="md">
+      <AssetSortButton
+        v-if="isCloud"
+        v-tooltip.top="{ value: $t('assetBrowser.sortBy') }"
+        size="md"
+      >
         <template #default="{ close }">
-          <MediaAssetSortMenu v-model:sort-by="sortBy" :show-generation-time-sort :close />
+          <MediaAssetSortMenu
+            v-model:sort-by="sortBy"
+            :show-generation-time-sort
+            :close
+          />
         </template>
       </AssetSortButton>
-      <MediaAssetViewModeToggle v-if="isQueuePanelV2Enabled" v-model:view-mode="viewMode" />
+      <MediaAssetViewModeToggle
+        v-if="isQueuePanelV2Enabled"
+        v-model:view-mode="viewMode"
+      />
     </div>
   </div>
 </template>
