@@ -222,12 +222,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       // 4. Exchange Firebase token for workspace token
       try {
         await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
-      } catch (tokenError) {
+      } catch {
         // Log but don't fail initialization - API calls will fall back to Firebase token
-        console.error(
-          '[teamWorkspaceStore] Token exchange failed during init:',
-          tokenError
-        )
+        console.error('[teamWorkspaceStore] Token exchange failed during init')
       }
 
       // 5. Set active workspace
