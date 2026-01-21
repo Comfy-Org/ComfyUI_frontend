@@ -703,6 +703,7 @@
     "noImportedFiles": "No imported files found",
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
+    "importedAssetsHeader": "Imported assets",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -1427,6 +1428,7 @@
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
+    "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
@@ -1507,6 +1509,7 @@
     "": "",
     "camera": "camera",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
   "dataTypes": {

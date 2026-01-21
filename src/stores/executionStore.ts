@@ -425,6 +425,18 @@ export const useExecutionStore = defineStore('execution', () => {
     initializingPromptIds.value = next
   }
 
+  function clearInitializationByPromptIds(promptIds: string[]) {
+    if (!promptIds.length) return
+    const current = initializingPromptIds.value
+    const toRemove = promptIds.filter((id) => current.has(id))
+    if (!toRemove.length) return
+    const next = new Set(current)
+    for (const id of toRemove) {
+      next.delete(id)
+    }
+    initializingPromptIds.value = next
+  }
+
   function isPromptInitializing(
     promptId: string | number | undefined
   ): boolean {
@@ -650,6 +662,8 @@ export const useExecutionStore = defineStore('execution', () => {
     runningWorkflowCount,
     initializingPromptIds,
     isPromptInitializing,
+    clearInitializationByPromptId,
+    clearInitializationByPromptIds,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
