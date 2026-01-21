@@ -6,6 +6,11 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 
 /** Permission flags for workspace actions */
 interface WorkspacePermissions {
+  canViewOtherMembers: boolean
+  canViewPendingInvites: boolean
+  canInviteMembers: boolean
+  canManageInvites: boolean
+  canRemoveMembers: boolean
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
@@ -13,6 +18,14 @@ interface WorkspacePermissions {
 
 /** UI configuration for workspace role */
 interface WorkspaceUIConfig {
+  showMembersList: boolean
+  showPendingTab: boolean
+  showSearch: boolean
+  showDateColumn: boolean
+  showRoleBadge: boolean
+  membersGridCols: string
+  pendingGridCols: string
+  headerGridCols: string
   showEditWorkspaceMenuItem: boolean
   workspaceMenuAction: 'leave' | 'delete' | null
   workspaceMenuDisabledTooltip: string | null
@@ -24,14 +37,24 @@ function getPermissions(
 ): WorkspacePermissions {
   if (type === 'personal') {
     return {
+      canViewOtherMembers: false,
+      canViewPendingInvites: false,
+      canInviteMembers: false,
+      canManageInvites: false,
+      canRemoveMembers: false,
       canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
+      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }
   }
 
   if (role === 'owner') {
     return {
+      canViewOtherMembers: true,
+      canViewPendingInvites: true,
+      canInviteMembers: true,
+      canManageInvites: true,
+      canRemoveMembers: true,
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true
@@ -40,6 +63,11 @@ function getPermissions(
 
   // member role
   return {
+    canViewOtherMembers: true,
+    canViewPendingInvites: false,
+    canInviteMembers: false,
+    canManageInvites: false,
+    canRemoveMembers: false,
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
     canManageSubscription: false
@@ -52,7 +80,15 @@ function getUIConfig(
 ): WorkspaceUIConfig {
   if (type === 'personal') {
     return {
-      showEditWorkspaceMenuItem: false,
+      showMembersList: false,
+      showPendingTab: false,
+      showSearch: false,
+      showDateColumn: false,
+      showRoleBadge: false,
+      membersGridCols: 'grid-cols-1',
+      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+      headerGridCols: 'grid-cols-1',
+      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
@@ -60,6 +96,14 @@ function getUIConfig(
 
   if (role === 'owner') {
     return {
+      showMembersList: true,
+      showPendingTab: true,
+      showSearch: true,
+      showDateColumn: true,
+      showRoleBadge: true,
+      membersGridCols: 'grid-cols-[50%_40%_10%]',
+      pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+      headerGridCols: 'grid-cols-[50%_40%_10%]',
       showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip:
@@ -69,6 +113,14 @@ function getUIConfig(
 
   // member role
   return {
+    showMembersList: true,
+    showPendingTab: false,
+    showSearch: true,
+    showDateColumn: true,
+    showRoleBadge: true,
+    membersGridCols: 'grid-cols-[1fr_auto]',
+    pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
+    headerGridCols: 'grid-cols-[1fr_auto]',
     showEditWorkspaceMenuItem: false,
     workspaceMenuAction: 'leave',
     workspaceMenuDisabledTooltip: null

@@ -2115,31 +2115,22 @@
     "notSet": "Not set",
     "updatePassword": "Update Password"
   },
+
+  "createWorkspaceDialog": {
+    "title": "Create a new workspace",
+    "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+    "nameLabel": "Workspace name*",
+    "namePlaceholder": "Enter workspace name",
+    "create": "Create"
+  },
+  "toast": {
+    "workspaceCreated": {
+      "title": "Workspace created",
+      "message": "Subscribe to a plan, invite teammates, and start collaborating.",
+      "subscribe": "Subscribe"
+    }
+  },
   "workspacePanel": {
-    "tabs": {
-      "planCredits": "Plan & Credits"
-    },
-    "menu": {
-      "editWorkspace": "Edit workspace details",
-      "leaveWorkspace": "Leave Workspace",
-      "deleteWorkspace": "Delete Workspace",
-      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
-    },
-    "editWorkspaceDialog": {
-      "title": "Edit workspace details",
-      "nameLabel": "Workspace name",
-      "save": "Save"
-    },
-    "leaveDialog": {
-      "title": "Leave this workspace?",
-      "message": "You won't be able to join again unless you contact the workspace owner.",
-      "leave": "Leave"
-    },
-    "deleteDialog": {
-      "title": "Delete this workspace?",
-      "message": "Any unused credits or unsaved assets will be lost. This action cannot be undone.",
-      "messageWithName": "Delete \"{name}\"? Any unused credits or unsaved assets will be lost. This action cannot be undone."
-    },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
       "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
@@ -2148,14 +2139,13 @@
       "create": "Create"
     },
     "toast": {
-      "workspaceUpdated": {
-        "title": "Workspace updated",
-        "message": "Workspace details have been saved."
+      "workspaceCreated": {
+        "title": "Workspace created",
+        "message": "Subscribe to a plan, invite teammates, and start collaborating.",
+        "subscribe": "Subscribe"
       },
-      "failedToUpdateWorkspace": "Failed to update workspace",
       "failedToCreateWorkspace": "Failed to create workspace",
-      "failedToDeleteWorkspace": "Failed to delete workspace",
-      "failedToLeaveWorkspace": "Failed to leave workspace"
+      "failedToFetchWorkspaces": "Failed to load workspaces"
     }
   },
   "workspaceSwitcher": {

@@ -53,6 +53,9 @@ const teamWorkspacesEnabled = computed(
   () => isCloud && flags.teamWorkspacesEnabled
 )
 
+const { flags } = useFeatureFlags()
+const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
+
 const dialogStore = useDialogStore()
 </script>
 
