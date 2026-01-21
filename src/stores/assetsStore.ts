@@ -275,30 +275,23 @@ export const useAssetsStore = defineStore('assets', () => {
         { source: Map<string, AssetItem>; array: AssetItem[] }
       >()
 
-      function createInitialState(): ModelPaginationState {
-        const state: ModelPaginationState = {
+      function createState(): ModelPaginationState {
+        return shallowReactive({
           assets: new Map(),
           offset: 0,
           hasMore: true,
           isLoading: false
-        }
-        return shallowReactive(state)
+        })
       }
 
-      function getOrCreateState(key: string): ModelPaginationState {
-        if (!modelStateByKey.value.has(key)) {
-          modelStateByKey.value.set(key, createInitialState())
-        }
-        return modelStateByKey.value.get(key)!
+      function startNewRequest(key: string): ModelPaginationState {
+        const state = createState()
+        modelStateByKey.value.set(key, state)
+        return state
       }
 
-      function resetPaginationForKey(key: string) {
-        const state = getOrCreateState(key)
-        state.assets = new Map()
-        state.offset = 0
-        state.hasMore = true
-        delete state.error
-        assetsArrayCache.delete(key)
+      function isStale(key: string, state: ModelPaginationState): boolean {
+        return modelStateByKey.value.get(key) !== state
       }
 
       function getAssets(key: string): AssetItem[] {
@@ -336,9 +329,8 @@ export const useAssetsStore = defineStore('assets', () => {
         key: string,
         fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
       ): Promise<AssetItem[]> {
-        const state = getOrCreateState(key)
-
-        resetPaginationForKey(key)
+        const state = startNewRequest(key)
+        assetsArrayCache.delete(key)
         state.isLoading = true
 
         try {
@@ -347,21 +339,26 @@ export const useAssetsStore = defineStore('assets', () => {
             offset: 0
           })
 
+          if (isStale(key, state)) return []
+
           state.assets = new Map(assets.map((a) => [a.id, a]))
           state.offset = assets.length
           state.hasMore = assets.length === MODEL_BATCH_SIZE
 
           if (state.hasMore) {
-            void loadRemainingBatches(key, fetcher)
+            void loadRemainingBatches(key, fetcher, state)
           }
 
           return assets
         } catch (err) {
+          if (isStale(key, state)) return []
           state.error = err instanceof Error ? err : new Error(String(err))
           console.error(`Error fetching model assets for ${key}:`, err)
           return []
         } finally {
-          state.isLoading = false
+          if (!isStale(key, state)) {
+            state.isLoading = false
+          }
         }
       }
 
@@ -370,17 +367,17 @@ export const useAssetsStore = defineStore('assets', () => {
        */
       async function loadRemainingBatches(
         key: string,
-        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
+        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>,
+        state: ModelPaginationState
       ): Promise<void> {
-        const state = modelStateByKey.value.get(key)
-        if (!state) return
-
         while (state.hasMore) {
           try {
             const newAssets = await fetcher({
               limit: MODEL_BATCH_SIZE,
               offset: state.offset
             })
+
+            if (isStale(key, state)) return
 
             const assetsToAdd = newAssets.filter((a) => !state.assets.has(a.id))
             if (assetsToAdd.length > 0) {
@@ -397,6 +394,7 @@ export const useAssetsStore = defineStore('assets', () => {
               await new Promise((resolve) => setTimeout(resolve, 50))
             }
           } catch (err) {
+            if (isStale(key, state)) return
             state.error = err instanceof Error ? err : new Error(String(err))
             state.hasMore = false
             console.error(`Error loading batch for ${key}:`, err)

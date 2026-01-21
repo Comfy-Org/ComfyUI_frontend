@@ -554,6 +554,49 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
   })
 
+  describe('concurrent request handling', () => {
+    it('should discard stale request when newer request starts', async () => {
+      setActivePinia(createPinia())
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const firstBatch = Array.from({ length: 5 }, (_, i) =>
+        createMockAsset(`first-${i}`)
+      )
+      const secondBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockAsset(`second-${i}`)
+      )
+
+      let resolveFirst: (value: ReturnType<typeof createMockAsset>[]) => void
+      const firstPromise = new Promise<ReturnType<typeof createMockAsset>[]>(
+        (resolve) => {
+          resolveFirst = resolve
+        }
+      )
+      let callCount = 0
+      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
+        async () => {
+          callCount++
+          return callCount === 1 ? firstPromise : secondBatch
+        }
+      )
+
+      const firstRequest = store.updateModelsForNodeType(nodeType)
+      const secondRequest = store.updateModelsForNodeType(nodeType)
+      resolveFirst!(firstBatch)
+      const [firstResult, secondResult] = await Promise.all([
+        firstRequest,
+        secondRequest
+      ])
+
+      expect(firstResult).toEqual([])
+      expect(secondResult).toHaveLength(10)
+      expect(store.getAssets(nodeType)).toHaveLength(10)
+      expect(
+        store.getAssets(nodeType).every((a) => a.id.startsWith('second-'))
+      ).toBe(true)
+    })
+  })
+
   describe('shallowReactive state reactivity', () => {
     it('should trigger reactivity on isModelLoading change', async () => {
       setActivePinia(createPinia())
