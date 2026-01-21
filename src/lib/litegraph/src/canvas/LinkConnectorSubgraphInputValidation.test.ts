@@ -10,9 +10,19 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import type { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+
+interface MockPointerEvent {
+  canvasX: number
+  canvasY: number
+}
+
+interface MockRenderLink {
+  fromSlot: { type: string }
+}
 
 describe('LinkConnector SubgraphInput connection validation', () => {
   let connector: LinkConnector
@@ -206,10 +216,10 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       connector.state.connectingTo = 'output'
 
       // Create mock event
-      const mockEvent = {
+      const mockEvent: MockPointerEvent = {
         canvasX: 100,
         canvasY: 100
-      } as any
+      }
 
       // Mock the getSlotInPosition to return the subgraph input
       const mockGetSlotInPosition = vi.fn().mockReturnValue(subgraph.inputs[0])
@@ -219,7 +229,10 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       const connectSpy = vi.spyOn(movingLink, 'connectToSubgraphInput')
 
       // Drop on the SubgraphInputNode
-      connector.dropOnIoNode(subgraph.inputNode, mockEvent)
+      connector.dropOnIoNode(
+        subgraph.inputNode,
+        mockEvent as unknown as CanvasPointerEvent
+      )
 
       // Verify that the invalid connection was skipped
       expect(consoleWarnSpy).toHaveBeenCalledWith(
@@ -256,10 +269,10 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       connector.state.connectingTo = 'output'
 
       // Create mock event
-      const mockEvent = {
+      const mockEvent: MockPointerEvent = {
         canvasX: 100,
         canvasY: 100
-      } as any
+      }
 
       // Mock the getSlotInPosition to return the subgraph input
       const mockGetSlotInPosition = vi.fn().mockReturnValue(subgraph.inputs[0])
@@ -269,7 +282,10 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       const connectSpy = vi.spyOn(movingLink, 'connectToSubgraphInput')
 
       // Drop on the SubgraphInputNode
-      connector.dropOnIoNode(subgraph.inputNode, mockEvent)
+      connector.dropOnIoNode(
+        subgraph.inputNode,
+        mockEvent as unknown as CanvasPointerEvent
+      )
 
       // Verify that the valid connection was made
       expect(connectSpy).toHaveBeenCalledWith(
@@ -342,12 +358,12 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       })
 
       // Create a mock render link without the method
-      const mockLink = {
+      const mockLink: MockRenderLink = {
         fromSlot: { type: 'number' }
         // No canConnectToSubgraphInput method
-      } as any
+      }
 
-      connector.renderLinks.push(mockLink)
+      connector.renderLinks.push(mockLink as unknown as ToOutputRenderLink)
 
       const subgraphInput = subgraph.inputs[0]
 
