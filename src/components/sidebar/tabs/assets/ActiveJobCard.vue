@@ -1,5 +1,9 @@
 <template>
-  <div class="flex flex-col gap-2 p-2 overflow-hidden rounded-lg">
+  <div
+    role="status"
+    :aria-label="t('sideToolbar.activeJobStatus', { status: statusText })"
+    class="flex flex-col gap-2 p-2 rounded-lg"
+  >
     <!-- Thumbnail: gray placeholder with centered spinner -->
     <div class="relative aspect-square overflow-hidden rounded-lg">
       <div
@@ -33,11 +37,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 
 const { job } = defineProps<{ job: JobListItem }>()
+
+const { t } = useI18n()
 
 const { progressBarPrimaryClass, hasProgressPercent, progressPercentStyle } =
   useProgressBarBackground()

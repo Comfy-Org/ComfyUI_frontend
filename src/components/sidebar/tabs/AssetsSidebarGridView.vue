@@ -55,7 +55,7 @@ import ActiveJobCard from '@/components/sidebar/tabs/assets/ActiveJobCard.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { JobState } from '@/types/queue'
+import { isActiveJobState } from '@/utils/queueUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
@@ -101,11 +101,5 @@ const gridStyle = {
   gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
-
-function isActiveJobState(state: JobState): boolean {
-  return (
-    state === 'pending' || state === 'initialization' || state === 'running'
-  )
 }
 </script>
