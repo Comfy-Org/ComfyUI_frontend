@@ -305,24 +305,40 @@ describe('useJobList', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('sorts all tasks by priority descending', async () => {
+  it('sorts all tasks by create time', async () => {
     queueStoreMock.pendingTasks = [
-      createTask({ promptId: 'p', queueIndex: 1, mockState: 'pending' })
+      createTask({
+        promptId: 'p',
+        queueIndex: 1,
+        mockState: 'pending',
+        createTime: 3000
+      })
     ]
     queueStoreMock.runningTasks = [
-      createTask({ promptId: 'r', queueIndex: 5, mockState: 'running' })
+      createTask({
+        promptId: 'r',
+        queueIndex: 5,
+        mockState: 'running',
+        createTime: 2000
+      })
     ]
     queueStoreMock.historyTasks = [
-      createTask({ promptId: 'h', queueIndex: 3, mockState: 'completed' })
+      createTask({
+        promptId: 'h',
+        queueIndex: 3,
+        mockState: 'completed',
+        createTime: 1000,
+        executionEndTimestamp: 5000
+      })
     ]
 
     const { allTasksSorted } = initComposable()
     await flush()
 
     expect(allTasksSorted.value.map((task) => task.promptId)).toEqual([
+      'p',
       'r',
-      'h',
-      'p'
+      'h'
     ])
   })
 
