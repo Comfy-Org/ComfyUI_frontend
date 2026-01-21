@@ -15,6 +15,10 @@ import {
 
 import { test } from './__fixtures__/testExtensions'
 
+interface NodeConstructorWithSlotOffset {
+  slot_start_y?: number
+}
+
 function getMockISerialisedNode(
   data: Partial<ISerialisedNode>
 ): ISerialisedNode {
@@ -632,7 +636,9 @@ describe('LGraphNode', () => {
       }
       node.inputs = [inputSlot, inputSlot2]
       const slotIndex = 0
-      const nodeOffsetY = (node.constructor as any).slot_start_y || 0
+      const nodeOffsetY =
+        (node.constructor as unknown as NodeConstructorWithSlotOffset)
+          .slot_start_y || 0
       const expectedY =
         200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
@@ -644,7 +650,9 @@ describe('LGraphNode', () => {
     })
 
     test('should return default vertical position including slot_start_y when defined', () => {
-      ;(node.constructor as any).slot_start_y = 25
+      ;(
+        node.constructor as unknown as NodeConstructorWithSlotOffset
+      ).slot_start_y = 25
       node.flags.collapsed = false
       node.inputs = [inputSlot]
       const slotIndex = 0
@@ -653,7 +661,8 @@ describe('LGraphNode', () => {
         200 + (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT + nodeOffsetY
       const expectedX = 100 + LiteGraph.NODE_SLOT_HEIGHT * 0.5
       expect(node.getInputSlotPos(inputSlot)).toEqual([expectedX, expectedY])
-      delete (node.constructor as any).slot_start_y
+      delete (node.constructor as unknown as NodeConstructorWithSlotOffset)
+        .slot_start_y
     })
     test('should not overwrite onMouseDown prototype', () => {
       expect(Object.prototype.hasOwnProperty.call(node, 'onMouseDown')).toEqual(
