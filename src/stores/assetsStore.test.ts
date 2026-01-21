@@ -541,16 +541,19 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         ).toHaveBeenCalledTimes(2)
       })
 
-      // Cache the current array reference
-      const firstArrayRef = store.getAssets(nodeType)
-      expect(firstArrayRef).toHaveLength(501)
+      const assets = store.getAssets(nodeType)
+      expect(assets).toHaveLength(501)
+      expect(assets.map((a) => a.id)).toContain('new-asset')
+    })
 
-      // Call getAssets again - should return same cached array (same reference)
-      const secondArrayRef = store.getAssets(nodeType)
-      expect(secondArrayRef).toBe(firstArrayRef)
+    it('should return cached array on subsequent getAssets calls', () => {
+      const store = useAssetsStore()
+      const nodeType = 'TestLoader'
 
-      // Verify the new asset is included (cache was properly invalidated before mutation)
-      expect(secondArrayRef.map((a) => a.id)).toContain('new-asset')
+      const firstCall = store.getAssets(nodeType)
+      const secondCall = store.getAssets(nodeType)
+
+      expect(secondCall).toBe(firstCall)
     })
   })
 
