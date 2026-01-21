@@ -36,8 +36,8 @@
           </p>
           <div class="flex flex-col gap-y-2">
             <div class="flex flex-1 items-center gap-2">
-              <div v-if="nodesCount" class="p-2 pl-0 text-xs">
-                {{ nodesCount }} {{ $t('g.nodes') }}
+              <div v-if="nodesLabel" class="p-2 pl-0 text-xs">
+                {{ nodesLabel }}
               </div>
               <PackVersionBadge
                 :node-pack="nodePack"
@@ -94,7 +94,7 @@ const { nodePack, isSelected = false } = defineProps<{
   isSelected?: boolean
 }>()
 
-const { d } = useI18n()
+const { d, t } = useI18n()
 
 const colorPaletteStore = useColorPaletteStore()
 const isLightTheme = computed(
@@ -114,6 +114,9 @@ const isDisabled = computed(
 
 const nodesCount = computed(() =>
   isMergedNodePack(nodePack) ? nodePack.comfy_nodes?.length : undefined
+)
+const nodesLabel = computed(() =>
+  nodesCount.value ? t('g.nodesCount', nodesCount.value) : ''
 )
 const publisherName = computed(() => {
   if (!nodePack) return null
