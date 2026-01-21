@@ -6,7 +6,6 @@ import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 
-// Types aligned with backend API
 type WorkspaceType = 'personal' | 'team'
 type WorkspaceRole = 'owner' | 'member'
 
@@ -20,7 +19,6 @@ export interface WorkspaceWithRole extends Workspace {
   role: WorkspaceRole
 }
 
-// Member type from API
 export interface Member {
   id: string
   name: string
@@ -44,7 +42,6 @@ export interface ListMembersParams {
   limit?: number
 }
 
-// Pending invite type from API
 export interface PendingInvite {
   id: string
   email: string
@@ -66,7 +63,6 @@ interface AcceptInviteResponse {
   workspace_name: string
 }
 
-// Billing types (POST /api/billing/portal)
 interface BillingPortalRequest {
   return_url: string
 }
@@ -83,12 +79,10 @@ interface UpdateWorkspacePayload {
   name: string
 }
 
-// API responses
 interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
 }
 
-// Token exchange types (POST /api/auth/token)
 interface ExchangeTokenRequest {
   workspace_id: string
 }
@@ -231,7 +225,9 @@ export const workspaceApi = {
    */
   leave: (): Promise<void> =>
     withAuth((headers) =>
-      workspaceApiClient.post(api.apiURL('/workspace/leave'), null, { headers })
+      workspaceApiClient.post(api.apiURL('/workspace/leave'), null, {
+        headers
+      })
     ),
 
   /**
