@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
@@ -7,7 +8,9 @@ import { createI18n } from 'vue-i18n'
 
 // Import after mocks
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore';
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore';
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 // Mock the litegraph module
@@ -72,9 +75,9 @@ describe('ColorPickerButton', () => {
     // Mock workflow store
     workflowStore.activeWorkflow = {
       changeTracker: {
-        checkState: vi.fn()
+        checkState: vi.fn() as Mock
       }
-    } as any
+    } as unknown as LoadedComfyWorkflow
   })
 
   const createWrapper = () => {
@@ -90,13 +93,17 @@ describe('ColorPickerButton', () => {
 
   it('should render when nodes are selected', () => {
     // Add a mock node to selectedItems
-    canvasStore.selectedItems = [{ type: 'LGraphNode' } as any]
+    canvasStore.selectedItems = [
+      { type: 'LGraphNode' } as unknown as Positionable
+    ]
     const wrapper = createWrapper()
     expect(wrapper.find('button').exists()).toBe(true)
   })
 
   it('should toggle color picker visibility on button click', async () => {
-    canvasStore.selectedItems = [{ type: 'LGraphNode' } as any]
+    canvasStore.selectedItems = [
+      { type: 'LGraphNode' } as unknown as Positionable
+    ]
     const wrapper = createWrapper()
     const button = wrapper.find('button')
 
