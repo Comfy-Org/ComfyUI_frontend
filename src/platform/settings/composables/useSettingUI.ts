@@ -40,9 +40,7 @@ export function useSettingUI(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const { isActiveSubscription } = useSubscription()
 
-  const teamWorkspacesEnabled = computed(
-    () => isCloud && flags.teamWorkspacesEnabled
-  )
+  const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
 
   const settingRoot = computed<SettingTreeNode>(() => {
     const root = buildTree(
@@ -154,20 +152,23 @@ export function useSettingUI(
   }
 
   // Workspace panel: only available on cloud with team workspaces enabled
-  const workspacePanel: SettingPanelItem = {
-    node: {
-      key: 'workspace',
-      label: 'Workspace',
-      children: []
-    },
-    component: defineAsyncComponent(
-      () => import('@/components/dialog/content/setting/WorkspacePanel.vue')
-    )
-  }
+  const workspacePanel: SettingPanelItem | null = !teamWorkspacesEnabled
+    ? null
+    : {
+        node: {
+          key: 'workspace',
+          label: 'Workspace',
+          children: []
+        },
+        component: defineAsyncComponent(
+          () => import('@/components/dialog/content/setting/WorkspacePanel.vue')
+        )
+      }
 
-  const shouldShowWorkspacePanel = computed(
-    () => teamWorkspacesEnabled.value && isLoggedIn.value
-  )
+  const shouldShowWorkspacePanel = computed(() => {
+    if (!workspacePanel) return false
+    return isLoggedIn.value
+  })
 
   const keybindingPanel: SettingPanelItem = {
     node: {
@@ -207,7 +208,9 @@ export function useSettingUI(
       aboutPanel,
       creditsPanel,
       userPanel,
-      ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
+      ...(shouldShowWorkspacePanel.value && workspacePanel
+        ? [workspacePanel]
+        : []),
       keybindingPanel,
       extensionPanel,
       ...(isElectron() ? [serverConfigPanel] : []),
@@ -241,19 +244,21 @@ export function useSettingUI(
   // Sidebar structure when team workspaces is enabled
   const workspaceMenuTreeNodes = computed<SettingTreeNode[]>(() => [
     // Workspace settings
-    translateCategory({
+    {
       key: 'workspace',
       label: 'Workspace',
       children: [
-        ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
+        ...(shouldShowWorkspacePanel.value && workspacePanel
+          ? [workspacePanel.node]
+          : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
           : [])
       ].map(translateCategory)
-    }),
+    },
     // General settings - Profile + all core settings + special panels
-    translateCategory({
+    {
       key: 'general',
       label: 'General',
       children: [
@@ -264,15 +269,15 @@ export function useSettingUI(
         translateCategory(aboutPanel.node),
         ...(isElectron() ? [translateCategory(serverConfigPanel.node)] : [])
       ]
-    }),
+    },
     // Custom node settings (only shown if custom nodes have registered settings)
     ...(customNodeSettingCategories.value.length > 0
       ? [
-          translateCategory({
+          {
             key: 'other',
             label: 'Other',
             children: customNodeSettingCategories.value.map(translateCategory)
-          })
+          }
         ]
       : [])
   ])
@@ -316,7 +321,7 @@ export function useSettingUI(
   ])
 
   const groupedMenuTreeNodes = computed<SettingTreeNode[]>(() =>
-    teamWorkspacesEnabled.value
+    teamWorkspacesEnabled
       ? workspaceMenuTreeNodes.value
       : legacyMenuTreeNodes.value
   )

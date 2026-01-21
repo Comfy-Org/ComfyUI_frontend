@@ -41,7 +41,7 @@
         <!-- Workspace mode: custom group headers -->
         <template v-if="teamWorkspacesEnabled" #optiongroup="{ option }">
           <h3 class="text-xs font-semibold uppercase text-muted m-0 pt-6 pb-2">
-            {{ option.translatedLabel ?? option.label }}
+            {{ option.label }}
           </h3>
         </template>
         <!-- Legacy mode: divider between groups -->
@@ -130,9 +130,7 @@ const { defaultPanel } = defineProps<{
 }>()
 
 const { flags } = useFeatureFlags()
-const teamWorkspacesEnabled = computed(
-  () => isCloud && flags.teamWorkspacesEnabled
-)
+const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
 
 const {
   activeCategory,

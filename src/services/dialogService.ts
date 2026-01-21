@@ -563,6 +563,32 @@ export const useDialogService = () => {
     })
   }
 
+  async function showLeaveWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/LeaveWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'leave-workspace',
+      component,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showEditWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/EditWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'edit-workspace',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -582,6 +608,8 @@ export const useDialogService = () => {
     showImportFailedNodeDialog,
     showNodeConflictDialog,
     showDeleteWorkspaceDialog,
-    showCreateWorkspaceDialog
+    showCreateWorkspaceDialog,
+    showLeaveWorkspaceDialog,
+    showEditWorkspaceDialog
   }
 }
