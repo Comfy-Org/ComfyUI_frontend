@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -13,8 +14,12 @@ vi.mock('algoliasearch/dist/lite/builds/browser', () => ({
   liteClient: vi.fn()
 }))
 
+interface MockSearchClient {
+  search: Mock
+}
+
 describe('useAlgoliaSearchProvider', () => {
-  let mockSearchClient: any
+  let mockSearchClient: MockSearchClient
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -24,7 +29,9 @@ describe('useAlgoliaSearchProvider', () => {
       search: vi.fn()
     }
 
-    vi.mocked(algoliasearch).mockReturnValue(mockSearchClient)
+    vi.mocked(algoliasearch).mockReturnValue(
+      mockSearchClient as unknown as ReturnType<typeof algoliasearch>
+    )
   })
 
   afterEach(() => {
