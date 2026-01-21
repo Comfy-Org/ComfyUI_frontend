@@ -1,11 +1,17 @@
 import { FirebaseError } from 'firebase/app'
+import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { createPinia, setActivePinia } from 'pinia'
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+
+type MockUser = Omit<User, 'getIdToken'> & {
+  getIdToken: Mock
+}
 
 // Mock fetch
 const mockFetch = vi.fn()
@@ -84,18 +90,18 @@ vi.mock('@/services/dialogService')
 
 describe('useFirebaseAuthStore', () => {
   let store: ReturnType<typeof useFirebaseAuthStore>
-  let authStateCallback: (user: any) => void
-  let idTokenCallback: (user: any) => void
+  let authStateCallback: (user: User | null) => void
+  let idTokenCallback: (user: User | null) => void
 
   const mockAuth = {
     /* mock Auth object */
   }
 
-  const mockUser = {
+  const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
     getIdToken: vi.fn().mockResolvedValue('mock-id-token')
-  }
+  } as unknown as MockUser
 
   beforeEach(() => {
     vi.resetAllMocks()
@@ -112,9 +118,9 @@ describe('useFirebaseAuthStore', () => {
     // Mock onAuthStateChanged to capture the callback and simulate initial auth state
     vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
       (_, callback) => {
-        authStateCallback = callback as (user: any) => void
+        authStateCallback = callback as (user: User | null) => void
         // Call the callback with our mock user
-        ;(callback as (user: any) => void)(mockUser)
+        ;(callback as (user: User | null) => void)(mockUser)
         // Return an unsubscribe function
         return vi.fn()
       }
@@ -156,7 +162,7 @@ describe('useFirebaseAuthStore', () => {
 
       vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
         (_auth, callback) => {
-          idTokenCallback = callback as (user: any) => void
+          idTokenCallback = callback as (user: User | null) => void
           return vi.fn()
         }
       )
@@ -180,14 +186,14 @@ describe('useFirebaseAuthStore', () => {
     })
 
     it('should not increment when ID token event is for a different user UID', () => {
-      const otherUser = { uid: 'other-user-id' }
+      const otherUser = { uid: 'other-user-id' } as unknown as User
       idTokenCallback?.(mockUser)
       idTokenCallback?.(otherUser)
       expect(store.tokenRefreshTrigger).toBe(0)
     })
 
     it('should increment after switching to a new UID and receiving a second event for that UID', () => {
-      const otherUser = { uid: 'other-user-id' }
+      const otherUser = { uid: 'other-user-id' } as unknown as User
       idTokenCallback?.(mockUser)
       idTokenCallback?.(otherUser)
       idTokenCallback?.(otherUser)

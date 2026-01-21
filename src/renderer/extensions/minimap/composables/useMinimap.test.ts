@@ -1,5 +1,67 @@
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
+
+interface MockNode {
+  id: string
+  pos: number[]
+  size: number[]
+  color?: string
+  constructor?: { color: string }
+  outputs?: { links: string[] }[] | null
+}
+
+interface MockGraph {
+  _nodes: MockNode[]
+  links: Record<string, { id: string; target_id: string }>
+  getNodeById: Mock
+  setDirtyCanvas: Mock
+  onNodeAdded: ((node: MockNode) => void) | null
+  onNodeRemoved: ((node: MockNode) => void) | null
+  onConnectionChange: ((node: MockNode) => void) | null
+}
+
+interface MockCanvas {
+  graph: MockGraph
+  canvas: {
+    width: number
+    height: number
+    clientWidth: number
+    clientHeight: number
+  }
+  ds: {
+    scale: number
+    offset: [number, number]
+  }
+  setDirty: Mock
+}
+
+interface MockCanvasElement {
+  getContext: Mock
+  width: number
+  height: number
+  clientWidth: number
+  clientHeight: number
+}
+
+interface MockContainerElement {
+  getBoundingClientRect: Mock
+}
+
+interface MockContext2D {
+  clearRect: Mock
+  fillRect: Mock
+  strokeRect: Mock
+  beginPath: Mock
+  moveTo: Mock
+  lineTo: Mock
+  stroke: Mock
+  arc: Mock
+  fill: Mock
+  fillStyle: string
+  strokeStyle: string
+  lineWidth: number
+}
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -39,15 +101,15 @@ vi.mock('@vueuse/core', () => {
       }
     }),
     useThrottleFn: vi.fn((callback) => {
-      return (...args: any[]) => {
+      return (...args: unknown[]) => {
         return callback(...args)
       }
     })
   }
 })
 
-let mockCanvas: any
-let mockGraph: any
+let mockCanvas: MockCanvas = null!
+let mockGraph: MockGraph = null!
 
 const setupMocks = () => {
   const mockNodes = [
@@ -105,7 +167,10 @@ const setupMocks = () => {
 
 setupMocks()
 
-const defaultCanvasStore = {
+const defaultCanvasStore: {
+  canvas: MockCanvas | null
+  getCanvas: () => MockCanvas | null
+} = {
   canvas: mockCanvas,
   getCanvas: () => defaultCanvasStore.canvas
 }
@@ -158,16 +223,20 @@ const { useMinimap } =
 const { api } = await import('@/scripts/api')
 
 describe('useMinimap', () => {
-  let mockCanvas: any
-  let mockGraph: any
-  let mockCanvasElement: any
-  let mockContainerElement: any
-  let mockContext2D: any
+  let mockCanvas: MockCanvas
+  let mockGraph: MockGraph
+  let mockCanvasElement: MockCanvasElement
+  let mockContainerElement: MockContainerElement
+  let mockContext2D: MockContext2D
 
   async function createAndInitializeMinimap() {
     const minimap = useMinimap({
-      containerRefMaybe: shallowRef(mockContainerElement),
-      canvasRefMaybe: shallowRef(mockCanvasElement)
+      containerRefMaybe: shallowRef(
+        mockContainerElement as unknown as HTMLDivElement
+      ),
+      canvasRefMaybe: shallowRef(
+        mockCanvasElement as unknown as HTMLCanvasElement
+      )
     })
     await minimap.init()
     await nextTick()
@@ -432,7 +501,8 @@ describe('useMinimap', () => {
       mockGraph._nodes.push({
         id: 'new-node',
         pos: [150, 150],
-        size: [100, 50]
+        size: [100, 50],
+        constructor: { color: '#666' }
       })
 
       // Trigger RAF to process changes
@@ -793,12 +863,14 @@ describe('useMinimap', () => {
       mockCanvas.canvas.clientWidth = 1200
       mockCanvas.canvas.clientHeight = 900
 
-      const resizeHandler = (window.addEventListener as any).mock.calls.find(
-        (call: any) => call[0] === 'resize'
-      )?.[1]
+      const resizeHandler = vi
+        .mocked(window.addEventListener)
+        .mock.calls.find((call) => call[0] === 'resize')?.[1] as
+        | EventListener
+        | undefined
 
       if (resizeHandler) {
-        resizeHandler()
+        resizeHandler(new Event('resize'))
       }
 
       await nextTick()
