@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
 
 import { truncateText } from '@/lib/litegraph/src/litegraph'
@@ -57,7 +58,7 @@ describe('truncateText', () => {
     // Verify binary search efficiency - should not measure every possible substring
     // Binary search for 100 chars should take around log2(100) ≈ 7 iterations
     // Plus a few extra calls for measuring the full text and ellipsis
-    const callCount = (ctx.measureText as any).mock.calls.length
+    const callCount = (ctx.measureText as Mock).mock.calls.length
     expect(callCount).toBeLessThan(20)
     expect(callCount).toBeGreaterThan(5)
   })
