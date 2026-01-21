@@ -375,10 +375,6 @@ export const useAssetsStore = defineStore('assets', () => {
 
               if (isFirstBatch) {
                 state.isLoading = false
-                if (state.hasMore) {
-                  void loadBatches()
-                }
-                return
               }
 
               if (state.hasMore) {
