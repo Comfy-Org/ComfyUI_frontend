@@ -1,0 +1,20 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "tabWidth": 2,
+  "semi": false,
+  "trailingComma": "none",
+  "printWidth": 80,
+  "ignorePatterns": [
+    "packages/registry-types/src/comfyRegistryTypes.ts",
+    "src/types/generatedManagerTypes.ts",
+    "**/*.md",
+    "**/*.json",
+    "**/*.css",
+    "**/*.yaml",
+    "**/*.yml",
+    "**/*.html",
+    "**/*.svg",
+    "**/*.xml"
+  ]
+}
