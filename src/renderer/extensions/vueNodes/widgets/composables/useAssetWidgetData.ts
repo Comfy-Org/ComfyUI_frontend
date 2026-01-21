@@ -34,7 +34,7 @@ export function useAssetWidgetData(
 
     const assets = computed<AssetItem[]>(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType ? assetsStore.getAssets(resolvedType) : []
+      return resolvedType ? (assetsStore.getAssets(resolvedType) ?? []) : []
     })
 
     const isLoading = computed(() => {
@@ -65,7 +65,7 @@ export function useAssetWidgetData(
           return
         }
 
-        const existingAssets = assetsStore.getAssets(currentNodeType)
+        const existingAssets = assetsStore.getAssets(currentNodeType) ?? []
         const hasData = existingAssets.length > 0
 
         if (!hasData) {

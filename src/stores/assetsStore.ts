@@ -294,10 +294,12 @@ export const useAssetsStore = defineStore('assets', () => {
         return modelStateByKey.value.get(key) !== state
       }
 
+      const EMPTY_ASSETS: AssetItem[] = []
+
       function getAssets(key: string): AssetItem[] {
         const state = modelStateByKey.value.get(key)
         const assetsMap = state?.assets
-        if (!assetsMap) return []
+        if (!assetsMap) return EMPTY_ASSETS
 
         const cached = assetsArrayCache.get(key)
         if (cached && cached.source === assetsMap) {
