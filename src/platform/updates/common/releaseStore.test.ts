@@ -1,7 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { compare, valid } from 'semver'
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
 // Mock the dependencies
@@ -17,11 +19,36 @@ vi.mock('@vueuse/core', () => ({
   createSharedComposable: vi.fn((fn) => fn)
 }))
 
+interface MockReleaseService {
+  getReleases: Mock
+  isLoading: { value: boolean }
+  error: { value: string | null }
+}
+
+interface MockSettingStore {
+  get: Mock
+  set: Mock
+}
+
+interface MockSystemStatsStore {
+  systemStats: {
+    system: {
+      comfyui_version: string
+      argv?: string[] | undefined | null
+      [key: string]: unknown
+    }
+    devices?: unknown[]
+  } | null
+  isInitialized: boolean
+  refetchSystemStats: Mock
+  getFormFactor: Mock
+}
+
 describe('useReleaseStore', () => {
   let store: ReturnType<typeof useReleaseStore>
-  let mockReleaseService: any
-  let mockSettingStore: any
-  let mockSystemStatsStore: any
+  let mockReleaseService: MockReleaseService
+  let mockSettingStore: MockSettingStore
+  let mockSystemStatsStore: MockSystemStatsStore
 
   const mockRelease = {
     id: 1,
@@ -68,9 +95,15 @@ describe('useReleaseStore', () => {
     const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
     const { isElectron } = await import('@/utils/envUtil')
 
-    vi.mocked(useReleaseService).mockReturnValue(mockReleaseService)
-    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
-    vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
+    vi.mocked(useReleaseService).mockReturnValue(
+      mockReleaseService as unknown as ReturnType<typeof useReleaseService>
+    )
+    vi.mocked(useSettingStore).mockReturnValue(
+      mockSettingStore as unknown as ReturnType<typeof useSettingStore>
+    )
+    vi.mocked(useSystemStatsStore).mockReturnValue(
+      mockSystemStatsStore as unknown as ReturnType<typeof useSystemStatsStore>
+    )
     vi.mocked(isElectron).mockReturnValue(true)
     vi.mocked(valid).mockReturnValue('1.0.0')
 
@@ -171,7 +204,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should show popup for latest version', () => {
-        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        mockSystemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
 
@@ -213,7 +246,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should not show popup even for latest version', () => {
-        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        mockSystemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
 
@@ -265,7 +298,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should skip fetching when --disable-api-nodes is present', async () => {
-      mockSystemStatsStore.systemStats.system.argv = ['--disable-api-nodes']
+      mockSystemStatsStore.systemStats!.system.argv = ['--disable-api-nodes']
 
       await store.initialize()
 
@@ -274,7 +307,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should skip fetching when --disable-api-nodes is one of multiple args', async () => {
-      mockSystemStatsStore.systemStats.system.argv = [
+      mockSystemStatsStore.systemStats!.system.argv = [
         '--port',
         '8080',
         '--disable-api-nodes',
@@ -288,7 +321,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should fetch normally when --disable-api-nodes is not present', async () => {
-      mockSystemStatsStore.systemStats.system.argv = [
+      mockSystemStatsStore.systemStats!.system.argv = [
         '--port',
         '8080',
         '--verbose'
@@ -302,7 +335,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should fetch normally when argv is undefined', async () => {
-      mockSystemStatsStore.systemStats.system.argv = undefined
+      mockSystemStatsStore.systemStats!.system.argv = undefined
       mockReleaseService.getReleases.mockResolvedValue([mockRelease])
 
       await store.initialize()
@@ -330,8 +363,8 @@ describe('useReleaseStore', () => {
     })
 
     it('should set loading state correctly', async () => {
-      let resolvePromise: (value: any) => void
-      const promise = new Promise((resolve) => {
+      let resolvePromise: (value: ReleaseNote[] | null) => void
+      const promise = new Promise<ReleaseNote[] | null>((resolve) => {
         resolvePromise = resolve
       })
 
@@ -372,7 +405,7 @@ describe('useReleaseStore', () => {
 
   describe('--disable-api-nodes argument handling', () => {
     it('should skip fetchReleases when --disable-api-nodes is present', async () => {
-      mockSystemStatsStore.systemStats.system.argv = ['--disable-api-nodes']
+      mockSystemStatsStore.systemStats!.system.argv = ['--disable-api-nodes']
 
       await store.fetchReleases()
 
@@ -381,7 +414,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should skip fetchReleases when --disable-api-nodes is among other args', async () => {
-      mockSystemStatsStore.systemStats.system.argv = [
+      mockSystemStatsStore.systemStats!.system.argv = [
         '--port',
         '8080',
         '--disable-api-nodes',
@@ -395,7 +428,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should proceed with fetchReleases when --disable-api-nodes is not present', async () => {
-      mockSystemStatsStore.systemStats.system.argv = [
+      mockSystemStatsStore.systemStats!.system.argv = [
         '--port',
         '8080',
         '--verbose'
@@ -408,7 +441,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should proceed with fetchReleases when argv is null', async () => {
-      mockSystemStatsStore.systemStats.system.argv = null
+      mockSystemStatsStore.systemStats!.system.argv = null
       mockReleaseService.getReleases.mockResolvedValue([mockRelease])
 
       await store.fetchReleases()
@@ -515,7 +548,7 @@ describe('useReleaseStore', () => {
     })
 
     it('should show popup for latest version', () => {
-      mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0' // Same as release
+      mockSystemStatsStore.systemStats!.system.comfyui_version = '1.2.0' // Same as release
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.Notification.ShowVersionUpdates') return true
         return null
@@ -592,7 +625,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should show popup for latest version', () => {
-        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        mockSystemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
 
@@ -649,7 +682,7 @@ describe('useReleaseStore', () => {
       })
 
       it('should NOT show popup even for latest version', () => {
-        mockSystemStatsStore.systemStats.system.comfyui_version = '1.2.0'
+        mockSystemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
 
         vi.mocked(compare).mockReturnValue(0)
 
