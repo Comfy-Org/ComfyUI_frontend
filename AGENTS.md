@@ -15,14 +15,6 @@ pnpm test:browser     # Playwright E2E
 pnpm knip             # Dead code detection
 ```
 
-## Project Structure
-
-- `src/` — Main application (components, views, stores, composables, services, utils)
-- `browser_tests/` — Playwright E2E tests (`*.spec.ts`)
-- `packages/` — Shared packages (design-system, etc.)
-- `docs/guidance/` — File-type conventions (auto-loaded by glob)
-- `docs/testing/` — Testing patterns and examples
-
 ## Key Conventions
 
 See `docs/guidance/*.md` for file-specific rules. Quick reference:
