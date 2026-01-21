@@ -43,7 +43,7 @@ const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const isEditing = ref(false)
 
 const widgetComponent = computed(() => {
-  const component = getComponent(widget.type, widget.name)
+  const component = getComponent(widget.type)
   return component || WidgetLegacy
 })
 
