@@ -31,7 +31,7 @@ const { class: className, ...restProps } = defineProps<
     </SelectItemText>
 
     <SelectItemIndicator class="flex shrink-0 items-center justify-center">
-      <i class="icon-[lucide--check] text-base-foreground" />
+      <i class="icon-[lucide--check] text-base-foreground" aria-hidden="true" />
     </SelectItemIndicator>
   </SelectItem>
 </template>
