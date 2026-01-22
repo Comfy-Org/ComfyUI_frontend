@@ -5,8 +5,10 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import type { WindowRange } from '../virtualListUtils'
 import {
   applyWindow,
-  calculateSpacerHeights,
-  createInitialWindowRange
+  calculateSpacerHeightsVariable,
+  calculateWindowRangeByHeights,
+  createInitialWindowRange,
+  mergeWindowRange
 } from '../virtualListUtils'
 
 describe('virtualListUtils', () => {
@@ -27,43 +29,6 @@ describe('virtualListUtils', () => {
     })
   })
 
-  describe('calculateSpacerHeights', () => {
-    it('calculates correct spacer heights', () => {
-      const range: WindowRange = { start: 20, end: 80 }
-      const result = calculateSpacerHeights(100, range, 28)
-      expect(result).toEqual({
-        topSpacer: 20 * 28,
-        bottomSpacer: 20 * 28
-      })
-    })
-
-    it('returns zero spacers when window covers all children', () => {
-      const range: WindowRange = { start: 0, end: 50 }
-      const result = calculateSpacerHeights(50, range, 28)
-      expect(result).toEqual({
-        topSpacer: 0,
-        bottomSpacer: 0
-      })
-    })
-
-    it('handles window at start', () => {
-      const range: WindowRange = { start: 0, end: 60 }
-      const result = calculateSpacerHeights(100, range, 28)
-      expect(result).toEqual({
-        topSpacer: 0,
-        bottomSpacer: 40 * 28
-      })
-    })
-
-    it('handles window at end', () => {
-      const range: WindowRange = { start: 40, end: 100 }
-      const result = calculateSpacerHeights(100, range, 28)
-      expect(result).toEqual({
-        topSpacer: 40 * 28,
-        bottomSpacer: 0
-      })
-    })
-  })
   describe('applyWindow', () => {
     const createMockNode = (
       key: string,
@@ -132,6 +97,104 @@ describe('virtualListUtils', () => {
       const parentNode = createMockNode('parent', children)
       const result = applyWindow(parentNode, {}, 60)
       expect(result.children).toHaveLength(30)
+    })
+  })
+
+  describe('mergeWindowRange', () => {
+    it('returns calculated when existing is undefined', () => {
+      const result = mergeWindowRange(
+        undefined,
+        { start: 10, end: 20 },
+        {
+          bufferRows: 2,
+          windowSize: 10,
+          totalChildren: 100
+        }
+      )
+      expect(result).toEqual({ range: { start: 10, end: 20 }, changed: true })
+    })
+
+    it('keeps existing when calculated is within buffer', () => {
+      const result = mergeWindowRange(
+        { start: 10, end: 30 },
+        { start: 11, end: 29 },
+        { bufferRows: 5, windowSize: 10, totalChildren: 100 }
+      )
+      expect(result.changed).toBe(false)
+      expect(result.range).toEqual({ start: 10, end: 30 })
+    })
+
+    it('expands when calculated exceeds existing', () => {
+      const result = mergeWindowRange(
+        { start: 10, end: 30 },
+        { start: 5, end: 40 },
+        { bufferRows: 2, windowSize: 10, totalChildren: 100 }
+      )
+      expect(result.changed).toBe(true)
+      expect(result.range).toEqual({ start: 5, end: 40 })
+    })
+  })
+
+  describe('calculateSpacerHeightsVariable', () => {
+    it('calculates spacers using variable item heights', () => {
+      const items = [10, 20, 30, 40, 50]
+      const range: WindowRange = { start: 1, end: 4 } // visible: 20,30,40
+      const result = calculateSpacerHeightsVariable(items, range, (n) => n)
+      expect(result).toEqual({ topSpacer: 10, bottomSpacer: 50 })
+    })
+  })
+
+  describe('calculateWindowRangeByHeights', () => {
+    it('returns start window when list is below viewport', () => {
+      const items = Array.from({ length: 100 }, (_, i) => i)
+      const range = calculateWindowRangeByHeights({
+        items,
+        listStart: 1000,
+        listEnd: 2000,
+        scrollTop: 0,
+        scrollBottom: 300,
+        bufferHeight: 50,
+        bufferRows: 2,
+        windowSize: 10,
+        getItemStart: (n) => n * 10,
+        getItemHeight: () => 10
+      })
+      expect(range).toEqual({ start: 0, end: 10 })
+    })
+
+    it('returns end window when list is above viewport', () => {
+      const items = Array.from({ length: 100 }, (_, i) => i)
+      const range = calculateWindowRangeByHeights({
+        items,
+        listStart: 0,
+        listEnd: 500,
+        scrollTop: 2000,
+        scrollBottom: 2300,
+        bufferHeight: 50,
+        bufferRows: 2,
+        windowSize: 10,
+        getItemStart: (n) => n * 10,
+        getItemHeight: () => 10
+      })
+      expect(range).toEqual({ start: 90, end: 100 })
+    })
+
+    it('computes window around viewport with buffer and min size', () => {
+      const items = Array.from({ length: 100 }, (_, i) => i)
+      const range = calculateWindowRangeByHeights({
+        items,
+        listStart: 0,
+        listEnd: 2000,
+        scrollTop: 200,
+        scrollBottom: 260,
+        bufferHeight: 0,
+        bufferRows: 2,
+        windowSize: 10,
+        getItemStart: (n) => n * 10,
+        getItemHeight: () => 10
+      })
+      expect(range.end - range.start).toBeGreaterThanOrEqual(10)
+      expect(range.start).toBeLessThanOrEqual(20)
     })
   })
 })

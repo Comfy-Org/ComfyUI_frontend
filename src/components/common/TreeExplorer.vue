@@ -63,7 +63,13 @@ import type {
 } from '@/types/treeExplorerTypes'
 import { combineTrees } from '@/utils/treeUtil'
 import type { WindowRange } from '@/utils/virtualListUtils'
-import { applyWindow, createInitialWindowRange } from '@/utils/virtualListUtils'
+import {
+  applyWindow,
+  calculateSpacerHeightsVariable,
+  calculateWindowRangeByHeights,
+  createInitialWindowRange,
+  mergeWindowRange
+} from '@/utils/virtualListUtils'
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys', {
   required: true
@@ -117,6 +123,9 @@ const viewRows = computed(() =>
 const bufferRows = computed(() => Math.max(1, Math.floor(viewRows.value / 3)))
 const windowSize = computed(() => viewRows.value + bufferRows.value * 2)
 
+const isNodeExpanded = (node: RenderedTreeExplorerNode): boolean =>
+  !!(node.children && !node.leaf && expandedKeys.value?.[node.key])
+
 // Calculate positions for all nodes in the tree
 const calculateNodePositions = (
   root: RenderedTreeExplorerNode
@@ -128,8 +137,8 @@ const calculateNodePositions = (
     nodePositions.set(node.key, currentPos)
     currentPos += DEFAULT_NODE_HEIGHT
 
-    if (node.children && !node.leaf && expandedKeys.value?.[node.key]) {
-      node.children.forEach(traverse)
+    if (isNodeExpanded(node)) {
+      node.children!.forEach(traverse)
     }
   }
 
@@ -138,12 +147,12 @@ const calculateNodePositions = (
 }
 
 const getFullNodeHeight = (node: RenderedTreeExplorerNode): number => {
-  if (!node.children || node.leaf || !expandedKeys.value?.[node.key]) {
+  if (!isNodeExpanded(node)) {
     return DEFAULT_NODE_HEIGHT
   }
   return (
     DEFAULT_NODE_HEIGHT +
-    node.children.reduce((sum, child) => sum + getFullNodeHeight(child), 0)
+    node.children!.reduce((sum, child) => sum + getFullNodeHeight(child), 0)
   )
 }
 
@@ -154,73 +163,36 @@ const calculateNodeWindowRange = (
   scrollBottom: number,
   bufferHeight: number
 ): WindowRange | null => {
-  if (
-    !node.children ||
-    node.leaf ||
-    !expandedKeys.value?.[node.key] ||
-    node.children.length === 0
-  ) {
-    return null
-  }
+  if (!isNodeExpanded(node)) return null
 
-  const totalChildren = node.children.length
+  const children = node.children!
+  if (!children.length) return null
+
   const nodeStart = nodePositions.get(node.key) ?? 0
   const childrenStart = nodeStart + DEFAULT_NODE_HEIGHT
-
-  const lastChild = node.children[totalChildren - 1]
+  const lastChild = children[children.length - 1]
   const lastChildStart = nodePositions.get(lastChild.key) ?? childrenStart
   const childrenEnd = lastChildStart + getFullNodeHeight(lastChild)
 
-  const scrollTopWithBuffer = scrollTop - bufferHeight
-  const scrollBottomWithBuffer = scrollBottom + bufferHeight
-
-  // Quick checks for nodes outside viewport
-  if (childrenEnd < scrollTopWithBuffer) {
-    return {
-      start: Math.max(0, totalChildren - windowSize.value),
-      end: totalChildren
-    }
-  }
-
-  if (childrenStart > scrollBottomWithBuffer) {
-    return { start: 0, end: Math.min(windowSize.value, totalChildren) }
-  }
-
-  // Find visible range by iterating children
-  let startIndex = 0
-  let endIndex = totalChildren
-
-  for (let i = 0; i < totalChildren; i++) {
-    const child = node.children[i]
-    const childStart = nodePositions.get(child.key) ?? 0
-    const childEnd = childStart + getFullNodeHeight(child)
-
-    if (childEnd < scrollTopWithBuffer) {
-      startIndex = i + 1
-    }
-    if (childStart <= scrollBottomWithBuffer) {
-      endIndex = i + 1
-    }
-  }
-
-  // Apply buffer and ensure minimum window size
-  startIndex = Math.max(0, startIndex - bufferRows.value)
-  endIndex = Math.min(
-    totalChildren,
-    Math.max(endIndex + bufferRows.value, startIndex + windowSize.value)
-  )
-
-  return { start: startIndex, end: endIndex }
+  return calculateWindowRangeByHeights({
+    items: children,
+    listStart: childrenStart,
+    listEnd: childrenEnd,
+    scrollTop,
+    scrollBottom,
+    bufferHeight,
+    bufferRows: bufferRows.value,
+    windowSize: windowSize.value,
+    getItemStart: (child) => nodePositions.get(child.key) ?? 0,
+    getItemHeight: getFullNodeHeight
+  })
 }
 
 const getTreeNodeIcon = (node: TreeExplorerNode): string => {
   const customIcon = node.getIcon?.() ?? node.icon
   if (customIcon) return customIcon
-
   if (node.leaf) return 'pi pi-file'
-
-  const isExpanded = expandedKeys.value?.[node.key] ?? false
-  return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
+  return expandedKeys.value?.[node.key] ? 'pi pi-folder-open' : 'pi pi-folder'
 }
 
 const fillNodeInfo = (node: TreeExplorerNode): RenderedTreeExplorerNode => {
@@ -255,46 +227,6 @@ const nodeKeyMap = computed<Record<string, RenderedTreeExplorerNode>>(() => {
   return map
 })
 
-const mergeRanges = (
-  existing: WindowRange | undefined,
-  calculated: WindowRange,
-  totalChildren: number
-): { range: WindowRange; changed: boolean } => {
-  if (!existing) {
-    return { range: calculated, changed: true }
-  }
-
-  const buffer = bufferRows.value
-  const maxWindow = windowSize.value * 2
-
-  const updateStart =
-    calculated.start < existing.start ||
-    (existing.start > 0 && calculated.start > existing.start + buffer)
-  const updateEnd =
-    calculated.end > existing.end ||
-    (existing.end < totalChildren && calculated.end < existing.end - buffer)
-
-  let newStart = updateStart ? calculated.start : existing.start
-  let newEnd = updateEnd ? calculated.end : existing.end
-
-  // Limit maximum window size
-  if (newEnd - newStart > maxWindow) {
-    if (updateStart) {
-      newEnd = Math.min(totalChildren, newStart + maxWindow)
-    } else {
-      newStart = Math.max(0, newEnd - maxWindow)
-    }
-  }
-
-  const changed =
-    updateStart ||
-    updateEnd ||
-    newStart !== existing.start ||
-    newEnd !== existing.end
-
-  return { range: { start: newStart, end: newEnd }, changed }
-}
-
 const updateVisibleParentRanges = () => {
   if (!containerHeight.value || !renderedRoot.value.children) {
     return
@@ -307,16 +239,15 @@ const updateVisibleParentRanges = () => {
   const currentRanges = parentNodeWindowRanges.value
   const newRanges: Record<string, WindowRange> = {}
   let hasChanges = false
+  const mergeOptions = {
+    bufferRows: bufferRows.value,
+    windowSize: windowSize.value
+  }
 
   const processNode = (node: RenderedTreeExplorerNode) => {
-    if (
-      !node.children ||
-      node.leaf ||
-      !expandedKeys.value?.[node.key]
-    ) {
-      return
-    }
+    if (!isNodeExpanded(node)) return
 
+    const children = node.children!
     const calculated = calculateNodeWindowRange(
       node,
       nodePositions,
@@ -326,16 +257,16 @@ const updateVisibleParentRanges = () => {
     )
 
     if (calculated) {
-      const { range, changed } = mergeRanges(
+      const { range, changed } = mergeWindowRange(
         currentRanges[node.key],
         calculated,
-        node.children.length
+        { ...mergeOptions, totalChildren: children.length }
       )
       newRanges[node.key] = range
       if (changed) hasChanges = true
     }
 
-    node.children.forEach(processNode)
+    children.forEach(processNode)
   }
 
   renderedRoot.value.children.forEach(processNode)
@@ -348,54 +279,43 @@ const updateVisibleParentRanges = () => {
   }
 }
 
-watch([scrollY, containerHeight], updateVisibleParentRanges, { immediate: true })
+watch([scrollY, containerHeight], updateVisibleParentRanges, {
+  immediate: true
+})
 watch(expandedKeys, updateVisibleParentRanges, { deep: true })
 
-const displayRoot = computed<RenderedTreeExplorerNode>(() => ({
-  ...renderedRoot.value,
-  children: (renderedRoot.value.children || []).map((node) =>
-    applyWindow(node, parentNodeWindowRanges.value, windowSize.value)
-  )
-}))
-
-const calculateRealSpacerHeights = (
-  originalChildren: RenderedTreeExplorerNode[],
-  range: WindowRange
-): { topSpacer: number; bottomSpacer: number } => {
-  const topSpacer = originalChildren
-    .slice(0, range.start)
-    .reduce((sum, child) => sum + getFullNodeHeight(child), 0)
-
-  const bottomSpacer = originalChildren
-    .slice(range.end)
-    .reduce((sum, child) => sum + getFullNodeHeight(child), 0)
-
-  return { topSpacer, bottomSpacer }
-}
+const displayRoot = computed<RenderedTreeExplorerNode>(() => {
+  const root = renderedRoot.value
+  if (!root.children) return root
+  return {
+    ...root,
+    children: root.children.map((node) =>
+      applyWindow(node, parentNodeWindowRanges.value, windowSize.value)
+    )
+  }
+})
 
 const getNodeChildrenStyle = (node: RenderedTreeExplorerNode) => {
   const baseStyle = { class: 'virtual-node-children' }
 
-  if (
-    !node ||
-    node.leaf ||
-    !expandedKeys.value?.[node.key]
-  ) {
+  if (!node || !isNodeExpanded(node)) {
     return baseStyle
   }
 
   const originalNode = nodeKeyMap.value[node.key]
-  if (!originalNode?.children?.length) {
+  const children = originalNode?.children
+  if (!children?.length) {
     return baseStyle
   }
 
   const range =
     parentNodeWindowRanges.value[node.key] ??
-    createInitialWindowRange(originalNode.children.length, windowSize.value)
+    createInitialWindowRange(children.length, windowSize.value)
 
-  const { topSpacer, bottomSpacer } = calculateRealSpacerHeights(
-    originalNode.children,
-    range
+  const { topSpacer, bottomSpacer } = calculateSpacerHeightsVariable(
+    children,
+    range,
+    getFullNodeHeight
   )
 
   return {
@@ -421,7 +341,7 @@ const onNodeContentClick = async (
       node.handleError
     )()
   }
-  
+
   emit('nodeClick', node, e)
 }
 
@@ -432,6 +352,23 @@ const extraMenuItems = computed(() => {
     ? contextMenuItems(menuTargetNode.value!)
     : contextMenuItems
 })
+
+const wrapCommandWithErrorHandler = (
+  command: (event: MenuItemCommandEvent) => void,
+  { isAsync = false }: { isAsync: boolean }
+):
+  | ((event: MenuItemCommandEvent) => void)
+  | ((event: MenuItemCommandEvent) => Promise<void>) => {
+  return isAsync
+    ? errorHandling.wrapWithErrorHandlingAsync(
+        command as (event: MenuItemCommandEvent) => Promise<void>,
+        menuTargetNode.value?.handleError
+      )
+    : errorHandling.wrapWithErrorHandling(
+        command,
+        menuTargetNode.value?.handleError
+      )
+}
 
 const handleNodeLabelEdit = async (
   node: RenderedTreeExplorerNode,
@@ -498,23 +435,6 @@ const handleContextMenu = (e: MouseEvent, node: RenderedTreeExplorerNode) => {
   }
 }
 
-const wrapCommandWithErrorHandler = (
-  command: (event: MenuItemCommandEvent) => void,
-  { isAsync = false }: { isAsync: boolean }
-):
-  | ((event: MenuItemCommandEvent) => void)
-  | ((event: MenuItemCommandEvent) => Promise<void>) => {
-  return isAsync
-    ? errorHandling.wrapWithErrorHandlingAsync(
-        command as (event: MenuItemCommandEvent) => Promise<void>,
-        menuTargetNode.value?.handleError
-      )
-    : errorHandling.wrapWithErrorHandling(
-        command,
-        menuTargetNode.value?.handleError
-      )
-}
-
 defineExpose({
   /**
    * The command to add a folder to a node via the context menu
@@ -525,7 +445,7 @@ defineExpose({
     if (targetNode) {
       addFolderCommand(targetNode)
     }
-  },
+  }
 })
 </script>
 
