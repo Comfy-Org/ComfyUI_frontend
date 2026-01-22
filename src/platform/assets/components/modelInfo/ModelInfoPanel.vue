@@ -65,7 +65,6 @@
         <Select
           v-if="!isImmutable"
           v-model="selectedModelType"
-          :disabled="isImmutable"
         >
           <SelectTrigger class="w-full">
             <SelectValue
