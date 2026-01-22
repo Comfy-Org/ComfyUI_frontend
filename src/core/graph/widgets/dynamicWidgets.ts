@@ -1,4 +1,5 @@
 import { remove } from 'es-toolkit'
+import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type {
@@ -342,7 +343,9 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   //ensure outputs get updated
   const index = node.inputs.length - 1
   requestAnimationFrame(() => {
-    const input = node.inputs.at(index)!
+    const input = node.inputs[index]
+    if (!input) return
+    node.inputs[index] = shallowReactive(input)
     node.onConnectionsChange?.(
       LiteGraph.INPUT,
       index,
@@ -385,20 +388,32 @@ function addAutogrowGroup(
     ...autogrowOrdinalToName(ordinal, input.name, groupName, node)
   }))
 
-  const newInputs = namedSpecs
-    .filter(
-      (namedSpec) => !node.inputs.some((inp) => inp.name === namedSpec.name)
-    )
-    .map((namedSpec) => {
-      addNodeInput(node, namedSpec)
-      const input = spliceInputs(node, node.inputs.length - 1, 1)[0]
-      if (inputSpecs.length !== 1 || (INLINE_INPUTS && !input.widget))
-        ensureWidgetForInput(node, input)
-      return input
-    })
+  const newInputs = namedSpecs.map((namedSpec) => {
+    addNodeInput(node, namedSpec)
+    const input = spliceInputs(node, node.inputs.length - 1, 1)[0]
+    if (inputSpecs.length !== 1 || (INLINE_INPUTS && !input.widget))
+      ensureWidgetForInput(node, input)
+    return input
+  })
 
+  for (const newInput of newInputs) {
+    for (const existingInput of remove(
+      node.inputs,
+      (inp) => inp.name === newInput.name
+    )) {
+      //NOTE: link.target_slot is updated on spliceInputs call
+      newInput.link ??= existingInput.link
+    }
+  }
+
+  const targetName = autogrowOrdinalToName(
+    ordinal - 1,
+    inputSpecs.at(-1)!.name,
+    groupName,
+    node
+  ).name
   const lastIndex = node.inputs.findLastIndex((inp) =>
-    inp.name.startsWith(groupName)
+    inp.name.startsWith(targetName)
   )
   const insertionIndex = lastIndex === -1 ? node.inputs.length : lastIndex + 1
   spliceInputs(node, insertionIndex, 0, ...newInputs)
@@ -427,13 +442,14 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const lastInput = node.inputs.findLast((inp) =>
-    inp.name.startsWith(groupName)
+    inp.name.startsWith(groupName + '.')
   )
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (
     !lastInput ||
     ordinal == undefined ||
-    ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node)
+    (ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node) &&
+      !app.configuringGraph)
   )
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
@@ -453,6 +469,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       inp.name.lastIndexOf('.') === groupName.length
   )
   const stride = inputSpecs.length
+  if (stride + index >= node.inputs.length) return
   if (groupInputs.length % stride !== 0) {
     console.error('Failed to group multi-input autogrow inputs')
     return
@@ -473,10 +490,24 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
       const curIndex = node.inputs.findIndex((inp) => inp === curInput)
       if (curIndex === -1) throw new Error('missing input')
       link.target_slot = curIndex
+      node.onConnectionsChange?.(
+        LiteGraph.INPUT,
+        curIndex,
+        true,
+        link,
+        curInput
+      )
     }
     const lastInput = groupInputs.at(column - stride)
     if (!lastInput) continue
     lastInput.link = null
+    node.onConnectionsChange?.(
+      LiteGraph.INPUT,
+      node.inputs.length + column - stride,
+      false,
+      null,
+      lastInput
+    )
   }
   const removalChecks = groupInputs.slice((min - 1) * stride)
   let i
@@ -564,5 +595,6 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
     prefix,
     inputSpecs: inputsV2
   }
-  for (let i = 0; i < min; i++) addAutogrowGroup(i, inputSpecV2.name, node)
+  for (let i = 0; i === 0 || i < min; i++)
+    addAutogrowGroup(i, inputSpecV2.name, node)
 }
