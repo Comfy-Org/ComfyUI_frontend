@@ -120,8 +120,12 @@ describe('formatUtil', () => {
       })
 
       it('should handle null and undefined gracefully', () => {
-        expect(getMediaTypeFromFilename(null as any)).toBe('image')
-        expect(getMediaTypeFromFilename(undefined as any)).toBe('image')
+        expect(getMediaTypeFromFilename(null as unknown as string)).toBe(
+          'image'
+        )
+        expect(getMediaTypeFromFilename(undefined as unknown as string)).toBe(
+          'image'
+        )
       })
 
       it('should handle special characters in filenames', () => {
