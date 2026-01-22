@@ -5,7 +5,9 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import type { WindowRange } from './virtualListUtils'
 import {
   applyWindow,
+  calculateChildrenListBounds,
   calculateSpacerHeightsVariable,
+  calculateTreePositionsAndHeights,
   calculateWindowRangeByHeights,
   createInitialWindowRange,
   mergeWindowRange
@@ -234,6 +236,326 @@ describe('virtualListUtils', () => {
       })
       expect(range.end - range.start).toBeGreaterThanOrEqual(10)
       expect(range.start).toBeLessThanOrEqual(20)
+    })
+  })
+
+  describe('calculateTreePositionsAndHeights', () => {
+    type TestNode = { key: string; children?: TestNode[] }
+
+    it('calculates positions and heights for flat tree', () => {
+      const root: { children?: TestNode[] } = {
+        children: [{ key: 'a' }, { key: 'b' }, { key: 'c' }]
+      }
+
+      const { positions, heights } = calculateTreePositionsAndHeights({
+        root,
+        itemHeight: 32,
+        getChildren: (node) => node.children,
+        isExpanded: () => false
+      })
+
+      expect(positions.get('a')).toBe(0)
+      expect(positions.get('b')).toBe(32)
+      expect(positions.get('c')).toBe(64)
+
+      expect(heights.get('a')).toBe(32)
+      expect(heights.get('b')).toBe(32)
+      expect(heights.get('c')).toBe(32)
+    })
+
+    it('calculates positions and heights for nested tree with expanded nodes', () => {
+      const root: { children?: TestNode[] } = {
+        children: [
+          {
+            key: 'parent',
+            children: [{ key: 'child1' }, { key: 'child2' }]
+          }
+        ]
+      }
+
+      const { positions, heights } = calculateTreePositionsAndHeights({
+        root,
+        itemHeight: 32,
+        getChildren: (node) => node.children,
+        isExpanded: (node) => node.key === 'parent'
+      })
+
+      expect(positions.get('parent')).toBe(0)
+      expect(positions.get('child1')).toBe(32)
+      expect(positions.get('child2')).toBe(64)
+
+      expect(heights.get('parent')).toBe(96) // 32 + 32 + 32
+      expect(heights.get('child1')).toBe(32)
+      expect(heights.get('child2')).toBe(32)
+    })
+
+    it('calculates positions and heights for nested tree with collapsed nodes', () => {
+      const root: { children?: TestNode[] } = {
+        children: [
+          {
+            key: 'parent',
+            children: [{ key: 'child1' }, { key: 'child2' }]
+          }
+        ]
+      }
+
+      const { positions, heights } = calculateTreePositionsAndHeights({
+        root,
+        itemHeight: 32,
+        getChildren: (node) => node.children,
+        isExpanded: () => false
+      })
+
+      expect(positions.get('parent')).toBe(0)
+      expect(heights.get('parent')).toBe(32) // Only parent height, children not included
+    })
+
+    it('handles deeply nested tree', () => {
+      const root: { children?: TestNode[] } = {
+        children: [
+          {
+            key: 'level1',
+            children: [
+              {
+                key: 'level2',
+                children: [{ key: 'level3' }]
+              }
+            ]
+          }
+        ]
+      }
+
+      const { positions, heights } = calculateTreePositionsAndHeights({
+        root,
+        itemHeight: 32,
+        getChildren: (node) => node.children,
+        isExpanded: () => true
+      })
+
+      expect(positions.get('level1')).toBe(0)
+      expect(positions.get('level2')).toBe(32)
+      expect(positions.get('level3')).toBe(64)
+
+      expect(heights.get('level1')).toBe(96) // 32 + 32 + 32
+      expect(heights.get('level2')).toBe(64) // 32 + 32
+      expect(heights.get('level3')).toBe(32)
+    })
+
+    it('handles empty tree', () => {
+      const root: { children?: TestNode[] } = { children: [] }
+
+      const { positions, heights } = calculateTreePositionsAndHeights({
+        root,
+        itemHeight: 32,
+        getChildren: (node) => node.children,
+        isExpanded: () => false
+      })
+
+      expect(positions.size).toBe(0)
+      expect(heights.size).toBe(0)
+    })
+
+    it('handles root without children', () => {
+      const root: { children?: TestNode[] } = {}
+
+      const { positions, heights } = calculateTreePositionsAndHeights({
+        root,
+        itemHeight: 32,
+        getChildren: (node) => node.children,
+        isExpanded: () => false
+      })
+
+      expect(positions.size).toBe(0)
+      expect(heights.size).toBe(0)
+    })
+
+    it('handles mixed expanded and collapsed nodes', () => {
+      const root: { children?: TestNode[] } = {
+        children: [
+          {
+            key: 'expanded',
+            children: [{ key: 'child1' }, { key: 'child2' }]
+          },
+          {
+            key: 'collapsed',
+            children: [{ key: 'child3' }]
+          }
+        ]
+      }
+
+      const { positions, heights } = calculateTreePositionsAndHeights({
+        root,
+        itemHeight: 32,
+        getChildren: (node) => node.children,
+        isExpanded: (node) => node.key === 'expanded'
+      })
+
+      expect(positions.get('expanded')).toBe(0)
+      expect(positions.get('child1')).toBe(32)
+      expect(positions.get('child2')).toBe(64)
+      expect(positions.get('collapsed')).toBe(96)
+
+      expect(heights.get('expanded')).toBe(96) // 32 + 32 + 32
+      expect(heights.get('collapsed')).toBe(32) // Only collapsed node height
+    })
+  })
+
+  describe('calculateChildrenListBounds', () => {
+    type TestNode = { key: string }
+
+    it('calculates bounds for node with children', () => {
+      const node: TestNode = { key: 'parent' }
+      const children: TestNode[] = [
+        { key: 'child1' },
+        { key: 'child2' },
+        { key: 'child3' }
+      ]
+
+      const nodePositions = new Map<string, number>([
+        ['parent', 0],
+        ['child1', 32],
+        ['child2', 64],
+        ['child3', 96]
+      ])
+
+      const nodeHeights = new Map<string, number>([
+        ['parent', 128],
+        ['child1', 32],
+        ['child2', 32],
+        ['child3', 32]
+      ])
+
+      const result = calculateChildrenListBounds({
+        node,
+        children,
+        nodePositions,
+        nodeHeights,
+        itemHeight: 32
+      })
+
+      expect(result.listStart).toBe(32) // parent position (0) + itemHeight (32)
+      expect(result.listEnd).toBe(128) // child3 position (96) + child3 height (32)
+    })
+
+    it('handles empty children array', () => {
+      const node: TestNode = { key: 'parent' }
+      const children: TestNode[] = []
+
+      const nodePositions = new Map<string, number>([['parent', 100]])
+      const nodeHeights = new Map<string, number>([['parent', 32]])
+
+      const result = calculateChildrenListBounds({
+        node,
+        children,
+        nodePositions,
+        nodeHeights,
+        itemHeight: 32
+      })
+
+      expect(result.listStart).toBe(132) // parent position (100) + itemHeight (32)
+      expect(result.listEnd).toBe(132) // Same as listStart when no children
+    })
+
+    it('uses default values when node position is missing', () => {
+      const node: TestNode = { key: 'parent' }
+      const children: TestNode[] = [{ key: 'child1' }]
+
+      const nodePositions = new Map<string, number>()
+      const nodeHeights = new Map<string, number>([['child1', 32]])
+
+      const result = calculateChildrenListBounds({
+        node,
+        children,
+        nodePositions,
+        nodeHeights,
+        itemHeight: 32
+      })
+
+      expect(result.listStart).toBe(32) // default node position (0) + itemHeight (32)
+      expect(result.listEnd).toBe(64) // default child position (32) + child height (32)
+    })
+
+    it('uses default values when child position or height is missing', () => {
+      const node: TestNode = { key: 'parent' }
+      const children: TestNode[] = [{ key: 'child1' }]
+
+      const nodePositions = new Map<string, number>([
+        ['parent', 0]
+        // child1 position missing
+      ])
+      const nodeHeights = new Map<string, number>()
+      // child1 height missing
+
+      const result = calculateChildrenListBounds({
+        node,
+        children,
+        nodePositions,
+        nodeHeights,
+        itemHeight: 32
+      })
+
+      expect(result.listStart).toBe(32) // parent position (0) + itemHeight (32)
+      expect(result.listEnd).toBe(64) // default child position (32) + default height (32)
+    })
+
+    it('handles single child', () => {
+      const node: TestNode = { key: 'parent' }
+      const children: TestNode[] = [{ key: 'child1' }]
+
+      const nodePositions = new Map<string, number>([
+        ['parent', 0],
+        ['child1', 32]
+      ])
+
+      const nodeHeights = new Map<string, number>([
+        ['parent', 64],
+        ['child1', 32]
+      ])
+
+      const result = calculateChildrenListBounds({
+        node,
+        children,
+        nodePositions,
+        nodeHeights,
+        itemHeight: 32
+      })
+
+      expect(result.listStart).toBe(32)
+      expect(result.listEnd).toBe(64)
+    })
+
+    it('handles children with variable heights', () => {
+      const node: TestNode = { key: 'parent' }
+      const children: TestNode[] = [
+        { key: 'child1' },
+        { key: 'child2' },
+        { key: 'child3' }
+      ]
+
+      const nodePositions = new Map<string, number>([
+        ['parent', 0],
+        ['child1', 32],
+        ['child2', 64],
+        ['child3', 96]
+      ])
+
+      const nodeHeights = new Map<string, number>([
+        ['parent', 160],
+        ['child1', 32],
+        ['child2', 64], // Larger height
+        ['child3', 32]
+      ])
+
+      const result = calculateChildrenListBounds({
+        node,
+        children,
+        nodePositions,
+        nodeHeights,
+        itemHeight: 32
+      })
+
+      expect(result.listStart).toBe(32)
+      expect(result.listEnd).toBe(128) // child3 position (96) + child3 height (32)
     })
   })
 })

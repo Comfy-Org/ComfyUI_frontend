@@ -65,7 +65,9 @@ import { combineTrees } from '@/utils/treeUtil'
 import type { WindowRange } from '@/utils/virtualListUtils'
 import {
   applyWindow,
+  calculateChildrenListBounds,
   calculateSpacerHeightsVariable,
+  calculateTreePositionsAndHeights,
   calculateWindowRangeByHeights,
   createInitialWindowRange,
   mergeWindowRange
@@ -76,7 +78,6 @@ const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys', {
 })
 provide(InjectKeyExpandedKeys, expandedKeys)
 const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
-// Tracks whether the caller has set the selectionKeys model.
 const storeSelectionKeys = selectionKeys.value !== undefined
 
 const props = defineProps<{
@@ -108,6 +109,7 @@ const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const menuTargetNode = ref<RenderedTreeExplorerNode | null>(null)
 const renameEditingNode = ref<RenderedTreeExplorerNode | null>(null)
 const parentNodeWindowRanges = ref<Record<string, WindowRange>>({})
+const nodeHeightsCache = ref<Map<string, number>>(new Map())
 
 const { height: containerHeight } = useElementSize(treeContainerRef)
 const { y: scrollY } = useScroll(treeContainerRef, {
@@ -126,39 +128,21 @@ const windowSize = computed(() => viewRows.value + bufferRows.value * 2)
 const isNodeExpanded = (node: RenderedTreeExplorerNode): boolean =>
   !!(node.children && !node.leaf && expandedKeys.value?.[node.key])
 
-// Calculate positions for all nodes in the tree
-const calculateNodePositions = (
+const calculateNodePositionsAndHeights = (
   root: RenderedTreeExplorerNode
-): Map<string, number> => {
-  const nodePositions = new Map<string, number>()
-  let currentPos = 0
-
-  const traverse = (node: RenderedTreeExplorerNode) => {
-    nodePositions.set(node.key, currentPos)
-    currentPos += DEFAULT_NODE_HEIGHT
-
-    if (isNodeExpanded(node)) {
-      node.children!.forEach(traverse)
-    }
-  }
-
-  root.children?.forEach(traverse)
-  return nodePositions
-}
-
-const getFullNodeHeight = (node: RenderedTreeExplorerNode): number => {
-  if (!isNodeExpanded(node)) {
-    return DEFAULT_NODE_HEIGHT
-  }
-  return (
-    DEFAULT_NODE_HEIGHT +
-    node.children!.reduce((sum, child) => sum + getFullNodeHeight(child), 0)
-  )
+): { positions: Map<string, number>; heights: Map<string, number> } => {
+  return calculateTreePositionsAndHeights({
+    root,
+    itemHeight: DEFAULT_NODE_HEIGHT,
+    getChildren: (node) => node.children,
+    isExpanded: isNodeExpanded
+  })
 }
 
 const calculateNodeWindowRange = (
   node: RenderedTreeExplorerNode,
   nodePositions: Map<string, number>,
+  nodeHeights: Map<string, number>,
   scrollTop: number,
   scrollBottom: number,
   bufferHeight: number
@@ -168,23 +152,30 @@ const calculateNodeWindowRange = (
   const children = node.children!
   if (!children.length) return null
 
-  const nodeStart = nodePositions.get(node.key) ?? 0
-  const childrenStart = nodeStart + DEFAULT_NODE_HEIGHT
-  const lastChild = children[children.length - 1]
-  const lastChildStart = nodePositions.get(lastChild.key) ?? childrenStart
-  const childrenEnd = lastChildStart + getFullNodeHeight(lastChild)
+  const { listStart, listEnd } = calculateChildrenListBounds({
+    node,
+    children,
+    nodePositions,
+    nodeHeights,
+    itemHeight: DEFAULT_NODE_HEIGHT
+  })
+
+  const getItemStart = (child: RenderedTreeExplorerNode) =>
+    nodePositions.get(child.key) ?? 0
+  const getItemHeight = (child: RenderedTreeExplorerNode) =>
+    nodeHeights.get(child.key) ?? DEFAULT_NODE_HEIGHT
 
   return calculateWindowRangeByHeights({
     items: children,
-    listStart: childrenStart,
-    listEnd: childrenEnd,
+    listStart,
+    listEnd,
     scrollTop,
     scrollBottom,
     bufferHeight,
     bufferRows: bufferRows.value,
     windowSize: windowSize.value,
-    getItemStart: (child) => nodePositions.get(child.key) ?? 0,
-    getItemHeight: getFullNodeHeight
+    getItemStart,
+    getItemHeight
   })
 }
 
@@ -235,7 +226,10 @@ const updateVisibleParentRanges = () => {
   const scrollTop = scrollY.value
   const scrollBottom = scrollTop + containerHeight.value
   const bufferHeight = bufferRows.value * DEFAULT_NODE_HEIGHT
-  const nodePositions = calculateNodePositions(renderedRoot.value)
+  const { positions: nodePositions, heights: nodeHeights } =
+    calculateNodePositionsAndHeights(renderedRoot.value)
+  nodeHeightsCache.value = nodeHeights
+
   const currentRanges = parentNodeWindowRanges.value
   const newRanges: Record<string, WindowRange> = {}
   let hasChanges = false
@@ -251,30 +245,30 @@ const updateVisibleParentRanges = () => {
     const calculated = calculateNodeWindowRange(
       node,
       nodePositions,
+      nodeHeights,
       scrollTop,
       scrollBottom,
       bufferHeight
     )
 
-    if (calculated) {
-      const { range, changed } = mergeWindowRange(
-        currentRanges[node.key],
-        calculated,
-        { ...mergeOptions, totalChildren: children.length }
-      )
-      newRanges[node.key] = range
-      if (changed) hasChanges = true
-    }
+    if (!calculated) return
+
+    const { range, changed } = mergeWindowRange(
+      currentRanges[node.key],
+      calculated,
+      { ...mergeOptions, totalChildren: children.length }
+    )
+    newRanges[node.key] = range
+    if (changed) hasChanges = true
 
     children.forEach(processNode)
   }
 
   renderedRoot.value.children.forEach(processNode)
 
-  if (
-    hasChanges ||
+  const keysChanged =
     Object.keys(newRanges).length !== Object.keys(currentRanges).length
-  ) {
+  if (hasChanges || keysChanged) {
     parentNodeWindowRanges.value = newRanges
   }
 }
@@ -282,6 +276,7 @@ const updateVisibleParentRanges = () => {
 watch([scrollY, containerHeight], updateVisibleParentRanges, {
   immediate: true
 })
+watch(renderedRoot, updateVisibleParentRanges)
 watch(expandedKeys, updateVisibleParentRanges, { deep: true })
 
 const displayRoot = computed<RenderedTreeExplorerNode>(() => {
@@ -312,10 +307,12 @@ const getNodeChildrenStyle = (node: RenderedTreeExplorerNode) => {
     parentNodeWindowRanges.value[node.key] ??
     createInitialWindowRange(children.length, windowSize.value)
 
+  const getHeight = (child: RenderedTreeExplorerNode) =>
+    nodeHeightsCache.value.get(child.key) ?? DEFAULT_NODE_HEIGHT
   const { topSpacer, bottomSpacer } = calculateSpacerHeightsVariable(
     children,
     range,
-    getFullNodeHeight
+    getHeight
   )
 
   return {
@@ -346,10 +343,12 @@ const onNodeContentClick = async (
 }
 
 const extraMenuItems = computed(() => {
-  const contextMenuItems = menuTargetNode.value?.contextMenuItems
+  const targetNode = menuTargetNode.value
+  if (!targetNode) return []
+  const contextMenuItems = targetNode.contextMenuItems
   if (!contextMenuItems) return []
   return typeof contextMenuItems === 'function'
-    ? contextMenuItems(menuTargetNode.value!)
+    ? contextMenuItems(targetNode)
     : contextMenuItems
 })
 

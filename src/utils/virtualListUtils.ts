@@ -168,3 +168,81 @@ export function createInitialWindowRange(
     end: Math.min(windowSize, totalChildren)
   }
 }
+
+/**
+ * Calculate positions and heights for tree nodes in a single traversal
+ * @param root - Root node with children
+ * @param options - Configuration options
+ * @returns Maps of node positions and heights
+ */
+export function calculateTreePositionsAndHeights<T extends { key: string }>({
+  root,
+  itemHeight,
+  getChildren,
+  isExpanded
+}: {
+  root: { children?: T[] }
+  itemHeight: number
+  getChildren: (node: T) => T[] | undefined
+  isExpanded: (node: T) => boolean
+}): { positions: Map<string, number>; heights: Map<string, number> } {
+  const nodePositions = new Map<string, number>()
+  const nodeHeights = new Map<string, number>()
+  let currentPos = 0
+
+  const traverse = (node: T): number => {
+    nodePositions.set(node.key, currentPos)
+    currentPos += itemHeight
+
+    let nodeHeight = itemHeight
+    const children = getChildren(node)
+    if (isExpanded(node) && children) {
+      for (const child of children) {
+        nodeHeight += traverse(child)
+      }
+    }
+
+    nodeHeights.set(node.key, nodeHeight)
+    return nodeHeight
+  }
+
+  root.children?.forEach(traverse)
+  return { positions: nodePositions, heights: nodeHeights }
+}
+
+/**
+ * Calculate list start and end positions for a parent node's children
+ * @param node - Parent node
+ * @param children - Children array
+ * @param nodePositions - Map of node positions
+ * @param nodeHeights - Map of node heights
+ * @param itemHeight - Height of a single item
+ * @returns Object with listStart and listEnd positions
+ */
+export function calculateChildrenListBounds<T extends { key: string }>({
+  node,
+  children,
+  nodePositions,
+  nodeHeights,
+  itemHeight
+}: {
+  node: T
+  children: T[]
+  nodePositions: Map<string, number>
+  nodeHeights: Map<string, number>
+  itemHeight: number
+}): { listStart: number; listEnd: number } {
+  const nodeStart = nodePositions.get(node.key) ?? 0
+  const listStart = nodeStart + itemHeight
+
+  if (children.length === 0) {
+    return { listStart, listEnd: listStart }
+  }
+
+  const lastChild = children.at(-1)!
+  const lastChildStart = nodePositions.get(lastChild.key) ?? listStart
+  const lastChildHeight = nodeHeights.get(lastChild.key) ?? itemHeight
+  const listEnd = lastChildStart + lastChildHeight
+
+  return { listStart, listEnd }
+}
