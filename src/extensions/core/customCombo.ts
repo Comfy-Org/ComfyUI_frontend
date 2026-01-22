@@ -98,6 +98,19 @@ function onNodeCreated(this: LGraphNode) {
       }
     })
   }
+  const widgets = this.widgets!
+  widgets.push({
+    name: 'index',
+    type: 'hidden',
+    get value() {
+      return widgets.slice(2).findIndex((w) => w.value === comboWidget.value)
+    },
+    set value(_) {},
+    draw: () => undefined,
+    computeSize: () => [0, -4],
+    options: { hidden: true },
+    y: 0
+  })
   addOption(this)
 }
 

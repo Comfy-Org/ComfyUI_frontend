@@ -76,6 +76,7 @@ function getModuleName(id: string): string {
 export function comfyAPIPlugin(isDev: boolean): Plugin {
   return {
     name: 'comfy-api-plugin',
+    apply: 'build',
     transform(code: string, id: string) {
       if (isDev) return null
 

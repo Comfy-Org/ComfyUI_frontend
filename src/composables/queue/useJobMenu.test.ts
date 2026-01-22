@@ -5,6 +5,10 @@ import type { Ref } from 'vue'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false
+}))
+
 const downloadFileMock = vi.fn()
 vi.mock('@/base/common/downloadUtil', () => ({
   downloadFile: (url: string, filename?: string) => {
@@ -60,7 +64,8 @@ const workflowStoreMock = {
   createTemporary: vi.fn()
 }
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => workflowStoreMock
+  useWorkflowStore: () => workflowStoreMock,
+  ComfyWorkflow: class {}
 }))
 
 const interruptMock = vi.fn()
@@ -109,6 +114,13 @@ const queueStoreMock = {
 }
 vi.mock('@/stores/queueStore', () => ({
   useQueueStore: () => queueStoreMock
+}))
+
+const executionStoreMock = {
+  clearInitializationByPromptId: vi.fn()
+}
+vi.mock('@/stores/executionStore', () => ({
+  useExecutionStore: () => executionStoreMock
 }))
 
 const getJobWorkflowMock = vi.fn()

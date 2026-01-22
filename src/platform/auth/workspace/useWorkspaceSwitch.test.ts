@@ -1,22 +1,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
-import type { WorkspaceWithRole } from '@/platform/auth/workspace/workspaceTypes'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 const mockSwitchWorkspace = vi.hoisted(() => vi.fn())
-const mockCurrentWorkspace = vi.hoisted(() => ({
+const mockActiveWorkspace = vi.hoisted(() => ({
   value: null as WorkspaceWithRole | null
 }))
 
-vi.mock('@/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
     switchWorkspace: mockSwitchWorkspace
   })
 }))
 
 vi.mock('pinia', () => ({
   storeToRefs: () => ({
-    currentWorkspace: mockCurrentWorkspace
+    activeWorkspace: mockActiveWorkspace
   })
 }))
 
@@ -46,19 +46,16 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const mockReload = vi.fn()
-
 describe('useWorkspaceSwitch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockCurrentWorkspace.value = {
+    mockActiveWorkspace.value = {
       id: 'workspace-1',
       name: 'Test Workspace',
       type: 'personal',
       role: 'owner'
     }
     mockModifiedWorkflows.length = 0
-    vi.stubGlobal('location', { reload: mockReload })
   })
 
   afterEach(() => {
@@ -109,7 +106,6 @@ describe('useWorkspaceSwitch', () => {
       expect(result).toBe(true)
       expect(mockConfirm).not.toHaveBeenCalled()
       expect(mockSwitchWorkspace).toHaveBeenCalledWith('workspace-2')
-      expect(mockReload).toHaveBeenCalled()
     })
 
     it('shows confirmation dialog when there are unsaved changes', async () => {
@@ -136,10 +132,9 @@ describe('useWorkspaceSwitch', () => {
 
       expect(result).toBe(false)
       expect(mockSwitchWorkspace).not.toHaveBeenCalled()
-      expect(mockReload).not.toHaveBeenCalled()
     })
 
-    it('calls switchWorkspace and reloads page after user confirms', async () => {
+    it('calls switchWorkspace after user confirms', async () => {
       mockModifiedWorkflows.push({ isModified: true })
       mockConfirm.mockResolvedValue(true)
       mockSwitchWorkspace.mockResolvedValue(undefined)
@@ -149,7 +144,6 @@ describe('useWorkspaceSwitch', () => {
 
       expect(result).toBe(true)
       expect(mockSwitchWorkspace).toHaveBeenCalledWith('workspace-2')
-      expect(mockReload).toHaveBeenCalled()
     })
 
     it('returns false if switchWorkspace throws an error', async () => {
@@ -160,7 +154,6 @@ describe('useWorkspaceSwitch', () => {
       const result = await switchWithConfirmation('workspace-2')
 
       expect(result).toBe(false)
-      expect(mockReload).not.toHaveBeenCalled()
     })
   })
 })

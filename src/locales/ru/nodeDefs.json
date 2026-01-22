@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Редактирование изображений с помощью новейшей модели Bria",
+    "display_name": "Bria Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "Большее значение заставляет изображение точнее следовать промпту."
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "mask": {
+        "name": "маска",
+        "tooltip": "Если не указано, редактирование применяется ко всему изображению."
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "модерация_контента_промпта"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "модерация_визуального_входа"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "модерация_визуального_выхода"
+      },
+      "negative_prompt": {
+        "name": "негативный_промпт"
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Инструкция для редактирования изображения"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "steps": {
+        "name": "шаги"
+      },
+      "structured_prompt": {
+        "name": "структурированный_промпт",
+        "tooltip": "Строка, содержащая структурированный промпт для редактирования в формате JSON. Используйте вместо обычного промпта для точного, программного управления."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "структурированный_промпт",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Создать видео с использованием промпта и первого и последнего кадров.",
     "display_name": "ByteDance - Преобразование первого-последнего кадра в видео",
@@ -13450,6 +13512,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "автоматическое_изменение_размера_изображений"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "изображение1"
+      },
+      "image2": {
+        "name": "изображение2"
+      },
+      "image3": {
+        "name": "изображение3"
+      },
+      "image_encoder": {
+        "name": "кодировщик_изображения"
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Преобразовать текст в нижний регистр",
     "inputs": {
@@ -16133,6 +16229,43 @@
       },
       "3": {
         "name": "обрезанный_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Быстрый и качественный апскейлер видео, повышающий разрешение и восстанавливающий чёткость для низкокачественных или размытых кадров.",
+    "display_name": "FlashVSR Видео Апскейл",
+    "inputs": {
+      "target_resolution": {
+        "name": "целевое_разрешение"
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Увеличьте разрешение и качество изображения, апскейл фотографий до 4K или 8K для чётких и детализированных результатов.",
+    "display_name": "WaveSpeed Апскейл Изображения",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "целевое_разрешение"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

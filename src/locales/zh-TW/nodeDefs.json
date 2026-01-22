@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "使用 Bria 最新模型編輯圖像",
+    "display_name": "Bria 圖像編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "guidance_scale": {
+        "name": "指引強度",
+        "tooltip": "數值越高，圖像越貼合提示詞。"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "若未設定，編輯將套用至整張圖像。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "審核",
+        "tooltip": "審核設定"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "提示詞內容審核"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "輸入圖像審核"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "輸出圖像審核"
+      },
+      "negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "編輯圖像的指令"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "steps": {
+        "name": "步數"
+      },
+      "structured_prompt": {
+        "name": "結構化提示詞",
+        "tooltip": "包含結構化編輯提示的 JSON 格式字串。若需精確、程式化控制，請使用此項取代一般提示詞。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "結構化提示詞",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "使用提示詞和首尾幀生成影片。",
     "display_name": "字節跳動首尾幀轉影片",
@@ -13450,6 +13512,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "自動調整圖像尺寸"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "圖像1"
+      },
+      "image2": {
+        "name": "圖像2"
+      },
+      "image3": {
+        "name": "圖像3"
+      },
+      "image_encoder": {
+        "name": "圖像編碼器"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "轉換為小寫",
     "inputs": {
@@ -16133,6 +16229,43 @@
       },
       "3": {
         "name": "裁剪潛空間",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "快速高品質影片升頻器，提升解析度並恢復低解析度或模糊影片的清晰度。",
+    "display_name": "FlashVSR 影片升頻",
+    "inputs": {
+      "target_resolution": {
+        "name": "目標解析度"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "提升圖像解析度與品質，將照片升頻至 4K 或 8K，獲得銳利細緻的效果。",
+    "display_name": "WaveSpeed 圖像升頻",
+    "inputs": {
+      "image": {
+        "name": "圖像"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "目標解析度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

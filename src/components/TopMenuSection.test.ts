@@ -1,12 +1,17 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import type {
+  JobListItem,
+  JobStatus
+} from '@/platform/remote/comfyui/jobs/jobTypes'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { isElectron } from '@/utils/envUtil'
 
 const mockData = vi.hoisted(() => ({ isLoggedIn: false }))
@@ -36,7 +41,8 @@ function createWrapper() {
         sideToolbar: {
           queueProgressOverlay: {
             viewJobHistory: 'View job history',
-            expandCollapsedQueue: 'Expand collapsed queue'
+            expandCollapsedQueue: 'Expand collapsed queue',
+            activeJobsShort: '{count} active | {count} active'
           }
         }
       }
@@ -57,6 +63,19 @@ function createWrapper() {
       }
     }
   })
+}
+
+function createJob(id: string, status: JobStatus): JobListItem {
+  return {
+    id,
+    status,
+    create_time: 0,
+    priority: 0
+  }
+}
+
+function createTask(id: string, status: JobStatus): TaskItemImpl {
+  return new TaskItemImpl(createJob(id, status))
 }
 
 describe('TopMenuSection', () => {
@@ -99,5 +118,20 @@ describe('TopMenuSection', () => {
         })
       })
     })
+  })
+
+  it('shows the active jobs label with the current count', async () => {
+    const wrapper = createWrapper()
+    const queueStore = useQueueStore()
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+    queueStore.runningTasks = [
+      createTask('running-1', 'in_progress'),
+      createTask('running-2', 'in_progress')
+    ]
+
+    await nextTick()
+
+    const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
+    expect(queueButton.text()).toContain('3 active')
   })
 })

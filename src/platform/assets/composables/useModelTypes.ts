@@ -46,9 +46,10 @@ const DISALLOWED_MODEL_TYPES = ['nlf'] as const
 export const useModelTypes = createSharedComposable(() => {
   const {
     state: modelTypes,
+    isReady,
     isLoading,
     error,
-    execute: fetchModelTypes
+    execute
   } = useAsyncState(
     async (): Promise<ModelTypeOption[]> => {
       const response = await api.getModelFolders()
@@ -73,6 +74,11 @@ export const useModelTypes = createSharedComposable(() => {
       }
     }
   )
+
+  async function fetchModelTypes() {
+    if (isReady.value || isLoading.value) return
+    await execute()
+  }
 
   return {
     modelTypes,

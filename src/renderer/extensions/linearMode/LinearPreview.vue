@@ -45,7 +45,7 @@ const timeOptions = {
   second: 'numeric'
 } as const
 
-function formatTime(time: string) {
+function formatTime(time?: string) {
   if (!time) return ''
   const date = new Date(time)
   return `${d(date, dateOptions)} | ${d(date, timeOptions)}`

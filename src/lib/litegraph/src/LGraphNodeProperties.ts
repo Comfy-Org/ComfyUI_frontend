@@ -13,7 +13,9 @@ const DEFAULT_TRACKED_PROPERTIES: string[] = [
   'flags.pinned',
   'mode',
   'color',
-  'bgcolor'
+  'bgcolor',
+  'shape',
+  'showAdvanced'
 ]
 /**
  * Manages node properties with optional change tracking and instrumentation.

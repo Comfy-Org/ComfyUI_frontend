@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "ویرایش تصاویر با استفاده از جدیدترین مدل Bria",
+    "display_name": "ویرایش تصویر Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "guidance_scale": {
+        "name": "مقیاس راهنما",
+        "tooltip": "مقدار بالاتر باعث می‌شود تصویر بیشتر از پرامپت پیروی کند."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "mask": {
+        "name": "ماسک",
+        "tooltip": "در صورت عدم انتخاب، ویرایش بر کل تصویر اعمال می‌شود."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "moderation": {
+        "name": "تنظیمات نظارت",
+        "tooltip": "تنظیمات نظارت"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "نظارت بر محتوای پرامپت"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "نظارت بر ورودی تصویری"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "نظارت بر خروجی تصویری"
+      },
+      "negative_prompt": {
+        "name": "پرامپت منفی"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "دستورالعمل برای ویرایش تصویر"
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "steps": {
+        "name": "گام‌ها"
+      },
+      "structured_prompt": {
+        "name": "پرامپت ساختاریافته",
+        "tooltip": "یک رشته شامل پرامپت ویرایش ساختاریافته در قالب JSON. برای کنترل دقیق و برنامه‌نویسی شده، به جای پرامپت معمولی از این گزینه استفاده کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "پرامپت ساختاریافته",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از پرامپت و اولین و آخرین فریم.",
     "display_name": "تبدیل اولین و آخرین فریم به ویدیو ByteDance",
@@ -13477,6 +13539,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "تغییر اندازه خودکار تصاویر"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "تصویر ۱"
+      },
+      "image2": {
+        "name": "تصویر ۲"
+      },
+      "image3": {
+        "name": "تصویر ۳"
+      },
+      "image_encoder": {
+        "name": "رمزگذار تصویر"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "تبدیل متن به حروف کوچک",
     "inputs": {
@@ -16164,6 +16260,43 @@
       },
       "3": {
         "name": "trim_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "افزایش‌دهنده سریع و با کیفیت ویدیو که وضوح را افزایش داده و شفافیت را برای ویدیوهای کم‌کیفیت یا تار بازمی‌گرداند.",
+    "display_name": "افزایش کیفیت ویدیو FlashVSR",
+    "inputs": {
+      "target_resolution": {
+        "name": "وضوح هدف"
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "افزایش وضوح و کیفیت تصویر، ارتقاء عکس‌ها به ۴K یا ۸K برای نتایج شفاف و با جزئیات.",
+    "display_name": "افزایش کیفیت تصویر WaveSpeed",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "target_resolution": {
+        "name": "وضوح هدف"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

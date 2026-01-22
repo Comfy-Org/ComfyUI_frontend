@@ -75,7 +75,9 @@ useExtensionService().registerExtension({
 
         for (const previewWidget of previewWidgets) {
           const text = message.text ?? ''
-          previewWidget.value = Array.isArray(text) ? (text[0] ?? '') : text
+          previewWidget.value = Array.isArray(text)
+            ? (text?.join('\n\n') ?? '')
+            : text
         }
       }
     }

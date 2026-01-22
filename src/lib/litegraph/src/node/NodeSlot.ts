@@ -30,7 +30,7 @@ export interface IDrawOptions {
   highlight?: boolean
 }
 
-const ROTATION_OFFSET = -Math.PI / 2
+const ROTATION_OFFSET = -Math.PI
 
 /** Shared base class for {@link LGraphNode} input and output slots. */
 export abstract class NodeSlot extends SlotBase implements INodeSlot {

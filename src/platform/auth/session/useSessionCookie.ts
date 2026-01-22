@@ -1,5 +1,5 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
@@ -19,12 +19,13 @@ export const useSessionCookie = () => {
   const createSession = async (): Promise<void> => {
     if (!isCloud) return
 
+    const { flags } = useFeatureFlags()
     try {
       const authStore = useFirebaseAuthStore()
 
       let authHeader: Record<string, string>
 
-      if (remoteConfig.value.team_workspaces_enabled) {
+      if (flags.teamWorkspacesEnabled) {
         const firebaseToken = await authStore.getIdToken()
         if (!firebaseToken) {
           console.warn(

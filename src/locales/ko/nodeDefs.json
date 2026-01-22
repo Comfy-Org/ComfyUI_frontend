@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Bria 최신 모델을 사용하여 이미지를 편집합니다",
+    "display_name": "Bria 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "guidance_scale": {
+        "name": "가이던스 스케일",
+        "tooltip": "값이 높을수록 프롬프트를 더 엄격하게 따릅니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "생략하면 전체 이미지에 편집이 적용됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "모더레이션",
+        "tooltip": "모더레이션 설정"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "프롬프트 콘텐츠 모더레이션"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "비주얼 입력 모더레이션"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "비주얼 출력 모더레이션"
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 편집을 위한 지시문"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "steps": {
+        "name": "스텝"
+      },
+      "structured_prompt": {
+        "name": "구조화된 프롬프트",
+        "tooltip": "JSON 형식의 구조화된 편집 프롬프트 문자열입니다. 더 정확하고 프로그래밍적으로 제어하려면 일반 프롬프트 대신 사용하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "구조화된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "프롬프트와 첫 번째 및 마지막 프레임을 사용하여 비디오를 생성합니다.",
     "display_name": "ByteDance 첫-마지막-프레임에서 비디오 생성",
@@ -13450,6 +13512,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "이미지 자동 크기 조정"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "이미지1"
+      },
+      "image2": {
+        "name": "이미지2"
+      },
+      "image3": {
+        "name": "이미지3"
+      },
+      "image_encoder": {
+        "name": "이미지 인코더"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "텍스트 소문자 변환",
     "inputs": {
@@ -16133,6 +16229,43 @@
       },
       "3": {
         "name": "잘린 잠재 비디오",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "저해상도 또는 흐릿한 영상의 해상도를 높이고 선명도를 복원하는 빠르고 고품질의 비디오 업스케일러입니다.",
+    "display_name": "FlashVSR 비디오 업스케일",
+    "inputs": {
+      "target_resolution": {
+        "name": "목표 해상도"
+      },
+      "video": {
+        "name": "비디오"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "이미지 해상도와 품질을 높여 사진을 4K 또는 8K로 업스케일하여 선명하고 디테일한 결과를 제공합니다.",
+    "display_name": "WaveSpeed 이미지 업스케일",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "목표 해상도"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

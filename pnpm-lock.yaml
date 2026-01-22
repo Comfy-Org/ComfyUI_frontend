@@ -186,6 +186,9 @@ catalogs:
     jsdom:
       specifier: ^27.4.0
       version: 27.4.0
+    jsonata:
+      specifier: ^2.1.0
+      version: 2.1.0
     knip:
       specifier: ^5.75.1
       version: 5.75.1
@@ -449,6 +452,9 @@ importers:
       glob:
         specifier: ^11.0.3
         version: 11.0.3
+      jsonata:
+        specifier: 'catalog:'
+        version: 2.1.0
       jsondiffpatch:
         specifier: ^0.6.0
         version: 0.6.0
@@ -6044,6 +6050,10 @@ packages:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
     engines: {node: '>=6'}
     hasBin: true
+
+  jsonata@2.1.0:
+    resolution: {integrity: sha512-OCzaRMK8HobtX8fp37uIVmL8CY1IGc/a6gLsDqz3quExFR09/U78HUzWYr7T31UEB6+Eu0/8dkVD5fFDOl9a8w==}
+    engines: {node: '>= 8'}
 
   jsonc-eslint-parser@2.4.0:
     resolution: {integrity: sha512-WYDyuc/uFcGp6YtM2H0uKmUwieOuzeE/5YocFJLnLfclZ4inf3mRn8ZVy1s7Hxji7Jxm6Ss8gqpexD/GlKoGgg==}
@@ -14402,6 +14412,8 @@ snapshots:
     optional: true
 
   json5@2.2.3: {}
+
+  jsonata@2.1.0: {}
 
   jsonc-eslint-parser@2.4.0:
     dependencies:

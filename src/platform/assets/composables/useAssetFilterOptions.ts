@@ -4,6 +4,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import type { SelectOption } from '@/components/input/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'
 
 /**
  * Composable that extracts available filter options from asset data
@@ -37,12 +38,7 @@ export function useAssetFilterOptions(assets: MaybeRefOrGetter<AssetItem[]>) {
    */
   const availableBaseModels = computed<SelectOption[]>(() => {
     const assetList = toValue(assets)
-    const models = assetList
-      .map((asset) => asset.user_metadata?.base_model)
-      .filter(
-        (baseModel): baseModel is string =>
-          baseModel !== undefined && typeof baseModel === 'string'
-      )
+    const models = assetList.flatMap((asset) => getAssetBaseModels(asset))
 
     const uniqueModels = uniqWith(models, (a, b) => a === b)
 
