@@ -7,12 +7,12 @@
   >
     <template v-if="shouldShowLeftPanel" #leftPanel>
       <LeftSidePanel
-        v-model="selectedCategory"
+        v-model="selectedNavItem"
         data-component-id="AssetBrowserModal-LeftSidePanel"
-        :nav-items="availableCategories"
+        :nav-items
       >
         <template #header-icon>
-          <div class="icon-[lucide--folder] size-4" />
+          <div class="icon-[comfy--ai-model] size-4" />
         </template>
         <template #header-title>
           <span class="capitalize">{{ displayTitle }}</span>
@@ -143,8 +143,9 @@ const { isUploadButtonEnabled, showUploadDialog } =
 
 const {
   searchQuery,
+  selectedNavItem,
   selectedCategory,
-  availableCategories,
+  navItems,
   categoryFilteredAssets,
   filteredAssets,
   updateFilters
