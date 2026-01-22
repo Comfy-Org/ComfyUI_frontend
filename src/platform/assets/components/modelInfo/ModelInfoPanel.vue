@@ -219,6 +219,7 @@ const assetsStore = useAssetsStore()
 const { modelTypes } = useModelTypes()
 
 const pendingUpdates = ref<AssetUserMetadata>({})
+const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
 const isImmutable = computed(() => asset.is_immutable ?? true)
@@ -236,6 +237,13 @@ watch(
   () => asset.user_metadata,
   () => {
     pendingUpdates.value = {}
+  }
+)
+
+watch(
+  () => asset.tags,
+  () => {
+    pendingModelType.value = undefined
   }
 )
 
@@ -288,9 +296,11 @@ const userDescription = computed({
 })
 
 const selectedModelType = computed({
-  get: () => getAssetModelType(asset) ?? undefined,
+  get: () => pendingModelType.value ?? getAssetModelType(asset) ?? undefined,
   set: (value: string | undefined) => {
-    if (value) debouncedSaveModelType(value)
+    if (!value) return
+    pendingModelType.value = value
+    debouncedSaveModelType(value)
   }
 })
 </script>
