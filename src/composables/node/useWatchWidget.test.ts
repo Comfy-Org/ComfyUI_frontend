@@ -59,9 +59,9 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value and trigger callback
     const widthWidget = mockNode.widgets?.find((w) => w.name === 'width')
-    if (widthWidget) {
+    if (widthWidget && widthWidget.callback) {
       widthWidget.value = 150
-      ;(widthWidget.callback as any)?.()
+      widthWidget.callback(widthWidget.value)
     }
 
     await nextTick()
@@ -89,9 +89,9 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change observed widget
     const widthWidget = mockNode.widgets?.find((w) => w.name === 'width')
-    if (widthWidget) {
+    if (widthWidget && widthWidget.callback) {
       widthWidget.value = 150
-      ;(widthWidget.callback as any)?.()
+      widthWidget.callback(widthWidget.value)
     }
 
     await nextTick()
@@ -117,9 +117,9 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value
     const widget = mockNode.widgets?.[0]
-    if (widget) {
+    if (widget && widget.callback) {
       widget.value = 20
-      ;(widget.callback as any)?.()
+      widget.callback(widget.value)
     }
 
     await nextTick()
@@ -139,9 +139,9 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value
     const widget = mockNode.widgets?.[0]
-    if (widget) {
+    if (widget && widget.callback) {
       widget.value = 20
-      ;(widget.callback as any)?.()
+      widget.callback(widget.value)
     }
 
     await nextTick()
@@ -171,8 +171,8 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Trigger widget callback
     const widget = mockNode.widgets?.[0]
-    if (widget) {
-      ;(widget.callback as any)?.()
+    if (widget && widget.callback) {
+      widget.callback(widget.value)
     }
 
     await nextTick()

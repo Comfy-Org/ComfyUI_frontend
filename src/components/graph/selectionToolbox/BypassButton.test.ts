@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import BypassButton from '@/components/graph/selectionToolbox/BypassButton.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -59,21 +60,21 @@ describe('BypassButton', () => {
   }
 
   it('should render bypass button', () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
+    canvasStore.selectedItems = [mockLGraphNode as unknown as LGraphNode]
     const wrapper = mountComponent()
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)
   })
 
   it('should have correct test id', () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
+    canvasStore.selectedItems = [mockLGraphNode as unknown as LGraphNode]
     const wrapper = mountComponent()
     const button = wrapper.find('[data-testid="bypass-button"]')
     expect(button.exists()).toBe(true)
   })
 
   it('should execute bypass command when clicked', async () => {
-    canvasStore.selectedItems = [mockLGraphNode] as any
+    canvasStore.selectedItems = [mockLGraphNode as unknown as LGraphNode]
     const executeSpy = vi.spyOn(commandStore, 'execute').mockResolvedValue()
 
     const wrapper = mountComponent()
@@ -86,7 +87,7 @@ describe('BypassButton', () => {
 
   it('should show bypassed styling when node is bypassed', async () => {
     const bypassedNode = { ...mockLGraphNode, mode: LGraphEventMode.BYPASS }
-    canvasStore.selectedItems = [bypassedNode] as any
+    canvasStore.selectedItems = [bypassedNode as unknown as LGraphNode]
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
     const wrapper = mountComponent()
 
@@ -100,7 +101,10 @@ describe('BypassButton', () => {
 
   it('should handle multiple selected items', () => {
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
-    canvasStore.selectedItems = [mockLGraphNode, mockLGraphNode] as any
+    canvasStore.selectedItems = [
+      mockLGraphNode as unknown as LGraphNode,
+      mockLGraphNode as unknown as LGraphNode
+    ]
     const wrapper = mountComponent()
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)
