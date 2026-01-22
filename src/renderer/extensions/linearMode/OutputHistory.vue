@@ -62,14 +62,14 @@ defineExpose({ onWheel })
 
 const selectedIndex = ref<[number, number]>([-1, 0])
 
-watch(selectedIndex, () => {
+function doEmit() {
   const [index] = selectedIndex.value
   emit('updateSelection', [
     outputs.media.value[index],
     selectedOutput.value,
     selectedIndex.value[0] <= 0
   ])
-})
+}
 
 const outputsRef = useTemplateRef('outputsRef')
 const { reset: resetInfiniteScroll } = useInfiniteScroll(
@@ -152,12 +152,12 @@ const selectedOutput = computed(() => {
   return toValue(allOutputs(outputs.media.value[index]))[key]
 })
 
+watch([selectedIndex, selectedOutput], doEmit)
 watch(
   () => outputs.media.value,
   (newAssets, oldAssets) => {
     if (newAssets.length === oldAssets.length || oldAssets.length === 0) return
     if (selectedIndex.value[0] <= 0) {
-      //force update
       selectedIndex.value = [0, 0]
       return
     }
