@@ -1,7 +1,7 @@
 <template>
   <Button
     v-tooltip.top="$t('manager.tryUpdateTooltip')"
-    variant="textonly"
+    variant="inverted"
     :size
     :disabled="isUpdating"
     @click="tryUpdate"

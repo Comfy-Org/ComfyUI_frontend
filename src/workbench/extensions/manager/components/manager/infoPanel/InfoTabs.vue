@@ -1,54 +1,46 @@
 <template>
-  <div class="overflow-hidden">
-    <Tabs :value="activeTab">
-      <TabList class="scrollbar-hide overflow-x-auto">
-        <Tab
-          v-if="hasCompatibilityIssues"
-          value="warning"
-          class="mr-6 p-2 font-inter"
-        >
+  <div class="overflow-hidden h-full flex flex-col">
+    <div class="flex-1 min-h-0">
+      <TabList v-model="activeTab" class="scrollbar-hide overflow-x-auto">
+        <Tab v-if="hasCompatibilityIssues" value="warning">
           <div class="flex items-center gap-1">
             <span>⚠️</span>
             {{ importFailed ? $t('g.error') : $t('g.warning') }}
           </div>
         </Tab>
-        <Tab value="description" class="mr-6 p-2 font-inter">
+        <Tab value="description">
           {{ $t('g.description') }}
         </Tab>
-        <Tab value="nodes" class="p-2 font-inter">
+        <Tab value="nodes">
           {{ $t('g.nodes') }}
         </Tab>
       </TabList>
-      <TabPanels class="overflow-auto px-2 py-4">
-        <TabPanel
-          v-if="hasCompatibilityIssues"
-          value="warning"
-          class="bg-transparent"
-        >
-          <WarningTabPanel
-            :node-pack="nodePack"
-            :conflict-result="conflictResult"
-          />
-        </TabPanel>
-        <TabPanel value="description">
-          <DescriptionTabPanel :node-pack="nodePack" />
-        </TabPanel>
-        <TabPanel value="nodes">
-          <NodesTabPanel :node-pack="nodePack" :node-names="nodeNames" />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+    </div>
+
+    <div class="p-2 scrollbar-custom">
+      <WarningTabPanel
+        v-if="activeTab === 'warning' && hasCompatibilityIssues"
+        :node-pack="nodePack"
+        :conflict-result="conflictResult"
+      />
+      <DescriptionTabPanel
+        v-else-if="activeTab === 'description'"
+        :node-pack="nodePack"
+      />
+      <NodesTabPanel
+        v-else-if="activeTab === 'nodes'"
+        :node-pack="nodePack"
+        :node-names="nodeNames"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Tab from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import TabPanel from 'primevue/tabpanel'
-import TabPanels from 'primevue/tabpanels'
-import Tabs from 'primevue/tabs'
 import { computed, inject, ref, watchEffect } from 'vue'
 
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import DescriptionTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue'
 import NodesTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/NodesTabPanel.vue'

@@ -1,36 +1,24 @@
 <template>
   <div v-if="nodePacks?.length" class="flex flex-col items-center">
-    <slot name="thumbnail">
-      <PackIcon :node-pack="nodePacks[0]" width="204" height="106" />
-    </slot>
-    <h2
-      class="mt-4 mb-2 text-center text-2xl font-bold"
-      style="word-break: break-all"
-    >
-      <slot name="title">
-        <span class="inline-block text-base">{{ nodePacks[0].name }}</span>
-      </slot>
-    </h2>
-    <div
-      v-if="!importFailed"
-      class="mt-2 mb-4 flex w-full max-w-xs justify-center"
-    >
-      <slot name="install-button">
-        <PackUninstallButton
-          v-if="isAllInstalled"
-          v-bind="$attrs"
-          size="md"
-          :node-packs="nodePacks"
-        />
+    <PackIcon :node-pack="nodePacks[0]" width="204" height="106" />
+    <p class="text-center text-base font-bold">{{ nodePacks[0].name }}</p>
+    <div v-if="!importFailed" class="flex justify-center gap-2">
+      <template v-if="canTryNightlyUpdate">
+        <PackTryUpdateButton :node-pack="nodePacks[0]" size="md" />
+        <PackUninstallButton :node-packs="nodePacks" size="md" />
+      </template>
+      <template v-else-if="isAllInstalled">
+        <PackUninstallButton v-bind="$attrs" size="md" :node-packs="nodePacks" />
+      </template>
+      <template v-else>
         <PackInstallButton
-          v-else
           v-bind="$attrs"
           size="md"
           :node-packs="nodePacks"
           :has-conflict="hasConflict || computedHasConflict"
           :conflict-info="conflictInfo"
         />
-      </slot>
+      </template>
     </div>
   </div>
   <div v-else class="flex flex-col items-center">
@@ -47,8 +35,10 @@ import { computed, inject, ref, watch } from 'vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
+import PackTryUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackTryUpdateButton.vue'
 import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
 import PackIcon from '@/workbench/extensions/manager/components/manager/packIcon/PackIcon.vue'
+import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
@@ -75,6 +65,9 @@ watch(
   },
   { immediate: true }
 )
+
+// Check if nightly update is available for the first pack
+const { canTryNightlyUpdate } = usePackUpdateStatus(() => nodePacks[0])
 
 // Add conflict detection for install button dialog
 const { checkNodeCompatibility } = useConflictDetection()

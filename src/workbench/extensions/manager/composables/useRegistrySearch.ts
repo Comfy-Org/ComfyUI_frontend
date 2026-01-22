@@ -90,7 +90,10 @@ export function useRegistrySearch(
   }
 
   const onQueryChange = () => updateSearchResults({ append: false })
-  const onPageChange = () => updateSearchResults({ append: true })
+  const onPageChange = () => {
+    if (pageNumber.value === 0) return
+    updateSearchResults({ append: true })
+  }
 
   watch([sortField, searchMode], onQueryChange)
   watch(pageNumber, onPageChange)

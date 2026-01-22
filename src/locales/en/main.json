@@ -295,6 +295,17 @@
     "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
+    "nav": {
+      "allExtensions": "All Extensions",
+      "notInstalled": "Not Installed",
+      "installedSection": "INSTALLED",
+      "allInstalled": "All installed",
+      "updatesAvailable": "Updates Available",
+      "conflicting": "Conflicting",
+      "inWorkflowSection": "IN WORKFLOW",
+      "allInWorkflow": "All in: {workflowName}",
+      "missingNodes": "Missing Nodes"
+    },
     "infoPanelEmpty": "Click an item to see the info",
     "applyChanges": "Apply Changes",
     "restartToApplyChanges": "To apply changes, please restart ComfyUI",

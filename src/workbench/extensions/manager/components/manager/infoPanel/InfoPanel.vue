@@ -1,22 +1,15 @@
 <template>
   <template v-if="nodePack">
-    <div class="relative z-40 flex h-full flex-col overflow-hidden">
-      <div class="top-0 z-10 w-full px-6 pt-6">
+    <div class="flex h-full flex-col overflow-hidden">
+      <div class="w-full px-6 pt-6">
         <InfoPanelHeader
           :node-packs="[nodePack]"
           :has-conflict="hasCompatibilityIssues"
-        >
-          <template v-if="canTryNightlyUpdate" #install-button>
-            <div class="flex w-full justify-center gap-2">
-              <PackTryUpdateButton :node-pack="nodePack" size="md" />
-              <PackUninstallButton :node-packs="[nodePack]" size="md" />
-            </div>
-          </template>
-        </InfoPanelHeader>
+        />
       </div>
       <div
         ref="scrollContainer"
-        class="scrollbar-hide flex-1 overflow-y-auto p-6 pt-2 text-sm"
+        class="scrollbar-hide flex-1 flex flex-col p-6 pt-2 text-sm"
       >
         <div class="mb-6">
           <MetadataRow
@@ -49,7 +42,7 @@
             <PackVersionBadge :node-pack="nodePack" :is-selected="true" />
           </MetadataRow>
         </div>
-        <div class="mb-6 overflow-hidden">
+        <div class="mb-6 flex-1 overflow-hidden">
           <InfoTabs
             :node-pack="nodePack"
             :has-compatibility-issues="hasCompatibilityIssues"
@@ -75,12 +68,9 @@ import type { components } from '@/types/comfyRegistryTypes'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'
-import PackTryUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackTryUpdateButton.vue'
-import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
 import InfoPanelHeader from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelHeader.vue'
 import InfoTabs from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTabs.vue'
 import MetadataRow from '@/workbench/extensions/manager/components/manager/infoPanel/MetadataRow.vue'
-import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -108,8 +98,6 @@ provide(IsInstallingKey, isInstalling)
 whenever(isInstalled, () => {
   isInstalling.value = false
 })
-
-const { canTryNightlyUpdate } = usePackUpdateStatus(() => nodePack)
 
 const { checkNodeCompatibility } = useConflictDetection()
 const { getConflictsForPackageByID } = useConflictDetectionStore()

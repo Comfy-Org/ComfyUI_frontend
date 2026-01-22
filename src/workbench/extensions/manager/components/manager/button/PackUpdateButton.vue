@@ -3,12 +3,13 @@
     v-tooltip.top="
       hasDisabledUpdatePacks ? $t('manager.disabledNodesWontUpdate') : null
     "
-    class="border"
+    variant="primary"
     :size
     :disabled="isUpdating"
     @click="updateAllPacks"
   >
     <DotSpinner v-if="isUpdating" duration="1s" :size="12" />
+    <i v-else class="icon-[lucide--refresh-cw]" />
     <span>{{ $t('manager.updateAll') }}</span>
   </Button>
 </template>

@@ -1,8 +1,7 @@
 <template>
   <Button
-    variant="textonly"
+    variant="destructive"
     :size
-    class="border border-red-500"
     @click="uninstallItems"
   >
     {{

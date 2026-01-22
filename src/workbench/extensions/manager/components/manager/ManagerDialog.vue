@@ -16,32 +16,63 @@
     </template>
 
     <template #header>
-      <div class="flex items-center gap-2">
-        <SingleSelect
-          v-model="searchMode"
-          class="min-w-34"
-          :options="filterOptions"
+      <div class="flex w-full items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <SingleSelect
+            v-model="searchMode"
+            class="min-w-34"
+            :options="filterOptions"
+          />
+          <AutoCompletePlus
+            v-model.lazy="searchQuery"
+            :suggestions="suggestions"
+            :placeholder="$t('manager.searchPlaceholder')"
+            :complete-on-focus="false"
+            :delay="8"
+            option-label="query"
+            class="w-full min-w-md max-w-lg"
+            :pt="{
+              root: { class: 'relative' },
+              pcInputText: {
+                root: {
+                  autofocus: true,
+                  class:
+                    'w-full h-10 rounded-lg bg-comfy-input text-comfy-input-foreground border-none outline-none text-sm'
+                }
+              },
+              overlay: {
+                class: 'bg-comfy-input rounded-lg mt-1 shadow-lg border border-border-default'
+              },
+              list: { class: 'p-1' },
+              option: {
+                class:
+                  'px-3 py-2 rounded hover:bg-button-hover-surface cursor-pointer text-sm'
+              },
+              loader: { style: 'display: none' }
+            }"
+            :show-empty-message="false"
+            @complete="stubTrue"
+            @option-select="onOptionSelect"
+          >
+            <template #dropdownicon>
+              <i
+                class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              />
+            </template>
+          </AutoCompletePlus>
+        </div>
+        <PackInstallButton
+          v-if="isMissingTab && missingNodePacks.length > 0"
+          :disabled="isMissingLoading || !!missingError"
+          :node-packs="missingNodePacks"
+          size="lg"
+          :label="$t('manager.installAllMissingNodes')"
         />
-        <AutoCompletePlus
-          v-model.lazy="searchQuery"
-          :suggestions="suggestions"
-          :placeholder="$t('manager.searchPlaceholder')"
-          :complete-on-focus="false"
-          :delay="8"
-          option-label="query"
-          class="w-full min-w-md max-w-lg"
-          :pt="{
-            pcInputText: {
-              root: {
-                autofocus: true,
-                class: 'w-full rounded-lg h-10'
-              }
-            },
-            loader: { style: 'display: none' }
-          }"
-          :show-empty-message="false"
-          @complete="stubTrue"
-          @option-select="onOptionSelect"
+        <PackUpdateButton
+          v-if="isUpdateAvailableTab && hasUpdateAvailable"
+          :node-packs="enabledUpdateAvailableNodePacks"
+          :has-disabled-update-packs="hasDisabledUpdatePacks"
+          size="lg"
         />
       </div>
     </template>
@@ -79,37 +110,18 @@
         </Button>
       </div>
 
-      <!-- Filters Row -->
-      <div class="relative flex flex-wrap justify-between gap-2 px-6 pb-4">
-        <div>
-          <PackInstallButton
-            v-if="isMissingTab && missingNodePacks.length > 0"
-            :disabled="isMissingLoading || !!missingError"
-            :node-packs="missingNodePacks"
-            size="lg"
-            :label="$t('manager.installAllMissingNodes')"
-          />
-          <PackUpdateButton
-            v-if="isUpdateAvailableTab && hasUpdateAvailable"
-            :node-packs="enabledUpdateAvailableNodePacks"
-            :has-disabled-update-packs="hasDisabledUpdatePacks"
-            size="lg"
-          />
-        </div>
-
-        <!-- Sort Options on right -->
-        <div>
-          <SingleSelect
-            v-model="sortField"
-            :label="$t('g.sort')"
-            :options="availableSortOptions"
-            class="w-48"
-          >
-            <template #icon>
-              <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
-            </template>
-          </SingleSelect>
-        </div>
+      <!-- Sort Options -->
+      <div class="flex justify-end px-6 pb-4">
+        <SingleSelect
+          v-model="sortField"
+          :label="$t('g.sort')"
+          :options="availableSortOptions"
+          class="w-48"
+        >
+          <template #icon>
+            <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
+          </template>
+        </SingleSelect>
       </div>
     </template>
 
@@ -118,7 +130,7 @@
         <GridSkeleton :grid-style="GRID_STYLE" :skeleton-card-count />
       </div>
       <NoResultsPlaceholder
-        v-else-if="searchResults.length === 0"
+        v-else-if="displayPacks.length === 0"
         :title="
           comfyManagerStore.error
             ? $t('manager.errorConnecting')
@@ -130,7 +142,7 @@
             : $t('manager.tryDifferentSearch')
         "
       />
-      <div v-else class="h-full" @click="handleGridContainerClick">
+      <div v-else class="h-full w-full" @click="handleGridContainerClick">
         <VirtualGrid
           id="results-grid"
           :items="resultsWithKeys"
@@ -185,9 +197,10 @@ import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { NavItemData } from '@/types/navTypes'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue'
@@ -195,14 +208,13 @@ import InfoPanel from '@/workbench/extensions/manager/components/manager/infoPan
 import InfoPanelMultiItem from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelMultiItem.vue'
 import PackCard from '@/workbench/extensions/manager/components/manager/packCard/PackCard.vue'
 import GridSkeleton from '@/workbench/extensions/manager/components/manager/skeleton/GridSkeleton.vue'
-import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
-import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useUpdateAvailableNodes } from '@/workbench/extensions/manager/composables/nodePack/useUpdateAvailableNodes'
-import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDisplayPacks } from '@/workbench/extensions/manager/composables/useManagerDisplayPacks'
 import { useManagerStatePersistence } from '@/workbench/extensions/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
@@ -218,14 +230,16 @@ const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
 const conflictAcknowledgment = useConflictAcknowledgment()
+const conflictDetectionStore = useConflictDetectionStore()
+const workflowStore = useWorkflowStore()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
 
 const GRID_STYLE = {
   display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, minmax(17rem, 1fr))',
-  gap: '1.5rem',
-  padding: '0'
+  gridTemplateColumns: 'repeat(auto-fill, minmax(14rem, 1fr))',
+  gap: '1rem',
+  padding: '0.5rem'
 } as const
 
 const {
@@ -248,32 +262,84 @@ const {
   hasDisabledUpdatePacks
 } = useUpdateAvailableNodes()
 
+// Get the current workflow name for the nav item
+const workflowName = computed(
+  () => workflowStore.activeWorkflow?.filename ?? t('manager.inWorkflow')
+)
+
 // Navigation items for LeftSidePanel
-const navItems = computed<NavItemData[]>(() => [
-  { id: ManagerTab.All, label: t('g.all'), icon: 'pi pi-list' },
-  { id: ManagerTab.Installed, label: t('g.installed'), icon: 'pi pi-box' },
+const navItems = computed<(NavItemData | NavGroupData)[]>(() => [
   {
-    id: ManagerTab.Workflow,
-    label: t('manager.inWorkflow'),
-    icon: 'pi pi-folder'
+    id: ManagerTab.All,
+    label: t('manager.nav.allExtensions'),
+    icon: 'icon-[lucide--list]'
   },
   {
-    id: ManagerTab.Missing,
-    label: t('g.missing'),
-    icon: 'pi pi-exclamation-circle'
+    id: ManagerTab.NotInstalled,
+    label: t('manager.nav.notInstalled'),
+    icon: 'icon-[lucide--globe]'
   },
   {
-    id: ManagerTab.UpdateAvailable,
-    label: t('g.updateAvailable'),
-    icon: 'pi pi-sync'
+    title: t('manager.nav.installedSection'),
+    items: [
+      {
+        id: ManagerTab.AllInstalled,
+        label: t('manager.nav.allInstalled'),
+        icon: 'icon-[lucide--download]'
+      },
+      {
+        id: ManagerTab.UpdateAvailable,
+        label: t('manager.nav.updatesAvailable'),
+        icon: 'icon-[lucide--refresh-cw]'
+      },
+      {
+        id: ManagerTab.Conflicting,
+        label: t('manager.nav.conflicting'),
+        icon: 'icon-[lucide--triangle-alert]',
+        badge: conflictDetectionStore.conflictedPackages.length || undefined
+      }
+    ]
+  },
+  {
+    title: t('manager.nav.inWorkflowSection'),
+    items: [
+      {
+        id: ManagerTab.Workflow,
+        label: t('manager.nav.allInWorkflow', {
+          workflowName: workflowName.value
+        }),
+        icon: 'icon-[lucide--share-2]'
+      },
+      {
+        id: ManagerTab.Missing,
+        label: t('manager.nav.missingNodes'),
+        icon: 'icon-[lucide--triangle-alert]'
+      }
+    ]
   }
 ])
 
 const initialTabId = initialTab ?? initialState.selectedTabId ?? ManagerTab.All
 const selectedNavId = ref<string | null>(initialTabId)
 
+// Helper to find a nav item by id in the nested structure
+const findNavItemById = (
+  items: (NavItemData | NavGroupData)[],
+  id: string | null
+): NavItemData | undefined => {
+  for (const item of items) {
+    if ('items' in item) {
+      const found = item.items.find((subItem) => subItem.id === id)
+      if (found) return found
+    } else if (item.id === id) {
+      return item
+    }
+  }
+  return undefined
+}
+
 const selectedTab = computed(() =>
-  navItems.value.find((item) => item.id === selectedNavId.value)
+  findNavItemById(navItems.value, selectedNavId.value)
 )
 
 const {
@@ -318,120 +384,20 @@ const isInitialLoad = computed(
   () => searchResults.value.length === 0 && searchQuery.value === ''
 )
 
-const isEmptySearch = computed(() => searchQuery.value === '')
-const displayPacks = ref<components['schemas']['Node'][]>([])
-
+// Use the new composable for tab-based display packs
 const {
-  startFetchInstalled,
-  filterInstalledPack,
-  installedPacks,
-  isLoading: isLoadingInstalled,
-  isReady: installedPacksReady
-} = useInstalledPacks()
+  displayPacks,
+  isLoading: isTabLoading,
+  workflowPacks
+} = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
 
-const {
-  startFetchWorkflowPacks,
-  filterWorkflowPack,
-  workflowPacks,
-  isLoading: isLoadingWorkflow,
-  isReady: workflowPacksReady
-} = useWorkflowPacks()
-
-const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
-  packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
-
+// Tab helpers for template
 const isUpdateAvailableTab = computed(
   () => selectedTab.value?.id === ManagerTab.UpdateAvailable
-)
-const isInstalledTab = computed(
-  () => selectedTab.value?.id === ManagerTab.Installed
 )
 const isMissingTab = computed(
   () => selectedTab.value?.id === ManagerTab.Missing
 )
-const isWorkflowTab = computed(
-  () => selectedTab.value?.id === ManagerTab.Workflow
-)
-const isAllTab = computed(() => selectedTab.value?.id === ManagerTab.All)
-
-const isOutdatedPack = (pack: components['schemas']['Node']) => {
-  const { isUpdateAvailable } = usePackUpdateStatus(pack)
-  return isUpdateAvailable.value === true
-}
-const filterOutdatedPacks = (packs: components['schemas']['Node'][]) =>
-  packs.filter(isOutdatedPack)
-
-watch(
-  [isUpdateAvailableTab, installedPacks],
-  async () => {
-    if (!isUpdateAvailableTab.value) return
-
-    if (!isEmptySearch.value) {
-      displayPacks.value = filterOutdatedPacks(installedPacks.value)
-    } else if (
-      !installedPacks.value.length &&
-      !installedPacksReady.value &&
-      !isLoadingInstalled.value
-    ) {
-      await startFetchInstalled()
-    } else {
-      displayPacks.value = filterOutdatedPacks(installedPacks.value)
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  [isInstalledTab, installedPacks],
-  async () => {
-    if (!isInstalledTab.value) return
-
-    if (!isEmptySearch.value) {
-      displayPacks.value = filterInstalledPack(searchResults.value)
-    } else if (
-      !installedPacks.value.length &&
-      !installedPacksReady.value &&
-      !isLoadingInstalled.value
-    ) {
-      await startFetchInstalled()
-    } else {
-      displayPacks.value = installedPacks.value
-    }
-  },
-  { immediate: true }
-)
-
-watch(
-  [isMissingTab, isWorkflowTab, workflowPacks, installedPacks],
-  async () => {
-    if (!isWorkflowTab.value && !isMissingTab.value) return
-
-    if (!isEmptySearch.value) {
-      displayPacks.value = isMissingTab.value
-        ? filterMissingPacks(filterWorkflowPack(searchResults.value))
-        : filterWorkflowPack(searchResults.value)
-    } else if (
-      !workflowPacks.value.length &&
-      !isLoadingWorkflow.value &&
-      !workflowPacksReady.value
-    ) {
-      await startFetchWorkflowPacks()
-      if (isMissingTab.value) {
-        await startFetchInstalled()
-      }
-    } else {
-      displayPacks.value = isMissingTab.value
-        ? filterMissingPacks(workflowPacks.value)
-        : workflowPacks.value
-    }
-  },
-  { immediate: true }
-)
-
-watch([isAllTab, searchResults], () => {
-  if (!isAllTab.value) return
-  displayPacks.value = searchResults.value
-})
 
 const onClickWarningLink = () => {
   window.open(
@@ -442,49 +408,9 @@ const onClickWarningLink = () => {
   )
 }
 
-const onResultsChange = () => {
-  switch (selectedTab.value?.id) {
-    case ManagerTab.Installed:
-      displayPacks.value = isEmptySearch.value
-        ? installedPacks.value
-        : filterInstalledPack(searchResults.value)
-      break
-    case ManagerTab.Workflow:
-      displayPacks.value = isEmptySearch.value
-        ? workflowPacks.value
-        : filterWorkflowPack(searchResults.value)
-      break
-    case ManagerTab.Missing:
-      if (!isEmptySearch.value) {
-        displayPacks.value = filterMissingPacks(
-          filterWorkflowPack(searchResults.value)
-        )
-      }
-      break
-    case ManagerTab.UpdateAvailable:
-      displayPacks.value = isEmptySearch.value
-        ? filterOutdatedPacks(installedPacks.value)
-        : filterOutdatedPacks(searchResults.value)
-      break
-    default:
-      displayPacks.value = searchResults.value
-  }
-}
-
-watch(searchResults, onResultsChange, { flush: 'post' })
-watch(() => comfyManagerStore.installedPacksIds, onResultsChange)
-
 const isLoading = computed(() => {
   if (isSearchLoading.value) return searchResults.value.length === 0
-  if (selectedTab.value?.id === ManagerTab.Installed) {
-    return isLoadingInstalled.value
-  }
-  if (
-    selectedTab.value?.id === ManagerTab.Workflow ||
-    selectedTab.value?.id === ManagerTab.Missing
-  ) {
-    return isLoadingWorkflow.value
-  }
+  if (isTabLoading.value) return true
   return isInitialLoad.value
 })
 
@@ -511,7 +437,7 @@ watch(
 
 const getLoadingCount = () => {
   switch (selectedTab.value?.id) {
-    case ManagerTab.Installed:
+    case ManagerTab.AllInstalled:
       return comfyManagerStore.installedPacksIds?.size
     case ManagerTab.Workflow:
       return workflowPacks.value?.length
@@ -580,10 +506,6 @@ whenever(selectedNodePack, async () => {
     )
     if (packIndex !== -1) {
       selectedNodePacks.value.splice(packIndex, 1, mergedPack)
-    }
-    const idx = displayPacks.value.findIndex((p) => p.id === mergedPack.id)
-    if (idx !== -1) {
-      displayPacks.value.splice(idx, 1, mergedPack)
     }
   }
 })
