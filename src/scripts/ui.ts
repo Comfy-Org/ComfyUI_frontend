@@ -28,7 +28,7 @@ type Props = {
   style?: Partial<CSSStyleDeclaration>
   for?: string
   textContent?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 type Children = Element[] | Element | string | string[]
