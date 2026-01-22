@@ -125,13 +125,18 @@
         :label="t('assetBrowser.modelInfo.triggerPhrases')"
       >
         <div class="flex flex-wrap gap-1">
-          <span
+          <Button
             v-for="phrase in triggerPhrases"
             :key="phrase"
-            class="rounded px-2 py-0.5 text-xs"
+            variant="muted-textonly"
+            size="unset"
+            :title="t('g.copyToClipboard')"
+            class="text-pretty whitespace-normal text-left text-xs"
+            @click="copyToClipboard(phrase)"
           >
             {{ phrase }}
-          </span>
+            <i class="icon-[lucide--copy] size-4 min-w-4 min-h-4 opacity-60" />
+          </Button>
         </div>
       </ModelInfoField>
       <ModelInfoField
@@ -170,7 +175,9 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
@@ -201,6 +208,7 @@ import { cn } from '@/utils/tailwindUtil'
 import ModelInfoField from './ModelInfoField.vue'
 
 const { t } = useI18n()
+const { copyToClipboard } = useCopyToClipboard()
 
 const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'
