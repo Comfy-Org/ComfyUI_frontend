@@ -1282,7 +1282,10 @@
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
     "Execution": "Execution",
-    "PLY": "PLY"
+    "PLY": "PLY",
+    "Workspace": "Workspace",
+    "General": "General",
+    "Other": "Other"
   },
   "serverConfigItems": {
     "listen": {
