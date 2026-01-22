@@ -72,11 +72,11 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py'] } // No --enable-manager flag
         }),
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
 
@@ -96,11 +96,11 @@ describe('useManagerState', () => {
           } // Both flags needed
         }),
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
 
@@ -113,7 +113,7 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
@@ -121,10 +121,10 @@ describe('useManagerState', () => {
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()
-      } as any)
+      } as unknown as ReturnType<typeof useFeatureFlags>)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
 
@@ -137,7 +137,7 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: false
       })
@@ -145,10 +145,10 @@ describe('useManagerState', () => {
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()
-      } as any)
+      } as unknown as ReturnType<typeof useFeatureFlags>)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
 
@@ -161,15 +161,15 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: false },
         featureFlag: vi.fn()
-      } as any)
+      } as unknown as ReturnType<typeof useFeatureFlags>)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: [{ name: 'Comfy.CustomNodesManager' }]
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
 
@@ -182,16 +182,16 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(api.getServerFeature).mockReturnValue(undefined)
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: undefined },
         featureFlag: vi.fn()
-      } as any)
+      } as unknown as ReturnType<typeof useFeatureFlags>)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
 
@@ -204,16 +204,16 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(api.getServerFeature).mockReturnValue(false)
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: false },
         featureFlag: vi.fn()
-      } as any)
+      } as unknown as ReturnType<typeof useFeatureFlags>)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
 
@@ -224,7 +224,7 @@ describe('useManagerState', () => {
       vi.mocked(useSystemStatsStore).mockReturnValue({
         systemStats: ref(null),
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
@@ -232,10 +232,10 @@ describe('useManagerState', () => {
       vi.mocked(useFeatureFlags).mockReturnValue({
         flags: { supportsManagerV4: true },
         featureFlag: vi.fn()
-      } as any)
+      } as unknown as ReturnType<typeof useFeatureFlags>)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
 
@@ -251,14 +251,14 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
       expect(managerState.isManagerEnabled.value).toBe(true)
@@ -270,11 +270,11 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py'] } // No --enable-manager flag means disabled
         }),
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
       expect(managerState.isManagerEnabled.value).toBe(false)
@@ -286,14 +286,14 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
       expect(managerState.isNewManagerUI.value).toBe(true)
@@ -312,11 +312,11 @@ describe('useManagerState', () => {
           } // Both flags needed
         }),
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({})
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
       expect(managerState.isLegacyManagerUI.value).toBe(true)
@@ -328,14 +328,14 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
       expect(managerState.shouldShowInstallButton.value).toBe(true)
@@ -347,14 +347,14 @@ describe('useManagerState', () => {
           system: { argv: ['python', 'main.py', '--enable-manager'] }
         }), // Need --enable-manager
         isInitialized: ref(true)
-      } as any)
+      } as unknown as ReturnType<typeof useSystemStatsStore>)
       vi.mocked(api.getClientFeatureFlags).mockReturnValue({
         supports_manager_v4_ui: true
       })
       vi.mocked(api.getServerFeature).mockReturnValue(true)
       vi.mocked(useExtensionStore).mockReturnValue({
         extensions: []
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionStore>)
 
       const managerState = useManagerState()
       expect(managerState.shouldShowManagerButtons.value).toBe(true)
