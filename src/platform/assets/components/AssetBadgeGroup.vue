@@ -1,11 +1,11 @@
 <template>
-  <div class="absolute right-2 bottom-2 flex flex-wrap justify-end gap-1">
+  <div class="absolute left-2 bottom-2 flex flex-wrap justify-start gap-1">
     <span
       v-for="badge in badges"
       :key="badge.label"
       :class="
         cn(
-          'px-2 py-1 rounded text-xs font-bold uppercase tracking-wider text-modal-card-tag-foreground bg-modal-card-tag-background'
+          'px-2 py-1 rounded text-xs font-bold uppercase tracking-wider text-modal-card-tag-foreground bg-modal-card-tag-background break-all'
         )
       "
     >

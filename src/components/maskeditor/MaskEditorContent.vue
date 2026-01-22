@@ -4,6 +4,7 @@
     class="maskEditor-dialog-root flex h-full w-full flex-col"
     @contextmenu.prevent
     @dragstart="handleDragStart"
+    @keydown.stop
   >
     <div
       id="maskEditorCanvasContainer"
@@ -12,18 +13,27 @@
     >
       <canvas
         ref="imgCanvasRef"
-        class="absolute top-0 left-0 w-full h-full"
+        class="absolute top-0 left-0 w-full h-full z-0"
         @contextmenu.prevent
       />
       <canvas
         ref="rgbCanvasRef"
-        class="absolute top-0 left-0 w-full h-full"
+        class="absolute top-0 left-0 w-full h-full z-10"
         @contextmenu.prevent
       />
       <canvas
         ref="maskCanvasRef"
-        class="absolute top-0 left-0 w-full h-full"
+        class="absolute top-0 left-0 w-full h-full z-30"
         @contextmenu.prevent
+      />
+      <!-- GPU Preview Canvas -->
+      <canvas
+        ref="gpuCanvasRef"
+        class="absolute top-0 left-0 w-full h-full pointer-events-none"
+        :class="{
+          'z-20': store.activeLayer === 'rgb',
+          'z-40': store.activeLayer === 'mask'
+        }"
       />
       <div ref="canvasBackgroundRef" class="bg-white w-full h-full" />
     </div>
@@ -87,6 +97,7 @@ const canvasContainerRef = ref<HTMLDivElement>()
 const imgCanvasRef = ref<HTMLCanvasElement>()
 const maskCanvasRef = ref<HTMLCanvasElement>()
 const rgbCanvasRef = ref<HTMLCanvasElement>()
+const gpuCanvasRef = ref<HTMLCanvasElement>()
 const canvasBackgroundRef = ref<HTMLDivElement>()
 
 const toolPanelRef = ref<InstanceType<typeof ToolPanel>>()
@@ -97,7 +108,7 @@ const initialized = ref(false)
 const keyboard = useKeyboard()
 const panZoom = usePanAndZoom()
 
-let toolManager: ReturnType<typeof useToolManager> | null = null
+const toolManager = useToolManager(keyboard, panZoom)
 
 let resizeObserver: ResizeObserver | null = null
 
@@ -135,8 +146,6 @@ const initUI = async () => {
   try {
     await loader.loadFromNode(node)
 
-    toolManager = useToolManager(keyboard, panZoom)
-
     const imageLoader = useImageLoader()
     const image = await imageLoader.loadImages()
 
@@ -148,6 +157,18 @@ const initUI = async () => {
     )
 
     store.canvasHistory.saveInitialState()
+
+    // Initialize GPU resources
+    if (toolManager.brushDrawing) {
+      await toolManager.brushDrawing.initGPUResources()
+      if (gpuCanvasRef.value && toolManager.brushDrawing.initPreviewCanvas) {
+        // Match preview canvas resolution to mask canvas
+        gpuCanvasRef.value.width = maskCanvasRef.value.width
+        gpuCanvasRef.value.height = maskCanvasRef.value.height
+
+        toolManager.brushDrawing.initPreviewCanvas(gpuCanvasRef.value)
+      }
+    }
 
     initialized.value = true
   } catch (error) {
@@ -172,7 +193,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  toolManager?.brushDrawing.saveBrushSettings()
+  toolManager.brushDrawing.saveBrushSettings()
 
   keyboard?.removeListeners()
 
@@ -182,6 +203,7 @@ onBeforeUnmount(() => {
   }
 
   store.canvasHistory.clearStates()
+
   store.resetState()
   dataStore.reset()
 })

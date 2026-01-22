@@ -1,27 +1,31 @@
 <template>
-  <div v-if="renderError" class="node-error p-4 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-4 text-red-500">
     {{ st('nodeErrors.header', 'Node Header Error') }}
   </div>
   <div
     v-else
     :class="
       cn(
-        'lg-node-header py-2 pl-2 pr-3 text-sm rounded-t-2xl w-full min-w-50',
+        'lg-node-header text-sm py-2 pl-2 pr-3 w-full min-w-0',
         'text-node-component-header bg-node-component-header-surface',
-        collapsed && 'rounded-2xl'
+        headerShapeClass
       )
     "
-    :style="headerStyle"
+    :style="{
+      backgroundColor: applyLightThemeColor(nodeData?.color),
+      opacity: useSettingStore().get('Comfy.Node.Opacity') ?? 1
+    }"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
-    <div class="flex items-center justify-between gap-2.5">
+    <div class="flex items-center justify-between gap-2.5 min-w-0">
       <!-- Collapse/Expand Button -->
-      <div class="relative grow-1 flex items-center gap-2.5">
-        <div class="lod-toggle flex shrink-0 items-center px-0.5">
-          <IconButton
-            size="fit-content"
-            type="transparent"
+      <div class="relative grow-1 flex items-center gap-2.5 min-w-0 flex-1">
+        <div class="flex shrink-0 items-center px-0.5">
+          <Button
+            size="icon-sm"
+            variant="textonly"
+            class="hover:bg-transparent"
             data-testid="node-collapse-button"
             @click.stop="handleCollapse"
             @dblclick.stop
@@ -33,32 +37,33 @@
                   collapsed && '-rotate-90'
                 )
               "
-              class="relative top-px text-xs leading-none text-node-component-header-icon"
-            ></i>
-          </IconButton>
+              class="text-node-component-header-icon"
+            />
+          </Button>
         </div>
 
         <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
-        <div v-if="isApiNode" class="icon-[lucide--dollar-sign] size-4" />
+        <div v-if="isApiNode" class="icon-[lucide--component] size-4" />
 
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
-          class="lod-toggle grow-1 items-center gap-2 truncate text-sm font-bold w-15"
+          class="flex min-w-0 flex-1 items-center gap-2"
           data-testid="node-title"
         >
-          <EditableText
-            :model-value="displayTitle"
-            :is-editing="isEditing"
-            :input-attrs="{ 'data-testid': 'node-title-input' }"
-            @edit="handleTitleEdit"
-            @cancel="handleTitleCancel"
-          />
+          <div class="truncate min-w-0 flex-1">
+            <EditableText
+              :model-value="displayTitle"
+              :is-editing="isEditing"
+              :input-attrs="{ 'data-testid': 'node-title-input' }"
+              @edit="handleTitleEdit"
+              @cancel="handleTitleCancel"
+            />
+          </div>
         </div>
-        <LODFallback />
       </div>
 
-      <div class="lod-toggle flex shrink-0 items-center justify-between gap-2">
+      <div class="flex shrink-0 items-center justify-between gap-2">
         <NodeBadge
           v-for="badge of nodeBadges"
           :key="badge.text"
@@ -70,19 +75,19 @@
           class="size-5"
           data-testid="node-pin-indicator"
         />
-        <IconButton
+        <Button
           v-if="isSubgraphNode"
           v-tooltip.top="enterSubgraphTooltipConfig"
-          type="transparent"
+          variant="textonly"
+          size="sm"
           data-testid="subgraph-enter-button"
-          class="size-5"
+          class="text-node-component-header h-5 px-0.5"
           @click.stop="handleEnterSubgraph"
           @dblclick.stop
         >
-          <i
-            class="icon-[lucide--picture-in-picture] size-5 text-node-component-header-icon"
-          ></i>
-        </IconButton>
+          <span>{{ $t('g.edit') }}</span>
+          <i class="icon-[lucide--scaling] size-5" />
+        </Button>
       </div>
     </div>
   </div>
@@ -91,18 +96,17 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref, toValue, watch } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
 import EditableText from '@/components/common/EditableText.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
@@ -110,7 +114,6 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
-import LODFallback from './LODFallback.vue'
 import type { NodeBadgeProps } from './NodeBadge.vue'
 
 interface NodeHeaderProps {
@@ -155,23 +158,6 @@ const enterSubgraphTooltipConfig = computed(() => {
   return createTooltipConfig(st('enterSubgraph', 'Enter Subgraph'))
 })
 
-const headerStyle = computed(() => {
-  const colorPaletteStore = useColorPaletteStore()
-
-  const opacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
-
-  if (!nodeData?.color) {
-    return { backgroundColor: '', opacity }
-  }
-
-  const headerColor = applyLightThemeColor(
-    nodeData.color,
-    Boolean(colorPaletteStore.completedActivePalette.light_theme)
-  )
-
-  return { backgroundColor: headerColor, opacity }
-})
-
 const resolveTitle = (info: VueNodeData | undefined) => {
   const title = (info?.title ?? '').trim()
   if (title.length > 0) return title
@@ -202,12 +188,34 @@ const nodeBadges = computed<NodeBadgeProps[]>(() =>
 )
 const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
 const isApiNode = computed(() => Boolean(nodeData?.apiNode))
+
+const headerShapeClass = computed(() => {
+  if (collapsed) {
+    switch (nodeData?.shape) {
+      case RenderShape.BOX:
+        return 'rounded-none'
+      case RenderShape.CARD:
+        return 'rounded-tl-2xl rounded-br-2xl rounded-tr-none rounded-bl-none'
+      default:
+        return 'rounded-2xl'
+    }
+  }
+  switch (nodeData?.shape) {
+    case RenderShape.BOX:
+      return 'rounded-t-none'
+    case RenderShape.CARD:
+      return 'rounded-tl-2xl rounded-tr-none'
+    default:
+      return 'rounded-t-2xl'
+  }
+})
+
 // Subgraph detection
 const isSubgraphNode = computed(() => {
   if (!nodeData?.id) return false
 
   // Get the underlying LiteGraph node
-  const graph = app.graph?.rootGraph || app.graph
+  const graph = app.rootGraph
   if (!graph) return false
 
   const locatorId = getLocatorIdFromNodeData(nodeData)

@@ -402,6 +402,19 @@ export function usePanAndZoom() {
     }
   )
 
+  const addPenPointerId = (pointerId: number): void => {
+    if (!penPointerIdList.value.includes(pointerId)) {
+      penPointerIdList.value.push(pointerId)
+    }
+  }
+
+  const removePenPointerId = (pointerId: number): void => {
+    const index = penPointerIdList.value.indexOf(pointerId)
+    if (index !== -1) {
+      penPointerIdList.value.splice(index, 1)
+    }
+  }
+
   return {
     initializeCanvasPanZoom,
     handlePanStart,
@@ -411,6 +424,8 @@ export function usePanAndZoom() {
     handleTouchEnd,
     updateCursorPosition,
     zoom,
-    invalidatePanZoom
+    invalidatePanZoom,
+    addPenPointerId,
+    removePenPointerId
   }
 }

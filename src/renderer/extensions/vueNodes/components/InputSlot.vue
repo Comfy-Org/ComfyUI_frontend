@@ -1,25 +1,56 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
-  <div v-else v-tooltip.left="tooltipConfig" :class="slotWrapperClass">
+  <div
+    v-else
+    v-tooltip.left="tooltipConfig"
+    :class="
+      cn(
+        'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
+        'cursor-crosshair',
+        props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
+        {
+          'lg-slot--connected': props.connected,
+          'lg-slot--compatible': props.compatible,
+          'opacity-40': shouldDim
+        },
+        props.socketless && 'pointer-events-none invisible'
+      )
+    "
+  >
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
-      :color="slotColor"
-      :class="cn('-translate-x-1/2', 'w-3', errorClassesDot)"
+      :class="
+        cn(
+          '-translate-x-1/2 w-3',
+          hasSlotError &&
+            'before:ring-2 before:ring-error before:ring-offset-0 before:size-4 before:absolute before:rounded-full before:pointer-events-none'
+        )
+      "
+      :slot-data
+      @click="onClick"
+      @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
     />
 
     <!-- Slot Name -->
-    <div class="relative h-full flex items-center">
+    <div class="h-full flex items-center min-w-0">
       <span
         v-if="!dotOnly"
         :class="
-          cn('whitespace-nowrap text-xs font-normal lod-toggle', labelClasses)
+          cn(
+            'truncate text-node-component-slot-text',
+            hasSlotError && 'text-error font-medium'
+          )
         "
       >
-        {{ slotData.localized_name || slotData.name || `Input ${index}` }}
+        {{
+          slotData.label ||
+          slotData.localized_name ||
+          slotData.name ||
+          `Input ${index}`
+        }}
       </span>
-      <LODFallback />
     </div>
   </div>
 </template>
@@ -29,7 +60,6 @@ import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -39,7 +69,6 @@ import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composabl
 import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface InputSlotProps {
@@ -50,6 +79,7 @@ interface InputSlotProps {
   connected?: boolean
   compatible?: boolean
   dotOnly?: boolean
+  socketless?: boolean
 }
 
 const props = defineProps<InputSlotProps>()
@@ -65,18 +95,6 @@ const hasSlotError = computed(() => {
     (error) => error.extra_info?.input_name === slotName
   )
 })
-
-const errorClassesDot = computed(() => {
-  return hasSlotError.value
-    ? 'ring-2 ring-error ring-offset-0 rounded-full'
-    : ''
-})
-
-const labelClasses = computed(() =>
-  hasSlotError.value
-    ? 'text-error font-medium'
-    : 'text-node-component-slot-text'
-)
 
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
@@ -98,13 +116,6 @@ onErrorCaptured((error) => {
   return false
 })
 
-const slotColor = computed(() => {
-  if (hasSlotError.value) {
-    return 'var(--color-error)'
-  }
-  return getSlotColor(props.slotData.type)
-})
-
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
   getSlotKey(props.nodeId ?? '', props.index, true)
@@ -113,19 +124,6 @@ const shouldDim = computed(() => {
   if (!dragState.active) return false
   return !dragState.compatible.get(slotKey.value)
 })
-
-const slotWrapperClass = computed(() =>
-  cn(
-    'lg-slot lg-slot--input flex items-center group rounded-r-lg h-6',
-    'cursor-crosshair',
-    props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
-    {
-      'lg-slot--connected': props.connected,
-      'lg-slot--compatible': props.compatible,
-      'opacity-40': shouldDim.value
-    }
-  )
-)
 
 const connectionDotRef = ref<ComponentPublicInstance<{
   slotElRef: HTMLElement | undefined
@@ -144,7 +142,7 @@ useSlotElementTracking({
   element: slotElRef
 })
 
-const { onPointerDown } = useSlotLinkInteraction({
+const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   nodeId: props.nodeId ?? '',
   index: props.index,
   type: 'input'

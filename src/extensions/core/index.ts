@@ -1,16 +1,18 @@
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isNightly } from '@/platform/distribution/types'
 
 import './clipspace'
 import './contextMenuFilter'
+import './customCombo'
 import './dynamicPrompts'
 import './editAttention'
 import './electronAdapter'
 import './groupNode'
 import './groupNodeManage'
 import './groupOptions'
+import './imageCompare'
+import './imageCrop'
 import './load3d'
 import './maskeditor'
-import './matchType'
 import './nodeTemplates'
 import './noteNode'
 import './previewAny'
@@ -35,4 +37,9 @@ if (isCloud) {
   if (window.__CONFIG__?.subscription_required) {
     await import('./cloudSubscription')
   }
+}
+
+// Nightly-only extensions
+if (isNightly && !isCloud) {
+  await import('./nightlyBadges')
 }

@@ -2,12 +2,12 @@
   <a
     ref="wrapperRef"
     v-tooltip.bottom="{
-      value: item.label,
+      value: tooltipText,
       showDelay: 512
     }"
     draggable="false"
     href="#"
-    class="p-breadcrumb-item-link h-12 cursor-pointer px-2"
+    class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
     :class="{
       'flex items-center gap-1': isActive,
       'p-breadcrumb-item-link-menu-visible': menu?.overlayVisible,
@@ -16,12 +16,16 @@
     }"
     @click="handleClick"
   >
+    <i
+      v-if="hasMissingNodes && isRoot"
+      class="icon-[lucide--triangle-alert] text-warning-background"
+    />
     <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
-    <Tag v-if="item.isBlueprint" :value="'Blueprint'" severity="primary" />
+    <Tag v-if="item.isBlueprint" value="Blueprint" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
   </a>
   <Menu
-    v-if="isActive"
+    v-if="isActive || isRoot"
     ref="menu"
     :model="menuItems"
     :popup="true"
@@ -55,15 +59,19 @@ import Tag from 'primevue/tag'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { appendJsonExt } from '@/utils/formatUtil'
+import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 interface Props {
   item: MenuItem
@@ -73,6 +81,11 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   isActive: false
 })
+
+const nodeDefStore = useNodeDefStore()
+const hasMissingNodes = computed(() =>
+  graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
+)
 
 const { t } = useI18n()
 const menu = ref<InstanceType<typeof Menu> & MenuState>()
@@ -115,79 +128,36 @@ const rename = async (
 }
 
 const isRoot = props.item.key === 'root'
-const menuItems = computed<MenuItem[]>(() => {
-  return [
-    {
-      label: t('g.rename'),
-      icon: 'pi pi-pencil',
-      command: startRename
-    },
-    {
-      label: t('breadcrumbsMenu.duplicate'),
-      icon: 'pi pi-copy',
-      command: async () => {
-        await workflowService.duplicateWorkflow(workflowStore.activeWorkflow!)
-      },
-      visible: isRoot && !props.item.isBlueprint
-    },
-    {
-      separator: true,
-      visible: isRoot
-    },
-    {
-      label: t('menuLabels.Save'),
-      icon: 'pi pi-save',
-      command: async () => {
-        await useCommandStore().execute('Comfy.SaveWorkflow')
-      },
-      visible: isRoot
-    },
-    {
-      label: t('menuLabels.Save As'),
-      icon: 'pi pi-save',
-      command: async () => {
-        await useCommandStore().execute('Comfy.SaveWorkflowAs')
-      },
-      visible: isRoot
-    },
-    {
-      separator: true
-    },
-    {
-      label: t('breadcrumbsMenu.clearWorkflow'),
-      icon: 'pi pi-trash',
-      command: async () => {
-        await useCommandStore().execute('Comfy.ClearWorkflow')
-      }
-    },
-    {
-      separator: true,
-      visible: props.item.key === 'root' && props.item.isBlueprint
-    },
-    {
-      label: t('subgraphStore.publish'),
-      icon: 'pi pi-copy',
-      command: async () => {
-        await workflowService.saveWorkflowAs(workflowStore.activeWorkflow!)
-      },
-      visible: props.item.key === 'root' && props.item.isBlueprint
-    },
-    {
-      separator: true,
-      visible: isRoot
-    },
-    {
-      label: props.item.isBlueprint
-        ? t('breadcrumbsMenu.deleteBlueprint')
-        : t('breadcrumbsMenu.deleteWorkflow'),
-      icon: 'pi pi-times',
-      command: async () => {
-        await workflowService.deleteWorkflow(workflowStore.activeWorkflow!)
-      },
-      visible: isRoot
-    }
-  ]
+
+const tooltipText = computed(() => {
+  if (hasMissingNodes.value && isRoot) {
+    return t('breadcrumbsMenu.missingNodesWarning')
+  }
+  return props.item.label
 })
+
+const startRename = async () => {
+  // Check if element is hidden (collapsed breadcrumb)
+  // When collapsed, root item is hidden via CSS display:none, so use rename command
+  if (isRoot && wrapperRef.value?.offsetParent === null) {
+    await useCommandStore().execute('Comfy.RenameWorkflow')
+    return
+  }
+
+  isEditing.value = true
+  itemLabel.value = props.item.label as string
+  void nextTick(() => {
+    if (itemInputRef.value?.$el) {
+      itemInputRef.value.$el.focus()
+      itemInputRef.value.$el.select()
+      if (wrapperRef.value) {
+        itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
+      }
+    }
+  })
+}
+
+const { menuItems } = useWorkflowActionsMenu(startRename, { isRoot })
 
 const handleClick = (event: MouseEvent) => {
   if (isEditing.value) {
@@ -208,20 +178,6 @@ const handleClick = (event: MouseEvent) => {
   }
 }
 
-const startRename = () => {
-  isEditing.value = true
-  itemLabel.value = props.item.label as string
-  void nextTick(() => {
-    if (itemInputRef.value?.$el) {
-      itemInputRef.value.$el.focus()
-      itemInputRef.value.$el.select()
-      if (wrapperRef.value) {
-        itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
-      }
-    }
-  })
-}
-
 const inputBlur = async (doRename: boolean) => {
   if (doRename) {
     await rename(itemLabel.value, props.item.label as string)
@@ -229,6 +185,14 @@ const inputBlur = async (doRename: boolean) => {
 
   isEditing.value = false
 }
+
+const toggleMenu = (event: MouseEvent) => {
+  menu.value?.toggle(event)
+}
+
+defineExpose({
+  toggleMenu
+})
 </script>
 
 <style scoped>

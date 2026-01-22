@@ -26,6 +26,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import {
+  getEffectiveBrushSize,
+  getEffectiveHardness
+} from '@/composables/maskeditor/brushUtils'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
@@ -36,11 +40,14 @@ const { containerRef } = defineProps<{
 const store = useMaskEditorStore()
 
 const brushOpacity = computed(() => {
-  return store.brushVisible ? '1' : '0'
+  return store.brushVisible ? 1 : 0
 })
 
 const brushRadius = computed(() => {
-  return store.brushSettings.size * store.zoomRatio
+  const size = store.brushSettings.size
+  const hardness = store.brushSettings.hardness
+  const effectiveSize = getEffectiveBrushSize(size, hardness)
+  return effectiveSize * store.zoomRatio
 })
 
 const brushSize = computed(() => {
@@ -78,19 +85,26 @@ const gradientVisible = computed(() => {
 })
 
 const gradientBackground = computed(() => {
+  const size = store.brushSettings.size
   const hardness = store.brushSettings.hardness
+  const effectiveSize = getEffectiveBrushSize(size, hardness)
+  const effectiveHardness = getEffectiveHardness(size, hardness, effectiveSize)
 
-  if (hardness === 1) {
+  if (effectiveHardness === 1) {
     return 'rgba(255, 0, 0, 0.5)'
   }
 
-  const midStop = hardness * 100
+  const midStop = effectiveHardness * 100
   const outerStop = 100
+  // Add an intermediate stop to approximate the squared falloff
+  // At 50% of the fade region, squared falloff is 0.25 (relative to max)
+  const fadeMidStop = midStop + (outerStop - midStop) * 0.5
 
   return `radial-gradient(
     circle,
     rgba(255, 0, 0, 0.5) 0%,
-    rgba(255, 0, 0, 0.25) ${midStop}%,
+    rgba(255, 0, 0, 0.5) ${midStop}%,
+    rgba(255, 0, 0, 0.125) ${fadeMidStop}%,
     rgba(255, 0, 0, 0) ${outerStop}%
   )`
 })

@@ -4,10 +4,14 @@ import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
+import FormSearchInput from '../FormSearchInput.vue'
 import type { LayoutMode, OptionId, SortOption } from './types'
 
 defineProps<{
-  isQuerying: boolean
+  searcher?: (
+    query: string,
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<void>
   sortOptions: SortOption[]
 }>()
 
@@ -46,32 +50,18 @@ function handleSortSelected(item: SortOption) {
 
 <template>
   <div class="text-secondary flex gap-2 px-4">
-    <!-- TODO: Replace with a common Search input -->
-    <label
+    <FormSearchInput
+      v-model="searchQuery"
+      :searcher
       :class="
         cn(
           actionButtonStyle,
-          'flex-1 flex px-2 items-center text-base leading-none cursor-text',
-          searchQuery?.trim() !== '' ? 'text-base-foreground' : '',
           'hover:outline-component-node-widget-background-highlighted/80',
-          'focus-within:outline-component-node-widget-background-highlighted/80'
+          'focus-within:outline-component-node-widget-background-highlighted/80 focus-within:ring-0'
         )
       "
-    >
-      <i
-        v-if="isQuerying"
-        class="mr-2 icon-[lucide--loader-circle] size-4 animate-spin"
-      />
-      <i v-else class="mr-2 icon-[lucide--search] size-4" />
-      <input
-        v-model="searchQuery"
-        type="text"
-        :class="resetInputStyle"
-        placeholder="Search"
-      />
-    </label>
+    />
 
-    <!-- Sort Select -->
     <button
       ref="sortTriggerRef"
       :class="

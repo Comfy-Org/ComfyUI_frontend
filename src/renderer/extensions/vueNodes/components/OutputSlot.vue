@@ -1,21 +1,17 @@
 <template>
   <div v-if="renderError" class="node-error p-1 text-xs text-red-500">⚠️</div>
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
-    <div class="relative h-full flex items-center">
+    <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
-      <span
-        v-if="!dotOnly"
-        class="lod-toggle text-xs font-normal whitespace-nowrap text-node-component-slot-text"
-      >
+      <span v-if="!dotOnly" class="truncate text-node-component-slot-text">
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
-      <LODFallback />
     </div>
     <!-- Connection Dot -->
     <SlotConnectionDot
       ref="connectionDotRef"
-      :color="slotColor"
       class="w-3 translate-x-1/2"
+      :slot-data
       @pointerdown="onPointerDown"
     />
   </div>
@@ -26,7 +22,6 @@ import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getSlotColor } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -35,7 +30,6 @@ import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composabl
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@/utils/tailwindUtil'
 
-import LODFallback from './LODFallback.vue'
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
 interface OutputSlotProps {
@@ -71,9 +65,6 @@ onErrorCaptured((error) => {
   toastErrorHandler(error)
   return false
 })
-
-// Get slot color based on type
-const slotColor = computed(() => getSlotColor(props.slotData.type))
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>

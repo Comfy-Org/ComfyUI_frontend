@@ -23,7 +23,7 @@ export class InputIndicators implements Disposable {
   colour1 = '#ff5f00'
   colour2 = '#00ff7c'
   colour3 = '#dea7ff'
-  fontString = 'bold 12px Arial'
+  fontString = 'bold 12px Inter, sans-serif'
   // #endregion
 
   // #region state

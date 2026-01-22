@@ -14,7 +14,7 @@
         "tooltip": "控制扩散过程中的引导运行平均值，设置为0时禁用。"
       },
       "norm_threshold": {
-        "name": "norm_threshold",
+        "name": "向量归一化",
         "tooltip": "将引导向量归一化到此值，设置为 0 时禁用归一化。"
       }
     },
@@ -38,6 +38,87 @@
       },
       "sigmas": {
         "name": "Sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "AddTextPrefix": {
+    "display_name": "文本前添加",
+    "inputs": {
+      "prefix": {
+        "name": "前缀",
+        "tooltip": "要添加的内容。"
+      },
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要被添加的文本。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": "处理后的文本"
+      }
+    }
+  },
+  "AddTextSuffix": {
+    "display_name": "文本后添加",
+    "inputs": {
+      "suffix": {
+        "name": "后缀",
+        "tooltip": "要添加的内容。"
+      },
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要被添加的文本。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": "处理后的文本"
+      }
+    }
+  },
+  "AdjustBrightness": {
+    "display_name": "调整亮度",
+    "inputs": {
+      "factor": {
+        "name": "系数",
+        "tooltip": "亮度系数。1.0表示无变化，<1.0表示更暗，>1.0表示更亮。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要调整的图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "调整后的图像"
+      }
+    }
+  },
+  "AdjustContrast": {
+    "display_name": "调整对比度",
+    "inputs": {
+      "factor": {
+        "name": "系数",
+        "tooltip": "对比度系数。1.0表示无变化，<1.0表示更低，>1.0表示更高。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要调整的图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "调整后的图像"
       }
     }
   },
@@ -70,21 +151,31 @@
         "name": "音量",
         "tooltip": "音量调整，单位为分贝 (dB)。0 = 无变化，+6 = 加倍，-6 = 减半，等等"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "AudioConcat": {
-    "description": "将 audio1 与 audio2 按指定方向连接。",
+    "description": "将 音频1 与 音频2 按指定方向连接。",
     "display_name": "音频拼接",
     "inputs": {
       "audio1": {
-        "name": "audio1"
+        "name": "音频1"
       },
       "audio2": {
         "name": "音频2"
       },
       "direction": {
         "name": "方向",
-        "tooltip": "是否在 audio1 之后或之前追加 audio2。"
+        "tooltip": "音频2 在 音频1 之前或之后。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -105,10 +196,10 @@
     }
   },
   "AudioEncoderLoader": {
-    "display_name": "音频编码器加载器",
+    "display_name": "加载音频编码器",
     "inputs": {
       "audio_encoder_name": {
-        "name": "音频编码器名称"
+        "name": "音频编码器"
       }
     },
     "outputs": {
@@ -118,11 +209,11 @@
     }
   },
   "AudioMerge": {
-    "description": "通过叠加两个音频轨道的波形来合并它们。",
+    "description": "叠加 音频1 和 音频2 轨道的波形。",
     "display_name": "音频合并",
     "inputs": {
       "audio1": {
-        "name": "audio1"
+        "name": "音频1"
       },
       "audio2": {
         "name": "音频2"
@@ -130,6 +221,11 @@
       "merge_method": {
         "name": "合并方法",
         "tooltip": "用于组合音频波形的方法。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -141,6 +237,11 @@
       },
       "model": {
         "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -159,22 +260,133 @@
       "steps": {
         "name": "步数"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchImagesNode": {
+    "display_name": "批量图像",
+    "inputs": {
+      "images": {
+        "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchLatentsNode": {
+    "display_name": "批量latent",
+    "inputs": {
+      "latents": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchMasksNode": {
+    "display_name": "批量mask",
+    "inputs": {
+      "masks": {
+        "name": "mask"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "BetaSamplingScheduler": {
     "display_name": "Beta采样调度器",
     "inputs": {
       "alpha": {
-        "name": "阿尔法"
+        "name": "alpha"
       },
       "beta": {
-        "name": "贝塔"
+        "name": "beta"
       },
       "model": {
         "name": "模型"
       },
       "steps": {
         "name": "步数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaImageEditNode": {
+    "description": "使用 Bria 最新模型编辑图像",
+    "display_name": "Bria 图像编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "数值越高，图像越贴合 prompt。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "如未指定，编辑将应用于整个图像。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "内容审核设置"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "prompt_content_moderation"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "visual_input_moderation"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "visual_output_moderation"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "编辑图像的指令"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "包含结构化编辑提示的 JSON 字符串。使用此项可实现更精确、可编程的控制，替代常规 prompt。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": null
       }
     }
   },
@@ -201,13 +413,16 @@
         "name": "第一帧",
         "tooltip": "用于视频的第一帧。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
+      },
       "last_frame": {
         "name": "最后一帧",
         "tooltip": "用于视频的最后一帧。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -248,8 +463,7 @@
         "tooltip": "要编辑的基础图像"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -286,8 +500,7 @@
         "tooltip": "图像的自定义高度。仅当 `size_preset` 设置为 `Custom` 时该值才生效"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -336,8 +549,7 @@
         "tooltip": "一到四张图片。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -381,13 +593,16 @@
         "name": "时长",
         "tooltip": "输出视频的时长（以秒为单位）。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
+      },
       "image": {
         "name": "图片",
         "tooltip": "用于视频的第一帧。"
       },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -489,9 +704,12 @@
         "name": "时长",
         "tooltip": "输出视频的时长（秒）。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
+      },
       "model": {
-        "name": "模型",
-        "tooltip": "模型名称"
+        "name": "模型"
       },
       "prompt": {
         "name": "提示",
@@ -531,6 +749,11 @@
       "positive": {
         "name": "正面条件"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "CFGNorm": {
@@ -545,7 +768,7 @@
     },
     "outputs": {
       "0": {
-        "name": "修补模型",
+        "name": "模型",
         "tooltip": null
       }
     }
@@ -554,12 +777,12 @@
     "display_name": "CFGZeroStar",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "模型"
       }
     },
     "outputs": {
       "0": {
-        "name": "patched_model",
+        "name": "模型",
         "tooltip": null
       }
     }
@@ -568,7 +791,7 @@
     "display_name": "CLIP注意力相乘",
     "inputs": {
       "clip": {
-        "name": "clip"
+        "name": "CLIP"
       },
       "k": {
         "name": "k"
@@ -685,7 +908,7 @@
     }
   },
   "CLIPTextEncodeControlnet": {
-    "display_name": "CLIP文本编码ControlNet",
+    "display_name": "CLIP文本编码(ControlNet)",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -704,7 +927,7 @@
     }
   },
   "CLIPTextEncodeFlux": {
-    "display_name": "CLIP文本编码Flux",
+    "display_name": "CLIP文本编码（Flux）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -726,7 +949,7 @@
     }
   },
   "CLIPTextEncodeHiDream": {
-    "display_name": "CLIPTextEncodeHiDream",
+    "display_name": "CLIP文本编码（HiDream）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -751,7 +974,7 @@
     }
   },
   "CLIPTextEncodeHunyuanDiT": {
-    "display_name": "CLIP文本编码混元DiT",
+    "display_name": "CLIP文本编码（混元DiT）",
     "inputs": {
       "bert": {
         "name": "bert"
@@ -769,20 +992,39 @@
       }
     }
   },
+  "CLIPTextEncodeKandinsky5": {
+    "display_name": "CLIP文本编码（Kandinsky5）",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "clip_l": {
+        "name": "clip_l"
+      },
+      "qwen25_7b": {
+        "name": "qwen25_7b"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CLIPTextEncodeLumina2": {
     "description": "使用CLIP模型将系统提示和用户提示编码成可以用来引导扩散模型生成特定图像的嵌入。",
-    "display_name": "Lumina2的CLIP文本编码",
+    "display_name": "CLIP文本编码（Lumina2）",
     "inputs": {
       "clip": {
         "name": "clip",
         "tooltip": "用于编码文本的CLIP模型。"
       },
       "system_prompt": {
-        "name": "system_prompt",
+        "name": "系统提示词",
         "tooltip": "Lumina2提供两种类型的系统提示：优越：你是一个设计来根据文本提示或用户提示生成优越图像的助手，这些图像具有基于文本提示的优越度的图像-文本对齐。对齐：你是一个设计来根据文本提示生成高质量图像的助手，这些图像具有基于文本提示的最高度的图像-文本对齐。"
       },
       "user_prompt": {
-        "name": "user_prompt",
+        "name": "提示词",
         "tooltip": "需要编码的文本。"
       }
     },
@@ -794,7 +1036,7 @@
   },
   "CLIPTextEncodePixArtAlpha": {
     "description": "编码文本并设置PixArt Alpha的分辨率条件。不适用于PixArt Sigma。",
-    "display_name": "CLIPTextEncodePixArtAlpha",
+    "display_name": "CLIP文本编码（PixArtAlpha）",
     "inputs": {
       "clip": {
         "name": "剪辑"
@@ -816,7 +1058,7 @@
     }
   },
   "CLIPTextEncodeSD3": {
-    "display_name": "CLIP文本编码SD3",
+    "display_name": "CLIP文本编码（SD3）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -841,7 +1083,7 @@
     }
   },
   "CLIPTextEncodeSDXL": {
-    "display_name": "CLIP文本编码SDXL",
+    "display_name": "CLIP文本编码（SDXL）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -878,7 +1120,7 @@
     }
   },
   "CLIPTextEncodeSDXLRefiner": {
-    "display_name": "CLIP文本编码SDXL精炼器",
+    "display_name": "CLIP文本编码（SDXLRefiner）",
     "inputs": {
       "ascore": {
         "name": "美学分数"
@@ -956,6 +1198,29 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "CenterCropImages": {
+    "display_name": "裁剪图像（中心）",
+    "inputs": {
+      "height": {
+        "name": "高度",
+        "tooltip": "裁剪框高度"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要调整的图像"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "裁剪框宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "调整后的图像"
       }
     }
   },
@@ -1092,6 +1357,26 @@
       },
       "hooks_H": {
         "name": "约束_H"
+      }
+    }
+  },
+  "ComfySwitchNode": {
+    "display_name": "切换",
+    "inputs": {
+      "on_false": {
+        "name": "为假时"
+      },
+      "on_true": {
+        "name": "为真时"
+      },
+      "switch": {
+        "name": "切换"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "输出",
+        "tooltip": null
       }
     }
   },
@@ -1329,10 +1614,12 @@
     },
     "outputs": {
       "0": {
-        "name": "正面条件"
+        "name": "正面条件",
+        "tooltip": null
       },
       "1": {
-        "name": "负面条件"
+        "name": "负面条件",
+        "tooltip": null
       }
     }
   },
@@ -1390,6 +1677,10 @@
       "dim": {
         "name": "维度",
         "tooltip": "应用上下文窗口的维度。"
+      },
+      "freenoise": {
+        "name": "Freenoise",
+        "tooltip": "是否应用 Freenoise，优化窗口融合。"
       },
       "fuse_method": {
         "name": "融合方法",
@@ -1550,7 +1841,7 @@
     }
   },
   "CosmosImageToVideoLatent": {
-    "display_name": "Cosmos图像到视频潜在",
+    "display_name": "图像到视频Latent（Cosmos）",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -1581,10 +1872,10 @@
     }
   },
   "CosmosPredict2ImageToVideoLatent": {
-    "display_name": "CosmosPredict2ImageToVideoLatent",
+    "display_name": "图像到视频Latent（CosmosPredict2）",
     "inputs": {
       "batch_size": {
-        "name": "batch_size"
+        "name": "批次大小"
       },
       "end_image": {
         "name": "结束图像"
@@ -1791,6 +2082,26 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CustomCombo": {
+    "display_name": "自定义组合",
+    "inputs": {
+      "choice": {
+        "name": "选择"
+      },
+      "option0": {
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "DiffControlNetLoader": {
@@ -1829,7 +2140,12 @@
     }
   },
   "DisableNoise": {
-    "display_name": "禁用噪波"
+    "display_name": "禁用噪波",
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
   },
   "DualCFGGuider": {
     "display_name": "双CFG引导器",
@@ -1854,6 +2170,11 @@
       },
       "style": {
         "name": "样式"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -1880,7 +2201,7 @@
     "display_name": "EasyCache",
     "inputs": {
       "end_percent": {
-        "name": "end_percent",
+        "name": "结束位置",
         "tooltip": "结束使用 EasyCache 的相对采样步数。"
       },
       "model": {
@@ -1888,15 +2209,15 @@
         "tooltip": "要添加 EasyCache 的模型。"
       },
       "reuse_threshold": {
-        "name": "reuse_threshold",
+        "name": "重用阈值",
         "tooltip": "重用缓存步骤的阈值。"
       },
       "start_percent": {
-        "name": "start_percent",
+        "name": "开始位置",
         "tooltip": "开始使用 EasyCache 的相对采样步数。"
       },
       "verbose": {
-        "name": "verbose",
+        "name": "调试信息",
         "tooltip": "是否记录详细信息。"
       }
     },
@@ -1907,11 +2228,11 @@
     }
   },
   "EmptyAceStepLatentAudio": {
-    "display_name": "EmptyAceStepLatentAudio",
+    "display_name": "空Latent音频（AceStep）",
     "inputs": {
       "batch_size": {
-        "name": "batch_size",
-        "tooltip": "批次中的潜在图像数量。"
+        "name": "批次大小",
+        "tooltip": "批次中的 Latent 数量。"
       },
       "seconds": {
         "name": "秒数"
@@ -1927,24 +2248,29 @@
     "display_name": "空音频",
     "inputs": {
       "channels": {
-        "name": "channels",
+        "name": "通道",
         "tooltip": "音频通道数（1 为单声道，2 为立体声）。"
       },
       "duration": {
-        "name": "duration",
+        "name": "长度",
         "tooltip": "空音频片段的持续时间（秒）"
       },
       "sample_rate": {
-        "name": "sample_rate",
+        "name": "采样率",
         "tooltip": "空音频片段的采样率。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
   "EmptyChromaRadianceLatentImage": {
-    "display_name": "EmptyChromaRadianceLatentImage",
+    "display_name": "空Latent图像（ChromaRadiance）",
     "inputs": {
       "batch_size": {
-        "name": "batch_size"
+        "name": "批次大小"
       },
       "height": {
         "name": "高度"
@@ -1960,7 +2286,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "空的Cosmos潜在视频",
+    "display_name": "空Latent视频（Cosmos）",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -1981,11 +2307,30 @@
       }
     }
   },
-  "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+  "EmptyFlux2LatentImage": {
+    "display_name": "空Latent图像（Flux2）",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHunyuanImageLatent": {
+    "display_name": "空Latent图像",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
       },
       "height": {
         "name": "高度"
@@ -2001,7 +2346,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "空Latent视频（混元）",
+    "display_name": "空Latent视频（Hunyuan）",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -2011,6 +2356,28 @@
       },
       "length": {
         "name": "长度"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "EmptyHunyuanVideo15Latent": {
+    "display_name": "空Latent视频（Hunyuan1.5）",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "时长"
       },
       "width": {
         "name": "宽度"
@@ -2071,17 +2438,27 @@
       "seconds": {
         "name": "秒"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "空Latent图像（Hunyuan3Dv2）",
     "inputs": {
       "batch_size": {
-        "name": "批量大小",
-        "tooltip": "批量中的潜在图像数量。"
+        "name": "批次大小",
+        "tooltip": "批次中的Latent数量。"
       },
       "resolution": {
         "name": "分辨率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2130,6 +2507,28 @@
       }
     }
   },
+  "EmptyQwenImageLayeredLatentImage": {
+    "display_name": "空Latent图像（QwenImageLayerd）",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "layers": {
+        "name": "图层"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptySD3LatentImage": {
     "display_name": "空Latent图像（SD3）",
     "inputs": {
@@ -2150,13 +2549,13 @@
     }
   },
   "Epsilon Scaling": {
-    "display_name": "Epsilon Scaling",
+    "display_name": "Epsilon缩放",
     "inputs": {
       "model": {
         "name": "模型"
       },
       "scaling_factor": {
-        "name": "scaling_factor"
+        "name": "系数"
       }
     },
     "outputs": {
@@ -2172,15 +2571,20 @@
         "name": "最大Sigma"
       },
       "sigma_min": {
-        "name": "最新Sigma"
+        "name": "最小Sigma"
       },
       "steps": {
         "name": "步数"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ExtendIntermediateSigmas": {
-    "display_name": "ExtendIntermediateSigmas",
+    "display_name": "插值扩展Sigmas",
     "inputs": {
       "end_at_sigma": {
         "name": "结束 sigma"
@@ -2189,13 +2593,18 @@
         "name": "sigmas"
       },
       "spacing": {
-        "name": "间距"
+        "name": "间距方式"
       },
       "start_at_sigma": {
         "name": "起始 sigma"
       },
       "steps": {
         "name": "步数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2217,6 +2626,11 @@
       "top": {
         "name": "顶"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FlipSigmas": {
@@ -2225,14 +2639,110 @@
       "sigmas": {
         "name": "sigmas"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2MaxImageNode": {
+    "description": "根据提示词和分辨率同步生成图像。",
+    "display_name": "Flux.2 [max] 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "参考图像（最多9张）"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成或编辑的提示词"
+      },
+      "prompt_upsampling": {
+        "name": "提示词上采样",
+        "tooltip": "选择启用提示词采样，启用后会自动修改提示词生成更具创意的内容。"
+      },
+      "seed": {
+        "name": "随机种",
+        "tooltip": "创建噪波的随机种"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2ProImageNode": {
+    "description": "根据提示词和分辨率同步生成图像。",
+    "display_name": "Flux.2 [pro] 图像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "参考图像（最多9张）"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于生成或编辑的提示词"
+      },
+      "prompt_upsampling": {
+        "name": "提示词上采样",
+        "tooltip": "选择启用提示词采样，启用后会自动修改提示词生成更具创意的内容。"
+      },
+      "seed": {
+        "name": "随机种",
+        "tooltip": "创建噪波的随机种"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux2Scheduler": {
+    "display_name": "Flux2调度器",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "steps": {
+        "name": "步数"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FluxDisableGuidance": {
-    "description": "此节点完全禁用Flux和类似Flux模型上的指导嵌入",
+    "description": "此节点完全禁用Flux和类似Flux模型上的引导嵌入",
     "display_name": "Flux禁用指导",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "条件"
       }
     },
     "outputs": {
@@ -2258,11 +2768,11 @@
     }
   },
   "FluxKontextImageScale": {
-    "description": "此节点将图像调整为更适合 flux kontext 的尺寸。",
-    "display_name": "FluxKontextImageScale",
+    "description": "将图像调整为更适合 Flux Kontext 的尺寸。",
+    "display_name": "图像缩放为FluxKontext",
     "inputs": {
       "image": {
-        "name": "image"
+        "name": "图像"
       }
     },
     "outputs": {
@@ -2273,11 +2783,11 @@
   },
   "FluxKontextMaxImageNode": {
     "description": "使用Flux.1 Kontext [max]通过API基于提示词和宽高比编辑图像。",
-    "display_name": "Flux.1 Kontext [max] Image",
+    "display_name": "Flux.1 Kontext [max] 图像",
     "inputs": {
       "aspect_ratio": {
         "name": "宽高比",
-        "tooltip": "图像宽高比；必须在1:4到4:1之间。"
+        "tooltip": "图像宽高比；必须在1:4和4:1之间。"
       },
       "control_after_generate": {
         "name": "生成后控制"
@@ -2437,7 +2947,7 @@
         "name": "图像"
       },
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       },
       "prompt": {
         "name": "提示词",
@@ -2508,18 +3018,18 @@
     "display_name": "FreSca",
     "inputs": {
       "freq_cutoff": {
-        "name": "freq_cutoff",
+        "name": "低频阈值",
         "tooltip": "围绕中心被视为低频的频率索引数量"
       },
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "scale_high": {
-        "name": "scale_high",
+        "name": "高频缩放",
         "tooltip": "高频分量的缩放因子"
       },
       "scale_low": {
-        "name": "scale_low",
+        "name": "低频缩放",
         "tooltip": "低频分量的缩放因子"
       }
     },
@@ -2547,6 +3057,11 @@
       "s2": {
         "name": "s2"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "FreeU_V2": {
@@ -2566,6 +3081,11 @@
       },
       "s2": {
         "name": "s2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -2600,7 +3120,7 @@
     "display_name": "GLIGEN文本框应用",
     "inputs": {
       "clip": {
-        "name": "CLIPCLIP"
+        "name": "CLIP"
       },
       "conditioning_to": {
         "name": "条件到"
@@ -2625,9 +3145,61 @@
       }
     }
   },
+  "GeminiImage2Node": {
+    "description": "通过Google API编辑图像。",
+    "display_name": "Nano Banana Pro（Google Gemini 图像）",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "自动：会自动匹配输入图像的宽高比，或如果没有提供图像，则生成1:1的正方形。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "files": {
+        "name": "文件",
+        "tooltip": "模型上下文文件。接受来自 Gemini输入文件 节点的输入。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "参考图像。如果要使用多个参考图，使用 图像批次 节点（最多14张）。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "使用文本描述要生成的图像或要应用的编辑的内容。包括模型应该遵循的任何约束、样式或细节。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "目标分辨率。2K/4K 会使用 Gemini 放大生成。"
+      },
+      "response_modalities": {
+        "name": "响应模态",
+        "tooltip": "选择 图像 仅生成图像，选择 图像+文本 会生成图像和文本。"
+      },
+      "seed": {
+        "name": "随机种",
+        "tooltip": "为特定值时，模型将尽可能提供相同的结果。但不保证确定一致的输出。此外，即使使用相同的种子值，更改模型或参数设置（例如温度）也会导致结果变化。默认使用随机值。"
+      },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "决定 AI 行为的基本指令。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImageNode": {
     "description": "通过Google API同步编辑图像。",
-    "display_name": "Google Gemini 图像",
+    "display_name": "Nano Banana （Google Gemini 图像）",
     "inputs": {
       "aspect_ratio": {
         "name": "宽高比",
@@ -2652,9 +3224,17 @@
         "name": "提示词",
         "tooltip": "用于生成的文本提示词"
       },
+      "response_modalities": {
+        "name": "回复模态",
+        "tooltip": "选择“图像”仅输出图像，选择“图像+文本”输出图像和文本。"
+      },
       "seed": {
         "name": "种子",
         "tooltip": "当种子固定为特定值时，模型会尽力为重复请求提供相同的响应。不能保证确定性输出。此外，更改模型或参数设置（如温度）即使使用相同的种子值也可能导致响应变化。默认使用随机种子值。"
+      },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "决定 AI 行为的基本指令。"
       }
     },
     "outputs": {
@@ -2671,7 +3251,7 @@
     "display_name": "Gemini 输入文件",
     "inputs": {
       "GEMINI_INPUT_FILES": {
-        "name": "GEMINI_INPUT_FILES",
+        "name": "Gemini 输入文件",
         "tooltip": "与此节点加载的文件批量组合的可选附加文件。允许链式连接输入文件，以便单个消息可包含多个输入文件。"
       },
       "file": {
@@ -2716,6 +3296,10 @@
         "name": "种子",
         "tooltip": "当种子固定为特定值时，模型会尽力为重复请求提供相同的响应。不保证确定性输出。此外，更改模型或参数设置（如温度）即使使用相同的种子值也可能导致响应变化。默认使用随机种子值。"
       },
+      "system_prompt": {
+        "name": "系统提示词",
+        "tooltip": "决定 AI 行为的基本指令。"
+      },
       "video": {
         "name": "视频",
         "tooltip": "用作模型上下文的可选视频。"
@@ -2723,6 +3307,72 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GenerateTracks": {
+    "display_name": "生成轨道",
+    "inputs": {
+      "bezier": {
+        "name": "贝塞尔曲线",
+        "tooltip": "贝塞尔曲线路径，使用中点作为控制点。"
+      },
+      "end_x": {
+        "name": "结束点X",
+        "tooltip": "结束点的规格化X坐标（0-1）。"
+      },
+      "end_y": {
+        "name": "结束点Y",
+        "tooltip": "结束点的规格化Y坐标（0-1）。"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "interpolation": {
+        "name": "插值",
+        "tooltip": "控制轨迹沿着路径移动的时间/速度。"
+      },
+      "mid_x": {
+        "name": "中间点Y",
+        "tooltip": "中间点的规格化Y坐标（0-1）。"
+      },
+      "mid_y": {
+        "name": "中间点Y",
+        "tooltip": "中间点的规格化Y坐标（0-1）。"
+      },
+      "num_frames": {
+        "name": "帧数"
+      },
+      "num_tracks": {
+        "name": "轨迹数"
+      },
+      "start_x": {
+        "name": "起始点X",
+        "tooltip": "起始点的规格化X坐标（0-1）。"
+      },
+      "start_y": {
+        "name": "起始点Y",
+        "tooltip": "起始点的规格化Y坐标（0-1）。"
+      },
+      "track_mask": {
+        "name": "轨道遮罩",
+        "tooltip": "遮罩，用于标记可见帧"
+      },
+      "track_spread": {
+        "name": "轨道分布",
+        "tooltip": "轨道间的规格化距离。垂直于轨迹运动方向展开。"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "轨迹长度",
         "tooltip": null
       }
     }
@@ -2737,23 +3387,26 @@
     },
     "outputs": {
       "0": {
-        "name": "宽度"
+        "name": "宽度",
+        "tooltip": null
       },
       "1": {
-        "name": "高度"
+        "name": "高度",
+        "tooltip": null
       },
       "2": {
-        "name": "批处理大小"
+        "name": "批处理大小",
+        "tooltip": null
       }
     }
   },
   "GetVideoComponents": {
-    "description": "提取视频中的所有组件：帧、音频和帧率。",
-    "display_name": "获取视频组件",
+    "description": "提取视频中的所有元素：帧、音频和帧率。",
+    "display_name": "获取视频元素",
     "inputs": {
       "video": {
         "name": "视频",
-        "tooltip": "要提取组件的视频。"
+        "tooltip": "要提取元素的视频。"
       }
     },
     "outputs": {
@@ -2783,10 +3436,15 @@
       "tapered_corners": {
         "name": "倒角"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Hunyuan3Dv2Conditioning": {
-    "display_name": "Hunyuan3Dv2Conditioning",
+    "display_name": "Hunyuan3Dv2条件",
     "inputs": {
       "clip_vision_output": {
         "name": "clip视觉输出"
@@ -2794,15 +3452,17 @@
     },
     "outputs": {
       "0": {
-        "name": "正向"
+        "name": "正向",
+        "tooltip": null
       },
       "1": {
-        "name": "反向"
+        "name": "反向",
+        "tooltip": null
       }
     }
   },
   "Hunyuan3Dv2ConditioningMultiView": {
-    "display_name": "Hunyuan3Dv2ConditioningMultiView",
+    "display_name": "Hunyuan3Dv2条件多视角",
     "inputs": {
       "back": {
         "name": "后"
@@ -2819,15 +3479,17 @@
     },
     "outputs": {
       "0": {
-        "name": "正向"
+        "name": "正向",
+        "tooltip": null
       },
       "1": {
-        "name": "反向"
+        "name": "反向",
+        "tooltip": null
       }
     }
   },
   "HunyuanImageToVideo": {
-    "display_name": "Hunyuan图像到视频",
+    "display_name": "图像到视频（Hunyuan）",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -2860,7 +3522,7 @@
         "tooltip": null
       },
       "1": {
-        "name": "潜在空间",
+        "name": "Latent",
         "tooltip": null
       }
     }
@@ -2869,7 +3531,7 @@
     "display_name": "HunyuanRefinerLatent",
     "inputs": {
       "latent": {
-        "name": "潜在"
+        "name": "Latent"
       },
       "negative": {
         "name": "负面"
@@ -2892,6 +3554,120 @@
       },
       "2": {
         "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15ImageToVideo": {
+    "display_name": "图像到视频（Hunyuan Video 15 ）",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "clip_vision_output": {
+        "name": "CLIP视觉输出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "帧数"
+      },
+      "negative": {
+        "name": "负面条件"
+      },
+      "positive": {
+        "name": "正面条件"
+      },
+      "start_image": {
+        "name": "图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面条件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面条件",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15LatentUpscaleWithModel": {
+    "display_name": "Hunyuan Video 15 Latent 使用模型放大",
+    "inputs": {
+      "crop": {
+        "name": "裁剪"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "samples": {
+        "name": "Latent"
+      },
+      "upscale_method": {
+        "name": "放大方法"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanVideo15SuperResolution": {
+    "display_name": "Hunyuan Video 15超分辨率",
+    "inputs": {
+      "clip_vision_output": {
+        "name": "CLIP视觉输出"
+      },
+      "latent": {
+        "name": "latent"
+      },
+      "negative": {
+        "name": "负面条件"
+      },
+      "noise_augmentation": {
+        "name": "噪波增强"
+      },
+      "positive": {
+        "name": "正面条件"
+      },
+      "start_image": {
+        "name": "图像"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面条件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面条件",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Latent",
         "tooltip": null
       }
     }
@@ -2945,29 +3721,29 @@
     "display_name": "Ideogram V1",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "宽高比",
         "tooltip": "图像生成的宽高比。"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "magic_prompt_option": {
-        "name": "magic_prompt_option",
+        "name": "Magic Prompt",
         "tooltip": "确定生成时是否使用 MagicPrompt"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "描述需要从图像中排除的内容"
       },
       "num_images": {
-        "name": "num_images"
+        "name": "图像数量"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "用于图像生成的提示词"
       },
       "seed": {
-        "name": "seed"
+        "name": "随机种"
       },
       "turbo": {
         "name": "turbo",
@@ -2985,36 +3761,36 @@
     "display_name": "Ideogram V2",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "宽高比",
         "tooltip": "图像生成的宽高比。如果分辨率未设置为 AUTO，则此项无效。"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "magic_prompt_option": {
-        "name": "magic_prompt_option",
+        "name": "Magic Prompt",
         "tooltip": "确定生成时是否使用 MagicPrompt"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "描述图像中需要排除的内容"
       },
       "num_images": {
-        "name": "num_images"
+        "name": "图像数量"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "用于图像生成的提示词"
       },
       "resolution": {
-        "name": "resolution",
+        "name": "分辨率",
         "tooltip": "图像生成的分辨率。如果未设置为 AUTO，则会覆盖 aspect_ratio 设置。"
       },
       "seed": {
-        "name": "seed"
+        "name": "随机种"
       },
       "style_type": {
-        "name": "style_type",
+        "name": "风格",
         "tooltip": "生成的风格类型（仅限 V2）"
       },
       "turbo": {
@@ -3033,7 +3809,7 @@
     "display_name": "Ideogram V3",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "宽高比",
         "tooltip": "图像生成的宽高比。如果分辨率未设置为自动，则忽略此项。"
       },
       "character_image": {
@@ -3045,37 +3821,37 @@
         "tooltip": "角色参考图像的可选遮罩。"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "image": {
-        "name": "image",
+        "name": "图像",
         "tooltip": "用于图像编辑的可选参考图片。"
       },
       "magic_prompt_option": {
-        "name": "magic_prompt_option",
+        "name": "Magic Prompt",
         "tooltip": "决定生成时是否使用 MagicPrompt"
       },
       "mask": {
-        "name": "mask",
+        "name": "遮罩",
         "tooltip": "用于修复的可选 mask（白色区域将被替换）"
       },
       "num_images": {
-        "name": "num_images"
+        "name": "图像数量"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "用于图像生成或编辑的提示词"
       },
       "rendering_speed": {
-        "name": "rendering_speed",
+        "name": "生成速度",
         "tooltip": "控制生成速度与质量之间的权衡"
       },
       "resolution": {
-        "name": "resolution",
+        "name": "分辨率",
         "tooltip": "图像生成的分辨率。如果未设置为自动，则覆盖 aspect_ratio 设置。"
       },
       "seed": {
-        "name": "seed"
+        "name": "随机种"
       }
     },
     "outputs": {
@@ -3099,6 +3875,11 @@
       },
       "strength": {
         "name": "强度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3163,6 +3944,26 @@
       "image": {
         "name": "图像"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageCompare": {
+    "description": "通过滑块并排比较两张图像。",
+    "display_name": "图像对比",
+    "inputs": {
+      "compare_view": {
+        "name": "compare_view"
+      },
+      "image_a": {
+        "name": "image_a"
+      },
+      "image_b": {
+        "name": "image_b"
+      }
     }
   },
   "ImageCompositeMasked": {
@@ -3186,6 +3987,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageCrop": {
@@ -3206,6 +4012,30 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageDeduplication": {
+    "display_name": "图像去重",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "需要处理的图像序列。"
+      },
+      "similarity_threshold": {
+        "name": "相似度阈值",
+        "tooltip": "相似阈值（0-1）。越高表示越相似。超过该值的图像则认定为重复图像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "处理后的图像"
+      }
     }
   },
   "ImageFlip": {
@@ -3216,6 +4046,11 @@
       },
       "image": {
         "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3230,6 +4065,42 @@
       },
       "length": {
         "name": "长度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageGrid": {
+    "display_name": "图像表格",
+    "inputs": {
+      "cell_height": {
+        "name": "单元格高度",
+        "tooltip": "表格中每个单元格的高度。"
+      },
+      "cell_width": {
+        "name": "单元格宽度",
+        "tooltip": "表格中每个单元格的宽度。"
+      },
+      "columns": {
+        "name": "列数",
+        "tooltip": "表格的列数。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要处理的图像序列。"
+      },
+      "padding": {
+        "name": "间距",
+        "tooltip": "图像间距"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "处理后的图像"
       }
     }
   },
@@ -3309,7 +4180,7 @@
     }
   },
   "ImageRGBToYUV": {
-    "display_name": "ImageRGBToYUV",
+    "display_name": "图像RGB到YUV",
     "inputs": {
       "image": {
         "name": "图像"
@@ -3338,6 +4209,11 @@
       },
       "rotation": {
         "name": "旋转"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3387,6 +4263,11 @@
       "upscale_method": {
         "name": "放大方法"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageScaleToTotalPixels": {
@@ -3397,6 +4278,9 @@
       },
       "megapixels": {
         "name": "像素数量"
+      },
+      "resolution_steps": {
+        "name": "分辨率步数"
       },
       "upscale_method": {
         "name": "缩放算法"
@@ -3452,6 +4336,11 @@
       "spacing_width": {
         "name": "间距宽度"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "ImageToMask": {
@@ -3462,6 +4351,11 @@
       },
       "image": {
         "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3482,7 +4376,7 @@
     }
   },
   "ImageYUVToRGB": {
-    "display_name": "ImageYUVToRGB",
+    "display_name": "图像YUV到RGB",
     "inputs": {
       "U": {
         "name": "U"
@@ -3571,6 +4465,29 @@
     "inputs": {
       "mask": {
         "name": "遮罩"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "JoinAudioChannels": {
+    "description": "将左声道和右声道的单声道音频合成为立体声音频。",
+    "display_name": "音频通道合并",
+    "inputs": {
+      "audio_left": {
+        "name": "audio_left"
+      },
+      "audio_right": {
+        "name": "audio_right"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -3697,6 +4614,58 @@
       "sampler_name": {
         "name": "采样器名称"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kandinsky5ImageToVideo": {
+    "display_name": "图像到视频（Kandinsky5）",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度  "
+      },
+      "length": {
+        "name": "时长"
+      },
+      "negative": {
+        "name": "负面条件"
+      },
+      "positive": {
+        "name": "正面条件"
+      },
+      "start_image": {
+        "name": "初始图象"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面条件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面条件",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Latent",
+        "tooltip": "空视频Latent"
+      },
+      "3": {
+        "name": "条件Latent",
+        "tooltip": "纯净编码的 Latent，用于替代纯噪波 Latent 输出。"
+      }
     }
   },
   "KarrasScheduler": {
@@ -3706,13 +4675,18 @@
         "name": "rho"
       },
       "sigma_max": {
-        "name": "sigma_max"
+        "name": "最大Sigma"
       },
       "sigma_min": {
-        "name": "sigma_min"
+        "name": "最小Sigma"
       },
       "steps": {
         "name": "步数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3721,25 +4695,25 @@
     "display_name": "Kling 图像转视频（摄像机控制）",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio"
+        "name": "宽高比"
       },
       "camera_control": {
-        "name": "camera_control",
+        "name": "镜头控制",
         "tooltip": "可通过 Kling Camera Controls 节点创建。控制视频生成过程中的摄像机运动和动作。"
       },
       "cfg_scale": {
-        "name": "cfg_scale"
+        "name": "CFG"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "反向文本提示"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "正向文本提示"
       },
       "start_frame": {
-        "name": "start_frame",
+        "name": "起始帧",
         "tooltip": "参考图像 - URL 或 Base64 编码字符串，不能超过 10MB，分辨率不低于 300*300 像素，宽高比在 1:2.5 ~ 2.5:1 之间。Base64 不应包含 data:image 前缀。"
       }
     },
@@ -3748,11 +4722,11 @@
         "tooltip": null
       },
       "1": {
-        "name": "video_id",
+        "name": "视频ID",
         "tooltip": null
       },
       "2": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": null
       }
     }
@@ -3762,21 +4736,21 @@
     "display_name": "Kling 文本转视频（摄像机控制）",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio"
+        "name": "宽高比"
       },
       "camera_control": {
-        "name": "camera_control",
+        "name": "镜头控制",
         "tooltip": "可通过 Kling Camera Controls 节点创建。控制视频生成过程中的摄像机运动和移动。"
       },
       "cfg_scale": {
-        "name": "cfg_scale"
+        "name": "CFG"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "反向文本提示"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "正向文本提示"
       }
     },
@@ -3785,11 +4759,11 @@
         "tooltip": null
       },
       "1": {
-        "name": "video_id",
+        "name": "视频ID",
         "tooltip": null
       },
       "2": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": null
       }
     }
@@ -3799,63 +4773,63 @@
     "display_name": "Kling 相机控制",
     "inputs": {
       "camera_control_type": {
-        "name": "camera_control_type"
+        "name": "镜头类型"
       },
       "horizontal_movement": {
-        "name": "horizontal_movement",
+        "name": "水平移动",
         "tooltip": "控制相机在水平轴（x 轴）上的移动。负值表示向左，正值表示向右。"
       },
       "pan": {
-        "name": "pan",
+        "name": "垂直旋转",
         "tooltip": "控制相机在垂直平面（x 轴）上的旋转。负值表示向下旋转，正值表示向上旋转。"
       },
       "roll": {
-        "name": "roll",
+        "name": "滚转",
         "tooltip": "控制相机的滚转量（z 轴）。负值表示逆时针，正值表示顺时针。"
       },
       "tilt": {
-        "name": "tilt",
+        "name": "水平旋转",
         "tooltip": "控制相机在水平平面（y 轴）上的旋转。负值表示向左旋转，正值表示向右旋转。"
       },
       "vertical_movement": {
-        "name": "vertical_movement",
+        "name": "垂直移动",
         "tooltip": "控制相机在垂直轴（y 轴）上的移动。负值表示向下，正值表示向上。"
       },
       "zoom": {
-        "name": "zoom",
+        "name": "变焦",
         "tooltip": "控制相机焦距的变化。负值表示视野变窄，正值表示视野变宽。"
       }
     },
     "outputs": {
       "0": {
-        "name": "camera_control",
+        "name": "镜头控制",
         "tooltip": null
       }
     }
   },
   "KlingDualCharacterVideoEffectNode": {
-    "description": "根据 effect_scene 在生成视频时实现不同的特效。第一张图片将被放置在合成画面的左侧，第二张图片在右侧。",
+    "description": "根据 效果 在生成视频时实现不同的特效。第一张图片将被放置在合成画面的左侧，第二张图片在右侧。",
     "display_name": "Kling 双角色视频特效",
     "inputs": {
       "duration": {
-        "name": "duration"
+        "name": "时长"
       },
       "effect_scene": {
-        "name": "effect_scene"
+        "name": "效果"
       },
       "image_left": {
-        "name": "image_left",
+        "name": "左侧图像",
         "tooltip": "左侧图片"
       },
       "image_right": {
-        "name": "image_right",
+        "name": "右侧图像",
         "tooltip": "右侧图片"
       },
       "mode": {
-        "name": "mode"
+        "name": "模式"
       },
       "model_name": {
-        "name": "model_name"
+        "name": "模型"
       }
     },
     "outputs": {
@@ -3863,40 +4837,39 @@
         "tooltip": null
       },
       "1": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": null
       }
     }
   },
   "KlingImage2VideoNode": {
-    "description": "Kling 图像转视频节点",
     "display_name": "Kling 图像转视频",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio"
+        "name": "宽高比"
       },
       "cfg_scale": {
-        "name": "cfg_scale"
+        "name": "CFG"
       },
       "duration": {
-        "name": "duration"
+        "name": "时长"
       },
       "mode": {
-        "name": "mode"
+        "name": "模式"
       },
       "model_name": {
-        "name": "model_name"
+        "name": "模型"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "反向文本提示"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "正向文本提示"
       },
       "start_frame": {
-        "name": "start_frame",
+        "name": "起始帧",
         "tooltip": "参考图像 - URL 或 Base64 编码字符串，不能超过 10MB，分辨率不少于 300*300 像素，宽高比在 1:2.5 ~ 2.5:1 之间。Base64 不应包含 data:image 前缀。"
       }
     },
@@ -3905,11 +4878,11 @@
         "tooltip": null
       },
       "1": {
-        "name": "video_id",
+        "name": "视频ID",
         "tooltip": null
       },
       "2": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": null
       }
     }
@@ -3919,36 +4892,65 @@
     "display_name": "Kling 图像生成",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio"
+        "name": "宽高比"
       },
       "human_fidelity": {
-        "name": "human_fidelity",
+        "name": "主体参考强度",
         "tooltip": "主体参考相似度"
       },
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "image_fidelity": {
-        "name": "image_fidelity",
+        "name": "图像参考强度",
         "tooltip": "用户上传图像的参考强度"
       },
       "image_type": {
-        "name": "image_type"
+        "name": "图像类型"
       },
       "model_name": {
-        "name": "model_name"
+        "name": "模型"
       },
       "n": {
-        "name": "n",
+        "name": "图像数量",
         "tooltip": "生成图像数量"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "反向文本提示"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "正向文本提示"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingImageToVideoWithAudio": {
+    "display_name": "Kling 图像到视频音频",
+    "inputs": {
+      "duration": {
+        "name": "时长（秒）"
+      },
+      "generate_audio": {
+        "name": "生成音频"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "model_name": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "正面文本提示词。"
+      },
+      "start_frame": {
+        "name": "起始帧"
       }
     },
     "outputs": {
@@ -4018,22 +5020,243 @@
       }
     }
   },
+  "KlingMotionControl": {
+    "display_name": "Kling 动作控制",
+    "inputs": {
+      "character_orientation": {
+        "name": "参考方向",
+        "tooltip": "控制角色的朝向/方向。\nv视频：动作，表情，相机移动和方向遵循运动参考视频（其他细节通过提示）。\n图像：运动和表情仍然遵循运动参考视频，但角色方向匹配参考图像（通过提示相机/其他细节）"
+      },
+      "keep_original_sound": {
+        "name": "保留原音频"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "prompt": {
+        "name": "提示词"
+      },
+      "reference_image": {
+        "name": "参考图像"
+      },
+      "reference_video": {
+        "name": "参考视频",
+        "tooltip": "动作或表情的参考视频。\n持续时间取决于参考类型：\n图像：3-10 秒\n视频：3-30 秒"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProEditVideoNode": {
+    "description": "使用 Kling 最新模型编辑视频。",
+    "display_name": "Kling Omni 编辑视频 (Pro)",
+    "inputs": {
+      "keep_original_sound": {
+        "name": "保留原音频"
+      },
+      "model_name": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述视频内容的文本提示词。可以同时包括正面负面描述。"
+      },
+      "reference_images": {
+        "name": "参考图像",
+        "tooltip": "最多 4 个参考图像"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "需要编辑的视频，输出视频的时长和输入视频相同。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProFirstLastFrameNode": {
+    "description": "使用 Kling 最新模型和起始帧、可选的结束帧或参考图像。",
+    "display_name": "Kling Omni 首尾帧到视频 (Pro)",
+    "inputs": {
+      "duration": {
+        "name": "时长"
+      },
+      "end_frame": {
+        "name": "结束帧",
+        "tooltip": "可选的视频结束帧。不能和“参考图像”同时使用。"
+      },
+      "first_frame": {
+        "name": "起始帧"
+      },
+      "model_name": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述视频内容的文本提示词。可以同时包括正面负面描述。"
+      },
+      "reference_images": {
+        "name": "参考图像",
+        "tooltip": "最多 6 个参考图像"
+      },
+      "resolution": {
+        "name": "分辨率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProImageNode": {
+    "description": "使用 Kling 最新模型生成或编辑图像。",
+    "display_name": "Kling Omni 图像 (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比"
+      },
+      "model_name": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述图像内容的文本提示词。可以同时包括正面负面描述。"
+      },
+      "reference_images": {
+        "name": "参考图像",
+        "tooltip": "最多 10 个参考图像"
+      },
+      "resolution": {
+        "name": "分辨率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProImageToVideoNode": {
+    "description": "使用 Kling 最新模型基于最多 7 个参考图生成视频。",
+    "display_name": "Kling Omni 图像到视频 (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "model_name": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述图像内容的文本提示词。可以同时包括正面负面描述。"
+      },
+      "reference_images": {
+        "name": "参考图像",
+        "tooltip": "最多 7 个参考图像"
+      },
+      "resolution": {
+        "name": "分辨率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProTextToVideoNode": {
+    "description": "使用 Kling 最新模型和提示词生成视频。",
+    "display_name": "Kling Omni 文本到视频 (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "model_name": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述图像内容的文本提示词。可以同时包括正面负面描述。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "KlingOmniProVideoToVideoNode": {
+    "description": "使用 Kling 最新模型基于最多 4 个参考图编辑视频。",
+    "display_name": "Kling Omni 视频到视频 (Pro)",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "keep_original_sound": {
+        "name": "保留原音频"
+      },
+      "model_name": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述图像内容的文本提示词。可以同时包括正面负面描述。"
+      },
+      "reference_images": {
+        "name": "参考图像",
+        "tooltip": "最多 4 个参考图像"
+      },
+      "reference_video": {
+        "name": "参考视频",
+        "tooltip": "用于参考的视频。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingSingleImageVideoEffectNode": {
-    "description": "根据 effect_scene 在生成视频时实现不同的特效。",
+    "description": "根据 效果 在生成视频时实现不同的特效。",
     "display_name": "Kling 视频特效",
     "inputs": {
       "duration": {
-        "name": "duration"
+        "name": "时长"
       },
       "effect_scene": {
-        "name": "effect_scene"
+        "name": "效果"
       },
       "image": {
-        "name": "image",
+        "name": "图像3",
         "tooltip": "参考图片。URL 或 Base64 编码字符串（不含 data:image 前缀）。文件大小不得超过 10MB，分辨率不低于 300*300 像素，宽高比在 1:2.5 ~ 2.5:1 之间。"
       },
       "model_name": {
-        "name": "model_name"
+        "name": "模型"
       }
     },
     "outputs": {
@@ -4041,11 +5264,11 @@
         "tooltip": null
       },
       "1": {
-        "name": "video_id",
+        "name": "视频ID",
         "tooltip": null
       },
       "2": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": null
       }
     }
@@ -4055,29 +5278,29 @@
     "display_name": "Kling 起止帧生成视频",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio"
+        "name": "宽高比"
       },
       "cfg_scale": {
-        "name": "cfg_scale"
+        "name": "CFG"
       },
       "end_frame": {
         "name": "end_frame",
         "tooltip": "参考图像 - 结束帧控制。URL 或 Base64 编码字符串，不能超过 10MB，分辨率不低于 300*300 像素。Base64 不应包含 data:image 前缀。"
       },
       "mode": {
-        "name": "mode",
+        "name": "模式",
         "tooltip": "用于视频生成的配置，格式为：mode / duration / model_name。"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "反向文本提示"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "正向文本提示"
       },
       "start_frame": {
-        "name": "start_frame",
+        "name": "起始帧",
         "tooltip": "参考图像 - URL 或 Base64 编码字符串，不能超过 10MB，分辨率不低于 300*300 像素，宽高比在 1:2.5 ~ 2.5:1 之间。Base64 不应包含 data:image 前缀。"
       }
     },
@@ -4086,11 +5309,11 @@
         "tooltip": null
       },
       "1": {
-        "name": "video_id",
+        "name": "视频ID",
         "tooltip": null
       },
       "2": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": null
       }
     }
@@ -4100,21 +5323,21 @@
     "display_name": "Kling 文本转视频",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio"
+        "name": "宽高比"
       },
       "cfg_scale": {
-        "name": "cfg_scale"
+        "name": "CFG"
       },
       "mode": {
-        "name": "mode",
+        "name": "模式",
         "tooltip": "用于视频生成的配置，格式为：mode / duration / model_name。"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "反向文本提示"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "正向文本提示"
       }
     },
@@ -4123,11 +5346,40 @@
         "tooltip": null
       },
       "1": {
-        "name": "video_id",
+        "name": "视频ID",
         "tooltip": null
       },
       "2": {
-        "name": "duration",
+        "name": "时长",
+        "tooltip": null
+      }
+    }
+  },
+  "KlingTextToVideoWithAudio": {
+    "display_name": "Kling 文本到视频音频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "generate_audio": {
+        "name": "生成音频"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "model_name": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "正面文本提示词。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -4137,18 +5389,18 @@
     "display_name": "Kling 视频扩展",
     "inputs": {
       "cfg_scale": {
-        "name": "cfg_scale"
+        "name": "CFG"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "用于在扩展视频中避免出现的元素的负向文本提示"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "用于引导视频扩展的正向文本提示"
       },
       "video_id": {
-        "name": "video_id",
+        "name": "视频ID",
         "tooltip": "要扩展的视频 ID。支持由文本转视频、图像转视频以及之前的视频扩展操作生成的视频。扩展后总时长不能超过 3 分钟。"
       }
     },
@@ -4157,11 +5409,11 @@
         "tooltip": null
       },
       "1": {
-        "name": "video_id",
+        "name": "视频ID",
         "tooltip": null
       },
       "2": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": null
       }
     }
@@ -4171,13 +5423,33 @@
     "display_name": "Kling 虚拟试穿",
     "inputs": {
       "cloth_image": {
-        "name": "cloth_image"
+        "name": "服装"
       },
       "human_image": {
-        "name": "human_image"
+        "name": "主体"
       },
       "model_name": {
-        "name": "model_name"
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LTXAVTextEncoderLoader": {
+    "description": "[Recipes]\n\nltxav: gemma 3 12B",
+    "display_name": "LTXV音频文本编码器加载器",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt名称"
+      },
+      "device": {
+        "name": "设备"
+      },
+      "text_encoder": {
+        "name": "文本编码器"
       }
     },
     "outputs": {
@@ -4224,6 +5496,76 @@
       },
       "2": {
         "name": "潜在空间",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEDecode": {
+    "display_name": "LTXV音频VAE解码",
+    "inputs": {
+      "audio_vae": {
+        "name": "音频VAE",
+        "tooltip": "用于解码latent的音频VAE模型。"
+      },
+      "samples": {
+        "name": "样本",
+        "tooltip": "要解码的latent。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAEEncode": {
+    "display_name": "LTXV音频VAE编码",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "要编码的音频。"
+      },
+      "audio_vae": {
+        "name": "音频VAE",
+        "tooltip": "用于编码的音频VAE模型。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频latent",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVAudioVAELoader": {
+    "display_name": "LTXV音频VAE加载器",
+    "inputs": {
+      "ckpt_name": {
+        "name": "ckpt名称",
+        "tooltip": "要加载的音频VAE检查点。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "音频VAE",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVConcatAVLatent": {
+    "display_name": "LTXVConcatAVLatent",
+    "inputs": {
+      "audio_latent": {
+        "name": "audio_latent"
+      },
+      "video_latent": {
+        "name": "video_latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
         "tooltip": null
       }
     }
@@ -4280,8 +5622,35 @@
       }
     }
   },
+  "LTXVEmptyLatentAudio": {
+    "display_name": "LTXV 空音频潜空间",
+    "inputs": {
+      "audio_vae": {
+        "name": "音频VAE",
+        "tooltip": "用于获取配置信息的音频VAE模型。"
+      },
+      "batch_size": {
+        "name": "批量大小",
+        "tooltip": "批次中潜音频样本的数量。"
+      },
+      "frame_rate": {
+        "name": "帧率",
+        "tooltip": "每秒的帧数。"
+      },
+      "frames_number": {
+        "name": "帧数",
+        "tooltip": "帧的数量。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "潜空间",
+        "tooltip": null
+      }
+    }
+  },
   "LTXVImgToVideo": {
-    "display_name": "LTXV图像到视频",
+    "display_name": "图像到视频（LTXV）",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -4323,6 +5692,47 @@
       "2": {
         "name": "Latent",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVImgToVideoInplace": {
+    "display_name": "LTXV图像转视频（原地）",
+    "inputs": {
+      "bypass": {
+        "name": "跳过",
+        "tooltip": "跳过条件处理。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "latent": {
+        "name": "潜空间"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "潜空间",
+        "tooltip": null
+      }
+    }
+  },
+  "LTXVLatentUpsampler": {
+    "display_name": "LTXV潜空间上采样器",
+    "inputs": {
+      "samples": {
+        "name": "样本"
+      },
+      "upscale_model": {
+        "name": "放大模型"
+      },
+      "vae": {
+        "name": "vae"
       }
     }
   },
@@ -4374,6 +5784,25 @@
       }
     }
   },
+  "LTXVSeparateAVLatent": {
+    "description": "LTXV分离音视频潜空间",
+    "display_name": "LTXV分离音视频潜空间",
+    "inputs": {
+      "av_latent": {
+        "name": "音视频潜空间"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "video_latent",
+        "tooltip": null
+      },
+      "1": {
+        "name": "audio_latent",
+        "tooltip": null
+      }
+    }
+  },
   "LaplaceScheduler": {
     "display_name": "Laplace调度器",
     "inputs": {
@@ -4391,6 +5820,11 @@
       },
       "steps": {
         "name": "步数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -4529,6 +5963,11 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LatentConcat": {
@@ -4584,6 +6023,25 @@
       },
       "samples": {
         "name": "样本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentCutToBatch": {
+    "display_name": "Latent切割",
+    "inputs": {
+      "dim": {
+        "name": "维度"
+      },
+      "samples": {
+        "name": "Latent"
+      },
+      "slice_size": {
+        "name": "碎片大小"
       }
     },
     "outputs": {
@@ -4745,6 +6203,19 @@
       }
     }
   },
+  "LatentUpscaleModelLoader": {
+    "display_name": "加载Latent放大模型",
+    "inputs": {
+      "model_name": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LazyCache": {
     "description": "EasyCache 的自制版本 - 更'简单'的 EasyCache 实现。总体效果不如 EasyCache，但在某些罕见情况下表现更好，并且与 ComfyUI 中的所有内容具有通用兼容性。",
     "display_name": "惰性缓存",
@@ -4792,45 +6263,7 @@
       },
       "upload 3d model": {
       },
-      "width": {
-        "name": "宽度"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "image"
-      },
-      "1": {
-        "name": "mask"
-      },
-      "2": {
-        "name": "mesh_path"
-      },
-      "3": {
-        "name": "normal"
-      },
-      "4": {
-        "name": "lineart"
-      },
-      "5": {
-        "name": "camera_info"
-      },
-      "6": {
-        "name": "录制视频"
-      }
-    }
-  },
-  "Load3DAnimation": {
-    "display_name": "加载3D动画",
-    "inputs": {
-      "height": {
-        "name": "高度"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "model_file": {
-        "name": "模型文件"
+      "upload extra resources": {
       },
       "width": {
         "name": "宽度"
@@ -4838,22 +6271,28 @@
     },
     "outputs": {
       "0": {
-        "name": "图像"
+        "name": "图像",
+        "tooltip": null
       },
       "1": {
-        "name": "遮罩"
+        "name": "遮罩",
+        "tooltip": null
       },
       "2": {
-        "name": "mesh_path"
+        "name": "网格路径",
+        "tooltip": null
       },
       "3": {
-        "name": "法线"
+        "name": "法向",
+        "tooltip": null
       },
       "4": {
-        "name": "相机信息"
+        "name": "线条",
+        "tooltip": null
       },
       "5": {
-        "name": "录制视频"
+        "name": "相机信息",
+        "tooltip": null
       }
     }
   },
@@ -4869,6 +6308,11 @@
       "upload": {
         "name": "选择文件上传"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "LoadImage": {
@@ -4879,6 +6323,21 @@
       },
       "upload": {
         "name": "选择文件上传"
+      }
+    }
+  },
+  "LoadImageDataSetFromFolder": {
+    "display_name": "加载图像数据集",
+    "inputs": {
+      "folder": {
+        "name": "文件夹",
+        "tooltip": "图像数据集的文件夹"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "已加载的图像序列"
       }
     }
   },
@@ -4900,6 +6359,8 @@
     "description": "从输出文件夹加载图像。当点击刷新按钮时，节点将更新图像列表并自动选择第一张图像，便于轻松迭代。",
     "display_name": "加载图像（来自输出）",
     "inputs": {
+      "Auto-refresh after generation": {
+      },
       "image": {
         "name": "图像"
       },
@@ -4910,41 +6371,22 @@
       }
     }
   },
-  "LoadImageSetFromFolderNode": {
-    "description": "从目录加载一批图像用于训练。",
-    "display_name": "从文件夹加载图像数据集",
+  "LoadImageTextDataSetFromFolder": {
+    "display_name": "加载图像和文本数据集",
     "inputs": {
       "folder": {
         "name": "文件夹",
-        "tooltip": "要从中加载图像的文件夹。"
-      },
-      "resize_method": {
-        "name": "调整大小方法"
+        "tooltip": "图像数据集的文件夹"
       }
-    }
-  },
-  "LoadImageTextSetFromFolderNode": {
-    "description": "从目录加载一批图像和标题用于训练。",
-    "display_name": "从文件夹加载图像和文本数据集",
-    "inputs": {
-      "clip": {
-        "name": "CLIP 模型",
-        "tooltip": "用于编码文本的 CLIP 模型。"
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "已加载的图像序列"
       },
-      "folder": {
-        "name": "文件夹",
-        "tooltip": "要从中加载图像的文件夹。"
-      },
-      "height": {
-        "name": "高度",
-        "tooltip": "调整图像的目标高度。-1 表示使用原始高度。"
-      },
-      "resize_method": {
-        "name": "调整大小方法"
-      },
-      "width": {
-        "name": "宽度",
-        "tooltip": "调整图像的目标宽度。-1 表示使用原始宽度。"
+      "1": {
+        "name": "文本",
+        "tooltip": "已加载的标注文本"
       }
     }
   },
@@ -4953,6 +6395,25 @@
     "inputs": {
       "latent": {
         "name": "Latent"
+      }
+    }
+  },
+  "LoadTrainingDataset": {
+    "display_name": "加载训练数据集",
+    "inputs": {
+      "folder_name": {
+        "name": "文件夹名",
+        "tooltip": "包含训练数据集的文件夹名（在 输出 文件夹内）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Latent",
+        "tooltip": "Latent 列表"
+      },
+      "1": {
+        "name": "条件",
+        "tooltip": "条件列表"
       }
     }
   },
@@ -4977,7 +6438,7 @@
     "display_name": "加载LoRA",
     "inputs": {
       "clip": {
-        "name": "CLIPCLIP",
+        "name": "CLIP",
         "tooltip": "LoRA 将应用于的 CLIP 模型。"
       },
       "lora_name": {
@@ -5027,7 +6488,6 @@
     }
   },
   "LoraModelLoader": {
-    "description": "从训练 LoRA 节点加载训练好的 LoRA 权重。",
     "display_name": "加载 LoRA 模型",
     "inputs": {
       "lora": {
@@ -5045,6 +6505,7 @@
     },
     "outputs": {
       "0": {
+        "name": "模型",
         "tooltip": "修改后的扩散模型。"
       }
     }
@@ -5075,19 +6536,20 @@
     }
   },
   "LossGraphNode": {
-    "description": "绘制损失图并将其保存到输出目录。",
     "display_name": "绘制损失图",
     "inputs": {
       "filename_prefix": {
-        "name": "文件名前缀"
+        "name": "文件名前缀",
+        "tooltip": "保存损失图的文件名前缀"
       },
       "loss": {
-        "name": "损失"
+        "name": "损失",
+        "tooltip": "训练节点的损失图"
       }
     }
   },
   "LotusConditioning": {
-    "display_name": "LotusConditioning",
+    "display_name": "Lotus条件",
     "outputs": {
       "0": {
         "name": "条件",
@@ -5097,7 +6559,7 @@
   },
   "LtxvApiImageToVideo": {
     "description": "基于起始图像生成专业品质视频，可自定义时长和分辨率。",
-    "display_name": "LTXV 图像转视频",
+    "display_name": "LTXV 图像到视频",
     "inputs": {
       "duration": {
         "name": "时长"
@@ -5131,7 +6593,7 @@
   },
   "LtxvApiTextToVideo": {
     "description": "可自定义时长和分辨率的专业品质视频。",
-    "display_name": "LTXV 文本转视频",
+    "display_name": "LTXV 文本到视频",
     "inputs": {
       "duration": {
         "name": "时长"
@@ -5141,7 +6603,7 @@
       },
       "generate_audio": {
         "name": "生成音频",
-        "tooltip": "为 true 时，生成的视频将包含与场景匹配的 AI 生成音频。"
+        "tooltip": "生成的视频将包含与场景匹配的 AI 生成音频。"
       },
       "model": {
         "name": "模型"
@@ -5164,25 +6626,25 @@
     "display_name": "Luma 概念",
     "inputs": {
       "concept1": {
-        "name": "concept1"
+        "name": "概念1"
       },
       "concept2": {
-        "name": "concept2"
+        "name": "概念2"
       },
       "concept3": {
-        "name": "concept3"
+        "name": "概念3"
       },
       "concept4": {
-        "name": "concept4"
+        "name": "概念4"
       },
       "luma_concepts": {
-        "name": "luma_concepts",
+        "name": "Luma概念",
         "tooltip": "可选的相机概念，将添加到此处选择的概念中。"
       }
     },
     "outputs": {
       "0": {
-        "name": "luma_concepts",
+        "name": "Luma概念",
         "tooltip": null
       }
     }
@@ -5192,24 +6654,24 @@
     "display_name": "Luma 图像到图像",
     "inputs": {
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "image_weight": {
-        "name": "image_weight",
+        "name": "图像权重",
         "tooltip": "图像权重；越接近 1.0，图像被修改的程度越小。"
       },
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "用于图像生成的提示词"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
       }
     },
@@ -5285,7 +6747,7 @@
         "name": "循环"
       },
       "luma_concepts": {
-        "name": "luma_concepts",
+        "name": "Luma概念",
         "tooltip": "可选的 Camera Concepts，通过 Luma Concepts 节点控制相机运动。"
       },
       "model": {
@@ -5318,7 +6780,7 @@
         "tooltip": "用作参考的图片。"
       },
       "luma_ref": {
-        "name": "luma_ref"
+        "name": "Luma参考"
       },
       "weight": {
         "name": "权重",
@@ -5327,7 +6789,7 @@
     },
     "outputs": {
       "0": {
-        "name": "luma_ref",
+        "name": "Luma参考",
         "tooltip": null
       }
     }
@@ -5349,7 +6811,7 @@
         "name": "循环"
       },
       "luma_concepts": {
-        "name": "luma_concepts",
+        "name": "Luma概念",
         "tooltip": "可选的相机概念，通过 Luma Concepts 节点控制相机运动。"
       },
       "model": {
@@ -5388,6 +6850,50 @@
       }
     }
   },
+  "MakeTrainingDataset": {
+    "display_name": "制作训练数据集",
+    "inputs": {
+      "clip": {
+        "name": "CLIP",
+        "tooltip": "用于编码文本的 CLIP 模型"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要编码的图像序列。"
+      },
+      "texts": {
+        "name": "文本",
+        "tooltip": "标注文本序列。数量可以是n（匹配图像），1（重复使用），或者省略（使用空字符串）。"
+      },
+      "vae": {
+        "name": "VAE",
+        "tooltip": "用于编码图像的 VAE 模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Latent",
+        "tooltip": "Latent 字典序列"
+      },
+      "1": {
+        "name": "条件",
+        "tooltip": "条件字典序列"
+      }
+    }
+  },
+  "ManualSigmas": {
+    "display_name": "自定义Sigmas",
+    "inputs": {
+      "sigmas": {
+        "name": "sigmas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MaskComposite": {
     "display_name": "合成遮罩",
     "inputs": {
@@ -5406,14 +6912,19 @@
       "y": {
         "name": "y"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "MaskPreview": {
     "description": "将输入图像保存到您的 ComfyUI 输出目录。",
-    "display_name": "MaskPreview",
+    "display_name": "预览遮罩",
     "inputs": {
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       }
     }
   },
@@ -5422,6 +6933,315 @@
     "inputs": {
       "mask": {
         "name": "遮罩"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MergeImageLists": {
+    "display_name": "融合图像序列",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "需要处理的图像序列。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "已处理的图像"
+      }
+    }
+  },
+  "MergeTextLists": {
+    "display_name": "融合文本序列",
+    "inputs": {
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要处理的文本序列"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": "已处理的文本"
+      }
+    }
+  },
+  "MeshyAnimateModelNode": {
+    "description": "为已绑定骨骼的角色应用特定动画动作。",
+    "display_name": "Meshy：动画模型",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "访问 https://docs.meshy.ai/en/api/animation-library 查看可用值列表。"
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy：图像转模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "指定生成模型的姿态模式。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "设置为 false 时，返回未处理的三角网格。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "决定是否生成纹理。设置为 false 跳过纹理阶段，返回无纹理的网格。"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy：多图像转模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "指定生成模型的姿态模式。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "设置为 false 时，返回未处理的三角网格。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "决定是否生成纹理。设置为 false 跳过纹理阶段，返回无纹理的网格。"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "对先前创建的草稿模型进行精细化处理。",
+    "display_name": "Meshy：精细化草稿模型",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "在基础色之外生成PBR贴图（金属度、粗糙度、法线）。注意：使用雕塑风格时应设置为false，因为雕塑风格会生成其专属的PBR贴图。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "‘texture_image’和‘texture_prompt’只能二选一。"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "提供文本提示以引导材质生成。最多600个字符。不能与'texture_image'同时使用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "以标准格式提供带骨骼的角色模型。自动骨骼绑定目前不适用于无贴图网格、非类人资产或肢体结构不清晰的类人资产。",
+    "display_name": "Meshy：骨骼绑定模型",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "角色模型的大致高度（米），有助于缩放和骨骼绑定的准确性。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "模型的UV展开基础色贴图。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy：文本生成模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "指定生成模型的姿态模式。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "设置为false时，返回未处理的三角网格。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy：纹理模型",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "启用原始UV",
+        "tooltip": "使用模型的原始UV，而不是生成新的UV。启用后，Meshy会保留上传模型中已有的纹理。如果模型没有原始UV，输出质量可能会有所下降。"
+      },
+      "image_style": {
+        "name": "图像风格",
+        "tooltip": "用于引导纹理生成的2D图像。不能与“text_style_prompt”同时使用。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "text_style_prompt": {
+        "name": "文本风格提示",
+        "tooltip": "用文本描述你想要的物体纹理风格。最多600个字符。不能与“image_style”同时使用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
       }
     }
   },
@@ -5468,22 +7288,22 @@
     "display_name": "MiniMax 图像转视频",
     "inputs": {
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "image": {
-        "name": "image",
+        "name": "图像",
         "tooltip": "用于视频生成首帧的图像"
       },
       "model": {
-        "name": "model",
+        "name": "模型",
         "tooltip": "用于视频生成的模型"
       },
       "prompt_text": {
-        "name": "prompt_text",
+        "name": "提示词",
         "tooltip": "用于引导视频生成的文本提示"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于生成噪声的随机种子。"
       }
     },
@@ -5498,18 +7318,18 @@
     "display_name": "MiniMax 文本转视频",
     "inputs": {
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "model": {
-        "name": "model",
+        "name": "模型",
         "tooltip": "用于视频生成的模型"
       },
       "prompt_text": {
-        "name": "prompt_text",
+        "name": "提示词",
         "tooltip": "用于引导视频生成的文本提示"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于生成噪声的随机种子。"
       }
     },
@@ -5702,7 +7522,7 @@
     }
   },
   "ModelMergeCosmos14B": {
-    "display_name": "ModelMergeCosmos14B",
+    "display_name": "模型融合（Cosmos14B）",
     "inputs": {
       "affline_norm_": {
         "name": "仿射规范化."
@@ -5839,7 +7659,7 @@
     }
   },
   "ModelMergeCosmos7B": {
-    "display_name": "ModelMergeCosmos7B",
+    "display_name": "模型融合（COsmos7B）",
     "inputs": {
       "affline_norm_": {
         "name": "仿射规范化."
@@ -5952,7 +7772,7 @@
     }
   },
   "ModelMergeCosmosPredict2_14B": {
-    "display_name": "ModelMergeCosmosPredict2_14B",
+    "display_name": "模型融合（CosmosPredict2_14B）",
     "inputs": {
       "blocks_0_": {
         "name": "块0。"
@@ -6086,7 +7906,7 @@
     }
   },
   "ModelMergeCosmosPredict2_2B": {
-    "display_name": "ModelMergeCosmosPredict2_2B",
+    "display_name": "模型融合（CosmosPredict2_2B）",
     "inputs": {
       "blocks_0_": {
         "name": "块.0."
@@ -7443,7 +9263,7 @@
   },
   "ModelMergeWAN2_1": {
     "description": "1.3B模型有30个模块，14B模型有40个模块。图像转视频模型有额外的img_emb。",
-    "display_name": "ModelMergeWAN2_1",
+    "display_name": "模型融合（WAN2.1）",
     "inputs": {
       "blocks_0_": {
         "name": "blocks.0."
@@ -7572,10 +9392,10 @@
         "name": "img_emb."
       },
       "model1": {
-        "name": "model1"
+        "name": "模型1"
       },
       "model2": {
-        "name": "model2"
+        "name": "模型2"
       },
       "patch_embedding_": {
         "name": "patch_embedding."
@@ -7592,7 +9412,7 @@
     }
   },
   "ModelPatchLoader": {
-    "display_name": "ModelPatchLoader",
+    "display_name": "加载模型补丁",
     "inputs": {
       "name": {
         "name": "名称"
@@ -7734,8 +9554,8 @@
     }
   },
   "MoonvalleyImg2VideoNode": {
-    "description": "Moonvalry Marey 图像转视频节点",
-    "display_name": "Moonvalry Marey 图像转视频",
+    "description": "Moonvalley Marey 图像转视频节点",
+    "display_name": "Moonvalley Marey 图像转视频",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -7775,7 +9595,7 @@
     }
   },
   "MoonvalleyTxt2VideoNode": {
-    "display_name": "Moonvalry Marey 文本转视频",
+    "display_name": "Moonvalley Marey 文本转视频",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -7811,7 +9631,7 @@
     }
   },
   "MoonvalleyVideo2VideoNode": {
-    "display_name": "Moonvalry Marey 视频转视频",
+    "display_name": "Moonvalley Marey 视频转视频",
     "inputs": {
       "control_type": {
         "name": "控制类型"
@@ -7866,16 +9686,62 @@
       }
     }
   },
+  "NormalizeImages": {
+    "display_name": "规格化图像",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "需要处理的图像序列。"
+      },
+      "mean": {
+        "name": "平均",
+        "tooltip": "规格化的平均值。"
+      },
+      "std": {
+        "name": "标准差",
+        "tooltip": "规格化的标准差。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "已处理的图像"
+      }
+    }
+  },
+  "NormalizeVideoLatentStart": {
+    "description": "将视频初始帧的 Latent 规格化，使其符合后续参考帧的平均值与标准差。有助于减少起始帧与视频其余部分之间的差异。",
+    "display_name": "规格化视频Latent",
+    "inputs": {
+      "latent": {
+        "name": "Latent"
+      },
+      "reference_frame_count": {
+        "name": "参考数量",
+        "tooltip": "从起始帧开始，用于参考的 Latent 数量"
+      },
+      "start_frame_count": {
+        "name": "规格化数量",
+        "tooltip": "从起始帧开始，需要规格化的 Latent 数量"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIChatConfig": {
     "description": "允许为OpenAI聊天节点指定高级配置选项。",
     "display_name": "OpenAI ChatGPT 高级选项",
     "inputs": {
       "instructions": {
-        "name": "instructions",
+        "name": "指令",
         "tooltip": "指导模型如何生成响应的指令"
       },
       "max_output_tokens": {
-        "name": "max_output_tokens",
+        "name": "Token输出上限",
         "tooltip": "生成响应时可生成token数量的上限，包括可见输出token"
       },
       "truncation": {
@@ -7894,27 +9760,27 @@
     "display_name": "OpenAI ChatGPT",
     "inputs": {
       "advanced_options": {
-        "name": "advanced_options",
+        "name": "高级设置",
         "tooltip": "模型的可选配置。接受来自OpenAI聊天高级选项节点的输入。"
       },
       "files": {
-        "name": "files",
+        "name": "文件",
         "tooltip": "可选文件，用作模型的上下文。接受来自OpenAI聊天输入文件节点的输入。"
       },
       "images": {
-        "name": "images",
+        "name": "图像",
         "tooltip": "可选图像，用作模型的上下文。要包含多张图像，可使用批处理图像节点。"
       },
       "model": {
-        "name": "model",
+        "name": "模型",
         "tooltip": "用于生成响应的模型"
       },
       "persist_context": {
-        "name": "persist_context",
+        "name": "保持上下文",
         "tooltip": "此参数已弃用，无任何效果。"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "模型的文本输入，用于生成响应。"
       }
     },
@@ -8012,8 +9878,11 @@
         "tooltip": "用于图像编辑的可选参考图像。"
       },
       "mask": {
-        "name": "mask",
+        "name": "遮罩",
         "tooltip": "用于修复的可选 mask（白色区域将被替换）"
+      },
+      "model": {
+        "name": "模型"
       },
       "n": {
         "name": "数量",
@@ -8047,11 +9916,11 @@
     "display_name": "OpenAI ChatGPT Input Files",
     "inputs": {
       "OPENAI_INPUT_FILES": {
-        "name": "OPENAI_INPUT_FILES",
+        "name": "OpenAI输入文件",
         "tooltip": "可选的附加文件，与此节点加载的文件一起批处理。允许链式连接输入文件，以便单个消息可包含多个输入文件。"
       },
       "file": {
-        "name": "file",
+        "name": "文件",
         "tooltip": "作为模型上下文的输入文件。目前仅接受文本(.txt)和PDF(.pdf)文件。"
       }
     },
@@ -8066,27 +9935,27 @@
     "display_name": "OpenAI Sora - Video",
     "inputs": {
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "duration": {
-        "name": "duration"
+        "name": "时长"
       },
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "引导文本；如果存在输入图像，可为空。"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
       },
       "size": {
-        "name": "size"
+        "name": "尺寸"
       }
     },
     "outputs": {
@@ -8096,13 +9965,13 @@
     }
   },
   "OptimalStepsScheduler": {
-    "display_name": "OptimalStepsScheduler",
+    "display_name": "OptimalSteps调度器",
     "inputs": {
       "denoise": {
         "name": "去噪"
       },
       "model_type": {
-        "name": "model_type"
+        "name": "模型"
       },
       "steps": {
         "name": "步数"
@@ -8373,265 +10242,6 @@
       }
     }
   },
-  "PikaImageToVideoNode2_2": {
-    "description": "将图像和提示词发送到 Pika API v2.2 以生成视频。",
-    "display_name": "Pika 图像转视频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "要转换为视频的图像"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaScenesV2_2": {
-    "description": "将你的图像组合在一起，生成包含所有物体的高质量视频。上传多张图片作为素材，生成融合所有内容的视频。",
-    "display_name": "Pika 场景（视频图像合成）",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "宽高比（宽 / 高）"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "image_ingredient_1": {
-        "name": "图片素材 1",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "image_ingredient_2": {
-        "name": "图片素材 2",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "image_ingredient_3": {
-        "name": "图片素材 3",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "image_ingredient_4": {
-        "name": "图片素材 4",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "image_ingredient_5": {
-        "name": "图片素材 5",
-        "tooltip": "用于生成视频的图片素材。"
-      },
-      "ingredients_mode": {
-        "name": "素材模式"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "随机种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaStartEndFrameNode2_2": {
-    "description": "通过合成首帧和尾帧生成视频。上传两张图片以定义起点和终点，让 AI 在它们之间创建平滑过渡。",
-    "display_name": "Pika 首尾帧合成视频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "image_end": {
-        "name": "image_end",
-        "tooltip": "要合成的最后一张图片。"
-      },
-      "image_start": {
-        "name": "image_start",
-        "tooltip": "要合成的第一张图片。"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "PikaTextToVideoNode2_2": {
-    "description": "将文本提示发送到 Pika API v2.2 以生成视频。",
-    "display_name": "Pika 文本转视频",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比",
-        "tooltip": "宽高比（宽 / 高）"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "negative_prompt": {
-        "name": "反向提示"
-      },
-      "prompt_text": {
-        "name": "提示文本"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "种子"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikadditions": {
-    "description": "将任意对象或图像添加到你的视频中。上传一个视频并指定你想要添加的内容，实现无缝集成的效果。",
-    "display_name": "Pikadditions（视频对象插入）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "要添加到视频中的图像。"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "seed": {
-        "name": "种子"
-      },
-      "video": {
-        "name": "视频",
-        "tooltip": "要添加图像的视频。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaffects": {
-    "description": "生成带有特定Pikaffect的视频。支持的Pikaffect有：Cake-ify、Crumble、Crush、Decapitate、Deflate、Dissolve、Explode、Eye-pop、Inflate、Levitate、Melt、Peel、Poke、Squish、Ta-da、Tear",
-    "display_name": "Pikaffects（视频特效）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "要应用Pikaffect的参考图像。"
-      },
-      "negative_prompt": {
-        "name": "negative_prompt"
-      },
-      "pikaffect": {
-        "name": "pikaffect"
-      },
-      "prompt_text": {
-        "name": "prompt_text"
-      },
-      "seed": {
-        "name": "seed"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "Pikaswaps": {
-    "description": "用新图像或对象替换视频中的任意对象或区域。可通过 mask 或坐标定义需要替换的区域。",
-    "display_name": "Pika Swaps（视频对象替换）",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像",
-        "tooltip": "用于替换视频中被 mask 的对象的图像。"
-      },
-      "mask": {
-        "name": "mask",
-        "tooltip": "使用 mask 定义视频中需要替换的区域"
-      },
-      "negative_prompt": {
-        "name": "反向提示词"
-      },
-      "prompt_text": {
-        "name": "提示词"
-      },
-      "region_to_modify": {
-        "name": "region_to_modify",
-        "tooltip": "要修改的对象/区域的纯文本描述。"
-      },
-      "seed": {
-        "name": "种子"
-      },
-      "video": {
-        "name": "视频",
-        "tooltip": "要在其中替换对象的视频。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "PixverseImageToVideoNode": {
     "description": "根据提示词和输出尺寸同步生成视频。",
     "display_name": "PixVerse 图像转视频",
@@ -8683,7 +10293,7 @@
     },
     "outputs": {
       "0": {
-        "name": "pixverse_template",
+        "name": "Pixverse模板",
         "tooltip": null
       }
     }
@@ -8786,6 +10396,11 @@
       "steps": {
         "name": "步数"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "PorterDuffImageComposite": {
@@ -8819,6 +10434,9 @@
   "Preview3D": {
     "display_name": "预览3D",
     "inputs": {
+      "bg_image": {
+        "name": "背景图像"
+      },
       "camera_info": {
         "name": "相机信息"
       },
@@ -8830,21 +10448,12 @@
       }
     }
   },
-  "Preview3DAnimation": {
-    "display_name": "预览3D - 动画",
-    "inputs": {
-      "camera_info": {
-        "name": "相机信息"
-      },
-      "model_file": {
-        "name": "模型文件"
-      }
-    }
-  },
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
       "preview": {
+      },
+      "previewMode": {
       },
       "source": {
         "name": "源"
@@ -8941,7 +10550,7 @@
   },
   "QuadrupleCLIPLoader": {
     "description": "[配方]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
-    "display_name": "QuadrupleCLIPLoader",
+    "display_name": "四重CLIP加载器",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -8966,22 +10575,52 @@
     "display_name": "QwenImageDiffsynthControlnet",
     "inputs": {
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       },
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "model_patch": {
-        "name": "model_patch"
+        "name": "模型补丁"
       },
       "strength": {
-        "name": "strength"
+        "name": "强度"
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "RandomCropImages": {
+    "display_name": "裁剪图像（随机）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "裁剪框高度"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要处理的图像序列。"
+      },
+      "seed": {
+        "name": "随机种",
+        "tooltip": "随机种"
+      },
+      "width": {
+        "name": "宽度",
+        "tooltip": "裁剪框宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "已处理的图像"
       }
     }
   },
@@ -8993,6 +10632,11 @@
       },
       "noise_seed": {
         "name": "噪波随机种"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9029,10 +10673,15 @@
     }
   },
   "RecordAudio": {
-    "display_name": "Record Audio",
+    "display_name": "录制音频",
     "inputs": {
       "audio": {
-        "name": "audio"
+        "name": "音频"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9053,12 +10702,12 @@
         "tooltip": "颜色的红色值。"
       },
       "recraft_color": {
-        "name": "recraft_color"
+        "name": "Recraft色彩"
       }
     },
     "outputs": {
       "0": {
-        "name": "recraft_color",
+        "name": "Recraft色彩",
         "tooltip": null
       }
     }
@@ -9068,15 +10717,15 @@
     "display_name": "Recraft 控件",
     "inputs": {
       "background_color": {
-        "name": "background_color"
+        "name": "背景色"
       },
       "colors": {
-        "name": "colors"
+        "name": "色彩"
       }
     },
     "outputs": {
       "0": {
-        "name": "recraft_controls",
+        "name": "Recraft控制",
         "tooltip": null
       }
     }
@@ -9117,10 +10766,10 @@
         "name": "生成后控制"
       },
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "mask": {
-        "name": "mask"
+        "name": "遮罩"
       },
       "n": {
         "name": "数量",
@@ -9135,7 +10784,7 @@
         "tooltip": "用于图像生成的提示词。"
       },
       "recraft_style": {
-        "name": "recraft_style"
+        "name": "Recraft风格"
       },
       "seed": {
         "name": "种子",
@@ -9156,7 +10805,7 @@
         "name": "生成后控制"
       },
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "n": {
         "name": "数量",
@@ -9171,11 +10820,11 @@
         "tooltip": "用于生成图像的提示词。"
       },
       "recraft_controls": {
-        "name": "recraft_controls",
+        "name": "Recraft控制",
         "tooltip": "通过 Recraft Controls 节点对生成过程进行可选的附加控制。"
       },
       "recraft_style": {
-        "name": "recraft_style"
+        "name": "Recraft风格"
       },
       "seed": {
         "name": "种子",
@@ -9255,7 +10904,7 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style",
+        "name": "Recraft风格",
         "tooltip": null
       }
     }
@@ -9265,13 +10914,13 @@
     "display_name": "Recraft 风格 - 无限风格库",
     "inputs": {
       "style_id": {
-        "name": "style_id",
+        "name": "风格ID",
         "tooltip": "来自无限风格库的风格 UUID。"
       }
     },
     "outputs": {
       "0": {
-        "name": "recraft_style",
+        "name": "Recraft风格",
         "tooltip": null
       }
     }
@@ -9286,7 +10935,7 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style",
+        "name": "Recraft风格",
         "tooltip": null
       }
     }
@@ -9301,7 +10950,7 @@
     },
     "outputs": {
       "0": {
-        "name": "recraft_style",
+        "name": "Recraft风格",
         "tooltip": null
       }
     }
@@ -9311,33 +10960,33 @@
     "display_name": "Recraft 文本转图像",
     "inputs": {
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "n": {
         "name": "n",
         "tooltip": "要生成的图像数量。"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "对图像中不希望出现元素的可选文本描述。"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "用于图像生成的提示词。"
       },
       "recraft_controls": {
-        "name": "recraft_controls",
+        "name": "Recraft控制",
         "tooltip": "通过 Recraft Controls 节点对生成过程的可选附加控制。"
       },
       "recraft_style": {
-        "name": "recraft_style"
+        "name": "Recraft风格"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
       },
       "size": {
-        "name": "size",
+        "name": "尺寸",
         "tooltip": "生成图像的尺寸。"
       }
     },
@@ -9404,13 +11053,13 @@
   },
   "ReferenceLatent": {
     "description": "此节点为编辑模型设置引导潜在空间。如果模型支持，您可以链式连接多个以设置多个参考图像。",
-    "display_name": "ReferenceLatent",
+    "display_name": "参考Latent",
     "inputs": {
       "conditioning": {
-        "name": "conditioning"
+        "name": "条件"
       },
       "latent": {
-        "name": "latent"
+        "name": "Latent"
       }
     },
     "outputs": {
@@ -9538,6 +11187,11 @@
       "image": {
         "name": "图像"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "RepeatLatentBatch": {
@@ -9548,6 +11202,51 @@
       },
       "samples": {
         "name": "Latent"
+      }
+    }
+  },
+  "ReplaceText": {
+    "display_name": "替换文本",
+    "inputs": {
+      "find": {
+        "name": "搜索",
+        "tooltip": "需要被替换的文本"
+      },
+      "replace": {
+        "name": "替换",
+        "tooltip": "用于替换的文本"
+      },
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要处理的文本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": "已处理的文本"
+      }
+    }
+  },
+  "ReplaceVideoLatentFrames": {
+    "display_name": "替换视频Latent",
+    "inputs": {
+      "destination": {
+        "name": "目标Latent",
+        "tooltip": "需要被替换的 Latent"
+      },
+      "index": {
+        "name": "序号",
+        "tooltip": "选择需要被替换的 Latent 的序号，负值表示从后往前数。"
+      },
+      "source": {
+        "name": "来源Latent",
+        "tooltip": "用于替换的 Latent，如果没有则不会替换。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -9579,6 +11278,95 @@
       },
       "target_width": {
         "name": "目标宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ResizeImageMaskNode": {
+    "display_name": "调整图像/掩码大小",
+    "inputs": {
+      "input": {
+        "name": "输入"
+      },
+      "resize_type": {
+        "name": "调整类型"
+      },
+      "resize_type_multiplier": {
+        "name": "倍数"
+      },
+      "scale_method": {
+        "name": "缩放方法"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "已调整大小",
+        "tooltip": null
+      }
+    }
+  },
+  "ResizeImagesByLongerEdge": {
+    "display_name": "缩放图像（长边）",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "需要处理的图像序列。"
+      },
+      "longer_edge": {
+        "name": "长边",
+        "tooltip": "长边目标长度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "已处理的图像"
+      }
+    }
+  },
+  "ResizeImagesByShorterEdge": {
+    "display_name": "Resize Images by Shorter Edge",
+    "inputs": {
+      "images": {
+        "name": "图像",
+        "tooltip": "需要处理的图像序列。"
+      },
+      "shorter_edge": {
+        "name": "短边",
+        "tooltip": "短边目标长度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "已处理的图像"
+      }
+    }
+  },
+  "ResolutionBucket": {
+    "display_name": "分辨率 Bucket",
+    "inputs": {
+      "conditioning": {
+        "name": "条件",
+        "tooltip": "条件序列（必须和 Latent 序列数量相同）"
+      },
+      "latents": {
+        "name": "Latent",
+        "tooltip": "需要 bucket 的 Latent 字典序列"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Latent",
+        "tooltip": "Latent 字典，按分辨率分批。"
+      },
+      "1": {
+        "name": "条件",
+        "tooltip": "条件字典，按分辨率分批。"
       }
     }
   },
@@ -9833,6 +11621,11 @@
       "steps": {
         "name": "步数"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SD_4XUpscale_Conditioning": {
@@ -9988,10 +11781,12 @@
     },
     "outputs": {
       "0": {
-        "name": "Latent"
+        "name": "Latent",
+        "tooltip": null
       },
       "1": {
-        "name": "降噪Latent"
+        "name": "降噪Latent",
+        "tooltip": null
       }
     }
   },
@@ -10016,10 +11811,12 @@
     },
     "outputs": {
       "0": {
-        "name": "Latent"
+        "name": "Latent",
+        "tooltip": null
       },
       "1": {
-        "name": "降噪Latent"
+        "name": "降噪Latent",
+        "tooltip": null
       }
     }
   },
@@ -10056,6 +11853,11 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerDPMPP_2M_SDE": {
@@ -10065,13 +11867,18 @@
         "name": "eta"
       },
       "noise_device": {
-        "name": "噪波设备"
+        "name": "设备"
       },
       "s_noise": {
         "name": "s_noise"
       },
       "solver_type": {
         "name": "求解器类型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10084,6 +11891,11 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerDPMPP_3M_SDE": {
@@ -10093,10 +11905,15 @@
         "name": "eta"
       },
       "noise_device": {
-        "name": "噪波设备"
+        "name": "设备"
       },
       "s_noise": {
         "name": "s_noise"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10107,7 +11924,7 @@
         "name": "eta"
       },
       "noise_device": {
-        "name": "噪波设备"
+        "name": "设备"
       },
       "r": {
         "name": "r"
@@ -10115,10 +11932,15 @@
       "s_noise": {
         "name": "s_noise"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerER_SDE": {
-    "display_name": "SamplerER_SDE",
+    "display_name": "ER_SDE采样器",
     "inputs": {
       "eta": {
         "name": "eta",
@@ -10131,7 +11953,12 @@
         "name": "s_noise"
       },
       "solver_type": {
-        "name": "求解器类型"
+        "name": "求解器"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10144,6 +11971,11 @@
       "s_noise": {
         "name": "s噪波"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerEulerAncestralCFGPP": {
@@ -10154,6 +11986,11 @@
       },
       "s_noise": {
         "name": "s噪波"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -10195,10 +12032,15 @@
       "order": {
         "name": "顺序"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplerSASolver": {
-    "display_name": "SamplerSASolver",
+    "display_name": "SASolver采样器",
     "inputs": {
       "corrector_order": {
         "name": "校正器阶数"
@@ -10227,10 +12069,41 @@
       "use_pece": {
         "name": "使用 PECE"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SamplerSEEDS2": {
+    "description": "该采样器节点可以表示多个采样器：\n\nseeds 2\n-默认设置\n\nexp_heun_2_x0\n- 求解器=phi 2, r=1.0, eta=0.0\n\nexp_heun_2_x0_sde\n- 求解器=phi 2, r=1.0, eta=1.0, s noise=1.0",
+    "display_name": "SEEDS2采样器",
+    "inputs": {
+      "eta": {
+        "name": "eta",
+        "tooltip": "Stochastic strength"
+      },
+      "r": {
+        "name": "r",
+        "tooltip": "Relative step size for the intermediate stage (c2 node)"
+      },
+      "s_noise": {
+        "name": "s_noise",
+        "tooltip": "SDE noise multiplier"
+      },
+      "solver_type": {
+        "name": "求解器"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SamplingPercentToSigma": {
-    "display_name": "SamplingPercentToSigma",
+    "display_name": "采样比到Sigma",
     "inputs": {
       "model": {
         "name": "模型"
@@ -10245,7 +12118,8 @@
     },
     "outputs": {
       "0": {
-        "name": "sigma 值"
+        "name": "sigma 值",
+        "tooltip": null
       }
     }
   },
@@ -10338,7 +12212,7 @@
     }
   },
   "SaveGLB": {
-    "display_name": "SaveGLB",
+    "display_name": "保存GLB",
     "inputs": {
       "filename_prefix": {
         "name": "文件名前缀"
@@ -10365,6 +12239,44 @@
       }
     }
   },
+  "SaveImageDataSetToFolder": {
+    "display_name": "保存图像数据集",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀",
+        "tooltip": "保存的图像的文件名前缀。"
+      },
+      "folder_name": {
+        "name": "文件夹名",
+        "tooltip": "保存训练数据集的文件夹名（在 输出 文件夹内）。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要保存的图像序列。"
+      }
+    }
+  },
+  "SaveImageTextDataSetToFolder": {
+    "display_name": "保存图像文本数据集",
+    "inputs": {
+      "filename_prefix": {
+        "name": "文件名前缀",
+        "tooltip": "保存的图像的文件名前缀。"
+      },
+      "folder_name": {
+        "name": "文件夹名",
+        "tooltip": "保存训练数据集的文件夹名（在 输出 文件夹内）。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要保存的图像序列。"
+      },
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要保存的标注文本序列。"
+      }
+    }
+  },
   "SaveImageWebsocket": {
     "display_name": "保存图像（网络接口）",
     "inputs": {
@@ -10384,33 +12296,54 @@
       }
     }
   },
-  "SaveLoRANode": {
-    "display_name": "保存 LoRA 权重",
+  "SaveLoRA": {
+    "display_name": "保存 LoRA",
     "inputs": {
       "lora": {
-        "name": "lora",
-        "tooltip": "要保存的 LoRA 模型。请勿使用带有 LoRA 层的模型。"
+        "name": "LoRA",
+        "tooltip": "需要保存的 LoRA 模型。不要使用分层 LoRA。"
       },
       "prefix": {
         "name": "前缀",
-        "tooltip": "用于保存的 LoRA 文件的前缀。"
+        "tooltip": "保存的 LoRA 文件的文件名前缀。"
       },
       "steps": {
         "name": "步数",
-        "tooltip": "可选：LoRA 已训练的步数，用于命名保存的文件。"
+        "tooltip": "可选：LoRA 的训练步数，用于保存文件命名。"
       }
     }
   },
   "SaveSVGNode": {
     "description": "在磁盘上保存 SVG 文件。",
-    "display_name": "SaveSVGNode",
+    "display_name": "保存SVG",
     "inputs": {
       "filename_prefix": {
-        "name": "filename_prefix",
+        "name": "文件名前缀",
         "tooltip": "保存文件的前缀。可包含格式化信息，如 %date:yyyy-MM-dd% 或 %Empty Latent Image.width% 以包含节点中的值。"
       },
       "svg": {
         "name": "svg"
+      }
+    }
+  },
+  "SaveTrainingDataset": {
+    "display_name": "保存训练数据集",
+    "inputs": {
+      "conditioning": {
+        "name": "条件",
+        "tooltip": "制作训练数据集 节点输出的条件字典"
+      },
+      "folder_name": {
+        "name": "文件夹名",
+        "tooltip": "包含训练数据集的文件夹名（在 输出 文件夹内）。"
+      },
+      "latents": {
+        "name": "Latent",
+        "tooltip": "制作训练数据集 节点输出的 Latent 字典"
+      },
+      "shard_size": {
+        "name": "shard_size",
+        "tooltip": "Number of samples per shard file."
       }
     }
   },
@@ -10459,10 +12392,10 @@
   },
   "ScaleROPE": {
     "description": "缩放和偏移模型的ROPE。",
-    "display_name": "ScaleROPE",
+    "display_name": "缩放ROPE",
     "inputs": {
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "scale_t": {
         "name": "scale_t"
@@ -10534,6 +12467,11 @@
       "sigmas": {
         "name": "sigmas"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SetHookKeyframes": {
@@ -10574,6 +12512,58 @@
       }
     }
   },
+  "ShuffleDataset": {
+    "display_name": "打乱图像数据集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要处理的图像序列。"
+      },
+      "seed": {
+        "name": "随机种",
+        "tooltip": "随机种"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "处理后的图像"
+      }
+    }
+  },
+  "ShuffleImageTextDataset": {
+    "display_name": "打乱图像文本数据集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "需要打乱的图像序列。"
+      },
+      "seed": {
+        "name": "随机种",
+        "tooltip": "随机种"
+      },
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要打乱的文本序列"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "图像",
+        "tooltip": "打乱后的图像"
+      },
+      "1": {
+        "name": "文本",
+        "tooltip": "打乱后的文本"
+      }
+    }
+  },
   "SkipLayerGuidanceDiT": {
     "description": "通用的跳过层引导节点，可用于每个DiT模型。",
     "display_name": "跳过层引导（DiT）",
@@ -10607,23 +12597,23 @@
     }
   },
   "SkipLayerGuidanceDiTSimple": {
-    "description": "SkipLayerGuidanceDiT节点的简化版本，仅修改无条件传递。",
-    "display_name": "SkipLayerGuidanceDiTSimple",
+    "description": "跳过层引导（DiT）节点的简化版本，仅修改无条件传递。",
+    "display_name": "跳过层引导（DiT简化）",
     "inputs": {
       "double_layers": {
-        "name": "double_layers"
+        "name": "双层"
       },
       "end_percent": {
-        "name": "end_percent"
+        "name": "结束百分比"
       },
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "single_layers": {
-        "name": "single_layers"
+        "name": "单层"
       },
       "start_percent": {
-        "name": "start_percent"
+        "name": "开始百分比"
       }
     },
     "outputs": {
@@ -10670,22 +12660,29 @@
       "width": {
         "name": "宽度"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "SplitAudioChannels": {
     "description": "将音频分离为左右声道。",
-    "display_name": "Split Audio Channels",
+    "display_name": "分离音频通道",
     "inputs": {
       "audio": {
-        "name": "audio"
+        "name": "音频"
       }
     },
     "outputs": {
       "0": {
-        "name": "left"
+        "name": "左声道",
+        "tooltip": null
       },
       "1": {
-        "name": "right"
+        "name": "右声道",
+        "tooltip": null
       }
     }
   },
@@ -10717,10 +12714,12 @@
     },
     "outputs": {
       "0": {
-        "name": "高方差"
+        "name": "高方差",
+        "tooltip": null
       },
       "1": {
-        "name": "低方差"
+        "name": "低方差",
+        "tooltip": null
       }
     }
   },
@@ -10736,46 +12735,48 @@
     },
     "outputs": {
       "0": {
-        "name": "高方差"
+        "name": "高方差",
+        "tooltip": null
       },
       "1": {
-        "name": "低方差"
+        "name": "低方差",
+        "tooltip": null
       }
     }
   },
   "StabilityAudioInpaint": {
     "description": "使用文本指令转换现有音频样本的部分内容。",
-    "display_name": "Stability AI Audio Inpaint",
+    "display_name": "Stability AI 音频重绘",
     "inputs": {
       "audio": {
-        "name": "audio",
+        "name": "音频",
         "tooltip": "音频长度必须在6到190秒之间。"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "duration": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": "控制生成音频的时长（秒）。"
       },
       "mask_end": {
-        "name": "mask_end"
+        "name": "结束遮罩"
       },
       "mask_start": {
-        "name": "mask_start"
+        "name": "开始遮罩"
       },
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "prompt": {
-        "name": "prompt"
+        "name": "提示词"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于生成的随机种子。"
       },
       "steps": {
-        "name": "steps",
+        "name": "步数",
         "tooltip": "控制采样步数。"
       }
     },
@@ -10787,31 +12788,31 @@
   },
   "StabilityAudioToAudio": {
     "description": "使用文本指令将现有音频样本转换为新的高质量作品。",
-    "display_name": "Stability AI Audio To Audio",
+    "display_name": "Stability AI 音频到音频",
     "inputs": {
       "audio": {
-        "name": "audio",
+        "name": "音频",
         "tooltip": "音频长度必须在6到190秒之间。"
       },
       "control_after_generate": {
         "name": "生成后控制"
       },
       "duration": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": "控制生成音频的时长（秒）。"
       },
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "prompt": {
-        "name": "prompt"
+        "name": "提示词"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于生成的随机种子。"
       },
       "steps": {
-        "name": "steps",
+        "name": "步数",
         "tooltip": "控制采样步数。"
       },
       "strength": {
@@ -10830,40 +12831,40 @@
     "display_name": "Stability AI Stable Diffusion 3.5 图像",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "宽高比",
         "tooltip": "生成图像的宽高比。"
       },
       "cfg_scale": {
-        "name": "cfg_scale",
+        "name": "CFG",
         "tooltip": "扩散过程对提示词文本的遵循程度（数值越高，生成的图像越接近你的提示词）"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "image_denoise": {
-        "name": "image_denoise",
+        "name": "图像降噪",
         "tooltip": "输入图像的去噪程度；0.0 表示与输入图像完全相同，1.0 表示完全不使用输入图像。"
       },
       "model": {
-        "name": "model"
+        "name": "模型"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "你不希望在输出图像中出现的关键词。此为高级功能。"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "你希望在输出图像中看到的内容。强有力且描述清晰的提示词，能够明确定义元素、颜色和主题，将带来更好的结果。"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于生成噪声的随机种子。"
       },
       "style_preset": {
-        "name": "style_preset",
+        "name": "风格预设",
         "tooltip": "可选，生成图像的期望风格。"
       }
     },
@@ -10875,36 +12876,36 @@
   },
   "StabilityStableImageUltraNode": {
     "description": "根据提示词和分辨率同步生成图像。",
-    "display_name": "Stability AI Stable Image Ultra",
+    "display_name": "Stability AI Stable 图像 Ultra",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "宽高比",
         "tooltip": "生成图像的宽高比。"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "image_denoise": {
-        "name": "image_denoise",
+        "name": "降噪",
         "tooltip": "输入图像的去噪强度；0.0 表示与输入图像完全相同，1.0 表示完全不参考输入图像。"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "描述你不希望在输出图像中出现内容的文本。这是一个高级功能。"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "你希望在输出图像中看到的内容。一个强有力且描述清晰的提示词，能够明确界定元素、颜色和主题，将带来更好的结果。要控制某个词的权重，请使用格式 `(word:weight)`，其中 `word` 是你想要控制权重的词，`weight` 是介于 0 到 1 之间的数值。例如：`The sky was a crisp (blue:0.3) and (green:0.8)` 表示天空是蓝色和绿色，但绿色多于蓝色。"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于生成噪声的随机种子。"
       },
       "style_preset": {
-        "name": "style_preset",
+        "name": "风格预设",
         "tooltip": "可选的生成图像风格。"
       }
     },
@@ -10958,7 +12959,7 @@
         "tooltip": "控制生成与初始图像不强相关的额外细节的可能性。"
       },
       "image": {
-        "name": "image"
+        "name": "图像"
       },
       "negative_prompt": {
         "name": "反向提示词",
@@ -11343,6 +13344,21 @@
       }
     }
   },
+  "StripWhitespace": {
+    "display_name": "清理空字符",
+    "inputs": {
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要处理的文本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": "已处理的文本"
+      }
+    }
+  },
   "StyleModelApply": {
     "display_name": "应用风格模型",
     "inputs": {
@@ -11372,7 +13388,7 @@
     }
   },
   "T5TokenizerOptions": {
-    "display_name": "T5TokenizerOptions",
+    "display_name": "T5Tokenizer设置",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -11400,7 +13416,7 @@
     },
     "outputs": {
       "0": {
-        "name": "修补模型",
+        "name": "模型",
         "tooltip": null
       }
     }
@@ -11423,13 +13439,13 @@
     },
     "outputs": {
       "0": {
-        "name": "patched_model",
+        "name": "模型",
         "tooltip": null
       }
     }
   },
   "TextEncodeAceStepAudio": {
-    "display_name": "TextEncodeAceStepAudio",
+    "display_name": "文本音频编码（AceStep）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -11451,7 +13467,7 @@
     }
   },
   "TextEncodeHunyuanVideo_ImageToVideo": {
-    "display_name": "文本编码Hunyuan视频_图像到视频",
+    "display_name": "文本编码（Hunyuan视频_图像到视频）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -11474,7 +13490,7 @@
     }
   },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "文本编码（QwenImageEdit）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -11496,7 +13512,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "文本编码（QwenImageEditPlus）",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -11523,6 +13539,70 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "auto_resize_images"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      },
+      "image3": {
+        "name": "image3"
+      },
+      "image_encoder": {
+        "name": "image_encoder"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextToLowercase": {
+    "display_name": "文本半角",
+    "inputs": {
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要处理的文本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": "已经处理的文本"
+      }
+    }
+  },
+  "TextToUppercase": {
+    "display_name": "文本全角",
+    "inputs": {
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要处理的文本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": "已经处理的文本"
+      }
+    }
+  },
   "ThresholdMask": {
     "display_name": "遮罩阈值",
     "inputs": {
@@ -11531,6 +13611,11 @@
       },
       "value": {
         "name": "值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -11542,6 +13627,118 @@
       },
       "ratio": {
         "name": "比率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazImageEnhance": {
+    "description": "专业级放大和图像增强。",
+    "display_name": "Topaz 图像增强",
+    "inputs": {
+      "color_preservation": {
+        "name": "固定色彩",
+        "tooltip": "保证色彩一致性。"
+      },
+      "creativity": {
+        "name": "多样性"
+      },
+      "crop_to_fill": {
+        "name": "裁剪",
+        "tooltip": "默认情况下，当输出宽高比不同时，图像会带有边框。启用后会裁剪图像填充输出尺寸。"
+      },
+      "face_enhancement": {
+        "name": "面部增强",
+        "tooltip": "优化面部（如果存在）。"
+      },
+      "face_enhancement_creativity": {
+        "name": "面部增强多样性",
+        "tooltip": "设置面部增强时的多样性。"
+      },
+      "face_enhancement_strength": {
+        "name": "面部增强强度",
+        "tooltip": "控制面部相对于背景的锐度。"
+      },
+      "face_preservation": {
+        "name": "固定面部",
+        "tooltip": "保证主体面部一致性。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "output_height": {
+        "name": "输出高度",
+        "tooltip": "0为自动（一般情况下和输入图像相同）。"
+      },
+      "output_width": {
+        "name": "输出宽度",
+        "tooltip": "0为自动（一般情况下和输入图像相同）。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于引导放大"
+      },
+      "subject_detection": {
+        "name": "物体检测"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TopazVideoEnhance": {
+    "description": "通过强大的放大和修复技术，为视频注入新的生命。",
+    "display_name": "Topaz 视频增强",
+    "inputs": {
+      "dynamic_compression_level": {
+        "name": "动态压缩",
+        "tooltip": "CQP 等级."
+      },
+      "interpolation_duplicate": {
+        "name": "补帧重复帧",
+        "tooltip": "分析原视频，移除重复的帧。"
+      },
+      "interpolation_duplicate_threshold": {
+        "name": "补帧重复帧阈值",
+        "tooltip": "判断为重复帧的阈值。"
+      },
+      "interpolation_enabled": {
+        "name": "补帧"
+      },
+      "interpolation_frame_rate": {
+        "name": "补帧帧率",
+        "tooltip": "输出帧率"
+      },
+      "interpolation_model": {
+        "name": "补帧模型"
+      },
+      "interpolation_slowmo": {
+        "name": "补帧慢动作",
+        "tooltip": "使用慢动作补帧。例如，设为 2 会让视频变慢到 0.5 倍，持续时间增加到 2 倍。"
+      },
+      "upscaler_creativity": {
+        "name": "放大多样性",
+        "tooltip": "多样等级（仅适用 Starlight (Astra) Creative 模型）."
+      },
+      "upscaler_enabled": {
+        "name": "放大"
+      },
+      "upscaler_model": {
+        "name": "放大模型"
+      },
+      "upscaler_resolution": {
+        "name": "放大分辨率"
+      },
+      "video": {
+        "name": "视频"
       }
     },
     "outputs": {
@@ -11576,6 +13773,10 @@
       "batch_size": {
         "name": "批次大小",
         "tooltip": "用于训练的批次大小。"
+      },
+      "bucket_mode": {
+        "name": "bucket模式",
+        "tooltip": "启用分辨率 bucket 模式。开启后会先使用 分辨率Bucket 节点处理 Latent。"
       },
       "control_after_generate": {
         "name": "生成后控制"
@@ -11639,16 +13840,20 @@
     },
     "outputs": {
       "0": {
-        "name": "带LoRA的模型"
+        "name": "带LoRA的模型",
+        "tooltip": "已应用 LoRA 的模型"
       },
       "1": {
-        "name": "LoRA"
+        "name": "LoRA",
+        "tooltip": "LoRA 权重"
       },
       "2": {
-        "name": "损失"
+        "name": "损失",
+        "tooltip": "损失历史图"
       },
       "3": {
-        "name": "步数"
+        "name": "步数",
+        "tooltip": "总训练步数"
       }
     }
   },
@@ -11667,16 +13872,21 @@
         "name": "起始索引",
         "tooltip": "开始时间（秒），可为负数表示从末尾开始计数（支持小数秒）。"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "TrimVideoLatent": {
-    "display_name": "TrimVideoLatent",
+    "display_name": "修剪视频Latent",
     "inputs": {
       "samples": {
-        "name": "samples"
+        "name": "Latent"
       },
       "trim_amount": {
-        "name": "trim_amount"
+        "name": "修剪数量"
       }
     },
     "outputs": {
@@ -11708,8 +13918,32 @@
   "TripoConversionNode": {
     "display_name": "Tripo：转换模型",
     "inputs": {
+      "animate_in_place": {
+        "name": "原地动画"
+      },
+      "bake": {
+        "name": "烘焙"
+      },
+      "export_orientation": {
+        "name": "导出朝向"
+      },
+      "export_vertex_colors": {
+        "name": "导出顶点色"
+      },
       "face_limit": {
         "name": "面数限制"
+      },
+      "fbx_preset": {
+        "name": "fbx预设"
+      },
+      "flatten_bottom": {
+        "name": "平滑底部"
+      },
+      "flatten_bottom_threshold": {
+        "name": "平滑底部阈值"
+      },
+      "force_symmetry": {
+        "name": "强制对称"
       },
       "format": {
         "name": "格式"
@@ -11717,14 +13951,29 @@
       "original_model_task_id": {
         "name": "原始模型任务ID"
       },
+      "pack_uv": {
+        "name": "打包uv"
+      },
+      "part_names": {
+        "name": "部件名称"
+      },
+      "pivot_to_center_bottom": {
+        "name": "对齐底部中心"
+      },
       "quad": {
         "name": "四边形"
+      },
+      "scale_factor": {
+        "name": "缩放系数"
       },
       "texture_format": {
         "name": "纹理格式"
       },
       "texture_size": {
         "name": "纹理大小"
+      },
+      "with_animation": {
+        "name": "加入动画"
       }
     }
   },
@@ -11733,6 +13982,9 @@
     "inputs": {
       "face_limit": {
         "name": "面数限制"
+      },
+      "geometry_quality": {
+        "name": "几何质量"
       },
       "image": {
         "name": "图像"
@@ -11785,6 +14037,9 @@
     "inputs": {
       "face_limit": {
         "name": "面数限制"
+      },
+      "geometry_quality": {
+        "name": "几何质量"
       },
       "image": {
         "name": "图像"
@@ -11903,6 +14158,9 @@
       "face_limit": {
         "name": "面数限制"
       },
+      "geometry_quality": {
+        "name": "几何质量"
+      },
       "image_seed": {
         "name": "图像种子"
       },
@@ -11978,6 +14236,25 @@
       "1": {
         "name": "模型任务ID",
         "tooltip": null
+      }
+    }
+  },
+  "TruncateText": {
+    "display_name": "截断文本",
+    "inputs": {
+      "max_length": {
+        "name": "长度上限",
+        "tooltip": "文本长度上限"
+      },
+      "texts": {
+        "name": "文本",
+        "tooltip": "需要处理的文本"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文本",
+        "tooltip": "已处理的文本"
       }
     }
   },
@@ -12122,10 +14399,15 @@
       "vae": {
         "name": "vae"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "VAE解码（Hunyuan3D）",
     "inputs": {
       "num_chunks": {
         "name": "块数"
@@ -12138,6 +14420,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12185,6 +14472,11 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -12264,6 +14556,63 @@
       "steps": {
         "name": "步数"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Veo3FirstLastFrameNode": {
+    "description": "使用首尾帧和提示词生成视频",
+    "display_name": "Google Veo 3 首尾帧视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比",
+        "tooltip": "输出视频的宽高比"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "输出视频的秒数"
+      },
+      "first_frame": {
+        "name": "初始帧",
+        "tooltip": "初始帧"
+      },
+      "generate_audio": {
+        "name": "生成音频",
+        "tooltip": "为视频生成音频"
+      },
+      "last_frame": {
+        "name": "结束帧",
+        "tooltip": "结束帧"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "negative_prompt": {
+        "name": "负面提示词",
+        "tooltip": "避免视频出现内容的文本描述"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "视频的文本描述"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "随机种",
+        "tooltip": "生成视频的随机种"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Veo3VideoGenerationNode": {
@@ -12271,46 +14620,46 @@
     "display_name": "Google Veo 3 视频生成",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "宽高比",
         "tooltip": "输出视频的宽高比"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
+        "name": "时长",
         "tooltip": "输出视频的时长（秒）（Veo 3 仅支持 8 秒）"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
+        "name": "优化提示词",
         "tooltip": "是否使用 AI 辅助增强提示"
       },
       "generate_audio": {
-        "name": "generate_audio",
+        "name": "生成音频",
         "tooltip": "为视频生成音频。所有 Veo 3 模型均支持此功能。"
       },
       "image": {
-        "name": "image",
+        "name": "图像",
         "tooltip": "用于指导视频生成的可选参考图像"
       },
       "model": {
-        "name": "model",
+        "name": "模型",
         "tooltip": "用于视频生成的 Veo 3 模型"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "负面文本提示，指导视频中应避免的内容"
       },
       "person_generation": {
-        "name": "person_generation",
+        "name": "生成人类",
         "tooltip": "是否允许在视频中生成人物"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "视频的文本描述"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "视频生成的种子值（0 表示随机）"
       }
     },
@@ -12325,42 +14674,42 @@
     "display_name": "Google Veo2 视频生成",
     "inputs": {
       "aspect_ratio": {
-        "name": "aspect_ratio",
+        "name": "宽高比",
         "tooltip": "输出视频的宽高比"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "duration_seconds": {
-        "name": "duration_seconds",
+        "name": "时长",
         "tooltip": "输出视频的时长（秒）"
       },
       "enhance_prompt": {
-        "name": "enhance_prompt",
+        "name": "优化提示词",
         "tooltip": "是否使用 AI 辅助增强提示词"
       },
       "image": {
-        "name": "image",
+        "name": "图像",
         "tooltip": "可选的参考图像，用于引导视频生成"
       },
       "model": {
-        "name": "model",
+        "name": "模型",
         "tooltip": "用于视频生成的 Veo 2 模型"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "用于指导视频中应避免内容的负面文本提示"
       },
       "person_generation": {
-        "name": "person_generation",
+        "name": "生成人类",
         "tooltip": "是否允许在视频中生成人物"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "视频的文本描述"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "视频生成的种子（0 表示随机）"
       }
     },
@@ -12392,39 +14741,199 @@
       }
     }
   },
-  "ViduImageToVideoNode": {
-    "description": "从图像和可选提示生成视频",
-    "display_name": "Vidu 图像转视频生成",
+  "Vidu2ImageToVideoNode": {
+    "description": "根据一张图像和可选提示生成视频。",
+    "display_name": "Vidu2 图像转视频生成",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
       },
       "duration": {
-        "name": "duration",
-        "tooltip": "输出视频的时长（秒）"
+        "name": "duration"
       },
       "image": {
         "name": "image",
-        "tooltip": "用作生成视频起始帧的图像"
+        "tooltip": "用于生成视频起始帧的图像。"
       },
       "model": {
-        "name": "model",
-        "tooltip": "模型名称"
+        "name": "model"
       },
       "movement_amplitude": {
         "name": "movement_amplitude",
-        "tooltip": "画面中对象的运动幅度"
+        "tooltip": "画面中物体的运动幅度。"
       },
       "prompt": {
         "name": "prompt",
+        "tooltip": "用于视频生成的可选文本提示（最多2000字符）。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2ReferenceVideoNode": {
+    "description": "根据多张参考图像和提示生成视频。",
+    "display_name": "Vidu2 参考图像转视频生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "audio": {
+        "name": "audio",
+        "tooltip": "启用后，视频将根据提示包含生成的语音和背景音乐。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "model": {
+        "name": "model"
+      },
+      "movement_amplitude": {
+        "name": "movement_amplitude",
+        "tooltip": "画面中物体的运动幅度。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "启用后，视频将根据提示生成语音和背景音乐。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "subjects": {
+        "name": "subjects",
+        "tooltip": "每个主体最多提供3张参考图像（所有主体共7张）。可通过 @subject{subject_id} 在提示中引用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2StartEndToVideoNode": {
+    "description": "根据起始帧、结束帧和提示词生成视频。",
+    "display_name": "Vidu2 起始/结束帧到视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "end_frame": {
+        "name": "结束帧"
+      },
+      "first_frame": {
+        "name": "起始帧"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "movement_amplitude": {
+        "name": "运动幅度",
+        "tooltip": "帧中物体的运动幅度。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "提示描述（最多2000个字符）。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu2TextToVideoNode": {
+    "description": "根据文本提示生成视频",
+    "display_name": "Vidu2 文本到视频生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "宽高比"
+      },
+      "background_music": {
+        "name": "背景音乐",
+        "tooltip": "是否为生成的视频添加背景音乐。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用于视频生成的文本描述，最大长度为2000个字符。"
+      },
+      "resolution": {
+        "name": "分辨率"
+      },
+      "seed": {
+        "name": "种子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduImageToVideoNode": {
+    "description": "从图像和可选提示生成视频",
+    "display_name": "Vidu 图像转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "输出视频的时长（秒）"
+      },
+      "image": {
+        "name": "图像",
+        "tooltip": "用作生成视频起始帧的图像"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "模型名称"
+      },
+      "movement_amplitude": {
+        "name": "运动幅度",
+        "tooltip": "画面中对象的运动幅度"
+      },
+      "prompt": {
+        "name": "提示词",
         "tooltip": "用于视频生成的文本描述"
       },
       "resolution": {
-        "name": "resolution",
+        "name": "分辨率",
         "tooltip": "支持的值可能因模型和时长而异"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "视频生成的种子值（0 表示随机）"
       }
     },
@@ -12450,11 +14959,11 @@
         "tooltip": "输出视频的时长（秒）"
       },
       "images": {
-        "name": "images",
+        "name": "图像",
         "tooltip": "用作参考以生成具有一致主体的图像（最多 7 张图像）"
       },
       "model": {
-        "name": "model",
+        "name": "模型",
         "tooltip": "模型名称"
       },
       "movement_amplitude": {
@@ -12462,7 +14971,7 @@
         "tooltip": "画面中物体的运动幅度"
       },
       "prompt": {
-        "name": "prompt",
+        "name": "提示词",
         "tooltip": "用于视频生成的文本描述"
       },
       "resolution": {
@@ -12569,7 +15078,7 @@
     }
   },
   "VoxelToMesh": {
-    "display_name": "VoxelToMesh",
+    "display_name": "体素到网格",
     "inputs": {
       "algorithm": {
         "name": "算法"
@@ -12578,12 +15087,17 @@
         "name": "阈值"
       },
       "voxel": {
-        "name": "voxel"
+        "name": "体素"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
   "VoxelToMeshBasic": {
-    "display_name": "VoxelToMeshBasic",
+    "display_name": "体素到网格（基础）",
     "inputs": {
       "threshold": {
         "name": "阈值"
@@ -12591,10 +15105,15 @@
       "voxel": {
         "name": "体素"
       }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
     }
   },
   "Wan22FunControlToVideo": {
-    "display_name": "Wan22FunControlToVideo",
+    "display_name": "Wan22FunControl视频",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -12870,6 +15389,10 @@
         "name": "上下文步长",
         "tooltip": "上下文窗口的步长；仅适用于均匀调度。"
       },
+      "freenoise": {
+        "name": "Freenoise",
+        "tooltip": "是否应用 Freenoise，优化窗口融合。"
+      },
       "fuse_method": {
         "name": "融合方法",
         "tooltip": "用于融合上下文窗口的方法。"
@@ -12886,7 +15409,7 @@
     }
   },
   "WanFirstLastFrameToVideo": {
-    "display_name": "WanFirstLastFrameToVideo",
+    "display_name": "Wan首尾帧视频",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -12938,13 +15461,13 @@
     }
   },
   "WanFunControlToVideo": {
-    "display_name": "WanFunControlToVideo",
+    "display_name": "WanFunControl视频",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "CLIP视觉输出"
       },
       "control_video": {
         "name": "控制视频"
@@ -12987,13 +15510,13 @@
     }
   },
   "WanFunInpaintToVideo": {
-    "display_name": "WanFunInpaintToVideo",
+    "display_name": "WanFunInpaint视频",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "CLIP视觉输出"
       },
       "end_image": {
         "name": "结束图像"
@@ -13083,7 +15606,7 @@
   },
   "WanImageToImageApi": {
     "description": "根据一张或两张输入图像和文本提示生成图像。输出图像目前固定为160万像素；其宽高比与输入图像匹配。",
-    "display_name": "万图像转图像",
+    "display_name": "Wan 图像转图像",
     "inputs": {
       "control_after_generate": {
         "name": "生成后控制"
@@ -13120,7 +15643,7 @@
     }
   },
   "WanImageToVideo": {
-    "display_name": "Wan图像到视频",
+    "display_name": "图像到视频（Wan）",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
@@ -13167,7 +15690,7 @@
   },
   "WanImageToVideoApi": {
     "description": "基于首帧图像和文本提示生成视频。",
-    "display_name": "万图生视频",
+    "display_name": "Wan 图生视频",
     "inputs": {
       "audio": {
         "name": "音频",
@@ -13200,7 +15723,7 @@
         "tooltip": "用于描述元素和视觉特征的提示词，支持英文/中文。"
       },
       "prompt_extend": {
-        "name": "提示词扩展",
+        "name": "优化提示词",
         "tooltip": "是否通过AI辅助增强提示词。"
       },
       "resolution": {
@@ -13209,6 +15732,10 @@
       "seed": {
         "name": "种子",
         "tooltip": "生成使用的种子值。"
+      },
+      "shot_type": {
+        "name": "镜头类型",
+        "tooltip": "选择生成的视频的镜头类型，即视频是单个连续镜头还是多个剪辑镜头。需要开启 优化提示词。"
       },
       "watermark": {
         "name": "水印",
@@ -13221,8 +15748,125 @@
       }
     }
   },
+  "WanMoveConcatTrack": {
+    "display_name": "WanMove合并轨道",
+    "inputs": {
+      "tracks_1": {
+        "name": "轨道1"
+      },
+      "tracks_2": {
+        "name": "轨道2"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveTrackToVideo": {
+    "display_name": "WanMove轨道到视频",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "clip_vision_output": {
+        "name": "CLIP视觉输出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "时长"
+      },
+      "negative": {
+        "name": "负面条件"
+      },
+      "positive": {
+        "name": "正面条件"
+      },
+      "start_image": {
+        "name": "起始帧"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "轨道条件的强度。"
+      },
+      "tracks": {
+        "name": "轨道"
+      },
+      "vae": {
+        "name": "VAE"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正面条件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "负面条件",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveTracksFromCoords": {
+    "display_name": "WanMove坐标到轨道",
+    "inputs": {
+      "track_coords": {
+        "name": "轨道坐标"
+      },
+      "track_mask": {
+        "name": "轨道遮罩"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "轨道长度",
+        "tooltip": null
+      }
+    }
+  },
+  "WanMoveVisualizeTracks": {
+    "display_name": "WanMove预览轨道",
+    "inputs": {
+      "circle_size": {
+        "name": "圆环尺寸"
+      },
+      "images": {
+        "name": "图像"
+      },
+      "line_resolution": {
+        "name": "线条分辨率"
+      },
+      "line_width": {
+        "name": "线条宽度"
+      },
+      "opacity": {
+        "name": "不透明度"
+      },
+      "tracks": {
+        "name": "轨道"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "WanPhantomSubjectToVideo": {
-    "display_name": "万幻主体转视频",
+    "display_name": "WanPhantom主体转视频",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -13268,8 +15912,53 @@
       }
     }
   },
+  "WanReferenceVideoApi": {
+    "description": "使用输入视频中的角色和声音，结合提示词，生成保持角色一致性的新视频。",
+    "display_name": "Wan 参考视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "negative_prompt": {
+        "name": "反向提示词",
+        "tooltip": "描述需要避免内容的反向提示词。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述元素和视觉特征的提示词。支持英文和中文。使用如 `character1` 和 `character2` 这样的标识符来指代参考角色。"
+      },
+      "reference_videos": {
+        "name": "参考视频"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "shot_type": {
+        "name": "镜头类型",
+        "tooltip": "指定生成视频的镜头类型，即视频是单一连续镜头还是包含多个剪辑的镜头。"
+      },
+      "size": {
+        "name": "尺寸"
+      },
+      "watermark": {
+        "name": "水印",
+        "tooltip": "是否为结果添加 AI 生成的水印。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "WanSoundImageToVideo": {
-    "display_name": "WanSoundImageToVideo",
+    "display_name": "图像到视频（WanSound）",
     "inputs": {
       "audio_encoder_output": {
         "name": "音频编码器输出"
@@ -13321,7 +16010,7 @@
     }
   },
   "WanSoundImageToVideoExtend": {
-    "display_name": "WanSoundImageToVideoExtend",
+    "display_name": "图像到视频扩展（WanSound）",
     "inputs": {
       "audio_encoder_output": {
         "name": "音频编码器输出"
@@ -13412,18 +16101,18 @@
     "display_name": "Wan文生视频",
     "inputs": {
       "audio": {
-        "name": "audio",
+        "name": "音频",
         "tooltip": "音频必须包含清晰、响亮的人声，无杂音和背景音乐。"
       },
       "control_after_generate": {
-        "name": "control after generate"
+        "name": "生成后控制"
       },
       "duration": {
-        "name": "duration",
+        "name": "时长",
         "tooltip": "可用时长：5秒和10秒"
       },
       "generate_audio": {
-        "name": "generate_audio",
+        "name": "生成音频",
         "tooltip": "若无音频输入，则自动生成音频。"
       },
       "model": {
@@ -13431,7 +16120,7 @@
         "tooltip": "要使用的模型。"
       },
       "negative_prompt": {
-        "name": "negative_prompt",
+        "name": "负面提示词",
         "tooltip": "用于引导避免内容的负面文本提示。"
       },
       "prompt": {
@@ -13439,18 +16128,22 @@
         "tooltip": "用于描述元素和视觉特征的提示词，支持英文/中文。"
       },
       "prompt_extend": {
-        "name": "prompt_extend",
+        "name": "优化提示词",
         "tooltip": "是否通过AI辅助增强提示词。"
       },
       "seed": {
-        "name": "seed",
+        "name": "随机种",
         "tooltip": "用于生成的种子值。"
       },
+      "shot_type": {
+        "name": "镜头类型",
+        "tooltip": "选择生成的视频的镜头类型，即视频是单个连续镜头还是多个剪辑镜头。需要开启 优化提示词。"
+      },
       "size": {
-        "name": "size"
+        "name": "尺寸"
       },
       "watermark": {
-        "name": "watermark",
+        "name": "水印",
         "tooltip": "是否在结果中添加“AI生成”水印。"
       }
     },
@@ -13461,31 +16154,31 @@
     }
   },
   "WanTrackToVideo": {
-    "display_name": "WanTrackToVideo",
+    "display_name": "WanTrack视频",
     "inputs": {
       "batch_size": {
-        "name": "batch_size"
+        "name": "批次大小"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "CLIP视觉输出"
       },
       "height": {
-        "name": "height"
+        "name": "高度"
       },
       "length": {
-        "name": "length"
+        "name": "长度"
       },
       "negative": {
-        "name": "negative"
+        "name": "负面条件"
       },
       "positive": {
-        "name": "positive"
+        "name": "正面条件"
       },
       "start_image": {
-        "name": "start_image"
+        "name": "图像"
       },
       "temperature": {
-        "name": "temperature"
+        "name": "温度"
       },
       "topk": {
         "name": "topk"
@@ -13497,16 +16190,16 @@
         "name": "vae"
       },
       "width": {
-        "name": "width"
+        "name": "宽度"
       }
     },
     "outputs": {
       "0": {
-        "name": "positive",
+        "name": "正面提示词",
         "tooltip": null
       },
       "1": {
-        "name": "negative",
+        "name": "负面提示词",
         "tooltip": null
       },
       "2": {
@@ -13516,13 +16209,13 @@
     }
   },
   "WanVaceToVideo": {
-    "display_name": "WanVaceToVideo",
+    "display_name": "WanVace视频",
     "inputs": {
       "batch_size": {
         "name": "批量大小"
       },
       "control_masks": {
-        "name": "控制mask"
+        "name": "控制遮罩"
       },
       "control_video": {
         "name": "控制视频"
@@ -13534,10 +16227,10 @@
         "name": "长度"
       },
       "negative": {
-        "name": "负向"
+        "name": "负面条件"
       },
       "positive": {
-        "name": "正向"
+        "name": "正面条件"
       },
       "reference_image": {
         "name": "参考图像"
@@ -13571,6 +16264,43 @@
       }
     }
   },
+  "WavespeedFlashVSRNode": {
+    "description": "快速高质量的视频超分辨率工具，可提升分辨率并恢复低分辨率或模糊视频的清晰度。",
+    "display_name": "FlashVSR 视频超分辨率",
+    "inputs": {
+      "target_resolution": {
+        "name": "target_resolution"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "提升图像分辨率和质量，将照片放大至 4K 或 8K，获得清晰细致的效果。",
+    "display_name": "WaveSpeed 图像超分辨率",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "target_resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "WebcamCapture": {
     "display_name": "网络摄像头捕获",
     "inputs": {
@@ -13587,6 +16317,32 @@
       },
       "width": {
         "name": "宽度"
+      }
+    }
+  },
+  "ZImageFunControlnet": {
+    "display_name": "ZImageFunControlnet",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      },
+      "inpaint_image": {
+        "name": "重绘图像"
+      },
+      "mask": {
+        "name": "遮罩"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型补丁"
+      },
+      "strength": {
+        "name": "强度"
+      },
+      "vae": {
+        "name": "VAE"
       }
     }
   },
@@ -13612,6 +16368,20 @@
       },
       "strength": {
         "name": "强度"
+      }
+    }
+  },
+  "wanBlockSwap": {
+    "description": "NOP",
+    "display_name": "Wan块置换",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   }

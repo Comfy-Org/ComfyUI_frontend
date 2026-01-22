@@ -10,12 +10,13 @@ import { FileSystemIconLoader } from 'unplugin-icons/loaders'
 import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
-import { defineConfig } from 'vite'
-import type { ProxyOptions, UserConfig } from 'vite'
+import typegpuPlugin from 'unplugin-typegpu/vite'
+import { defineConfig } from 'vitest/config'
+import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin, generateImportMapPlugin } from './build/plugins'
+import { comfyAPIPlugin } from './build/plugins'
 
 dotenvConfig()
 
@@ -26,6 +27,7 @@ const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
 const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -49,10 +51,19 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
       ? 'cloud'
       : 'localhost'
 
+// Nightly builds are from main branch; RC/stable builds are from core/* branches
+// Can be overridden via IS_NIGHTLY env var for testing
+const IS_NIGHTLY =
+  process.env.IS_NIGHTLY === 'true' ||
+  (process.env.IS_NIGHTLY !== 'false' &&
+    process.env.CI === 'true' &&
+    process.env.GITHUB_REF_NAME === 'main')
+
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
-  (DISTRIBUTION === 'cloud' && !IS_DEV)
+  (DISTRIBUTION === 'cloud' && !IS_DEV) ||
+  IS_STORYBOOK
 
 const DEV_SEVER_FALLBACK_URL =
   DISTRIBUTION === 'cloud'
@@ -169,6 +180,8 @@ export default defineConfig({
         target: DEV_SERVER_COMFYUI_URL,
         ...cloudProxyConfig,
         bypass: (req, res, _options) => {
+          if (!res) return null
+
           // Return empty array for extensions API as these modules
           // are not on vite's dev server.
           if (req.url === '/api/extensions') {
@@ -231,7 +244,41 @@ export default defineConfig({
       ? [vueDevTools(), vue(), createHtmlPlugin({})]
       : [vue()]),
     tailwindcss(),
+    typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
+    // Inject legacy user stylesheet links for desktop/localhost only
+    {
+      name: 'inject-user-stylesheet-links',
+      enforce: 'post',
+      transformIndexHtml(html) {
+        if (DISTRIBUTION === 'cloud') return html
+
+        return {
+          html,
+          tags: [
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'user.css'
+              },
+              injectTo: 'head-prepend'
+            },
+            {
+              tag: 'link',
+              attrs: {
+                rel: 'stylesheet',
+                type: 'text/css',
+                href: 'api/userdata/user.css'
+              },
+              injectTo: 'head-prepend'
+            }
+          ]
+        }
+      }
+    },
+
     // Twitter/Open Graph meta tags plugin (cloud distribution only)
     {
       name: 'inject-twitter-meta',
@@ -316,47 +363,6 @@ export default defineConfig({
         }
       }
     },
-    // Skip import-map generation for cloud builds to keep bundle small
-    ...(DISTRIBUTION !== 'cloud'
-      ? [
-          generateImportMapPlugin([
-            {
-              name: 'vue',
-              pattern: 'vue',
-              entry: './dist/vue.esm-browser.prod.js'
-            },
-            {
-              name: 'vue-i18n',
-              pattern: 'vue-i18n',
-              entry: './dist/vue-i18n.esm-browser.prod.js'
-            },
-            {
-              name: 'primevue',
-              pattern: /^primevue\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true
-            },
-            {
-              name: '@primevue/themes',
-              pattern: /^@primevue\/themes\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true
-            },
-            {
-              name: '@primevue/forms',
-              pattern: /^@primevue\/forms\/?.*/,
-              entry: './index.mjs',
-              recursiveDependence: true,
-              override: {
-                '@primeuix/forms': {
-                  entry: ''
-                }
-              }
-            }
-          ])
-        ]
-      : []),
-
     Icons({
       compiler: 'vue3',
       customCollections: {
@@ -414,80 +420,83 @@ export default defineConfig({
   ],
 
   build: {
-    minify: SHOULD_MINIFY ? 'esbuild' : false,
+    minify: SHOULD_MINIFY,
     target: 'es2022',
     sourcemap: GENERATE_SOURCEMAP,
-    rollupOptions: {
-      treeshake: true,
-      output: {
-        manualChunks: (id) => {
-          if (!id.includes('node_modules')) {
-            return undefined
-          }
-
-          if (id.includes('primevue') || id.includes('@primeuix')) {
-            return 'vendor-primevue'
-          }
-
-          if (id.includes('@tiptap')) {
-            return 'vendor-tiptap'
-          }
-
-          if (id.includes('chart.js')) {
-            return 'vendor-chart'
-          }
-
-          if (id.includes('three')) {
-            return 'vendor-three'
-          }
-
-          if (id.includes('@xterm')) {
-            return 'vendor-xterm'
-          }
-
-          if (id.includes('/vue') || id.includes('pinia')) {
-            return 'vendor-vue'
-          }
-
-          return 'vendor-other'
-        }
-      }
-    }
-  },
-
-  esbuild: {
-    minifyIdentifiers: SHOULD_MINIFY,
-    keepNames: true,
-    minifySyntax: SHOULD_MINIFY,
-    minifyWhitespace: SHOULD_MINIFY,
-    pure: SHOULD_MINIFY
-      ? [
-          'console.log',
+    rolldownOptions: {
+      treeshake: {
+        manualPureFunctions: [
+          'console.clear',
+          'console.count',
+          'console.countReset',
           'console.debug',
-          'console.info',
-          'console.trace',
           'console.dir',
           'console.dirxml',
           'console.group',
           'console.groupCollapsed',
           'console.groupEnd',
+          'console.info',
+          'console.log',
+          'console.profile',
+          'console.profileEnd',
           'console.table',
           'console.time',
           'console.timeEnd',
           'console.timeLog',
-          'console.count',
-          'console.countReset',
-          'console.profile',
-          'console.profileEnd',
-          'console.clear'
+          'console.trace'
         ]
-      : []
-  },
-
-  test: {
-    globals: true,
-    environment: 'happy-dom',
-    setupFiles: ['./vitest.setup.ts']
+      },
+      experimental: {
+        strictExecutionOrder: true
+      },
+      output: {
+        keepNames: true,
+        codeSplitting: {
+          groups: [
+            {
+              name: 'vendor-primevue',
+              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-tiptap',
+              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-chart',
+              test: /[\\/]node_modules[\\/]chart\.js[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-three',
+              test: /[\\/]node_modules[\\/](three|@sparkjsdev)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-xterm',
+              test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-vue',
+              test: /[\\/]node_modules[\\/](vue|pinia)[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-reka-ui',
+              test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
+              priority: 10
+            },
+            {
+              name: 'vendor-other',
+              test: /[\\/]node_modules[\\/]/,
+              priority: 0
+            }
+          ]
+        }
+      }
+    }
   },
 
   define: {
@@ -501,7 +510,8 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION)
+    __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
   },
 
   resolve: {
@@ -516,5 +526,28 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['@comfyorg/comfyui-electron-types'],
     entries: ['index.html']
+  },
+
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    setupFiles: ['./vitest.setup.ts'],
+    retry: process.env.CI ? 2 : 0,
+    include: [
+      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+    ],
+    coverage: {
+      reporter: ['text', 'json', 'html']
+    },
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint}.config.*',
+      '**/.{oxlintrc,oxfmtrc}.json'
+    ],
+    silent: 'passed-only'
   }
-}) satisfies UserConfig as UserConfig
+})

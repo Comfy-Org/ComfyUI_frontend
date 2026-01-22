@@ -177,6 +177,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customers/cloud-subscription-checkout/{tier}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create cloud subscription checkout session for a specific tier
+         * @description Creates a cloud subscription checkout session for a specific subscription tier (standard, creator, or pro) with automatic billing
+         */
+        post: operations["createCloudSubscriptionCheckoutTier"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/cloud-subscription-status": {
         parameters: {
             query?: never;
@@ -189,6 +209,48 @@ export interface paths {
          * @description Check if the customer has an active cloud subscription
          */
         get: operations["GetCloudSubscriptionStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/verify-api-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify a ComfyUI API key and return customer details
+         * @description Validates a ComfyUI API key and returns the associated customer information.
+         *     This endpoint is used by cloud.comfy.org to authenticate users via API keys
+         *     instead of Firebase tokens.
+         */
+        post: operations["VerifyApiKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/customers/{customer_id}/cloud-subscription-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Admin check cloud subscription status
+         * @description Allows an admin to inspect a specific customer's cloud subscription status.
+         */
+        get: operations["GetAdminCustomerCloudSubscriptionStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -251,6 +313,26 @@ export interface paths {
         get: operations["GetCustomerBalanceById"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/{customer_id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Track usage for a customer (Admin only)
+         * @description Manually track usage for a customer in Metronome. This endpoint is for admin use to record usage events.
+         */
+        post: operations["TrackCustomerUsage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1212,6 +1294,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customers/admin/coupons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all coupons
+         * @description Retrieves a list of all coupons from Stripe. Only admins can list coupons.
+         */
+        get: operations["listCoupons"];
+        put?: never;
+        /**
+         * Create a new Stripe coupon
+         * @description Creates a new coupon in Stripe. Only admins can create coupons.
+         */
+        post: operations["createCoupon"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/admin/coupons/{coupon_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a specific coupon
+         * @description Retrieves details of a specific coupon from Stripe. Only admins can view coupons.
+         */
+        get: operations["getCoupon"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a coupon
+         * @description Deletes a coupon in Stripe. Only admins can delete coupons.
+         */
+        delete: operations["deleteCoupon"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a coupon
+         * @description Updates a coupon in Stripe. Only admins can update coupons.
+         */
+        patch: operations["updateCoupon"];
+        trace?: never;
+    };
+    "/customers/admin/promo-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all promotional codes
+         * @description Retrieves a list of all promotional codes from Stripe. Only admins can list promo codes.
+         */
+        get: operations["listPromoCodes"];
+        put?: never;
+        /**
+         * Generate a new Stripe promotional code
+         * @description Creates a new unique promotional code in Stripe for the specified coupon. Only admins can generate promo codes.
+         */
+        post: operations["createPromoCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/admin/promo-codes/{promo_code_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a specific promotional code
+         * @description Retrieves details of a specific promotional code from Stripe. Only admins can view promo codes.
+         */
+        get: operations["getPromoCode"];
+        put?: never;
+        post?: never;
+        /**
+         * Deactivate a promotional code
+         * @description Deactivates a promotional code in Stripe. Only admins can deactivate promo codes.
+         */
+        delete: operations["deletePromoCode"];
+        options?: never;
+        head?: never;
+        /**
+         * Update a promotional code
+         * @description Updates a promotional code in Stripe. Only admins can update promo codes.
+         */
+        patch: operations["updatePromoCode"];
+        trace?: never;
+    };
     "/releases": {
         parameters: {
             query?: never;
@@ -1712,6 +1898,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/kling/v1/videos/omni-video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** KlingAI Create Omni-Video Task */
+        post: operations["klingCreateOmniVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/kling/v1/videos/omni-video/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** KlingAI Query Single Omni-Video Task */
+        get: operations["klingOmniVideoQuerySingleTask"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/kling/v1/images/generations": {
         parameters: {
             query?: never;
@@ -1739,6 +1959,40 @@ export interface paths {
         };
         /** KlingAI Query Single Image Generation Task */
         get: operations["klingImageGenerationsQuerySingleTask"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/kling/v1/images/omni-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** KlingAI Create Omni-Image Task */
+        post: operations["klingCreateOmniImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/kling/v1/images/omni-image/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** KlingAI Query Single Omni-Image Task */
+        get: operations["klingOmniImageQuerySingleTask"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1896,6 +2150,46 @@ export interface paths {
          * @description Forwards image generation requests to BFL's Flux Pro 1.1 Ultra API and returns the results.
          */
         post: operations["bflFluxProGenerate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/bfl/flux-2-pro/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Proxy request to BFL Flux 2 Pro for image generation
+         * @description Forwards image generation requests to BFL's Flux 2 Pro API and returns the results. Supports image-to-image generation with up to 5 input images.
+         */
+        post: operations["bflFlux2ProGenerate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/bfl/flux-2-max/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Proxy request to BFL Flux 2 Max for image generation
+         * @description Forwards image generation requests to BFL's Flux 2 Max API and returns the results. Supports image-to-image generation with up to 8 input images.
+         */
+        post: operations["bflFlux2MaxGenerate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3512,10 +3806,165 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/topaz/image/v1/enhance-gen/async": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["topazEnhanceGenAsync"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/topaz/image/v1/status/{process_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["topazGetStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/topaz/image/v1/download/{process_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["topazDownloadResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/topaz/video/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["topazVideoCreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/topaz/video/{request_id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["topazVideoAccept"];
+        trace?: never;
+    };
+    "/proxy/topaz/video/{request_id}/complete-upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Complete Video Upload
+         * @description Send metadata of the multi-part uploads to complete the upload and begin processing the video.
+         *
+         *     Optionally include the MD5 hash of the source video file to validate successful upload before processing.
+         */
+        patch: operations["topazVideoCompleteUpload"];
+        trace?: never;
+    };
+    "/proxy/topaz/video/{request_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["topazVideoGetStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get server feature flags
+         * @description Returns the server's feature capabilities
+         */
+        get: operations["getFeatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description The subscription tier level
+         * @enum {string}
+         */
+        SubscriptionTier: "STANDARD" | "CREATOR" | "PRO" | "FOUNDERS_EDITION";
+        /**
+         * @description The subscription billing duration
+         * @enum {string}
+         */
+        SubscriptionDuration: "MONTHLY" | "ANNUAL";
+        FeaturesResponse: {
+            /**
+             * @description The conversion rate for partner nodes
+             * @example 0.5
+             */
+            partner_node_conversion_rate: number;
+        };
         ClaimMyNodeRequest: {
             /** @description GitHub token to verify if the user owns the repo of the node */
             GH_TOKEN: string;
@@ -3627,6 +4076,128 @@ export interface components {
         ErrorResponse: {
             error: string;
             message: string;
+        };
+        CreateCouponRequest: {
+            /** @description Name of the coupon displayed to customers */
+            name?: string;
+            /**
+             * Format: double
+             * @description Percent off discount (0-100)
+             */
+            percent_off?: number;
+            /** @description Amount off in cents */
+            amount_off?: number;
+            /**
+             * @description Currency for amount_off (required if amount_off is set)
+             * @enum {string}
+             */
+            currency?: "usd";
+            /**
+             * @description How long the coupon lasts
+             * @default once
+             * @enum {string}
+             */
+            duration: "once" | "repeating" | "forever";
+            /** @description Required if duration is repeating */
+            duration_in_months?: number;
+            /** @description Maximum number of times this coupon can be redeemed */
+            max_redemptions?: number;
+            /**
+             * Format: int64
+             * @description Unix timestamp specifying the last time at which the coupon can be redeemed
+             */
+            redeem_by?: number;
+            /** @description Set of key-value pairs for storing additional information */
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        UpdateCouponRequest: {
+            /** @description Name of the coupon displayed to customers */
+            name?: string;
+            /** @description Set of key-value pairs for storing additional information */
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        CouponResponse: {
+            /** @description The Stripe coupon ID */
+            id: string;
+            /** @description Name of the coupon displayed to customers */
+            name?: string;
+            /**
+             * Format: double
+             * @description Percent off discount (0-100)
+             */
+            percent_off?: number;
+            /** @description Amount off in cents */
+            amount_off?: number;
+            /** @description Currency for amount_off */
+            currency?: string;
+            /**
+             * @description How long the coupon lasts
+             * @enum {string}
+             */
+            duration: "once" | "repeating" | "forever";
+            /** @description Number of months for repeating coupons */
+            duration_in_months?: number;
+            /** @description Maximum number of times this coupon can be redeemed */
+            max_redemptions?: number;
+            /** @description Number of times this coupon has been redeemed */
+            times_redeemed?: number;
+            /**
+             * Format: int64
+             * @description Unix timestamp specifying the last time at which the coupon can be redeemed
+             */
+            redeem_by?: number;
+            /** @description Whether the coupon can still be redeemed */
+            valid: boolean;
+            /** @description Set of key-value pairs for storing additional information */
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        CreatePromoCodeRequest: {
+            /** @description The Stripe coupon ID to create the promotional code for */
+            coupon_id: string;
+            /**
+             * @description Number of days until the promotion code expires
+             * @default 30
+             */
+            expire_days: number;
+            /** @description Maximum number of times this code can be redeemed */
+            max_redemptions?: number;
+        };
+        UpdatePromoCodeRequest: {
+            /** @description Whether the promo code is active */
+            active?: boolean;
+            /** @description Set of key-value pairs for storing additional information */
+            metadata?: {
+                [key: string]: string;
+            };
+        };
+        PromoCodeResponse: {
+            /** @description The Stripe promotion code ID */
+            id: string;
+            /** @description The generated promotional code */
+            code: string;
+            /** @description The Stripe coupon ID associated with this promo code */
+            coupon_id: string;
+            /** @description Whether the promo code is currently active */
+            active: boolean;
+            /**
+             * Format: int64
+             * @description Unix timestamp when the promo code expires
+             */
+            expires_at?: number;
+            /** @description Maximum number of times this code can be redeemed */
+            max_redemptions?: number;
+            /** @description Number of times this code has been redeemed */
+            times_redeemed?: number;
+            /** @description Set of key-value pairs for storing additional information */
+            metadata?: {
+                [key: string]: string;
+            };
         };
         RunwayTextToImageRequest: {
             /** @description Text prompt for the image generation */
@@ -4233,13 +4804,13 @@ export interface components {
          * @default kling-v1
          * @enum {string}
          */
-        KlingTextToVideoModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo";
+        KlingTextToVideoModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6";
         /**
          * @description Model Name
          * @default kling-v2-master
          * @enum {string}
          */
-        KlingVideoGenModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1" | "kling-v2-1-master" | "kling-v2-5-turbo";
+        KlingVideoGenModelName: "kling-v1" | "kling-v1-5" | "kling-v1-6" | "kling-v2-master" | "kling-v2-1" | "kling-v2-1-master" | "kling-v2-5-turbo" | "kling-v2-6";
         /**
          * @description Video generation mode. std: Standard Mode, which is cost-effective. pro: Professional Mode, generates videos with longer duration but higher quality output.
          * @default std
@@ -4385,6 +4956,12 @@ export interface components {
             aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
             duration?: components["schemas"]["KlingVideoGenDuration"];
             /**
+             * @description Whether to generate sound simultaneously when generating videos. Only V2.6 and subsequent versions of the model support this parameter.
+             * @default off
+             * @enum {string}
+             */
+            sound: "on" | "off";
+            /**
              * Format: uri
              * @description The callback notification address
              */
@@ -4446,6 +5023,12 @@ export interface components {
             camera_control?: components["schemas"]["KlingCameraControl"];
             aspect_ratio?: components["schemas"]["KlingVideoGenAspectRatio"];
             duration?: components["schemas"]["KlingVideoGenDuration"];
+            /**
+             * @description Whether to generate sound simultaneously when generating videos. Only V2.6 and subsequent versions of the model support this parameter.
+             * @default off
+             * @enum {string}
+             */
+            sound: "on" | "off";
             /**
              * Format: uri
              * @description The callback notification address. Server will notify when the task status changes.
@@ -4511,6 +5094,163 @@ export interface components {
                 updated_at?: number;
                 task_result?: {
                     videos?: components["schemas"]["KlingVideoResult"][];
+                };
+            };
+        };
+        KlingOmniVideoRequest: {
+            /**
+             * @description Model Name
+             * @default kling-video-o1
+             * @enum {string}
+             */
+            model_name: "kling-video-o1";
+            /** @description Text prompt words, which can include positive and negative descriptions. Must not exceed 2,500 characters. Can specify elements, images, or videos in the format <<<>>> such as <<element_1>>, <<<image_1>>>, <<<video_1>>>. */
+            prompt: string;
+            /** @description Reference Image List. Can include reference images of the element, scene, style, etc., or be used as the first or last frame to generate videos. */
+            image_list?: {
+                /** @description Image Base64 encoding or image URL (ensure accessibility). Supported formats include .jpg/.jpeg/.png. File size cannot exceed 10MB. Width and height dimensions shall not be less than 300px, aspect ratio between 1:2.5 ~ 2.5:1. */
+                image_url?: string;
+                /**
+                 * @description Whether the image is in the first or last frame. first_frame is the first frame, end_frame is the last frame. Currently does not support only the end frame.
+                 * @enum {string}
+                 */
+                type?: "first_frame" | "end_frame";
+            }[];
+            /** @description Reference Element List based on element ID configuration. */
+            element_list?: {
+                /**
+                 * Format: int64
+                 * @description Element ID
+                 */
+                element_id?: number;
+            }[];
+            /** @description Reference Video list. Can be used as a reference video for feature or as a video to be edited, with the default being the video to be edited. */
+            video_list?: {
+                /** @description URL of uploaded video. Only .mp4/.mov formats are supported. Duration between 3-10 seconds. Resolution must be between 720px and 2160px. Frame rates of 24-60 fps supported. Only 1 video can be uploaded, with size not exceeding 200MB. */
+                video_url?: string;
+                /**
+                 * @description Reference video type. feature is the feature reference video, base is the video to be edited.
+                 * @enum {string}
+                 */
+                refer_type?: "feature" | "base";
+                /**
+                 * @description Whether to keep the video original sound. yes indicates retention, no indicates non retention.
+                 * @enum {string}
+                 */
+                keep_original_sound?: "yes" | "no";
+            }[];
+            /**
+             * @description Video generation mode. pro - Professional Mode, generates videos use longer duration but higher quality video output.
+             * @default pro
+             * @enum {string}
+             */
+            mode: "pro";
+            /**
+             * @description The aspect ratio of the generated video frame (width:height). Required when first-frame reference or video editing features are not used.
+             * @enum {string}
+             */
+            aspect_ratio?: "16:9" | "9:16" | "1:1";
+            /**
+             * @description Video Length in seconds. When using text generated videos, first frame image generated videos, and first and last frame generated videos, only 5 and 10 seconds are supported. When using video editing function, output duration is the same as input video.
+             * @default 5
+             * @enum {string}
+             */
+            duration: "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10";
+            /**
+             * Format: uri
+             * @description The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.
+             */
+            callback_url?: string;
+            /** @description Customized Task ID. Must be unique within a single user account. */
+            external_task_id?: string;
+        };
+        KlingOmniVideoResponse: {
+            /** @description Error code */
+            code?: number;
+            /** @description Error message */
+            message?: string;
+            /** @description Request ID */
+            request_id?: string;
+            data?: {
+                /** @description Task ID */
+                task_id?: string;
+                task_status?: components["schemas"]["KlingTaskStatus"];
+                /** @description Task status information, displaying the failure reason when the task fails */
+                task_status_msg?: string;
+                task_info?: {
+                    external_task_id?: string;
+                };
+                /** @description Task creation time */
+                created_at?: number;
+                /** @description Task update time */
+                updated_at?: number;
+                task_result?: {
+                    videos?: components["schemas"]["KlingVideoResult"][];
+                };
+            };
+        };
+        KlingOmniImageRequest: {
+            /**
+             * @description Model Name
+             * @default kling-image-o1
+             * @enum {string}
+             */
+            model_name: "kling-image-o1";
+            /** @description Text prompt words, which can include positive and negative descriptions. Must not exceed 2,500 characters. The Omni model can achieve various capabilities through Prompt with elements and images. Specify an image in the format of <<<>>>, such as <<<image_1>>>. */
+            prompt: string;
+            /** @description Reference Image List. Supports inputting image Base64 encoding or image URL (ensure accessibility). Supported formats include .jpg/.jpeg/.png. File size cannot exceed 10MB. Width and height dimensions shall not be less than 300px, aspect ratio between 1:2.5 ~ 2.5:1. Maximum 10 images. */
+            image_list?: {
+                /** @description Image Base64 encoding or image URL (ensure accessibility) */
+                image?: string;
+            }[];
+            /**
+             * @description Image generation resolution. 1k is 1K standard, 2k is 2K high-res, 4k is 4K high-res.
+             * @default 1k
+             * @enum {string}
+             */
+            resolution: "1k" | "2k" | "4k";
+            /**
+             * @description Number of generated images. Value range [1,9].
+             * @default 1
+             */
+            n: number;
+            /**
+             * @description Aspect ratio of the generated images (width:height). auto is to intelligently generate images based on incoming content.
+             * @default auto
+             * @enum {string}
+             */
+            aspect_ratio: "16:9" | "9:16" | "1:1" | "4:3" | "3:4" | "3:2" | "2:3" | "21:9" | "auto";
+            /**
+             * Format: uri
+             * @description The callback notification address for the result of this task. If configured, the server will actively notify when the task status changes.
+             */
+            callback_url?: string;
+            /** @description Customized Task ID. Must be unique within a single user account. */
+            external_task_id?: string;
+        };
+        KlingOmniImageResponse: {
+            /** @description Error code */
+            code?: number;
+            /** @description Error message */
+            message?: string;
+            /** @description Request ID */
+            request_id?: string;
+            data?: {
+                /** @description Task ID */
+                task_id?: string;
+                task_status?: components["schemas"]["KlingTaskStatus"];
+                /** @description Task status information, displaying the failure reason when the task fails (such as triggering the content risk control of the platform, etc.) */
+                task_status_msg?: string;
+                task_info?: {
+                    /** @description Customer-defined task ID */
+                    external_task_id?: string;
+                };
+                /** @description Task creation time, Unix timestamp in milliseconds */
+                created_at?: number;
+                /** @description Task update time, Unix timestamp in milliseconds */
+                updated_at?: number;
+                task_result?: {
+                    images?: components["schemas"]["KlingImageResult"][];
                 };
             };
         };
@@ -5011,6 +5751,21 @@ export interface components {
             id: string;
             /** @description URL to poll for the generation result. */
             polling_url: string;
+            /**
+             * Format: float
+             * @description The cost of the generation task.
+             */
+            cost?: number;
+            /**
+             * Format: float
+             * @description Input megapixels.
+             */
+            input_mp?: number;
+            /**
+             * Format: float
+             * @description Output megapixels.
+             */
+            output_mp?: number;
         };
         /** @description Response from the BFL Flux Pro 1.1 Ultra status check API. */
         BFLFluxProStatusResponse: {
@@ -5034,6 +5789,57 @@ export interface components {
          * @enum {string}
          */
         BFLStatus: "Task not found" | "Pending" | "Request Moderated" | "Content Moderated" | "Ready" | "Error";
+        /** @description Request body for the BFL Flux 2 Pro image generation API. */
+        BFLFlux2ProGenerateRequest: {
+            /** @description Text description of the image to generate. */
+            prompt: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image?: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image_2?: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image_3?: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image_4?: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image_5?: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image_6?: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image_7?: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image_8?: string;
+            /** @description Base64 encoded image for image-to-image generation. */
+            input_image_9?: string;
+            /**
+             * @description Width of the image.
+             * @default 1024
+             */
+            width: number;
+            /**
+             * @description Height of the image.
+             * @default 1024
+             */
+            height: number;
+            /** @description Seed for reproducibility. */
+            seed?: number;
+            /**
+             * @description Automatically modify prompt for generation.
+             * @default true
+             */
+            prompt_upsampling: boolean;
+            /**
+             * @description Output format for the generated image.
+             * @default jpeg
+             * @enum {string}
+             */
+            output_format: "jpeg" | "png";
+            /**
+             * @description Moderation tolerance level (Flux 2 Max only).
+             * @default 2
+             */
+            safety_tolerance: number;
+        };
         /** FluxProFillInputs */
         BFLFluxProFillInputs: {
             /**
@@ -5635,6 +6441,8 @@ export interface components {
         TripoConvertFormat: "GLTF" | "USDZ" | "FBX" | "OBJ" | "STL" | "3MF";
         /** @enum {string} */
         TripoTextureFormat: "BMP" | "DPX" | "HDR" | "JPEG" | "OPEN_EXR" | "PNG" | "TARGA" | "TIFF" | "WEBP";
+        /** @enum {string} */
+        TripoGeometryQuality: "standard" | "detailed";
         /**
          * @description The aspect ratio of the generation
          * @default 16:9
@@ -6076,6 +6884,13 @@ export interface components {
                     gcsUri?: string;
                     mimeType?: string;
                 } & (unknown | unknown);
+                /** @description Optional last frame image to guide video generation */
+                lastFrame?: {
+                    /** Format: byte */
+                    bytesBase64Encoded?: string;
+                    gcsUri?: string;
+                    mimeType?: string;
+                } & (unknown | unknown);
             }[];
             parameters?: {
                 /** @example 16:9 */
@@ -6222,6 +7037,10 @@ export interface components {
                     image_tokens?: number;
                 };
                 output_tokens?: number;
+                output_tokens_details?: {
+                    text_tokens?: number;
+                    image_tokens?: number;
+                };
                 total_tokens?: number;
             };
         };
@@ -7710,6 +8529,8 @@ export interface components {
             imageConfig?: {
                 /** @description Aspect ratio for generated images */
                 aspectRatio?: string;
+                /** @description Optional. Specifies the size of generated images. Supported values are 1K, 2K, 4K. If not specified, the model will use default value 1K. */
+                imageSize?: string;
             };
         };
         /** @description For video input, the start and end offset of the video in Duration format. For example, to specify a 10 second clip starting at 1:00, set "startOffset": { "seconds": 60 } and "endOffset": { "seconds": 70 }. The metadata should only be specified while the video data is presented in inlineData or fileData. */
@@ -7760,6 +8581,7 @@ export interface components {
              */
             text?: string;
             inlineData?: components["schemas"]["GeminiInlineData"];
+            fileData?: components["schemas"]["GeminiFileData"];
         };
         GeminiFunctionDeclaration: {
             name: string;
@@ -7786,6 +8608,12 @@ export interface components {
              * @description The base64 encoding of the image, PDF, or video to include inline in the prompt. When including media inline, you must also specify the media type (mimeType) of the data. Size limit: 20MB
              */
             data?: string;
+        };
+        /** @description URI based data. */
+        GeminiFileData: {
+            mimeType?: components["schemas"]["GeminiMimeType"];
+            /** @description URI */
+            fileUri?: string;
         };
         GeminiCitation: {
             startIndex?: number;
@@ -9331,7 +10159,7 @@ export interface components {
              * @description The project this release note belongs to
              * @enum {string}
              */
-            project: "comfyui" | "comfyui_frontend" | "desktop";
+            project: "comfyui" | "comfyui_frontend" | "desktop" | "cloud";
             /** @description The version of the release */
             version: string;
             /**
@@ -9404,7 +10232,7 @@ export interface components {
         };
         BytePlusImageGenerationRequest: {
             /** @enum {string} */
-            model: "seedream-3-0-t2i-250415" | "seededit-3-0-i2i-250628" | "seedream-4-0-250828";
+            model: "seedream-3-0-t2i-250415" | "seededit-3-0-i2i-250628" | "seedream-4-0-250828" | "seedream-4-5-251128";
             /** @description Text description for image generation or transformation */
             prompt: string;
             /**
@@ -9509,10 +10337,10 @@ export interface components {
         };
         BytePlusVideoGenerationRequest: {
             /**
-             * @description The ID of the model to call. Available models include seedance-1-0-pro-250528, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
+             * @description The ID of the model to call. Available models include seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
              * @enum {string}
              */
-            model: "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428";
+            model: "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015";
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
             /**
@@ -9596,40 +10424,76 @@ export interface components {
              * @description The ID of the model to call
              * @enum {string}
              */
-            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview";
+            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v";
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
-                /** @description Text prompt words. Support Chinese and English, length not exceeding 800 characters */
+                /**
+                 * @description Text prompt words. Support Chinese and English, length not exceeding 800 characters.
+                 *     For wan2.6-r2v with multiple reference videos, use 'character1', 'character2', etc. to refer to subjects
+                 *     in the order of reference videos. Example: "Character1 sings on the roadside, Character2 dances beside it"
+                 */
                 prompt: string;
                 /** @description Reverse prompt words are used to describe content that you do not want to see in the video screen */
                 negative_prompt?: string;
-                /** @description Audio file download URL. Supported formats: mp3 and wav. */
+                /** @description Audio file download URL. Supported formats: mp3 and wav. Cannot be used with reference_video_urls. */
                 audio_url?: string;
                 /** @description First frame image URL or Base64 encoded data. Required for I2V models. Image formats: JPEG, JPG, PNG, BMP, WEBP. Resolution: 360-2000 pixels. File size: max 10MB. */
                 img_url?: string;
                 /** @description Video effect template name. Optional. Currently supported: squish, flying, carousel. When used, prompt parameter is ignored. */
                 template?: string;
+                /**
+                 * @description Reference video URLs for wan2.6-r2v model only. Array of 1-3 video URLs.
+                 *     Input restrictions:
+                 *     - Format: mp4, mov
+                 *     - Quantity: 1-3 videos
+                 *     - Single video length: 2-30 seconds
+                 *     - Single file size: max 30MB
+                 *     - Cannot be used with audio_url
+                 *     Reference duration: Single video max 5s, two videos max 2.5s each, three videos proportionally less.
+                 *     Billing: Based on actual reference duration used.
+                 */
+                reference_video_urls?: string[];
             };
             /** @description Video processing parameters */
             parameters?: {
-                /** @description Used to specify the video resolution in the format of 宽*高. Supported resolutions vary by model (for T2V models) */
+                /**
+                 * @description Video resolution in format width*height. Supported resolutions vary by model:
+                 *     For wan2.5 T2V: 480P (480*832, 832*480, 624*624), 720P, 1080P sizes
+                 *     For wan2.6 T2V/R2V (no 480P):
+                 *       720P: 1280*720, 720*1280, 960*960, 1088*832, 832*1088
+                 *       1080P: 1920*1080, 1080*1920, 1440*1440, 1632*1248, 1248*1632
+                 */
                 size?: string;
                 /**
-                 * @description Resolution level for I2V models. Supported values vary by model: 480P, 720P, 1080P
+                 * @description Resolution level for I2V models. Supported values vary by model:
+                 *     - wan2.5-i2v-preview: 480P, 720P, 1080P
+                 *     - wan2.6-i2v: 720P, 1080P only (no 480P support)
                  * @enum {string}
                  */
                 resolution?: "480P" | "720P" | "1080P";
                 /**
-                 * @description The duration of the video generated, in seconds
+                 * @description The duration of the video generated, in seconds:
+                 *     - wan2.5 models: 5 or 10 seconds
+                 *     - wan2.6-t2v, wan2.6-i2v: 5, 10, or 15 seconds
+                 *     - wan2.6-r2v: 5 or 10 seconds only (no 15s support)
                  * @default 5
                  * @enum {integer}
                  */
-                duration?: 5 | 10;
+                duration?: 5 | 10 | 15;
                 /**
                  * @description Is it enabled prompt intelligent rewriting. Default is true
                  * @default true
                  */
                 prompt_extend?: boolean;
+                /**
+                 * @description Intelligent multi-lens control. Only active when prompt_extend is enabled.
+                 *     For wan2.6 models only.
+                 *     - multi: Intelligent disassembly into multiple lenses (default)
+                 *     - single: Single lens generation
+                 * @default multi
+                 * @enum {string}
+                 */
+                shot_type?: "multi" | "single";
                 /** @description Random number seed, used to control the randomness of the model generated content */
                 seed?: number;
                 /**
@@ -9839,6 +10703,723 @@ export interface components {
             code?: string;
             /** @description Detailed information about the failed request (not returned if request is successful) */
             message?: string;
+        };
+        TopazEnhanceGenRequest: {
+            /**
+             * @description The desired format of the output image
+             * @default jpeg
+             * @enum {string}
+             */
+            output_format: "jpeg" | "jpg" | "png" | "tiff" | "tif";
+            /**
+             * @description Specifies whether you want to detect all subjects in the image, only the foreground subject, or only the background for the AI model to run on
+             * @default All
+             * @enum {string}
+             */
+            subject_detection: "All" | "Foreground" | "Background";
+            /**
+             * @description By default, faces (if any) are enhanced during image processing as well. Set face_enhancement to false if you don't want this
+             * @default true
+             */
+            face_enhancement: boolean;
+            /**
+             * @description Choose the level of creativity for face enhancement from 0 to 1. Defaults to 0, and is ignored if face_enhancement is false
+             * @default 0
+             */
+            face_enhancement_creativity: number;
+            /**
+             * @description Control how sharp the enhanced faces are relative to the background from 0 to 1. Defaults to 0.8, and is ignored if face_enhancement is false
+             * @default 0.8
+             */
+            face_enhancement_strength: number;
+            /**
+             * Format: binary
+             * @description The image file to be processed. Supported formats - jpeg (or jpg), png, tiff (or tif)
+             */
+            image?: string;
+            /**
+             * @description Unique identifier of the source image
+             * @example d7b3b3b3-7b3b-4b3b-8b3b-3b3b3b3b3b3b
+             */
+            source_id?: string;
+            /**
+             * @description The URL of the source image
+             * @example https://example.com/image.jpg
+             */
+            source_url?: string;
+            /**
+             * @description The model to use for processing the image (Bloom - Creative Upscale)
+             * @default Reimagine
+             * @enum {string}
+             */
+            model: "Reimagine";
+            /** @description The desired height of the output image in pixels */
+            output_height?: number;
+            /** @description The desired width of the output image in pixels */
+            output_width?: number;
+            /**
+             * @description Default behavior is to letterbox the image if a differing aspect ratio is chosen. Enable crop_to_fill by setting this to true if you instead want to crop the image to fill the dimensions
+             * @default false
+             */
+            crop_to_fill: boolean;
+            /**
+             * @description Text prompt for creative upscaling guidance - available for Reimagine only
+             * @example enter-your-prompt-here
+             */
+            prompt?: string;
+            /**
+             * @description Creativity settings range from 1 to 9 -  - available for Reimagine only
+             * @default 3
+             */
+            creativity: number;
+            /**
+             * @description To preserve the identity of characters - available for Reimagine only (must be string "true" or "false" due to Topaz API requirement)
+             * @default true
+             * @enum {string}
+             */
+            face_preservation: "true" | "false";
+            /**
+             * @description To preserve the original color - available for Reimagine only (must be string "true" or "false" due to Topaz API requirement)
+             * @default true
+             * @enum {string}
+             */
+            color_preservation: "true" | "false";
+        };
+        TopazEnhanceGenResponse: {
+            /**
+             * @description Unique identifier for the processing job
+             * @example d7b3b3b3-7b3b-4b3b-8b3b-3b3b3b3b3b3b
+             */
+            process_id: string;
+            /**
+             * @description Unique identifier of the source image
+             * @example d7b3b3b3-7b3b-4b3b-8b3b-3b3b3b3b3b3b
+             */
+            source_id?: string;
+            /**
+             * @description Expected completion time in Unix timestamp
+             * @example 1617220000
+             */
+            eta: number;
+        };
+        TopazStatusResponse: {
+            /** @description Unique identifier for the processing job */
+            process_id: string;
+            /** @description Unique identifier of the source image */
+            source_id?: string;
+            /** @description Original filename without extension */
+            filename?: string;
+            /** @description Format of the input image */
+            input_format?: string;
+            /** @description Height of the input image in pixels */
+            input_height?: number;
+            /** @description Width of the input image in pixels */
+            input_width?: number;
+            /** @description Format of the output image */
+            output_format?: string;
+            /** @description Height of the output image in pixels */
+            output_height?: number;
+            /** @description Width of the output image in pixels */
+            output_width?: number;
+            /** @description Processing category (e.g., "Enhance") */
+            category?: string;
+            /** @description Type of model used (e.g., "Generative") */
+            model_type?: string;
+            /** @description Specific model used (e.g., "Reimagine") */
+            model?: string;
+            /** @description Subject detection setting */
+            subject_detection?: string;
+            /** @description Whether face enhancement is enabled */
+            face_enhancement?: boolean;
+            /** @description Face enhancement creativity level */
+            face_enhancement_creativity?: number;
+            /** @description Face enhancement strength level */
+            face_enhancement_strength?: number;
+            /** @description Whether crop to fill is enabled */
+            crop_to_fill?: boolean;
+            /** @description JSON string containing additional options */
+            options_json?: string;
+            /** @description Whether this was a synchronous request */
+            sync?: boolean;
+            /**
+             * @description Current status of the processing job
+             * @enum {string}
+             */
+            status: "Pending" | "Processing" | "Completed" | "Failed" | "Cancelled";
+            /** @description Progress percentage (0-100) */
+            progress?: number;
+            /** @description Expected completion time in Unix timestamp */
+            eta?: number;
+            /** @description Creation time in Unix timestamp */
+            creation_time?: number;
+            /** @description Last modification time in Unix timestamp */
+            modification_time?: number;
+            /** @description Credits consumed for this job */
+            credits: number;
+        };
+        TopazDownloadResponse: {
+            /**
+             * @description Presigned URL to download the image
+             * @example https://example.com/d7b3b3b3-7b3b-4b3b-8b3b-3b3b3b3b3b3b?presigned_headers
+             */
+            download_url: string;
+            /**
+             * @description Presigned URL to get image metadata
+             * @example https://example.com/d7b3b3b3-7b3b-4b3b-8b3b-3b3b3b3b3b3b?presigned_headers
+             */
+            head_url?: string;
+            /**
+             * @description Expiration time of the presigned URLs in Unix timestamp
+             * @example 1617220000
+             */
+            expiry: number;
+        };
+        TopazVideoSourceResolution: {
+            /**
+             * @description Width of the video in pixels
+             * @example 1920
+             */
+            width: number;
+            /**
+             * @description Height of the video in pixels
+             * @example 1080
+             */
+            height: number;
+        };
+        TopazVideoOutputResolution: {
+            /**
+             * @description Desired output width in pixels
+             * @example 3840
+             */
+            width: number;
+            /**
+             * @description Desired output height in pixels
+             * @example 2160
+             */
+            height: number;
+        };
+        TopazVideoEnhancementFilter: {
+            /**
+             * @description Short code name for AI model
+             * @example prob-4
+             * @enum {string}
+             */
+            model: "aaa-9" | "ahq-12" | "alq-13" | "alqs-2" | "amq-13" | "amqs-2" | "ddv-3" | "dtd-4" | "dtds-2" | "dtv-4" | "dtvs-2" | "gcg-5" | "ghq-5" | "iris-2" | "iris-3" | "nxf-1" | "nyx-3" | "prob-4" | "rhea-1" | "rxl-1" | "thd-3" | "thf-4" | "thm-2" | "slf-1" | "slc-1";
+            /**
+             * @description Frame/field type of the video
+             * @example Progressive
+             * @enum {string}
+             */
+            videoType?: "Progressive" | "Interlaced" | "ProgressiveInterlaced";
+            /**
+             * @description Parameter mode of the selected model
+             * @example Auto
+             * @enum {string}
+             */
+            auto?: "Auto" | "Manual" | "Relative";
+            /**
+             * @description Optional specification of field order for interlaced input videos
+             * @example Auto
+             * @enum {string}
+             */
+            fieldOrder?: "TopFirst" | "BottomFirst" | "Auto";
+            /**
+             * @description Downscales video input for stronger correction of blurred subjects
+             * @example Normal
+             * @enum {string}
+             */
+            focusFixLevel?: "None" | "Normal" | "Strong";
+            /**
+             * @description Adjust strength of compression recovery
+             * @example 0.1
+             */
+            compression?: number;
+            /**
+             * @description Amount of detail reconstruction
+             * @example 0.2
+             */
+            details?: number;
+            /**
+             * @description Adds noise to input to reduce over-smoothing
+             * @example 0.01
+             */
+            prenoise?: number;
+            /**
+             * @description Amount of noise reduction
+             * @example 0.3
+             */
+            noise?: number;
+            /**
+             * @description Amount of halo reduction
+             * @example 0.4
+             */
+            halo?: number;
+            /**
+             * @description Adjust anti-aliasing and deblurring strength
+             * @example 0.5
+             */
+            preblur?: number;
+            /**
+             * @description Amount of sharpness applied
+             * @example 0.6
+             */
+            blur?: number;
+            /**
+             * @description Adds grain after AI model processing
+             * @example 0.02
+             */
+            grain?: number;
+            /**
+             * @description Size of generated grain
+             * @example 1
+             */
+            grainSize?: number;
+            /**
+             * @description Reintroduce source details into the output video
+             * @example 0.7
+             */
+            recoverOriginalDetailValue?: number;
+            /**
+             * @description Creativity level for Starlight Creative (slc-1) only
+             * @enum {string}
+             */
+            creativity?: "low" | "high";
+            /** @description Set to true for Starlight Creative (slc-1) only */
+            isOptimizedMode?: boolean;
+        };
+        TopazVideoFrameInterpolationFilter: {
+            /**
+             * @description Short code name for AI model
+             * @example apo-8
+             * @enum {string}
+             */
+            model: "aion-1" | "apf-2" | "apo-8" | "chf-3" | "chr-2";
+            /**
+             * @description Slow motion factor applied to input video
+             * @example 2
+             */
+            slowmo?: number;
+            /**
+             * @description Output frame rate, does not increase duration
+             * @example 60
+             */
+            fps?: number;
+            /**
+             * @description Analyze input for duplicate frames and remove them
+             * @example true
+             */
+            duplicate?: boolean;
+            /**
+             * @description Sensitivity of detection for duplicate frames
+             * @example 0.01
+             */
+            duplicateThreshold?: number;
+        };
+        TopazCombinedCreateRequest: components["schemas"]["TopazCreateRequestVideoSchema"] | components["schemas"]["TopazCreateRequestImageSequenceSchema"];
+        /** Video AI */
+        TopazCreateRequestVideoSchema: {
+            /** @description Source details for the video */
+            source: {
+                /**
+                 * @description The container format of the video file
+                 * @example mp4
+                 * @enum {string}
+                 */
+                container: "mp4" | "mov" | "mkv";
+                /**
+                 * @description Size of the video file in bytes
+                 * @example 123456000
+                 */
+                size: number;
+                /**
+                 * @description Duration of the video file in seconds
+                 * @example 600
+                 */
+                duration: number;
+                /**
+                 * @description Total number of frames in the video
+                 * @example 18000
+                 */
+                frameCount: number;
+                /**
+                 * @description Frame rate of the video
+                 * @example 30
+                 */
+                frameRate: number;
+                /** @description Resolution details of the video */
+                resolution: {
+                    /**
+                     * @description Width of the video in pixels
+                     * @example 1920
+                     */
+                    width: number;
+                    /**
+                     * @description Height of the video in pixels
+                     * @example 1080
+                     */
+                    height: number;
+                };
+                external?: components["schemas"]["TopazExternalStorage"];
+            };
+            filters: components["schemas"]["TopazInputFilters"];
+            output: components["schemas"]["TopazOutputInformationVideo"];
+            destination?: {
+                external?: components["schemas"]["TopazExternalStorage"];
+            };
+            overrides?: {
+                isPaidDiffusion?: boolean;
+            };
+        };
+        /** Image Sequence */
+        TopazCreateRequestImageSequenceSchema: {
+            /** @description Source details for the video */
+            source: {
+                /**
+                 * @description The container format of the image files
+                 * @example TIFF
+                 * @enum {string}
+                 */
+                container: "DPX" | "EXR" | "JPEG" | "PNG" | "TIFF";
+                /**
+                 * @description Total number of frames in the video, in this case, equal to the number of image files.
+                 * @example 18000
+                 */
+                frameCount: number;
+                /**
+                 * @description Frame rate of the video
+                 * @example 30
+                 */
+                frameRate: number;
+                /** @description Resolution details of the image */
+                resolution: {
+                    /**
+                     * @description Width of the image in pixels
+                     * @example 1920
+                     */
+                    width: number;
+                    /**
+                     * @description Height of the image in pixels
+                     * @example 1080
+                     */
+                    height: number;
+                };
+                /**
+                 * @description Optional starting frame number for image sequences
+                 * @example 120
+                 */
+                startNumber?: number;
+                /**
+                 * @description Optional ending frame number for image sequences
+                 * @example 120
+                 */
+                endNumber?: number;
+                external: components["schemas"]["TopazExternalStorage"];
+            };
+            filters: components["schemas"]["TopazInputFilters"];
+            output: components["schemas"]["TopazOutputInformationImageSequence"];
+            destination: {
+                external?: components["schemas"]["TopazExternalStorage"];
+            };
+        };
+        TopazExternalStorage: {
+            /**
+             * @example s3
+             * @enum {string}
+             */
+            provider: "s3";
+            credentials: components["schemas"]["TopazCredentialsS3"];
+            /** @example galaxies */
+            bucketName: string;
+            /**
+             * @description The example includes the standard specifier for image sequence requests, with optional directory path. It must begin with "%" and end with the integer specifier "d". The "0" in the example indicates left-padding with zeroes, and "6" indicates the number of digits in the file name.
+             *     Keys for video requests must be valid characters supported by S3.
+             * @example milky_way/%06d.tiff
+             */
+            key: string;
+        };
+        TopazCredentialsS3: {
+            /**
+             * @description AWS ARN of the role to assume
+             * @example arn:aws:iam::123456789:role/topazlabs
+             */
+            roleArn: string;
+            /**
+             * @description Kind of like a secret string for extra layer of security
+             * @example MSTnuGztXtTU25XKjVfMJCsujv6VtAGtv1TGSjtOL6M=
+             */
+            externalId: string;
+        };
+        /**
+         * @description Array of EnhancementFilter or FrameInterpolationFilter objects
+         * @example [
+         *       {
+         *         "model": "prob-4",
+         *         "videoType": "Progressive",
+         *         "auto": "Auto",
+         *         "fieldOrder": "Auto",
+         *         "focusFixLevel": "Normal",
+         *         "compression": 0.1,
+         *         "details": 0.2,
+         *         "prenoise": 0.01,
+         *         "noise": 0.3,
+         *         "halo": 0.4,
+         *         "preblur": 0.5,
+         *         "blur": 0.6,
+         *         "grain": 0.02,
+         *         "grainSize": 1,
+         *         "recoverOriginalDetailValue": 0.7
+         *       },
+         *       {
+         *         "model": "apo-8",
+         *         "slowmo": 2,
+         *         "fps": 60,
+         *         "duplicate": true,
+         *         "duplicateThreshold": 0.01
+         *       }
+         *     ]
+         */
+        TopazInputFilters: (components["schemas"]["TopazVideoEnhancementFilter"] | components["schemas"]["TopazVideoFrameInterpolationFilter"])[];
+        TopazOutputInformationVideo: {
+            /** @description Desired output resolution */
+            resolution: {
+                /**
+                 * @description Width in pixels. The maximum size depends on the encoder and can be referenced using the table below <table> <tr> <td>H264</td> <td>H265</td> <td>ProRes <td>AV1 <td>VP9 </tr> <tr> <td>4096</td> <td>8192</td> <td>16386</td> <td>16384</td> <td>8192</td> </tr> </table>
+                 * @example 7680
+                 */
+                width: number;
+                /**
+                 * @description Height in pixels. The maximum size depends on the encoder and can be referenced using the table below <table> <tr> <td>H264</td> <td>H265</td> <td>ProRes <td>AV1 <td>VP9 </tr> <tr> <td>4096</td> <td>8192</td> <td>16386</td> <td>8704</td> <td>8192</td> </tr> </table>
+                 * @example 4320
+                 */
+                height: number;
+            };
+            /**
+             * @description Frame rate
+             * @example 30
+             */
+            frameRate: number;
+            /**
+             * @description Audio bitrate, if audioTransfer is Copy or Convert. Default values for the codec are used if not provided.
+             * @example 320
+             */
+            audioBitrate?: string;
+            /**
+             * @description __Required if audioTransfer is Copy or Convert.__
+             * @example AAC
+             * @enum {string}
+             */
+            audioCodec: "AAC" | "AC3" | "PCM";
+            /**
+             * @example Copy
+             * @enum {string}
+             */
+            audioTransfer: "Copy" | "Convert" | "None";
+            /**
+             * @description Video codec ID, if known. Defaults to videoEncoder.
+             * @example h265-main-win-nvidia
+             */
+            codecId?: string;
+            /**
+             * @example H265
+             * @enum {string}
+             */
+            videoEncoder?: "AV1" | "FFV1" | "H264" | "H265" | "ProRes" | "QuickTime Animation" | "QuickTime R210" | "QuickTime V210" | "VP9";
+            /**
+             * @description __Required if dynamicCompressionLevel is not provided.__ Constant bitrate, suffixed with "k" for kilobits or "m" for megabits per second.
+             * @example 1k
+             */
+            videoBitrate?: string;
+            /**
+             * @description __Required if videoBitrate is not provided.__ Automatic CQP selection.
+             * @example Mid
+             * @enum {string}
+             */
+            dynamicCompressionLevel?: "Low" | "Mid" | "High";
+            /**
+             * @description Codec profile specific to videoEncoder. The following are some combinations of available profiles based on the 'videoEncoder' selection <table> <tr> <td>H264</td> <td>H265</td> <td>ProRes <td>AV1 <td>VP9 </tr> <tr> <td>High</td> <td>Main, Main10</td> <td>422 Proxy, 422 LT, 422 Std, 422 HQ</td> <td>8-bit, 10-bit</td> <td>Good, Best</td> </tr> </table>
+             * @example Main
+             */
+            videoProfile?: string;
+            /**
+             * @description Center cropping to fit the output dimensions
+             * @example true
+             */
+            cropToFit?: boolean;
+            /**
+             * @description Desired output container
+             * @example mp4
+             * @enum {string}
+             */
+            container?: "mp4" | "mov" | "mkv";
+        };
+        TopazOutputInformationImageSequence: {
+            /** @description Desired output resolution */
+            resolution: {
+                /**
+                 * @description Width in pixels. The maximum size depends on the encoder and can be referenced using the table below <table> <tr> <td>H264</td> <td>H265</td> <td>ProRes <td>AV1 <td>VP9 </tr> <tr> <td>4096</td> <td>8192</td> <td>16386</td> <td>16384</td> <td>8192</td> </tr> </table>
+                 * @example 7680
+                 */
+                width: number;
+                /**
+                 * @description Height in pixels. The maximum size depends on the encoder and can be referenced using the table below <table> <tr> <td>H264</td> <td>H265</td> <td>ProRes <td>AV1 <td>VP9 </tr> <tr> <td>4096</td> <td>8192</td> <td>16386</td> <td>8704</td> <td>8192</td> </tr> </table>
+                 * @example 4320
+                 */
+                height: number;
+            };
+            /**
+             * @description Frame rate
+             * @example 30
+             */
+            frameRate: number;
+            /**
+             * @description Video codec ID, if known. Defaults to videoEncoder.
+             * @example h265-main-win-nvidia
+             */
+            codecId?: string;
+            /**
+             * @example TIFF
+             * @enum {string}
+             */
+            videoEncoder?: "DPX" | "EXR" | "JPEG" | "PNG" | "TIFF";
+            /**
+             * @description Codec profile specific to videoEncoder
+             * @example Main
+             */
+            videoProfile?: string;
+            /**
+             * @description Center cropping to fit the output dimensions
+             * @example true
+             */
+            cropToFit?: boolean;
+            /**
+             * @description Desired output container, defaults to the input container
+             * @example TIFF
+             * @enum {string}
+             */
+            container?: "DPX" | "EXR" | "JPEG" | "PNG" | "TIFF";
+        };
+        TopazVideoCreateRequest: components["schemas"]["TopazCombinedCreateRequest"];
+        /** @description Lower and upper bound estimates */
+        TopazVideoRequestEstimates: {
+            /**
+             * @description Cost range in credits
+             * @example [
+             *       10,
+             *       12
+             *     ]
+             */
+            cost?: number[];
+            /**
+             * @description Time range in seconds
+             * @example [
+             *       600,
+             *       700
+             *     ]
+             */
+            time?: number[];
+        };
+        TopazVideoCreateResponse: {
+            /**
+             * Format: uuid
+             * @description Unique identifier for the video processing request
+             * @example c1f96dc2-c448-00e6-82ed-14ecb6403c62
+             */
+            requestId: string;
+            estimates: components["schemas"]["TopazVideoRequestEstimates"];
+        };
+        TopazVideoAcceptResponse: {
+            /**
+             * @description Upload ID for completing multi-part upload
+             * @example GDlWC7qIaE6okS41Xf/ktpuS5XzTRabg
+             */
+            uploadId: string;
+            /**
+             * @description URLs to PUT the parts to
+             * @example [
+             *       "https://videocloud.s3.amazonaws.com/source.mp4?uploadPart1",
+             *       "https://videocloud.s3.amazonaws.com/source.mp4?uploadPart2"
+             *     ]
+             */
+            urls: string[];
+            /**
+             * @description Response message
+             * @example Accepted
+             */
+            message?: string;
+        };
+        TopazVideoCompleteUploadRequest: {
+            /**
+             * @description MD5 hash of the source video file in hex
+             * @example 4d186321c1a7f0f354b297e8914ab240
+             */
+            md5Hash?: string;
+            /** @description An array of part number and ETag pairs of the uploaded parts. ETags are returned by S3 upon upload of the part. */
+            uploadResults: {
+                /**
+                 * @description Part number of the uploaded part, starting from 1
+                 * @example 1
+                 */
+                partNum: number;
+                /**
+                 * @description eTag value returned by S3 upon upload of the part
+                 * @example d41d8cd98f00b204e9800998ecf8427e
+                 */
+                eTag: string;
+            }[];
+        };
+        TopazVideoCompleteUploadResponse: {
+            /**
+             * @description Confirmation message
+             * @example Processing has been queued
+             */
+            message: string;
+        };
+        /** @description Signed download URL to the enhanced video file */
+        TopazVideoEnhancedDownload: {
+            /** @example https://videocloud.r2.cloudflarestorage.com/enhanced.mp4 */
+            url?: string;
+            /**
+             * @description TTL in milliseconds
+             * @example 86400000
+             */
+            expiresIn?: number;
+            /**
+             * @description Time in milliseconds since UTC epoch
+             * @example 1727213400000
+             */
+            expiresAt?: number;
+        };
+        TopazVideoStatusResponse: {
+            /**
+             * @description Current status of the video processing
+             * @example processing
+             * @enum {string}
+             */
+            status: "requested" | "accepted" | "initializing" | "preprocessing" | "processing" | "postprocessing" | "complete" | "canceling" | "canceled" | "failed";
+            /**
+             * @description Total progress percentage
+             * @example 82
+             */
+            progress?: number;
+            estimates?: components["schemas"]["TopazVideoRequestEstimates"];
+            /**
+             * @description Size of output video
+             * @example 10 GB
+             */
+            outputSize?: string;
+            /**
+             * @description Average processing speed of each node
+             * @example 1.23
+             */
+            averageFps?: number;
+            /**
+             * @description Combined processing speed of all nodes
+             * @example 12.34
+             */
+            combinedFps?: number;
+            /** @example Processing */
+            message?: string;
+            download?: components["schemas"]["TopazVideoEnhancedDownload"];
         };
     };
     responses: never;
@@ -10329,6 +11910,8 @@ export interface operations {
                 "application/json": {
                     /** @description Optional URL to redirect the customer after they're done with the billing portal */
                     return_url?: string;
+                    /** @description Optional target subscription tier. When provided, creates a deep link directly to the subscription update confirmation screen with this tier pre-selected. */
+                    target_tier?: "standard" | "creator" | "pro" | "standard-yearly" | "creator-yearly" | "pro-yearly";
                 };
             };
         };
@@ -10420,6 +12003,57 @@ export interface operations {
             };
         };
     };
+    createCloudSubscriptionCheckoutTier: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The subscription tier (standard, creator, or pro) with optional yearly billing (standard-yearly, creator-yearly, pro-yearly) */
+                tier: "standard" | "creator" | "pro" | "standard-yearly" | "creator-yearly" | "pro-yearly";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscription checkout session created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description The URL to redirect the customer to complete subscription */
+                        checkout_url?: string;
+                    };
+                };
+            };
+            /** @description Bad request, invalid input or tier */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     GetCloudSubscriptionStatus: {
         parameters: {
             query?: never;
@@ -10440,6 +12074,10 @@ export interface operations {
                         is_active?: boolean;
                         /** @description The active subscription ID if one exists */
                         subscription_id?: string | null;
+                        subscription_tier?: components["schemas"]["SubscriptionTier"] | null;
+                        subscription_duration?: components["schemas"]["SubscriptionDuration"] | null;
+                        /** @description Whether the customer has funds/credits available */
+                        has_fund?: boolean;
                         /**
                          * Format: date-time
                          * @description The next renewal date for the subscription (ISO 8601 format)
@@ -10455,6 +12093,140 @@ export interface operations {
             };
             /** @description Unauthorized or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    VerifyApiKey: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Admin API secret used to authorize this request */
+                "X-Comfy-Admin-Secret": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description The ComfyUI API key to verify (e.g., comfy_xxx...) */
+                    api_key: string;
+                };
+            };
+        };
+        responses: {
+            /** @description API key is valid */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Whether the API key is valid */
+                        valid: boolean;
+                        /** @description The Firebase UID of the user */
+                        firebase_uid: string;
+                        /** @description The customer's email address */
+                        email?: string;
+                        /** @description The customer's name */
+                        name?: string;
+                        /** @description Whether the customer is an admin */
+                        is_admin?: boolean;
+                    };
+                };
+            };
+            /** @description Unauthorized or missing admin API secret */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description API key not found or invalid */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    GetAdminCustomerCloudSubscriptionStatus: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Admin API secret used to authorize this request */
+                "X-Comfy-Admin-Secret": string;
+            };
+            path: {
+                /** @description The ID of the customer whose subscription status to retrieve */
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cloud subscription status retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Whether the customer has an active cloud subscription */
+                        is_active?: boolean;
+                        /** @description The active subscription ID if one exists */
+                        subscription_id?: string | null;
+                        subscription_tier?: components["schemas"]["SubscriptionTier"] | null;
+                        subscription_duration?: components["schemas"]["SubscriptionDuration"] | null;
+                        /** @description Whether the customer has funds/credits available */
+                        has_fund?: boolean;
+                        /**
+                         * Format: date-time
+                         * @description The next renewal date for the subscription (ISO 8601 format)
+                         */
+                        renewal_date?: string | null;
+                        /**
+                         * Format: date-time
+                         * @description The date when the subscription is set to end (ISO 8601 format)
+                         */
+                        end_date?: string | null;
+                    };
+                };
+            };
+            /** @description Unauthorized or missing admin API secret */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Customer not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10548,6 +12320,16 @@ export interface operations {
                          * @description The remaining balance from cloud credits in microamount
                          */
                         cloud_credit_balance_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The total amount of pending/unbilled charges from draft invoices in microamount. Only included when the show_negative_balances feature flag is enabled.
+                         */
+                        pending_charges_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The effective balance (total balance minus pending charges). Can be negative if pending charges exceed the balance. Only included when the show_negative_balances feature flag is enabled.
+                         */
+                        effective_balance_micros?: number;
                         /** @description The currency code (e.g., "usd") */
                         currency: string;
                     };
@@ -10614,8 +12396,100 @@ export interface operations {
                          * @description The remaining balance from cloud credits in microamount
                          */
                         cloud_credit_balance_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The total amount of pending/unbilled charges from draft invoices in microamount. Only included when the show_negative_balances feature flag is enabled.
+                         */
+                        pending_charges_micros?: number;
+                        /**
+                         * Format: double
+                         * @description The effective balance (total balance minus pending charges). Can be negative if pending charges exceed the balance. Only included when the show_negative_balances feature flag is enabled.
+                         */
+                        effective_balance_micros?: number;
                         /** @description The currency code (e.g., "usd") */
                         currency: string;
+                    };
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Customer not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    TrackCustomerUsage: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Admin API secret used to authorize this request */
+                "X-Comfy-Admin-Secret": string;
+            };
+            path: {
+                /** @description The ID of the customer to track usage for */
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: uuid
+                     * @description Unique transaction ID for this usage event
+                     */
+                    transaction_id: string;
+                    /**
+                     * Format: date-time
+                     * @description Timestamp of the usage event (RFC3339 format)
+                     */
+                    timestamp?: string;
+                    /** @description Custom parameters for the usage event */
+                    params: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Usage tracked successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Success message */
+                        message?: string;
                     };
                 };
             };
@@ -12366,6 +14240,15 @@ export interface operations {
                     "application/json": components["schemas"]["Node"];
                 };
             };
+            /** @description Redirect to node with normalized name match */
+            302: {
+                headers: {
+                    /** @description URL of the node with the correct ID */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Forbidden */
             403: {
                 headers: {
@@ -12975,11 +14858,611 @@ export interface operations {
             };
         };
     };
+    listCoupons: {
+        parameters: {
+            query?: {
+                /** @description Number of coupons to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of coupons retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        coupons: components["schemas"]["CouponResponse"][];
+                        /** @description Whether there are more results available */
+                        has_more?: boolean;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCouponRequest"];
+            };
+        };
+        responses: {
+            /** @description Coupon created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CouponResponse"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Stripe coupon ID */
+                coupon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Coupon retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CouponResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Coupon not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deleteCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Stripe coupon ID */
+                coupon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Coupon deleted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Success message */
+                        message: string;
+                        /** @description The deleted coupon ID */
+                        coupon_id: string;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Coupon not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Stripe coupon ID */
+                coupon_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCouponRequest"];
+            };
+        };
+        responses: {
+            /** @description Coupon updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CouponResponse"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Coupon not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listPromoCodes: {
+        parameters: {
+            query?: {
+                /** @description Filter by active status */
+                active?: boolean;
+                /** @description Number of promo codes to return */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of promo codes retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        promo_codes: components["schemas"]["PromoCodeResponse"][];
+                        /** @description Whether there are more results available */
+                        has_more?: boolean;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createPromoCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePromoCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Promo code created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodeResponse"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPromoCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Stripe promotion code ID */
+                promo_code_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Promo code retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodeResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Promo code not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    deletePromoCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Stripe promotion code ID */
+                promo_code_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Promo code deactivated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Success message */
+                        message: string;
+                        /** @description The deactivated promo code ID */
+                        promo_code_id: string;
+                    };
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Promo code not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updatePromoCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The Stripe promotion code ID */
+                promo_code_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePromoCodeRequest"];
+            };
+        };
+        responses: {
+            /** @description Promo code updated successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodeResponse"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Forbidden - Admin access required */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Promo code not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     getReleaseNotes: {
         parameters: {
             query: {
                 /** @description The project to get release notes for */
-                project: "comfyui" | "comfyui_frontend" | "desktop";
+                project: "comfyui" | "comfyui_frontend" | "desktop" | "cloud";
                 /** @description The current version to filter release notes */
                 current_version?: string;
                 /** @description The locale for the release notes */
@@ -15683,6 +18166,198 @@ export interface operations {
             };
         };
     };
+    klingCreateOmniVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Create task for generating omni-video */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KlingOmniVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingOmniVideoResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Service temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Server timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingOmniVideoQuerySingleTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task ID or External Task ID. Can query by either task_id (generated by system) or external_task_id (customized task ID) */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingOmniVideoResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Service temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Server timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
     klingImageGenerationsQueryTaskList: {
         parameters: {
             query?: {
@@ -15896,6 +18571,198 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KlingImageGenerationsResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Service temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Server timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingCreateOmniImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Create task for generating omni-image */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KlingOmniImageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingOmniImageResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Service temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Server timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingOmniImageQuerySingleTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Task ID or External Task ID. Can query by either task_id (generated by system) or external_task_id (customized task ID) */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingOmniImageResponse"];
                 };
             };
             /** @description Invalid request parameters */
@@ -16592,6 +19459,172 @@ export interface operations {
         };
         responses: {
             /** @description Successful response from BFL Flux Pro proxy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BFLFluxProGenerateResponse"];
+                };
+            };
+            /** @description Bad Request (invalid input to proxy) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate limit exceeded (either from proxy or BFL) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error (proxy or upstream issue) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway (error communicating with BFL) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gateway Timeout (BFL took too long to respond) */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bflFlux2ProGenerate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BFLFlux2ProGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response from BFL Flux 2 Pro proxy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BFLFluxProGenerateResponse"];
+                };
+            };
+            /** @description Bad Request (invalid input to proxy) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate limit exceeded (either from proxy or BFL) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error (proxy or upstream issue) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway (error communicating with BFL) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gateway Timeout (BFL took too long to respond) */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bflFlux2MaxGenerate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BFLFlux2ProGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response from BFL Flux 2 Max proxy */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -19953,6 +22986,7 @@ export interface operations {
                     auto_size?: boolean;
                     /** @default false */
                     quad?: boolean;
+                    geometry_quality?: components["schemas"]["TripoGeometryQuality"];
                 } | {
                     type: components["schemas"]["TripoImageToModel"];
                     file: {
@@ -19978,6 +23012,7 @@ export interface operations {
                     orientation?: components["schemas"]["TripoOrientation"];
                     /** @default false */
                     quad?: boolean;
+                    geometry_quality?: components["schemas"]["TripoGeometryQuality"];
                 } | {
                     type: components["schemas"]["TripoMultiviewToModel"];
                     files: {
@@ -20005,6 +23040,7 @@ export interface operations {
                     orientation?: components["schemas"]["TripoOrientation"];
                     /** @default false */
                     quad?: boolean;
+                    geometry_quality?: components["schemas"]["TripoGeometryQuality"];
                 } | {
                     type: components["schemas"]["TripoTypeTextureModel"];
                     /** @default true */
@@ -21023,6 +24059,256 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    topazEnhanceGenAsync: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["TopazEnhanceGenRequest"];
+            };
+        };
+        responses: {
+            /** @description Image processing request has been successfully created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopazEnhanceGenResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    topazGetStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The process ID returned from the enhance-gen request */
+                process_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Status retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopazStatusResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    topazDownloadResult: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The process ID returned from the enhance-gen request */
+                process_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Presigned download URL for the processed image */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopazDownloadResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    topazVideoCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopazVideoCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Video enhancement request created successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopazVideoCreateResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    topazVideoAccept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The request ID returned from the video create request */
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Video request accepted successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopazVideoAcceptResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    topazVideoCompleteUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The request ID returned from the video create request */
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopazVideoCompleteUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Video upload completed successfully */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopazVideoCompleteUploadResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    topazVideoGetStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The request ID returned from the video create request */
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Video status retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopazVideoStatusResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getFeatures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeaturesResponse"];
                 };
             };
         };

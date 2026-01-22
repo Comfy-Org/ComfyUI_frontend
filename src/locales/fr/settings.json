@@ -29,12 +29,26 @@
     "name": "Image de fond du canevas",
     "tooltip": "URL de l'image pour le fond du canevas. Vous pouvez faire un clic droit sur une image dans le panneau de sortie et sélectionner « Définir comme fond » pour l'utiliser."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Comportement du clic gauche de la souris",
+    "options": {
+      "Panning": "Défilement",
+      "Select": "Sélectionner"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Défilement de la molette de la souris",
+    "options": {
+      "Panning": "Défilement",
+      "Zoom in/out": "Zoom avant/arrière"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "Mode de navigation sur le canvas",
     "options": {
+      "Custom": "Personnalisé",
       "Drag Navigation": "Navigation par glisser-déposer",
-      "Standard (New)": "Standard (Nouveau)",
-      "Custom": "Personnalisé"
+      "Standard (New)": "Standard (Nouveau)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -65,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Sauvegarder et restaurer la position et le niveau de zoom du canevas dans les flux de travail"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Méthode d’aperçu en direct",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "aucun",
+      "taesd": "taesd"
+    },
+    "tooltip": "Méthode d’aperçu en direct pendant la génération d’image. « default » utilise le paramètre CLI du serveur."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Nombre de décimales pour l'arrondi du widget flottant [0 = auto].",
     "tooltip": "(nécessite le rechargement de la page)"
@@ -85,6 +110,10 @@
       "Circle": "Cercle",
       "None": "Aucun"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Sélection en direct",
+    "tooltip": "Lorsqu’elle est activée, les nœuds sont sélectionnés/désélectionnés en temps réel pendant que vous faites glisser le rectangle de sélection, comme dans d’autres outils de conception."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Vitesse de zoom du canevas"
@@ -152,6 +181,15 @@
     "name": "Intensité lumineuse minimale",
     "tooltip": "Définit la valeur minimale autorisée de l’intensité lumineuse pour les scènes 3D. Cela définit la limite inférieure de luminosité pouvant être réglée lors de l’ajustement de l’éclairage dans tout widget 3D."
   },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "Moteur PLY",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "Sélectionnez le moteur pour charger les fichiers PLY. « threejs » utilise le PLYLoader natif de Three.js (idéal pour les fichiers PLY de maillage). « fastply » utilise un chargeur optimisé pour les fichiers PLY de nuages de points ASCII. « sparkjs » utilise Spark.js pour les fichiers PLY de Gaussian Splatting 3D."
+  },
   "Comfy_Load3D_ShowGrid": {
     "name": "Afficher la Grille",
     "tooltip": "Basculer pour afficher la grille par défaut"
@@ -166,10 +204,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "Verrouiller l'ajustement du pinceau sur l'axe dominant",
     "tooltip": "Lorsqu'il est activé, les ajustements du pinceau n'affecteront que la taille OU la dureté en fonction de la direction dans laquelle vous bougez le plus"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Utiliser le nouvel éditeur de masque",
-    "tooltip": "Passer à la nouvelle interface de l'éditeur de masque"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Charger automatiquement tous les dossiers de modèles",
@@ -298,6 +332,10 @@
     "name": "Taille de l'historique de la file d'attente",
     "tooltip": "Le nombre maximum de tâches qui s'affichent dans l'historique de la file d'attente."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Utiliser la file d’attente unifiée dans le panneau latéral des ressources",
+    "tooltip": "Remplace le panneau flottant de la file d’attente des tâches par une file d’attente équivalente intégrée dans le panneau latéral des ressources. Vous pouvez désactiver cette option pour revenir à la disposition du panneau flottant."
+  },
   "Comfy_Sidebar_Location": {
     "name": "Emplacement de la barre latérale",
     "options": {
@@ -310,6 +348,13 @@
     "options": {
       "normal": "normal",
       "small": "petit"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "Style de la barre latérale",
+    "options": {
+      "connected": "Connectée",
+      "floating": "Flottante"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -328,6 +373,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Espacement des éléments de l'explorateur d'arborescence"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Disposition de la barre d’onglets",
+    "options": {
+      "Default": "Par défaut",
+      "Integrated": "Intégrée"
+    },
+    "tooltip": "Contrôle la disposition de la barre d’onglets. « Intégrée » déplace les contrôles Aide et Utilisateur dans la zone de la barre d’onglets."
+  },
   "Comfy_UseNewMenu": {
     "name": "Utiliser le nouveau menu",
     "options": {
@@ -338,6 +391,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "Valider les flux de travail"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "Mise à l'échelle automatique de la mise en page (nœuds Vue)",
+    "tooltip": "Redimensionne automatiquement les positions des nœuds lors du passage au rendu Vue pour éviter les chevauchements"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Design moderne des nœuds (nœuds Vue)",
+    "tooltip": "Moderne : rendu basé sur DOM avec interactivité améliorée, fonctionnalités natives du navigateur et design visuel actualisé. Classique : rendu traditionnel sur toile."
   },
   "Comfy_WidgetControlMode": {
     "name": "Mode de contrôle du widget",
@@ -376,6 +437,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "Trier les ID de nœuds lors de l'enregistrement du flux de travail"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Exiger une confirmation pour écraser un plan de sous-graphe existant"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "Position des flux de travail ouverts",
     "options": {
@@ -407,37 +471,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "Toujours aligner sur la grille"
-  },
-  "Comfy_Canvas_LeftMouseClickBehavior": {
-    "name": "Comportement du clic gauche de la souris",
-    "options": {
-      "Panning": "Défilement",
-      "Select": "Sélectionner"
-    }
-  },
-  "Comfy_Canvas_MouseWheelScroll": {
-    "name": "Défilement de la molette de la souris",
-    "options": {
-      "Panning": "Défilement",
-      "Zoom in/out": "Zoom avant/arrière"
-    }
-  },
-  "Comfy_Sidebar_Style": {
-    "name": "Style de la barre latérale",
-    "options": {
-      "floating": "Flottante",
-      "connected": "Connectée"
-    }
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Mise à l'échelle automatique de la mise en page (nœuds Vue)",
-    "tooltip": "Redimensionne automatiquement les positions des nœuds lors du passage au rendu Vue pour éviter les chevauchements"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "Design moderne des nœuds (nœuds Vue)",
-    "tooltip": "Moderne : rendu basé sur DOM avec interactivité améliorée, fonctionnalités natives du navigateur et design visuel actualisé. Classique : rendu traditionnel sur toile."
-  },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "Exiger une confirmation pour écraser un plan de sous-graphe existant"
   }
 }

@@ -1,5 +1,5 @@
+# Description: Deploys Storybook previews from forked PRs (forks can't access deployment secrets)
 name: "CI: Tests Storybook (Deploy for Forks)"
-description: "Deploys Storybook previews from forked PRs (forks can't access deployment secrets)"
 
 on:
   workflow_run:

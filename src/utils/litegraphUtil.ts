@@ -204,7 +204,7 @@ export function compressWidgetInputSlots(graph: ISerialisedGraph) {
 }
 
 function matchesLegacyApi(input: ISerialisableNodeInput) {
-  return !(input.widget && input.link === null)
+  return !(input.widget && input.link === null && !input.label)
 }
 
 /**

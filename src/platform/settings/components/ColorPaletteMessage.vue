@@ -13,25 +13,30 @@
           option-value="id"
         />
         <Button
-          icon="pi pi-file-export"
-          text
+          size="icon"
+          variant="textonly"
           :title="$t('g.export')"
           @click="colorPaletteService.exportColorPalette(activePaletteId)"
-        />
+        >
+          <i class="pi pi-file-export" />
+        </Button>
         <Button
-          icon="pi pi-file-import"
-          text
+          size="icon"
+          variant="textonly"
           :title="$t('g.import')"
           @click="importCustomPalette"
-        />
+        >
+          <i class="pi pi-file-import" />
+        </Button>
         <Button
-          icon="pi pi-trash"
-          severity="danger"
-          text
+          size="icon"
+          variant="destructive-textonly"
           :title="$t('g.delete')"
           :disabled="!colorPaletteStore.isCustomPalette(activePaletteId)"
           @click="colorPaletteService.deleteCustomColorPalette(activePaletteId)"
-        />
+        >
+          <i class="pi pi-trash" />
+        </Button>
       </div>
     </div>
   </Message>
@@ -39,10 +44,10 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

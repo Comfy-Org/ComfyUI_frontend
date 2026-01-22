@@ -17,7 +17,7 @@
       root: ({ props }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
           'h-10 relative inline-flex cursor-pointer select-none',
-          'rounded-lg bg-base-background text-base-foreground',
+          'rounded-lg bg-secondary-background text-base-foreground',
           'transition-all duration-200 ease-in-out',
           'border-[2.5px] border-solid',
           selectedCount > 0
@@ -62,7 +62,7 @@
       // Option row hover and focus tone
       option: ({ context }: MultiSelectPassThroughMethodOptions) => ({
         class: cn(
-          'flex gap-2 items-center h-10 px-2 rounded-lg',
+          'flex gap-2 items-center h-10 px-2 rounded-lg cursor-pointer',
           'hover:bg-secondary-background-hover',
           // Add focus/highlight state for keyboard navigation
           context?.focused &&
@@ -83,7 +83,7 @@
     role="combobox"
     :aria-expanded="false"
     aria-haspopup="listbox"
-    tabindex="0"
+    :tabindex="0"
   >
     <template
       v-if="showSearchBox || showSelectedCount || showClearButton"
@@ -112,14 +112,14 @@
                 : $t('g.itemSelected', { selectedCount })
             }}
           </span>
-          <TextButton
+          <Button
             v-if="showClearButton"
-            :label="$t('g.clearAll')"
-            type="transparent"
-            size="fit-content"
-            class="text-sm text-text-primary"
+            variant="textonly"
+            size="md"
             @click.stop="selectedItems = []"
-          />
+          >
+            {{ $t('g.clearAll') }}
+          </Button>
         </div>
         <div class="my-4 h-px bg-border-default"></div>
       </div>
@@ -127,7 +127,7 @@
 
     <!-- Trigger value (keep text scale identical) -->
     <template #value>
-      <span class="text-sm text-muted-foreground">
+      <span class="text-sm">
         {{ label }}
       </span>
       <span
@@ -140,14 +140,18 @@
 
     <!-- Chevron size identical to current -->
     <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-lg text-neutral-400" />
+      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
     </template>
 
     <!-- Custom option row: square checkbox + label (unchanged layout/colors) -->
     <template #option="slotProps">
-      <div class="flex items-center gap-2" :style="popoverStyle">
+      <div
+        role="button"
+        class="flex items-center gap-2 cursor-pointer"
+        :style="popoverStyle"
+      >
         <div
-          class="flex h-4 w-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
+          class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
           :class="
             slotProps.selected
               ? 'bg-primary-background'
@@ -156,14 +160,12 @@
         >
           <i
             v-if="slotProps.selected"
-            class="text-bold icon-[lucide--check] text-xs text-white"
+            class="text-bold icon-[lucide--check] text-xs text-base-foreground"
           />
         </div>
-        <Button
-          class="border-none bg-transparent text-left outline-none"
-          unstyled
-          >{{ slotProps.option.name }}</Button
-        >
+        <span>
+          {{ slotProps.option.name }}
+        </span>
       </div>
     </template>
   </MultiSelect>
@@ -172,17 +174,16 @@
 <script setup lang="ts">
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
-import Button from 'primevue/button'
 import type { MultiSelectPassThroughMethodOptions } from 'primevue/multiselect'
 import MultiSelect from 'primevue/multiselect'
 import { computed, useAttrs } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchBox from '@/components/input/SearchBox.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@/utils/tailwindUtil'
 
-import TextButton from '../button/TextButton.vue'
 import type { SelectOption } from './types'
 
 type Option = SelectOption

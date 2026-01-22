@@ -22,10 +22,10 @@ export function useToolManager(
   const coordinateTransform = useCoordinateTransform()
 
   const brushDrawing = useBrushDrawing({
-    useDominantAxis: app.extensionManager.setting.get(
+    useDominantAxis: app.extensionManager.setting.get<boolean>(
       'Comfy.MaskEditor.UseDominantAxis'
     ),
-    brushAdjustmentSpeed: app.extensionManager.setting.get(
+    brushAdjustmentSpeed: app.extensionManager.setting.get<number>(
       'Comfy.MaskEditor.BrushAdjustmentSpeed'
     )
   })
@@ -113,6 +113,10 @@ export function useToolManager(
   const handlePointerDown = async (event: PointerEvent): Promise<void> => {
     event.preventDefault()
     if (event.pointerType === 'touch') return
+
+    if (event.pointerType === 'pen') {
+      panZoom.addPenPointerId(event.pointerId)
+    }
 
     const isSpacePressed = keyboard.isKeyDown(' ')
 
@@ -207,6 +211,11 @@ export function useToolManager(
   const handlePointerUp = async (event: PointerEvent): Promise<void> => {
     store.isPanning = false
     store.brushVisible = true
+
+    if (event.pointerType === 'pen') {
+      panZoom.removePenPointerId(event.pointerId)
+    }
+
     if (event.pointerType === 'touch') return
     updateCursor()
     store.isAdjustingBrush = false

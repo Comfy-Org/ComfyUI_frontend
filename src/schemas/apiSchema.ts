@@ -1,21 +1,20 @@
 import { z } from 'zod'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
-import {
-  zComfyWorkflow,
-  zNodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
 import { zKeybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 const zNodeType = z.string()
-export const zQueueIndex = z.number()
-export const zPromptId = z.string()
+const zPromptId = z.string()
 export type PromptId = z.infer<typeof zPromptId>
 export const resultItemType = z.enum(['input', 'output', 'temp'])
 export type ResultItemType = z.infer<typeof resultItemType>
+
+const zCustomNodesI18n = z.record(z.string(), z.unknown())
+export type CustomNodesI18n = z.infer<typeof zCustomNodesI18n>
 
 const zResultItem = z.object({
   filename: z.string().optional(),
@@ -28,9 +27,15 @@ const zOutputs = z
     audio: z.array(zResultItem).optional(),
     images: z.array(zResultItem).optional(),
     video: z.array(zResultItem).optional(),
-    animated: z.array(z.boolean()).optional()
+    animated: z.array(z.boolean()).optional(),
+    text: z.union([z.string(), z.array(z.string())]).optional()
   })
   .passthrough()
+
+export type NodeExecutionOutput = z.infer<typeof zOutputs>
+
+export type NodeOutputWith<T extends Record<string, unknown>> =
+  NodeExecutionOutput & T
 
 // WS messages
 const zStatusWsMessageStatus = z.object({
@@ -109,6 +114,10 @@ const zProgressTextWsMessage = z.object({
   text: z.string()
 })
 
+const zNotificationWsMessage = z.object({
+  value: z.string(),
+  id: z.string().optional()
+})
 const zTerminalSize = z.object({
   cols: z.number(),
   row: z.number()
@@ -127,6 +136,17 @@ const zLogRawResponse = z.object({
 })
 
 const zFeatureFlagsWsMessage = z.record(z.string(), z.any())
+
+const zAssetDownloadWsMessage = z.object({
+  task_id: z.string(),
+  asset_name: z.string(),
+  bytes_total: z.number(),
+  bytes_downloaded: z.number(),
+  progress: z.number(),
+  status: z.enum(['created', 'running', 'completed', 'failed']),
+  asset_id: z.string().optional(),
+  error: z.string().optional()
+})
 
 export type StatusWsMessageStatus = z.infer<typeof zStatusWsMessageStatus>
 export type StatusWsMessage = z.infer<typeof zStatusWsMessage>
@@ -147,137 +167,13 @@ export type ProgressTextWsMessage = z.infer<typeof zProgressTextWsMessage>
 export type NodeProgressState = z.infer<typeof zNodeProgressState>
 export type ProgressStateWsMessage = z.infer<typeof zProgressStateWsMessage>
 export type FeatureFlagsWsMessage = z.infer<typeof zFeatureFlagsWsMessage>
+export type AssetDownloadWsMessage = z.infer<typeof zAssetDownloadWsMessage>
 // End of ws messages
 
-const zPromptInputItem = z.object({
-  inputs: z.record(z.string(), z.any()),
-  class_type: zNodeType
-})
-
-const zPromptInputs = z.record(zPromptInputItem)
-
-const zExtraPngInfo = z
-  .object({
-    workflow: zComfyWorkflow
-  })
-  .passthrough()
-
-export const zExtraData = z
-  .object({
-    /** extra_pnginfo can be missing is backend execution gets a validation error. */
-    extra_pnginfo: zExtraPngInfo.optional(),
-    client_id: z.string().optional(),
-    // Cloud/Adapters: creation time in milliseconds when available
-    create_time: z.number().int().optional()
-  })
-  // Allow backend/adapters/extensions to add arbitrary metadata
-  .passthrough()
-const zOutputsToExecute = z.array(zNodeId)
-
-const zExecutionStartMessage = z.tuple([
-  z.literal('execution_start'),
-  zExecutionStartWsMessage
-])
-
-const zExecutionSuccessMessage = z.tuple([
-  z.literal('execution_success'),
-  zExecutionSuccessWsMessage
-])
-
-const zExecutionCachedMessage = z.tuple([
-  z.literal('execution_cached'),
-  zExecutionCachedWsMessage
-])
-
-const zExecutionInterruptedMessage = z.tuple([
-  z.literal('execution_interrupted'),
-  zExecutionInterruptedWsMessage
-])
-
-const zExecutionErrorMessage = z.tuple([
-  z.literal('execution_error'),
-  zExecutionErrorWsMessage
-])
-
-const zStatusMessage = z.union([
-  zExecutionStartMessage,
-  zExecutionSuccessMessage,
-  zExecutionCachedMessage,
-  zExecutionInterruptedMessage,
-  zExecutionErrorMessage
-])
-
-export const zStatus = z.object({
-  status_str: z.enum(['success', 'error']),
-  completed: z.boolean(),
-  messages: z.array(zStatusMessage)
-})
-
-const zTaskPrompt = z.tuple([
-  zQueueIndex,
-  zPromptId,
-  zPromptInputs,
-  zExtraData,
-  zOutputsToExecute
-])
-
-const zRunningTaskItem = z.object({
-  taskType: z.literal('Running'),
-  prompt: zTaskPrompt,
-  // @Deprecated
-  remove: z.object({
-    name: z.literal('Cancel'),
-    cb: z.function()
-  })
-})
-
-const zPendingTaskItem = z.object({
-  taskType: z.literal('Pending'),
-  prompt: zTaskPrompt
-})
+export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 
 export const zTaskOutput = z.record(zNodeId, zOutputs)
-
-const zNodeOutputsMeta = z.object({
-  node_id: zNodeId,
-  display_node: zNodeId,
-  prompt_id: zPromptId.optional(),
-  read_node_id: zNodeId.optional()
-})
-
-export const zTaskMeta = z.record(zNodeId, zNodeOutputsMeta)
-
-const zHistoryTaskItem = z.object({
-  taskType: z.literal('History'),
-  prompt: zTaskPrompt,
-  status: zStatus.optional(),
-  outputs: zTaskOutput,
-  meta: zTaskMeta.optional()
-})
-
-const zTaskItem = z.union([
-  zRunningTaskItem,
-  zPendingTaskItem,
-  zHistoryTaskItem
-])
-
-const zTaskType = z.union([
-  z.literal('Running'),
-  z.literal('Pending'),
-  z.literal('History')
-])
-
-export type TaskType = z.infer<typeof zTaskType>
-export type TaskPrompt = z.infer<typeof zTaskPrompt>
-export type TaskStatus = z.infer<typeof zStatus>
 export type TaskOutput = z.infer<typeof zTaskOutput>
-
-// `/queue`
-export type RunningTaskItem = z.infer<typeof zRunningTaskItem>
-export type PendingTaskItem = z.infer<typeof zPendingTaskItem>
-// `/history`
-export type HistoryTaskItem = z.infer<typeof zHistoryTaskItem>
-export type TaskItem = z.infer<typeof zTaskItem>
 
 const zEmbeddingsResponse = z.array(z.string())
 const zExtensionsResponse = z.array(z.string())
@@ -328,7 +224,11 @@ const zSystemStats = z.object({
     required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),
     ram_total: z.number(),
-    ram_free: z.number()
+    ram_free: z.number(),
+    // Cloud-specific fields
+    cloud_version: z.string().optional(),
+    comfyui_frontend_version: z.string().optional(),
+    workflow_templates_version: z.string().optional()
   }),
   devices: z.array(zDeviceStats)
 })
@@ -359,12 +259,22 @@ const zNodeBadgeMode = z.enum(
   Object.values(NodeBadgeMode) as [string, ...string[]]
 )
 
+const zPreviewMethod = z.enum([
+  'default',
+  'none',
+  'auto',
+  'latent2rgb',
+  'taesd'
+])
+export type PreviewMethod = z.infer<typeof zPreviewMethod>
+
 const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
   'Comfy.Canvas.BackgroundImage': z.string().optional(),
   'Comfy.ConfirmClear': z.boolean(),
   'Comfy.DevMode': z.boolean(),
+  'Comfy.UI.TabBarLayout': z.enum(['Default', 'Integrated']),
   'Comfy.Workflow.ShowMissingNodesWarning': z.boolean(),
   'Comfy.Workflow.ShowMissingModelsWarning': z.boolean(),
   'Comfy.Workflow.WarnBlueprintOverwrite': z.boolean(),
@@ -378,6 +288,7 @@ const zSettings = z.object({
   'Comfy.Graph.CanvasInfo': z.boolean(),
   'Comfy.Graph.CanvasMenu': z.boolean(),
   'Comfy.Graph.CtrlShiftZoom': z.boolean(),
+  'Comfy.Graph.LiveSelection': z.boolean(),
   'Comfy.Graph.LinkMarkers': z.nativeEnum(LinkMarkerShape),
   'Comfy.Graph.ZoomSpeed': z.number(),
   'Comfy.Group.DoubleClickTitleToEdit': z.boolean(),
@@ -420,7 +331,7 @@ const zSettings = z.object({
   'Comfy.TreeExplorer.ItemPadding': z.number(),
   'Comfy.Validation.Workflows': z.boolean(),
   'Comfy.Workflow.SortNodeIdOnSave': z.boolean(),
-  'Comfy.Queue.ImageFit': z.enum(['contain', 'cover']),
+  'Comfy.Execution.PreviewMethod': zPreviewMethod,
   'Comfy.Workflow.WorkflowTabsPosition': z.enum(['Sidebar', 'Topbar']),
   'Comfy.Node.DoubleClickTitleToEdit': z.boolean(),
   'Comfy.WidgetControlMode': z.enum(['before', 'after']),
@@ -432,6 +343,7 @@ const zSettings = z.object({
   'Comfy.Notification.ShowVersionUpdates': z.boolean(),
   'Comfy.QueueButton.BatchCountLimit': z.number(),
   'Comfy.Queue.MaxHistoryItems': z.number(),
+  'Comfy.Queue.History.Expanded': z.boolean(),
   'Comfy.Keybinding.UnsetBindings': z.array(zKeybinding),
   'Comfy.Keybinding.NewBindings': z.array(zKeybinding),
   'Comfy.Extension.Disabled': z.array(z.string()),
@@ -468,13 +380,13 @@ const zSettings = z.object({
   'Comfy.VueNodes.Enabled': z.boolean(),
   'Comfy.VueNodes.AutoScaleLayout': z.boolean(),
   'Comfy.Assets.UseAssetAPI': z.boolean(),
+  'Comfy.Queue.QPOV2': z.boolean(),
   'Comfy-Desktop.AutoUpdate': z.boolean(),
   'Comfy-Desktop.SendStatistics': z.boolean(),
   'Comfy-Desktop.WindowStyle': z.string(),
   'Comfy-Desktop.UV.PythonInstallMirror': z.string(),
   'Comfy-Desktop.UV.PypiInstallMirror': z.string(),
   'Comfy-Desktop.UV.TorchInstallMirror': z.string(),
-  'Comfy.MaskEditor.UseNewEditor': z.boolean(),
   'Comfy.MaskEditor.BrushAdjustmentSpeed': z.number(),
   'Comfy.MaskEditor.UseDominantAxis': z.boolean(),
   'Comfy.Load3D.ShowGrid': z.boolean(),
@@ -485,6 +397,7 @@ const zSettings = z.object({
   'Comfy.Load3D.LightAdjustmentIncrement': z.number(),
   'Comfy.Load3D.CameraType': z.enum(['perspective', 'orthographic']),
   'Comfy.Load3D.3DViewerEnable': z.boolean(),
+  'Comfy.Load3D.PLYEngine': z.enum(['threejs', 'fastply', 'sparkjs']),
   'Comfy.Memory.AllowManualUnload': z.boolean(),
   'pysssss.SnapToGrid': z.boolean(),
   /** VHS setting is used for queue video preview support. */
@@ -503,6 +416,8 @@ const zSettings = z.object({
   'Comfy.Templates.SelectedRunsOn': z.array(z.string()),
   'Comfy.Templates.SortBy': z.enum([
     'default',
+    'recommended',
+    'popular',
     'alphabetical',
     'newest',
     'vram-low-to-high',
@@ -513,7 +428,9 @@ const zSettings = z.object({
   'main.sub.setting.name': z.any(),
   'single.setting': z.any(),
   'LiteGraph.Node.DefaultPadding': z.boolean(),
-  'LiteGraph.Pointer.TrackpadGestures': z.boolean()
+  'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
+  'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
+  'Comfy.RightSidePanel.IsOpen': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>

@@ -2,6 +2,7 @@ import _ from 'es-toolkit/compat'
 import * as jsondiffpatch from 'jsondiffpatch'
 import log from 'loglevel'
 
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   ComfyWorkflow,
@@ -40,7 +41,7 @@ export class ChangeTracker {
   _restoringState: boolean = false
 
   ds?: { scale: number; offset: [number, number] }
-  nodeOutputs?: Record<string, any>
+  nodeOutputs?: Record<string, ExecutedWsMessage['output']>
 
   private subgraphState?: {
     navigation: string[]
@@ -96,13 +97,13 @@ export class ChangeTracker {
       const activeId = navigation.at(-1)
       if (activeId) {
         // Navigate to the saved subgraph
-        const subgraph = app.graph.subgraphs.get(activeId)
+        const subgraph = app.rootGraph.subgraphs.get(activeId)
         if (subgraph) {
           app.canvas.setGraph(subgraph)
         }
       } else {
         // Empty navigation array means root level
-        app.canvas.setGraph(app.graph)
+        app.canvas.setGraph(app.rootGraph)
       }
     }
   }
@@ -130,7 +131,7 @@ export class ChangeTracker {
 
   checkState() {
     if (!app.graph || this.changeCount) return
-    const currentState = clone(app.graph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = currentState
       return
@@ -303,11 +304,11 @@ export class ChangeTracker {
     const prompt = LGraphCanvas.prototype.prompt
     LGraphCanvas.prototype.prompt = function (
       title: string,
-      value: any,
-      callback: (v: any) => void,
-      event: any
+      value: string | number,
+      callback: (v: string) => void,
+      event: CanvasPointerEvent
     ) {
-      const extendedCallback = (v: any) => {
+      const extendedCallback = (v: string) => {
         callback(v)
         checkState()
       }

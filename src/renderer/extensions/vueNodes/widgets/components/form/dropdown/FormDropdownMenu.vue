@@ -15,9 +15,12 @@ import type {
 interface Props {
   items: DropdownItem[]
   isSelected: (item: DropdownItem, index: number) => boolean
-  isQuerying: boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
+  searcher?: (
+    query: string,
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<void>
 }
 
 defineProps<Props>()
@@ -50,7 +53,7 @@ const searchQuery = defineModel<string>('searchQuery')
       v-model:sort-selected="sortSelected"
       v-model:search-query="searchQuery"
       :sort-options="sortOptions"
-      :is-querying="isQuerying"
+      :searcher
     />
     <!-- List -->
     <div class="relative flex h-full mt-2 overflow-y-scroll">
@@ -67,15 +70,16 @@ const searchQuery = defineModel<string>('searchQuery')
         "
       >
         <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
-        <template v-if="items.length === 0">
-          <div class="absolute inset-0 flex items-center justify-center">
-            <i
-              title="No items"
-              class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
-            />
-          </div>
-          <div class="min-h-50" />
-        </template>
+<div
+          v-if="items.length === 0"
+          class="h-50 col-span-full flex items-center justify-center"
+        >
+          <i
+            :title="$t('g.noItems')"
+            :aria-label="$t('g.noItems')"
+            class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
+          />
+        </div>
         <!-- Item -->
         <FormDropdownMenuItem
           v-for="(item, index) in items"

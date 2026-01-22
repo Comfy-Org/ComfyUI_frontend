@@ -31,69 +31,64 @@
         }}</label>
       </div>
 
-      <Button
-        :label="$t('g.cancel')"
-        icon="pi pi-undo"
-        severity="secondary"
-        autofocus
-        @click="onCancel"
-      />
-      <Button
-        v-if="type === 'default'"
-        :label="$t('g.confirm')"
-        severity="primary"
-        icon="pi pi-check"
-        @click="onConfirm"
-      />
+      <Button variant="secondary" autofocus @click="onCancel">
+        <i class="pi pi-undo" />
+        {{ $t('g.cancel') }}
+      </Button>
+      <Button v-if="type === 'default'" variant="primary" @click="onConfirm">
+        <i class="pi pi-check" />
+        {{ $t('g.confirm') }}
+      </Button>
       <Button
         v-else-if="type === 'delete'"
-        :label="$t('g.delete')"
-        severity="danger"
-        icon="pi pi-trash"
+        variant="destructive"
         @click="onConfirm"
-      />
+      >
+        <i class="pi pi-trash" />
+        {{ $t('g.delete') }}
+      </Button>
       <Button
         v-else-if="type === 'overwrite' || type === 'overwriteBlueprint'"
-        :label="$t('g.overwrite')"
-        severity="warn"
-        icon="pi pi-save"
+        variant="destructive"
         @click="onConfirm"
-      />
+      >
+        <i class="pi pi-save" />
+        {{ $t('g.overwrite') }}
+      </Button>
       <template v-else-if="type === 'dirtyClose'">
-        <Button
-          :label="$t('g.no')"
-          severity="secondary"
-          icon="pi pi-times"
-          @click="onDeny"
-        />
-        <Button :label="$t('g.save')" icon="pi pi-save" @click="onConfirm" />
+        <Button variant="secondary" @click="onDeny">
+          <i class="pi pi-times" />
+          {{ $t('g.no') }}
+        </Button>
+        <Button @click="onConfirm">
+          <i class="pi pi-save" />
+          {{ $t('g.save') }}
+        </Button>
       </template>
       <Button
         v-else-if="type === 'reinstall'"
-        :label="$t('desktopMenu.reinstall')"
-        severity="warn"
-        icon="pi pi-eraser"
+        variant="destructive"
         @click="onConfirm"
-      />
+      >
+        <i class="pi pi-eraser" />
+        {{ $t('desktopMenu.reinstall') }}
+      </Button>
       <!-- Invalid - just show a close button. -->
-      <Button
-        v-else
-        :label="$t('g.close')"
-        severity="primary"
-        icon="pi pi-times"
-        @click="onCancel"
-      />
+      <Button v-else variant="primary" @click="onCancel">
+        <i class="pi pi-times" />
+        {{ $t('g.close') }}
+      </Button>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Checkbox from 'primevue/checkbox'
 import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'

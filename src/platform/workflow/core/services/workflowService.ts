@@ -11,6 +11,7 @@ import {
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
@@ -310,23 +311,39 @@ export const useWorkflowService = () => {
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON
   ) => {
-    // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
-    if (typeof value === 'string') {
-      const workflow = workflowStore.getWorkflowByPath(
-        ComfyWorkflow.basePath + appendJsonExt(value)
-      )
-      if (workflow?.isPersisted) {
-        const loadedWorkflow = await workflowStore.openWorkflow(workflow)
-        loadedWorkflow.changeTracker.restore()
-        loadedWorkflow.changeTracker.reset(workflowData)
-        return
-      }
-    }
+    if (
+      workflowData.extra?.linearMode !== undefined ||
+      !workflowData.nodes.length
+    )
+      useCanvasStore().linearMode = !!workflowData.extra?.linearMode
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
-      const tempWorkflow = workflowStore.createTemporary(
+
+      // Check if a persisted workflow with this path exists
+      if (path) {
+        const fullPath = ComfyWorkflow.basePath + appendJsonExt(path)
+        const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
+
+        // If the workflow exists and is NOT loaded yet (restoration case),
+        // use the existing workflow instead of creating a new one.
+        // If it IS loaded, this is a re-import case - create new with suffix.
+        if (existingWorkflow?.isPersisted && !existingWorkflow.isLoaded) {
+          const loadedWorkflow =
+            await workflowStore.openWorkflow(existingWorkflow)
+          loadedWorkflow.changeTracker.reset(workflowData)
+          loadedWorkflow.changeTracker.restore()
+          return
+        }
+      }
+
+      if (useCanvasStore().linearMode) {
+        app.rootGraph.extra ??= {}
+        app.rootGraph.extra.linearMode = true
+      }
+
+      const tempWorkflow = workflowStore.createNewTemporary(
         path ? appendJsonExt(path) : undefined,
         workflowData
       )
@@ -334,7 +351,6 @@ export const useWorkflowService = () => {
       return
     }
 
-    // value is a ComfyWorkflow.
     const loadedWorkflow = await workflowStore.openWorkflow(value)
     loadedWorkflow.changeTracker.reset(workflowData)
     loadedWorkflow.changeTracker.restore()

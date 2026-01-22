@@ -127,7 +127,7 @@ describe('FormSelectButton Core Component', () => {
       expect(buttons[1].classes()).toContain(
         'bg-interface-menu-component-surface-selected'
       )
-      expect(buttons[1].classes()).toContain('text-primary')
+      expect(buttons[1].classes()).toContain('text-text-primary')
       expect(buttons[0].classes()).not.toContain(
         'bg-interface-menu-component-surface-selected'
       )
@@ -149,7 +149,7 @@ describe('FormSelectButton Core Component', () => {
       expect(buttons[2].text()).toBe('3')
     })
 
-    it('emits string representation of number when clicked', async () => {
+    it('emits number value when clicked', async () => {
       const options = [10, 20, 30]
       const wrapper = mountComponent('10', options)
 
@@ -157,7 +157,7 @@ describe('FormSelectButton Core Component', () => {
 
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
-      expect(emitted![0]).toEqual(['20'])
+      expect(emitted![0]).toEqual([20])
     })
 
     it('highlights selected number option', () => {
@@ -168,7 +168,7 @@ describe('FormSelectButton Core Component', () => {
       expect(buttons[1].classes()).toContain(
         'bg-interface-menu-component-surface-selected'
       )
-      expect(buttons[1].classes()).toContain('text-primary')
+      expect(buttons[1].classes()).toContain('text-text-primary')
     })
   })
 
@@ -337,7 +337,7 @@ describe('FormSelectButton Core Component', () => {
         'bg-interface-menu-component-surface-selected'
       ) // Selected styling disabled
       expect(buttons[0].classes()).toContain('opacity-50')
-      expect(buttons[0].classes()).toContain('text-secondary')
+      expect(buttons[0].classes()).toContain('text-text-secondary')
     })
   })
 
@@ -399,7 +399,7 @@ describe('FormSelectButton Core Component', () => {
       expect(selectedButton.classes()).toContain(
         'bg-interface-menu-component-surface-selected'
       )
-      expect(selectedButton.classes()).toContain('text-primary')
+      expect(selectedButton.classes()).toContain('text-text-primary')
     })
 
     it('applies unselected styling to inactive options', () => {
@@ -408,7 +408,7 @@ describe('FormSelectButton Core Component', () => {
 
       const unselectedButton = wrapper.findAll('button')[1]
       expect(unselectedButton.classes()).toContain('bg-transparent')
-      expect(unselectedButton.classes()).toContain('text-secondary')
+      expect(unselectedButton.classes()).toContain('text-text-secondary')
     })
 
     it('applies hover effects to enabled unselected buttons', () => {
@@ -417,7 +417,7 @@ describe('FormSelectButton Core Component', () => {
 
       const unselectedButton = wrapper.findAll('button')[1]
       expect(unselectedButton.classes()).toContain(
-        'hover:bg-interface-menu-component-surface-hovered'
+        'hover:bg-interface-menu-component-surface-selected/50'
       )
       expect(unselectedButton.classes()).toContain('cursor-pointer')
     })
@@ -477,13 +477,12 @@ describe('FormSelectButton Core Component', () => {
       const mixedOptions: any[] = [
         'string',
         123,
-        { label: 'Object', value: 'obj' },
-        null
+        { label: 'Object', value: 'obj' }
       ]
       const wrapper = mountComponent('123', mixedOptions)
 
       const buttons = wrapper.findAll('button')
-      expect(buttons).toHaveLength(4)
+      expect(buttons).toHaveLength(3)
       expect(buttons[1].classes()).toContain(
         'bg-interface-menu-component-surface-selected'
       ) // Number 123 as string

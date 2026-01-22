@@ -12,6 +12,8 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { AuditLog } from '@/services/customerEventsService'
+
 /**
  * Authentication metadata for sign-up tracking
  */
@@ -195,6 +197,8 @@ export interface TemplateFilterMetadata {
   selected_runs_on: string[]
   sort_by:
     | 'default'
+    | 'recommended'
+    | 'popular'
     | 'alphabetical'
     | 'newest'
     | 'vram-low-to-high'
@@ -276,7 +280,7 @@ export interface TelemetryProvider {
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking(): void
-  checkForCompletedTopup(events: any[] | undefined | null): boolean
+  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean
   clearTopupTracking(): void
 
   // Survey flow events
@@ -409,6 +413,7 @@ export type ExecutionTriggerSource =
   | 'keybinding'
   | 'legacy_ui'
   | 'unknown'
+  | 'linear'
 
 /**
  * Union type for all possible telemetry event properties

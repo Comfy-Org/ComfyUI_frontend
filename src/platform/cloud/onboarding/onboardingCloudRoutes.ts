@@ -14,9 +14,8 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         beforeEnter: async (to, _from, next) => {
           // Only redirect if not explicitly switching accounts
           if (!to.query.switchAccount) {
-            const { useCurrentUser } = await import(
-              '@/composables/auth/useCurrentUser'
-            )
+            const { useCurrentUser } =
+              await import('@/composables/auth/useCurrentUser')
             const { isLoggedIn } = useCurrentUser()
 
             if (isLoggedIn.value) {
@@ -66,6 +65,13 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudAuthTimeoutView.vue'),
         props: true
+      },
+      {
+        path: 'subscribe',
+        name: 'cloud-subscribe',
+        component: () =>
+          import('@/platform/cloud/onboarding/CloudSubscriptionRedirectView.vue'),
+        meta: { requiresAuth: true }
       }
     ]
   }

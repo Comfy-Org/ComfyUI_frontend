@@ -33,12 +33,20 @@ const mockNodePack = {
 const mockIsPackEnabled = vi.fn()
 const mockEnablePack = vi.fn().mockResolvedValue(undefined)
 const mockDisablePack = vi.fn().mockResolvedValue(undefined)
+const mockGetConflictsForPackageByID = vi.fn()
+
 vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
   useComfyManagerStore: vi.fn(() => ({
     isPackEnabled: mockIsPackEnabled,
     enablePack: mockEnablePack,
     disablePack: mockDisablePack,
     installedPacks: {}
+  }))
+}))
+
+vi.mock('@/workbench/extensions/manager/stores/conflictDetectionStore', () => ({
+  useConflictDetectionStore: vi.fn(() => ({
+    getConflictsForPackageByID: mockGetConflictsForPackageByID
   }))
 }))
 
@@ -162,5 +170,42 @@ describe('PackEnableToggle', () => {
     // Check that the toggle is enabled after the operation completes
     await nextTick()
     expect(wrapper.findComponent(ToggleSwitch).props('disabled')).toBe(false)
+  })
+
+  describe('conflict warning icon', () => {
+    it('should show warning icon when package has conflicts', () => {
+      mockGetConflictsForPackageByID.mockReturnValue({
+        package_id: 'test-pack',
+        package_name: 'Test Pack',
+        has_conflict: true,
+        conflicts: [
+          {
+            type: 'import_failed',
+            current_value: 'installed',
+            required_value: 'error message'
+          }
+        ],
+        is_compatible: false
+      })
+
+      mockIsPackEnabled.mockReturnValue(true)
+      const wrapper = mountComponent()
+
+      // Check if warning icon exists
+      const warningIcon = wrapper.find('.icon-\\[lucide--triangle-alert\\]')
+      expect(warningIcon.exists()).toBe(true)
+      expect(warningIcon.classes()).toContain('text-warning-background')
+    })
+
+    it('should not show warning icon when package has no conflicts', () => {
+      mockGetConflictsForPackageByID.mockReturnValue(null)
+
+      mockIsPackEnabled.mockReturnValue(true)
+      const wrapper = mountComponent()
+
+      // Check if warning icon does not exist
+      const warningIcon = wrapper.find('.icon-\\[lucide--triangle-alert\\]')
+      expect(warningIcon.exists()).toBe(false)
+    })
   })
 })

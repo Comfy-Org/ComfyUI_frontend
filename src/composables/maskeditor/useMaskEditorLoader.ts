@@ -80,21 +80,65 @@ export function useMaskEditorLoader() {
     try {
       validateNode(node)
 
-      const nodeImageUrl = getNodeImageUrl(node)
+      let nodeImageUrl = getNodeImageUrl(node)
 
-      const nodeImageRef = parseImageRef(nodeImageUrl)
+      let nodeImageRef = parseImageRef(nodeImageUrl)
 
       let widgetFilename: string | undefined
       if (node.widgets) {
         const imageWidget = node.widgets.find((w) => w.name === 'image')
-        if (
-          imageWidget &&
-          typeof imageWidget.value === 'object' &&
-          imageWidget.value &&
-          'filename' in imageWidget.value &&
-          typeof imageWidget.value.filename === 'string'
-        ) {
-          widgetFilename = imageWidget.value.filename
+        if (imageWidget) {
+          if (typeof imageWidget.value === 'string') {
+            widgetFilename = imageWidget.value
+          } else if (
+            typeof imageWidget.value === 'object' &&
+            imageWidget.value &&
+            'filename' in imageWidget.value &&
+            typeof imageWidget.value.filename === 'string'
+          ) {
+            widgetFilename = imageWidget.value.filename
+          }
+        }
+      }
+
+      // If we have a widget filename, we should prioritize it over the node image
+      // because the node image might be stale (e.g. from a previous save)
+      // while the widget value reflects the current selection.
+      // Skip internal reference formats (e.g. "$35-0" used by some plugins like Impact-Pack)
+      if (widgetFilename && !widgetFilename.startsWith('$')) {
+        try {
+          // Parse the widget value which might be in format "subfolder/filename [type]" or just "filename"
+          let filename = widgetFilename
+          let subfolder: string | undefined = undefined
+          let type: string | undefined = 'input' // Default to input for widget values
+
+          // Check for type in brackets at the end
+          const typeMatch = filename.match(/ \[([^\]]+)\]$/)
+          if (typeMatch) {
+            type = typeMatch[1]
+            filename = filename.substring(
+              0,
+              filename.length - typeMatch[0].length
+            )
+          }
+
+          // Check for subfolder (forward slash separator)
+          const lastSlashIndex = filename.lastIndexOf('/')
+          if (lastSlashIndex !== -1) {
+            subfolder = filename.substring(0, lastSlashIndex)
+            filename = filename.substring(lastSlashIndex + 1)
+          }
+
+          nodeImageRef = {
+            filename,
+            type,
+            subfolder
+          }
+
+          // We also need to update nodeImageUrl to match this new ref so subsequent logic works
+          nodeImageUrl = mkFileUrl({ ref: nodeImageRef })
+        } catch (e) {
+          console.warn('Failed to parse widget filename as ref', e)
         }
       }
 

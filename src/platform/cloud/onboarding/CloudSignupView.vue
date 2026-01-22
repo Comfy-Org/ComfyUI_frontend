@@ -38,7 +38,7 @@
         <Button
           type="button"
           class="h-10 bg-[#2d2e32]"
-          severity="secondary"
+          variant="secondary"
           @click="signInWithGoogle"
         >
           <i class="pi pi-google mr-2"></i>
@@ -48,7 +48,7 @@
         <Button
           type="button"
           class="h-10 bg-[#2d2e32]"
-          severity="secondary"
+          variant="secondary"
           @click="signInWithGithub"
         >
           <i class="pi pi-github mr-2"></i>
@@ -91,7 +91,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { onMounted, ref } from 'vue'
@@ -99,7 +98,9 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -110,13 +111,13 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authActions = useFirebaseAuthActions()
-const isSecureContext = window.isSecureContext
+const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const userIsInChina = ref(false)
 const toastStore = useToastStore()
 
-const navigateToLogin = () => {
-  void router.push({ name: 'cloud-login', query: route.query })
+const navigateToLogin = async () => {
+  await router.push({ name: 'cloud-login', query: route.query })
 }
 
 const onSuccess = async () => {
@@ -125,7 +126,14 @@ const onSuccess = async () => {
     summary: 'Sign up Completed',
     life: 2000
   })
-  // Direct redirect to main app - email verification removed
+
+  const previousFullPath = getSafePreviousFullPath(route.query)
+  if (previousFullPath) {
+    await router.replace(previousFullPath)
+    return
+  }
+
+  // Default redirect to the normal onboarding flow
   await router.push({ path: '/', query: route.query })
 }
 

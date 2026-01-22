@@ -21,7 +21,7 @@
     "label": "출력 폴더 열기"
   },
   "Comfy-Desktop_OpenDevTools": {
-    "label": "DevTools 열기"
+    "label": "개발자 도구 열기"
   },
   "Comfy-Desktop_OpenUserGuide": {
     "label": "데스크톱 사용자 가이드"
@@ -37,6 +37,9 @@
   },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "선택한 노드에 대해 3D 뷰어(베타) 열기"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "실험적: 모델 에셋 탐색"
   },
   "Comfy_BrowseTemplates": {
     "label": "템플릿 탐색"
@@ -125,6 +128,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "선택 영역을 서브그래프로 변환"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "서브그래프 위젯 편집"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "서브그래프 나가기"
   },
@@ -133,6 +139,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "선택한 노드 그룹화"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "호버링된 위젯 프로모션 전환"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "선택한 서브그래프 묶음 풀기"
@@ -182,17 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "업데이트 확인"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "진행 상황 대화 상자 전환"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "마스크 편집기에서 브러시 크기 줄이기"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "마스크 편집기에서 브러시 크기 늘리기"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditor에서 색상 선택기 열기"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "마스크 에디터에서 수평 반전"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "마스크 에디터에서 수직 반전"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "선택한 노드 마스크 편집기 열기"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "마스크 에디터에서 왼쪽으로 회전"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "마스크 에디터에서 오른쪽으로 회전"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "모델 언로드"
@@ -224,11 +245,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "선택한 출력 노드 대기열에 추가"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "작업 기록 토글"
+  },
   "Comfy_Redo": {
     "label": "다시 실행"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "노드 정의 새로 고침"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "워크플로우 이름 변경"
   },
   "Comfy_SaveWorkflow": {
     "label": "워크플로 저장"
@@ -239,11 +266,20 @@
   "Comfy_ShowSettingsDialog": {
     "label": "설정 대화상자 보기"
   },
+  "Comfy_ToggleAssetAPI": {
+    "label": "실험적: AssetAPI 활성화"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "캔버스 성능"
   },
   "Comfy_ToggleHelpCenter": {
     "label": "도움말 센터"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "선형 모드 토글"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Queue Panel V2 토글"
   },
   "Comfy_ToggleTheme": {
     "label": "밝기 테마 전환 (어두운/밝은)"
@@ -256,6 +292,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "로그아웃"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "실험적: Vue 노드 활성화"
   },
   "Workspace_CloseWorkflow": {
     "label": "현재 워크플로 닫기"
@@ -290,6 +329,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "포커스 모드 토글"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "에셋 사이드바 전환",
+    "tooltip": "에셋"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "모델 라이브러리 사이드바 토글",
     "tooltip": "모델 라이브러리"
@@ -298,31 +341,8 @@
     "label": "노드 라이브러리 사이드바 토글",
     "tooltip": "노드 라이브러리"
   },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "실행 큐 사이드바 토글",
-    "tooltip": "실행 큐"
-  },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "워크플로 사이드바 토글",
     "tooltip": "워크플로"
-  },
-  "Comfy_BrowseModelAssets": {
-    "label": "실험적: 모델 에셋 탐색"
-  },
-  "Comfy_Graph_EditSubgraphWidgets": {
-    "label": "서브그래프 위젯 편집"
-  },
-  "Comfy_Graph_ToggleWidgetPromotion": {
-    "label": "호버링된 위젯 프로모션 전환"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "실험적: AssetAPI 활성화"
-  },
-  "Experimental_ToggleVueNodes": {
-    "label": "실험적: Vue 노드 활성화"
-  },
-  "Workspace_ToggleSidebarTab_assets": {
-    "label": "에셋 사이드바 전환",
-    "tooltip": "에셋"
   }
 }

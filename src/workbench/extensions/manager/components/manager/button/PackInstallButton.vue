@@ -1,34 +1,31 @@
 <template>
-  <IconTextButton
-    v-bind="$attrs"
-    type="secondary"
-    :label="computedLabel"
-    :size="size"
+  <Button
+    variant="secondary"
+    :size
     :disabled="isLoading || isInstalling"
     @click="installAllPacks"
   >
-    <template #icon>
-      <i
-        v-if="hasConflict && !isInstalling && !isLoading"
-        class="pi pi-exclamation-triangle text-yellow-500"
-      />
-      <DotSpinner
-        v-else-if="isLoading || isInstalling"
-        duration="1s"
-        :size="size === 'sm' ? 12 : 16"
-      />
-    </template>
-  </IconTextButton>
+    <i
+      v-if="hasConflict && !isInstalling && !isLoading"
+      class="icon-[lucide--triangle-alert] text-warning-background"
+    />
+    <DotSpinner
+      v-else-if="isLoading || isInstalling"
+      duration="1s"
+      :size="size === 'sm' ? 12 : 16"
+    />
+    <span>{{ computedLabel }}</span>
+  </Button>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import { t } from '@/i18n'
+import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
 import { useDialogService } from '@/services/dialogService'
-import type { ButtonSize } from '@/types/buttonTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -51,13 +48,14 @@ const {
   nodePacks: NodePack[]
   isLoading?: boolean
   label?: string
-  size?: ButtonSize
+  size?: ButtonVariants['size']
   hasConflict?: boolean
   conflictInfo?: ConflictDetail[]
 }>()
 
 const managerStore = useComfyManagerStore()
 const { showNodeConflictDialog } = useDialogService()
+const { t } = useI18n()
 
 // Check if any of the packs are currently being installed
 const isInstalling = computed(() => {

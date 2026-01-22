@@ -14,6 +14,7 @@
         <component
           :is="item.headerComponent"
           v-if="item.headerComponent"
+          v-bind="item.headerProps"
           :id="item.key"
         />
         <h3 v-else :id="item.key">
@@ -53,18 +54,5 @@ const dialogStore = useDialogStore()
 .global-dialog .p-dialog-content {
   @apply p-2 2xl:p-[var(--p-dialog-content-padding)];
   @apply pt-0;
-}
-
-.manager-dialog {
-  height: 80vh;
-  max-width: 1724px;
-  max-height: 1026px;
-}
-
-@media (min-width: 3000px) {
-  .manager-dialog {
-    max-width: 2200px;
-    max-height: 1320px;
-  }
 }
 </style>

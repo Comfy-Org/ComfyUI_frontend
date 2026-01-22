@@ -5,23 +5,27 @@
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
     <div
+      v-show="!linearMode"
       id="graph-canvas-container"
       ref="graphCanvasContainerRef"
       class="graph-canvas-container"
     >
       <GraphCanvas @ready="onGraphReady" />
     </div>
+    <LinearView v-if="linearMode" />
   </div>
 
   <GlobalToast />
   <RerouteMigrationToast />
-  <VueNodesMigrationToast />
+  <ModelImportProgressDialog />
+  <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import {
@@ -41,18 +45,19 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
-import VueNodesMigrationToast from '@/components/toast/VueNodesMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -75,6 +80,8 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
+import LinearView from '@/views/LinearView.vue'
+import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
@@ -89,6 +96,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const { linearMode } = storeToRefs(useCanvasStore())
 
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()
@@ -200,19 +208,25 @@ const init = () => {
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
+const sidebarTabStore = useSidebarTabStore()
+
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
-  await Promise.all([
-    queueStore.update(),
-    assetsStore.updateHistory() // Update history assets when status changes
-  ])
+  await queueStore.update()
+  // Only update assets if the assets sidebar is currently open
+  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
+    await assetsStore.updateHistory()
+  }
 }
 
 const onExecutionSuccess = async () => {
-  await Promise.all([
-    queueStore.update(),
-    assetsStore.updateHistory() // Update history assets on execution success
-  ])
+  await queueStore.update()
+  // Only update assets if the assets sidebar is currently open
+  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
+  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+    await assetsStore.updateHistory()
+  }
 }
 
 const reconnectingMessage: ToastMessageOptions = {

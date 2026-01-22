@@ -14,10 +14,6 @@ const zRemoteWidgetConfig = z.object({
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })
-const zWidgetTemplate = z.object({
-  template_id: z.string(),
-  allowed_types: z.string().optional()
-})
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
   chip: z.boolean().optional()
@@ -27,12 +23,13 @@ export const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
     defaultInput: z.boolean().optional(),
+    display_name: z.string().optional(),
     forceInput: z.boolean().optional(),
     tooltip: z.string().optional(),
+    socketless: z.boolean().optional(),
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
     widgetType: z.string().optional(),
-    template: zWidgetTemplate.optional(),
     /** Backend-only properties. */
     rawLink: z.boolean().optional(),
     lazy: z.boolean().optional()
@@ -230,6 +227,30 @@ export const zComfyNodeDef = z.object({
   input_order: z.record(z.array(z.string())).optional()
 })
 
+export const zAutogrowOptions = z.object({
+  ...zBaseInputOptions.shape,
+  template: z.object({
+    input: zComfyInputsSpec,
+    names: z.array(z.string()).optional(),
+    max: z.number().optional(),
+    //Backend defines as mandatory with min 1, Frontend is more forgiving
+    min: z.number().optional(),
+    prefix: z.string().optional()
+  })
+})
+
+export const zDynamicComboInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICCOMBO_V3'),
+  zBaseInputOptions.extend({
+    options: z.array(
+      z.object({
+        inputs: zComfyInputsSpec,
+        key: z.string()
+      })
+    )
+  })
+])
+
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
 export type ComfyOutputTypesSpec = z.infer<typeof zComfyOutputTypesSpec>
@@ -246,7 +267,7 @@ export type ComboInputSpecV2 = z.infer<typeof zComboInputSpecV2>
 export type InputSpec = z.infer<typeof zInputSpec>
 
 export function validateComfyNodeDef(
-  data: any,
+  data: unknown,
   onError: (error: string) => void = console.warn
 ): ComfyNodeDef | null {
   const result = zComfyNodeDef.safeParse(data)

@@ -1,5 +1,5 @@
+# Description: AI-powered code review triggered by adding the 'claude-review' label to a PR
 name: "PR: Claude Review"
-description: "AI-powered code review triggered by adding the 'claude-review' label to a PR"
 
 permissions:
   contents: read

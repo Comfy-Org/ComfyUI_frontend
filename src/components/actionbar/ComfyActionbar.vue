@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full items-center">
+  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -10,7 +10,7 @@
     </div>
 
     <Panel
-      class="pointer-events-auto z-1000"
+      class="pointer-events-auto"
       :style="style"
       :class="panelClass"
       :pt="{
@@ -18,18 +18,29 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none">
+      <div ref="panelRef" class="flex items-center select-none gap-2">
         <span
           ref="dragHandleRef"
           :class="
             cn(
-              'drag-handle cursor-grab w-3 h-max mr-2',
+              'drag-handle cursor-grab w-3 h-max',
               isDragging && 'cursor-grabbing'
             )
           "
         />
-
-        <ComfyRunButton />
+        <Suspense @resolve="comfyRunButtonResolved">
+          <ComfyRunButton />
+        </Suspense>
+        <Button
+          v-tooltip.bottom="cancelJobTooltipConfig"
+          variant="destructive"
+          size="icon"
+          :disabled="isExecutionIdle"
+          :aria-label="t('menu.interrupt')"
+          @click="cancelCurrentJob"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </Button>
       </div>
     </Panel>
   </div>
@@ -43,22 +54,29 @@ import {
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
+import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { t } from '@/i18n'
+import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
+const commandStore = useCommandStore()
+const { t } = useI18n()
+const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
 
-const tabContainer = document.querySelector('.workflow-tabs-container')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
@@ -66,22 +84,10 @@ const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const {
-  x,
-  y,
-  style: style,
-  isDragging
-} = useDraggable(panelRef, {
+const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
-  containerElement: document.body,
-  onMove: (event) => {
-    // Prevent dragging the menu over the top of the tabs
-    const minY = tabContainer?.getBoundingClientRect().bottom ?? 40
-    if (event.y < minY) {
-      event.y = minY
-    }
-  }
+  containerElement: document.body
 })
 
 // Update storedPosition when x or y changes
@@ -126,7 +132,14 @@ const setInitialPosition = () => {
     }
   }
 }
-onMounted(setInitialPosition)
+
+//The ComfyRunButton is a dynamic import. Which means it will not be loaded onMount in this component.
+//So we must use suspense resolve to ensure that is has loaded and updated the DOM before calling setInitialPosition()
+async function comfyRunButtonResolved() {
+  await nextTick()
+  setInitialPosition()
+}
+
 watch(visible, async (newVisible) => {
   if (newVisible) {
     await nextTick(setInitialPosition)
@@ -255,21 +268,32 @@ watch(isDragging, (dragging) => {
     isMouseOverDropZone.value = false
   }
 })
+
+const cancelJobTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menu.interrupt'))
+)
+
+const cancelCurrentJob = async () => {
+  if (isExecutionIdle.value) return
+  await commandStore.execute('Comfy.Interrupt')
+}
+
 const actionbarClass = computed(() =>
   cn(
-    'w-[265px] border-dashed border-blue-500 opacity-80',
+    'w-[200px] border-dashed border-blue-500 opacity-80',
     'm-1.5 flex items-center justify-center self-stretch',
     'rounded-md before:w-50 before:-ml-50 before:h-full',
+    'pointer-events-auto',
     isMouseOverDropZone.value &&
       'border-[3px] opacity-100 scale-105 shadow-[0_0_20px] shadow-blue-500'
   )
 )
 const panelClass = computed(() =>
   cn(
-    'actionbar pointer-events-auto z1000',
+    'actionbar pointer-events-auto z-1300',
     isDragging.value && 'select-none pointer-events-none',
     isDocked.value
-      ? 'p-0 static mr-2 border-none bg-transparent'
+      ? 'p-0 static border-none bg-transparent'
       : 'fixed shadow-interface'
   )
 )

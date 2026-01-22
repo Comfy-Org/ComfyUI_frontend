@@ -4,7 +4,10 @@ import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetAssetOptions
+} from '@/lib/litegraph/src/types/widgets'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import {
   assetFilenameSchema,
@@ -13,16 +16,16 @@ import {
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   ComboInputSpec,
   InputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
-import { addValueControlWidgets } from '@/scripts/widgets'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { addValueControlWidgets } from '@/scripts/widgets'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -69,6 +72,16 @@ const addMultiSelectWidget = (
   addWidget(node, widget as BaseDOMWidget<object | string>)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
+  if (inputSpec.control_after_generate) {
+    widget.linkedWidgets = addValueControlWidgets(
+      node,
+      widget,
+      'fixed',
+      undefined,
+      transformInputSpecV2ToV1(inputSpec)
+    )
+  }
+
   return widget
 }
 
@@ -81,55 +94,59 @@ const createAssetBrowserWidget = (
   const displayLabel = currentValue ?? t('widgets.selectModel')
   const assetBrowserDialog = useAssetBrowserDialog()
 
+  async function openModal(widget: IBaseWidget) {
+    if (!isAssetWidget(widget)) {
+      throw new Error(`Expected asset widget but received ${widget.type}`)
+    }
+    await assetBrowserDialog.show({
+      nodeType: node.comfyClass || '',
+      inputName: inputSpec.name,
+      currentValue: widget.value,
+      onAssetSelected: (asset) => {
+        const validatedAsset = assetItemSchema.safeParse(asset)
+
+        if (!validatedAsset.success) {
+          console.error(
+            'Invalid asset item:',
+            validatedAsset.error.errors,
+            'Received:',
+            asset
+          )
+          return
+        }
+
+        const filename = validatedAsset.data.user_metadata?.filename
+        const validatedFilename = assetFilenameSchema.safeParse(filename)
+
+        if (!validatedFilename.success) {
+          console.error(
+            'Invalid asset filename:',
+            validatedFilename.error.errors,
+            'for asset:',
+            validatedAsset.data.id
+          )
+          return
+        }
+
+        const oldValue = widget.value
+        widget.value = validatedFilename.data
+        node.onWidgetChanged?.(
+          widget.name,
+          validatedFilename.data,
+          oldValue,
+          widget
+        )
+      }
+    })
+  }
+  const options: IWidgetAssetOptions = { openModal }
+
   const widget = node.addWidget(
     'asset',
     inputSpec.name,
     displayLabel,
-    async function (this: IBaseWidget) {
-      if (!isAssetWidget(widget)) {
-        throw new Error(`Expected asset widget but received ${widget.type}`)
-      }
-      await assetBrowserDialog.show({
-        nodeType: node.comfyClass || '',
-        inputName: inputSpec.name,
-        currentValue: widget.value,
-        onAssetSelected: (asset) => {
-          const validatedAsset = assetItemSchema.safeParse(asset)
-
-          if (!validatedAsset.success) {
-            console.error(
-              'Invalid asset item:',
-              validatedAsset.error.errors,
-              'Received:',
-              asset
-            )
-            return
-          }
-
-          const filename = validatedAsset.data.user_metadata?.filename
-          const validatedFilename = assetFilenameSchema.safeParse(filename)
-
-          if (!validatedFilename.success) {
-            console.error(
-              'Invalid asset filename:',
-              validatedFilename.error.errors,
-              'for asset:',
-              validatedAsset.data.id
-            )
-            return
-          }
-
-          const oldValue = widget.value
-          this.value = validatedFilename.data
-          node.onWidgetChanged?.(
-            widget.name,
-            validatedFilename.data,
-            oldValue,
-            widget
-          )
-        }
-      })
-    }
+    () => undefined,
+    options
   )
 
   return widget

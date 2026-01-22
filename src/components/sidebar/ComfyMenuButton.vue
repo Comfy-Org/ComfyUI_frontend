@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="menuButtonRef"
     v-tooltip="{
       value: t('sideToolbar.labels.menu'),
       showDelay: 300,
@@ -73,6 +72,7 @@
         @click.stop="handleNodes2ToggleClick"
       >
         <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
         <ToggleSwitch
           v-model="nodes2Enabled"
           class="ml-4"
@@ -101,6 +101,7 @@
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
+import Tag from 'primevue/tag'
 import TieredMenu from 'primevue/tieredmenu'
 import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -135,7 +136,6 @@ const settingStore = useSettingStore()
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
 >(null)
-const menuButtonRef = ref<HTMLElement | null>(null)
 
 const nodes2Enabled = computed({
   get: () => settingStore.get('Comfy.VueNodes.Enabled') ?? false,

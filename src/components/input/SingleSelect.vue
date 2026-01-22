@@ -20,7 +20,7 @@
           'h-10 relative inline-flex cursor-pointer select-none items-center',
           // trigger surface
           'rounded-lg',
-          'bg-base-background text-base-foreground',
+          'bg-secondary-background text-base-foreground',
           'border-[2.5px] border-solid border-transparent',
           'transition-all duration-200 ease-in-out',
           'focus-within:border-node-component-border',
@@ -84,7 +84,7 @@
   >
     <!-- Trigger value -->
     <template #value="slotProps">
-      <div class="flex items-center gap-2 text-sm text-neutral-500">
+      <div class="flex items-center gap-2 text-sm">
         <slot name="icon" />
         <span
           v-if="slotProps.value !== null && slotProps.value !== undefined"
@@ -100,7 +100,7 @@
 
     <!-- Trigger caret -->
     <template #dropdownicon>
-      <i class="icon-[lucide--chevron-down] text-base text-neutral-500" />
+      <i class="icon-[lucide--chevron-down] text-muted-foreground" />
     </template>
 
     <!-- Option row -->
@@ -152,7 +152,7 @@ const {
   popoverMaxWidth?: string
 }>()
 
-const selectedItem = defineModel<string | null>({ required: true })
+const selectedItem = defineModel<string | undefined>({ required: true })
 
 const { t } = useI18n()
 

@@ -181,7 +181,6 @@ Composables for sidebar functionality:
 |------------|-------------|
 | `useModelLibrarySidebarTab` | Manages the model library sidebar tab |
 | `useNodeLibrarySidebarTab` | Manages the node library sidebar tab |
-| `useQueueSidebarTab` | Manages the queue sidebar tab |
 | `useWorkflowsSidebarTab` | Manages the workflows sidebar tab |
 
 ### Tree

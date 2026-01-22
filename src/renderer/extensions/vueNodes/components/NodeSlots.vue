@@ -2,10 +2,10 @@
   <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
     {{ st('nodeErrors.slots', 'Node Slots Error') }}
   </div>
-  <div v-else :class="cn('flex justify-between', unifiedWrapperClass)">
+  <div v-else :class="cn('flex justify-between min-w-0', unifiedWrapperClass)">
     <div
       v-if="filteredInputs.length"
-      :class="cn('flex flex-col', unifiedDotsClass)"
+      :class="cn('flex flex-col min-w-0', unifiedDotsClass)"
     >
       <InputSlot
         v-for="(input, index) in filteredInputs"
@@ -19,7 +19,7 @@
 
     <div
       v-if="nodeData?.outputs?.length"
-      :class="cn('ml-auto flex flex-col', unifiedDotsClass)"
+      :class="cn('ml-auto flex flex-col min-w-0', unifiedDotsClass)"
     >
       <OutputSlot
         v-for="(output, index) in nodeData.outputs"

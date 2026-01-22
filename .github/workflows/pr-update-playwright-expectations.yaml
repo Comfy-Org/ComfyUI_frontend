@@ -25,7 +25,6 @@ jobs:
         ) &&
         startsWith(github.event.comment.body, '/update-playwright') )
     outputs:
-      cache-key: ${{ steps.cache-key.outputs.key }}
       pr-number: ${{ steps.pr-info.outputs.pr-number }}
       branch: ${{ steps.pr-info.outputs.branch }}
       comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
@@ -64,105 +63,89 @@ jobs:
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
-      # Save expensive build artifacts (Python env, built frontend, node_modules)
-      # Source code will be checked out fresh in sharded jobs
-      - name: Generate cache key
-        id: cache-key
-        run: echo "key=$(date +%s)" >> $GITHUB_OUTPUT
-      - name: Save cache
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684
+
+      # Upload built dist/ (containerized test jobs will pnpm install without cache)
+      - name: Upload built frontend
+        uses: actions/upload-artifact@v4
         with:
-          path: |
-            ComfyUI
-            dist
-          key: comfyui-setup-${{ steps.cache-key.outputs.key }}
+          name: frontend-dist
+          path: dist/
+          retention-days: 1
 
   # Sharded snapshot updates
   update-snapshots-sharded:
     needs: setup
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.10
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
     strategy:
       fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     steps:
-      # Checkout source code fresh (not cached)
       - name: Checkout repository
         uses: actions/checkout@v5
         with:
           ref: ${{ needs.setup.outputs.branch }}
-
-      # Restore expensive build artifacts from setup job
-      - name: Restore cached artifacts
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684
+      - name: Download built frontend
+        uses: actions/download-artifact@v4
         with:
-          fail-on-cache-miss: true
-          path: |
-            ComfyUI
-            dist
-          key: comfyui-setup-${{ needs.setup.outputs.cache-key }}
+          name: frontend-dist
+          path: dist/
 
-      - name: Setup ComfyUI server (from cache)
-        uses: ./.github/actions/setup-comfyui-server
-        with:
-          launch_server: true
+      - name: Start ComfyUI server
+        uses: ./.github/actions/start-comfyui-server
 
-      - name: Setup nodejs, pnpm, reuse built frontend
-        uses: ./.github/actions/setup-frontend
+      - name: Install frontend deps
+        run: pnpm install --frozen-lockfile
 
-      - name: Setup Playwright
-        uses: ./.github/actions/setup-playwright
-
-      # Run sharded tests with snapshot updates
+      # Run sharded tests with snapshot updates (browsers pre-installed in container)
       - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright-tests
         run: pnpm exec playwright test --update-snapshots --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         continue-on-error: true
 
-      # Identify and stage only changed snapshot files
       - name: Stage changed snapshot files
         id: changed-snapshots
+        shell: bash
         run: |
-          echo "=========================================="
-          echo "STAGING CHANGED SNAPSHOTS (Shard ${{ matrix.shardIndex }})"
-          echo "=========================================="
+          set -euo pipefail
 
-          # Get list of changed snapshot files
-          changed_files=$(git diff --name-only browser_tests/ 2>/dev/null | grep -E '\-snapshots/' || echo "")
+          # Configure git safe.directory for container environment
+          git config --global --add safe.directory "$(pwd)"
+
+          # Get list of changed snapshot files (including untracked/new files)
+          changed_files=$( (
+            git diff --name-only browser_tests/ 2>/dev/null || true
+            git ls-files --others --exclude-standard browser_tests/ 2>/dev/null || true
+          ) | sort -u | grep -E '\-snapshots/' || true )
 
           if [ -z "$changed_files" ]; then
-            echo "No snapshot changes in this shard"
+            echo "No snapshot changes in shard ${{ matrix.shardIndex }}"
             echo "has-changes=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          echo "✓ Found changed files:"
-          echo "$changed_files"
           file_count=$(echo "$changed_files" | wc -l)
-          echo "Count: $file_count"
+          echo "Shard ${{ matrix.shardIndex }}: $file_count changed snapshot(s):"
+          echo "$changed_files"
           echo "has-changes=true" >> $GITHUB_OUTPUT
-          echo ""
 
-          # Create staging directory
+          # Copy changed files to staging directory
           mkdir -p /tmp/changed_snapshots_shard
-
-          # Copy only changed files, preserving directory structure
-          # Strip 'browser_tests/' prefix to avoid double nesting
-          echo "Copying changed files to staging directory..."
           while IFS= read -r file; do
-            # Remove 'browser_tests/' prefix
+            [ -f "$file" ] || continue
             file_without_prefix="${file#browser_tests/}"
-            # Create parent directories
             mkdir -p "/tmp/changed_snapshots_shard/$(dirname "$file_without_prefix")"
-            # Copy file
             cp "$file" "/tmp/changed_snapshots_shard/$file_without_prefix"
-            echo "  → $file_without_prefix"
           done <<< "$changed_files"
-
-          echo ""
-          echo "Staged files for upload:"
-          find /tmp/changed_snapshots_shard -type f
 
       # Upload ONLY the changed files from this shard
       - name: Upload changed snapshots
@@ -204,9 +187,15 @@ jobs:
           echo "=========================================="
           echo "DOWNLOADED SNAPSHOT FILES"
           echo "=========================================="
-          find ./downloaded-snapshots -type f
-          echo ""
-          echo "Total files: $(find ./downloaded-snapshots -type f | wc -l)"
+          if [ -d "./downloaded-snapshots" ]; then
+            find ./downloaded-snapshots -type f
+            echo ""
+            echo "Total files: $(find ./downloaded-snapshots -type f | wc -l)"
+          else
+            echo "No snapshot artifacts downloaded (no changes in any shard)"
+            echo ""
+            echo "Total files: 0"
+          fi
 
       # Merge only the changed files into browser_tests
       - name: Merge changed snapshots
@@ -216,6 +205,16 @@ jobs:
           echo "=========================================="
           echo "MERGING CHANGED SNAPSHOTS"
           echo "=========================================="
+
+          # Check if any artifacts were downloaded
+          if [ ! -d "./downloaded-snapshots" ]; then
+            echo "No snapshot artifacts to merge"
+            echo "=========================================="
+            echo "MERGE COMPLETE"
+            echo "=========================================="
+            echo "Shards merged: 0"
+            exit 0
+          fi
 
           # Verify target directory exists
           if [ ! -d "browser_tests" ]; then
@@ -261,11 +260,19 @@ jobs:
           echo "CHANGES SUMMARY"
           echo "=========================================="
           echo ""
-          echo "Changed files in browser_tests:"
-          git diff --name-only browser_tests/ | head -20 || echo "No changes"
-          echo ""
-          echo "Total changes:"
-          git diff --name-only browser_tests/ | wc -l || echo "0"
+          echo "Changed files in browser_tests (including untracked):"
+          CHANGES=$(git status --porcelain=v1 --untracked-files=all -- browser_tests/)
+          if [ -z "$CHANGES" ]; then
+            echo "No changes"
+            echo ""
+            echo "Total changes:"
+            echo "0"
+          else
+            echo "$CHANGES" | head -50
+            echo ""
+            echo "Total changes:"
+            echo "$CHANGES" | wc -l
+          fi
 
       - name: Commit updated expectations
         id: commit
@@ -273,7 +280,7 @@ jobs:
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
 
-          if git diff --quiet browser_tests/; then
+          if [ -z "$(git status --porcelain=v1 --untracked-files=all -- browser_tests/)" ]; then
             echo "No changes to commit"
             echo "has-changes=false" >> $GITHUB_OUTPUT
             exit 0

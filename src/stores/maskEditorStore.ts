@@ -22,7 +22,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     size: 10,
     opacity: 0.7,
     hardness: 1,
-    smoothingPrecision: 10
+    stepSize: 10
   })
 
   const maskBlendMode = ref<MaskBlendMode>(MaskBlendMode.Black)
@@ -50,6 +50,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const panOffset = ref<Offset>({ x: 0, y: 0 })
   const cursorPoint = ref<Point>({ x: 0, y: 0 })
   const resetZoomTrigger = ref<number>(0)
+  const clearTrigger = ref<number>(0)
 
   const maskCanvas = ref<HTMLCanvasElement | null>(null)
   const maskCtx = ref<CanvasRenderingContext2D | null>(null)
@@ -69,6 +70,25 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const brushPreviewGradientVisible = ref<boolean>(false)
 
   const canvasHistory = useCanvasHistory(20)
+
+  const tgpuRoot = ref<any>(null)
+
+  const colorInput = ref<HTMLInputElement | null>(null)
+
+  // GPU texture recreation signals
+  /**
+   * GPU texture data must use ArrayBuffer (not SharedArrayBuffer) for compatibility
+   * with WebGPU's device.queue.writeTexture API. SharedArrayBuffer is not accepted
+   * by the WebGPU specification and will cause runtime errors.
+   *
+   * @see https://gpuweb.github.io/gpuweb/#dom-gpuqueue-writetexture
+   */
+  type GPUCompatibleArray = Uint8ClampedArray & { buffer: ArrayBuffer }
+  const gpuTexturesNeedRecreation = ref<boolean>(false)
+  const gpuTextureWidth = ref<number>(0)
+  const gpuTextureHeight = ref<number>(0)
+  const pendingGPUMaskData = ref<GPUCompatibleArray | null>(null)
+  const pendingGPURgbData = ref<GPUCompatibleArray | null>(null)
 
   watch(maskCanvas, (canvas) => {
     if (canvas) {
@@ -110,7 +130,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   })
 
   function setBrushSize(size: number): void {
-    brushSettings.value.size = _.clamp(size, 1, 100)
+    brushSettings.value.size = _.clamp(size, 1, 250)
   }
 
   function setBrushOpacity(opacity: number): void {
@@ -121,8 +141,8 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     brushSettings.value.hardness = _.clamp(hardness, 0, 1)
   }
 
-  function setBrushSmoothingPrecision(precision: number): void {
-    brushSettings.value.smoothingPrecision = _.clamp(precision, 1, 100)
+  function setBrushStepSize(step: number): void {
+    brushSettings.value.stepSize = _.clamp(step, 1, 100)
   }
 
   function resetBrushToDefault(): void {
@@ -130,7 +150,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     brushSettings.value.size = 20
     brushSettings.value.opacity = 1
     brushSettings.value.hardness = 1
-    brushSettings.value.smoothingPrecision = 60
+    brushSettings.value.stepSize = 5
   }
 
   function setPaintBucketTolerance(tolerance: number): void {
@@ -169,6 +189,10 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     resetZoomTrigger.value++
   }
 
+  function triggerClear(): void {
+    clearTrigger.value++
+  }
+
   function setMaskOpacity(opacity: number): void {
     maskOpacity.value = _.clamp(opacity, 0, 1)
   }
@@ -179,7 +203,7 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
       size: 10,
       opacity: 0.7,
       hardness: 1,
-      smoothingPrecision: 10
+      stepSize: 5
     }
     maskBlendMode.value = MaskBlendMode.Black
     activeLayer.value = 'mask'
@@ -199,6 +223,13 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     panOffset.value = { x: 0, y: 0 }
     cursorPoint.value = { x: 0, y: 0 }
     maskOpacity.value = 0.8
+
+    // Reset GPU recreation flags
+    gpuTexturesNeedRecreation.value = false
+    gpuTextureWidth.value = 0
+    gpuTextureHeight.value = 0
+    pendingGPUMaskData.value = null
+    pendingGPURgbData.value = null
   }
 
   return {
@@ -243,10 +274,21 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
 
     canvasHistory,
 
+    tgpuRoot,
+
+    // GPU texture recreation signals
+    gpuTexturesNeedRecreation,
+    gpuTextureWidth,
+    gpuTextureHeight,
+    pendingGPUMaskData,
+    pendingGPURgbData,
+
+    colorInput,
+
     setBrushSize,
     setBrushOpacity,
     setBrushHardness,
-    setBrushSmoothingPrecision,
+    setBrushStepSize,
     resetBrushToDefault,
     setPaintBucketTolerance,
     setFillOpacity,
@@ -257,6 +299,8 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
     setPanOffset,
     setCursorPoint,
     resetZoom,
+    triggerClear,
+    clearTrigger,
     setMaskOpacity,
     resetState
   }
