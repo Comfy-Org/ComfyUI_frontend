@@ -6,7 +6,7 @@ const badges: TopbarBadge[] = [
   {
     text: t('nightly.badge.label'),
     label: t('g.nightly'),
-    variant: 'info',
+    variant: 'warning',
     tooltip: t('nightly.badge.tooltip')
   }
 ]
