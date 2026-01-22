@@ -2535,5 +2535,20 @@
       "completed": "Completed",
       "failed": "Failed"
     }
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "title": "Unsaved Changes",
+      "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "notAuthenticated": "You must be logged in to access workspaces",
+      "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
+      "accessDenied": "You do not have access to this workspace",
+      "workspaceNotFound": "Workspace not found",
+      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+    }
   }
 }
