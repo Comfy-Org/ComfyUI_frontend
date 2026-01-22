@@ -189,7 +189,7 @@ describe('useModelToNodeStore', () => {
     it('should not register provider when nodeDef is undefined', () => {
       const modelToNodeStore = useModelToNodeStore()
       const providerWithoutNodeDef = new ModelNodeProvider(
-        undefined as any,
+        undefined as unknown as ComfyNodeDefImpl,
         'custom_key'
       )
 
@@ -458,13 +458,13 @@ describe('useModelToNodeStore', () => {
 
       // These should not throw but return undefined
       expect(
-        modelToNodeStore.getCategoryForNodeType(null as any)
+        modelToNodeStore.getCategoryForNodeType(null as unknown as string)
       ).toBeUndefined()
       expect(
-        modelToNodeStore.getCategoryForNodeType(undefined as any)
+        modelToNodeStore.getCategoryForNodeType(undefined as unknown as string)
       ).toBeUndefined()
       expect(
-        modelToNodeStore.getCategoryForNodeType(123 as any)
+        modelToNodeStore.getCategoryForNodeType(123 as unknown as string)
       ).toBeUndefined()
     })
 

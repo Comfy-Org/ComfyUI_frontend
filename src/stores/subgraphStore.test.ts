@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ExportedSubgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -72,7 +73,7 @@ describe('useSubgraphStore', () => {
         ({
           status: 200,
           text: () => JSON.stringify(filenames[f.slice(10)])
-        }) as any
+        }) as unknown as ReturnType<typeof api.getUserData>
     )
     return await store.fetchSubgraphs()
   }
@@ -92,7 +93,7 @@ describe('useSubgraphStore', () => {
     vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
     vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
       nodes: [subgraphNode.serialize()],
-      subgraphs: [subgraph.serialize() as any]
+      subgraphs: [subgraph.serialize() as unknown as ExportedSubgraph]
     }))
     //mock saving of file
     vi.mocked(api.storeUserData).mockResolvedValue({
