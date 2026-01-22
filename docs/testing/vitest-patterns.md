@@ -30,6 +30,10 @@ describe('MyStore', () => {
 
 **Why `stubActions: false`?** By default, testing pinia stubs all actions. Set to `false` when testing actual store behavior.
 
+## i18n in Component Tests
+
+Use real `createI18n` with empty messages instead of mocking `vue-i18n`. See `SearchBox.test.ts` for example.
+
 ## Mock Patterns
 
 ### Reset all mocks at once

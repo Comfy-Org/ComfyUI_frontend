@@ -319,8 +319,8 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       // Verify sorting (newest first - lower index = newer)
       for (let i = 1; i < store.historyAssets.length; i++) {
-        const prevDate = new Date(store.historyAssets[i - 1].created_at)
-        const currDate = new Date(store.historyAssets[i].created_at)
+        const prevDate = new Date(store.historyAssets[i - 1].created_at ?? 0)
+        const currDate = new Date(store.historyAssets[i].created_at ?? 0)
         expect(prevDate.getTime()).toBeGreaterThanOrEqual(currDate.getTime())
       }
     })
@@ -435,8 +435,8 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       // Should still maintain sorting
       for (let i = 1; i < store.historyAssets.length; i++) {
-        const prevDate = new Date(store.historyAssets[i - 1].created_at)
-        const currDate = new Date(store.historyAssets[i].created_at)
+        const prevDate = new Date(store.historyAssets[i - 1].created_at ?? 0)
+        const currDate = new Date(store.historyAssets[i].created_at ?? 0)
         expect(prevDate.getTime()).toBeGreaterThanOrEqual(currDate.getTime())
       }
     })
