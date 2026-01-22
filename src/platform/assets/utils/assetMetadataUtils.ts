@@ -1,38 +1,52 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 /**
- * Type-safe utilities for extracting metadata from assets
+ * Type-safe utilities for extracting metadata from assets.
+ * These utilities check user_metadata first, then metadata, then fallback.
  */
 
 /**
+ * Helper to get a string property from user_metadata or metadata
+ */
+function getStringProperty(asset: AssetItem, key: string): string | undefined {
+  const userValue = asset.user_metadata?.[key]
+  if (typeof userValue === 'string') return userValue
+
+  const metaValue = asset.metadata?.[key]
+  if (typeof metaValue === 'string') return metaValue
+
+  return undefined
+}
+
+/**
  * Safely extracts string description from asset metadata
+ * Checks user_metadata first, then metadata, then returns null
  * @param asset - The asset to extract description from
  * @returns The description string or null if not present/not a string
  */
 export function getAssetDescription(asset: AssetItem): string | null {
-  return typeof asset.user_metadata?.description === 'string'
-    ? asset.user_metadata.description
-    : null
+  return getStringProperty(asset, 'description') ?? null
 }
 
 /**
  * Safely extracts string base_model from asset metadata
+ * Checks user_metadata first, then metadata, then returns null
  * @param asset - The asset to extract base_model from
  * @returns The base_model string or null if not present/not a string
  */
 export function getAssetBaseModel(asset: AssetItem): string | null {
-  return typeof asset.user_metadata?.base_model === 'string'
-    ? asset.user_metadata.base_model
-    : null
+  return getStringProperty(asset, 'base_model') ?? null
 }
 
 /**
  * Extracts base models as an array from asset metadata
+ * Checks user_metadata first, then metadata, then returns empty array
  * @param asset - The asset to extract base models from
  * @returns Array of base model strings
  */
 export function getAssetBaseModels(asset: AssetItem): string[] {
-  const baseModel = asset.user_metadata?.base_model
+  const baseModel =
+    asset.user_metadata?.base_model ?? asset.metadata?.base_model
   if (Array.isArray(baseModel)) {
     return baseModel.filter((m): m is string => typeof m === 'string')
   }
@@ -43,14 +57,23 @@ export function getAssetBaseModels(asset: AssetItem): string[] {
 }
 
 /**
- * Gets the display name for an asset, falling back to filename
+ * Gets the display name for an asset
+ * Checks user_metadata.name first, then metadata.name, then asset.name
  * @param asset - The asset to get display name from
- * @returns The display name or filename
+ * @returns The display name
  */
 export function getAssetDisplayName(asset: AssetItem): string {
-  return typeof asset.user_metadata?.name === 'string'
-    ? asset.user_metadata.name
-    : asset.name
+  return getStringProperty(asset, 'name') ?? asset.name
+}
+
+/**
+ * Extracts filename from asset metadata
+ * Checks user_metadata first, then metadata, then returns null
+ * @param asset - The asset to extract filename from
+ * @returns The filename string or null if not present
+ */
+export function getAssetFilename(asset: AssetItem): string | null {
+  return getStringProperty(asset, 'filename') ?? null
 }
 
 /**
@@ -59,7 +82,9 @@ export function getAssetDisplayName(asset: AssetItem): string {
  * @returns The source URL or null if not present/parseable
  */
 export function getAssetSourceUrl(asset: AssetItem): string | null {
-  const sourceArn = asset.user_metadata?.source_arn
+  // Note: Reversed priority for backwards compatibility
+  const sourceArn =
+    asset.metadata?.source_arn ?? asset.user_metadata?.source_arn
   if (typeof sourceArn !== 'string') return null
 
   const civitaiMatch = sourceArn.match(
@@ -75,11 +100,13 @@ export function getAssetSourceUrl(asset: AssetItem): string | null {
 
 /**
  * Extracts trigger phrases from asset metadata
+ * Checks user_metadata first, then metadata, then returns empty array
  * @param asset - The asset to extract trigger phrases from
  * @returns Array of trigger phrases
  */
 export function getAssetTriggerPhrases(asset: AssetItem): string[] {
-  const phrases = asset.user_metadata?.trained_words
+  const phrases =
+    asset.user_metadata?.trained_words ?? asset.metadata?.trained_words
   if (Array.isArray(phrases)) {
     return phrases.filter((p): p is string => typeof p === 'string')
   }
