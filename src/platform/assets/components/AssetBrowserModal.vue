@@ -25,7 +25,7 @@
     <template #header>
       <div
         class="flex w-full items-center justify-between gap-2"
-        @click="focusedAsset = null"
+        @click.self="focusedAsset = null"
       >
         <SearchBox
           v-model="searchQuery"
@@ -53,7 +53,7 @@
       <AssetFilterBar
         :assets="categoryFilteredAssets"
         @filter-change="updateFilters"
-        @click="focusedAsset = null"
+        @click.self="focusedAsset = null"
       />
     </template>
 
