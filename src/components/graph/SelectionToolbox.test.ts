@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
@@ -117,7 +119,7 @@ describe('SelectionToolbox', () => {
       state: {
         selectionChanged: false
       }
-    } as any
+    } as unknown as typeof canvasStore.canvas
 
     vi.resetAllMocks()
   })
@@ -187,12 +189,14 @@ describe('SelectionToolbox', () => {
       mockExtensionService.mockReturnValue({
         extensionCommands: { value: new Map() },
         invokeExtensions: vi.fn(() => [])
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionService>)
     })
 
     it('should show info button only for single selections', () => {
       // Single node selection
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
       expect(wrapper.find('.info-button').exists()).toBe(true)
 
@@ -200,14 +204,16 @@ describe('SelectionToolbox', () => {
       canvasStore.selectedItems = [
         { type: 'TestNode1' },
         { type: 'TestNode2' }
-      ] as any
+      ] as unknown as Positionable[]
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(wrapper2.find('.info-button').exists()).toBe(false)
     })
 
     it('should not show info button when node definition is not found', () => {
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       // mock nodedef and return null
       nodeDefMock = null
       // remount component
@@ -217,7 +223,9 @@ describe('SelectionToolbox', () => {
 
     it('should show color picker for all selections', () => {
       // Single node selection
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
       expect(wrapper.find('[data-testid="color-picker-button"]').exists()).toBe(
         true
@@ -227,7 +235,7 @@ describe('SelectionToolbox', () => {
       canvasStore.selectedItems = [
         { type: 'TestNode1' },
         { type: 'TestNode2' }
-      ] as any
+      ] as unknown as Positionable[]
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(
@@ -237,7 +245,9 @@ describe('SelectionToolbox', () => {
 
     it('should show frame nodes only for multiple selections', () => {
       // Single node selection
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
       expect(wrapper.find('.frame-nodes').exists()).toBe(false)
 
@@ -245,7 +255,7 @@ describe('SelectionToolbox', () => {
       canvasStore.selectedItems = [
         { type: 'TestNode1' },
         { type: 'TestNode2' }
-      ] as any
+      ] as unknown as Positionable[]
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(wrapper2.find('.frame-nodes').exists()).toBe(true)
@@ -253,7 +263,9 @@ describe('SelectionToolbox', () => {
 
     it('should show bypass button for appropriate selections', () => {
       // Single node selection
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
       expect(wrapper.find('[data-testid="bypass-button"]').exists()).toBe(true)
 
@@ -261,14 +273,16 @@ describe('SelectionToolbox', () => {
       canvasStore.selectedItems = [
         { type: 'TestNode1' },
         { type: 'TestNode2' }
-      ] as any
+      ] as unknown as Positionable[]
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(wrapper2.find('[data-testid="bypass-button"]').exists()).toBe(true)
     })
 
     it('should show common buttons for all selections', () => {
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
 
       expect(wrapper.find('[data-testid="delete-button"]').exists()).toBe(true)
@@ -286,13 +300,17 @@ describe('SelectionToolbox', () => {
 
       // Single image node
       isImageNodeSpy.mockReturnValue(true)
-      canvasStore.selectedItems = [{ type: 'ImageNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'ImageNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
       expect(wrapper.find('.mask-editor-button').exists()).toBe(true)
 
       // Single non-image node
       isImageNodeSpy.mockReturnValue(false)
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(wrapper2.find('.mask-editor-button').exists()).toBe(false)
@@ -304,13 +322,17 @@ describe('SelectionToolbox', () => {
 
       // Single Load3D node
       isLoad3dNodeSpy.mockReturnValue(true)
-      canvasStore.selectedItems = [{ type: 'Load3DNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'Load3DNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
       expect(wrapper.find('.load-3d-viewer-button').exists()).toBe(true)
 
       // Single non-Load3D node
       isLoad3dNodeSpy.mockReturnValue(false)
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(wrapper2.find('.load-3d-viewer-button').exists()).toBe(false)
@@ -326,17 +348,21 @@ describe('SelectionToolbox', () => {
 
       // With output node selected
       isOutputNodeSpy.mockReturnValue(true)
-      filterOutputNodesSpy.mockReturnValue([{ type: 'SaveImage' }] as any)
+      filterOutputNodesSpy.mockReturnValue([
+        { type: 'SaveImage' }
+      ] as unknown as LGraphNode[])
       canvasStore.selectedItems = [
         { type: 'SaveImage', constructor: { nodeData: { output_node: true } } }
-      ] as any
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
       expect(wrapper.find('.execute-button').exists()).toBe(true)
 
       // Without output node selected
       isOutputNodeSpy.mockReturnValue(false)
       filterOutputNodesSpy.mockReturnValue([])
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       wrapper.unmount()
       const wrapper2 = mountComponent()
       expect(wrapper2.find('.execute-button').exists()).toBe(false)
@@ -352,7 +378,9 @@ describe('SelectionToolbox', () => {
   describe('Divider Visibility Logic', () => {
     it('should show dividers between button groups when both groups have buttons', () => {
       // Setup single node to show info + other buttons
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
 
       const dividers = wrapper.findAll('.vertical-divider')
@@ -379,9 +407,11 @@ describe('SelectionToolbox', () => {
           ])
         },
         invokeExtensions: vi.fn(() => ['test-command'])
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionService>)
 
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
 
       expect(wrapper.find('.extension-command-button').exists()).toBe(true)
@@ -392,9 +422,11 @@ describe('SelectionToolbox', () => {
       mockExtensionService.mockReturnValue({
         extensionCommands: { value: new Map() },
         invokeExtensions: vi.fn(() => [])
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionService>)
 
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
 
       expect(wrapper.find('.extension-command-button').exists()).toBe(false)
@@ -407,9 +439,11 @@ describe('SelectionToolbox', () => {
       mockExtensionService.mockReturnValue({
         extensionCommands: { value: new Map() },
         invokeExtensions: vi.fn(() => [])
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionService>)
 
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
 
       const panel = wrapper.find('.panel')
@@ -421,9 +455,11 @@ describe('SelectionToolbox', () => {
       mockExtensionService.mockReturnValue({
         extensionCommands: { value: new Map() },
         invokeExtensions: vi.fn(() => [])
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionService>)
 
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
 
       const panel = wrapper.find('.panel')
@@ -438,9 +474,11 @@ describe('SelectionToolbox', () => {
       mockExtensionService.mockReturnValue({
         extensionCommands: { value: new Map() },
         invokeExtensions: vi.fn(() => [])
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionService>)
 
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
 
       const panel = wrapper.find('.panel')
@@ -454,15 +492,17 @@ describe('SelectionToolbox', () => {
       const forwardEventToCanvasSpy = vi.fn()
       mockCanvasInteractions.mockReturnValue({
         forwardEventToCanvas: forwardEventToCanvasSpy
-      } as any)
+      } as unknown as ReturnType<typeof useCanvasInteractions>)
 
       const mockExtensionService = vi.mocked(useExtensionService)
       mockExtensionService.mockReturnValue({
         extensionCommands: { value: new Map() },
         invokeExtensions: vi.fn(() => [])
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionService>)
 
-      canvasStore.selectedItems = [{ type: 'TestNode' }] as any
+      canvasStore.selectedItems = [
+        { type: 'TestNode' }
+      ] as unknown as Positionable[]
       const wrapper = mountComponent()
 
       const panel = wrapper.find('.panel')
@@ -478,7 +518,7 @@ describe('SelectionToolbox', () => {
       mockExtensionService.mockReturnValue({
         extensionCommands: { value: new Map() },
         invokeExtensions: vi.fn(() => [])
-      } as any)
+      } as unknown as ReturnType<typeof useExtensionService>)
     })
 
     it('should hide most buttons when no items selected', () => {
