@@ -23,7 +23,10 @@
     </template>
 
     <template #header>
-      <div class="flex w-full items-center justify-between gap-2">
+      <div
+        class="flex w-full items-center justify-between gap-2"
+        @click="focusedAsset = null"
+      >
         <SearchBox
           v-model="searchQuery"
           :autofocus="true"
@@ -50,6 +53,7 @@
       <AssetFilterBar
         :assets="categoryFilteredAssets"
         @filter-change="updateFilters"
+        @click="focusedAsset = null"
       />
     </template>
 
@@ -60,10 +64,10 @@
         :focused-asset-id="focusedAsset?.id"
         :empty-message
         @asset-focus="handleAssetFocus"
-        @asset-blur="focusedAsset = null"
         @asset-select="handleAssetSelectAndEmit"
         @asset-deleted="refreshAssets"
         @asset-show-info="handleShowInfo"
+        @click="focusedAsset = null"
       />
     </template>
 

@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="card"
     data-component-id="AssetCard"
     :data-asset-id="asset.id"
     :aria-labelledby="titleId"
@@ -10,7 +9,8 @@
       cn(
         'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
         interactive &&
-          'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4'
+          'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4',
+        focused && 'bg-secondary-background outline-solid'
       )
     "
     @click.stop="interactive && $emit('focus', asset)"
@@ -131,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { onClickOutside, useImage } from '@vueuse/core'
+import { useImage } from '@vueuse/core'
 import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -150,11 +150,7 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const {
-  asset,
-  interactive,
-  focused = false
-} = defineProps<{
+const { asset, interactive, focused } = defineProps<{
   asset: AssetDisplayItem
   interactive?: boolean
   focused?: boolean
@@ -162,7 +158,6 @@ const {
 
 const emit = defineEmits<{
   focus: [asset: AssetDisplayItem]
-  blur: []
   select: [asset: AssetDisplayItem]
   deleted: [asset: AssetDisplayItem]
   showInfo: [asset: AssetDisplayItem]
@@ -174,30 +169,8 @@ const { closeDialog } = useDialogStore()
 const { flags } = useFeatureFlags()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
 
-const cardRef = useTemplateRef<HTMLDivElement>('card')
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
   'dropdown-menu-button'
-)
-
-onClickOutside(
-  cardRef,
-  () => {
-    if (focused) {
-      const activeElement = document.activeElement
-      const isInPanel = !!activeElement?.closest(
-        '[data-component-id="ModelInfoPanel"]'
-      )
-      if (isInPanel) return
-
-      emit('blur')
-    }
-  },
-  {
-    ignore: [
-      '[data-component-id="ModelInfoPanel"]',
-      '[data-component-id="RightPanelHeader"]'
-    ]
-  }
 )
 
 const titleId = useId()

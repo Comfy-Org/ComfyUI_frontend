@@ -39,7 +39,6 @@
           :interactive="true"
           :focused="item.id === focusedAssetId"
           @focus="$emit('assetFocus', $event)"
-          @blur="$emit('assetBlur')"
           @select="$emit('assetSelect', $event)"
           @deleted="$emit('assetDeleted', $event)"
           @show-info="$emit('assetShowInfo', $event)"
@@ -68,7 +67,6 @@ const { assets, focusedAssetId, emptyTitle, emptyMessage } = defineProps<{
 
 defineEmits<{
   assetFocus: [asset: AssetDisplayItem]
-  assetBlur: []
   assetSelect: [asset: AssetDisplayItem]
   assetDeleted: [asset: AssetDisplayItem]
   assetShowInfo: [asset: AssetDisplayItem]
