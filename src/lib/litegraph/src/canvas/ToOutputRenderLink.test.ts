@@ -4,6 +4,12 @@ import {
   LinkDirection,
   ToOutputRenderLink
 } from '@/lib/litegraph/src/litegraph'
+import type {
+  LinkNetwork,
+  LGraphNode,
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/litegraph'
 
 describe('ToOutputRenderLink', () => {
   describe('connectToOutput', () => {
@@ -18,9 +24,9 @@ describe('ToOutputRenderLink', () => {
       }
 
       const renderLink = new ToOutputRenderLink(
-        mockNetwork as any,
-        mockNode as any,
-        mockFromSlot as any,
+        mockNetwork as unknown as LinkNetwork,
+        mockNode as unknown as LGraphNode,
+        mockFromSlot as unknown as INodeInputSlot,
         undefined,
         LinkDirection.CENTER
       )
@@ -39,9 +45,11 @@ describe('ToOutputRenderLink', () => {
 
       // Act
       renderLink.connectToOutput(
-        mockTargetNode as any,
-        {} as any,
-        mockEvents as any
+        mockTargetNode as unknown as LGraphNode,
+        {} as unknown as INodeOutputSlot,
+        mockEvents as unknown as Parameters<
+          typeof renderLink.connectToOutput
+        >[2]
       )
 
       // Assert
@@ -60,9 +68,9 @@ describe('ToOutputRenderLink', () => {
       }
 
       const renderLink = new ToOutputRenderLink(
-        mockNetwork as any,
-        mockNode as any,
-        mockFromSlot as any,
+        mockNetwork as unknown as LinkNetwork,
+        mockNode as unknown as LGraphNode,
+        mockFromSlot as unknown as INodeInputSlot,
         undefined,
         LinkDirection.CENTER
       )
@@ -77,9 +85,11 @@ describe('ToOutputRenderLink', () => {
 
       // Act
       renderLink.connectToOutput(
-        mockTargetNode as any,
-        {} as any,
-        mockEvents as any
+        mockTargetNode as unknown as LGraphNode,
+        {} as unknown as INodeOutputSlot,
+        mockEvents as unknown as Parameters<
+          typeof renderLink.connectToOutput
+        >[2]
       )
 
       // Assert

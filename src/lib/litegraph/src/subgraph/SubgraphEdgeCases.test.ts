@@ -83,7 +83,7 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
       name: 'fake',
       type: 'number',
       disconnect: () => {}
-    } as any
+    } as unknown as Parameters<typeof subgraph.removeInput>[0]
 
     // Should throw appropriate error for non-existent input
     expect(() => {
@@ -97,7 +97,7 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
       name: 'fake',
       type: 'number',
       disconnect: () => {}
-    } as any
+    } as unknown as Parameters<typeof subgraph.removeOutput>[0]
 
     expect(() => {
       subgraph.removeOutput(fakeOutput)
@@ -111,11 +111,11 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
     // TODO: Consider adding validation to prevent null/undefined names
     // This test documents the current permissive behavior
     expect(() => {
-      subgraph.addInput(null as any, 'number')
+      subgraph.addInput(null as unknown as string, 'number')
     }).not.toThrow() // Current behavior: allows null
 
     expect(() => {
-      subgraph.addInput(undefined as any, 'number')
+      subgraph.addInput(undefined as unknown as string, 'number')
     }).not.toThrow() // Current behavior: allows undefined
   })
 
@@ -126,11 +126,11 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
     // TODO: Consider adding validation to prevent null/undefined names
     // This test documents the current permissive behavior
     expect(() => {
-      subgraph.addOutput(null as any, 'number')
+      subgraph.addOutput(null as unknown as string, 'number')
     }).not.toThrow() // Current behavior: allows null
 
     expect(() => {
-      subgraph.addOutput(undefined as any, 'number')
+      subgraph.addOutput(undefined as unknown as string, 'number')
     }).not.toThrow() // Current behavior: allows undefined
   })
 
@@ -153,11 +153,11 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
 
     // Undefined type should not crash but may have default behavior
     expect(() => {
-      subgraph.addInput('test', undefined as any)
+      subgraph.addInput('test', undefined as unknown as string)
     }).not.toThrow()
 
     expect(() => {
-      subgraph.addOutput('test', undefined as any)
+      subgraph.addOutput('test', undefined as unknown as string)
     }).not.toThrow()
   })
 
