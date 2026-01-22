@@ -53,15 +53,6 @@
                   class="pi pi-check text-sm text-base-foreground"
                 />
               </button>
-              <!-- Delete button - only for team workspaces where user is owner -->
-              <button
-                v-if="canDeleteWorkspace(workspace)"
-                class="flex size-6 cursor-pointer items-center justify-center rounded border-none bg-transparent text-muted-foreground opacity-0 transition-opacity hover:bg-error-background hover:text-error-foreground group-hover:opacity-100"
-                :title="$t('g.delete')"
-                @click.stop="handleDeleteWorkspace(workspace)"
-              >
-                <i class="pi pi-trash text-xs" />
-              </button>
             </div>
           </div>
         </template>
@@ -121,7 +112,7 @@ import type {
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogService } from '@/services/dialogService'
+
 import { cn } from '@/utils/tailwindUtil'
 
 interface AvailableWorkspace {
@@ -134,12 +125,11 @@ interface AvailableWorkspace {
 const emit = defineEmits<{
   select: [workspace: AvailableWorkspace]
   create: []
-  delete: [workspace: AvailableWorkspace]
 }>()
 
 const { t } = useI18n()
 const { switchWithConfirmation } = useWorkspaceSwitch()
-const { showDeleteWorkspaceDialog } = useDialogService()
+
 const workspaceStore = useTeamWorkspaceStore()
 const { workspaceId, workspaces, canCreateWorkspace, isFetchingWorkspaces } =
   storeToRefs(workspaceStore)
@@ -152,9 +142,6 @@ const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
     role: w.role
   }))
 )
-
-// Workspace store is initialized in router.ts before the app loads
-// This component just displays the already-loaded workspace data
 
 function isCurrentWorkspace(workspace: AvailableWorkspace): boolean {
   return workspace.id === workspaceId.value
@@ -175,18 +162,5 @@ async function handleSelectWorkspace(workspace: AvailableWorkspace) {
 
 function handleCreateWorkspace() {
   emit('create')
-}
-
-function canDeleteWorkspace(workspace: AvailableWorkspace): boolean {
-  // Can only delete team workspaces where user is owner
-  return workspace.type === 'team' && workspace.role === 'owner'
-}
-
-function handleDeleteWorkspace(workspace: AvailableWorkspace) {
-  showDeleteWorkspaceDialog({
-    workspaceId: workspace.id,
-    workspaceName: workspace.name
-  })
-  emit('delete', workspace)
 }
 </script>
