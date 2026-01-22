@@ -125,7 +125,7 @@ const outputItems = computed<DropdownItem[]>(() => {
     return toAssertType(mediaType) === props.assetKind
   })
 
-return outputFiles.map((asset, index) => {
+  return outputFiles.map((asset, index) => {
     // Add [output] annotation so the preview component knows the type
     const annotatedPath = `${asset.name} [output]`
     return {

@@ -70,7 +70,7 @@ const searchQuery = defineModel<string>('searchQuery')
         "
       >
         <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
-<div
+        <div
           v-if="items.length === 0"
           class="h-50 col-span-full flex items-center justify-center"
         >
