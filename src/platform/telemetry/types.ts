@@ -35,6 +35,7 @@ export interface SurveyResponses {
   industry?: string
   useCase?: string
   making?: string[]
+  [key: string]: unknown
 }
 
 /**

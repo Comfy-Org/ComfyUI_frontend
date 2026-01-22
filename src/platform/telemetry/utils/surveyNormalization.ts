@@ -583,21 +583,29 @@ export function normalizeUseCase(rawUseCase: unknown): string {
  * Apply normalization to survey responses
  * Creates both normalized and raw versions of responses
  */
-export function normalizeSurveyResponses(responses: {
-  industry?: string
-  useCase?: string
-  [key: string]: any
-}) {
-  const normalized = { ...responses }
+export function normalizeSurveyResponses<T extends Record<string, unknown>>(
+  responses: T
+): T & {
+  industry_normalized?: string
+  industry_raw?: string
+  useCase_normalized?: string
+  useCase_raw?: string
+} {
+  const normalized = { ...responses } as T & {
+    industry_normalized?: string
+    industry_raw?: string
+    useCase_normalized?: string
+    useCase_raw?: string
+  }
 
   // Normalize industry
-  if (responses.industry) {
+  if ('industry' in responses && typeof responses.industry === 'string') {
     normalized.industry_normalized = normalizeIndustry(responses.industry)
     normalized.industry_raw = responses.industry
   }
 
   // Normalize use case
-  if (responses.useCase) {
+  if ('useCase' in responses && typeof responses.useCase === 'string') {
     normalized.useCase_normalized = normalizeUseCase(responses.useCase)
     normalized.useCase_raw = responses.useCase
   }
