@@ -81,7 +81,7 @@
         <div v-else class="p-2 text-sm text-muted-foreground">
           {{
             modelTypes.find((o) => o.value === selectedModelType)?.name ??
-            'Unknown'
+            t('assetBrowser.unknown')
           }}
         </div>
       </ModelInfoField>
