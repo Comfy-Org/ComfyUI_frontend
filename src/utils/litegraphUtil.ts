@@ -1,6 +1,11 @@
 import _ from 'es-toolkit/compat'
 
-import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  ColorOption,
+  LGraph,
+  LGraphCanvas,
+} from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphGroup,
   LGraphNode,
@@ -17,11 +22,46 @@ import type {
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { t } from '@/i18n'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
   videoContainer: HTMLElement | undefined
   imgs: HTMLVideoElement[] | undefined
+}
+
+/**
+ * Promisify Litegraph.createNode with ComfyUI
+ * @param canvas
+ * @param name
+ */
+export async function createNode(
+  canvas: LGraphCanvas,
+  name: string
+): Promise<LGraphNode | null> {
+  if (!name) {
+    return null
+  }
+
+  const { graph, graph_mouse: [ posX, posY ] } = canvas
+  let newNode: LGraphNode | null = null
+  // createNode calls onNodeCreated w/o params before returning the node
+  await new Promise<void>((resolve) => {
+    newNode = LiteGraph.createNode(name, name, {
+      onNodeCreated: () => setTimeout(resolve, 0)
+    })
+  })
+
+  if (newNode as LGraphNode | null) {
+    newNode!.pos = [ posX, posY ]
+    const createdNode = graph?.add(newNode!) ?? null
+    graph?.change()
+    return createdNode
+  } else {
+    useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
+    return null
+  }
 }
 
 export function isImageNode(node: LGraphNode | undefined): node is ImageNode {

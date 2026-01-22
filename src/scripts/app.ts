@@ -77,6 +77,7 @@ import {
 } from '@/utils/graphTraversalUtil'
 import {
   executeWidgetsCallback,
+  createNode,
   fixLinkInputSlots,
   isImageNode
 } from '@/utils/litegraphUtil'
@@ -97,7 +98,7 @@ import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { extractFileFromDragEvent } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { pasteImageNode } from '@/composables/usePaste'
+import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -542,7 +543,13 @@ export class ComfyApp {
         const workspace = useWorkspaceStore()
         try {
           workspace.spinner = true
-          await this.handleFile(fileMaybe, 'file_drop')
+          if (fileMaybe instanceof File) {
+              await this.handleFile(fileMaybe, 'file_drop')
+          }
+
+          if (fileMaybe instanceof FileList) {
+            await this.handleFileList(fileMaybe)
+          }
         } finally {
           workspace.spinner = false
         }
@@ -1437,7 +1444,7 @@ export class ComfyApp {
       if (file.type.startsWith('image')) {
         const transfer = new DataTransfer()
         transfer.items.add(file)
-        pasteImageNode(this.canvas, transfer.items)
+        await pasteImageNode(this.canvas, transfer.items)
         return
       }
 
@@ -1514,6 +1521,44 @@ export class ComfyApp {
     }
 
     this.showErrorOnFileLoad(file)
+  }
+
+
+  /**
+   * Loads multiple files and connects to a batch node
+   * @param {FileList} fileList
+   */
+  async handleFileList(fileList: FileList) {
+    if (fileList[0].type.startsWith('image')) {
+      const imageNodes = await pasteImageNodes(this.canvas, fileList)
+      const batchImagesNode = await createNode(this.canvas, 'BatchImagesNode')
+      if (!batchImagesNode) return
+
+      this.positionNodes(imageNodes, batchImagesNode)
+
+      Array.from(imageNodes).forEach((imageNode, index) => {
+        imageNode.connect(0, batchImagesNode, index)
+      })
+    }
+  }
+
+  /**
+   * Positions batched nodes in drag and drop
+   * @param nodes
+   * @param batchNode
+   */
+  positionNodes(nodes: LGraphNode[], batchNode: LGraphNode) {
+    const [x, y, width, height] = nodes[0].getBounding()
+    batchNode.pos = [ x + width + 100, y + 30 ]
+
+    nodes.forEach((node, index) => {
+      if (index > 0) {
+        node.pos = [ x, y + (height * index) + (25 * (index + 1))];
+
+        console.log('index:', index, 'pos:', node.pos)
+      }
+      this.canvas.graph?.change()
+    });
   }
 
   // @deprecated
