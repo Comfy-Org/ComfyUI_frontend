@@ -134,7 +134,7 @@ export function getSourceName(url: string): string {
  * @returns The model type string or null if not present
  */
 export function getAssetModelType(asset: AssetItem): string | null {
-  const typeTag = asset.tags?.find((tag) => tag !== 'models')
+  const typeTag = asset.tags?.find((tag) => tag && tag !== 'models')
   if (!typeTag) return null
   return typeTag.includes('/') ? (typeTag.split('/').pop() ?? null) : typeTag
 }
