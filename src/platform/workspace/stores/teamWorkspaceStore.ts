@@ -194,43 +194,10 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         const hasValidSession = workspaceAuthStore.initializeFromSession()
 
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {
-          // Valid session exists - fetch workspace list and verify access
+          // Valid session exists - fetch workspace list and sync state
           const response = await workspaceApi.list()
           workspaces.value = response.workspaces.map(createWorkspaceState)
-
-          if (workspaces.value.length === 0) {
-            throw new Error('No workspaces available')
-          }
-
-          // Verify session workspace exists in fetched list
-          const sessionWorkspaceId = workspaceAuthStore.currentWorkspace.id
-          const sessionWorkspaceExists = workspaces.value.some(
-            (w) => w.id === sessionWorkspaceId
-          )
-
-          if (sessionWorkspaceExists) {
-            activeWorkspaceId.value = sessionWorkspaceId
-            initState.value = 'ready'
-            isFetchingWorkspaces.value = false
-            return
-          }
-
-          // Session workspace not found (deleted/access revoked) - fallback to default
-          workspaceAuthStore.clearWorkspaceContext()
-
-          const personal = workspaces.value.find((w) => w.type === 'personal')
-          const fallbackWorkspaceId = personal?.id ?? workspaces.value[0].id
-
-          try {
-            await workspaceAuthStore.switchWorkspace(fallbackWorkspaceId)
-          } catch {
-            console.error(
-              '[teamWorkspaceStore] Token exchange failed during fallback'
-            )
-          }
-
-          activeWorkspaceId.value = fallbackWorkspaceId
-          setLastWorkspaceId(fallbackWorkspaceId)
+          activeWorkspaceId.value = workspaceAuthStore.currentWorkspace.id
           initState.value = 'ready'
           isFetchingWorkspaces.value = false
           return
@@ -288,9 +255,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
         // Retry with exponential backoff for transient errors
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt)
-        const errorMessage = e instanceof Error ? e.message : String(e)
         console.warn(
-          `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms: ${errorMessage}`
+          `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms:`,
+          e
         )
         await new Promise((resolve) => setTimeout(resolve, delay))
       }

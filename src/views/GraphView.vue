@@ -253,32 +253,21 @@ const onReconnected = () => {
   }
 }
 
-// Initialize workspace store when feature flag becomes available
+// Initialize workspace store when feature flag and auth become available
 // Uses watch because remoteConfig loads asynchronously after component mount
 if (isCloud) {
   const { flags } = useFeatureFlags()
-  let workspaceInitialized = false
 
   watch(
-    () => flags.teamWorkspacesEnabled,
-    async (enabled) => {
-      if (
-        enabled &&
-        !workspaceInitialized &&
-        firebaseAuthStore.isAuthenticated
-      ) {
-        workspaceInitialized = true
-        try {
-          const { useTeamWorkspaceStore } =
-            await import('@/platform/workspace/stores/teamWorkspaceStore')
-          const workspaceStore = useTeamWorkspaceStore()
-          if (workspaceStore.initState === 'uninitialized') {
-            await workspaceStore.initialize()
-          }
-        } catch (error) {
-          console.error('Failed to initialize workspace store:', error)
-          workspaceInitialized = false // Allow retry on error
-        }
+    () => [flags.teamWorkspacesEnabled, firebaseAuthStore.isAuthenticated],
+    async ([enabled, isAuthenticated]) => {
+      if (!enabled || !isAuthenticated) return
+
+      const { useTeamWorkspaceStore } =
+        await import('@/platform/workspace/stores/teamWorkspaceStore')
+      const workspaceStore = useTeamWorkspaceStore()
+      if (workspaceStore.initState === 'uninitialized') {
+        await workspaceStore.initialize()
       }
     },
     { immediate: true }
