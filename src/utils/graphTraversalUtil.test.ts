@@ -96,8 +96,8 @@ describe('graphTraversalUtil', () => {
 
       it('should return null for invalid input', () => {
         expect(parseExecutionId('')).toBeNull()
-        expect(parseExecutionId(null as any)).toBeNull()
-        expect(parseExecutionId(undefined as any)).toBeNull()
+        expect(parseExecutionId(null as unknown as string)).toBeNull()
+        expect(parseExecutionId(undefined as unknown as string)).toBeNull()
       })
     })
 
@@ -415,7 +415,7 @@ describe('graphTraversalUtil', () => {
 
         // Add a title property to each node
         forEachNode(graph, (node) => {
-          ;(node as any).title = `Node ${node.id}`
+          ;(node as unknown as { title: string }).title = `Node ${node.id}`
         })
 
         expect(nodes[0]).toHaveProperty('title', 'Node 1')
@@ -653,7 +653,7 @@ describe('graphTraversalUtil', () => {
       it('should return root graph from subgraph', () => {
         const rootGraph = createMockGraph([])
         const subgraph = createMockSubgraph('sub-uuid', [])
-        ;(subgraph as any).rootGraph = rootGraph
+        ;(subgraph as Subgraph & { rootGraph: LGraph }).rootGraph = rootGraph
 
         expect(getRootGraph(subgraph)).toBe(rootGraph)
       })
@@ -663,8 +663,10 @@ describe('graphTraversalUtil', () => {
         const midSubgraph = createMockSubgraph('mid-uuid', [])
         const deepSubgraph = createMockSubgraph('deep-uuid', [])
 
-        ;(midSubgraph as any).rootGraph = rootGraph
-        ;(deepSubgraph as any).rootGraph = midSubgraph
+        ;(midSubgraph as Subgraph & { rootGraph: LGraph }).rootGraph = rootGraph
+        ;(
+          deepSubgraph as Subgraph & { rootGraph: LGraph | Subgraph }
+        ).rootGraph = midSubgraph
 
         expect(getRootGraph(deepSubgraph)).toBe(rootGraph)
       })
@@ -726,7 +728,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph(nodes)
 
         forEachSubgraphNode(graph, subgraphId, (node) => {
-          ;(node as any).title = 'Updated Title'
+          ;(node as unknown as { title: string }).title = 'Updated Title'
         })
 
         expect(nodes[0]).toHaveProperty('title', 'Updated Title')

@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
 import { useCanvasManager } from '@/composables/maskeditor/useCanvasManager'
 const mockStore = {
-  imgCanvas: null as any,
-  maskCanvas: null as any,
-  rgbCanvas: null as any,
-  imgCtx: null as any,
-  maskCtx: null as any,
-  rgbCtx: null as any,
-  canvasBackground: null as any,
+  imgCanvas: null as unknown as HTMLCanvasElement,
+  maskCanvas: null as unknown as HTMLCanvasElement,
+  rgbCanvas: null as unknown as HTMLCanvasElement,
+  imgCtx: null as unknown as CanvasRenderingContext2D,
+  maskCtx: null as unknown as CanvasRenderingContext2D,
+  rgbCtx: null as unknown as CanvasRenderingContext2D,
+  canvasBackground: null as unknown as HTMLElement,
   maskColor: { r: 0, g: 0, b: 0 },
   maskBlendMode: MaskBlendMode.Black,
   maskOpacity: 0.8
@@ -40,7 +40,7 @@ describe('useCanvasManager', () => {
 
     mockStore.imgCtx = {
       drawImage: vi.fn()
-    }
+    } as unknown as CanvasRenderingContext2D
 
     mockStore.maskCtx = {
       drawImage: vi.fn(),
@@ -48,16 +48,16 @@ describe('useCanvasManager', () => {
       putImageData: vi.fn(),
       globalCompositeOperation: 'source-over',
       fillStyle: ''
-    }
+    } as unknown as CanvasRenderingContext2D
 
     mockStore.rgbCtx = {
       drawImage: vi.fn()
-    }
+    } as unknown as CanvasRenderingContext2D
 
     mockStore.imgCanvas = {
       width: 0,
       height: 0
-    }
+    } as unknown as HTMLCanvasElement
 
     mockStore.maskCanvas = {
       width: 0,
@@ -66,18 +66,18 @@ describe('useCanvasManager', () => {
         mixBlendMode: '',
         opacity: ''
       }
-    }
+    } as unknown as HTMLCanvasElement
 
     mockStore.rgbCanvas = {
       width: 0,
       height: 0
-    }
+    } as unknown as HTMLCanvasElement
 
     mockStore.canvasBackground = {
       style: {
         backgroundColor: ''
       }
-    }
+    } as unknown as HTMLElement
 
     mockStore.maskColor = { r: 0, g: 0, b: 0 }
     mockStore.maskBlendMode = MaskBlendMode.Black
@@ -163,7 +163,7 @@ describe('useCanvasManager', () => {
     it('should throw error when canvas missing', async () => {
       const manager = useCanvasManager()
 
-      mockStore.imgCanvas = null
+      mockStore.imgCanvas = null as unknown as HTMLCanvasElement
 
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
@@ -176,7 +176,7 @@ describe('useCanvasManager', () => {
     it('should throw error when context missing', async () => {
       const manager = useCanvasManager()
 
-      mockStore.imgCtx = null
+      mockStore.imgCtx = null as unknown as CanvasRenderingContext2D
 
       const origImage = createMockImage(512, 512)
       const maskImage = createMockImage(512, 512)
@@ -259,7 +259,7 @@ describe('useCanvasManager', () => {
     it('should return early when canvas missing', async () => {
       const manager = useCanvasManager()
 
-      mockStore.maskCanvas = null
+      mockStore.maskCanvas = null as unknown as HTMLCanvasElement
 
       await manager.updateMaskColor()
 
@@ -269,7 +269,7 @@ describe('useCanvasManager', () => {
     it('should return early when context missing', async () => {
       const manager = useCanvasManager()
 
-      mockStore.maskCtx = null
+      mockStore.maskCtx = null as unknown as CanvasRenderingContext2D
 
       await manager.updateMaskColor()
 

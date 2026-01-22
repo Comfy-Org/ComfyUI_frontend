@@ -9,12 +9,12 @@ const mockCanvasHistory = {
 }
 
 const mockStore = {
-  maskCtx: null as any,
-  imgCtx: null as any,
-  maskCanvas: null as any,
-  imgCanvas: null as any,
-  rgbCtx: null as any,
-  rgbCanvas: null as any,
+  maskCtx: null as unknown as CanvasRenderingContext2D,
+  imgCtx: null as unknown as CanvasRenderingContext2D,
+  maskCanvas: null as unknown as HTMLCanvasElement,
+  imgCanvas: null as unknown as HTMLCanvasElement,
+  rgbCtx: null as unknown as CanvasRenderingContext2D,
+  rgbCanvas: null as unknown as HTMLCanvasElement,
   maskColor: { r: 255, g: 255, b: 255 },
   paintBucketTolerance: 10,
   fillOpacity: 100,
@@ -61,30 +61,30 @@ describe('useCanvasTools', () => {
       getImageData: vi.fn(() => mockMaskImageData),
       putImageData: vi.fn(),
       clearRect: vi.fn()
-    }
+    } as unknown as CanvasRenderingContext2D
 
     mockStore.imgCtx = {
       getImageData: vi.fn(() => mockImgImageData)
-    }
+    } as unknown as CanvasRenderingContext2D
 
     mockStore.rgbCtx = {
       clearRect: vi.fn()
-    }
+    } as unknown as CanvasRenderingContext2D
 
     mockStore.maskCanvas = {
       width: 100,
       height: 100
-    }
+    } as unknown as HTMLCanvasElement
 
     mockStore.imgCanvas = {
       width: 100,
       height: 100
-    }
+    } as unknown as HTMLCanvasElement
 
     mockStore.rgbCanvas = {
       width: 100,
       height: 100
-    }
+    } as unknown as HTMLCanvasElement
 
     mockStore.maskColor = { r: 255, g: 255, b: 255 }
     mockStore.paintBucketTolerance = 10
@@ -158,7 +158,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when canvas missing', () => {
-      mockStore.maskCanvas = null
+      mockStore.maskCanvas = null as unknown as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
@@ -243,7 +243,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when canvas missing', async () => {
-      mockStore.imgCanvas = null
+      mockStore.imgCanvas = null as unknown as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
@@ -363,7 +363,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when canvas missing', () => {
-      mockStore.maskCanvas = null
+      mockStore.maskCanvas = null as unknown as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
@@ -373,7 +373,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when context missing', () => {
-      mockStore.maskCtx = null
+      mockStore.maskCtx = null as unknown as CanvasRenderingContext2D
 
       const tools = useCanvasTools()
 
@@ -395,7 +395,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should handle missing mask canvas', () => {
-      mockStore.maskCanvas = null
+      mockStore.maskCanvas = null as unknown as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
@@ -406,7 +406,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should handle missing rgb canvas', () => {
-      mockStore.rgbCanvas = null
+      mockStore.rgbCanvas = null as unknown as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
