@@ -812,6 +812,7 @@
     "name": "Nombre",
     "newFolder": "Nueva carpeta",
     "next": "Siguiente",
+    "nightly": "NIGHTLY",
     "no": "No",
     "noAudioRecorded": "No se grabó audio",
     "noItems": "Sin elementos",
@@ -1627,6 +1628,12 @@
       "description": "Este flujo de trabajo utiliza nodos personalizados que aún no has instalado.",
       "replacementInstruction": "Instala estos nodos para ejecutar este flujo de trabajo, o reemplázalos por alternativas ya instaladas. Los nodos faltantes están resaltados en rojo en el lienzo.",
       "title": "Este flujo de trabajo tiene nodos faltantes"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "Versión preliminar",
+      "tooltip": "Estás usando una versión nightly de ComfyUI. Por favor, utiliza el botón de comentarios para compartir tus opiniones sobre estas funciones."
     }
   },
   "nodeCategories": {

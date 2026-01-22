@@ -812,6 +812,7 @@
     "name": "Nom",
     "newFolder": "Nouveau dossier",
     "next": "Suivant",
+    "nightly": "NIGHTLY",
     "no": "Non",
     "noAudioRecorded": "Aucun audio enregistré",
     "noItems": "Aucun élément",
@@ -1627,6 +1628,12 @@
       "description": "Ce flux de travail utilise des nœuds personnalisés que vous n’avez pas encore installés.",
       "replacementInstruction": "Installez ces nœuds pour exécuter ce flux de travail, ou remplacez-les par des alternatives installées. Les nœuds manquants sont surlignés en rouge sur le canevas.",
       "title": "Ce flux de travail a des nœuds manquants"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "Version de prévisualisation",
+      "tooltip": "Vous utilisez une version nightly de ComfyUI. Veuillez utiliser le bouton de retour pour partager vos impressions sur ces fonctionnalités."
     }
   },
   "nodeCategories": {

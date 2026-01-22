@@ -812,6 +812,7 @@
     "name": "名称",
     "newFolder": "新文件夹",
     "next": "下一个",
+    "nightly": "NIGHTLY",
     "no": "否",
     "noAudioRecorded": "未录制音频",
     "noItems": "无项目",
@@ -1627,6 +1628,12 @@
       "description": "该工作流包含您未安装的自定义节点",
       "replacementInstruction": "安装这些节点后运行此工作流，或者用已安装的节点替换它们。缺失的节点在画布上以红色突出显示。",
       "title": "该工作流含有缺失节点"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "预览版",
+      "tooltip": "您正在使用 ComfyUI 的夜间版本。请使用反馈按钮分享您对这些功能的看法。"
     }
   },
   "nodeCategories": {

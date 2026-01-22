@@ -812,6 +812,7 @@
     "name": "Ad",
     "newFolder": "Yeni Klasör",
     "next": "İleri",
+    "nightly": "NIGHTLY",
     "no": "Hayır",
     "noAudioRecorded": "Ses kaydedilmedi",
     "noItems": "Öğe yok",
@@ -1627,6 +1628,12 @@
       "description": "Bu iş akışı, henüz yüklemediğiniz özel düğümler kullanıyor.",
       "replacementInstruction": "Bu iş akışını çalıştırmak için bu düğümleri yükleyin veya yüklü alternatiflerle değiştirin. Eksik düğümler tuvalde kırmızı ile vurgulanır.",
       "title": "Bu iş akışında eksik düğümler var"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "Önizleme Sürümü",
+      "tooltip": "ComfyUI'nin nightly sürümünü kullanıyorsunuz. Lütfen bu özelliklerle ilgili görüşlerinizi paylaşmak için geri bildirim butonunu kullanın."
     }
   },
   "nodeCategories": {

@@ -812,6 +812,7 @@
     "name": "Nome",
     "newFolder": "Nova pasta",
     "next": "Próximo",
+    "nightly": "NIGHTLY",
     "no": "Não",
     "noAudioRecorded": "Nenhum áudio gravado",
     "noItems": "Nenhum item",
@@ -1627,6 +1628,12 @@
       "description": "Este fluxo de trabalho utiliza nós personalizados que você ainda não instalou.",
       "replacementInstruction": "Instale esses nós para executar este fluxo de trabalho ou substitua-os por alternativas já instaladas. Nós ausentes estão destacados em vermelho no canvas.",
       "title": "Este fluxo de trabalho possui nós ausentes"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "Versão de Prévia",
+      "tooltip": "Você está usando uma versão nightly do ComfyUI. Por favor, use o botão de feedback para compartilhar suas opiniões sobre esses recursos."
     }
   },
   "nodeCategories": {

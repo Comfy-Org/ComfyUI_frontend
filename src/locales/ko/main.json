@@ -812,6 +812,7 @@
     "name": "이름",
     "newFolder": "새 폴더",
     "next": "다음",
+    "nightly": "NIGHTLY",
     "no": "아니오",
     "noAudioRecorded": "녹음된 오디오가 없습니다",
     "noItems": "항목 없음",
@@ -1627,6 +1628,12 @@
       "description": "이 워크플로우는 아직 설치하지 않은 커스텀 노드를 사용합니다.",
       "replacementInstruction": "이 노드를 설치하거나, 설치된 대체 노드로 교체해야 워크플로우를 실행할 수 있습니다. 누락된 노드는 캔버스에서 빨간색으로 강조됩니다.",
       "title": "이 워크플로우에 누락된 노드가 있습니다"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "미리보기 버전",
+      "tooltip": "현재 ComfyUI의 나이트리 버전을 사용 중입니다. 이 기능들에 대한 의견을 피드백 버튼을 통해 공유해 주세요."
     }
   },
   "nodeCategories": {

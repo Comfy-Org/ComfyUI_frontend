@@ -812,6 +812,7 @@
     "name": "名稱",
     "newFolder": "新資料夾",
     "next": "下一步",
+    "nightly": "NIGHTLY",
     "no": "否",
     "noAudioRecorded": "沒有錄製到音訊",
     "noItems": "沒有項目",
@@ -1627,6 +1628,12 @@
       "description": "此工作流程使用了你尚未安裝的自訂節點。",
       "replacementInstruction": "請安裝這些節點以執行此工作流程，或以已安裝的替代節點取代。缺少的節點會在畫布上以紅色標示。",
       "title": "此工作流程有缺少的節點"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "預覽版本",
+      "tooltip": "您正在使用 ComfyUI 的夜間版本。請使用反饋按鈕分享您對這些功能的看法。"
     }
   },
   "nodeCategories": {
