@@ -1,12 +1,150 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   compressWidgetInputSlots,
+  createNode,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
+
+vi.mock('@/lib/litegraph/src/litegraph', () => ({
+  LiteGraph: {
+    createNode: vi.fn()
+  }
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({
+    addAlert: vi.fn()
+  }))
+}))
+
+vi.mock('@/i18n', () => ({
+  t: vi.fn((key) => key)
+}))
+
+describe('createNode', () => {
+  let mockCanvas: Partial<LGraphCanvas>
+  let mockGraph: any
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGraph = {
+      add: vi.fn((node) => node),
+      change: vi.fn()
+    }
+    mockCanvas = {
+      graph: mockGraph,
+      graph_mouse: [100, 200]
+    }
+  })
+
+  it('should create a node successfully', async () => {
+    const mockNode = {
+      pos: [0, 0]
+    } as unknown as LGraphNode
+
+    vi.mocked(LiteGraph.createNode).mockImplementation(
+      (_name, _title, options: any) => {
+        setTimeout(() => options?.onNodeCreated?.(), 0)
+        return mockNode
+      }
+    )
+
+    const result = await createNode(mockCanvas as LGraphCanvas, 'LoadImage')
+
+    expect(LiteGraph.createNode).toHaveBeenCalledWith(
+      'LoadImage',
+      'LoadImage',
+      {
+        onNodeCreated: expect.any(Function)
+      }
+    )
+    expect(mockNode.pos).toEqual([100, 200])
+    expect(mockGraph.add).toHaveBeenCalledWith(mockNode)
+    expect(mockGraph.change).toHaveBeenCalled()
+    expect(result).toBe(mockNode)
+  })
+
+  it('should return null when name is empty', async () => {
+    const result = await createNode(mockCanvas as LGraphCanvas, '')
+
+    expect(LiteGraph.createNode).not.toHaveBeenCalled()
+    expect(result).toBeNull()
+  })
+
+  it('should return null when name is falsy', async () => {
+    const result = await createNode(mockCanvas as LGraphCanvas, null as any)
+
+    expect(LiteGraph.createNode).not.toHaveBeenCalled()
+    expect(result).toBeNull()
+  })
+
+  it('should handle node creation failure and show toast', async () => {
+    const { useToastStore } =
+      await import('@/platform/updates/common/toastStore')
+    const mockAddAlert = vi.fn()
+    vi.mocked(useToastStore).mockReturnValue({ addAlert: mockAddAlert } as any)
+
+    vi.mocked(LiteGraph.createNode).mockImplementation(
+      (_name, _title, options: any) => {
+        setTimeout(() => options?.onNodeCreated?.(), 0)
+        return null
+      }
+    )
+
+    const result = await createNode(mockCanvas as LGraphCanvas, 'InvalidNode')
+
+    expect(mockAddAlert).toHaveBeenCalledWith('assetBrowser.failedToCreateNode')
+    expect(result).toBeNull()
+  })
+
+  it('should handle graph being null', async () => {
+    const mockNode = {
+      pos: [0, 0]
+    } as unknown as LGraphNode
+
+    mockCanvas.graph = null
+
+    vi.mocked(LiteGraph.createNode).mockImplementation(
+      (_name, _title, options: any) => {
+        setTimeout(() => options?.onNodeCreated?.(), 0)
+        return mockNode
+      }
+    )
+
+    const result = await createNode(mockCanvas as LGraphCanvas, 'LoadImage')
+
+    expect(mockNode.pos).toEqual([100, 200])
+    expect(result).toBeNull()
+  })
+
+  it('should set position based on canvas graph_mouse', async () => {
+    const mockCanvasWithDifferentPos = {
+      ...mockCanvas,
+      graph_mouse: [250, 350]
+    }
+
+    const mockNode = {
+      pos: [0, 0]
+    } as unknown as LGraphNode
+
+    vi.mocked(LiteGraph.createNode).mockImplementation(
+      (_name, _title, options: any) => {
+        setTimeout(() => options?.onNodeCreated?.(), 0)
+        return mockNode
+      }
+    )
+
+    await createNode(mockCanvasWithDifferentPos as LGraphCanvas, 'LoadAudio')
+
+    expect(mockNode.pos).toEqual([250, 350])
+  })
+})
 
 describe('migrateWidgetsValues', () => {
   it('should remove widget values for forceInput inputs', () => {
