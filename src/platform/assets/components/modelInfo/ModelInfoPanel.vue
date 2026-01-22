@@ -62,7 +62,11 @@
         </span>
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
-        <Select v-model="selectedModelType" :disabled="isImmutable">
+        <Select
+          v-if="!isImmutable"
+          v-model="selectedModelType"
+          :disabled="isImmutable"
+        >
           <SelectTrigger class="w-full">
             <SelectValue
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
@@ -78,6 +82,12 @@
             </SelectItem>
           </SelectContent>
         </Select>
+        <div v-else class="p-2 text-sm text-muted-foreground">
+          {{
+            modelTypes.find((o) => o.value === selectedModelType)?.name ??
+            'Unknown'
+          }}
+        </div>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
         <TagsInput
