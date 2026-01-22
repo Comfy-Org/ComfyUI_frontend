@@ -110,7 +110,6 @@ async function getAuthHeaderOrThrow() {
   return authHeader
 }
 
-
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status

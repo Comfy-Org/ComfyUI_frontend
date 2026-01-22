@@ -313,7 +313,7 @@
 import { storeToRefs } from 'pinia'
 import Menu from 'primevue/menu'
 import { useToast } from 'primevue/usetoast'
-import { computed, ref, } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -378,7 +378,6 @@ function showMemberMenu(event: Event, member: WorkspaceMember) {
   selectedMember.value = member
   memberMenu.value?.toggle(event)
 }
-
 
 // Other members (sorted, excluding current user)
 const filteredMembers = computed(() => {

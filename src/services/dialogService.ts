@@ -589,7 +589,6 @@ export const useDialogService = () => {
     })
   }
 
-  
   async function showRemoveMemberDialog(memberId: string) {
     const { default: component } =
       await import('@/components/dialog/content/workspace/RemoveMemberDialogContent.vue')
@@ -601,7 +600,7 @@ export const useDialogService = () => {
     })
   }
 
-    async function showInviteMemberDialog() {
+  async function showInviteMemberDialog() {
     const { default: component } =
       await import('@/components/dialog/content/workspace/InviteMemberDialogContent.vue')
     return dialogStore.showDialog({
@@ -616,7 +615,6 @@ export const useDialogService = () => {
       }
     })
   }
-
 
   async function showRevokeInviteDialog(inviteId: string) {
     const { default: component } =
@@ -651,8 +649,8 @@ export const useDialogService = () => {
     showCreateWorkspaceDialog,
     showLeaveWorkspaceDialog,
     showEditWorkspaceDialog,
-     showRemoveMemberDialog,
+    showRemoveMemberDialog,
     showRevokeInviteDialog,
-    showInviteMemberDialog,
+    showInviteMemberDialog
   }
 }

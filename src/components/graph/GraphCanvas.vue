@@ -465,11 +465,10 @@ onMounted(async () => {
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
 
-// Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
+  // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
     await inviteUrlLoader.loadInviteFromUrl()
   }
-
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
