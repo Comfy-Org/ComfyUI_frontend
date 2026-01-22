@@ -6,10 +6,10 @@
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
         <span class="text-xs uppercase font-inter">
-          {{ $t('assetBrowser.modelInfo.basicInfo') }}
+          {{ t('assetBrowser.modelInfo.basicInfo') }}
         </span>
       </template>
-      <ModelInfoField :label="$t('assetBrowser.modelInfo.displayName')">
+      <ModelInfoField :label="t('assetBrowser.modelInfo.displayName')">
         <EditableText
           :model-value="displayName"
           :is-editing="isEditingDisplayName"
@@ -19,12 +19,12 @@
           @cancel="isEditingDisplayName = false"
         />
       </ModelInfoField>
-      <ModelInfoField :label="$t('assetBrowser.modelInfo.fileName')">
+      <ModelInfoField :label="t('assetBrowser.modelInfo.fileName')">
         <span class="break-all">{{ asset.name }}</span>
       </ModelInfoField>
       <ModelInfoField
         v-if="sourceUrl"
-        :label="$t('assetBrowser.modelInfo.source')"
+        :label="t('assetBrowser.modelInfo.source')"
       >
         <a
           :href="sourceUrl"
@@ -38,9 +38,7 @@
             alt=""
             class="size-4 shrink-0"
           />
-          {{
-            $t('assetBrowser.modelInfo.viewOnSource', { source: sourceName })
-          }}
+          {{ t('assetBrowser.modelInfo.viewOnSource', { source: sourceName }) }}
           <i class="icon-[lucide--external-link] size-4 shrink-0" />
         </a>
       </ModelInfoField>
@@ -49,14 +47,14 @@
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
         <span class="text-xs uppercase font-inter">
-          {{ $t('assetBrowser.modelInfo.modelTagging') }}
+          {{ t('assetBrowser.modelInfo.modelTagging') }}
         </span>
       </template>
-      <ModelInfoField :label="$t('assetBrowser.modelInfo.modelType')">
+      <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
         <Select v-model="selectedModelType" :disabled="isImmutable">
           <SelectTrigger class="w-full">
             <SelectValue
-              :placeholder="$t('assetBrowser.modelInfo.selectModelType')"
+              :placeholder="t('assetBrowser.modelInfo.selectModelType')"
             />
           </SelectTrigger>
           <SelectContent>
@@ -70,9 +68,7 @@
           </SelectContent>
         </Select>
       </ModelInfoField>
-      <ModelInfoField
-        :label="$t('assetBrowser.modelInfo.compatibleBaseModels')"
-      >
+      <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
         <TagsInput
           v-slot="{ isEmpty }"
           v-model="baseModels"
@@ -90,13 +86,13 @@
             :is-empty="isEmpty"
             :placeholder="
               isImmutable
-                ? $t('assetBrowser.modelInfo.baseModelUnknown')
-                : $t('assetBrowser.modelInfo.addBaseModel')
+                ? t('assetBrowser.modelInfo.baseModelUnknown')
+                : t('assetBrowser.modelInfo.addBaseModel')
             "
           />
         </TagsInput>
       </ModelInfoField>
-      <ModelInfoField :label="$t('assetBrowser.modelInfo.additionalTags')">
+      <ModelInfoField :label="t('assetBrowser.modelInfo.additionalTags')">
         <TagsInput
           v-slot="{ isEmpty }"
           v-model="additionalTags"
@@ -110,8 +106,8 @@
             :is-empty="isEmpty"
             :placeholder="
               isImmutable
-                ? $t('assetBrowser.modelInfo.noAdditionalTags')
-                : $t('assetBrowser.modelInfo.addTag')
+                ? t('assetBrowser.modelInfo.noAdditionalTags')
+                : t('assetBrowser.modelInfo.addTag')
             "
           />
         </TagsInput>
@@ -121,12 +117,12 @@
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
         <span class="text-xs uppercase font-inter">
-          {{ $t('assetBrowser.modelInfo.modelDescription') }}
+          {{ t('assetBrowser.modelInfo.modelDescription') }}
         </span>
       </template>
       <ModelInfoField
         v-if="triggerPhrases.length > 0"
-        :label="$t('assetBrowser.modelInfo.triggerPhrases')"
+        :label="t('assetBrowser.modelInfo.triggerPhrases')"
       >
         <div class="flex flex-wrap gap-1">
           <span
@@ -140,19 +136,19 @@
       </ModelInfoField>
       <ModelInfoField
         v-if="description"
-        :label="$t('assetBrowser.modelInfo.description')"
+        :label="t('assetBrowser.modelInfo.description')"
       >
         <p class="text-sm whitespace-pre-wrap">{{ description }}</p>
       </ModelInfoField>
-      <ModelInfoField :label="$t('assetBrowser.modelInfo.description')">
+      <ModelInfoField :label="t('assetBrowser.modelInfo.description')">
         <textarea
           ref="descriptionTextarea"
           v-model="userDescription"
           :disabled="isImmutable"
           :placeholder="
             isImmutable
-              ? $t('assetBrowser.modelInfo.descriptionNotSet')
-              : $t('assetBrowser.modelInfo.descriptionPlaceholder')
+              ? t('assetBrowser.modelInfo.descriptionNotSet')
+              : t('assetBrowser.modelInfo.descriptionPlaceholder')
           "
           rows="3"
           :class="
@@ -171,6 +167,7 @@
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
@@ -202,6 +199,8 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ModelInfoField from './ModelInfoField.vue'
+
+const { t } = useI18n()
 
 const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'

@@ -38,11 +38,7 @@ describe('ModelInfoPanel', () => {
     return mount(ModelInfoPanel, {
       props: { asset },
       global: {
-        plugins: [createTestingPinia({ stubActions: false }), i18n],
-        mocks: {
-          $t: (key: string, params?: Record<string, string>) =>
-            params ? `${key}:${JSON.stringify(params)}` : key
-        }
+        plugins: [createTestingPinia({ stubActions: false }), i18n]
       }
     })
   }
@@ -85,12 +81,14 @@ describe('ModelInfoPanel', () => {
       expect(link.attributes('target')).toBe('_blank')
     })
 
-    it('displays correct source name for Civitai', () => {
+    it('displays Civitai icon for Civitai source', () => {
       const asset = createMockAsset({
         user_metadata: { source_arn: 'civitai:model:123:version:456' }
       })
       const wrapper = mountPanel(asset)
-      expect(wrapper.text()).toContain('Civitai')
+      expect(
+        wrapper.find('img[src="/assets/images/civitai.svg"]').exists()
+      ).toBe(true)
     })
 
     it('does not render source field when source_arn is absent', () => {
@@ -114,7 +112,7 @@ describe('ModelInfoPanel', () => {
 
     it('renders base models field', () => {
       const asset = createMockAsset({
-        user_metadata: { base_models: ['SDXL'] }
+        user_metadata: { base_model: ['SDXL'] }
       })
       const wrapper = mountPanel(asset)
       expect(wrapper.text()).toContain(
