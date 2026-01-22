@@ -88,6 +88,7 @@
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
     "copyToClipboard": "Copy to Clipboard",
+    "copyAll": "Copy All",
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
     "imageFailedToLoad": "Image failed to load",

@@ -124,7 +124,18 @@
         v-if="triggerPhrases.length > 0"
         :label="t('assetBrowser.modelInfo.triggerPhrases')"
       >
-        <div class="flex flex-wrap gap-1">
+        <template #label-action>
+          <Button
+            variant="muted-textonly"
+            size="icon-sm"
+            :title="t('g.copyAll')"
+            class="ml-auto p-0"
+            @click="copyToClipboard(triggerPhrases.join(', '))"
+          >
+            <i class="icon-[lucide--copy] size-4 min-w-4 min-h-4 opacity-60" />
+          </Button>
+        </template>
+        <div class="flex flex-wrap gap-1 pt-1">
           <Button
             v-for="phrase in triggerPhrases"
             :key="phrase"
