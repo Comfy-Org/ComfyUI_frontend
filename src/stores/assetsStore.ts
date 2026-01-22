@@ -1,4 +1,5 @@
 import { useAsyncState, whenever } from '@vueuse/core'
+import { difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
@@ -465,22 +466,45 @@ export const useAssetsStore = defineStore('assets', () => {
         cacheKey?: string
       ) {
         updateAssetInCache(assetId, { user_metadata: userMetadata }, cacheKey)
-        await assetService.updateAsset(assetId, { user_metadata: userMetadata })
+        const updatedAsset = await assetService.updateAsset(assetId, {
+          user_metadata: userMetadata
+        })
+        updateAssetInCache(assetId, updatedAsset, cacheKey)
       }
 
       /**
-       * Update asset tags with optimistic cache update
-       * @param assetId The asset ID to update
-       * @param tags The tags array to save
+       * Update asset tags using add/remove endpoints
+       * @param asset The asset to update (used to read current tags)
+       * @param newTags The desired tags array
        * @param cacheKey Optional cache key to target for optimistic update
        */
       async function updateAssetTags(
-        assetId: string,
-        tags: string[],
+        asset: AssetItem,
+        newTags: string[],
         cacheKey?: string
       ) {
-        updateAssetInCache(assetId, { tags }, cacheKey)
-        await assetService.updateAsset(assetId, { tags })
+        const currentTags = asset.tags
+        const tagsToAdd = difference(newTags, currentTags)
+        const tagsToRemove = difference(currentTags, newTags)
+
+        if (tagsToAdd.length === 0 && tagsToRemove.length === 0) return
+
+        updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
+
+        const removeResult =
+          tagsToRemove.length > 0
+            ? await assetService.removeAssetTags(asset.id, tagsToRemove)
+            : undefined
+
+        const addResult =
+          tagsToAdd.length > 0
+            ? await assetService.addAssetTags(asset.id, tagsToAdd)
+            : undefined
+
+        const finalTags = (addResult ?? removeResult)?.total_tags
+        if (finalTags) {
+          updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
+        }
       }
 
       return {

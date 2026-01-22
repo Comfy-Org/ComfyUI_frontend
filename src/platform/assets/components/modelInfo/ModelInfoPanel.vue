@@ -275,7 +275,7 @@ const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
   const newTags = asset.tags
     .filter((tag) => tag !== currentModelType)
     .concat(newModelType)
-  assetsStore.updateAssetTags(asset.id, newTags, cacheKey)
+  assetsStore.updateAssetTags(asset, newTags, cacheKey)
 }, 500)
 
 const baseModels = computed({

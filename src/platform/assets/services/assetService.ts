@@ -14,7 +14,8 @@ import type {
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
-  ModelFolder
+  ModelFolder,
+  TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -472,6 +473,56 @@ function createAssetService() {
   }
 
   /**
+   * Add tags to an asset
+   * @param id - The asset ID (UUID)
+   * @param tags - Tags to add
+   * @returns Promise<TagsOperationResult>
+   */
+  async function addAssetTags(
+    id: string,
+    tags: string[]
+  ): Promise<TagsOperationResult> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}/tags`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags })
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to add tags to asset ${id}: Server returned ${res.status}`
+      )
+    }
+
+    return await res.json()
+  }
+
+  /**
+   * Remove tags from an asset
+   * @param id - The asset ID (UUID)
+   * @param tags - Tags to remove
+   * @returns Promise<TagsOperationResult>
+   */
+  async function removeAssetTags(
+    id: string,
+    tags: string[]
+  ): Promise<TagsOperationResult> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}/tags`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags })
+    })
+
+    if (!res.ok) {
+      throw new Error(
+        `Unable to remove tags from asset ${id}: Server returned ${res.status}`
+      )
+    }
+
+    return await res.json()
+  }
+
+  /**
    * Uploads an asset asynchronously using the /api/assets/download endpoint
    * Returns immediately with either the asset (if already exists) or a task to track
    *
@@ -546,6 +597,8 @@ function createAssetService() {
     getAssetsByTag,
     deleteAsset,
     updateAsset,
+    addAssetTags,
+    removeAssetTags,
     getAssetMetadata,
     uploadAssetFromUrl,
     uploadAssetFromBase64,
