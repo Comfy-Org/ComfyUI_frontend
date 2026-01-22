@@ -26,7 +26,7 @@ describe('versionUtil', () => {
     it('should return null when current version is null', () => {
       const result = checkVersionCompatibility(
         'comfyui_version',
-        null as any,
+        null as unknown as string | undefined,
         '>=1.0.0'
       )
       expect(result).toBeNull()
@@ -50,7 +50,7 @@ describe('versionUtil', () => {
       const result = checkVersionCompatibility(
         'comfyui_version',
         '1.0.0',
-        null as any
+        null as unknown as string | undefined
       )
       expect(result).toBeNull()
     })

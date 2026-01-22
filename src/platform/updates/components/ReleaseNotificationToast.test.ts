@@ -192,7 +192,7 @@ describe('ReleaseNotificationToast', () => {
       value: mockWindowOpen,
       writable: true
     })
-    ;(window as any).electronAPI = {}
+    ;(window as unknown as Record<string, unknown>).electronAPI = {}
 
     wrapper = mountComponent()
     await wrapper.vm.handleUpdate()
@@ -203,7 +203,7 @@ describe('ReleaseNotificationToast', () => {
     expect(mockWindowOpen).not.toHaveBeenCalled()
     expect(toastErrorHandlerMock).not.toHaveBeenCalled()
 
-    delete (window as any).electronAPI
+    delete (window as unknown as Record<string, unknown>).electronAPI
   })
 
   it('shows an error toast if the desktop updater flow fails in Electron', async () => {
@@ -220,7 +220,7 @@ describe('ReleaseNotificationToast', () => {
       value: mockWindowOpen,
       writable: true
     })
-    ;(window as any).electronAPI = {}
+    ;(window as unknown as Record<string, unknown>).electronAPI = {}
 
     wrapper = mountComponent()
     await wrapper.vm.handleUpdate()
@@ -228,7 +228,7 @@ describe('ReleaseNotificationToast', () => {
     expect(toastErrorHandlerMock).toHaveBeenCalledWith(error)
     expect(mockWindowOpen).not.toHaveBeenCalled()
 
-    delete (window as any).electronAPI
+    delete (window as unknown as Record<string, unknown>).electronAPI
   })
 
   it('calls handleShowChangelog when learn more link is clicked', async () => {

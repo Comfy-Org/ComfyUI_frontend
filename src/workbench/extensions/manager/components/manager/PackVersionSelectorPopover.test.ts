@@ -477,8 +477,8 @@ describe('PackVersionSelectorPopover', () => {
       mockCheckNodeCompatibility.mockClear()
 
       // Trigger compatibility check by accessing getVersionCompatibility
-      const vm = wrapper.vm as any
-      vm.getVersionCompatibility('1.0.0')
+      const vm = wrapper.vm as unknown as Record<string, unknown>
+      ;(vm.getVersionCompatibility as (version: string) => unknown)('1.0.0')
 
       // Verify that checkNodeCompatibility was called with correct data
       // Since 1.0.0 is the latest version, it should use latest_version data
@@ -565,13 +565,13 @@ describe('PackVersionSelectorPopover', () => {
       })
       await waitForPromises()
 
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as unknown as Record<string, unknown>
 
       // Clear previous calls from component mounting/rendering
       mockCheckNodeCompatibility.mockClear()
 
       // Test latest version
-      vm.getVersionCompatibility('latest')
+      ;(vm.getVersionCompatibility as (version: string) => unknown)('latest')
       expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
         supported_os: ['windows'],
         supported_accelerators: ['CPU'],
@@ -587,7 +587,7 @@ describe('PackVersionSelectorPopover', () => {
       mockCheckNodeCompatibility.mockClear()
 
       // Test nightly version
-      vm.getVersionCompatibility('nightly')
+      ;(vm.getVersionCompatibility as (version: string) => unknown)('nightly')
       expect(mockCheckNodeCompatibility).toHaveBeenCalledWith({
         id: 'test-pack',
         name: 'Test Pack',
