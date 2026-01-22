@@ -245,7 +245,8 @@ export const zDynamicComboInputSpec = z.tuple([
     options: z.array(
       z.object({
         inputs: zComfyInputsSpec,
-        key: z.string()
+        key: z.string(),
+        display_name: z.string().optional()
       })
     )
   })

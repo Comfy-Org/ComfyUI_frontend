@@ -78,6 +78,12 @@ function dynamicComboWidget(
   const options = Object.fromEntries(
     inputData[1].options.map(({ key, inputs }) => [key, inputs])
   )
+  const displayNameMap = Object.fromEntries(
+    inputData[1].options.map(({ key, display_name }) => [
+      key,
+      display_name ?? key
+    ])
+  )
   const subSpec: ComboInputSpec = [Object.keys(options), {}]
   const { widget, minWidth, minHeight } = app.widgets['COMBO'](
     node,
@@ -86,6 +92,8 @@ function dynamicComboWidget(
     appArg,
     widgetName
   )
+  widget.options.getOptionLabel = (value?: string | null) =>
+    value ? (displayNameMap[value] ?? value) : ''
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
   }
