@@ -19,9 +19,11 @@
     >
       <i class="mb-4 icon-[lucide--search] size-10" />
       <h3 class="mb-2 text-lg font-medium">
-        {{ $t('assetBrowser.noAssetsFound') }}
+        {{ emptyTitle ?? $t('assetBrowser.noAssetsFound') }}
       </h3>
-      <p class="text-sm">{{ $t('assetBrowser.tryAdjustingFilters') }}</p>
+      <p class="text-sm">
+        {{ emptyMessage ?? $t('assetBrowser.tryAdjustingFilters') }}
+      </p>
     </div>
     <VirtualGrid
       v-else
@@ -35,8 +37,11 @@
         <AssetCard
           :asset="item"
           :interactive="true"
+          :focused="item.id === focusedAssetId"
+          @focus="$emit('assetFocus', $event)"
           @select="$emit('assetSelect', $event)"
           @deleted="$emit('assetDeleted', $event)"
+          @show-info="$emit('assetShowInfo', $event)"
         />
       </template>
     </VirtualGrid>
@@ -52,14 +57,19 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 
-const { assets } = defineProps<{
+const { assets, focusedAssetId, emptyTitle, emptyMessage } = defineProps<{
   assets: AssetDisplayItem[]
   loading?: boolean
+  focusedAssetId?: string | null
+  emptyTitle?: string
+  emptyMessage?: string
 }>()
 
 defineEmits<{
+  assetFocus: [asset: AssetDisplayItem]
   assetSelect: [asset: AssetDisplayItem]
   assetDeleted: [asset: AssetDisplayItem]
+  assetShowInfo: [asset: AssetDisplayItem]
 }>()
 
 const assetsWithKey = computed(() =>
@@ -73,7 +83,7 @@ const isLg = breakpoints.greaterOrEqual('lg')
 const isMd = breakpoints.greaterOrEqual('md')
 const maxColumns = computed(() => {
   if (is2Xl.value) return 5
-  if (isXl.value) return 4
+  if (isXl.value) return 3
   if (isLg.value) return 3
   if (isMd.value) return 2
   return 1

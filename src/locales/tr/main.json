@@ -24,6 +24,7 @@
     "assets": "Varlıklar",
     "baseModels": "Temel modeller",
     "browseAssets": "Varlıklara Göz At",
+    "byType": "Türe göre",
     "checkpoints": "Kontrol noktaları",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "Örnek:",
@@ -45,6 +46,10 @@
       "failed": "İndirme başarısız oldu",
       "inProgress": "{assetName} indiriliyor..."
     },
+    "emptyImported": {
+      "canImport": "Henüz içe aktarılmış model yok. Kendi modelinizi eklemek için \"Model İçe Aktar\"a tıklayın.",
+      "restricted": "Kişisel modeller yalnızca Creator ve üzeri seviyelerde kullanılabilir."
+    },
     "errorFileTooLarge": "Dosya izin verilen maksimum boyut sınırını aşıyor",
     "errorFormatNotAllowed": "Yalnızca SafeTensor formatı destekleniyor",
     "errorModelTypeNotSupported": "Bu model türü desteklenmiyor",
@@ -61,6 +66,7 @@
     "finish": "Bitir",
     "genericLinkPlaceholder": "Bağlantıyı buraya yapıştırın",
     "importAnother": "Başka Birini İçe Aktar",
+    "imported": "İçe aktarıldı",
     "jobId": "İş ID",
     "loadingModels": "{type} yükleniyor...",
     "maxFileSize": "Maksimum dosya boyutu: {size}",
@@ -70,6 +76,29 @@
       "threeDModelPlaceholder": "3D Model"
     },
     "modelAssociatedWithLink": "Sağladığınız bağlantı ile ilişkili model:",
+    "modelInfo": {
+      "addBaseModel": "Taban model ekle...",
+      "addTag": "Etiket ekle...",
+      "additionalTags": "Ek Etiketler",
+      "baseModelUnknown": "Taban model bilinmiyor",
+      "basicInfo": "Temel Bilgiler",
+      "compatibleBaseModels": "Uyumlu Taban Modelleri",
+      "description": "Açıklama",
+      "descriptionNotSet": "Açıklama ayarlanmadı",
+      "descriptionPlaceholder": "Bu model için bir açıklama ekleyin...",
+      "displayName": "Görünen Ad",
+      "fileName": "Dosya Adı",
+      "modelDescription": "Model Açıklaması",
+      "modelTagging": "Model Etiketleme",
+      "modelType": "Model Türü",
+      "noAdditionalTags": "Ek etiket yok",
+      "selectModelPrompt": "Bilgilerini görmek için bir model seçin",
+      "selectModelType": "Model türü seç...",
+      "source": "Kaynak",
+      "title": "Model Bilgisi",
+      "triggerPhrases": "Tetikleyici İfadeler",
+      "viewOnSource": "{source} üzerinde görüntüle"
+    },
     "modelName": "Model Adı",
     "modelNamePlaceholder": "Bu model için bir ad girin",
     "modelTypeSelectorLabel": "Bu hangi model türü?",
@@ -684,6 +713,7 @@
     "clearAll": "Tümünü temizle",
     "clearFilters": "Filtreleri Temizle",
     "close": "Kapat",
+    "closeDialog": "Diyaloğu kapat",
     "color": "Renk",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrg Logosu",
@@ -762,6 +792,8 @@
     "goToNode": "Düğüme Git",
     "graphNavigation": "Grafik gezintisi",
     "halfSpeed": "0.5x",
+    "hideLeftPanel": "Sol paneli gizle",
+    "hideRightPanel": "Sağ paneli gizle",
     "icon": "Simge",
     "imageFailedToLoad": "Görsel yüklenemedi",
     "imagePreview": "Görüntü önizlemesi - Görüntüler arasında gezinmek için ok tuşlarını kullanın",
@@ -803,6 +835,7 @@
     "name": "Ad",
     "newFolder": "Yeni Klasör",
     "next": "İleri",
+    "nightly": "NIGHTLY",
     "no": "Hayır",
     "noAudioRecorded": "Ses kaydedilmedi",
     "noItems": "Öğe yok",
@@ -892,7 +925,9 @@
     "selectedFile": "Seçilen dosya",
     "setAsBackground": "Arka Plan Olarak Ayarla",
     "settings": "Ayarlar",
+    "showLeftPanel": "Sol paneli göster",
     "showReport": "Raporu Göster",
+    "showRightPanel": "Sağ paneli göster",
     "singleSelectDropdown": "Tekli seçim açılır menüsü",
     "sort": "Sırala",
     "source": "Kaynak",
@@ -915,6 +950,7 @@
     "updating": "{id} güncelleniyor",
     "upload": "Yükle",
     "usageHint": "Kullanım ipucu",
+    "use": "Kullan",
     "user": "Kullanıcı",
     "versionMismatchWarning": "Sürüm Uyumluluk Uyarısı",
     "versionMismatchWarningMessage": "{warning}: {detail} Güncelleme talimatları için https://docs.comfy.org/installation/update_comfyui#common-update-issues adresini ziyaret edin.",
@@ -1618,6 +1654,12 @@
       "title": "Bu iş akışında eksik düğümler var"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "Önizleme Sürümü",
+      "tooltip": "ComfyUI'nin nightly sürümünü kullanıyorsunuz. Lütfen bu özelliklerle ilgili görüşlerinizi paylaşmak için geri bildirim butonunu kullanın."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2132,12 +2174,14 @@
     "viewControls": "Görünüm Kontrolleri"
   },
   "sideToolbar": {
+    "activeJobStatus": "Aktif iş: {status}",
     "assets": "Varlıklar",
     "backToAssets": "Tüm varlıklara dön",
     "browseTemplates": "Örnek şablonlara göz atın",
     "downloads": "İndirmeler",
     "generatedAssetsHeader": "Oluşturulan varlıklar",
     "helpCenter": "Yardım Merkezi",
+    "importedAssetsHeader": "İçe aktarılan varlıklar",
     "labels": {
       "assets": "Varlıklar",
       "console": "Konsol",
@@ -2182,6 +2226,7 @@
     "queue": "Kuyruk",
     "queueProgressOverlay": {
       "activeJobs": "{count} aktif iş | {count} aktif iş",
+      "activeJobsShort": "{count} aktif | {count} aktif",
       "activeJobsSuffix": "aktif iş",
       "cancelJobTooltip": "İşi iptal et",
       "clearHistory": "İş kuyruğu geçmişini temizle",
