@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
@@ -11,6 +11,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
@@ -187,7 +188,9 @@ describe('useWorkflowStore', () => {
 
       // Mock the load response
       vi.spyOn(workflow, 'load').mockImplementation(async () => {
-        workflow.changeTracker = { activeState: mockWorkflowData } as any
+        workflow.changeTracker = {
+          activeState: mockWorkflowData
+        } as unknown as ChangeTracker
         return workflow as LoadedComfyWorkflow
       })
 
@@ -462,7 +465,7 @@ describe('useWorkflowStore', () => {
       workflow.changeTracker = {
         activeState: mockState,
         reset: vi.fn()
-      } as any
+      } as unknown as ChangeTracker
       vi.mocked(api.storeUserData).mockResolvedValue({
         status: 200,
         json: () =>
@@ -492,7 +495,7 @@ describe('useWorkflowStore', () => {
       workflow.changeTracker = {
         activeState: mockState,
         reset: vi.fn()
-      } as any
+      } as unknown as ChangeTracker
       vi.mocked(api.storeUserData).mockResolvedValue({
         status: 200,
         json: () =>
@@ -526,7 +529,7 @@ describe('useWorkflowStore', () => {
       workflow.changeTracker = {
         activeState: mockState,
         reset: vi.fn()
-      } as any
+      } as unknown as ChangeTracker
       vi.mocked(api.storeUserData).mockResolvedValue({
         status: 200,
         json: () =>
@@ -553,13 +556,15 @@ describe('useWorkflowStore', () => {
   describe('Subgraphs', () => {
     beforeEach(async () => {
       // Ensure canvas exists for these tests
-      vi.mocked(comfyApp).canvas = { subgraph: null } as any
+      vi.mocked(comfyApp).canvas = {
+        subgraph: null
+      } as unknown as typeof comfyApp.canvas
 
       // Setup an active workflow as updateActiveGraph depends on it
       const workflow = store.createTemporary('test-subgraph-workflow.json')
       // Mock load to avoid actual file operations/parsing
       vi.spyOn(workflow, 'load').mockImplementation(async () => {
-        workflow.changeTracker = { activeState: {} } as any // Minimal mock
+        workflow.changeTracker = { activeState: {} } as unknown as ChangeTracker // Minimal mock
         workflow.originalContent = '{}'
         workflow.content = '{}'
         return workflow as LoadedComfyWorkflow
@@ -572,7 +577,7 @@ describe('useWorkflowStore', () => {
 
     it('should handle when comfyApp.canvas is not available', async () => {
       // Arrange
-      vi.mocked(comfyApp).canvas = null as any // Simulate canvas not ready
+      vi.mocked(comfyApp).canvas = null as unknown as typeof comfyApp.canvas // Simulate canvas not ready
 
       // Act
       console.debug(store.isSubgraphActive)
@@ -608,7 +613,7 @@ describe('useWorkflowStore', () => {
           { name: 'Level 1 Subgraph' },
           { name: 'Level 2 Subgraph' }
         ]
-      } as any
+      } as unknown as Subgraph
       vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
 
       // Mock isSubgraph to return true for our mockSubgraph
@@ -631,7 +636,7 @@ describe('useWorkflowStore', () => {
         name: 'Initial Subgraph',
         pathToRootGraph: [{ name: 'Root' }, { name: 'Initial Subgraph' }],
         isRootGraph: false
-      } as any
+      } as unknown as Subgraph
       vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
 
       // Mock isSubgraph to return true for our initialSubgraph
@@ -651,7 +656,9 @@ describe('useWorkflowStore', () => {
       const workflow2 = store.createTemporary('workflow2.json')
       // Mock load for the second workflow
       vi.spyOn(workflow2, 'load').mockImplementation(async () => {
-        workflow2.changeTracker = { activeState: {} } as any
+        workflow2.changeTracker = {
+          activeState: {}
+        } as unknown as ChangeTracker
         workflow2.originalContent = '{}'
         workflow2.content = '{}'
         return workflow2 as LoadedComfyWorkflow
@@ -680,7 +687,7 @@ describe('useWorkflowStore', () => {
       // Setup mock graph structure with subgraphs
       const mockSubgraph = {
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        rootGraph: null as any,
+        rootGraph: null as unknown as LGraph,
         _nodes: [],
         nodes: []
       }
@@ -701,11 +708,11 @@ describe('useWorkflowStore', () => {
         }
       }
 
-      mockSubgraph.rootGraph = mockRootGraph as any
+      mockSubgraph.rootGraph = mockRootGraph as unknown as LGraph
 
-      vi.mocked(comfyApp).rootGraph = mockRootGraph as any
-      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph as any
-      store.activeSubgraph = mockSubgraph as any
+      vi.mocked(comfyApp).rootGraph = mockRootGraph as unknown as LGraph
+      vi.mocked(comfyApp.canvas).subgraph = mockSubgraph as unknown as Subgraph
+      store.activeSubgraph = mockSubgraph as unknown as Subgraph
     })
 
     describe('nodeIdToNodeLocatorId', () => {
@@ -723,7 +730,7 @@ describe('useWorkflowStore', () => {
       it('should use provided subgraph instead of active one', () => {
         const customSubgraph = {
           id: 'custom-uuid-1234-5678-90ab-cdef12345678'
-        } as any
+        } as unknown as Subgraph
         const result = store.nodeIdToNodeLocatorId(789, customSubgraph)
         expect(result).toBe('custom-uuid-1234-5678-90ab-cdef12345678:789')
       })
