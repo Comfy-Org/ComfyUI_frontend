@@ -24,6 +24,7 @@
     "assets": "الأصول",
     "baseModels": "النماذج الأساسية",
     "browseAssets": "تصفح الأصول",
+    "byType": "حسب النوع",
     "checkpoints": "نقاط التحقق",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "مثال:",
@@ -45,6 +46,10 @@
       "failed": "فشل التنزيل",
       "inProgress": "جاري تنزيل {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "لا توجد نماذج مستوردة بعد. انقر على \"استيراد نموذج\" لإضافة نموذجك الخاص.",
+      "restricted": "النماذج الشخصية متاحة فقط لمستوى Creator وما فوق."
+    },
     "errorFileTooLarge": "الملف يتجاوز الحد الأقصى المسموح به للحجم",
     "errorFormatNotAllowed": "يسمح فقط بصيغة SafeTensor",
     "errorModelTypeNotSupported": "نوع النموذج هذا غير مدعوم",
@@ -61,6 +66,7 @@
     "finish": "إنهاء",
     "genericLinkPlaceholder": "الصق الرابط هنا",
     "importAnother": "استيراد آخر",
+    "imported": "مستوردة",
     "jobId": "معرّف المهمة",
     "loadingModels": "جارٍ تحميل {type}...",
     "maxFileSize": "الحد الأقصى لحجم الملف: {size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "عناصر تحكم العرض"
   },
   "sideToolbar": {
+    "activeJobStatus": "المهمة النشطة: {status}",
     "assets": "الأصول",
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",

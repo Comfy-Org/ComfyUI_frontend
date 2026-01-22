@@ -24,6 +24,7 @@
     "assets": "アセット",
     "baseModels": "ベースモデル",
     "browseAssets": "アセットを閲覧",
+    "byType": "タイプ別",
     "checkpoints": "チェックポイント",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "例：",
@@ -45,6 +46,10 @@
       "failed": "ダウンロードに失敗しました",
       "inProgress": "{assetName}をダウンロード中..."
     },
+    "emptyImported": {
+      "canImport": "まだインポートされたモデルはありません。「モデルをインポート」をクリックして追加してください。",
+      "restricted": "パーソナルモデルはCreator以上のプランでのみ利用可能です。"
+    },
     "errorFileTooLarge": "ファイルが許可された最大サイズを超えています",
     "errorFormatNotAllowed": "SafeTensor形式のみ許可されています",
     "errorModelTypeNotSupported": "このモデルタイプはサポートされていません",
@@ -61,6 +66,7 @@
     "finish": "完了",
     "genericLinkPlaceholder": "ここにリンクを貼り付けてください",
     "importAnother": "別のファイルをインポート",
+    "imported": "インポート済み",
     "jobId": "ジョブID",
     "loadingModels": "{type}を読み込み中...",
     "maxFileSize": "最大ファイルサイズ：{size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "ビューコントロール"
   },
   "sideToolbar": {
+    "activeJobStatus": "アクティブジョブ: {status}",
     "assets": "アセット",
     "backToAssets": "すべてのアセットに戻る",
     "browseTemplates": "サンプルテンプレートを表示",

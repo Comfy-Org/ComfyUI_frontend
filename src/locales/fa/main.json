@@ -24,6 +24,7 @@
     "assets": "دارایی‌ها",
     "baseModels": "مدل‌های پایه",
     "browseAssets": "مرور دارایی‌ها",
+    "byType": "بر اساس نوع",
     "checkpoints": "چک‌پوینت‌ها",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "مثال:",
@@ -45,6 +46,10 @@
       "failed": "دانلود ناموفق بود",
       "inProgress": "در حال دانلود {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "هنوز مدلی وارد نشده است. برای افزودن مدل خود، روی «وارد کردن مدل» کلیک کنید.",
+      "restricted": "مدل‌های شخصی فقط برای سطح Creator و بالاتر در دسترس هستند."
+    },
     "errorFileTooLarge": "فایل از حداکثر اندازه مجاز بزرگ‌تر است",
     "errorFormatNotAllowed": "فقط فرمت SafeTensor مجاز است",
     "errorModelTypeNotSupported": "این نوع مدل پشتیبانی نمی‌شود",
@@ -61,6 +66,7 @@
     "finish": "پایان",
     "genericLinkPlaceholder": "لینک را اینجا وارد کنید",
     "importAnother": "وارد کردن مورد دیگر",
+    "imported": "وارد شده",
     "jobId": "شناسه کار: {jobId}",
     "loadingModels": "در حال بارگذاری {type}...",
     "maxFileSize": "حداکثر اندازه فایل: {size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "کنترل‌های نمایش"
   },
   "sideToolbar": {
+    "activeJobStatus": "وضعیت کار فعال: {status}",
     "assets": "دارایی‌ها",
     "backToAssets": "بازگشت به همه دارایی‌ها",
     "browseTemplates": "مرور قالب‌های نمونه",

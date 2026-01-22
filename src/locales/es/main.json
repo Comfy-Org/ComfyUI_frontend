@@ -24,6 +24,7 @@
     "assets": "Recursos",
     "baseModels": "Modelos base",
     "browseAssets": "Explorar recursos",
+    "byType": "Por tipo",
     "checkpoints": "Checkpoints",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "Ejemplo:",
@@ -45,6 +46,10 @@
       "failed": "La descarga falló",
       "inProgress": "Descargando {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "Aún no hay modelos importados. Haz clic en \"Importar modelo\" para añadir el tuyo.",
+      "restricted": "Los modelos personales solo están disponibles en el nivel Creador o superior."
+    },
     "errorFileTooLarge": "El archivo excede el tamaño máximo permitido",
     "errorFormatNotAllowed": "Solo se permite el formato SafeTensor",
     "errorModelTypeNotSupported": "Este tipo de modelo no es compatible",
@@ -61,6 +66,7 @@
     "finish": "Finalizar",
     "genericLinkPlaceholder": "Pega el enlace aquí",
     "importAnother": "Importar otro",
+    "imported": "Importado",
     "jobId": "ID de tarea",
     "loadingModels": "Cargando {type}...",
     "maxFileSize": "Tamaño máximo de archivo: {size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "Controles de vista"
   },
   "sideToolbar": {
+    "activeJobStatus": "Trabajo activo: {status}",
     "assets": "Recursos",
     "backToAssets": "Volver a todos los recursos",
     "browseTemplates": "Explorar plantillas de ejemplo",

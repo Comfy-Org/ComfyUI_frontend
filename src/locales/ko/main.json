@@ -24,6 +24,7 @@
     "assets": "에셋",
     "baseModels": "베이스 모델",
     "browseAssets": "에셋 탐색",
+    "byType": "유형별",
     "checkpoints": "체크포인트",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "예시:",
@@ -45,6 +46,10 @@
       "failed": "다운로드 실패",
       "inProgress": "{assetName} 다운로드 중..."
     },
+    "emptyImported": {
+      "canImport": "아직 가져온 모델이 없습니다. \"모델 가져오기\"를 클릭하여 직접 추가하세요.",
+      "restricted": "개인 모델은 Creator 등급 이상에서만 사용할 수 있습니다."
+    },
     "errorFileTooLarge": "파일이 허용된 최대 크기 제한을 초과했습니다",
     "errorFormatNotAllowed": "SafeTensor 형식만 허용됩니다",
     "errorModelTypeNotSupported": "이 모델 유형은 지원되지 않습니다",
@@ -61,6 +66,7 @@
     "finish": "완료",
     "genericLinkPlaceholder": "여기에 링크를 붙여넣으세요",
     "importAnother": "다른 항목 가져오기",
+    "imported": "가져온 항목",
     "jobId": "작업 ID",
     "loadingModels": "{type} 불러오는 중...",
     "maxFileSize": "최대 파일 크기: {size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "보기 컨트롤"
   },
   "sideToolbar": {
+    "activeJobStatus": "진행 중인 작업: {status}",
     "assets": "에셋",
     "backToAssets": "모든 에셋으로 돌아가기",
     "browseTemplates": "예제 템플릿 탐색",

@@ -24,6 +24,7 @@
     "assets": "Ресурсы",
     "baseModels": "Базовые модели",
     "browseAssets": "Просмотр ресурсов",
+    "byType": "По типу",
     "checkpoints": "Чекпойнты",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "Пример:",
@@ -45,6 +46,10 @@
       "failed": "Ошибка загрузки",
       "inProgress": "Загрузка {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "Пока нет импортированных моделей. Нажмите «Импортировать модель», чтобы добавить свою.",
+      "restricted": "Персональные модели доступны только на уровне Creator и выше."
+    },
     "errorFileTooLarge": "Файл превышает максимально допустимый размер",
     "errorFormatNotAllowed": "Разрешён только формат SafeTensor",
     "errorModelTypeNotSupported": "Этот тип модели не поддерживается",
@@ -61,6 +66,7 @@
     "finish": "Готово",
     "genericLinkPlaceholder": "Вставьте ссылку сюда",
     "importAnother": "Импортировать другой",
+    "imported": "Импортировано",
     "jobId": "ID задачи",
     "loadingModels": "Загрузка {type}...",
     "maxFileSize": "Максимальный размер файла: {size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "Управление видом"
   },
   "sideToolbar": {
+    "activeJobStatus": "Активная задача: {status}",
     "assets": "Ассеты",
     "backToAssets": "Назад ко всем ассетам",
     "browseTemplates": "Просмотреть примеры шаблонов",

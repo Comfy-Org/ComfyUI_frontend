@@ -24,6 +24,7 @@
     "assets": "Ativos",
     "baseModels": "Modelos base",
     "browseAssets": "Explorar Ativos",
+    "byType": "Por tipo",
     "checkpoints": "Checkpoints",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "Exemplo:",
@@ -45,6 +46,10 @@
       "failed": "Falha no download",
       "inProgress": "Baixando {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "Nenhum modelo importado ainda. Clique em \"Importar Modelo\" para adicionar o seu.",
+      "restricted": "Modelos pessoais estão disponíveis apenas no nível Creator ou superior."
+    },
     "errorFileTooLarge": "O arquivo excede o limite máximo de tamanho permitido",
     "errorFormatNotAllowed": "Apenas o formato SafeTensor é permitido",
     "errorModelTypeNotSupported": "Este tipo de modelo não é suportado",
@@ -61,6 +66,7 @@
     "finish": "Concluir",
     "genericLinkPlaceholder": "Cole o link aqui",
     "importAnother": "Importar outro",
+    "imported": "Importado",
     "jobId": "ID do trabalho",
     "loadingModels": "Carregando {type}...",
     "maxFileSize": "Tamanho máximo do arquivo: {size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "Controles de Visualização"
   },
   "sideToolbar": {
+    "activeJobStatus": "Tarefa ativa: {status}",
     "assets": "Ativos",
     "backToAssets": "Voltar para todos os ativos",
     "browseTemplates": "Explorar modelos de exemplo",

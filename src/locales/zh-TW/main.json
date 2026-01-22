@@ -24,6 +24,7 @@
     "assets": "資產",
     "baseModels": "基礎模型",
     "browseAssets": "瀏覽資產",
+    "byType": "依類型",
     "checkpoints": "Checkpoints",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "範例：",
@@ -45,6 +46,10 @@
       "failed": "下載失敗",
       "inProgress": "正在下載 {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "尚未匯入模型。點擊「匯入模型」以新增您的模型。",
+      "restricted": "個人模型僅限 Creator 方案及以上等級使用。"
+    },
     "errorFileTooLarge": "檔案超過允許的最大大小限制",
     "errorFormatNotAllowed": "僅允許 SafeTensor 格式",
     "errorModelTypeNotSupported": "不支援此模型類型",
@@ -61,6 +66,7 @@
     "finish": "完成",
     "genericLinkPlaceholder": "請在此貼上連結",
     "importAnother": "匯入其他",
+    "imported": "已匯入",
     "jobId": "工作 ID",
     "loadingModels": "正在載入 {type}...",
     "maxFileSize": "最大檔案大小：{size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "檢視控制"
   },
   "sideToolbar": {
+    "activeJobStatus": "進行中作業：{status}",
     "assets": "資源",
     "backToAssets": "返回所有資源",
     "browseTemplates": "瀏覽範例模板",

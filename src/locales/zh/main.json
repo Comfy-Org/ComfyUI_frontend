@@ -24,6 +24,7 @@
     "assets": "资产",
     "baseModels": "基础模型",
     "browseAssets": "浏览资产",
+    "byType": "按类型",
     "checkpoints": "模型",
     "civitaiLinkExample": "<strong>案例：</strong> <a href=\"https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com/api/download/models/833921?type=Model&format=SafeTensor</a>",
     "civitaiLinkExampleStrong": "案例:",
@@ -45,6 +46,10 @@
       "failed": "下载失败",
       "inProgress": "正在下载 {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "尚未导入模型。点击“导入模型”添加您的模型。",
+      "restricted": "个人模型仅限创作者及以上等级使用。"
+    },
     "errorFileTooLarge": "允许执行文件的文件大小限制",
     "errorFormatNotAllowed": "仅允许 SafeTensor 格式",
     "errorModelTypeNotSupported": "不支持该类型的模型",
@@ -61,6 +66,7 @@
     "finish": "完成",
     "genericLinkPlaceholder": "粘贴链接到这",
     "importAnother": "导入其他",
+    "imported": "已导入",
     "jobId": "任务ID",
     "loadingModels": "正在加载{type}...",
     "maxFileSize": "最大文件大小：{size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "视图控制"
   },
   "sideToolbar": {
+    "activeJobStatus": "当前任务：{status}",
     "assets": "资产",
     "backToAssets": "返回所有资产",
     "browseTemplates": "浏览示例模板",

@@ -24,6 +24,7 @@
     "assets": "Varlıklar",
     "baseModels": "Temel modeller",
     "browseAssets": "Varlıklara Göz At",
+    "byType": "Türe göre",
     "checkpoints": "Kontrol noktaları",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "Örnek:",
@@ -45,6 +46,10 @@
       "failed": "İndirme başarısız oldu",
       "inProgress": "{assetName} indiriliyor..."
     },
+    "emptyImported": {
+      "canImport": "Henüz içe aktarılmış model yok. Kendi modelinizi eklemek için \"Model İçe Aktar\"a tıklayın.",
+      "restricted": "Kişisel modeller yalnızca Creator ve üzeri seviyelerde kullanılabilir."
+    },
     "errorFileTooLarge": "Dosya izin verilen maksimum boyut sınırını aşıyor",
     "errorFormatNotAllowed": "Yalnızca SafeTensor formatı destekleniyor",
     "errorModelTypeNotSupported": "Bu model türü desteklenmiyor",
@@ -61,6 +66,7 @@
     "finish": "Bitir",
     "genericLinkPlaceholder": "Bağlantıyı buraya yapıştırın",
     "importAnother": "Başka Birini İçe Aktar",
+    "imported": "İçe aktarıldı",
     "jobId": "İş ID",
     "loadingModels": "{type} yükleniyor...",
     "maxFileSize": "Maksimum dosya boyutu: {size}",
@@ -2137,6 +2143,7 @@
     "viewControls": "Görünüm Kontrolleri"
   },
   "sideToolbar": {
+    "activeJobStatus": "Aktif iş: {status}",
     "assets": "Varlıklar",
     "backToAssets": "Tüm varlıklara dön",
     "browseTemplates": "Örnek şablonlara göz atın",
