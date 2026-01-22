@@ -50,7 +50,7 @@ export async function createNode(
     setTimeout(resolve, 0, createdNode)
   })
 
-  if (newNode as LGraphNode | null) {
+  if (newNode) {
     newNode!.pos = [ posX, posY ]
     const addedNode = graph?.add(newNode!) ?? null
     graph?.change()
