@@ -1,5 +1,7 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
@@ -9,6 +11,7 @@ import type {
   TaskStatus,
   TaskOutput
 } from '@/schemas/apiSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
@@ -25,13 +28,17 @@ vi.mock('@/scripts/api', () => ({
 // Mock the asset service
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
-    getAssetsByTag: vi.fn()
+    getAssetsByTag: vi.fn(),
+    getAssetsForNodeType: vi.fn()
   }
 }))
 
-// Mock distribution type
+// Mock distribution type - hoisted so it can be changed per test
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: false
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 // Mock TaskItemImpl
@@ -144,7 +151,7 @@ describe('assetsStore - Refactored (Option A)', () => {
   })
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useAssetsStore()
     vi.clearAllMocks()
   })
@@ -517,6 +524,161 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(asset.user_metadata).toHaveProperty('outputCount')
       expect(asset.user_metadata).toHaveProperty('allOutputs')
       expect(Array.isArray(asset.user_metadata!.allOutputs)).toBe(true)
+    })
+  })
+})
+
+describe('assetsStore - Model Assets Cache (Cloud)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    mockIsCloud.value = true
+    vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    mockIsCloud.value = false
+  })
+
+  const createMockAsset = (id: string) => ({
+    id,
+    name: `asset-${id}`,
+    size: 100,
+    created_at: new Date().toISOString(),
+    tags: ['models'],
+    preview_url: `http://test.com/${id}`
+  })
+
+  describe('getAssets cache invalidation', () => {
+    it('should invalidate cache before mutating assets during batch loading', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      const firstBatch = Array.from({ length: 500 }, (_, i) =>
+        createMockAsset(`asset-${i}`)
+      )
+      const secondBatch = Array.from({ length: 100 }, (_, i) =>
+        createMockAsset(`asset-${500 + i}`)
+      )
+
+      let callCount = 0
+      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
+        async () => {
+          callCount++
+          return callCount === 1 ? firstBatch : secondBatch
+        }
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      // Wait for background batch loading to complete
+      await vi.waitFor(() => {
+        expect(
+          vi.mocked(assetService.getAssetsForNodeType)
+        ).toHaveBeenCalledTimes(2)
+      })
+
+      const assets = store.getAssets(nodeType)
+      expect(assets).toHaveLength(600)
+    })
+
+    it('should not return stale cached array after background batch completes', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'LoraLoader'
+
+      // First batch must be exactly MODEL_BATCH_SIZE (500) to trigger hasMore
+      const firstBatch = Array.from({ length: 500 }, (_, i) =>
+        createMockAsset(`first-${i}`)
+      )
+      const secondBatch = [createMockAsset('new-asset')]
+
+      let callCount = 0
+      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
+        async () => {
+          callCount++
+          return callCount === 1 ? firstBatch : secondBatch
+        }
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      // Wait for background batch loading to complete
+      await vi.waitFor(() => {
+        expect(
+          vi.mocked(assetService.getAssetsForNodeType)
+        ).toHaveBeenCalledTimes(2)
+      })
+
+      const assets = store.getAssets(nodeType)
+      expect(assets).toHaveLength(501)
+      expect(assets.map((a) => a.id)).toContain('new-asset')
+    })
+
+    it('should return cached array on subsequent getAssets calls', () => {
+      const store = useAssetsStore()
+      const nodeType = 'TestLoader'
+
+      const firstCall = store.getAssets(nodeType)
+      const secondCall = store.getAssets(nodeType)
+
+      expect(secondCall).toBe(firstCall)
+    })
+  })
+
+  describe('concurrent request handling', () => {
+    it('should discard stale request when newer request starts', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const firstBatch = Array.from({ length: 5 }, (_, i) =>
+        createMockAsset(`first-${i}`)
+      )
+      const secondBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockAsset(`second-${i}`)
+      )
+
+      let resolveFirst: (value: ReturnType<typeof createMockAsset>[]) => void
+      const firstPromise = new Promise<ReturnType<typeof createMockAsset>[]>(
+        (resolve) => {
+          resolveFirst = resolve
+        }
+      )
+      let callCount = 0
+      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
+        async () => {
+          callCount++
+          return callCount === 1 ? firstPromise : secondBatch
+        }
+      )
+
+      const firstRequest = store.updateModelsForNodeType(nodeType)
+      const secondRequest = store.updateModelsForNodeType(nodeType)
+      resolveFirst!(firstBatch)
+      await Promise.all([firstRequest, secondRequest])
+
+      expect(store.getAssets(nodeType)).toHaveLength(10)
+      expect(
+        store.getAssets(nodeType).every((a) => a.id.startsWith('second-'))
+      ).toBe(true)
+    })
+  })
+
+  describe('shallowReactive state reactivity', () => {
+    it('should trigger reactivity on isModelLoading change', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      const loadingStates: boolean[] = []
+      watch(
+        () => store.isModelLoading(nodeType),
+        (val) => loadingStates.push(val),
+        { immediate: true }
+      )
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
+      await store.updateModelsForNodeType(nodeType)
+      await nextTick()
+
+      expect(loadingStates).toContain(true)
+      expect(loadingStates).toContain(false)
     })
   })
 })
