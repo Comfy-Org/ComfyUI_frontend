@@ -42,11 +42,11 @@
 
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
+import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
-import { computed } from 'vue'
 
 const { flags } = useFeatureFlags()
 const teamWorkspacesEnabled = computed(

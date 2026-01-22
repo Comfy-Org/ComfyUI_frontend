@@ -112,7 +112,6 @@ import type {
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
 import { cn } from '@/utils/tailwindUtil'
 
 interface AvailableWorkspace {
