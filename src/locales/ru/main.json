@@ -24,6 +24,7 @@
     "assets": "Ресурсы",
     "baseModels": "Базовые модели",
     "browseAssets": "Просмотр ресурсов",
+    "byType": "По типу",
     "checkpoints": "Чекпойнты",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "Пример:",
@@ -45,6 +46,10 @@
       "failed": "Ошибка загрузки",
       "inProgress": "Загрузка {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "Пока нет импортированных моделей. Нажмите «Импортировать модель», чтобы добавить свою.",
+      "restricted": "Персональные модели доступны только на уровне Creator и выше."
+    },
     "errorFileTooLarge": "Файл превышает максимально допустимый размер",
     "errorFormatNotAllowed": "Разрешён только формат SafeTensor",
     "errorModelTypeNotSupported": "Этот тип модели не поддерживается",
@@ -61,6 +66,7 @@
     "finish": "Готово",
     "genericLinkPlaceholder": "Вставьте ссылку сюда",
     "importAnother": "Импортировать другой",
+    "imported": "Импортировано",
     "jobId": "ID задачи",
     "loadingModels": "Загрузка {type}...",
     "maxFileSize": "Максимальный размер файла: {size}",
@@ -70,6 +76,29 @@
       "threeDModelPlaceholder": "3D-модель"
     },
     "modelAssociatedWithLink": "Модель, связанная с предоставленной вами ссылкой:",
+    "modelInfo": {
+      "addBaseModel": "Добавить базовую модель...",
+      "addTag": "Добавить тег...",
+      "additionalTags": "Дополнительные теги",
+      "baseModelUnknown": "Базовая модель неизвестна",
+      "basicInfo": "Основная информация",
+      "compatibleBaseModels": "Совместимые базовые модели",
+      "description": "Описание",
+      "descriptionNotSet": "Описание не задано",
+      "descriptionPlaceholder": "Добавьте описание для этой модели...",
+      "displayName": "Отображаемое имя",
+      "fileName": "Имя файла",
+      "modelDescription": "Описание модели",
+      "modelTagging": "Теги модели",
+      "modelType": "Тип модели",
+      "noAdditionalTags": "Нет дополнительных тегов",
+      "selectModelPrompt": "Выберите модель, чтобы увидеть её информацию",
+      "selectModelType": "Выберите тип модели...",
+      "source": "Источник",
+      "title": "Информация о модели",
+      "triggerPhrases": "Триггерные фразы",
+      "viewOnSource": "Посмотреть на {source}"
+    },
     "modelName": "Имя модели",
     "modelNamePlaceholder": "Введите имя для этой модели",
     "modelTypeSelectorLabel": "Какой это тип модели?",
@@ -684,6 +713,7 @@
     "clearAll": "Очистить всё",
     "clearFilters": "Сбросить фильтры",
     "close": "Закрыть",
+    "closeDialog": "Закрыть диалог",
     "color": "Цвет",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "Логотип ComfyOrg",
@@ -762,6 +792,8 @@
     "goToNode": "Перейти к ноде",
     "graphNavigation": "Навигация по графу",
     "halfSpeed": "0.5x",
+    "hideLeftPanel": "Скрыть левую панель",
+    "hideRightPanel": "Скрыть правую панель",
     "icon": "Иконка",
     "imageFailedToLoad": "Не удалось загрузить изображение",
     "imagePreview": "Предварительный просмотр изображения - Используйте клавиши со стрелками для навигации между изображениями",
@@ -803,6 +835,7 @@
     "name": "Имя",
     "newFolder": "Новая папка",
     "next": "Далее",
+    "nightly": "NIGHTLY",
     "no": "Нет",
     "noAudioRecorded": "Аудио не записано",
     "noItems": "Нет элементов",
@@ -892,7 +925,9 @@
     "selectedFile": "Выбранный файл",
     "setAsBackground": "Установить как фон",
     "settings": "Настройки",
+    "showLeftPanel": "Показать левую панель",
     "showReport": "Показать отчёт",
+    "showRightPanel": "Показать правую панель",
     "singleSelectDropdown": "Выпадающий список единичного выбора",
     "sort": "Сортировать",
     "source": "Источник",
@@ -915,6 +950,7 @@
     "updating": "Обновление",
     "upload": "Загрузить",
     "usageHint": "Подсказка по использованию",
+    "use": "Использовать",
     "user": "Пользователь",
     "versionMismatchWarning": "Предупреждение о несовместимости версий",
     "versionMismatchWarningMessage": "{warning}: {detail} Посетите https://docs.comfy.org/installation/update_comfyui#common-update-issues для инструкций по обновлению.",
@@ -1618,6 +1654,12 @@
       "title": "В этом рабочем процессе отсутствуют узлы"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "Предварительная версия",
+      "tooltip": "Вы используете ночную версию ComfyUI. Пожалуйста, используйте кнопку обратной связи, чтобы поделиться своим мнением об этих функциях."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2132,12 +2174,14 @@
     "viewControls": "Управление видом"
   },
   "sideToolbar": {
+    "activeJobStatus": "Активная задача: {status}",
     "assets": "Ассеты",
     "backToAssets": "Назад ко всем ассетам",
     "browseTemplates": "Просмотреть примеры шаблонов",
     "downloads": "Загрузки",
     "generatedAssetsHeader": "Сгенерированные ресурсы",
     "helpCenter": "Центр поддержки",
+    "importedAssetsHeader": "Импортированные ресурсы",
     "labels": {
       "assets": "Ассеты",
       "console": "Консоль",
@@ -2182,6 +2226,7 @@
     "queue": "Очередь",
     "queueProgressOverlay": {
       "activeJobs": "{count} активное задание | {count} активных задания | {count} активных заданий",
+      "activeJobsShort": "{count} активно | {count} активно",
       "activeJobsSuffix": "активных заданий",
       "cancelJobTooltip": "Отменить задание",
       "clearHistory": "Очистить историю очереди заданий",

@@ -184,6 +184,7 @@
     "source": "Source",
     "filter": "Filter",
     "apply": "Apply",
+    "use": "Use",
     "enabled": "Enabled",
     "installed": "Installed",
     "restart": "Restart",
@@ -275,6 +276,7 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items"
   },
@@ -709,6 +711,7 @@
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
     "importedAssetsHeader": "Imported assets",
+    "activeJobStatus": "Active job: {status}",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -758,6 +761,7 @@
       "sortJobs": "Sort jobs",
       "sortBy": "Sort by",
       "activeJobs": "{count} active job | {count} active jobs",
+      "activeJobsShort": "{count} active | {count} active",
       "activeJobsSuffix": "active jobs",
       "jobQueue": "Job Queue",
       "expandCollapsedQueue": "Expand job queue",
@@ -2315,6 +2319,12 @@
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
+    "byType": "By type",
+    "emptyImported": {
+      "canImport": "No imported models yet. Click \"Import Model\" to add your own.",
+      "restricted": "Personal models are only available at Creator tier and above."
+    },
+    "imported": "Imported",
     "assetCollection": "Asset collection",
     "assets": "Assets",
     "baseModels": "Base models",
@@ -2404,6 +2414,29 @@
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
+    },
+    "modelInfo": {
+      "title": "Model Info",
+      "selectModelPrompt": "Select a model to see its information",
+      "basicInfo": "Basic Info",
+      "displayName": "Display Name",
+      "fileName": "File Name",
+      "source": "Source",
+      "viewOnSource": "View on {source}",
+      "modelTagging": "Model Tagging",
+      "modelType": "Model Type",
+      "selectModelType": "Select model type...",
+      "compatibleBaseModels": "Compatible Base Models",
+      "addBaseModel": "Add base model...",
+      "baseModelUnknown": "Base model unknown",
+      "additionalTags": "Additional Tags",
+      "addTag": "Add tag...",
+      "noAdditionalTags": "No additional tags",
+      "modelDescription": "Model Description",
+      "triggerPhrases": "Trigger Phrases",
+      "description": "Description",
+      "descriptionNotSet": "No description set",
+      "descriptionPlaceholder": "Add a description for this model..."
     },
     "media": {
       "threeDModelPlaceholder": "3D Model",
@@ -2626,6 +2659,12 @@
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
       "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "Preview Version",
+      "tooltip": "You are using a nightly version of ComfyUI. Please use the feedback button to share your thoughts about these features."
     }
   }
 }

@@ -175,4 +175,32 @@ describe('Autogrow', () => {
     await nextTick()
     expect(node.inputs.length).toBe(5)
   })
+  test('Can deserialize a complex node', async () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'a' })
+    addAutogrow(node, { min: 1, input: inputsSpec, prefix: 'b' })
+    addNodeInput(node, { name: 'aa', isOptional: false, type: 'IMAGE' })
+
+    connectInput(node, 0, graph)
+    connectInput(node, 1, graph)
+    connectInput(node, 3, graph)
+    connectInput(node, 4, graph)
+
+    const serialized = graph.serialize()
+    graph.clear()
+    graph.configure(serialized)
+    const newNode = graph.nodes[0]!
+
+    expect(newNode.inputs.map((i) => i.name)).toStrictEqual([
+      '0.a0',
+      '0.a1',
+      '0.a2',
+      '1.b0',
+      '1.b1',
+      '1.b2',
+      'aa'
+    ])
+  })
 })
