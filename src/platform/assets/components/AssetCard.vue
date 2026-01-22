@@ -14,6 +14,7 @@
       )
     "
     @click.stop="interactive && $emit('focus', asset)"
+    @focus="interactive && $emit('focus', asset)"
     @keydown.enter.self="interactive && $emit('select', asset)"
   >
     <div class="relative aspect-square w-full overflow-hidden rounded-xl">
