@@ -106,7 +106,7 @@ const zAssetUserMetadata = z.object({
 
 export type AssetUserMetadata = z.infer<typeof zAssetUserMetadata>
 
-const zTagsOperationResult = z.object({
+export const tagsOperationResultSchema = z.object({
   total_tags: z.array(z.string()),
   added: z.array(z.string()).optional(),
   removed: z.array(z.string()).optional(),
@@ -114,7 +114,7 @@ const zTagsOperationResult = z.object({
   not_present: z.array(z.string()).optional()
 })
 
-export type TagsOperationResult = z.infer<typeof zTagsOperationResult>
+export type TagsOperationResult = z.infer<typeof tagsOperationResultSchema>
 
 // Legacy interface for backward compatibility (now aligned with Zod schema)
 export interface ModelFolderInfo {

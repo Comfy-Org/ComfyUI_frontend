@@ -5,7 +5,8 @@ import { st } from '@/i18n'
 import {
   assetItemSchema,
   assetResponseSchema,
-  asyncUploadResponseSchema
+  asyncUploadResponseSchema,
+  tagsOperationResultSchema
 } from '@/platform/assets/schemas/assetSchema'
 import type {
   AssetItem,
@@ -494,7 +495,12 @@ function createAssetService() {
       )
     }
 
-    return await res.json()
+    const result = await res.json()
+    const parseResult = tagsOperationResultSchema.safeParse(result)
+    if (!parseResult.success) {
+      throw fromZodError(parseResult.error)
+    }
+    return parseResult.data
   }
 
   /**
@@ -519,7 +525,12 @@ function createAssetService() {
       )
     }
 
-    return await res.json()
+    const result = await res.json()
+    const parseResult = tagsOperationResultSchema.safeParse(result)
+    if (!parseResult.success) {
+      throw fromZodError(parseResult.error)
+    }
+    return parseResult.data
   }
 
   /**
