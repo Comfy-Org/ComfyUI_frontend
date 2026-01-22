@@ -274,7 +274,7 @@ test.describe('Feature Flags', () => {
     // Set up monitoring before navigation
     await newPage.addInitScript(() => {
       // Track when various app components are ready
-      ;(window as any).__appReadiness = {
+      ;(window as unknown as Record<string, unknown>).__appReadiness = {
         featureFlagsReceived: false,
         apiInitialized: false,
         appInitialized: false
@@ -286,7 +286,10 @@ test.describe('Feature Flags', () => {
           window['app']?.api?.serverFeatureFlags?.supports_preview_metadata !==
           undefined
         ) {
-          ;(window as any).__appReadiness.featureFlagsReceived = true
+          ;(window as unknown as Record<string, unknown>).__appReadiness = {
+            ...(window as unknown as Record<string, unknown>).__appReadiness,
+            featureFlagsReceived: true
+          }
           clearInterval(checkFeatureFlags)
         }
       }, 10)
@@ -294,7 +297,10 @@ test.describe('Feature Flags', () => {
       // Monitor API initialization
       const checkApi = setInterval(() => {
         if (window['app']?.api) {
-          ;(window as any).__appReadiness.apiInitialized = true
+          ;(window as unknown as Record<string, unknown>).__appReadiness = {
+            ...(window as unknown as Record<string, unknown>).__appReadiness,
+            apiInitialized: true
+          }
           clearInterval(checkApi)
         }
       }, 10)
@@ -302,7 +308,10 @@ test.describe('Feature Flags', () => {
       // Monitor app initialization
       const checkApp = setInterval(() => {
         if (window['app']?.graph) {
-          ;(window as any).__appReadiness.appInitialized = true
+          ;(window as unknown as Record<string, unknown>).__appReadiness = {
+            ...(window as unknown as Record<string, unknown>).__appReadiness,
+            appInitialized: true
+          }
           clearInterval(checkApp)
         }
       }, 10)
@@ -331,7 +340,7 @@ test.describe('Feature Flags', () => {
     // Get readiness state
     const readiness = await newPage.evaluate(() => {
       return {
-        ...(window as any).__appReadiness,
+        ...(window as unknown as Record<string, unknown>).__appReadiness,
         currentFlags: window['app'].api.serverFeatureFlags
       }
     })
