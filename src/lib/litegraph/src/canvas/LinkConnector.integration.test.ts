@@ -189,7 +189,7 @@ function mockedNodeTitleDropEvent(node: LGraphNode): CanvasPointerEvent {
   return {
     canvasX: node.pos[0] + node.size[0] / 2,
     canvasY: node.pos[1] + 16
-  } as any
+  } as unknown as CanvasPointerEvent
 }
 
 function mockedInputDropEvent(
@@ -200,7 +200,7 @@ function mockedInputDropEvent(
   return {
     canvasX: pos[0],
     canvasY: pos[1]
-  } as any
+  } as unknown as CanvasPointerEvent
 }
 
 function mockedOutputDropEvent(
@@ -211,7 +211,7 @@ function mockedOutputDropEvent(
   return {
     canvasX: pos[0],
     canvasY: pos[1]
-  } as any
+  } as unknown as CanvasPointerEvent
 }
 
 describe('LinkConnector Integration', () => {
@@ -239,7 +239,7 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = disconnectedNode.pos[0] + disconnectedNode.size[0] / 2
       const canvasY = disconnectedNode.pos[1] + 16
-      const dropEvent = { canvasX, canvasY } as any
+      const dropEvent = { canvasX, canvasY } as unknown as CanvasPointerEvent
 
       // Drop links, ensure reset has not been run
       connector.dropLinks(graph, dropEvent)
@@ -281,7 +281,7 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = disconnectedNode.pos[0] + disconnectedNode.size[0] / 2
       const canvasY = disconnectedNode.pos[1] + 16
-      const dropEvent = { canvasX, canvasY } as any
+      const dropEvent = { canvasX, canvasY } as unknown as CanvasPointerEvent
 
       connector.dropLinks(graph, dropEvent)
       connector.reset()
@@ -422,7 +422,7 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = disconnectedNode.pos[0] + disconnectedNode.size[0] / 2
       const canvasY = disconnectedNode.pos[1] + 16
-      const dropEvent = { canvasX, canvasY } as any
+      const dropEvent = { canvasX, canvasY } as unknown as CanvasPointerEvent
 
       connector.dropLinks(graph, dropEvent)
       connector.reset()
@@ -475,7 +475,7 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = floatingReroute.pos[0]
       const canvasY = floatingReroute.pos[1]
-      const dropEvent = { canvasX, canvasY } as any
+      const dropEvent = { canvasX, canvasY } as unknown as CanvasPointerEvent
 
       connector.dropLinks(graph, dropEvent)
       connector.reset()
@@ -554,7 +554,10 @@ describe('LinkConnector Integration', () => {
       const manyOutputsNode = graph.getNodeById(4)!
       const canvasX = floatingReroute.pos[0]
       const canvasY = floatingReroute.pos[1]
-      const floatingRerouteEvent = { canvasX, canvasY } as any
+      const floatingRerouteEvent = {
+        canvasX,
+        canvasY
+      } as unknown as CanvasPointerEvent
 
       connector.moveOutputLink(graph, manyOutputsNode.outputs[0])
       connector.dropLinks(graph, floatingRerouteEvent)
@@ -579,7 +582,10 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = reroute7.pos[0]
       const canvasY = reroute7.pos[1]
-      const reroute7Event = { canvasX, canvasY } as any
+      const reroute7Event = {
+        canvasX,
+        canvasY
+      } as unknown as CanvasPointerEvent
 
       const toSortedRerouteChain = (linkIds: number[]) =>
         linkIds
@@ -698,7 +704,10 @@ describe('LinkConnector Integration', () => {
       const canvasY = disconnectedNode.pos[1]
 
       connector.dragFromReroute(graph, floatingReroute)
-      connector.dropLinks(graph, { canvasX, canvasY } as any)
+      connector.dropLinks(graph, {
+        canvasX,
+        canvasY
+      } as unknown as CanvasPointerEvent)
       connector.reset()
 
       expect(graph.floatingLinks.size).toBe(0)
@@ -716,7 +725,10 @@ describe('LinkConnector Integration', () => {
       const canvasY = reroute8.pos[1]
 
       connector.dragFromReroute(graph, floatingReroute)
-      connector.dropLinks(graph, { canvasX, canvasY } as any)
+      connector.dropLinks(graph, {
+        canvasX,
+        canvasY
+      } as unknown as CanvasPointerEvent)
       connector.reset()
 
       expect(graph.floatingLinks.size).toBe(0)
@@ -804,7 +816,7 @@ describe('LinkConnector Integration', () => {
     const dropEvent = {
       canvasX: manyOutputsNode.pos[0],
       canvasY: manyOutputsNode.pos[1]
-    } as any
+    } as unknown as CanvasPointerEvent
     connector.dropLinks(graph, dropEvent)
     connector.reset()
 
@@ -818,9 +830,11 @@ describe('LinkConnector Integration', () => {
     connector.moveOutputLink(graph, manyOutputsNode.outputs[0])
 
     const disconnectedNode = graph.getNodeById(9)!
-    dropEvent.canvasX = disconnectedNode.pos[0]
-    dropEvent.canvasY = disconnectedNode.pos[1]
-    connector.dropLinks(graph, dropEvent)
+    const dropEvent2 = {
+      canvasX: disconnectedNode.pos[0],
+      canvasY: disconnectedNode.pos[1]
+    } as unknown as CanvasPointerEvent
+    connector.dropLinks(graph, dropEvent2)
     connector.reset()
 
     const newOutput = disconnectedNode.outputs[0]
@@ -954,7 +968,7 @@ describe('LinkConnector Integration', () => {
       const dropEvent = {
         canvasX: targetReroute.pos[0],
         canvasY: targetReroute.pos[1]
-      } as any
+      } as unknown as CanvasPointerEvent
 
       connector.dragNewFromOutput(
         graph,
@@ -1097,7 +1111,7 @@ describe('LinkConnector Integration', () => {
       const dropEvent = {
         canvasX: toReroute.pos[0],
         canvasY: toReroute.pos[1]
-      } as any
+      } as unknown as CanvasPointerEvent
       connector.dropLinks(graph, dropEvent)
       connector.reset()
 
@@ -1170,7 +1184,7 @@ describe('LinkConnector Integration', () => {
       const dropEvent = {
         canvasX: toReroute.pos[0],
         canvasY: toReroute.pos[1]
-      } as any
+      } as unknown as CanvasPointerEvent
 
       connector.dragFromReroute(graph, fromReroute)
       connector.dropLinks(graph, dropEvent)
@@ -1207,7 +1221,7 @@ describe('LinkConnector Integration', () => {
       const dropEvent = {
         canvasX: reroute.pos[0],
         canvasY: reroute.pos[1]
-      } as any
+      } as unknown as CanvasPointerEvent
 
       connector.dragNewFromInput(graph, node, input)
       connector.dropLinks(graph, dropEvent)
@@ -1234,7 +1248,10 @@ describe('LinkConnector Integration', () => {
 
       const node = graph.getNodeById(nodeId)!
       const reroute = graph.getReroute(rerouteId)!
-      const dropEvent = { canvasX: node.pos[0], canvasY: node.pos[1] } as any
+      const dropEvent = {
+        canvasX: node.pos[0],
+        canvasY: node.pos[1]
+      } as unknown as CanvasPointerEvent
 
       connector.dragFromReroute(graph, reroute)
       connector.dropLinks(graph, dropEvent)
@@ -1265,7 +1282,7 @@ describe('LinkConnector Integration', () => {
       const dropOnInputEvent = {
         canvasX: inputPos[0],
         canvasY: inputPos[1]
-      } as any
+      } as unknown as CanvasPointerEvent
 
       connector.dragFromReroute(graph, reroute)
       connector.dropLinks(graph, dropOnInputEvent)
