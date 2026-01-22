@@ -41,7 +41,7 @@ describe('DescriptionTabPanel', () => {
     const sections = wrapper
       .findComponent({ name: 'InfoTextSection' })
       .props('sections')
-    return sections.find((s: any) => s.title === title)
+    return sections.find((s: { title: string }) => s.title === title)
   }
 
   const createNodePack = (

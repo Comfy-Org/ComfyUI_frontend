@@ -12,7 +12,9 @@ vi.mock('@vueuse/core', async () => {
   const actual = await vi.importActual('@vueuse/core')
   return {
     ...actual,
-    createSharedComposable: <Fn extends (...args: any[]) => any>(fn: Fn) => fn
+    createSharedComposable: <Fn extends (...args: unknown[]) => unknown>(
+      fn: Fn
+    ) => fn
   }
 })
 

@@ -37,7 +37,11 @@ function createHistoryJob(createTime: number, id: string): JobListItem {
 
 const createTaskOutput = (
   nodeId: string = 'node-1',
-  images: any[] = []
+  images: {
+    type?: 'output' | 'input' | 'temp'
+    filename?: string
+    subfolder?: string
+  }[] = []
 ): TaskOutput => ({
   [nodeId]: {
     images
