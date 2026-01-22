@@ -6,6 +6,7 @@ import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 export const GetNodeParentGroupKey: InjectionKey<
   (node: LGraphNode) => LGraphGroup | null
@@ -202,4 +203,34 @@ function repeatItems<T>(items: T[]): T[] {
     result.push(item)
   }
   return result
+}
+
+export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
+  const settingStore = useSettingStore()
+
+  const includesAdvanced = computed(() =>
+    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+  )
+
+  const widgetsSectionDataList = computed((): NodeWidgetsListList => {
+    return toValue(nodes).map((node) => {
+      const { widgets = [] } = node
+      const shownWidgets = widgets
+        .filter(
+          (w) =>
+            !(
+              w.options?.canvasOnly ||
+              w.options?.hidden ||
+              (w.options?.advanced && !includesAdvanced.value)
+            )
+        )
+        .map((widget) => ({ node, widget }))
+      return { widgets: shownWidgets, node }
+    })
+  })
+
+  return {
+    widgetsSectionDataList,
+    includesAdvanced
+  }
 }

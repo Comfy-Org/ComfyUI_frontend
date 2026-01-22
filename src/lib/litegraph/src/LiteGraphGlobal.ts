@@ -191,6 +191,13 @@ export class LiteGraphGlobal {
   alwaysSnapToGrid?: boolean
 
   /**
+   * If `true`, advanced widgets are always visible on all nodes.
+   * When `false`, advanced widgets require per-node expansion.
+   * Default: `false`
+   */
+  alwaysShowAdvancedWidgets = false
+
+  /**
    * When set to a positive number, when nodes are moved their positions will
    * be rounded to the nearest multiple of this value.  Half up.
    * Default: `undefined`

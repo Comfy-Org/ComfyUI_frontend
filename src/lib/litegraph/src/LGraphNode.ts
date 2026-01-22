@@ -3839,8 +3839,10 @@ export class LGraphNode
    * Returns `true` if the widget is visible, otherwise `false`.
    */
   isWidgetVisible(widget: IBaseWidget): boolean {
+    const showAdvanced =
+      this.showAdvanced || LiteGraph.alwaysShowAdvancedWidgets
     const isHidden =
-      this.collapsed || widget.hidden || (widget.advanced && !this.showAdvanced)
+      this.collapsed || widget.hidden || (widget.advanced && !showAdvanced)
     return !isHidden
   }
 

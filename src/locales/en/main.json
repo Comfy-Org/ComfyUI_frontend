@@ -2624,7 +2624,8 @@
     "noneSearchDesc": "No items match your search",
     "nodesNoneDesc": "NO NODES",
     "fallbackGroupTitle": "Group",
-    "fallbackNodeTitle": "Node"
+    "fallbackNodeTitle": "Node",
+    "hideAdvancedInputsButton": "Hide advanced inputs"
   },
   "help": {
     "recentReleases": "Recent releases",
