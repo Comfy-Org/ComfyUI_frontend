@@ -11,6 +11,7 @@ vi.mock('@/platform/distribution/types', () => ({
 const mockAssetsByKey = new Map<string, AssetItem[]>()
 const mockLoadingByKey = new Map<string, boolean>()
 const mockErrorByKey = new Map<string, Error | undefined>()
+const mockInitializedKeys = new Set<string>()
 const mockUpdateModelsForNodeType = vi.fn()
 const mockGetCategoryForNodeType = vi.fn()
 
@@ -19,6 +20,7 @@ vi.mock('@/stores/assetsStore', () => ({
     getAssets: (key: string) => mockAssetsByKey.get(key) ?? [],
     isModelLoading: (key: string) => mockLoadingByKey.get(key) ?? false,
     getError: (key: string) => mockErrorByKey.get(key),
+    hasAssetKey: (key: string) => mockInitializedKeys.has(key),
     updateModelsForNodeType: mockUpdateModelsForNodeType
   })
 }))
@@ -35,6 +37,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     mockAssetsByKey.clear()
     mockLoadingByKey.clear()
     mockErrorByKey.clear()
+    mockInitializedKeys.clear()
     mockGetCategoryForNodeType.mockReturnValue(undefined)
 
     mockUpdateModelsForNodeType.mockImplementation(
@@ -76,6 +79,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
 
     mockUpdateModelsForNodeType.mockImplementation(
       async (_nodeType: string): Promise<AssetItem[]> => {
+        mockInitializedKeys.add(_nodeType)
         mockAssetsByKey.set(_nodeType, mockAssets)
         mockLoadingByKey.set(_nodeType, false)
         return mockAssets
@@ -108,6 +112,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
 
     mockUpdateModelsForNodeType.mockImplementation(
       async (_nodeType: string): Promise<AssetItem[]> => {
+        mockInitializedKeys.add(_nodeType)
         mockErrorByKey.set(_nodeType, mockError)
         mockAssetsByKey.set(_nodeType, [])
         mockLoadingByKey.set(_nodeType, false)
@@ -130,6 +135,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
 
     mockUpdateModelsForNodeType.mockImplementation(
       async (_nodeType: string): Promise<AssetItem[]> => {
+        mockInitializedKeys.add(_nodeType)
         mockAssetsByKey.set(_nodeType, [])
         mockLoadingByKey.set(_nodeType, false)
         return []
@@ -154,6 +160,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       mockGetCategoryForNodeType.mockReturnValue('checkpoints')
       mockUpdateModelsForNodeType.mockImplementation(
         async (_nodeType: string): Promise<AssetItem[]> => {
+          mockInitializedKeys.add(_nodeType)
           mockAssetsByKey.set(_nodeType, mockAssets)
           mockLoadingByKey.set(_nodeType, false)
           return mockAssets
@@ -182,6 +189,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       mockGetCategoryForNodeType.mockReturnValue('loras')
       mockUpdateModelsForNodeType.mockImplementation(
         async (_nodeType: string): Promise<AssetItem[]> => {
+          mockInitializedKeys.add(_nodeType)
           mockAssetsByKey.set(_nodeType, mockAssets)
           mockLoadingByKey.set(_nodeType, false)
           return mockAssets
@@ -209,6 +217,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       mockGetCategoryForNodeType.mockReturnValue('checkpoints')
       mockUpdateModelsForNodeType.mockImplementation(
         async (_nodeType: string): Promise<AssetItem[]> => {
+          mockInitializedKeys.add(_nodeType)
           mockAssetsByKey.set(_nodeType, mockAssets)
           mockLoadingByKey.set(_nodeType, false)
           return mockAssets

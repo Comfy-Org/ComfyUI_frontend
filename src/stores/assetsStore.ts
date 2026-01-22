@@ -88,7 +88,8 @@ function mapHistoryToAssets(historyItems: TaskItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(b.created_at ?? 0).getTime() -
+      new Date(a.created_at ?? 0).getTime()
   )
 }
 
@@ -155,9 +156,9 @@ export const useAssetsStore = defineStore('assets', () => {
         loadedIds.add(asset.id)
 
         // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at).getTime()
+        const assetTime = new Date(asset.created_at ?? 0).getTime()
         const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at).getTime() < assetTime
+          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
         )
 
         if (insertIndex === -1) {
@@ -331,6 +332,10 @@ export const useAssetsStore = defineStore('assets', () => {
         return modelStateByKey.value.get(key)?.hasMore ?? false
       }
 
+      function hasAssetKey(key: string): boolean {
+        return modelStateByKey.value.has(key)
+      }
+
       /**
        * Internal helper to fetch and cache assets with a given key and fetcher.
        * Loads first batch immediately, then progressively loads remaining batches.
@@ -429,13 +434,75 @@ export const useAssetsStore = defineStore('assets', () => {
         )
       }
 
+      /**
+       * Optimistically update an asset in the cache
+       * @param assetId The asset ID to update
+       * @param updates Partial asset data to merge
+       * @param cacheKey Optional cache key to target (nodeType or 'tag:xxx')
+       */
+      function updateAssetInCache(
+        assetId: string,
+        updates: Partial<AssetItem>,
+        cacheKey?: string
+      ) {
+        const keysToCheck = cacheKey
+          ? [cacheKey]
+          : Array.from(modelStateByKey.value.keys())
+
+        for (const key of keysToCheck) {
+          const state = modelStateByKey.value.get(key)
+          if (!state?.assets) continue
+
+          const existingAsset = state.assets.get(assetId)
+          if (existingAsset) {
+            const updatedAsset = { ...existingAsset, ...updates }
+            state.assets.set(assetId, updatedAsset)
+            assetsArrayCache.delete(key)
+            if (cacheKey) return
+          }
+        }
+      }
+
+      /**
+       * Update asset metadata with optimistic cache update
+       * @param assetId The asset ID to update
+       * @param userMetadata The user_metadata to save
+       * @param cacheKey Optional cache key to target for optimistic update
+       */
+      async function updateAssetMetadata(
+        assetId: string,
+        userMetadata: Record<string, unknown>,
+        cacheKey?: string
+      ) {
+        updateAssetInCache(assetId, { user_metadata: userMetadata }, cacheKey)
+        await assetService.updateAsset(assetId, { user_metadata: userMetadata })
+      }
+
+      /**
+       * Update asset tags with optimistic cache update
+       * @param assetId The asset ID to update
+       * @param tags The tags array to save
+       * @param cacheKey Optional cache key to target for optimistic update
+       */
+      async function updateAssetTags(
+        assetId: string,
+        tags: string[],
+        cacheKey?: string
+      ) {
+        updateAssetInCache(assetId, { tags }, cacheKey)
+        await assetService.updateAsset(assetId, { tags })
+      }
+
       return {
         getAssets,
         isLoading,
         getError,
         hasMore,
+        hasAssetKey,
         updateModelsForNodeType,
-        updateModelsForTag
+        updateModelsForTag,
+        updateAssetMetadata,
+        updateAssetTags
       }
     }
 
@@ -445,8 +512,11 @@ export const useAssetsStore = defineStore('assets', () => {
       isLoading: () => false,
       getError: () => undefined,
       hasMore: () => false,
+      hasAssetKey: () => false,
       updateModelsForNodeType: async () => {},
-      updateModelsForTag: async () => {}
+      updateModelsForTag: async () => {},
+      updateAssetMetadata: async () => {},
+      updateAssetTags: async () => {}
     }
   }
 
@@ -455,8 +525,11 @@ export const useAssetsStore = defineStore('assets', () => {
     isLoading: isModelLoading,
     getError,
     hasMore,
+    hasAssetKey,
     updateModelsForNodeType,
-    updateModelsForTag
+    updateModelsForTag,
+    updateAssetMetadata,
+    updateAssetTags
   } = getModelState()
 
   // Watch for completed downloads and refresh model caches
@@ -521,9 +594,12 @@ export const useAssetsStore = defineStore('assets', () => {
     isModelLoading,
     getError,
     hasMore,
+    hasAssetKey,
 
     // Model assets - actions
     updateModelsForNodeType,
-    updateModelsForTag
+    updateModelsForTag,
+    updateAssetMetadata,
+    updateAssetTags
   }
 })

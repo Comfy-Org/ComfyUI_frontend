@@ -15,6 +15,7 @@ vi.mock('@/stores/assetsStore', () => ({
     getAssets: () => [],
     isModelLoading: () => false,
     getError: () => undefined,
+    hasAssetKey: () => false,
     updateModelsForNodeType: mockUpdateModelsForNodeType
   })
 }))
