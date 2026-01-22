@@ -290,7 +290,7 @@ watch(
 const debouncedFlushMetadata = useDebounceFn(() => {
   if (isImmutable.value) return
   assetsStore.updateAssetMetadata(
-    asset.id,
+    asset,
     { ...(asset.user_metadata ?? {}), ...pendingUpdates.value },
     cacheKey
   )

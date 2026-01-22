@@ -456,20 +456,31 @@ export const useAssetsStore = defineStore('assets', () => {
 
       /**
        * Update asset metadata with optimistic cache update
-       * @param assetId The asset ID to update
+       * @param asset The asset to update
        * @param userMetadata The user_metadata to save
        * @param cacheKey Optional cache key to target for optimistic update
        */
       async function updateAssetMetadata(
-        assetId: string,
+        asset: AssetItem,
         userMetadata: Record<string, unknown>,
         cacheKey?: string
       ) {
-        updateAssetInCache(assetId, { user_metadata: userMetadata }, cacheKey)
-        const updatedAsset = await assetService.updateAsset(assetId, {
-          user_metadata: userMetadata
-        })
-        updateAssetInCache(assetId, updatedAsset, cacheKey)
+        const originalMetadata = asset.user_metadata
+        updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
+
+        try {
+          const updatedAsset = await assetService.updateAsset(asset.id, {
+            user_metadata: userMetadata
+          })
+          updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        } catch (error) {
+          console.error('Failed to update asset metadata:', error)
+          updateAssetInCache(
+            asset.id,
+            { user_metadata: originalMetadata },
+            cacheKey
+          )
+        }
       }
 
       /**
@@ -483,27 +494,32 @@ export const useAssetsStore = defineStore('assets', () => {
         newTags: string[],
         cacheKey?: string
       ) {
-        const currentTags = asset.tags
-        const tagsToAdd = difference(newTags, currentTags)
-        const tagsToRemove = difference(currentTags, newTags)
+        const originalTags = asset.tags
+        const tagsToAdd = difference(newTags, originalTags)
+        const tagsToRemove = difference(originalTags, newTags)
 
         if (tagsToAdd.length === 0 && tagsToRemove.length === 0) return
 
         updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
 
-        const removeResult =
-          tagsToRemove.length > 0
-            ? await assetService.removeAssetTags(asset.id, tagsToRemove)
-            : undefined
+        try {
+          const removeResult =
+            tagsToRemove.length > 0
+              ? await assetService.removeAssetTags(asset.id, tagsToRemove)
+              : undefined
 
-        const addResult =
-          tagsToAdd.length > 0
-            ? await assetService.addAssetTags(asset.id, tagsToAdd)
-            : undefined
+          const addResult =
+            tagsToAdd.length > 0
+              ? await assetService.addAssetTags(asset.id, tagsToAdd)
+              : undefined
 
-        const finalTags = (addResult ?? removeResult)?.total_tags
-        if (finalTags) {
-          updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
+          const finalTags = (addResult ?? removeResult)?.total_tags
+          if (finalTags) {
+            updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
+          }
+        } catch (error) {
+          console.error('Failed to update asset tags:', error)
+          updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
         }
       }
 
