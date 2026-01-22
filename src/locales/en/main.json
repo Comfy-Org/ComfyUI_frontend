@@ -275,6 +275,7 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items"
   },
@@ -709,6 +710,7 @@
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
     "importedAssetsHeader": "Imported assets",
+    "activeJobStatus": "Active job: {status}",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -2315,6 +2317,12 @@
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
+    "byType": "By type",
+    "emptyImported": {
+      "canImport": "No imported models yet. Click \"Import Model\" to add your own.",
+      "restricted": "Personal models are only available at Creator tier and above."
+    },
+    "imported": "Imported",
     "assetCollection": "Asset collection",
     "assets": "Assets",
     "baseModels": "Base models",
@@ -2626,6 +2634,12 @@
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
       "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "Preview Version",
+      "tooltip": "You are using a nightly version of ComfyUI. Please use the feedback button to share your thoughts about these features."
     }
   }
 }
