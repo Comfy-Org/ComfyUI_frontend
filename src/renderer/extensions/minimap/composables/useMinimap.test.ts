@@ -976,10 +976,7 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      const renderMinimap = (minimap as any).renderMinimap
-      if (renderMinimap) {
-        renderMinimap()
-      }
+      minimap.renderMinimap()
 
       expect(mockContext2D.fillRect).toHaveBeenCalled()
       expect(mockContext2D.fillStyle).toBeDefined()

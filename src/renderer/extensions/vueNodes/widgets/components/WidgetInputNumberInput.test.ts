@@ -202,7 +202,7 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
       global: { plugins: [i18n] },
       props: {
         widget,
-        modelValue: undefined as any
+        modelValue: undefined as unknown as number
       }
     })
 

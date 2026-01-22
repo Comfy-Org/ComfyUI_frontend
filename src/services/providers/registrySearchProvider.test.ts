@@ -27,7 +27,7 @@ describe('useComfyRegistrySearchProvider', () => {
         call: mockListAllPacksCall,
         clear: mockListAllPacksClear
       }
-    } as any)
+    } as unknown as ReturnType<typeof useComfyRegistryStore>)
   })
 
   describe('searchPacks', () => {

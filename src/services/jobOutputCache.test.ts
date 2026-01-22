@@ -4,6 +4,7 @@ import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
@@ -254,7 +255,9 @@ describe('jobOutputCache', () => {
       const mockWorkflow = { version: 1 }
 
       vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
-      vi.mocked(extractWorkflow).mockResolvedValue(mockWorkflow as any)
+      vi.mocked(extractWorkflow).mockResolvedValue(
+        mockWorkflow as ComfyWorkflowJSON
+      )
 
       const result = await getJobWorkflow('job-wf')
 

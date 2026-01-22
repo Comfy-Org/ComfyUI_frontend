@@ -238,7 +238,7 @@ describe('useFirebaseAuthStore', () => {
     // Now, succeed on next attempt
     vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValueOnce({
       user: mockUser
-    } as any)
+    } as unknown as UserCredential)
 
     await store.login('test@example.com', 'correct-password')
   })

@@ -413,7 +413,7 @@ describe('useConflictDetection', () => {
           error: 'Import error',
           name: 'fail-pack',
           path: '/path/to/pack'
-        } as any // The actual API returns different structure than types
+        } as { error?: string; traceback?: string } | null // The actual API returns different structure than types
       })
 
       // Mock registry response for the package

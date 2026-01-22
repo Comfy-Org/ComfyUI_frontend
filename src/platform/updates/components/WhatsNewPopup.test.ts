@@ -165,7 +165,9 @@ describe('WhatsNewPopup', () => {
     wrapper = mountComponent()
 
     // Call the close method directly instead of triggering DOM event
-    await (wrapper.vm as any).closePopup()
+    await (
+      wrapper.vm as typeof wrapper.vm & { closePopup: () => Promise<void> }
+    ).closePopup()
 
     expect(wrapper.emitted('whats-new-dismissed')).toBeTruthy()
   })

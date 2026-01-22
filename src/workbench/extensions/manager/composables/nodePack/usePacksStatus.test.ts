@@ -107,7 +107,7 @@ describe('usePacksStatus', () => {
 
     it('should handle packs without ids', () => {
       const nodePacks = ref<NodePack[]>([
-        { ...createMockPack('pack1'), id: undefined as any },
+        { ...createMockPack('pack1'), id: undefined as unknown as string },
         createMockPack('pack2')
       ])
 

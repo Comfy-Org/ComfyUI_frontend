@@ -1051,7 +1051,12 @@ describe('ComboWidget', () => {
         createMockWidgetConfig({
           name: 'mode',
           value: 'test',
-          options: { values: null as any }
+          options: {
+            values: null as unknown as
+              | string[]
+              | Record<string, string>
+              | (() => string[])
+          }
         }),
         node
       )

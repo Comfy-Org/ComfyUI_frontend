@@ -290,7 +290,7 @@ describe('WidgetGalleria Image Display', () => {
       await galleria.vm.$emit('update:activeIndex', 2)
 
       // Check that the internal activeIndex ref was updated
-      const vm = wrapper.vm as any
+      const vm = wrapper.vm as typeof wrapper.vm & { activeIndex: number }
       expect(vm.activeIndex).toBe(2)
     })
   })
