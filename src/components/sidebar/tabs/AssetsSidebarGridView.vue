@@ -55,7 +55,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import ActiveJobCard from '@/components/sidebar/tabs/assets/ActiveJobCard.vue'
+import ActiveJobCard from '@/platform/assets/components/ActiveJobCard.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
