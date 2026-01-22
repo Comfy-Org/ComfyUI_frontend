@@ -13,6 +13,7 @@ import SidebarIcon from '@/components/sidebar/SidebarIcon.vue'
 import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
@@ -31,8 +32,14 @@ import { cn } from '@/utils/tailwindUtil'
 
 const displayWorkflows = ref(false)
 const outputs = useMediaAssets('output')
-const queueStore = useQueueStore()
+const {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  progressPercentStyle
+} = useProgressBarBackground()
 const { totalPercent, currentNodePercent } = useQueueProgress()
+const queueStore = useQueueStore()
 const settingStore = useSettingStore()
 
 const workflowTab = useWorkspaceStore()
@@ -294,15 +301,17 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             queueStore.runningTasks.length + queueStore.pendingTasks.length
           "
         />
-        <div class="absolute bottom-0 w-full">
-          <div
-            class="bg-success-background h-1.5"
-            :style="{ width: `${currentNodePercent}%` }"
-          />
-          <div
-            class="bg-success-background h-1.5"
-            :style="{ width: `${totalPercent}%` }"
-          />
+        <div class="absolute -bottom-1 w-full h-3 rounded-sm overflow-clip">
+          <div :class="progressBarContainerClass">
+            <div
+              :class="progressBarPrimaryClass"
+              :style="progressPercentStyle(totalPercent)"
+            />
+            <div
+              :class="progressBarSecondaryClass"
+              :style="progressPercentStyle(currentNodePercent)"
+            />
+          </div>
         </div>
       </section>
       <template v-for="(item, index) in outputs.media.value" :key="index">
