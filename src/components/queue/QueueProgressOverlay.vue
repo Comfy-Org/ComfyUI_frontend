@@ -1,9 +1,13 @@
 <template>
-  <div v-if="isExpanded" class="flex justify-end w-full pointer-events-none">
+  <div
+    v-if="isOverlayVisible"
+    class="flex justify-end w-full pointer-events-none"
+  >
     <div
       class="pointer-events-auto flex w-[350px] min-w-[310px] max-h-[60vh] flex-col overflow-hidden rounded-lg border border-interface-stroke bg-interface-panel-surface font-inter shadow-interface"
     >
       <QueueOverlayExpanded
+        v-if="isExpanded"
         v-model:selected-job-tab="selectedJobTab"
         v-model:selected-workflow-filter="selectedWorkflowFilter"
         v-model:selected-sort-mode="selectedSortMode"
@@ -21,6 +25,11 @@
         @delete-item="onDeleteItem"
         @view-item="inspectJobAsset"
       />
+      <QueueOverlayEmpty
+        v-else-if="completionSummary"
+        :summary="completionSummary"
+        @summary-click="onSummaryClick"
+      />
     </div>
   </div>
 
@@ -34,9 +43,11 @@
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import QueueOverlayEmpty from '@/components/queue/QueueOverlayEmpty.vue'
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
 import QueueClearHistoryDialog from '@/components/queue/dialogs/QueueClearHistoryDialog.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
+import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'
 import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
@@ -79,6 +90,11 @@ const isExpanded = computed({
     emit('update:expanded', value)
   }
 })
+
+const { summary: completionSummary, clearSummary } = useCompletionSummary()
+const isOverlayVisible = computed(
+  () => isExpanded.value || completionSummary.value !== null
+)
 
 const runningCount = computed(() => queueStore.runningTasks.length)
 const queuedCount = computed(() => queueStore.pendingTasks.length)
@@ -140,6 +156,11 @@ const {
   galleryItems,
   onViewItem: openResultGallery
 } = useResultGallery(() => filteredTasks.value)
+
+const onSummaryClick = () => {
+  isExpanded.value = true
+  clearSummary()
+}
 
 const openAssetsSidebar = () => {
   sidebarTabStore.activeSidebarTabId = 'assets'
