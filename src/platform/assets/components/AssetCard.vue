@@ -115,10 +115,15 @@
           v-if="interactive"
           variant="secondary"
           size="lg"
-          class="shrink-0"
-          @click.stop="$emit('select', asset)"
+          class="shrink-0 relative"
+          @click.stop="handleSelect"
         >
           {{ $t('g.use') }}
+          <StatusBadge
+            v-if="isNewlyImported"
+            severity="contrast"
+            class="absolute -top-0.5 -right-0.5"
+          />
         </Button>
       </div>
     </div>
@@ -132,6 +137,7 @@ import { useI18n } from 'vue-i18n'
 
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -140,6 +146,7 @@ import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBro
 import { assetService } from '@/platform/assets/services/assetService'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -165,6 +172,7 @@ const { t } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { flags } = useFeatureFlags()
+const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
 
 const cardRef = useTemplateRef<HTMLDivElement>('card')
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
@@ -197,6 +205,8 @@ const descId = useId()
 
 const displayName = computed(() => getAssetDisplayName(asset))
 
+const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
+
 const showAssetOptions = computed(
   () =>
     (flags.assetDeletionEnabled || flags.assetRenameEnabled) &&
@@ -211,6 +221,11 @@ const { isLoading, error } = useImage({
   src: asset.preview_url ?? '',
   alt: asset.name
 })
+
+function handleSelect() {
+  acknowledgeAsset(asset.id)
+  emit('select', asset)
+}
 
 function confirmDeletion() {
   dropdownMenuButton.value?.hide()
