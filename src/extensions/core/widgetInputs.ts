@@ -1,7 +1,4 @@
-import {
-  type CallbackParams,
-  useChainCallback
-} from '@/composables/functional/useChainCallback'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
@@ -561,7 +558,7 @@ app.registerExtension({
     const origOnInputDblClick = nodeType.prototype.onInputDblClick
     nodeType.prototype.onInputDblClick = function (
       this: LGraphNode,
-      ...[slot, ...args]: CallbackParams<typeof origOnInputDblClick>
+      ...[slot, ...args]: Parameters<NonNullable<typeof origOnInputDblClick>>
     ) {
       const r = origOnInputDblClick?.apply(this, [slot, ...args])
 

@@ -1,4 +1,5 @@
 import { api } from '@/scripts/api'
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 
 /**
  * Sync entities from the API to the entityByPath map.
@@ -11,8 +12,8 @@ import { api } from '@/scripts/api'
 export async function syncEntities<T>(
   dir: string,
   entityByPath: Record<string, T>,
-  createEntity: (file: any) => T,
-  updateEntity: (entity: T, file: any) => void,
+  createEntity: (file: UserDataFullInfo & { path: string }) => T,
+  updateEntity: (entity: T, file: UserDataFullInfo & { path: string }) => void,
   exclude: (file: T) => boolean = () => false
 ) {
   const files = (await api.listUserDataFullInfo(dir)).map((file) => ({

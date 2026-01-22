@@ -27,7 +27,7 @@ import { computed } from 'vue'
 import type { SettingOption } from '@/platform/settings/types'
 
 const props = defineProps<{
-  modelValue: any
+  modelValue: string | number | undefined
   options: (SettingOption | string)[]
   optionLabel?: string
   optionValue?: string
@@ -35,7 +35,7 @@ const props = defineProps<{
 }>()
 
 defineEmits<{
-  'update:modelValue': [value: any]
+  'update:modelValue': [value: string | number | undefined]
 }>()
 
 const normalizedOptions = computed<SettingOption[]>(() => {

@@ -26,8 +26,8 @@ export function useWorkflowValidation() {
         fix: true,
         silent,
         logger: {
-          log: (message: string) => {
-            logs.push(message)
+          log: (...args: unknown[]) => {
+            logs.push(args.join(' '))
           }
         }
       }

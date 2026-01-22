@@ -79,12 +79,12 @@ export function fixBadLinks(
   options: {
     fix?: boolean
     silent?: boolean
-    logger?: { log: (...args: any[]) => void }
+    logger?: { log: (...args: unknown[]) => void }
   } = {}
 ): BadLinksData {
   const { fix = false, silent = false, logger: _logger = console } = options
   const logger = {
-    log: (...args: any[]) => {
+    log: (...args: unknown[]) => {
       if (!silent) {
         _logger.log(...args)
       }
