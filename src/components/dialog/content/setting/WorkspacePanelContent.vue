@@ -13,8 +13,27 @@
       <div class="flex w-full items-center">
         <TabList class="w-full">
           <Tab value="plan">{{ $t('workspacePanel.tabs.planCredits') }}</Tab>
+          <Tab value="members">{{
+            $t('workspacePanel.tabs.membersCount', { count: members.length })
+          }}</Tab>
         </TabList>
-
+        <Button
+          v-if="permissions.canInviteMembers"
+          v-tooltip="
+            inviteTooltip
+              ? { value: inviteTooltip, showDelay: 0 }
+              : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+          "
+          variant="secondary"
+          size="lg"
+          :disabled="isInviteLimitReached"
+          :class="isInviteLimitReached && 'opacity-50 cursor-not-allowed'"
+          :aria-label="$t('workspacePanel.inviteMember')"
+          @click="handleInviteMember"
+        >
+          {{ $t('workspacePanel.invite') }}
+          <i class="pi pi-plus ml-1 text-sm" />
+        </Button>
         <template v-if="permissions.canAccessWorkspaceMenu">
           <Button
             v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
@@ -57,6 +76,9 @@
         <TabPanel value="plan">
           <SubscriptionPanelContent />
         </TabPanel>
+        <TabPanel value="members">
+          <MembersPanelContent :key="workspaceRole" />
+        </TabPanel>
       </TabPanels>
     </Tabs>
   </div>
@@ -74,6 +96,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SubscriptionPanelContent from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -88,12 +111,15 @@ const { t } = useI18n()
 const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
+  showInviteMemberDialog,
   showEditWorkspaceDialog
 } = useDialogService()
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName, isWorkspaceSubscribed } = storeToRefs(workspaceStore)
-
-const { activeTab, setActiveTab, permissions, uiConfig } = useWorkspaceUI()
+const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
+  storeToRefs(workspaceStore)
+const { fetchMembers, fetchPendingInvites } = workspaceStore
+const { activeTab, setActiveTab, workspaceRole, permissions, uiConfig } =
+  useWorkspaceUI()
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -122,6 +148,16 @@ const deleteTooltip = computed(() => {
   const tooltipKey = uiConfig.value.workspaceMenuDisabledTooltip
   return tooltipKey ? t(tooltipKey) : null
 })
+
+const inviteTooltip = computed(() => {
+  if (!isInviteLimitReached.value) return null
+  return t('workspacePanel.inviteLimitReached')
+})
+
+function handleInviteMember() {
+  if (isInviteLimitReached.value) return
+  showInviteMemberDialog()
+}
 
 const menuItems = computed(() => {
   const items = []
@@ -159,5 +195,7 @@ const menuItems = computed(() => {
 
 onMounted(() => {
   setActiveTab(defaultTab)
+  fetchMembers()
+  fetchPendingInvites()
 })
 </script>

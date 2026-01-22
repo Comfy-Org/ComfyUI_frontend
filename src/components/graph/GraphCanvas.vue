@@ -160,6 +160,9 @@ import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
+import { isCloud } from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
 const emit = defineEmits<{
   ready: []
@@ -394,6 +397,9 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+const { flags } = useFeatureFlags()
+// Set up invite loader during setup phase so useRoute/useRouter work correctly
+const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
@@ -458,6 +464,12 @@ onMounted(async () => {
 
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
+
+// Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
+  if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
+    await inviteUrlLoader.loadInviteFromUrl()
+  }
+
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =

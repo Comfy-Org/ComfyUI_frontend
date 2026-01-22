@@ -589,6 +589,46 @@ export const useDialogService = () => {
     })
   }
 
+  
+  async function showRemoveMemberDialog(memberId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RemoveMemberDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'remove-member',
+      component,
+      props: { memberId },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+    async function showInviteMemberDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/InviteMemberDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-member',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[512px] w-full' }
+        }
+      }
+    })
+  }
+
+
+  async function showRevokeInviteDialog(inviteId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RevokeInviteDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'revoke-invite',
+      component,
+      props: { inviteId },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -610,6 +650,9 @@ export const useDialogService = () => {
     showDeleteWorkspaceDialog,
     showCreateWorkspaceDialog,
     showLeaveWorkspaceDialog,
-    showEditWorkspaceDialog
+    showEditWorkspaceDialog,
+     showRemoveMemberDialog,
+    showRevokeInviteDialog,
+    showInviteMemberDialog,
   }
 }

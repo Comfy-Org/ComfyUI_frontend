@@ -110,6 +110,7 @@ async function getAuthHeaderOrThrow() {
   return authHeader
 }
 
+
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
@@ -296,6 +297,7 @@ export const workspaceApi = {
   /**
    * Accept a workspace invite.
    * POST /api/invites/:token/accept
+   * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
     const headers = await getAuthHeaderOrThrow()

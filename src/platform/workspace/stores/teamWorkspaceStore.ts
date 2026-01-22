@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkspaceAuthStore } from '@/stores/workspaceAuthStore'
 
 import type {
@@ -12,14 +14,14 @@ import type {
 } from '../api/workspaceApi'
 import { workspaceApi } from '../api/workspaceApi'
 
-interface WorkspaceMember {
+export interface WorkspaceMember {
   id: string
   name: string
   email: string
   joinDate: Date
 }
 
-interface PendingInvite {
+export interface PendingInvite {
   id: string
   email: string
   token: string
@@ -367,6 +369,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
       // Clear context and switch to new workspace
       workspaceAuthStore.clearWorkspaceContext()
+      // Clear any preserved invite query to prevent stale invites from being
+      // processed after the reload (prevents owner adding themselves as member)
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.INVITE)
       setLastWorkspaceId(newWorkspace.id)
       window.location.reload()
 
