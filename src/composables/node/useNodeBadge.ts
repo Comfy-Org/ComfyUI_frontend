@@ -73,23 +73,12 @@ export const useNodeBadge = () => {
   onMounted(() => {
     const nodePricing = useNodePricing()
 
-    let redrawQueued = false
-    const queueCanvasRedraw = () => {
-      if (redrawQueued) return
-      redrawQueued = true
-      requestAnimationFrame(() => {
-        redrawQueued = false
-        app.canvas?.setDirty(true, true)
-      })
-    }
-
     watch(
       () => nodePricing.pricingRevision.value,
       () => {
         if (!showApiPricingBadge.value) return
-        queueCanvasRedraw()
-      },
-      { flush: 'sync' }
+        app.canvas?.setDirty(true, true)
+      }
     )
 
     extensionStore.registerExtension({
