@@ -34,23 +34,17 @@ export function useAssetWidgetData(
 
     const assets = computed<AssetItem[]>(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelAssetsByNodeType.get(resolvedType) ?? [])
-        : []
+      return resolvedType ? (assetsStore.getAssets(resolvedType) ?? []) : []
     })
 
     const isLoading = computed(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelLoadingByNodeType.get(resolvedType) ?? false)
-        : false
+      return resolvedType ? assetsStore.isModelLoading(resolvedType) : false
     })
 
     const error = computed<Error | null>(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelErrorByNodeType.get(resolvedType) ?? null)
-        : null
+      return resolvedType ? (assetsStore.getError(resolvedType) ?? null) : null
     })
 
     const dropdownItems = computed<DropdownItem[]>(() => {
@@ -71,7 +65,8 @@ export function useAssetWidgetData(
           return
         }
 
-        const hasData = assetsStore.modelAssetsByNodeType.has(currentNodeType)
+        const existingAssets = assetsStore.getAssets(currentNodeType) ?? []
+        const hasData = existingAssets.length > 0
 
         if (!hasData) {
           await assetsStore.updateModelsForNodeType(currentNodeType)
