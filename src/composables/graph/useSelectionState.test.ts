@@ -168,7 +168,7 @@ describe('useSelectionState', () => {
       title: 'Node Library',
       type: 'custom',
       render: () => null
-    } as any)
+    } as unknown as ReturnType<typeof useNodeLibrarySidebarTab>)
 
     // Setup mock utility functions
     vi.mocked(isLGraphNode).mockImplementation((item: unknown) => {
@@ -180,7 +180,10 @@ describe('useSelectionState', () => {
       return typedNode?.type === 'ImageNode'
     })
     vi.mocked(filterOutputNodes).mockImplementation(
-      (nodes: TestNode[]) => nodes.filter((n) => n.type === 'OutputNode') as any
+      (nodes: TestNode[]) =>
+        nodes.filter((n) => n.type === 'OutputNode') as unknown as ReturnType<
+          typeof filterOutputNodes
+        >
     )
   })
 

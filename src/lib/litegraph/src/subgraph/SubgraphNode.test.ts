@@ -7,6 +7,7 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
+import type { SubgraphEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphEventMap'
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 
@@ -531,8 +532,8 @@ describe.skip('SubgraphNode Cleanup', () => {
 
     // Now trigger an event - only node1 should respond
     subgraph.events.dispatch('input-added', {
-      input: { name: 'test', type: 'number', id: 'test-id' } as any
-    })
+      input: { name: 'test', type: 'number', id: 'test-id' }
+    } as unknown as SubgraphEventMap['input-added'])
 
     // Only node1 should have added an input
     expect(node1.inputs.length).toBe(1) // node1 responds
@@ -558,8 +559,8 @@ describe.skip('SubgraphNode Cleanup', () => {
 
     // Trigger an event - no nodes should respond
     subgraph.events.dispatch('input-added', {
-      input: { name: 'test', type: 'number', id: 'test-id' } as any
-    })
+      input: { name: 'test', type: 'number', id: 'test-id' }
+    } as unknown as SubgraphEventMap['input-added'])
 
     // Without cleanup: all 3 removed nodes would have added an input
     // With cleanup: no nodes should have added an input

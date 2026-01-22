@@ -136,7 +136,9 @@ describe('LinkConnector', () => {
       connector.state.connectingTo = 'input'
 
       expect(() => {
-        connector.moveInputLink(network, { link: 1 } as any)
+        connector.moveInputLink(network, { link: 1 } as unknown as Parameters<
+          typeof connector.moveInputLink
+        >[1])
       }).toThrow('Already dragging links.')
     })
   })
@@ -174,7 +176,9 @@ describe('LinkConnector', () => {
       connector.state.connectingTo = 'output'
 
       expect(() => {
-        connector.moveOutputLink(network, { links: [1] } as any)
+        connector.moveOutputLink(network, {
+          links: [1]
+        } as unknown as Parameters<typeof connector.moveOutputLink>[1])
       }).toThrow('Already dragging links.')
     })
   })
