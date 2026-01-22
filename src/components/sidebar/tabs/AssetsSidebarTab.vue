@@ -105,30 +105,19 @@
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
-        <VirtualGrid
+        <AssetsSidebarGridView
           v-else
-          :items="mediaAssetsWithKey"
-          :grid-style="{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            padding: '0 0.5rem',
-            gap: '0.5rem'
-          }"
+          :assets="displayAssets"
+          :is-selected="isSelected"
+          :asset-type="activeTab"
+          :show-output-count="shouldShowOutputCount"
+          :get-output-count="getOutputCount"
+          @select-asset="handleAssetSelect"
+          @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
-        >
-          <template #item="{ item }">
-            <MediaAssetCard
-              :asset="item"
-              :selected="isSelected(item.id)"
-              :show-output-count="shouldShowOutputCount(item)"
-              :output-count="getOutputCount(item)"
-              @click="handleAssetSelect(item)"
-              @context-menu="handleAssetContextMenu"
-              @zoom="handleZoomClick(item)"
-              @output-count-click="enterFolderView(item)"
-            />
-          </template>
-        </VirtualGrid>
+          @zoom="handleZoomClick"
+          @output-count-click="enterFolderView"
+        />
       </div>
     </template>
     <template #footer>
@@ -221,15 +210,14 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
@@ -406,14 +394,14 @@ const showLoadingState = computed(
   () =>
     loading.value &&
     displayAssets.value.length === 0 &&
-    (!isListView.value || activeJobsCount.value === 0)
+    activeJobsCount.value === 0
 )
 
 const showEmptyState = computed(
   () =>
     !loading.value &&
     displayAssets.value.length === 0 &&
-    (!isListView.value || activeJobsCount.value === 0)
+    activeJobsCount.value === 0
 )
 
 watch(displayAssets, (newAssets) => {
@@ -453,14 +441,6 @@ const galleryItems = computed(() => {
 
     return resultItem
   })
-})
-
-// Add key property for VirtualGrid
-const mediaAssetsWithKey = computed(() => {
-  return displayAssets.value.map((asset) => ({
-    ...asset,
-    key: asset.id
-  }))
 })
 
 const refreshAssets = async () => {

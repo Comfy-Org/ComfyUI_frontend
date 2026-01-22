@@ -7,12 +7,12 @@
   >
     <template v-if="shouldShowLeftPanel" #leftPanel>
       <LeftSidePanel
-        v-model="selectedCategory"
+        v-model="selectedNavItem"
         data-component-id="AssetBrowserModal-LeftSidePanel"
-        :nav-items="availableCategories"
+        :nav-items
       >
         <template #header-icon>
-          <div class="icon-[lucide--folder] size-4" />
+          <div class="icon-[comfy--ai-model] size-4" />
         </template>
         <template #header-title>
           <span class="capitalize">{{ displayTitle }}</span>
@@ -112,27 +112,21 @@ const cacheKey = computed(() => {
 })
 
 // Read directly from store cache - reactive to any store updates
-const fetchedAssets = computed(
-  () => assetStore.modelAssetsByNodeType.get(cacheKey.value) ?? []
-)
+const fetchedAssets = computed(() => assetStore.getAssets(cacheKey.value))
 
-const isStoreLoading = computed(
-  () => assetStore.modelLoadingByNodeType.get(cacheKey.value) ?? false
-)
+const isStoreLoading = computed(() => assetStore.isModelLoading(cacheKey.value))
 
 // Only show loading spinner when loading AND no cached data
 const isLoading = computed(
   () => isStoreLoading.value && fetchedAssets.value.length === 0
 )
 
-async function refreshAssets(): Promise<AssetItem[]> {
+async function refreshAssets(): Promise<void> {
   if (props.nodeType) {
-    return await assetStore.updateModelsForNodeType(props.nodeType)
+    await assetStore.updateModelsForNodeType(props.nodeType)
+  } else if (props.assetType) {
+    await assetStore.updateModelsForTag(props.assetType)
   }
-  if (props.assetType) {
-    return await assetStore.updateModelsForTag(props.assetType)
-  }
-  return []
 }
 
 // Trigger background refresh on mount
@@ -143,8 +137,9 @@ const { isUploadButtonEnabled, showUploadDialog } =
 
 const {
   searchQuery,
+  selectedNavItem,
   selectedCategory,
-  availableCategories,
+  navItems,
   categoryFilteredAssets,
   filteredAssets,
   updateFilters
