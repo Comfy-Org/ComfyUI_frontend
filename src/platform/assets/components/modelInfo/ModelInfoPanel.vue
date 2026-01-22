@@ -10,17 +10,28 @@
         </span>
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.displayName')">
-        <EditableText
-          :model-value="displayName"
-          :is-editing="isEditingDisplayName"
-          :class="cn('break-all', !isImmutable && 'text-base-foreground')"
-          @dblclick="isEditingDisplayName = !isImmutable"
-          @edit="handleDisplayNameEdit"
-          @cancel="isEditingDisplayName = false"
-        />
+        <div class="group flex justify-between">
+          <EditableText
+            :model-value="displayName"
+            :is-editing="isEditingDisplayName"
+            :class="cn('break-all text-muted-foreground flex-auto')"
+            @dblclick="isEditingDisplayName = !isImmutable"
+            @edit="handleDisplayNameEdit"
+            @cancel="isEditingDisplayName = false"
+          />
+          <Button
+            v-if="!isImmutable && !isEditingDisplayName"
+            size="icon-sm"
+            variant="muted-textonly"
+            class="transition-opacity opacity-0 group-hover:opacity-100"
+            @click="isEditingDisplayName = !isImmutable"
+          >
+            <i class="icon-[lucide--square-pen] self-center size-4" />
+          </Button>
+        </div>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.fileName')">
-        <span class="break-all">{{ asset.name }}</span>
+        <span class="break-all text-muted-foreground">{{ asset.name }}</span>
       </ModelInfoField>
       <ModelInfoField
         v-if="sourceUrl"
@@ -129,7 +140,7 @@
             variant="muted-textonly"
             size="icon-sm"
             :title="t('g.copyAll')"
-            class="ml-auto p-0"
+            class="p-0"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
             <i class="icon-[lucide--copy] size-4 min-w-4 min-h-4 opacity-60" />
