@@ -62,10 +62,7 @@
         </span>
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
-        <Select
-          v-if="!isImmutable"
-          v-model="selectedModelType"
-        >
+        <Select v-if="!isImmutable" v-model="selectedModelType">
           <SelectTrigger class="w-full">
             <SelectValue
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
