@@ -288,9 +288,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
         // Retry with exponential backoff for transient errors
         const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt)
+        const errorMessage = e instanceof Error ? e.message : String(e)
         console.warn(
-          `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms:`,
-          e
+          `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms: ${errorMessage}`
         )
         await new Promise((resolve) => setTimeout(resolve, delay))
       }
