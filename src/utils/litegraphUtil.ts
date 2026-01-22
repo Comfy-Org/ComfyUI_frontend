@@ -45,19 +45,16 @@ export async function createNode(
   }
 
   const { graph, graph_mouse: [ posX, posY ] } = canvas
-  let newNode: LGraphNode | null = null
-  // createNode calls onNodeCreated w/o params before returning the node
-  await new Promise<void>((resolve) => {
-    newNode = LiteGraph.createNode(name, name, {
-      onNodeCreated: () => setTimeout(resolve, 0)
-    })
+  const newNode = await new Promise<LGraphNode | null>((resolve) => {
+    const createdNode = LiteGraph.createNode(name)
+    setTimeout(resolve, 0, createdNode)
   })
 
   if (newNode as LGraphNode | null) {
     newNode!.pos = [ posX, posY ]
-    const createdNode = graph?.add(newNode!) ?? null
+    const addedNode = graph?.add(newNode!) ?? null
     graph?.change()
-    return createdNode
+    return addedNode
   } else {
     useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
     return null

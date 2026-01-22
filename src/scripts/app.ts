@@ -1444,7 +1444,9 @@ export class ComfyApp {
       if (file.type.startsWith('image')) {
         const transfer = new DataTransfer()
         transfer.items.add(file)
-        await pasteImageNode(this.canvas, transfer.items)
+        console.log('transfer items', transfer.items)
+        const imageNode = await createNode(this.canvas, 'LoadImage')
+        await pasteImageNode(this.canvas, transfer.items, imageNode)
         return
       }
 
@@ -1554,8 +1556,6 @@ export class ComfyApp {
     nodes.forEach((node, index) => {
       if (index > 0) {
         node.pos = [ x, y + (height * index) + (25 * (index + 1))];
-
-        console.log('index:', index, 'pos:', node.pos)
       }
       this.canvas.graph?.change()
     });
