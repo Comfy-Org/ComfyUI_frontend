@@ -322,6 +322,10 @@ export const useAssetsStore = defineStore('assets', () => {
         return modelStateByKey.value.get(key)?.hasMore ?? false
       }
 
+      function hasAssetKey(key: string): boolean {
+        return modelStateByKey.value.has(key)
+      }
+
       /**
        * Internal helper to fetch and cache assets with a given key and fetcher.
        * Loads first batch immediately, then progressively loads remaining batches.
@@ -484,6 +488,7 @@ export const useAssetsStore = defineStore('assets', () => {
         isLoading,
         getError,
         hasMore,
+        hasAssetKey,
         updateModelsForNodeType,
         updateModelsForTag,
         updateAssetMetadata,
@@ -497,6 +502,7 @@ export const useAssetsStore = defineStore('assets', () => {
       isLoading: () => false,
       getError: () => undefined,
       hasMore: () => false,
+      hasAssetKey: () => false,
       updateModelsForNodeType: async () => {},
       updateModelsForTag: async () => {},
       updateAssetMetadata: async () => {},
@@ -509,6 +515,7 @@ export const useAssetsStore = defineStore('assets', () => {
     isLoading: isModelLoading,
     getError,
     hasMore,
+    hasAssetKey,
     updateModelsForNodeType,
     updateModelsForTag,
     updateAssetMetadata,
@@ -577,6 +584,7 @@ export const useAssetsStore = defineStore('assets', () => {
     isModelLoading,
     getError,
     hasMore,
+    hasAssetKey,
 
     // Model assets - actions
     updateModelsForNodeType,

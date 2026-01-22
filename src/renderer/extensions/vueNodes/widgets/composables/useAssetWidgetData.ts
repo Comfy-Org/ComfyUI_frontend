@@ -65,10 +65,10 @@ export function useAssetWidgetData(
           return
         }
 
-        const existingAssets = assetsStore.getAssets(currentNodeType) ?? []
-        const hasData = existingAssets.length > 0
+        const isLoading = assetsStore.isModelLoading(currentNodeType)
+        const hasBeenInitialized = assetsStore.hasAssetKey(currentNodeType)
 
-        if (!hasData) {
+        if (!isLoading && !hasBeenInitialized) {
           await assetsStore.updateModelsForNodeType(currentNodeType)
         }
       },
