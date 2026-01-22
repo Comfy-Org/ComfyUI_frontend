@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 
@@ -75,7 +76,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
         id: 123,
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
-      } as any
+      } as unknown as LGraphNode
 
       // Mock app.rootGraph.getNodeById to return the mock node
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
@@ -181,7 +182,7 @@ describe('useExecutionStore - Node Error Lookups', () => {
         id: 123,
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
-      } as any
+      } as unknown as LGraphNode
 
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 

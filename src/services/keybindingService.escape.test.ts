@@ -40,7 +40,7 @@ describe('keybindingService - Escape key handling', () => {
     // Reset dialog store mock to empty
     vi.mocked(useDialogStore).mockReturnValue({
       dialogStack: []
-    } as any)
+    } as unknown as ReturnType<typeof useDialogStore>)
 
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
@@ -179,7 +179,7 @@ describe('keybindingService - Escape key handling', () => {
     // Mock dialog store to have open dialogs
     vi.mocked(useDialogStore).mockReturnValue({
       dialogStack: [{ key: 'test-dialog' }]
-    } as any)
+    } as unknown as ReturnType<typeof useDialogStore>)
 
     // Re-create keybinding service to pick up new mock
     keybindingService = useKeybindingService()

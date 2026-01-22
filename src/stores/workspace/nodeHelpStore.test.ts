@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
 describe('nodeHelpStore', () => {
@@ -26,7 +27,7 @@ describe('nodeHelpStore', () => {
   it('should open help for a node', () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    nodeHelpStore.openHelp(mockCoreNode as any)
+    nodeHelpStore.openHelp(mockCoreNode as unknown as ComfyNodeDefImpl)
 
     expect(nodeHelpStore.currentHelpNode).toStrictEqual(mockCoreNode)
     expect(nodeHelpStore.isHelpOpen).toBe(true)
@@ -35,7 +36,7 @@ describe('nodeHelpStore', () => {
   it('should close help', () => {
     const nodeHelpStore = useNodeHelpStore()
 
-    nodeHelpStore.openHelp(mockCoreNode as any)
+    nodeHelpStore.openHelp(mockCoreNode as unknown as ComfyNodeDefImpl)
     expect(nodeHelpStore.isHelpOpen).toBe(true)
 
     nodeHelpStore.closeHelp()

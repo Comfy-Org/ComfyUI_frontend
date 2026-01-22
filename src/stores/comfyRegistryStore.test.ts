@@ -126,7 +126,9 @@ describe('useComfyRegistryStore', () => {
     }
 
     vi.mocked(useComfyRegistryService).mockReturnValue(
-      mockRegistryService as any
+      mockRegistryService as unknown as ReturnType<
+        typeof useComfyRegistryService
+      >
     )
   })
 
@@ -176,7 +178,7 @@ describe('useComfyRegistryStore', () => {
     const store = useComfyRegistryStore()
     vi.spyOn(store.getPackById, 'call').mockResolvedValueOnce(null)
 
-    const result = await store.getPackById.call(null as any)
+    const result = await store.getPackById.call(null as unknown as string)
 
     expect(result).toBeNull()
     expect(mockRegistryService.getPackById).not.toHaveBeenCalled()
