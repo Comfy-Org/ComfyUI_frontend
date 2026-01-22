@@ -100,6 +100,11 @@
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
+    "closeDialog": "Close dialog",
+    "showLeftPanel": "Show left panel",
+    "hideLeftPanel": "Hide left panel",
+    "showRightPanel": "Show right panel",
+    "hideRightPanel": "Hide right panel",
     "or": "or",
     "pressKeysForNewBinding": "Press keys for new binding",
     "defaultBanner": "default banner",
@@ -2311,6 +2316,12 @@
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
+    "byType": "By type",
+    "emptyImported": {
+      "canImport": "No imported models yet. Click \"Import Model\" to add your own.",
+      "restricted": "Personal models are only available at Creator tier and above."
+    },
+    "imported": "Imported",
     "assetCollection": "Asset collection",
     "assets": "Assets",
     "baseModels": "Base models",

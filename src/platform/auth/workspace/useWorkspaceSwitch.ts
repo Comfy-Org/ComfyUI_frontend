@@ -2,13 +2,13 @@ import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
-import { useWorkspaceAuthStore } from '@/stores/workspaceAuthStore'
 
 export function useWorkspaceSwitch() {
   const { t } = useI18n()
-  const workspaceAuthStore = useWorkspaceAuthStore()
-  const { currentWorkspace } = storeToRefs(workspaceAuthStore)
+  const workspaceStore = useTeamWorkspaceStore()
+  const { activeWorkspace } = storeToRefs(workspaceStore)
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()
 
@@ -17,7 +17,7 @@ export function useWorkspaceSwitch() {
   }
 
   async function switchWithConfirmation(workspaceId: string): Promise<boolean> {
-    if (currentWorkspace.value?.id === workspaceId) {
+    if (activeWorkspace.value?.id === workspaceId) {
       return true
     }
 
@@ -34,8 +34,8 @@ export function useWorkspaceSwitch() {
     }
 
     try {
-      await workspaceAuthStore.switchWorkspace(workspaceId)
-      window.location.reload()
+      await workspaceStore.switchWorkspace(workspaceId)
+      // Note: switchWorkspace triggers page reload internally
       return true
     } catch {
       return false
