@@ -8,13 +8,14 @@ import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
-  getAssetBaseModel,
-  getAssetDescription
+  getAssetBaseModels,
+  getAssetDescription,
+  getAssetDisplayName
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
-export type OwnershipOption = 'all' | 'my-models' | 'public-models'
+type OwnershipOption = 'all' | 'my-models' | 'public-models'
 
 type NavId = 'all' | 'imported' | (string & {})
 
@@ -48,8 +49,8 @@ function filterByBaseModels(models: string[]) {
   return (asset: AssetItem) => {
     if (models.length === 0) return true
     const modelSet = new Set(models)
-    const baseModel = getAssetBaseModel(asset)
-    return baseModel ? modelSet.has(baseModel) : false
+    const assetBaseModels = getAssetBaseModels(asset)
+    return assetBaseModels.some((model) => modelSet.has(model))
   }
 }
 
@@ -95,8 +96,7 @@ export function useAssetBrowser(
   const filters = ref<FilterState>({
     sortBy: 'recent',
     fileFormats: [],
-    baseModels: [],
-    ownership: 'all'
+    baseModels: []
   })
 
   const selectedOwnership = computed<OwnershipOption>(() => {
@@ -135,18 +135,17 @@ export function useAssetBrowser(
       badges.push({ label: badgeLabel, type: 'type' })
     }
 
-    // Base model badge from metadata
-    const baseModel = getAssetBaseModel(asset)
-    if (baseModel) {
-      badges.push({
-        label: baseModel,
-        type: 'base'
-      })
+    // Base model badges from metadata
+    const baseModels = getAssetBaseModels(asset)
+    for (const model of baseModels) {
+      badges.push({ label: model, type: 'base' })
     }
 
     // Create display stats from API data
     const stats = {
-      formattedDate: d(new Date(asset.created_at), { dateStyle: 'short' }),
+      formattedDate: asset.created_at
+        ? d(new Date(asset.created_at), { dateStyle: 'short' })
+        : undefined,
       downloadCount: undefined, // Not available in API
       stars: undefined // Not available in API
     }
@@ -235,7 +234,13 @@ export function useAssetBrowser(
     fuseOptions: {
       keys: [
         { name: 'name', weight: 0.4 },
-        { name: 'tags', weight: 0.3 }
+        { name: 'tags', weight: 0.3 },
+        { name: 'user_metadata.name', weight: 0.4 },
+        { name: 'user_metadata.additional_tags', weight: 0.3 },
+        { name: 'user_metadata.trained_words', weight: 0.3 },
+        { name: 'user_metadata.user_description', weight: 0.3 },
+        { name: 'metadata.name', weight: 0.4 },
+        { name: 'metadata.trained_words', weight: 0.3 }
       ],
       threshold: 0.4, // Higher threshold for typo tolerance (0.0 = exact, 1.0 = match all)
       ignoreLocation: true, // Search anywhere in the string, not just at the beginning
@@ -264,16 +269,15 @@ export function useAssetBrowser(
     sortedAssets.sort((a, b) => {
       switch (filters.value.sortBy) {
         case 'name-desc':
-          return b.name.localeCompare(a.name)
+          return getAssetDisplayName(b).localeCompare(getAssetDisplayName(a))
         case 'recent':
           return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            new Date(b.created_at ?? 0).getTime() -
+            new Date(a.created_at ?? 0).getTime()
           )
-        case 'popular':
-          return a.name.localeCompare(b.name)
         case 'name-asc':
         default:
-          return a.name.localeCompare(b.name)
+          return getAssetDisplayName(a).localeCompare(getAssetDisplayName(b))
       }
     })
 

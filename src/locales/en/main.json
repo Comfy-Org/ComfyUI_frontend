@@ -183,6 +183,7 @@
     "source": "Source",
     "filter": "Filter",
     "apply": "Apply",
+    "use": "Use",
     "enabled": "Enabled",
     "installed": "Installed",
     "restart": "Restart",
@@ -2387,6 +2388,29 @@
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
+    },
+    "modelInfo": {
+      "title": "Model Info",
+      "selectModelPrompt": "Select a model to see its information",
+      "basicInfo": "Basic Info",
+      "displayName": "Display Name",
+      "fileName": "File Name",
+      "source": "Source",
+      "viewOnSource": "View on {source}",
+      "modelTagging": "Model Tagging",
+      "modelType": "Model Type",
+      "selectModelType": "Select model type...",
+      "compatibleBaseModels": "Compatible Base Models",
+      "addBaseModel": "Add base model...",
+      "baseModelUnknown": "Base model unknown",
+      "additionalTags": "Additional Tags",
+      "addTag": "Add tag...",
+      "noAdditionalTags": "No additional tags",
+      "modelDescription": "Model Description",
+      "triggerPhrases": "Trigger Phrases",
+      "description": "Description",
+      "descriptionNotSet": "No description set",
+      "descriptionPlaceholder": "Add a description for this model..."
     },
     "media": {
       "threeDModelPlaceholder": "3D Model",
