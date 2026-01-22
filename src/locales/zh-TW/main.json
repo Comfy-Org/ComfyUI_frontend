@@ -24,6 +24,7 @@
     "assets": "資產",
     "baseModels": "基礎模型",
     "browseAssets": "瀏覽資產",
+    "byType": "依類型",
     "checkpoints": "Checkpoints",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "範例：",
@@ -45,6 +46,10 @@
       "failed": "下載失敗",
       "inProgress": "正在下載 {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "尚未匯入模型。點擊「匯入模型」以新增您的模型。",
+      "restricted": "個人模型僅限 Creator 方案及以上等級使用。"
+    },
     "errorFileTooLarge": "檔案超過允許的最大大小限制",
     "errorFormatNotAllowed": "僅允許 SafeTensor 格式",
     "errorModelTypeNotSupported": "不支援此模型類型",
@@ -61,6 +66,7 @@
     "finish": "完成",
     "genericLinkPlaceholder": "請在此貼上連結",
     "importAnother": "匯入其他",
+    "imported": "已匯入",
     "jobId": "工作 ID",
     "loadingModels": "正在載入 {type}...",
     "maxFileSize": "最大檔案大小：{size}",
@@ -70,6 +76,29 @@
       "threeDModelPlaceholder": "3D 模型"
     },
     "modelAssociatedWithLink": "您提供的連結所對應的模型：",
+    "modelInfo": {
+      "addBaseModel": "新增基礎模型...",
+      "addTag": "新增標籤...",
+      "additionalTags": "其他標籤",
+      "baseModelUnknown": "基礎模型未知",
+      "basicInfo": "基本資訊",
+      "compatibleBaseModels": "相容基礎模型",
+      "description": "描述",
+      "descriptionNotSet": "尚未設定描述",
+      "descriptionPlaceholder": "為此模型新增描述...",
+      "displayName": "顯示名稱",
+      "fileName": "檔案名稱",
+      "modelDescription": "模型描述",
+      "modelTagging": "模型標籤",
+      "modelType": "模型類型",
+      "noAdditionalTags": "沒有其他標籤",
+      "selectModelPrompt": "選擇模型以查看其資訊",
+      "selectModelType": "選擇模型類型...",
+      "source": "來源",
+      "title": "模型資訊",
+      "triggerPhrases": "觸發詞",
+      "viewOnSource": "在 {source} 上檢視"
+    },
     "modelName": "模型名稱",
     "modelNamePlaceholder": "請輸入此模型的名稱",
     "modelTypeSelectorLabel": "這是什麼類型的模型？",
@@ -684,6 +713,7 @@
     "clearAll": "全部清除",
     "clearFilters": "清除篩選",
     "close": "關閉",
+    "closeDialog": "關閉對話框",
     "color": "顏色",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrg 標誌",
@@ -762,6 +792,8 @@
     "goToNode": "前往節點",
     "graphNavigation": "圖形導覽",
     "halfSpeed": "0.5倍速",
+    "hideLeftPanel": "隱藏左側面板",
+    "hideRightPanel": "隱藏右側面板",
     "icon": "圖示",
     "imageFailedToLoad": "無法載入圖片",
     "imagePreview": "圖片預覽 - 使用方向鍵在圖片間導航",
@@ -803,6 +835,7 @@
     "name": "名稱",
     "newFolder": "新資料夾",
     "next": "下一步",
+    "nightly": "NIGHTLY",
     "no": "否",
     "noAudioRecorded": "沒有錄製到音訊",
     "noItems": "沒有項目",
@@ -892,7 +925,9 @@
     "selectedFile": "已選取的檔案",
     "setAsBackground": "設為背景",
     "settings": "設定",
+    "showLeftPanel": "顯示左側面板",
     "showReport": "顯示報告",
+    "showRightPanel": "顯示右側面板",
     "singleSelectDropdown": "單選下拉式選單",
     "sort": "排序",
     "source": "來源",
@@ -915,6 +950,7 @@
     "updating": "更新中",
     "upload": "上傳",
     "usageHint": "使用提示",
+    "use": "使用",
     "user": "使用者",
     "versionMismatchWarning": "版本相容性警告",
     "versionMismatchWarningMessage": "{warning}：{detail} 請參閱 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新說明。",
@@ -1618,6 +1654,12 @@
       "title": "此工作流程有缺少的節點"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "預覽版本",
+      "tooltip": "您正在使用 ComfyUI 的夜間版本。請使用反饋按鈕分享您對這些功能的看法。"
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3D",
@@ -2132,12 +2174,14 @@
     "viewControls": "檢視控制"
   },
   "sideToolbar": {
+    "activeJobStatus": "進行中作業：{status}",
     "assets": "資源",
     "backToAssets": "返回所有資源",
     "browseTemplates": "瀏覽範例模板",
     "downloads": "下載",
     "generatedAssetsHeader": "已產生資產",
     "helpCenter": "說明中心",
+    "importedAssetsHeader": "已匯入資產",
     "labels": {
       "assets": "資源",
       "console": "控制台",
@@ -2182,6 +2226,7 @@
     "queue": "佇列",
     "queueProgressOverlay": {
       "activeJobs": "{count} 個執行中作業",
+      "activeJobsShort": "{count} 個進行中",
       "activeJobsSuffix": "執行中作業",
       "cancelJobTooltip": "取消作業",
       "clearHistory": "清除作業佇列歷史",

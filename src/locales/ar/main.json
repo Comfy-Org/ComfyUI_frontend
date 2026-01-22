@@ -24,6 +24,7 @@
     "assets": "الأصول",
     "baseModels": "النماذج الأساسية",
     "browseAssets": "تصفح الأصول",
+    "byType": "حسب النوع",
     "checkpoints": "نقاط التحقق",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "مثال:",
@@ -45,6 +46,10 @@
       "failed": "فشل التنزيل",
       "inProgress": "جاري تنزيل {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "لا توجد نماذج مستوردة بعد. انقر على \"استيراد نموذج\" لإضافة نموذجك الخاص.",
+      "restricted": "النماذج الشخصية متاحة فقط لمستوى Creator وما فوق."
+    },
     "errorFileTooLarge": "الملف يتجاوز الحد الأقصى المسموح به للحجم",
     "errorFormatNotAllowed": "يسمح فقط بصيغة SafeTensor",
     "errorModelTypeNotSupported": "نوع النموذج هذا غير مدعوم",
@@ -61,6 +66,7 @@
     "finish": "إنهاء",
     "genericLinkPlaceholder": "الصق الرابط هنا",
     "importAnother": "استيراد آخر",
+    "imported": "مستوردة",
     "jobId": "معرّف المهمة",
     "loadingModels": "جارٍ تحميل {type}...",
     "maxFileSize": "الحد الأقصى لحجم الملف: {size}",
@@ -70,6 +76,29 @@
       "threeDModelPlaceholder": "نموذج ثلاثي الأبعاد"
     },
     "modelAssociatedWithLink": "النموذج المرتبط بالرابط الذي قدمته:",
+    "modelInfo": {
+      "addBaseModel": "أضف نموذجًا أساسيًا...",
+      "addTag": "أضف وسمًا...",
+      "additionalTags": "وسوم إضافية",
+      "baseModelUnknown": "النموذج الأساسي غير معروف",
+      "basicInfo": "معلومات أساسية",
+      "compatibleBaseModels": "نماذج أساسية متوافقة",
+      "description": "الوصف",
+      "descriptionNotSet": "لم يتم تعيين وصف",
+      "descriptionPlaceholder": "أضف وصفًا لهذا النموذج...",
+      "displayName": "اسم العرض",
+      "fileName": "اسم الملف",
+      "modelDescription": "وصف النموذج",
+      "modelTagging": "تصنيف النموذج",
+      "modelType": "نوع النموذج",
+      "noAdditionalTags": "لا توجد وسوم إضافية",
+      "selectModelPrompt": "اختر نموذجًا لعرض معلوماته",
+      "selectModelType": "اختر نوع النموذج...",
+      "source": "المصدر",
+      "title": "معلومات النموذج",
+      "triggerPhrases": "عبارات التفعيل",
+      "viewOnSource": "عرض على {source}"
+    },
     "modelName": "اسم النموذج",
     "modelNamePlaceholder": "أدخل اسمًا لهذا النموذج",
     "modelTypeSelectorLabel": "ما نوع هذا النموذج؟",
@@ -684,6 +713,7 @@
     "clearAll": "مسح الكل",
     "clearFilters": "مسح الفلاتر",
     "close": "إغلاق",
+    "closeDialog": "إغلاق الحوار",
     "color": "اللون",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "شعار ComfyOrg",
@@ -762,6 +792,8 @@
     "goToNode": "الانتقال إلى العقدة",
     "graphNavigation": "التنقل في الرسم البياني",
     "halfSpeed": "0.5x",
+    "hideLeftPanel": "إخفاء اللوحة اليسرى",
+    "hideRightPanel": "إخفاء اللوحة اليمنى",
     "icon": "أيقونة",
     "imageFailedToLoad": "فشل تحميل الصورة",
     "imagePreview": "معاينة الصورة - استخدم مفاتيح الأسهم للتنقل بين الصور",
@@ -803,6 +835,7 @@
     "name": "الاسم",
     "newFolder": "مجلد جديد",
     "next": "التالي",
+    "nightly": "NIGHTLY",
     "no": "لا",
     "noAudioRecorded": "لم يتم تسجيل أي صوت",
     "noItems": "لا توجد عناصر",
@@ -892,7 +925,9 @@
     "selectedFile": "الملف المحدد",
     "setAsBackground": "تعيين كخلفية",
     "settings": "الإعدادات",
+    "showLeftPanel": "إظهار اللوحة اليسرى",
     "showReport": "عرض التقرير",
+    "showRightPanel": "إظهار اللوحة اليمنى",
     "singleSelectDropdown": "قائمة منسدلة اختيار واحد",
     "sort": "فرز",
     "source": "المصدر",
@@ -915,6 +950,7 @@
     "updating": "جارٍ التحديث",
     "upload": "رفع",
     "usageHint": "تلميح الاستخدام",
+    "use": "استخدم",
     "user": "المستخدم",
     "versionMismatchWarning": "تحذير توافق الإصدارات",
     "versionMismatchWarningMessage": "{warning}: {detail} زر https://docs.comfy.org/installation/update_comfyui#common-update-issues للحصول على تعليمات التحديث.",
@@ -1618,6 +1654,12 @@
       "title": "سير العمل هذا يحتوي على عقد مفقودة"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "إصدار معاينة",
+      "tooltip": "أنت تستخدم إصدارًا ليليًا من ComfyUI. يرجى استخدام زر الملاحظات لمشاركة آرائك حول هذه الميزات."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "ثلاثي الأبعاد",
@@ -2132,12 +2174,14 @@
     "viewControls": "عناصر تحكم العرض"
   },
   "sideToolbar": {
+    "activeJobStatus": "المهمة النشطة: {status}",
     "assets": "الأصول",
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
     "generatedAssetsHeader": "الأصول المُولدة",
     "helpCenter": "مركز المساعدة",
+    "importedAssetsHeader": "الأصول المستوردة",
     "labels": {
       "assets": "الأصول",
       "console": "وحدة التحكم",
@@ -2182,6 +2226,7 @@
     "queue": "قائمة الانتظار",
     "queueProgressOverlay": {
       "activeJobs": "{count} مهمة نشطة | {count} مهام نشطة",
+      "activeJobsShort": "{count} نشط | {count} نشط",
       "activeJobsSuffix": "مهام نشطة",
       "cancelJobTooltip": "إلغاء المهمة",
       "clearHistory": "مسح سجل قائمة الانتظار",

@@ -24,6 +24,7 @@
     "assets": "Recursos",
     "baseModels": "Modelos base",
     "browseAssets": "Explorar recursos",
+    "byType": "Por tipo",
     "checkpoints": "Checkpoints",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "Ejemplo:",
@@ -45,6 +46,10 @@
       "failed": "La descarga falló",
       "inProgress": "Descargando {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "Aún no hay modelos importados. Haz clic en \"Importar modelo\" para añadir el tuyo.",
+      "restricted": "Los modelos personales solo están disponibles en el nivel Creador o superior."
+    },
     "errorFileTooLarge": "El archivo excede el tamaño máximo permitido",
     "errorFormatNotAllowed": "Solo se permite el formato SafeTensor",
     "errorModelTypeNotSupported": "Este tipo de modelo no es compatible",
@@ -61,6 +66,7 @@
     "finish": "Finalizar",
     "genericLinkPlaceholder": "Pega el enlace aquí",
     "importAnother": "Importar otro",
+    "imported": "Importado",
     "jobId": "ID de tarea",
     "loadingModels": "Cargando {type}...",
     "maxFileSize": "Tamaño máximo de archivo: {size}",
@@ -70,6 +76,29 @@
       "threeDModelPlaceholder": "Modelo 3D"
     },
     "modelAssociatedWithLink": "El modelo asociado con el enlace que proporcionaste:",
+    "modelInfo": {
+      "addBaseModel": "Agregar modelo base...",
+      "addTag": "Agregar etiqueta...",
+      "additionalTags": "Etiquetas adicionales",
+      "baseModelUnknown": "Modelo base desconocido",
+      "basicInfo": "Información básica",
+      "compatibleBaseModels": "Modelos base compatibles",
+      "description": "Descripción",
+      "descriptionNotSet": "Sin descripción",
+      "descriptionPlaceholder": "Agrega una descripción para este modelo...",
+      "displayName": "Nombre para mostrar",
+      "fileName": "Nombre de archivo",
+      "modelDescription": "Descripción del modelo",
+      "modelTagging": "Etiquetado del modelo",
+      "modelType": "Tipo de modelo",
+      "noAdditionalTags": "Sin etiquetas adicionales",
+      "selectModelPrompt": "Selecciona un modelo para ver su información",
+      "selectModelType": "Selecciona el tipo de modelo...",
+      "source": "Fuente",
+      "title": "Información del modelo",
+      "triggerPhrases": "Frases de activación",
+      "viewOnSource": "Ver en {source}"
+    },
     "modelName": "Nombre del modelo",
     "modelNamePlaceholder": "Introduce un nombre para este modelo",
     "modelTypeSelectorLabel": "¿Qué tipo de modelo es este?",
@@ -684,6 +713,7 @@
     "clearAll": "Borrar todo",
     "clearFilters": "Borrar filtros",
     "close": "Cerrar",
+    "closeDialog": "Cerrar diálogo",
     "color": "Color",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "Logo de ComfyOrg",
@@ -762,6 +792,8 @@
     "goToNode": "Ir al nodo",
     "graphNavigation": "Navegación de gráficos",
     "halfSpeed": "0.5x",
+    "hideLeftPanel": "Ocultar panel izquierdo",
+    "hideRightPanel": "Ocultar panel derecho",
     "icon": "Icono",
     "imageFailedToLoad": "Falló la carga de la imagen",
     "imagePreview": "Vista previa de imagen - Usa las teclas de flecha para navegar entre imágenes",
@@ -803,6 +835,7 @@
     "name": "Nombre",
     "newFolder": "Nueva carpeta",
     "next": "Siguiente",
+    "nightly": "NIGHTLY",
     "no": "No",
     "noAudioRecorded": "No se grabó audio",
     "noItems": "Sin elementos",
@@ -892,7 +925,9 @@
     "selectedFile": "Archivo seleccionado",
     "setAsBackground": "Establecer como fondo",
     "settings": "Configuraciones",
+    "showLeftPanel": "Mostrar panel izquierdo",
     "showReport": "Mostrar informe",
+    "showRightPanel": "Mostrar panel derecho",
     "singleSelectDropdown": "Menú desplegable de selección única",
     "sort": "Ordenar",
     "source": "Fuente",
@@ -915,6 +950,7 @@
     "updating": "Actualizando",
     "upload": "Subir",
     "usageHint": "Sugerencia de uso",
+    "use": "Usar",
     "user": "Usuario",
     "versionMismatchWarning": "Advertencia de compatibilidad de versión",
     "versionMismatchWarningMessage": "{warning}: {detail} Visita https://docs.comfy.org/installation/update_comfyui#common-update-issues para obtener instrucciones de actualización.",
@@ -1618,6 +1654,12 @@
       "title": "Este flujo de trabajo tiene nodos faltantes"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "Versión preliminar",
+      "tooltip": "Estás usando una versión nightly de ComfyUI. Por favor, utiliza el botón de comentarios para compartir tus opiniones sobre estas funciones."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2132,12 +2174,14 @@
     "viewControls": "Controles de vista"
   },
   "sideToolbar": {
+    "activeJobStatus": "Trabajo activo: {status}",
     "assets": "Recursos",
     "backToAssets": "Volver a todos los recursos",
     "browseTemplates": "Explorar plantillas de ejemplo",
     "downloads": "Descargas",
     "generatedAssetsHeader": "Recursos generados",
     "helpCenter": "Centro de ayuda",
+    "importedAssetsHeader": "Recursos importados",
     "labels": {
       "assets": "Recursos",
       "console": "Consola",
@@ -2182,6 +2226,7 @@
     "queue": "Cola",
     "queueProgressOverlay": {
       "activeJobs": "{count} trabajo activo | {count} trabajos activos",
+      "activeJobsShort": "{count} activo(s) | {count} activo(s)",
       "activeJobsSuffix": "trabajos activos",
       "cancelJobTooltip": "Cancelar trabajo",
       "clearHistory": "Limpiar historial de la cola de trabajos",

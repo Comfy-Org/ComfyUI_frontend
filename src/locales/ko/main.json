@@ -24,6 +24,7 @@
     "assets": "에셋",
     "baseModels": "베이스 모델",
     "browseAssets": "에셋 탐색",
+    "byType": "유형별",
     "checkpoints": "체크포인트",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "예시:",
@@ -45,6 +46,10 @@
       "failed": "다운로드 실패",
       "inProgress": "{assetName} 다운로드 중..."
     },
+    "emptyImported": {
+      "canImport": "아직 가져온 모델이 없습니다. \"모델 가져오기\"를 클릭하여 직접 추가하세요.",
+      "restricted": "개인 모델은 Creator 등급 이상에서만 사용할 수 있습니다."
+    },
     "errorFileTooLarge": "파일이 허용된 최대 크기 제한을 초과했습니다",
     "errorFormatNotAllowed": "SafeTensor 형식만 허용됩니다",
     "errorModelTypeNotSupported": "이 모델 유형은 지원되지 않습니다",
@@ -61,6 +66,7 @@
     "finish": "완료",
     "genericLinkPlaceholder": "여기에 링크를 붙여넣으세요",
     "importAnother": "다른 항목 가져오기",
+    "imported": "가져온 항목",
     "jobId": "작업 ID",
     "loadingModels": "{type} 불러오는 중...",
     "maxFileSize": "최대 파일 크기: {size}",
@@ -70,6 +76,29 @@
       "threeDModelPlaceholder": "3D 모델"
     },
     "modelAssociatedWithLink": "제공하신 링크와 연결된 모델:",
+    "modelInfo": {
+      "addBaseModel": "베이스 모델 추가...",
+      "addTag": "태그 추가...",
+      "additionalTags": "추가 태그",
+      "baseModelUnknown": "베이스 모델 알 수 없음",
+      "basicInfo": "기본 정보",
+      "compatibleBaseModels": "호환 가능한 베이스 모델",
+      "description": "설명",
+      "descriptionNotSet": "설정된 설명 없음",
+      "descriptionPlaceholder": "이 모델에 대한 설명을 추가하세요...",
+      "displayName": "표시 이름",
+      "fileName": "파일 이름",
+      "modelDescription": "모델 설명",
+      "modelTagging": "모델 태깅",
+      "modelType": "모델 유형",
+      "noAdditionalTags": "추가 태그 없음",
+      "selectModelPrompt": "모델을 선택하여 정보를 확인하세요",
+      "selectModelType": "모델 유형 선택...",
+      "source": "소스",
+      "title": "모델 정보",
+      "triggerPhrases": "트리거 문구",
+      "viewOnSource": "{source}에서 보기"
+    },
     "modelName": "모델 이름",
     "modelNamePlaceholder": "이 모델의 이름을 입력하세요",
     "modelTypeSelectorLabel": "모델 유형은 무엇인가요?",
@@ -684,6 +713,7 @@
     "clearAll": "모두 지우기",
     "clearFilters": "필터 지우기",
     "close": "닫기",
+    "closeDialog": "대화 상자 닫기",
     "color": "색상",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrg 로고",
@@ -762,6 +792,8 @@
     "goToNode": "노드로 이동",
     "graphNavigation": "그래프 탐색",
     "halfSpeed": "0.5배속",
+    "hideLeftPanel": "왼쪽 패널 숨기기",
+    "hideRightPanel": "오른쪽 패널 숨기기",
     "icon": "아이콘",
     "imageFailedToLoad": "이미지를 로드하지 못했습니다.",
     "imagePreview": "이미지 미리보기 - 화살표 키를 사용하여 이미지 간 이동",
@@ -803,6 +835,7 @@
     "name": "이름",
     "newFolder": "새 폴더",
     "next": "다음",
+    "nightly": "NIGHTLY",
     "no": "아니오",
     "noAudioRecorded": "녹음된 오디오가 없습니다",
     "noItems": "항목 없음",
@@ -892,7 +925,9 @@
     "selectedFile": "선택된 파일",
     "setAsBackground": "배경으로 설정",
     "settings": "설정",
+    "showLeftPanel": "왼쪽 패널 표시",
     "showReport": "보고서 보기",
+    "showRightPanel": "오른쪽 패널 표시",
     "singleSelectDropdown": "단일 선택 드롭다운",
     "sort": "정렬",
     "source": "소스",
@@ -915,6 +950,7 @@
     "updating": "업데이트 중",
     "upload": "업로드",
     "usageHint": "사용 힌트",
+    "use": "사용",
     "user": "사용자",
     "versionMismatchWarning": "버전 호환성 경고",
     "versionMismatchWarningMessage": "{warning}: {detail} 업데이트 지침은 https://docs.comfy.org/installation/update_comfyui#common-update-issues 를 방문하세요.",
@@ -1618,6 +1654,12 @@
       "title": "이 워크플로우에 누락된 노드가 있습니다"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "미리보기 버전",
+      "tooltip": "현재 ComfyUI의 나이트리 버전을 사용 중입니다. 이 기능들에 대한 의견을 피드백 버튼을 통해 공유해 주세요."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
@@ -2132,12 +2174,14 @@
     "viewControls": "보기 컨트롤"
   },
   "sideToolbar": {
+    "activeJobStatus": "진행 중인 작업: {status}",
     "assets": "에셋",
     "backToAssets": "모든 에셋으로 돌아가기",
     "browseTemplates": "예제 템플릿 탐색",
     "downloads": "다운로드",
     "generatedAssetsHeader": "생성된 에셋",
     "helpCenter": "도움말 센터",
+    "importedAssetsHeader": "가져온 에셋",
     "labels": {
       "assets": "에셋",
       "console": "콘솔",
@@ -2182,6 +2226,7 @@
     "queue": "실행 대기열",
     "queueProgressOverlay": {
       "activeJobs": "{count}개의 활성 작업",
+      "activeJobsShort": "{count}개 활성",
       "activeJobsSuffix": "활성 작업",
       "cancelJobTooltip": "작업 취소",
       "clearHistory": "작업 대기열 기록 삭제",
