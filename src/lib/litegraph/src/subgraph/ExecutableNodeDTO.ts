@@ -4,11 +4,7 @@ import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLink
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
-import type {
-  CallbackParams,
-  CallbackReturn,
-  ISlotType
-} from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { Subgraph } from './Subgraph'
@@ -45,8 +41,8 @@ type ResolvedInput = {
  */
 export class ExecutableNodeDTO implements ExecutableLGraphNode {
   applyToGraph?(
-    ...args: CallbackParams<typeof this.node.applyToGraph>
-  ): CallbackReturn<typeof this.node.applyToGraph>
+    ...args: Parameters<NonNullable<typeof this.node.applyToGraph>>
+  ): ReturnType<NonNullable<typeof this.node.applyToGraph>>
 
   /** The graph that this node is a part of. */
   readonly graph: LGraph | Subgraph
