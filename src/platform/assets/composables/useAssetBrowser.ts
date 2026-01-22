@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
+import { storeToRefs } from 'pinia'
 
 import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
@@ -10,8 +11,12 @@ import {
   getAssetBaseModel,
   getAssetDescription
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
 export type OwnershipOption = 'all' | 'my-models' | 'public-models'
+
+type NavId = 'all' | 'imported' | (string & {})
 
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
@@ -81,14 +86,32 @@ export function useAssetBrowser(
   assetsSource: Ref<AssetItem[] | undefined> = ref<AssetItem[] | undefined>([])
 ) {
   const assets = computed<AssetItem[]>(() => assetsSource.value ?? [])
+  const assetDownloadStore = useAssetDownloadStore()
+  const { sessionDownloadCount } = storeToRefs(assetDownloadStore)
+
   // State
   const searchQuery = ref('')
-  const selectedCategory = ref('all')
+  const selectedNavItem = ref<NavId>('all')
   const filters = ref<FilterState>({
     sortBy: 'recent',
     fileFormats: [],
     baseModels: [],
     ownership: 'all'
+  })
+
+  const selectedOwnership = computed<OwnershipOption>(() => {
+    if (selectedNavItem.value === 'imported') return 'my-models'
+    return 'all'
+  })
+
+  const selectedCategory = computed(() => {
+    if (
+      selectedNavItem.value === 'all' ||
+      selectedNavItem.value === 'imported'
+    ) {
+      return 'all'
+    }
+    return selectedNavItem.value
   })
 
   // Transform API asset to display asset
@@ -136,39 +159,69 @@ export function useAssetBrowser(
     }
   }
 
-  const availableCategories = computed(() => {
+  const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
       .filter((asset) => asset.tags[0] === 'models')
       .map((asset) => asset.tags[1])
       .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
-      .map((tag) => tag.split('/')[0]) // Extract top-level folder name
+      .map((tag) => tag.split('/')[0])
 
-    const uniqueCategories = Array.from(new Set(categories))
+    return Array.from(new Set(categories))
       .sort()
       .map((category) => ({
         id: category,
         label: category.charAt(0).toUpperCase() + category.slice(1),
-        icon: 'icon-[lucide--package]'
+        icon: 'icon-[lucide--folder]'
       }))
+  })
 
-    return [
+  const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
+    const quickFilters: NavItemData[] = [
       {
         id: 'all',
         label: t('assetBrowser.allModels'),
-        icon: 'icon-[lucide--folder]'
+        icon: 'icon-[lucide--list]'
       },
-      ...uniqueCategories
+      {
+        id: 'imported',
+        label: t('assetBrowser.imported'),
+        icon: 'icon-[lucide--folder-input]',
+        badge:
+          sessionDownloadCount.value > 0
+            ? sessionDownloadCount.value
+            : undefined
+      }
+    ]
+
+    if (typeCategories.value.length === 0) {
+      return quickFilters
+    }
+
+    return [
+      ...quickFilters,
+      {
+        title: t('assetBrowser.byType'),
+        items: typeCategories.value,
+        collapsible: false
+      }
     ]
   })
 
-  // Compute content title from selected category
+  const isImportedSelected = computed(
+    () => selectedNavItem.value === 'imported'
+  )
+
+  // Compute content title from selected nav item
   const contentTitle = computed(() => {
-    if (selectedCategory.value === 'all') {
+    if (selectedNavItem.value === 'all') {
       return t('assetBrowser.allModels')
     }
+    if (selectedNavItem.value === 'imported') {
+      return t('assetBrowser.imported')
+    }
 
-    const category = availableCategories.value.find(
-      (cat) => cat.id === selectedCategory.value
+    const category = typeCategories.value.find(
+      (cat) => cat.id === selectedNavItem.value
     )
     return category?.label || t('assetBrowser.assets')
   })
@@ -205,7 +258,7 @@ export function useAssetBrowser(
     const filtered = searchFiltered.value
       .filter(filterByFileFormats(filters.value.fileFormats))
       .filter(filterByBaseModels(filters.value.baseModels))
-      .filter(filterByOwnership(filters.value.ownership))
+      .filter(filterByOwnership(selectedOwnership.value))
 
     const sortedAssets = [...filtered]
     sortedAssets.sort((a, b) => {
@@ -234,11 +287,13 @@ export function useAssetBrowser(
 
   return {
     searchQuery,
+    selectedNavItem,
     selectedCategory,
-    availableCategories,
+    navItems,
     contentTitle,
     categoryFilteredAssets,
     filteredAssets,
+    isImportedSelected,
     updateFilters
   }
 }

@@ -42,3 +42,8 @@ if (isCloud) {
 if (isCloud || isNightly) {
   await import('./cloudFeedbackTopbarButton')
 }
+
+// Nightly-only extensions
+if (isNightly && !isCloud) {
+  await import('./nightlyBadges')
+}
