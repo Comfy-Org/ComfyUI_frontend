@@ -24,6 +24,7 @@
             size="icon-sm"
             variant="muted-textonly"
             class="transition-opacity opacity-0 group-hover:opacity-100"
+            :aria-label="t('assetBrowser.modelInfo.editDisplayName')"
             @click="isEditingDisplayName = !isImmutable"
           >
             <i class="icon-[lucide--square-pen] self-center size-4" />
@@ -146,6 +147,7 @@
             variant="muted-textonly"
             size="icon-sm"
             :title="t('g.copyAll')"
+            :aria-label="t('g.copyAll')"
             class="p-0"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
