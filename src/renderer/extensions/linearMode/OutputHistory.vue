@@ -81,7 +81,9 @@ watch(selectedIndex, () => {
   const [index, key] = selectedIndex.value
   if (!outputsRef.value) return
 
-  const outputElement = outputsRef.value?.children?.[index]?.children?.[key]
+  const outputElement = outputsRef.value?.querySelectorAll(
+    `[data-output-index="${index}"]`
+  )?.[key]
   if (!outputElement) return
 
   //container: 'nearest' is nice, but bleeding edge and chrome only
@@ -318,6 +320,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                   'border-2'
               )
             "
+            :data-output-index="index"
             :src="output.url"
             @click="selectedIndex = [index, key]"
           />
@@ -331,6 +334,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                   'border-2'
               )
             "
+            :data-output-index="index"
             @click="selectedIndex = [index, key]"
           >
             <i
