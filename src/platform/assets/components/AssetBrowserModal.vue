@@ -1,8 +1,10 @@
 <template>
   <BaseModalLayout
+    v-model:right-panel-open="isRightPanelOpen"
     data-component-id="AssetBrowserModal"
     class="size-full max-h-full max-w-full min-w-0"
     :content-title="displayTitle"
+    :right-panel-title="$t('assetBrowser.modelInfo.title')"
     @close="handleClose"
   >
     <template v-if="shouldShowLeftPanel" #leftPanel>
@@ -21,7 +23,10 @@
     </template>
 
     <template #header>
-      <div class="flex w-full items-center justify-between gap-2">
+      <div
+        class="flex w-full items-center justify-between gap-2"
+        @click.self="focusedAsset = null"
+      >
         <SearchBox
           v-model="searchQuery"
           :autofocus="true"
@@ -47,8 +52,8 @@
     <template #contentFilter>
       <AssetFilterBar
         :assets="categoryFilteredAssets"
-        :all-assets="fetchedAssets"
         @filter-change="updateFilters"
+        @click.self="focusedAsset = null"
       />
     </template>
 
@@ -56,16 +61,31 @@
       <AssetGrid
         :assets="filteredAssets"
         :loading="isLoading"
+        :focused-asset-id="focusedAsset?.id"
+        :empty-message
+        @asset-focus="handleAssetFocus"
         @asset-select="handleAssetSelectAndEmit"
         @asset-deleted="refreshAssets"
+        @asset-show-info="handleShowInfo"
+        @click="focusedAsset = null"
       />
+    </template>
+
+    <template #rightPanel>
+      <ModelInfoPanel v-if="focusedAsset" :asset="focusedAsset" :cache-key />
+      <div
+        v-else
+        class="flex h-full items-center justify-center break-words p-6 text-center text-muted"
+      >
+        {{ $t('assetBrowser.modelInfo.selectModelPrompt') }}
+      </div>
     </template>
   </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { computed, provide } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -74,8 +94,10 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
 import AssetGrid from '@/platform/assets/components/AssetGrid.vue'
+import ModelInfoPanel from '@/platform/assets/components/modelInfo/ModelInfoPanel.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useAssetBrowser } from '@/platform/assets/composables/useAssetBrowser'
+import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
@@ -132,6 +154,10 @@ async function refreshAssets(): Promise<void> {
 // Trigger background refresh on mount
 void refreshAssets()
 
+// Eagerly fetch model types so they're available when ModelInfoPanel loads
+const { fetchModelTypes } = useModelTypes()
+void fetchModelTypes()
+
 const { isUploadButtonEnabled, showUploadDialog } =
   useModelUpload(refreshAssets)
 
@@ -142,8 +168,12 @@ const {
   navItems,
   categoryFilteredAssets,
   filteredAssets,
+  isImportedSelected,
   updateFilters
 } = useAssetBrowser(fetchedAssets)
+
+const focusedAsset = ref<AssetDisplayItem | null>(null)
+const isRightPanelOpen = ref(false)
 
 const primaryCategoryTag = computed(() => {
   const assets = fetchedAssets.value ?? []
@@ -181,15 +211,30 @@ const shouldShowLeftPanel = computed(() => {
   return props.showLeftPanel ?? true
 })
 
+const emptyMessage = computed(() => {
+  if (!isImportedSelected.value) return undefined
+
+  return isUploadButtonEnabled.value
+    ? t('assetBrowser.emptyImported.canImport')
+    : t('assetBrowser.emptyImported.restricted')
+})
+
 function handleClose() {
   props.onClose?.()
   emit('close')
 }
 
+function handleAssetFocus(asset: AssetDisplayItem) {
+  focusedAsset.value = asset
+}
+
+function handleShowInfo(asset: AssetDisplayItem) {
+  focusedAsset.value = asset
+  isRightPanelOpen.value = true
+}
+
 function handleAssetSelectAndEmit(asset: AssetDisplayItem) {
   emit('asset-select', asset)
-  // onSelect callback is provided by dialog composable layer
-  // It handles the appropriate transformation (filename extraction or full asset)
   props.onSelect?.(asset)
 }
 </script>

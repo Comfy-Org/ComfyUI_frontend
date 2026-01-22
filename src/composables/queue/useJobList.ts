@@ -1,3 +1,4 @@
+import { orderBy } from 'es-toolkit/array'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -205,10 +206,7 @@ export function useJobList() {
       ...queueStore.runningTasks,
       ...queueStore.historyTasks
     ]
-    return all.sort((a, b) => {
-      const delta = mostRecentTimestamp(b) - mostRecentTimestamp(a)
-      return delta === 0 ? 0 : delta
-    })
+    return orderBy(all, [mostRecentTimestamp], ['desc'])
   })
 
   const tasksWithJobState = computed<TaskWithState[]>(() =>
