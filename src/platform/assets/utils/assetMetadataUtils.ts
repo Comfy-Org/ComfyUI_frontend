@@ -67,16 +67,6 @@ export function getAssetDisplayName(asset: AssetItem): string {
 }
 
 /**
- * Extracts filename from asset metadata
- * Checks user_metadata first, then metadata, then returns null
- * @param asset - The asset to extract filename from
- * @returns The filename string or null if not present
- */
-export function getAssetFilename(asset: AssetItem): string | null {
-  return getStringProperty(asset, 'filename') ?? null
-}
-
-/**
  * Constructs source URL from asset's source_arn
  * @param asset - The asset to extract source URL from
  * @returns The source URL or null if not present/parseable
