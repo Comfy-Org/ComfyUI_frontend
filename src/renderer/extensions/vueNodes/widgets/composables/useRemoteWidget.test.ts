@@ -503,7 +503,9 @@ describe('useRemoteWidget', () => {
         resolvePromise = resolve
       })
 
-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise as any)
+      vi.mocked(axios.get).mockImplementationOnce(
+        () => delayedPromise as unknown as Promise<{ data: unknown }>
+      )
 
       const hook = useRemoteWidget(createMockOptions())
       hook.getValue()
@@ -524,12 +526,15 @@ describe('useRemoteWidget', () => {
         resolvePromise = resolve
       })
 
-      vi.mocked(axios.get).mockImplementationOnce(() => delayedPromise as any)
+      vi.mocked(axios.get).mockImplementationOnce(
+        () => delayedPromise as unknown as Promise<{ data: unknown }>
+      )
 
-      let hook = useRemoteWidget(createMockOptions())
+      let hook: ReturnType<typeof useRemoteWidget> | null =
+        useRemoteWidget(createMockOptions())
       const fetchPromise = hook.getValue()
 
-      hook = null as any
+      hook = null
 
       resolvePromise!({ data: ['delayed data'] })
       await fetchPromise
@@ -593,8 +598,8 @@ describe('useRemoteWidget', () => {
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
-        widget: mockWidget as any
+        node: mockNode as unknown as LGraphNode,
+        widget: mockWidget as unknown as IWidget
       })
 
       // Should add auto-refresh toggle widget
@@ -624,8 +629,8 @@ describe('useRemoteWidget', () => {
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
-        widget: mockWidget as any
+        node: mockNode as unknown as LGraphNode,
+        widget: mockWidget as unknown as IWidget
       })
 
       // Event listener should be registered immediately
@@ -649,12 +654,12 @@ describe('useRemoteWidget', () => {
         addWidget: vi.fn(),
         widgets: []
       }
-      const mockWidget = {} as any
+      const mockWidget = {} as unknown as IWidget
 
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
+        node: mockNode as unknown as LGraphNode,
         widget: mockWidget
       })
 
@@ -687,12 +692,12 @@ describe('useRemoteWidget', () => {
         addWidget: vi.fn(),
         widgets: []
       }
-      const mockWidget = {} as any
+      const mockWidget = {} as unknown as IWidget
 
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
+        node: mockNode as unknown as LGraphNode,
         widget: mockWidget
       })
 
@@ -721,7 +726,7 @@ describe('useRemoteWidget', () => {
       const mockNode = {
         addWidget: vi.fn(),
         widgets: [],
-        onRemoved: undefined as any
+        onRemoved: undefined as unknown as (() => void) | undefined
       }
       const mockWidget = {
         refresh: vi.fn()
@@ -730,8 +735,8 @@ describe('useRemoteWidget', () => {
       useRemoteWidget({
         remoteConfig: createMockConfig(),
         defaultValue: DEFAULT_VALUE,
-        node: mockNode as any,
-        widget: mockWidget as any
+        node: mockNode as unknown as LGraphNode,
+        widget: mockWidget as unknown as IWidget
       })
 
       // Simulate node removal
