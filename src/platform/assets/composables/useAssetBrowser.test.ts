@@ -295,8 +295,7 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: ['safetensors'],
-        baseModels: [],
-        ownership: 'all'
+        baseModels: []
       })
       await nextTick()
 
@@ -331,8 +330,7 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: ['SDXL'],
-        ownership: 'all'
+        baseModels: ['SDXL']
       })
       await nextTick()
 
@@ -386,8 +384,7 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: [],
-        ownership: 'all'
+        baseModels: []
       })
       await nextTick()
 
@@ -411,8 +408,7 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'recent',
         fileFormats: [],
-        baseModels: [],
-        ownership: 'all'
+        baseModels: []
       })
       await nextTick()
 
@@ -444,8 +440,7 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: [],
-        ownership: 'all'
+        baseModels: []
       })
       await nextTick()
 

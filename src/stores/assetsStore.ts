@@ -433,18 +433,17 @@ export const useAssetsStore = defineStore('assets', () => {
       ) {
         const keysToCheck = cacheKey
           ? [cacheKey]
-          : Array.from(modelAssetsByNodeType.keys())
+          : Array.from(modelStateByKey.value.keys())
 
         for (const key of keysToCheck) {
-          const assets = modelAssetsByNodeType.get(key)
-          if (!assets) continue
+          const state = modelStateByKey.value.get(key)
+          if (!state?.assets) continue
 
-          const index = assets.findIndex((a) => a.id === assetId)
-          if (index !== -1) {
-            const updatedAsset = { ...assets[index], ...updates }
-            const newAssets = [...assets]
-            newAssets[index] = updatedAsset
-            modelAssetsByNodeType.set(key, newAssets)
+          const existingAsset = state.assets.get(assetId)
+          if (existingAsset) {
+            const updatedAsset = { ...existingAsset, ...updates }
+            state.assets.set(assetId, updatedAsset)
+            assetsArrayCache.delete(key)
             if (cacheKey) return
           }
         }
