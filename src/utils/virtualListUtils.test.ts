@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
-import type { WindowRange } from '../virtualListUtils'
+import type { WindowRange } from './virtualListUtils'
 import {
   applyWindow,
   calculateSpacerHeightsVariable,
   calculateWindowRangeByHeights,
   createInitialWindowRange,
   mergeWindowRange
-} from '../virtualListUtils'
+} from './virtualListUtils'
 
 describe('virtualListUtils', () => {
   describe('createInitialWindowRange', () => {
@@ -131,7 +131,46 @@ describe('virtualListUtils', () => {
         { bufferRows: 2, windowSize: 10, totalChildren: 100 }
       )
       expect(result.changed).toBe(true)
+      // maxWindowSize defaults to windowSize * 2 = 20, so end is capped at start + 20 = 25
+      expect(result.range).toEqual({ start: 5, end: 25 })
+    })
+
+    it('respects maxWindowSize when provided', () => {
+      const result = mergeWindowRange(
+        { start: 10, end: 30 },
+        { start: 5, end: 40 },
+        {
+          bufferRows: 2,
+          windowSize: 10,
+          totalChildren: 100,
+          maxWindowSize: 50
+        }
+      )
+      expect(result.changed).toBe(true)
       expect(result.range).toEqual({ start: 5, end: 40 })
+    })
+
+    it('shrinks when calculated is smaller and outside buffer', () => {
+      const result = mergeWindowRange(
+        { start: 10, end: 30 },
+        { start: 15, end: 25 },
+        { bufferRows: 2, windowSize: 10, totalChildren: 100 }
+      )
+      expect(result.changed).toBe(true)
+      expect(result.range).toEqual({ start: 15, end: 25 })
+    })
+
+    it('caps window size when exceeding maxWindowSize on end update', () => {
+      const result = mergeWindowRange(
+        { start: 10, end: 30 },
+        { start: 10, end: 50 },
+        { bufferRows: 2, windowSize: 10, totalChildren: 100 }
+      )
+      expect(result.changed).toBe(true)
+      // maxWindowSize = 20, so start is adjusted: end (30) - 20 = 10, but we keep start at 10
+      // Actually, since updateStart is false, we adjust start: end (50) - 20 = 30
+      expect(result.range.start).toBe(30)
+      expect(result.range.end).toBe(50)
     })
   })
 
