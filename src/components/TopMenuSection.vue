@@ -120,15 +120,13 @@ const { toastErrorHandler } = useErrorHandling()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
 const queueUIStore = useQueueUIStore()
+const { activeJobsCount } = storeToRefs(queueStore)
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
 const releaseStore = useReleaseStore()
 const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
-const activeJobsCount = computed(
-  () => queueStore.pendingTasks.length + queueStore.runningTasks.length
-)
 const activeJobsLabel = computed(() => {
   const count = activeJobsCount.value
   return t(
