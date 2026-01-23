@@ -2,19 +2,29 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useImageLoader } from '@/composables/maskeditor/useImageLoader'
 
+type MockStore = {
+  imgCanvas: HTMLCanvasElement | null
+  maskCanvas: HTMLCanvasElement | null
+  rgbCanvas: HTMLCanvasElement | null
+  imgCtx: CanvasRenderingContext2D | null
+  maskCtx: CanvasRenderingContext2D | null
+  image: HTMLImageElement | null
+}
+
+type MockDataStore = {
+  inputData: {
+    baseLayer: { image: HTMLImageElement }
+    maskLayer: { image: HTMLImageElement }
+    paintLayer: { image: HTMLImageElement } | null
+  } | null
+}
+
 const mockCanvasManager = {
   invalidateCanvas: vi.fn().mockResolvedValue(undefined),
   updateMaskColor: vi.fn().mockResolvedValue(undefined)
 }
 
-const mockStore: {
-  imgCanvas: unknown
-  maskCanvas: unknown
-  rgbCanvas: unknown
-  imgCtx: unknown
-  maskCtx: unknown
-  image: unknown
-} = {
+const mockStore: MockStore = {
   imgCanvas: null,
   maskCanvas: null,
   rgbCanvas: null,
@@ -23,9 +33,7 @@ const mockStore: {
   image: null
 }
 
-const mockDataStore: {
-  inputData: unknown
-} = {
+const mockDataStore: MockDataStore = {
   inputData: null
 }
 
@@ -71,26 +79,26 @@ describe('useImageLoader', () => {
 
     mockStore.imgCtx = {
       clearRect: vi.fn()
-    }
+    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
     mockStore.maskCtx = {
       clearRect: vi.fn()
-    }
+    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
     mockStore.imgCanvas = {
       width: 0,
       height: 0
-    }
+    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockStore.maskCanvas = {
       width: 0,
       height: 0
-    }
+    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockStore.rgbCanvas = {
       width: 0,
       height: 0
-    }
+    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockDataStore.inputData = {
       baseLayer: { image: mockBaseImage },
@@ -114,10 +122,10 @@ describe('useImageLoader', () => {
 
       await loader.loadImages()
 
-      expect((mockStore.maskCanvas as { width: number }).width).toBe(512)
-      expect((mockStore.maskCanvas as { height: number }).height).toBe(512)
-      expect((mockStore.rgbCanvas as { width: number }).width).toBe(512)
-      expect((mockStore.rgbCanvas as { height: number }).height).toBe(512)
+      expect(mockStore.maskCanvas?.width).toBe(512)
+      expect(mockStore.maskCanvas?.height).toBe(512)
+      expect(mockStore.rgbCanvas?.width).toBe(512)
+      expect(mockStore.rgbCanvas?.height).toBe(512)
     })
 
     it('should clear canvas contexts', async () => {
@@ -125,12 +133,8 @@ describe('useImageLoader', () => {
 
       await loader.loadImages()
 
-      expect(
-        (mockStore.imgCtx as { clearRect: ReturnType<typeof vi.fn> }).clearRect
-      ).toHaveBeenCalledWith(0, 0, 0, 0)
-      expect(
-        (mockStore.maskCtx as { clearRect: ReturnType<typeof vi.fn> }).clearRect
-      ).toHaveBeenCalledWith(0, 0, 0, 0)
+      expect(mockStore.imgCtx?.clearRect).toHaveBeenCalledWith(0, 0, 0, 0)
+      expect(mockStore.maskCtx?.clearRect).toHaveBeenCalledWith(0, 0, 0, 0)
     })
 
     it('should call canvasManager methods', async () => {
@@ -202,10 +206,10 @@ describe('useImageLoader', () => {
 
       await loader.loadImages()
 
-      expect((mockStore.maskCanvas as { width: number }).width).toBe(1024)
-      expect((mockStore.maskCanvas as { height: number }).height).toBe(768)
-      expect((mockStore.rgbCanvas as { width: number }).width).toBe(1024)
-      expect((mockStore.rgbCanvas as { height: number }).height).toBe(768)
+      expect(mockStore.maskCanvas?.width).toBe(1024)
+      expect(mockStore.maskCanvas?.height).toBe(768)
+      expect(mockStore.rgbCanvas?.width).toBe(1024)
+      expect(mockStore.rgbCanvas?.height).toBe(768)
     })
   })
 })
