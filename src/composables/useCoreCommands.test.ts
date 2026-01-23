@@ -161,18 +161,11 @@ describe('useCoreCommands', () => {
 
   const mockSubgraph = createMockSubgraph()
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-
-    // Set up Pinia
-    setActivePinia(createPinia())
-
-    // Reset app state
-    app.canvas.subgraph = undefined
-
-    // Mock settings store
-    vi.mocked(useSettingStore).mockReturnValue({
-      get: vi.fn().mockReturnValue(false), // Skip confirmation dialog
+  function createMockSettingStore(
+    getReturnValue: boolean
+  ): ReturnType<typeof useSettingStore> {
+    return {
+      get: vi.fn().mockReturnValue(getReturnValue),
       addSetting: vi.fn(),
       loadSettingValues: vi.fn(),
       set: vi.fn(),
@@ -192,7 +185,20 @@ describe('useCoreCommands', () => {
       $dispose: vi.fn(),
       _customProperties: new Set(),
       _p: {}
-    } as ReturnType<typeof useSettingStore>)
+    } as ReturnType<typeof useSettingStore>
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    // Set up Pinia
+    setActivePinia(createPinia())
+
+    // Reset app state
+    app.canvas.subgraph = undefined
+
+    // Mock settings store
+    vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(false))
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
@@ -241,28 +247,7 @@ describe('useCoreCommands', () => {
 
     it('should respect confirmation setting', async () => {
       // Mock confirmation required
-      vi.mocked(useSettingStore).mockReturnValue({
-        get: vi.fn().mockReturnValue(true), // Require confirmation
-        addSetting: vi.fn(),
-        loadSettingValues: vi.fn(),
-        set: vi.fn(),
-        exists: vi.fn(),
-        getDefaultValue: vi.fn(),
-        settingValues: {},
-        settingsById: {},
-        $id: 'setting',
-        $state: {
-          settingValues: {},
-          settingsById: {}
-        },
-        $patch: vi.fn(),
-        $reset: vi.fn(),
-        $subscribe: vi.fn(),
-        $onAction: vi.fn(),
-        $dispose: vi.fn(),
-        _customProperties: new Set(),
-        _p: {}
-      } as ReturnType<typeof useSettingStore>)
+      vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
 
       global.confirm = vi.fn().mockReturnValue(false) // User cancels
 
