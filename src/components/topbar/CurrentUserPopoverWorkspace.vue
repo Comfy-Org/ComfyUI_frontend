@@ -42,9 +42,6 @@
         >
           {{ workspaceTierName }}
         </div>
-        <span v-else class="shrink-0 text-xs text-muted-foreground">
-          {{ $t('workspaceSwitcher.subscribe') }}
-        </span>
       </div>
       <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
     </div>
@@ -92,10 +89,10 @@
         >
           {{ $t('subscription.addCredits') }}
         </Button>
-        <!-- Unsubscribed: Show Subscribe button (disabled until billing is ready) -->
+        <!-- Unsubscribed: Show Subscribe button (enabled for personal workspaces) -->
         <SubscribeButton
           v-else
-          disabled
+          :disabled="!isPersonalWorkspace"
           :fluid="false"
           :label="$t('workspaceSwitcher.subscribe')"
           size="sm"
@@ -237,17 +234,26 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription } = useSubscription()
+const { isActiveSubscription, subscriptionTierName: userSubscriptionTierName } =
+  useSubscription()
 const { totalCredits, isLoadingBalance } = useSubscriptionCredits()
 const subscriptionDialog = useSubscriptionDialog()
 const { t } = useI18n()
 
-const displayedCredits = computed(() =>
-  isWorkspaceSubscribed.value ? totalCredits.value : '0'
-)
+const displayedCredits = computed(() => {
+  const isSubscribed = isPersonalWorkspace.value
+    ? isActiveSubscription.value
+    : isWorkspaceSubscribed.value
+  return isSubscribed ? totalCredits.value : '0'
+})
 
-// Workspace subscription tier name (not user tier)
+// Workspace subscription tier name
 const workspaceTierName = computed(() => {
+  // Personal workspace: use user's subscription tier
+  if (isPersonalWorkspace.value) {
+    return userSubscriptionTierName.value || null
+  }
+  // Shared workspace: use workspace subscription (future billing)
   if (!isWorkspaceSubscribed.value) return null
   if (!subscriptionPlan.value) return null
   // Convert plan to display name

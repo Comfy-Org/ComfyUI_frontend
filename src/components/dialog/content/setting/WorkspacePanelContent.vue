@@ -74,7 +74,7 @@
 
       <TabPanels>
         <TabPanel value="plan">
-          <SubscriptionPanelContent />
+          <SubscriptionPanelContentWorkspace />
         </TabPanel>
         <TabPanel value="members">
           <MembersPanelContent :key="workspaceRole" />
@@ -98,7 +98,7 @@ import { useI18n } from 'vue-i18n'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
-import SubscriptionPanelContent from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
+import SubscriptionPanelContentWorkspace from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'

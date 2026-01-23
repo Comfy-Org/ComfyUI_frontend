@@ -4,7 +4,7 @@
       <div>
         <div class="flex items-center justify-between gap-2">
           <!-- OWNER Unsubscribed State -->
-          <template v-if="isOwnerUnsubscribed">
+          <template v-if="showSubscribePrompt">
             <div class="flex flex-col gap-2">
               <div class="text-sm font-bold text-text-primary">
                 {{ $t('subscription.workspaceNotSubscribed') }}
@@ -264,22 +264,25 @@ import { cn } from '@/utils/tailwindUtil'
 
 const authActions = useFirebaseAuthActions()
 const workspaceStore = useTeamWorkspaceStore()
-const { isWorkspaceSubscribed } = storeToRefs(workspaceStore)
+const { isWorkspaceSubscribed, isInPersonalWorkspace } =
+  storeToRefs(workspaceStore)
 const { subscribeWorkspace } = workspaceStore
 const { permissions, workspaceRole } = useWorkspaceUI()
 const { t, n } = useI18n()
 
-// OWNER with unsubscribed workspace - can see subscribe button
-const isOwnerUnsubscribed = computed(
-  () => workspaceRole.value === 'owner' && !isWorkspaceSubscribed.value
-)
+// Show subscribe prompt to owners without active subscription
+const showSubscribePrompt = computed(() => {
+  if (workspaceRole.value !== 'owner') return false
+  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  return !isWorkspaceSubscribed.value
+})
 
 // MEMBER view - members can't manage subscription, show read-only zero state
 const isMemberView = computed(() => !permissions.value.canManageSubscription)
 
 // Show zero state for credits (no real billing data yet)
 const showZeroState = computed(
-  () => isOwnerUnsubscribed.value || isMemberView.value
+  () => showSubscribePrompt.value || isMemberView.value
 )
 
 // Demo: Subscribe workspace to PRO monthly plan

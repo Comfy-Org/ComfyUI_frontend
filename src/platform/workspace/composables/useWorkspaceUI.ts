@@ -43,7 +43,7 @@ function getPermissions(
       canManageInvites: false,
       canRemoveMembers: false,
       canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
+      canAccessWorkspaceMenu: false,
       canManageSubscription: true
     }
   }

@@ -62,7 +62,8 @@ function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
 function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
   return {
     ...workspace,
-    isSubscribed: false,
+    // Personal workspaces use user-scoped subscription from useSubscription()
+    isSubscribed: workspace.type === 'personal',
     subscriptionPlan: null,
     members: [],
     pendingInvites: []

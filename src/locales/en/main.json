@@ -1,6 +1,7 @@
 {
   "g": {
     "user": "User",
+    "you": "You",
     "currentUser": "Current user",
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
