@@ -12,21 +12,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
-interface MockEvent {
-  event_id: string
-  event_type: string
-  params: Record<string, unknown>
-  createdAt: string
-}
-
 type ComponentInstance = InstanceType<typeof UsageLogsTable> & {
   loading: boolean
   error: string | null
-  events: MockEvent[]
+  events: Partial<AuditLog>[]
   pagination: {
     page: number
     limit: number
