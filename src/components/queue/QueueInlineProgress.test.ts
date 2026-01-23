@@ -1,12 +1,13 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 
 const mockProgress = vi.hoisted(() => ({
-  totalPercent: ref(0),
-  currentNodePercent: ref(0)
+  totalPercent: null as unknown as Ref<number>,
+  currentNodePercent: null as unknown as Ref<number>
 }))
 
 vi.mock('@/composables/queue/useQueueProgress', () => ({
@@ -21,8 +22,8 @@ const createWrapper = (props: { hidden?: boolean } = {}) =>
 
 describe('QueueInlineProgress', () => {
   beforeEach(() => {
-    mockProgress.totalPercent.value = 0
-    mockProgress.currentNodePercent.value = 0
+    mockProgress.totalPercent = ref(0)
+    mockProgress.currentNodePercent = ref(0)
   })
 
   it('renders when total progress is non-zero', () => {
@@ -46,6 +47,29 @@ describe('QueueInlineProgress', () => {
 
     const wrapper = createWrapper({ hidden: true })
 
+    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(false)
+  })
+
+  it('shows when progress becomes non-zero', async () => {
+    const wrapper = createWrapper()
+
+    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(false)
+
+    mockProgress.totalPercent.value = 10
+    await nextTick()
+    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(true)
+  })
+
+  it('hides when progress returns to zero', async () => {
+    mockProgress.totalPercent.value = 10
+
+    const wrapper = createWrapper()
+
+    expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(true)
+
+    mockProgress.totalPercent.value = 0
+    mockProgress.currentNodePercent.value = 0
+    await nextTick()
     expect(wrapper.find('[aria-hidden="true"]').exists()).toBe(false)
   })
 })
