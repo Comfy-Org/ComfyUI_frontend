@@ -282,6 +282,8 @@ const inlineProgressTarget = computed(() => {
   return panelElement.value
 })
 
+defineExpose({ panelElement })
+
 // Handle drag state changes
 watch(isDragging, (dragging) => {
   if (dragging) {

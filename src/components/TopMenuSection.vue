@@ -43,6 +43,7 @@
               class="[&:not(:has(*>*:not(:empty)))]:hidden"
             ></div>
             <ComfyActionbar
+              ref="actionbarRef"
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
             />
@@ -103,10 +104,18 @@
     </div>
 
     <div>
+      <Teleport
+        v-if="inlineProgressSummaryTarget"
+        :to="inlineProgressSummaryTarget"
+      >
+        <div
+          class="pointer-events-none absolute left-0 right-0 top-full mt-1 flex justify-end pr-1"
+        >
+          <QueueInlineProgressSummary :hidden="isQueueOverlayExpanded" />
+        </div>
+      </Teleport>
       <QueueInlineProgressSummary
-        v-if="
-          isInlineProgressVisible && isActionbarEnabled && !isActionbarFloating
-        "
+        v-else-if="shouldShowInlineProgressSummary && !isActionbarFloating"
         class="pr-1"
         :hidden="isQueueOverlayExpanded"
       />
@@ -195,6 +204,25 @@ const isQueueProgressOverlayVisible = computed(
   () => !isQueuePanelV2Enabled.value
 )
 const isInlineProgressVisible = computed(() => isQueuePanelV2Enabled.value)
+type PanelElementTarget = HTMLElement | { value?: HTMLElement | null } | null
+const shouldShowInlineProgressSummary = computed(
+  () => isInlineProgressVisible.value && isActionbarEnabled.value
+)
+const actionbarRef = ref<{ panelElement: PanelElementTarget } | null>(null)
+const resolvePanelElement = (target: PanelElementTarget) => {
+  if (!target) return null
+  if (target instanceof HTMLElement) return target
+  if (typeof target === 'object' && 'value' in target) {
+    return target.value ?? null
+  }
+  return null
+}
+const inlineProgressSummaryTarget = computed(() => {
+  if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value) {
+    return null
+  }
+  return resolvePanelElement(actionbarRef.value?.panelElement ?? null)
+})
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
 )
