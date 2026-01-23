@@ -44,14 +44,10 @@ type MockCanvas = {
 
 type MockCanvasStore = ReturnType<typeof useCanvasStore>
 
-type MockCommandStore = ReturnType<typeof useCommandStore> & {
-  execute: Mock
-}
-
 describe('ExecuteButton', () => {
   let mockCanvas: MockCanvas
   let mockCanvasStore: MockCanvasStore
-  let mockCommandStore: MockCommandStore
+  let mockCommandStore: ReturnType<typeof useCommandStore>
   let mockSelectedNodes: LGraphNode[]
 
   const i18n = createI18n({
@@ -96,7 +92,9 @@ describe('ExecuteButton', () => {
 
     mockCommandStore = {
       execute: vi.fn()
-    } as MockCommandStore
+    } as Partial<ReturnType<typeof useCommandStore>> as ReturnType<
+      typeof useCommandStore
+    >
 
     // Setup store mocks
     vi.mocked(useCanvasStore).mockReturnValue(mockCanvasStore)
