@@ -55,7 +55,7 @@
                 :class="[
                   'flex items-center gap-2 px-3 py-2',
                   item.class,
-                  item.disabled ? 'pointer-events-auto' : ''
+                  item.disabled ? 'pointer-events-auto' : 'cursor-pointer'
                 ]"
                 @click="
                   item.command?.({

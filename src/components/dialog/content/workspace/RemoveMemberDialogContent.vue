@@ -38,7 +38,9 @@
 </template>
 
 <script setup lang="ts">
+import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -50,6 +52,8 @@ const { memberId } = defineProps<{
 
 const dialogStore = useDialogStore()
 const workspaceStore = useTeamWorkspaceStore()
+const toast = useToast()
+const { t } = useI18n()
 const loading = ref(false)
 
 function onCancel() {
@@ -60,7 +64,18 @@ async function onRemove() {
   loading.value = true
   try {
     await workspaceStore.removeMember(memberId)
+    toast.add({
+      severity: 'success',
+      summary: t('workspacePanel.removeMemberDialog.success'),
+      life: 2000
+    })
     dialogStore.closeDialog({ key: 'remove-member' })
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('workspacePanel.removeMemberDialog.error'),
+      life: 3000
+    })
   } finally {
     loading.value = false
   }

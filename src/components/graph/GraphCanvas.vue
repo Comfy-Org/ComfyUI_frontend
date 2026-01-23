@@ -466,8 +466,19 @@ onMounted(async () => {
   await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
-  if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
-    await inviteUrlLoader.loadInviteFromUrl()
+  // Uses watch because feature flags load asynchronously - flag may be false initially
+  // then become true once remoteConfig or websocket features are loaded
+  if (inviteUrlLoader) {
+    const stopWatching = watch(
+      () => flags.teamWorkspacesEnabled,
+      async (enabled) => {
+        if (enabled) {
+          stopWatching()
+          await inviteUrlLoader.loadInviteFromUrl()
+        }
+      },
+      { immediate: true }
+    )
   }
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)

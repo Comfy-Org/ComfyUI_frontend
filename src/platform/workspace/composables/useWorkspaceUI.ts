@@ -42,7 +42,7 @@ function getPermissions(
       canInviteMembers: false,
       canManageInvites: false,
       canRemoveMembers: false,
-      canLeaveWorkspace: false,
+      canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }
@@ -88,7 +88,7 @@ function getUIConfig(
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: true,
+      showEditWorkspaceMenuItem: false,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }

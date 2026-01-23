@@ -68,7 +68,7 @@
 
 <script setup lang="ts">
 import TabPanel from 'primevue/tabpanel'
-import { defineAsyncComponent } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -85,7 +85,9 @@ const SubscriptionPanelContentWorkspace = defineAsyncComponent(
 )
 
 const { flags } = useFeatureFlags()
-const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
+const teamWorkspacesEnabled = computed(
+  () => isCloud && flags.teamWorkspacesEnabled
+)
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 

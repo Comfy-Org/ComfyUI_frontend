@@ -2173,7 +2173,9 @@
     "removeMemberDialog": {
       "title": "Remove this member?",
       "message": "This member will be removed from your workspace. Credits they've used will not be refunded.",
-      "remove": "Remove member"
+      "remove": "Remove member",
+      "success": "Member removed",
+      "error": "Failed to remove member"
     },
     "revokeInviteDialog": {
       "title": "Uninvite this person?",
@@ -2780,7 +2782,10 @@
     "unsavedChanges": {
       "title": "Unsaved Changes",
       "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    }
+    },
+    "inviteAccepted": "Invite Accepted",
+    "addedToWorkspace": "You have been added to {workspaceName}",
+    "inviteFailed": "Failed to Accept Invite"
   },
   "workspaceAuth": {
     "errors": {
@@ -2791,6 +2796,7 @@
       "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
     }
   },
+
   "nightly": {
     "badge": {
       "label": "Preview Version",

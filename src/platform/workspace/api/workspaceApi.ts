@@ -110,6 +110,18 @@ async function getAuthHeaderOrThrow() {
   return authHeader
 }
 
+async function getFirebaseHeaderOrThrow() {
+  const authHeader = await useFirebaseAuthStore().getFirebaseAuthHeader()
+  if (!authHeader) {
+    throw new WorkspaceApiError(
+      t('toastMessages.userNotAuthenticated'),
+      401,
+      'NOT_AUTHENTICATED'
+    )
+  }
+  return authHeader
+}
+
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
@@ -299,7 +311,7 @@ export const workspaceApi = {
    * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await getAuthHeaderOrThrow()
+    const headers = await getFirebaseHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),

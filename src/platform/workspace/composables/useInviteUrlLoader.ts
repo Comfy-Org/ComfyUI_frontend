@@ -70,7 +70,6 @@ export function useInviteUrlLoader() {
   const loadInviteFromUrl = async () => {
     // Restore preserved query from sessionStorage (handles login redirect case)
     const query = await ensureInviteQueryFromIntent()
-
     const inviteParam = query.invite
     if (!inviteParam || typeof inviteParam !== 'string') {
       return

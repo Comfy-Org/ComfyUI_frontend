@@ -96,7 +96,6 @@ export function useFeatureFlags() {
       )
     },
     get teamWorkspacesEnabled() {
-      return true
       if (!isCloud) return false
 
       return (
