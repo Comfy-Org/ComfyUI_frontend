@@ -13,12 +13,10 @@ import SignInContent from '@/components/dialog/content/SignInContent.vue'
 import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsDialogContent.vue'
 import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
 import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
-import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -90,38 +88,6 @@ export const useDialogService = () => {
       key: 'global-missing-models-warning',
       component: MissingModelsWarning,
       props
-    })
-  }
-
-  function showSettingsDialog(
-    panel?:
-      | 'about'
-      | 'keybinding'
-      | 'extension'
-      | 'server-config'
-      | 'user'
-      | 'credits'
-      | 'subscription'
-      | 'workspace'
-  ) {
-    const props = panel ? { props: { defaultPanel: panel } } : undefined
-
-    dialogStore.showDialog({
-      key: 'global-settings',
-      headerComponent: SettingDialogHeader,
-      component: SettingDialogContent,
-      ...props
-    })
-  }
-
-  function showAboutDialog() {
-    dialogStore.showDialog({
-      key: 'global-settings',
-      headerComponent: SettingDialogHeader,
-      component: SettingDialogContent,
-      props: {
-        defaultPanel: 'about'
-      }
     })
   }
 
@@ -592,8 +558,6 @@ export const useDialogService = () => {
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
-    showSettingsDialog,
-    showAboutDialog,
     showExecutionErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,

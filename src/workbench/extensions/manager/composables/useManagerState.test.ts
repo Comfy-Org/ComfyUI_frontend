@@ -33,11 +33,11 @@ vi.mock('@/stores/systemStatsStore', () => ({
   useSystemStatsStore: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: vi.fn(() => ({
-    showManagerPopup: vi.fn(),
-    showLegacyManagerPopup: vi.fn(),
-    showSettingsDialog: vi.fn()
+vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+  useSettingsDialog: vi.fn(() => ({
+    show: vi.fn(),
+    hide: vi.fn(),
+    showAbout: vi.fn()
   }))
 }))
 

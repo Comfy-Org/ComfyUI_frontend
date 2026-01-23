@@ -9,69 +9,63 @@
         {{ workspaceName }}
       </h1>
     </div>
-    <Tabs :value="activeTab" @update:value="setActiveTab">
-      <div class="flex w-full items-center">
-        <TabList class="w-full">
-          <Tab value="plan">{{ $t('workspacePanel.tabs.planCredits') }}</Tab>
-        </TabList>
+    <div class="flex w-full items-center">
+      <TabList v-model="activeTab">
+        <Tab value="plan">{{ $t('workspacePanel.tabs.planCredits') }}</Tab>
+      </TabList>
 
-        <template v-if="permissions.canAccessWorkspaceMenu">
-          <Button
-            v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-            variant="muted-textonly"
-            size="icon"
-            :aria-label="$t('g.moreOptions')"
-            @click="menu?.toggle($event)"
-          >
-            <i class="pi pi-ellipsis-h" />
-          </Button>
-          <Menu ref="menu" :model="menuItems" :popup="true">
-            <template #item="{ item }">
-              <div
-                v-tooltip="
-                  item.disabled && deleteTooltip
-                    ? { value: deleteTooltip, showDelay: 0 }
-                    : null
-                "
-                :class="[
-                  'flex items-center gap-2 px-3 py-2',
-                  item.class,
-                  item.disabled ? 'pointer-events-auto' : ''
-                ]"
-                @click="
-                  item.command?.({
-                    originalEvent: $event,
-                    item
-                  })
-                "
-              >
-                <i :class="item.icon" />
-                <span>{{ item.label }}</span>
-              </div>
-            </template>
-          </Menu>
-        </template>
-      </div>
+      <template v-if="permissions.canAccessWorkspaceMenu">
+        <Button
+          v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('g.moreOptions')"
+          @click="menu?.toggle($event)"
+        >
+          <i class="pi pi-ellipsis-h" />
+        </Button>
+        <Menu ref="menu" :model="menuItems" :popup="true">
+          <template #item="{ item }">
+            <div
+              v-tooltip="
+                item.disabled && deleteTooltip
+                  ? { value: deleteTooltip, showDelay: 0 }
+                  : null
+              "
+              :class="[
+                'flex items-center gap-2 px-3 py-2',
+                item.class,
+                item.disabled ? 'pointer-events-auto' : ''
+              ]"
+              @click="
+                item.command?.({
+                  originalEvent: $event,
+                  item
+                })
+              "
+            >
+              <i :class="item.icon" />
+              <span>{{ item.label }}</span>
+            </div>
+          </template>
+        </Menu>
+      </template>
+    </div>
 
-      <TabPanels>
-        <TabPanel value="plan">
-          <SubscriptionPanelContent />
-        </TabPanel>
-      </TabPanels>
-    </Tabs>
+    <div v-if="activeTab === 'plan'" class="pt-4">
+      <SubscriptionPanelContent />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Menu from 'primevue/menu'
-import Tab from 'primevue/tab'
-import TabList from 'primevue/tablist'
-import TabPanel from 'primevue/tabpanel'
-import TabPanels from 'primevue/tabpanels'
-import Tabs from 'primevue/tabs'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Tab from '@/components/tab/Tab.vue'
+import TabList from '@/components/tab/TabList.vue'
 
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -93,7 +87,8 @@ const {
 const workspaceStore = useTeamWorkspaceStore()
 const { workspaceName, isWorkspaceSubscribed } = storeToRefs(workspaceStore)
 
-const { activeTab, setActiveTab, permissions, uiConfig } = useWorkspaceUI()
+const { permissions, uiConfig } = useWorkspaceUI()
+const activeTab = ref(defaultTab)
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -157,7 +152,4 @@ const menuItems = computed(() => {
   return items
 })
 
-onMounted(() => {
-  setActiveTab(defaultTab)
-})
 </script>

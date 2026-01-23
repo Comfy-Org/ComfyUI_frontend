@@ -102,7 +102,6 @@ describe('useFirebaseAuthStore', () => {
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
-      showSettingsDialog: vi.fn(),
       showErrorDialog: vi.fn()
     })
 

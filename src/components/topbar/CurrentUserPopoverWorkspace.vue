@@ -215,6 +215,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
 
 const workspaceStore = useTeamWorkspaceStore()
@@ -236,6 +237,7 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
+const settingsDialog = useSettingsDialog()
 const dialogService = useDialogService()
 const { isActiveSubscription } = useSubscription()
 const { totalCredits, isLoadingBalance } = useSubscriptionCredits()
@@ -277,12 +279,12 @@ const showCreditsSection = computed(
 )
 
 const handleOpenUserSettings = () => {
-  dialogService.showSettingsDialog('user')
+  settingsDialog.show('user')
   emit('close')
 }
 
 const handleOpenWorkspaceSettings = () => {
-  dialogService.showSettingsDialog('workspace')
+  settingsDialog.show('workspace')
   emit('close')
 }
 
@@ -293,9 +295,9 @@ const handleOpenPlansAndPricing = () => {
 
 const handleOpenPlanAndCreditsSettings = () => {
   if (isCloud) {
-    dialogService.showSettingsDialog('workspace')
+    settingsDialog.show('workspace')
   } else {
-    dialogService.showSettingsDialog('credits')
+    settingsDialog.show('credits')
   }
 
   emit('close')

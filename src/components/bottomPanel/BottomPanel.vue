@@ -89,12 +89,12 @@ import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
 
 const bottomPanelStore = useBottomPanelStore()
-const dialogService = useDialogService()
+const settingsDialog = useSettingsDialog()
 const { t } = useI18n()
 
 const isShortcutsTabActive = computed(() => {
@@ -115,7 +115,7 @@ const getTabDisplayTitle = (tab: BottomPanelExtension): string => {
 }
 
 const openKeybindingSettings = async () => {
-  dialogService.showSettingsDialog('keybinding')
+  settingsDialog.show('keybinding')
 }
 
 const closeBottomPanel = () => {
