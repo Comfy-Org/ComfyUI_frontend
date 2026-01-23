@@ -6,34 +6,39 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { createNode, isAudioNode, isImageNode, isVideoNode } from '@/utils/litegraphUtil'
+import {
+  createNode,
+  isAudioNode,
+  isImageNode,
+  isVideoNode
+} from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {
-  const persistent = new DataTransfer();
+  const persistent = new DataTransfer()
 
   // Copy string data
   for (const type of original.types) {
-    const data = original.getData(type);
+    const data = original.getData(type)
     if (data) {
-      persistent.setData(type, data);
+      persistent.setData(type, data)
     }
   }
 
   for (const item of original.items) {
     if (item.kind === 'file') {
-      const file = item.getAsFile();
+      const file = item.getAsFile()
       if (file) {
-        persistent.items.add(file);
+        persistent.items.add(file)
       }
     }
   }
 
   // Preserve dropEffect and effectAllowed
-  persistent.dropEffect = original.dropEffect;
-  persistent.effectAllowed = original.effectAllowed;
+  persistent.dropEffect = original.dropEffect
+  persistent.effectAllowed = original.effectAllowed
 
-  return persistent;
+  return persistent
 }
 
 function pasteClipboardItems(data: DataTransfer): boolean {

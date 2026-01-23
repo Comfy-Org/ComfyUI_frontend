@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
@@ -31,7 +35,7 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   }))
 }))
 
-function createMockNode(options: any = {}): LGraphNode {
+function createMockNode(options: Record<string, unknown> = {}): LGraphNode {
   return {
     id: 1,
     pos: [0, 0],
@@ -44,10 +48,12 @@ function createMockNode(options: any = {}): LGraphNode {
 }
 
 function createMockCanvas(): Partial<LGraphCanvas> {
+  const mockGraph: Partial<LGraph> = {
+    change: vi.fn()
+  }
+
   return {
-    graph: {
-      change: vi.fn()
-    } as any,
+    graph: mockGraph as LGraph,
     selectItems: vi.fn()
   }
 }
@@ -259,7 +265,7 @@ describe('ComfyApp', () => {
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
       vi.mocked(useToastStore).mockReturnValue({
         addAlert: mockAddAlert
-      } as any)
+      } as unknown as ReturnType<typeof useToastStore>)
 
       const textFile = new File([''], 'test.txt', { type: 'text/plain' })
 
