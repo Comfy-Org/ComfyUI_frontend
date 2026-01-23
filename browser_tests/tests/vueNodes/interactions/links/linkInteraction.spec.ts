@@ -419,7 +419,7 @@ test.describe('Vue Node Link Interaction', () => {
     // This avoids relying on an exact path hit-test position.
     await comfyPage.page.evaluate(
       ([targetNodeId, targetSlot, clientPoint]) => {
-        const app = (window as any)['app']
+        const app = window['app']
         const graph = app?.canvas?.graph ?? app?.graph
         if (!graph) throw new Error('Graph not available')
         const node = graph.getNodeById(targetNodeId)
@@ -505,7 +505,7 @@ test.describe('Vue Node Link Interaction', () => {
     // This avoids relying on an exact path hit-test position.
     await comfyPage.page.evaluate(
       ([targetNodeId, targetSlot, clientPoint]) => {
-        const app = (window as any)['app']
+        const app = window['app']
         const graph = app?.canvas?.graph ?? app?.graph
         if (!graph) throw new Error('Graph not available')
         const node = graph.getNodeById(targetNodeId)
