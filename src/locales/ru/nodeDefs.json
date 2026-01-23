@@ -2093,7 +2093,9 @@
       "choice": {
         "name": "выбор"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11271,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Изменить размер изображения или mask с помощью различных методов масштабирования.",
     "display_name": "Изменить размер изображения/маски",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Выберите способ изменения размера: по точным размерам, коэффициенту масштабирования, подгонке под другое изображение и т.д."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "обрезка"
+      },
+      "resize_type_height": {
+        "name": "высота"
+      },
+      "resize_type_width": {
+        "name": "ширина"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Алгоритм интерполяции. 'area' лучше всего подходит для уменьшения, 'lanczos' — для увеличения, 'nearest-exact' — для пиксель-арта."
       }
     },
     "outputs": {
@@ -15713,6 +15724,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "выход аудиоэнкодера 1"
+      },
+      "audio_scale": {
+        "name": "масштаб аудио"
+      },
+      "clip_vision_output": {
+        "name": "выход clip vision"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "mode": {
+        "name": "режим"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_patch": {
+        "name": "патч модели"
+      },
+      "motion_frame_count": {
+        "name": "количество кадров движения",
+        "tooltip": "Количество предыдущих кадров, используемых как контекст движения."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "previous_frames": {
+        "name": "предыдущие кадры"
+      },
+      "start_image": {
+        "name": "стартовое изображение"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "модель",
+        "tooltip": null
+      },
+      "1": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "негативный",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "обрезанное изображение",
         "tooltip": null
       }
     }

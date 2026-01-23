@@ -87,6 +87,7 @@
       "descriptionNotSet": "尚未設定描述",
       "descriptionPlaceholder": "為此模型新增描述...",
       "displayName": "顯示名稱",
+      "editDisplayName": "編輯顯示名稱",
       "fileName": "檔案名稱",
       "modelDescription": "模型描述",
       "modelTagging": "模型標籤",
@@ -730,6 +731,7 @@
     "control_before_generate": "生成前控制",
     "copied": "已複製",
     "copy": "複製",
+    "copyAll": "全部複製",
     "copyJobId": "複製工作 ID",
     "copyToClipboard": "複製到剪貼簿",
     "copyURL": "複製網址",
@@ -2129,6 +2131,7 @@
     "NodeLibrary": "節點庫",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "通知偏好設定",
+    "Other": "其他",
     "PLY": "PLY",
     "PlanCredits": "方案與點數",
     "Pointer": "指標",
@@ -2148,7 +2151,8 @@
     "Vue Nodes": "Vue 節點",
     "VueNodes": "Vue 節點",
     "Window": "視窗",
-    "Workflow": "工作流程"
+    "Workflow": "工作流程",
+    "Workspace": "工作區"
   },
   "shape": {
     "CARD": "卡片",
@@ -2315,9 +2319,11 @@
     "beta": "測試版",
     "billedMonthly": "每月收費",
     "billedYearly": "每年收費 {total}",
+    "cancelSubscription": "取消訂閱",
     "changeTo": "切換至 {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud 標誌",
+    "contactOwnerToSubscribe": "請聯絡工作區擁有者以訂閱",
     "contactUs": "聯絡我們",
     "creditsRemainingThisMonth": "本月剩餘點數",
     "creditsRemainingThisYear": "本年剩餘點數",
@@ -2330,6 +2336,7 @@
     "haveQuestions": "有疑問或想了解企業方案？",
     "invoiceHistory": "發票記錄",
     "learnMore": "了解更多",
+    "managePayment": "管理付款",
     "managePlan": "管理方案",
     "manageSubscription": "管理訂閱",
     "maxDuration": {
@@ -2365,6 +2372,7 @@
     "subscribeToComfyCloud": "訂閱 Comfy Cloud",
     "subscribeToRun": "訂閱",
     "subscribeToRunFull": "訂閱運行方案",
+    "subscriptionRequiredMessage": "會員需訂閱才能在雲端執行工作流程",
     "tierNameYearly": "{name} 年度方案",
     "tiers": {
       "creator": {
@@ -2396,6 +2404,7 @@
     "viewMoreDetails": "查看更多詳情",
     "viewMoreDetailsPlans": "查看更多方案與價格細節",
     "viewUsageHistory": "檢視使用記錄",
+    "workspaceNotSubscribed": "此工作區尚未訂閱",
     "yearly": "每年",
     "yearlyCreditsLabel": "年度總點數",
     "yearlyDiscount": "八折優惠",
@@ -2545,7 +2554,8 @@
     "notSet": "未設定",
     "provider": "登入提供者",
     "title": "使用者設定",
-    "updatePassword": "更新密碼"
+    "updatePassword": "更新密碼",
+    "workspaceSettings": "工作區設定"
   },
   "validation": {
     "descriptionRequired": "說明為必填項目",
@@ -2649,6 +2659,57 @@
       "tokenExchangeFailed": "與工作區驗證失敗：{error}",
       "workspaceNotFound": "找不到工作區"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "建立",
+      "message": "工作區可讓成員共用點數池。建立後您將成為擁有者。",
+      "nameLabel": "工作區名稱*",
+      "namePlaceholder": "輸入工作區名稱",
+      "title": "建立新工作區"
+    },
+    "deleteDialog": {
+      "message": "任何未使用的點數或未儲存的資產都將遺失。此操作無法復原。",
+      "messageWithName": "刪除「{name}」？任何未使用的點數或未儲存的資產都將遺失。此操作無法復原。",
+      "title": "確定要刪除此工作區？"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "工作區名稱",
+      "save": "儲存",
+      "title": "編輯工作區詳細資料"
+    },
+    "leaveDialog": {
+      "leave": "離開",
+      "message": "除非聯絡工作區擁有者，否則您將無法再次加入。",
+      "title": "確定要離開此工作區？"
+    },
+    "menu": {
+      "deleteWorkspace": "刪除工作區",
+      "deleteWorkspaceDisabledTooltip": "請先取消工作區的有效訂閱",
+      "editWorkspace": "編輯工作區詳細資料",
+      "leaveWorkspace": "離開工作區"
+    },
+    "tabs": {
+      "planCredits": "方案與點數"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "建立工作區失敗",
+      "failedToDeleteWorkspace": "刪除工作區失敗",
+      "failedToLeaveWorkspace": "離開工作區失敗",
+      "failedToUpdateWorkspace": "更新工作區失敗",
+      "workspaceUpdated": {
+        "message": "工作區詳細資料已儲存。",
+        "title": "工作區已更新"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "建立新工作區",
+    "maxWorkspacesReached": "您最多只能擁有 10 個工作區。請刪除一個以建立新工作區。",
+    "roleMember": "成員",
+    "roleOwner": "擁有者",
+    "subscribe": "訂閱",
+    "switchWorkspace": "切換工作區"
   },
   "zoomControls": {
     "hideMinimap": "隱藏小地圖",

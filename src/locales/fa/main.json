@@ -87,6 +87,7 @@
       "descriptionNotSet": "توضیحی تنظیم نشده است",
       "descriptionPlaceholder": "یک توضیح برای این مدل اضافه کنید...",
       "displayName": "نام نمایشی",
+      "editDisplayName": "ویرایش نام نمایشی",
       "fileName": "نام فایل",
       "modelDescription": "توضیحات مدل",
       "modelTagging": "برچسب‌گذاری مدل",
@@ -730,6 +731,7 @@
     "control_before_generate": "کنترل پیش از تولید",
     "copied": "کپی شد",
     "copy": "کپی",
+    "copyAll": "کپی همه",
     "copyJobId": "کپی شناسه وظیفه",
     "copyToClipboard": "کپی در کلیپ‌بورد",
     "copyURL": "کپی آدرس",
@@ -2129,6 +2131,7 @@
     "NodeLibrary": "کتابخانه Node",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "تنظیمات اعلان",
+    "Other": "سایر",
     "PLY": "PLY",
     "PlanCredits": "طرح و اعتبارات",
     "Pointer": "اشاره‌گر",
@@ -2148,7 +2151,8 @@
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Window": "پنجره",
-    "Workflow": "Workflow"
+    "Workflow": "Workflow",
+    "Workspace": "محیط کاری"
   },
   "shape": {
     "CARD": "کارت",
@@ -2326,9 +2330,11 @@
     "beta": "بتا",
     "billedMonthly": "صورتحساب ماهانه",
     "billedYearly": "{total} صورتحساب سالانه",
+    "cancelSubscription": "لغو اشتراک",
     "changeTo": "تغییر به {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "لوگوی Comfy Cloud",
+    "contactOwnerToSubscribe": "برای فعال‌سازی اشتراک با مالک محیط کاری تماس بگیرید",
     "contactUs": "تماس با ما",
     "creditsRemainingThisMonth": "شامل شده (شارژ مجدد {date})",
     "creditsRemainingThisYear": "شامل شده (شارژ مجدد {date})",
@@ -2341,6 +2347,7 @@
     "haveQuestions": "سوالی دارید یا به دنبال راهکار سازمانی هستید؟",
     "invoiceHistory": "تاریخچه فاکتورها",
     "learnMore": "اطلاعات بیشتر",
+    "managePayment": "مدیریت پرداخت",
     "managePlan": "مدیریت طرح",
     "manageSubscription": "مدیریت اشتراک",
     "maxDuration": {
@@ -2376,6 +2383,7 @@
     "subscribeToComfyCloud": "اشتراک در Comfy Cloud",
     "subscribeToRun": "اشتراک",
     "subscribeToRunFull": "اشتراک برای اجرا",
+    "subscriptionRequiredMessage": "برای اجرای workflowها در Cloud، اشتراک لازم است.",
     "tierNameYearly": "{name} سالانه",
     "tiers": {
       "creator": {
@@ -2407,6 +2415,7 @@
     "viewMoreDetails": "مشاهده جزئیات بیشتر",
     "viewMoreDetailsPlans": "مشاهده جزئیات بیشتر درباره طرح‌ها و قیمت‌ها",
     "viewUsageHistory": "مشاهده تاریخچه استفاده",
+    "workspaceNotSubscribed": "این محیط کاری اشتراک فعال ندارد",
     "yearly": "سالانه",
     "yearlyCreditsLabel": "کل اعتبار سالانه",
     "yearlyDiscount": "٪۲۰ تخفیف",
@@ -2556,7 +2565,8 @@
     "notSet": "تنظیم نشده",
     "provider": "ارائه‌دهنده ورود",
     "title": "تنظیمات حساب کاربری من",
-    "updatePassword": "به‌روزرسانی گذرواژه"
+    "updatePassword": "به‌روزرسانی گذرواژه",
+    "workspaceSettings": "تنظیمات محیط کاری"
   },
   "validation": {
     "descriptionRequired": "توضیحات الزامی است",
@@ -2660,6 +2670,57 @@
       "tokenExchangeFailed": "احراز هویت با فضای کاری ناموفق بود: {error}",
       "workspaceNotFound": "فضای کاری پیدا نشد."
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "ایجاد",
+      "message": "محیط‌های کاری به اعضا اجازه می‌دهند از یک اعتبار مشترک استفاده کنند. پس از ایجاد، شما مالک خواهید بود.",
+      "nameLabel": "نام محیط کاری*",
+      "namePlaceholder": "نام محیط کاری را وارد کنید",
+      "title": "ایجاد محیط کاری جدید"
+    },
+    "deleteDialog": {
+      "message": "هرگونه اعتبار یا دارایی ذخیره‌نشده از بین خواهد رفت. این عملیات قابل بازگشت نیست.",
+      "messageWithName": "حذف «{name}»؟ هرگونه اعتبار یا دارایی ذخیره‌نشده از بین خواهد رفت. این عملیات قابل بازگشت نیست.",
+      "title": "حذف این محیط کاری؟"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "نام محیط کاری",
+      "save": "ذخیره",
+      "title": "ویرایش جزئیات محیط کاری"
+    },
+    "leaveDialog": {
+      "leave": "خروج",
+      "message": "تا زمانی که با مالک محیط کاری تماس نگیرید، امکان پیوستن مجدد نخواهید داشت.",
+      "title": "خروج از این محیط کاری؟"
+    },
+    "menu": {
+      "deleteWorkspace": "حذف محیط کاری",
+      "deleteWorkspaceDisabledTooltip": "ابتدا اشتراک فعال محیط کاری خود را لغو کنید",
+      "editWorkspace": "ویرایش جزئیات محیط کاری",
+      "leaveWorkspace": "خروج از محیط کاری"
+    },
+    "tabs": {
+      "planCredits": "پلن و اعتبارها"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "ایجاد محیط کاری ناموفق بود",
+      "failedToDeleteWorkspace": "حذف محیط کاری ناموفق بود",
+      "failedToLeaveWorkspace": "خروج از محیط کاری ناموفق بود",
+      "failedToUpdateWorkspace": "به‌روزرسانی محیط کاری ناموفق بود",
+      "workspaceUpdated": {
+        "message": "جزئیات محیط کاری ذخیره شد.",
+        "title": "محیط کاری به‌روزرسانی شد"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "ایجاد محیط کاری جدید",
+    "maxWorkspacesReached": "شما فقط می‌توانید مالک ۱۰ محیط کاری باشید. برای ایجاد محیط کاری جدید، یکی را حذف کنید.",
+    "roleMember": "عضو",
+    "roleOwner": "مالک",
+    "subscribe": "اشتراک",
+    "switchWorkspace": "تغییر محیط کاری"
   },
   "zoomControls": {
     "hideMinimap": "مخفی‌سازی نقشه کوچک",

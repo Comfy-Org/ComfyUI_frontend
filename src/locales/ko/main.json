@@ -87,6 +87,7 @@
       "descriptionNotSet": "설정된 설명 없음",
       "descriptionPlaceholder": "이 모델에 대한 설명을 추가하세요...",
       "displayName": "표시 이름",
+      "editDisplayName": "표시 이름 편집",
       "fileName": "파일 이름",
       "modelDescription": "모델 설명",
       "modelTagging": "모델 태깅",
@@ -730,6 +731,7 @@
     "control_before_generate": "생성 전 제어",
     "copied": "복사됨",
     "copy": "복사",
+    "copyAll": "모두 복사",
     "copyJobId": "작업 ID 복사",
     "copyToClipboard": "클립보드에 복사",
     "copyURL": "URL 복사",
@@ -2129,6 +2131,7 @@
     "NodeLibrary": "노드 라이브러리",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "알림 환경설정",
+    "Other": "기타",
     "PLY": "PLY",
     "PlanCredits": "플랜 및 크레딧",
     "Pointer": "포인터",
@@ -2148,7 +2151,8 @@
     "Vue Nodes": "Vue 노드",
     "VueNodes": "Vue 노드",
     "Window": "창",
-    "Workflow": "워크플로"
+    "Workflow": "워크플로",
+    "Workspace": "워크스페이스"
   },
   "shape": {
     "CARD": "카드",
@@ -2315,9 +2319,11 @@
     "beta": "베타",
     "billedMonthly": "매월 결제",
     "billedYearly": "{total} 연간 결제",
+    "cancelSubscription": "구독 취소",
     "changeTo": "{plan}로 변경",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud 로고",
+    "contactOwnerToSubscribe": "워크스페이스 소유자에게 구독을 요청하세요",
     "contactUs": "문의하기",
     "creditsRemainingThisMonth": "이번 달 남은 크레딧",
     "creditsRemainingThisYear": "올해 남은 크레딧",
@@ -2330,6 +2336,7 @@
     "haveQuestions": "질문이 있거나 엔터프라이즈가 궁금하신가요?",
     "invoiceHistory": "청구서 기록",
     "learnMore": "더 알아보기",
+    "managePayment": "결제 관리",
     "managePlan": "플랜 관리",
     "manageSubscription": "구독 관리",
     "maxDuration": {
@@ -2365,6 +2372,7 @@
     "subscribeToComfyCloud": "Comfy Cloud 구독",
     "subscribeToRun": "구독",
     "subscribeToRunFull": "실행 구독",
+    "subscriptionRequiredMessage": "클라우드에서 워크플로우를 실행하려면 멤버가 구독해야 합니다",
     "tierNameYearly": "{name} 연간",
     "tiers": {
       "creator": {
@@ -2396,6 +2404,7 @@
     "viewMoreDetails": "자세히 보기",
     "viewMoreDetailsPlans": "플랜 및 가격에 대한 자세한 정보 보기",
     "viewUsageHistory": "사용 기록 보기",
+    "workspaceNotSubscribed": "이 워크스페이스는 구독 중이 아닙니다",
     "yearly": "연간",
     "yearlyCreditsLabel": "연간 총 크레딧",
     "yearlyDiscount": "20% 할인",
@@ -2545,7 +2554,8 @@
     "notSet": "설정되지 않음",
     "provider": "로그인 방법",
     "title": "사용자 설정",
-    "updatePassword": "비밀번호 업데이트"
+    "updatePassword": "비밀번호 업데이트",
+    "workspaceSettings": "워크스페이스 설정"
   },
   "validation": {
     "descriptionRequired": "설명은 필수입니다",
@@ -2649,6 +2659,57 @@
       "tokenExchangeFailed": "워크스페이스 인증에 실패했습니다: {error}",
       "workspaceNotFound": "워크스페이스를 찾을 수 없습니다."
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "만들기",
+      "message": "워크스페이스는 멤버들이 크레딧을 공유할 수 있게 해줍니다. 생성 후 소유자가 됩니다.",
+      "nameLabel": "워크스페이스 이름*",
+      "namePlaceholder": "워크스페이스 이름 입력",
+      "title": "새 워크스페이스 만들기"
+    },
+    "deleteDialog": {
+      "message": "사용하지 않은 크레딧이나 저장되지 않은 자산이 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "messageWithName": "\"{name}\"을(를) 삭제하시겠습니까? 사용하지 않은 크레딧이나 저장되지 않은 자산이 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "title": "이 워크스페이스를 삭제하시겠습니까?"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "워크스페이스 이름",
+      "save": "저장",
+      "title": "워크스페이스 정보 수정"
+    },
+    "leaveDialog": {
+      "leave": "나가기",
+      "message": "워크스페이스 소유자에게 연락하지 않으면 다시 참여할 수 없습니다.",
+      "title": "이 워크스페이스를 나가시겠습니까?"
+    },
+    "menu": {
+      "deleteWorkspace": "워크스페이스 삭제",
+      "deleteWorkspaceDisabledTooltip": "먼저 워크스페이스의 활성 구독을 취소하세요",
+      "editWorkspace": "워크스페이스 정보 수정",
+      "leaveWorkspace": "워크스페이스 나가기"
+    },
+    "tabs": {
+      "planCredits": "플랜 및 크레딧"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "워크스페이스 생성에 실패했습니다",
+      "failedToDeleteWorkspace": "워크스페이스 삭제에 실패했습니다",
+      "failedToLeaveWorkspace": "워크스페이스 나가기에 실패했습니다",
+      "failedToUpdateWorkspace": "워크스페이스 업데이트에 실패했습니다",
+      "workspaceUpdated": {
+        "message": "워크스페이스 정보가 저장되었습니다.",
+        "title": "워크스페이스가 업데이트되었습니다"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "새 워크스페이스 만들기",
+    "maxWorkspacesReached": "최대 10개의 워크스페이스만 소유할 수 있습니다. 새로 만들려면 하나를 삭제하세요.",
+    "roleMember": "멤버",
+    "roleOwner": "소유자",
+    "subscribe": "구독하기",
+    "switchWorkspace": "워크스페이스 전환"
   },
   "zoomControls": {
     "hideMinimap": "미니맵 숨기기",

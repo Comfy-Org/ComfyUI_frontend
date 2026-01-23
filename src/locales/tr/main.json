@@ -87,6 +87,7 @@
       "descriptionNotSet": "Açıklama ayarlanmadı",
       "descriptionPlaceholder": "Bu model için bir açıklama ekleyin...",
       "displayName": "Görünen Ad",
+      "editDisplayName": "Görünen Adı Düzenle",
       "fileName": "Dosya Adı",
       "modelDescription": "Model Açıklaması",
       "modelTagging": "Model Etiketleme",
@@ -730,6 +731,7 @@
     "control_before_generate": "oluşturmadan önce kontrol et",
     "copied": "Kopyalandı",
     "copy": "Kopyala",
+    "copyAll": "Tümünü Kopyala",
     "copyJobId": "İş Kimliğini Kopyala",
     "copyToClipboard": "Panoya Kopyala",
     "copyURL": "URL'yi Kopyala",
@@ -2129,6 +2131,7 @@
     "NodeLibrary": "Düğüm Kütüphanesi",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Bildirim Tercihleri",
+    "Other": "Diğer",
     "PLY": "PLY",
     "PlanCredits": "Plan & Krediler",
     "Pointer": "İşaretçi",
@@ -2148,7 +2151,8 @@
     "Vue Nodes": "Vue Düğümleri",
     "VueNodes": "Vue Düğümleri",
     "Window": "Pencere",
-    "Workflow": "İş Akışı"
+    "Workflow": "İş Akışı",
+    "Workspace": "Çalışma Alanı"
   },
   "shape": {
     "CARD": "Kart",
@@ -2315,9 +2319,11 @@
     "beta": "BETA",
     "billedMonthly": "Aylık faturalandırılır",
     "billedYearly": "{total} Yıllık faturalandırılır",
+    "cancelSubscription": "Aboneliği İptal Et",
     "changeTo": "{plan} planına geç",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud Logosu",
+    "contactOwnerToSubscribe": "Abone olmak için çalışma alanı sahibiyle iletişime geçin",
     "contactUs": "Bize ulaşın",
     "creditsRemainingThisMonth": "Bu ay kalan krediler",
     "creditsRemainingThisYear": "Bu yıl kalan krediler",
@@ -2330,6 +2336,7 @@
     "haveQuestions": "Sorularınız mı var veya kurumsal çözüm mü arıyorsunuz?",
     "invoiceHistory": "Fatura geçmişi",
     "learnMore": "Daha fazla bilgi edinin",
+    "managePayment": "Ödemeyi Yönet",
     "managePlan": "Planı yönet",
     "manageSubscription": "Aboneliği yönet",
     "maxDuration": {
@@ -2365,6 +2372,7 @@
     "subscribeToComfyCloud": "Comfy Cloud'a Abone Ol",
     "subscribeToRun": "Abone Ol",
     "subscribeToRunFull": "Çalıştırmaya Abone Ol",
+    "subscriptionRequiredMessage": "Üyelerin Bulut'ta iş akışlarını çalıştırabilmesi için abonelik gereklidir",
     "tierNameYearly": "{name} Yıllık",
     "tiers": {
       "creator": {
@@ -2396,6 +2404,7 @@
     "viewMoreDetails": "Daha fazla detay görüntüle",
     "viewMoreDetailsPlans": "Planlar ve fiyatlandırma hakkında daha fazla detay",
     "viewUsageHistory": "Kullanım geçmişini görüntüle",
+    "workspaceNotSubscribed": "Bu çalışma alanı bir aboneliğe sahip değil",
     "yearly": "Yıllık",
     "yearlyCreditsLabel": "Toplam yıllık krediler",
     "yearlyDiscount": "%20 İNDİRİM",
@@ -2545,7 +2554,8 @@
     "notSet": "Ayarlanmadı",
     "provider": "Giriş Sağlayıcı",
     "title": "Kullanıcı Ayarları",
-    "updatePassword": "Şifreyi Güncelle"
+    "updatePassword": "Şifreyi Güncelle",
+    "workspaceSettings": "Çalışma alanı ayarları"
   },
   "validation": {
     "descriptionRequired": "Açıklama gerekli",
@@ -2649,6 +2659,57 @@
       "tokenExchangeFailed": "Çalışma alanı ile kimlik doğrulama başarısız oldu: {error}",
       "workspaceNotFound": "Çalışma alanı bulunamadı"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "Oluştur",
+      "message": "Çalışma alanları, üyelerin tek bir kredi havuzunu paylaşmasını sağlar. Oluşturduktan sonra sahibi olacaksınız.",
+      "nameLabel": "Çalışma alanı adı*",
+      "namePlaceholder": "Çalışma alanı adını girin",
+      "title": "Yeni bir çalışma alanı oluştur"
+    },
+    "deleteDialog": {
+      "message": "Kullanılmamış krediler veya kaydedilmemiş varlıklar kaybolacak. Bu işlem geri alınamaz.",
+      "messageWithName": "\"{name}\" silinsin mi? Kullanılmamış krediler veya kaydedilmemiş varlıklar kaybolacak. Bu işlem geri alınamaz.",
+      "title": "Bu çalışma alanı silinsin mi?"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "Çalışma alanı adı",
+      "save": "Kaydet",
+      "title": "Çalışma alanı detaylarını düzenle"
+    },
+    "leaveDialog": {
+      "leave": "Ayrıl",
+      "message": "Çalışma alanı sahibiyle iletişime geçmedikçe tekrar katılamazsınız.",
+      "title": "Bu çalışma alanından ayrılsın mı?"
+    },
+    "menu": {
+      "deleteWorkspace": "Çalışma Alanını Sil",
+      "deleteWorkspaceDisabledTooltip": "Önce çalışma alanınızın aktif aboneliğini iptal edin",
+      "editWorkspace": "Çalışma alanı detaylarını düzenle",
+      "leaveWorkspace": "Çalışma Alanından Ayrıl"
+    },
+    "tabs": {
+      "planCredits": "Plan & Kredi"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "Çalışma alanı oluşturulamadı",
+      "failedToDeleteWorkspace": "Çalışma alanı silinemedi",
+      "failedToLeaveWorkspace": "Çalışma alanından ayrılamadı",
+      "failedToUpdateWorkspace": "Çalışma alanı güncellenemedi",
+      "workspaceUpdated": {
+        "message": "Çalışma alanı detayları kaydedildi.",
+        "title": "Çalışma alanı güncellendi"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "Yeni çalışma alanı oluştur",
+    "maxWorkspacesReached": "Yalnızca 10 çalışma alanına sahip olabilirsiniz. Yeni bir tane oluşturmak için birini silin.",
+    "roleMember": "Üye",
+    "roleOwner": "Sahip",
+    "subscribe": "Abone Ol",
+    "switchWorkspace": "Çalışma alanı değiştir"
   },
   "zoomControls": {
     "hideMinimap": "Mini Haritayı Gizle",

@@ -329,7 +329,7 @@
     }
   },
   "BriaImageEditNode": {
-    "display_name": "Bria Image Edit",
+    "display_name": "Bria FIBO Image Edit",
     "description": "Edit images using Bria latest model",
     "inputs": {
       "model": {
@@ -2095,7 +2095,8 @@
       "choice": {
         "name": "choice"
       },
-      "option0": {}
+      "index": {},
+      "option1": {}
     },
     "outputs": {
       "0": {
@@ -9857,8 +9858,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "display_name": "OpenAI GPT Image 1",
-    "description": "Generates images synchronously via OpenAI's GPT Image 1 endpoint.",
+    "display_name": "OpenAI GPT Image 1.5",
+    "description": "Generates images synchronously via OpenAI's GPT Image endpoint.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -11280,18 +11281,27 @@
   },
   "ResizeImageMaskNode": {
     "display_name": "Resize Image/Mask",
+    "description": "Resize an image or mask using various scaling methods.",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Select how to resize: by exact dimensions, scale factor, matching another image, etc."
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Interpolation algorithm. 'area' is best for downscaling, 'lanczos' for upscaling, 'nearest-exact' for pixel art."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "crop"
+      },
+      "resize_type_height": {
+        "name": "height"
+      },
+      "resize_type_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -15775,6 +15785,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "mode": {
+        "name": "mode"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "audio_encoder_output_1": {
+        "name": "audio_encoder_output_1"
+      },
+      "motion_frame_count": {
+        "name": "motion_frame_count",
+        "tooltip": "Number of previous frames to use as motion context."
+      },
+      "audio_scale": {
+        "name": "audio_scale"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "previous_frames": {
+        "name": "previous_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "trim_image",
         "tooltip": null
       }
     }
