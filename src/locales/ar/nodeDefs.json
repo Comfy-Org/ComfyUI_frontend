@@ -2093,7 +2093,9 @@
       "choice": {
         "name": "اختيار"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11271,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "تغيير حجم صورة أو قناع باستخدام طرق تحجيم مختلفة.",
     "display_name": "تغيير حجم الصورة/القناع",
     "inputs": {
       "input": {
         "name": "الإدخال"
       },
       "resize_type": {
-        "name": "نوع تغيير الحجم"
+        "name": "نوع تغيير الحجم",
+        "tooltip": "اختر طريقة تغيير الحجم: حسب الأبعاد الدقيقة، عامل التحجيم، مطابقة صورة أخرى، إلخ."
       },
-      "resize_type_multiplier": {
-        "name": "المضاعف"
+      "resize_type_crop": {
+        "name": "قص"
+      },
+      "resize_type_height": {
+        "name": "الارتفاع"
+      },
+      "resize_type_width": {
+        "name": "العرض"
       },
       "scale_method": {
-        "name": "طريقة التحجيم"
+        "name": "طريقة التحجيم",
+        "tooltip": "خوارزمية الاستيفاء. 'area' هي الأفضل لتصغير الحجم، و'lanczos' لتكبير الحجم، و'nearest-exact' لفن البكسل."
       }
     },
     "outputs": {
@@ -15713,6 +15724,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "مخرجات ترميز الصوت ١"
+      },
+      "audio_scale": {
+        "name": "مقياس الصوت"
+      },
+      "clip_vision_output": {
+        "name": "مخرجات clip للرؤية"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "mode": {
+        "name": "الوضع"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_patch": {
+        "name": "تصحيح النموذج"
+      },
+      "motion_frame_count": {
+        "name": "عدد إطارات الحركة",
+        "tooltip": "عدد الإطارات السابقة المستخدمة كسياق للحركة."
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "previous_frames": {
+        "name": "الإطارات السابقة"
+      },
+      "start_image": {
+        "name": "صورة البداية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "3": {
+        "name": "الفضاء الكامن",
+        "tooltip": null
+      },
+      "4": {
+        "name": "قص الصورة",
         "tooltip": null
       }
     }
