@@ -78,6 +78,8 @@ const maxSelectable = computed(() => {
   return 1
 })
 
+const itemsKey = computed(() => props.items.map((item) => item.id).join('|'))
+
 const filteredItems = ref<DropdownItem[]>([])
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
@@ -209,7 +211,7 @@ async function customSearcher(
         :items="sortedItems"
         :is-selected="internalIsSelected"
         :max-selectable="maxSelectable"
-        :update-key="items"
+        :update-key="itemsKey"
         @close="closeDropdown"
         @item-click="handleSelection"
       />
