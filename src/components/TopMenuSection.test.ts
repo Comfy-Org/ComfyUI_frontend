@@ -2,7 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick } from 'vue'
+import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
@@ -36,7 +37,17 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   }))
 }))
 
-function createWrapper(pinia = createTestingPinia({ createSpy: vi.fn })) {
+type WrapperOptions = {
+  pinia?: ReturnType<typeof createTestingPinia>
+  stubs?: Record<string, boolean | Component>
+  attachTo?: HTMLElement
+}
+
+function createWrapper({
+  pinia = createTestingPinia({ createSpy: vi.fn }),
+  stubs = {},
+  attachTo
+}: WrapperOptions = {}) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -55,6 +66,7 @@ function createWrapper(pinia = createTestingPinia({ createSpy: vi.fn })) {
   })
 
   return mount(TopMenuSection, {
+    attachTo,
     global: {
       plugins: [pinia, i18n],
       stubs: {
@@ -67,7 +79,8 @@ function createWrapper(pinia = createTestingPinia({ createSpy: vi.fn })) {
           name: 'ContextMenu',
           props: ['model'],
           template: '<div />'
-        }
+        },
+        ...stubs
       },
       directives: {
         tooltip: () => {}
@@ -92,6 +105,7 @@ function createTask(id: string, status: JobStatus): TaskItemImpl {
 describe('TopMenuSection', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    localStorage.clear()
   })
 
   describe('authentication state', () => {
@@ -152,7 +166,7 @@ describe('TopMenuSection', () => {
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? true : undefined
     )
-    const wrapper = createWrapper(pinia)
+    const wrapper = createWrapper({ pinia })
 
     await nextTick()
 
@@ -170,7 +184,7 @@ describe('TopMenuSection', () => {
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? false : undefined
     )
-    const wrapper = createWrapper(pinia)
+    const wrapper = createWrapper({ pinia })
     const commandStore = useCommandStore(pinia)
 
     await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
@@ -186,7 +200,7 @@ describe('TopMenuSection', () => {
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? true : undefined
     )
-    const wrapper = createWrapper(pinia)
+    const wrapper = createWrapper({ pinia })
     const sidebarTabStore = useSidebarTabStore(pinia)
 
     await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
@@ -200,7 +214,7 @@ describe('TopMenuSection', () => {
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? true : undefined
     )
-    const wrapper = createWrapper(pinia)
+    const wrapper = createWrapper({ pinia })
     const sidebarTabStore = useSidebarTabStore(pinia)
     const toggleButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
 
@@ -209,6 +223,81 @@ describe('TopMenuSection', () => {
 
     await toggleButton.trigger('click')
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
+  })
+
+  describe('inline progress summary', () => {
+    const configureSettings = (
+      pinia: ReturnType<typeof createTestingPinia>,
+      qpoV2Enabled: boolean
+    ) => {
+      const settingStore = useSettingStore(pinia)
+      vi.mocked(settingStore.get).mockImplementation((key) => {
+        if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        return undefined
+      })
+    }
+
+    it('renders inline progress summary when QPO V2 is enabled', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true)
+
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
+      ).toBe(true)
+    })
+
+    it('does not render inline progress summary when QPO V2 is disabled', async () => {
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, false)
+
+      const wrapper = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        wrapper.findComponent({ name: 'QueueInlineProgressSummary' }).exists()
+      ).toBe(false)
+    })
+
+    it('teleports inline progress summary when actionbar is floating', async () => {
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+      const actionbarTarget = document.createElement('div')
+      document.body.appendChild(actionbarTarget)
+      const pinia = createTestingPinia({ createSpy: vi.fn })
+      configureSettings(pinia, true)
+
+      const ComfyActionbarStub = defineComponent({
+        name: 'ComfyActionbar',
+        setup(_, { expose }) {
+          expose({ panelElement: actionbarTarget })
+          return () => h('div')
+        }
+      })
+
+      const wrapper = createWrapper({
+        pinia,
+        attachTo: document.body,
+        stubs: {
+          ComfyActionbar: ComfyActionbarStub
+        }
+      })
+
+      try {
+        await nextTick()
+
+        expect(
+          actionbarTarget.querySelector('queue-inline-progress-summary-stub')
+        ).not.toBeNull()
+      } finally {
+        wrapper.unmount()
+        actionbarTarget.remove()
+      }
+    })
   })
 
   it('disables the clear queue context menu item when no queued jobs exist', () => {
