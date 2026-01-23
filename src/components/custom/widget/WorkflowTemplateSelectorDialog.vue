@@ -5,9 +5,9 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
-      <span class="text-neutral text-base">{{
-        $t('sideToolbar.templates', 'Templates')
-      }}</span>
+      <h2 class="text-neutral text-base">
+        {{ $t('sideToolbar.templates', 'Templates') }}
+      </h2>
     </template>
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems" />
