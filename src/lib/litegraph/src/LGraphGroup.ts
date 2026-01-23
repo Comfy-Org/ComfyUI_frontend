@@ -241,8 +241,15 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     return this.pinned ? false : snapPoint(this.pos, snapTo)
   }
 
-  recomputeInsideNodes(): void {
+  /**
+   * Recomputes which items (nodes, reroutes, nested groups) are inside this group.
+   * Recursively processes nested groups to ensure their children are also computed.
+   * @param maxDepth Maximum recursion depth for nested groups. Use 1 to skip nested group computation.
+   */
+  recomputeInsideNodes(maxDepth: number = 100): void {
     if (!this.graph) throw new NullGraphError()
+    if (maxDepth <= 0) return
+
     const { nodes, reroutes, groups } = this.graph
     const children = this._children
     this._nodes.length = 0
@@ -261,9 +268,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       if (isPointInRect(reroute.pos, this._bounding)) children.add(reroute)
     }
 
-    // Move groups we wholly contain
+    // Move groups we wholly contain and recursively compute their children
     for (const group of groups) {
-      if (containsRect(this._bounding, group._bounding)) children.add(group)
+      if (group !== this && containsRect(this._bounding, group._bounding)) {
+        children.add(group)
+        group.recomputeInsideNodes(maxDepth - 1)
+      }
     }
 
     groups.sort((a, b) => {
