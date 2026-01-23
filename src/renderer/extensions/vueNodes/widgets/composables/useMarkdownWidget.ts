@@ -8,12 +8,9 @@ import TiptapStarterKit from '@tiptap/starter-kit'
 import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-
-const TRACKPAD_DETECTION_THRESHOLD = 50
 
 function addMarkdownWidget(
   node: LGraphNode,
@@ -38,9 +35,6 @@ function addMarkdownWidget(
     content: opts.defaultVal,
     editable: false
   })
-
-  // Cache the settingStore once
-  const settingStore = useSettingStore()
 
   const inputEl = editor.options.element as HTMLElement
   inputEl.classList.add('comfy-markdown')
@@ -99,10 +93,6 @@ function addMarkdownWidget(
   })
 
   inputEl.addEventListener('wheel', (event: WheelEvent) => {
-    // Use the cached settingStore
-    const gesturesEnabled = settingStore.get(
-      'LiteGraph.Pointer.TrackpadGestures'
-    )
     const deltaX = event.deltaX
     const deltaY = event.deltaY
 
@@ -112,20 +102,6 @@ function addMarkdownWidget(
 
     // Prevent pinch zoom from zooming the page
     if (event.ctrlKey) {
-      event.preventDefault()
-      event.stopPropagation()
-      app.canvas.processMouseWheel(event)
-      return
-    }
-
-    // Detect if this is likely a trackpad gesture vs mouse wheel
-    // Trackpads usually have deltaX or smaller deltaY values (< TRACKPAD_DETECTION_THRESHOLD)
-    // Mouse wheels typically have larger discrete deltaY values (>= TRACKPAD_DETECTION_THRESHOLD)
-    const isLikelyTrackpad =
-      Math.abs(deltaX) > 0 || Math.abs(deltaY) < TRACKPAD_DETECTION_THRESHOLD
-
-    // Trackpad gestures: when enabled, trackpad panning goes to canvas
-    if (gesturesEnabled && isLikelyTrackpad) {
       event.preventDefault()
       event.stopPropagation()
       app.canvas.processMouseWheel(event)
