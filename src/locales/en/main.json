@@ -283,6 +283,9 @@
   },
   "manager": {
     "title": "Nodes Manager",
+    "basicInfo": "Basic Info",
+    "actions": "Actions",
+    "selected": "Selected",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",

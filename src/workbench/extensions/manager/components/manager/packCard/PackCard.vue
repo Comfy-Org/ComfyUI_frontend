@@ -19,7 +19,9 @@
     <div class="flex flex-1 flex-col rounded-lg min-h-0">
       <div class="h-full w-full py-2 px-3">
         <div class="flex h-full w-full flex-col gap-y-1">
-          <span class="truncate overflow-hidden text-xs font-bold text-ellipsis">
+          <span
+            class="truncate overflow-hidden text-xs font-bold text-ellipsis"
+          >
             {{ nodePack.name }}
           </span>
           <p

@@ -10,9 +10,8 @@
           :href="section.text"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-2"
         >
-          <i v-if="isGitHubLink(section.text)" class="pi pi-github text-base" />
+          <i v-if="isGitHubLink(section.text)" class="pi pi-github text-base pr-1 pb-1" />
           <span class="break-all">{{ section.text }}</span>
         </a>
         <MarkdownText v-else :text="section.text" class="text-muted" />

@@ -10,7 +10,9 @@
   >
     <DotSpinner v-if="isUpdating" duration="1s" :size="12" />
     <i v-else class="icon-[lucide--refresh-cw]" />
-    <span>{{ $t('manager.updateAll') }}</span>
+    <span>{{
+      nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
+    }}</span>
   </Button>
 </template>
 

@@ -1,6 +1,5 @@
 <template>
   <div v-if="nodePacks?.length" class="flex flex-col items-center">
-    <PackIcon :node-pack="nodePacks[0]" width="204" height="106" />
     <p class="text-center text-base font-bold">{{ nodePacks[0].name }}</p>
     <div v-if="!importFailed" class="flex justify-center gap-2">
       <template v-if="canTryNightlyUpdate">
@@ -8,7 +7,11 @@
         <PackUninstallButton :node-packs="nodePacks" size="md" />
       </template>
       <template v-else-if="isAllInstalled">
-        <PackUninstallButton v-bind="$attrs" size="md" :node-packs="nodePacks" />
+        <PackUninstallButton
+          v-bind="$attrs"
+          size="md"
+          :node-packs="nodePacks"
+        />
       </template>
       <template v-else>
         <PackInstallButton
@@ -37,7 +40,6 @@ import type { components } from '@/types/comfyRegistryTypes'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackTryUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackTryUpdateButton.vue'
 import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
-import PackIcon from '@/workbench/extensions/manager/components/manager/packIcon/PackIcon.vue'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'

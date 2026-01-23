@@ -41,7 +41,8 @@
                 }
               },
               overlay: {
-                class: 'bg-comfy-input rounded-lg mt-1 shadow-lg border border-border-default'
+                class:
+                  'bg-comfy-input rounded-lg mt-1 shadow-lg border border-border-default'
               },
               list: { class: 'p-1' },
               option: {
