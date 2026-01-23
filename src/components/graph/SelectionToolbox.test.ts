@@ -21,7 +21,9 @@ function createMockExtensionService(): ReturnType<typeof useExtensionService> {
     registerExtension: vi.fn(),
     invokeExtensions: vi.fn(() => []),
     invokeExtensionsAsync: vi.fn()
-  } as ReturnType<typeof useExtensionService>
+  } as Partial<ReturnType<typeof useExtensionService>> as ReturnType<
+    typeof useExtensionService
+  >
 }
 
 // Mock the composables and services
