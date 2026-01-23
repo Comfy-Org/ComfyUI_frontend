@@ -21,7 +21,7 @@ function createMockWorkflow(
       checkState: vi.fn() as Mock
     },
     ...overrides
-  } as LoadedComfyWorkflow
+  } as Partial<LoadedComfyWorkflow> as LoadedComfyWorkflow
 }
 
 // Mock the litegraph module
