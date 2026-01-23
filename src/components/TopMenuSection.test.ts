@@ -11,7 +11,9 @@ import type {
   JobListItem,
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isElectron } from '@/utils/envUtil'
 
 const mockData = vi.hoisted(() => ({ isLoggedIn: false }))
@@ -32,7 +34,7 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   }))
 }))
 
-function createWrapper() {
+function createWrapper(pinia = createTestingPinia({ createSpy: vi.fn })) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -51,7 +53,7 @@ function createWrapper() {
 
   return mount(TopMenuSection, {
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+      plugins: [pinia, i18n],
       stubs: {
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
@@ -133,5 +135,37 @@ describe('TopMenuSection', () => {
 
     const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
     expect(queueButton.text()).toContain('3 active')
+  })
+
+  it('hides queue progress overlay when QPO V2 is enabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const wrapper = createWrapper(pinia)
+
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="queue-overlay-toggle"]').exists()).toBe(
+      true
+    )
+    expect(
+      wrapper.findComponent({ name: 'QueueProgressOverlay' }).exists()
+    ).toBe(false)
+  })
+
+  it('opens the assets sidebar tab when QPO V2 is enabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const wrapper = createWrapper(pinia)
+    const sidebarTabStore = useSidebarTabStore(pinia)
+
+    await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
+
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
   })
 })
