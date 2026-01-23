@@ -71,6 +71,10 @@
       </div>
     </div>
 
+    <div v-if="$slots.actions" class="relative z-1 flex items-center gap-2">
+      <slot name="actions" />
+    </div>
+
     <div
       v-if="typeof stackCount === 'number' && stackCount > 1"
       class="relative z-1 flex shrink-0 items-center"
@@ -85,10 +89,6 @@
         <span class="text-xs leading-none">{{ stackCount }}</span>
         <i aria-hidden="true" class="icon-[lucide--chevron-down] size-3" />
       </Button>
-    </div>
-
-    <div v-if="$slots.actions" class="relative z-1 flex items-center gap-2">
-      <slot name="actions" />
     </div>
   </div>
 </template>
