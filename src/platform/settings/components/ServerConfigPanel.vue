@@ -1,46 +1,38 @@
 <template>
-  <PanelTemplate value="Server-Config" class="server-config-panel">
-    <template #header>
-      <div class="flex flex-col gap-2">
-        <Message
-          v-if="modifiedConfigs.length > 0"
-          severity="info"
-          pt:text="w-full"
-        >
-          <p>
-            {{ $t('serverConfig.modifiedConfigs') }}
-          </p>
-          <ul>
-            <li v-for="config in modifiedConfigs" :key="config.id">
-              {{ config.name }}: {{ config.initialValue }} → {{ config.value }}
-            </li>
-          </ul>
-          <div class="flex justify-end gap-2">
-            <Button variant="secondary" @click="revertChanges">
-              {{ $t('serverConfig.revertChanges') }}
-            </Button>
-            <Button variant="destructive" @click="restartApp">
-              {{ $t('serverConfig.restart') }}
-            </Button>
-          </div>
-        </Message>
-        <Message v-if="commandLineArgs" severity="secondary" pt:text="w-full">
-          <template #icon>
-            <i class="icon-[lucide--terminal] text-xl font-bold" />
-          </template>
-          <div class="flex items-center justify-between">
-            <p>{{ commandLineArgs }}</p>
-            <Button
-              size="icon"
-              variant="muted-textonly"
-              @click="copyCommandLineArgs"
-            >
-              <i class="pi pi-clipboard" />
-            </Button>
-          </div>
-        </Message>
+  <div class="server-config-panel flex flex-col gap-2">
+    <Message v-if="modifiedConfigs.length > 0" severity="info" pt:text="w-full">
+      <p>
+        {{ $t('serverConfig.modifiedConfigs') }}
+      </p>
+      <ul>
+        <li v-for="config in modifiedConfigs" :key="config.id">
+          {{ config.name }}: {{ config.initialValue }} → {{ config.value }}
+        </li>
+      </ul>
+      <div class="flex justify-end gap-2">
+        <Button variant="secondary" @click="revertChanges">
+          {{ $t('serverConfig.revertChanges') }}
+        </Button>
+        <Button variant="destructive" @click="restartApp">
+          {{ $t('serverConfig.restart') }}
+        </Button>
       </div>
-    </template>
+    </Message>
+    <Message v-if="commandLineArgs" severity="secondary" pt:text="w-full">
+      <template #icon>
+        <i class="icon-[lucide--terminal] text-xl font-bold" />
+      </template>
+      <div class="flex items-center justify-between">
+        <p>{{ commandLineArgs }}</p>
+        <Button
+          size="icon"
+          variant="muted-textonly"
+          @click="copyCommandLineArgs"
+        >
+          <i class="pi pi-clipboard" />
+        </Button>
+      </div>
+    </Message>
     <div
       v-for="([label, items], i) in Object.entries(serverConfigsByCategory)"
       :key="label"
@@ -58,7 +50,7 @@
         />
       </div>
     </div>
-  </PanelTemplate>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -69,7 +61,6 @@ import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
-import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig } from '@/constants/serverConfig'

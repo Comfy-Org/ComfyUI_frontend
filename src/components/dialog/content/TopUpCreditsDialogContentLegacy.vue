@@ -162,7 +162,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -173,7 +173,7 @@ const { isInsufficientCredits = false } = defineProps<{
 const { t } = useI18n()
 const authActions = useFirebaseAuthActions()
 const dialogStore = useDialogStore()
-const dialogService = useDialogService()
+const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
@@ -266,7 +266,7 @@ async function handleBuy() {
       : isSubscriptionEnabled()
         ? 'subscription'
         : 'credits'
-    dialogService.showSettingsDialog(settingsPanel)
+    settingsDialog.show(settingsPanel)
   } catch (error) {
     console.error('Purchase failed:', error)
 

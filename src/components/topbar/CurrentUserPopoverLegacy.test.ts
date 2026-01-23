@@ -31,6 +31,15 @@ vi.mock('pinia')
 const mockShowSettingsDialog = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 
+// Mock the settings dialog composable
+vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+  useSettingsDialog: vi.fn(() => ({
+    show: mockShowSettingsDialog,
+    hide: vi.fn(),
+    showAbout: vi.fn()
+  }))
+}))
+
 // Mock window.open
 const originalWindowOpen = window.open
 beforeEach(() => {
@@ -64,7 +73,6 @@ vi.mock('@/composables/auth/useFirebaseAuthActions', () => ({
 // Mock the dialog service
 vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => ({
-    showSettingsDialog: mockShowSettingsDialog,
     showTopUpCreditsDialog: mockShowTopUpCreditsDialog
   }))
 }))

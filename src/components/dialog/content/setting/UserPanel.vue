@@ -1,5 +1,5 @@
 <template>
-  <TabPanel value="User" class="user-settings-container h-full">
+  <div class="user-settings-container h-full">
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
       <Divider class="mb-3" />
@@ -95,13 +95,12 @@
         </Button>
       </div>
     </div>
-  </TabPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
-import TabPanel from 'primevue/tabpanel'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'

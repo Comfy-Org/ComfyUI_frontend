@@ -1,13 +1,9 @@
 <template>
-  <PanelTemplate value="Keybinding" class="keybinding-panel">
-    <template #header>
-      <SearchBox
-        v-model="filters['global'].value"
-        :placeholder="
-          $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
-        "
-      />
-    </template>
+  <div class="keybinding-panel flex flex-col gap-2">
+    <SearchBox
+      v-model="filters['global'].value"
+      :placeholder="$t('g.searchPlaceholder', { subject: $t('g.keybindings') })"
+    />
 
     <DataTable
       v-model:selection="selectedCommandData"
@@ -135,7 +131,7 @@
       <i class="pi pi-replay" />
       {{ $t('g.resetAll') }}
     </Button>
-  </PanelTemplate>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -159,7 +155,6 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import PanelTemplate from './PanelTemplate.vue'
 import KeyComboDisplay from './keybinding/KeyComboDisplay.vue'
 
 const filters = ref({

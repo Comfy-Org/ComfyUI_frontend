@@ -161,7 +161,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingOperationStore } from '@/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -172,7 +172,7 @@ const { isInsufficientCredits = false } = defineProps<{
 
 const { t } = useI18n()
 const dialogStore = useDialogStore()
-const dialogService = useDialogService()
+const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
@@ -266,7 +266,7 @@ async function handleBuy() {
       })
       await fetchBalance()
       handleClose(false)
-      dialogService.showSettingsDialog('workspace')
+      settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
       billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
