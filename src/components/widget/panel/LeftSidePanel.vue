@@ -1,38 +1,38 @@
 <template>
-  <div class="flex h-full w-full flex-col bg-modal-panel-background">
-    <nav class="flex scrollbar-hide flex-1 flex-col gap-1 overflow-y-auto px-3">
-      <template v-for="(item, index) in navItems" :key="index">
-        <div v-if="'items' in item" class="flex flex-col gap-2">
-          <NavTitle
-            v-model="collapsedGroups[item.title]"
-            :title="item.title"
-            :collapsible="item.collapsible"
-          />
-          <template v-if="!item.collapsible || !collapsedGroups[item.title]">
-            <NavItem
-              v-for="subItem in item.items"
-              :key="subItem.id"
-              :icon="subItem.icon"
-              :badge="subItem.badge"
-              :active="activeItem === subItem.id"
-              @click="activeItem = subItem.id"
-            >
-              {{ subItem.label }}
-            </NavItem>
-          </template>
-        </div>
-        <div v-else class="flex flex-col gap-2">
+  <div
+    class="flex w-full flex-auto overflow-y-auto gap-1 min-h-0 flex-col bg-modal-panel-background scrollbar-hide px-3"
+  >
+    <template v-for="(item, index) in navItems" :key="index">
+      <div v-if="'items' in item" class="flex flex-col gap-2">
+        <NavTitle
+          v-model="collapsedGroups[item.title]"
+          :title="item.title"
+          :collapsible="item.collapsible"
+        />
+        <template v-if="!item.collapsible || !collapsedGroups[item.title]">
           <NavItem
-            :icon="item.icon"
-            :badge="item.badge"
-            :active="activeItem === item.id"
-            @click="activeItem = item.id"
+            v-for="subItem in item.items"
+            :key="subItem.id"
+            :icon="subItem.icon"
+            :badge="subItem.badge"
+            :active="activeItem === subItem.id"
+            @click="activeItem = subItem.id"
           >
-            {{ item.label }}
+            {{ subItem.label }}
           </NavItem>
-        </div>
-      </template>
-    </nav>
+        </template>
+      </div>
+      <div v-else class="flex flex-col gap-2">
+        <NavItem
+          :icon="item.icon"
+          :badge="item.badge"
+          :active="activeItem === item.id"
+          @click="activeItem = item.id"
+        >
+          {{ item.label }}
+        </NavItem>
+      </div>
+    </template>
   </div>
 </template>
 

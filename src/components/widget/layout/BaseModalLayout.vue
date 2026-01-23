@@ -8,7 +8,7 @@
       :style="gridStyle"
     >
       <nav
-        class="h-full overflow-hidden bg-modal-panel-background"
+        class="h-full overflow-hidden bg-modal-panel-background flex flex-col"
         :inert="!showLeftPanel"
         :aria-hidden="!showLeftPanel"
       >
@@ -27,9 +27,7 @@
             <i class="icon-[lucide--panel-left-close]" />
           </Button>
         </header>
-        <div v-if="hasLeftPanel" class="h-full min-w-40 max-w-56">
-          <slot name="leftPanel"> </slot>
-        </div>
+        <slot name="leftPanel" />
       </nav>
 
       <div class="flex flex-col bg-base-background overflow-hidden">
