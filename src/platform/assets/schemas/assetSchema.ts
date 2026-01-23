@@ -106,6 +106,16 @@ const zAssetUserMetadata = z.object({
 
 export type AssetUserMetadata = z.infer<typeof zAssetUserMetadata>
 
+export const tagsOperationResultSchema = z.object({
+  total_tags: z.array(z.string()),
+  added: z.array(z.string()).optional(),
+  removed: z.array(z.string()).optional(),
+  already_present: z.array(z.string()).optional(),
+  not_present: z.array(z.string()).optional()
+})
+
+export type TagsOperationResult = z.infer<typeof tagsOperationResultSchema>
+
 // Legacy interface for backward compatibility (now aligned with Zod schema)
 export interface ModelFolderInfo {
   name: string
