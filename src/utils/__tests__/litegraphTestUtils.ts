@@ -1,9 +1,5 @@
-
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type {
-  LGraphGroup,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 
