@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp, nextTick } from 'vue'
 
 import UrlInput from './UrlInput.vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 describe('UrlInput', () => {
   beforeEach(() => {
@@ -14,7 +15,13 @@ describe('UrlInput', () => {
     app.use(PrimeVue)
   })
 
-  const mountComponent = (props: any, options = {}) => {
+  const mountComponent = (
+    props: ComponentProps<typeof UrlInput> & {
+      placeholder?: string
+      disabled?: boolean
+    },
+    options = {}
+  ) => {
     return mount(UrlInput, {
       global: {
         plugins: [PrimeVue],
@@ -169,25 +176,25 @@ describe('UrlInput', () => {
       await input.setValue('  https://leading-space.com')
       await input.trigger('input')
       await nextTick()
-      expect(wrapper.vm.internalValue).toBe('https://leading-space.com')
+      expect(input.element.value).toBe('https://leading-space.com')
 
       // Test trailing whitespace
       await input.setValue('https://trailing-space.com  ')
       await input.trigger('input')
       await nextTick()
-      expect(wrapper.vm.internalValue).toBe('https://trailing-space.com')
+      expect(input.element.value).toBe('https://trailing-space.com')
 
       // Test both leading and trailing whitespace
       await input.setValue('  https://both-spaces.com  ')
       await input.trigger('input')
       await nextTick()
-      expect(wrapper.vm.internalValue).toBe('https://both-spaces.com')
+      expect(input.element.value).toBe('https://both-spaces.com')
 
       // Test whitespace in the middle of the URL
       await input.setValue('https:// middle-space.com')
       await input.trigger('input')
       await nextTick()
-      expect(wrapper.vm.internalValue).toBe('https://middle-space.com')
+      expect(input.element.value).toBe('https://middle-space.com')
     })
 
     it('trims whitespace when value set externally', async () => {
@@ -196,15 +203,17 @@ describe('UrlInput', () => {
         placeholder: 'Enter URL'
       })
 
+      const input = wrapper.find('input')
+
       // Check initial value is trimmed
-      expect(wrapper.vm.internalValue).toBe('https://initial-value.com')
+      expect(input.element.value).toBe('https://initial-value.com')
 
       // Update props with whitespace
       await wrapper.setProps({ modelValue: '  https://updated-value.com  ' })
       await nextTick()
 
       // Check updated value is trimmed
-      expect(wrapper.vm.internalValue).toBe('https://updated-value.com')
+      expect(input.element.value).toBe('https://updated-value.com')
     })
   })
 })

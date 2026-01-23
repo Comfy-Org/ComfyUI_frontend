@@ -512,6 +512,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     sendPasswordReset,
     updatePassword: _updatePassword,
     deleteAccount: _deleteAccount,
-    getAuthHeader
+    getAuthHeader,
+    getFirebaseAuthHeader
   }
 })
