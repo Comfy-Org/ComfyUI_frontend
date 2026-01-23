@@ -120,8 +120,8 @@ import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
-import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   mapOutputsToAssetItems,
