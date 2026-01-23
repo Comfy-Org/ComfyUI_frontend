@@ -120,18 +120,10 @@ import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
-import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
+import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  mapOutputsToAssetItems,
-  shouldLoadFullOutputs
-} from '@/platform/assets/utils/outputAssetUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import {
-  getJobDetail,
-  getPreviewableOutputsFromJobDetail
-} from '@/services/jobOutputCache'
 import { isActiveJobState } from '@/utils/queueUtil'
 import {
   formatDuration,
@@ -163,15 +155,10 @@ const { t } = useI18n()
 const { jobItems } = useJobList()
 const hoveredJobId = ref<string | null>(null)
 const hoveredAssetId = ref<string | null>(null)
-const expandedStackPromptIds = ref<Set<string>>(new Set())
-const stackChildrenByPromptId = ref<Record<string, AssetItem[]>>({})
-const loadingStackPromptIds = ref<Set<string>>(new Set())
-
-type AssetListItem = {
-  key: string
-  asset: AssetItem
-  isChild?: boolean
-}
+const { assetItems, selectableAssets, isStackExpanded, toggleStack } =
+  useOutputStacks({
+    assets: computed(() => assets)
+  })
 
 const activeJobItems = computed(() =>
   jobItems.value.filter((item) => isActiveJobState(item.state))
@@ -183,37 +170,6 @@ const hoveredJob = computed(() =>
     : null
 )
 const { cancelAction, canCancelJob, runCancelJob } = useJobActions(hoveredJob)
-
-const assetItems = computed<AssetListItem[]>(() => {
-  const items: AssetListItem[] = []
-
-  for (const asset of assets) {
-    const promptId = getStackPromptId(asset)
-    items.push({
-      key: `asset-${asset.id}`,
-      asset
-    })
-
-    if (!promptId || !expandedStackPromptIds.value.has(promptId)) {
-      continue
-    }
-
-    const children = stackChildrenByPromptId.value[promptId] ?? []
-    for (const child of children) {
-      items.push({
-        key: `asset-${child.id}`,
-        asset: child,
-        isChild: true
-      })
-    }
-  }
-
-  return items
-})
-
-const selectableAssets = computed(() =>
-  assetItems.value.map((item) => item.asset)
-)
 
 watch(
   selectableAssets,
@@ -252,11 +208,6 @@ function getAssetSecondaryText(asset: AssetItem): string {
   return ''
 }
 
-function getStackPromptId(asset: AssetItem): string | null {
-  const metadata = getOutputAssetMetadata(asset.user_metadata)
-  return metadata?.promptId ?? null
-}
-
 function getStackCount(asset: AssetItem): number | undefined {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (typeof metadata?.outputCount === 'number') {
@@ -268,89 +219,6 @@ function getStackCount(asset: AssetItem): number | undefined {
   }
 
   return undefined
-}
-
-function isStackExpanded(asset: AssetItem): boolean {
-  const promptId = getStackPromptId(asset)
-  if (!promptId) return false
-  return expandedStackPromptIds.value.has(promptId)
-}
-
-async function toggleStack(asset: AssetItem) {
-  const promptId = getStackPromptId(asset)
-  if (!promptId) return
-
-  if (expandedStackPromptIds.value.has(promptId)) {
-    const next = new Set(expandedStackPromptIds.value)
-    next.delete(promptId)
-    expandedStackPromptIds.value = next
-    return
-  }
-
-  if (!stackChildrenByPromptId.value[promptId]?.length) {
-    if (loadingStackPromptIds.value.has(promptId)) {
-      return
-    }
-    const nextLoading = new Set(loadingStackPromptIds.value)
-    nextLoading.add(promptId)
-    loadingStackPromptIds.value = nextLoading
-
-    const children = await resolveStackChildren(asset)
-
-    const afterLoading = new Set(loadingStackPromptIds.value)
-    afterLoading.delete(promptId)
-    loadingStackPromptIds.value = afterLoading
-
-    if (!children.length) {
-      return
-    }
-
-    stackChildrenByPromptId.value = {
-      ...stackChildrenByPromptId.value,
-      [promptId]: children
-    }
-  }
-
-  const nextExpanded = new Set(expandedStackPromptIds.value)
-  nextExpanded.add(promptId)
-  expandedStackPromptIds.value = nextExpanded
-}
-
-async function resolveStackOutputs(metadata: OutputAssetMetadata) {
-  const outputsToDisplay = metadata.allOutputs ?? []
-  if (!shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
-    return outputsToDisplay
-  }
-
-  try {
-    const jobDetail = await getJobDetail(metadata.promptId)
-    const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
-    return previewableOutputs.length ? previewableOutputs : outputsToDisplay
-  } catch (error) {
-    console.error('Failed to fetch job detail for stack children:', error)
-    return outputsToDisplay
-  }
-}
-
-async function resolveStackChildren(asset: AssetItem): Promise<AssetItem[]> {
-  const metadata = getOutputAssetMetadata(asset.user_metadata)
-  if (!metadata) {
-    return []
-  }
-
-  const outputsToDisplay = await resolveStackOutputs(metadata)
-  if (!outputsToDisplay.length) {
-    return []
-  }
-
-  return mapOutputsToAssetItems({
-    promptId: metadata.promptId,
-    outputs: outputsToDisplay,
-    createdAt: asset.created_at,
-    executionTimeInSeconds: metadata.executionTimeInSeconds,
-    workflow: metadata.workflow,
-    excludeFilename: asset.name
-  })
 }
 
 function getAssetCardClass(selected: boolean): string {
