@@ -14,7 +14,7 @@ import { vi } from 'vitest'
 export function createMockLGraphNode(
   overrides: Partial<LGraphNode> | Record<string, unknown> = {}
 ): LGraphNode {
-  const partial = {
+  const partial: Partial<LGraphNode> = {
     id: 1,
     pos: [0, 0],
     size: [100, 100],
@@ -22,7 +22,7 @@ export function createMockLGraphNode(
     mode: LGraphEventMode.ALWAYS,
     ...(overrides as Partial<LGraphNode>)
   }
-  return partial as LGraphNode
+  return partial as Partial<LGraphNode> as LGraphNode
 }
 
 /**
@@ -31,11 +31,12 @@ export function createMockLGraphNode(
 export function createMockPositionable(
   overrides: Partial<Positionable> = {}
 ): Positionable {
-  return {
+  const partial: Partial<Positionable> = {
     id: 1,
     pos: [0, 0],
     ...overrides
-  } as Positionable
+  }
+  return partial as Partial<Positionable> as Positionable
 }
 
 /**
@@ -44,12 +45,13 @@ export function createMockPositionable(
 export function createMockLGraphGroup(
   overrides: Partial<LGraphGroup> = {}
 ): LGraphGroup {
-  return {
+  const partial: Partial<LGraphGroup> = {
     id: 1,
     pos: [0, 0],
     boundingRect: new Rectangle(0, 0, 100, 100),
     ...overrides
-  } as LGraphGroup
+  }
+  return partial as Partial<LGraphGroup> as LGraphGroup
 }
 
 /**
