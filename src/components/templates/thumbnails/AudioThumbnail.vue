@@ -1,7 +1,13 @@
 <template>
   <BaseThumbnail>
-    <div class="w-full h-full flex items-center justify-center p-4">
-      <audio controls class="w-full relative" :src="src" @click.stop />
+    <div
+      class="flex h-full w-full items-center justify-center p-4"
+      :style="{
+        backgroundImage: 'url(/assets/images/default-template.png)',
+        backgroundRepeat: 'round'
+      }"
+    >
+      <audio controls class="relative w-full" :src="src" @click.stop />
     </div>
   </BaseThumbnail>
 </template>

@@ -32,7 +32,7 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 
-export interface BadLinksData<T = ISerialisedGraph | LGraph> {
+interface BadLinksData<T = ISerialisedGraph | LGraph> {
   hasBadLinks: boolean
   fixed: boolean
   graph: T
@@ -70,7 +70,7 @@ function extendLink(link: SerialisedLLinkArray) {
  * makes logical sense. Can apply fixes when passed the `fix` argument as true.
  *
  * Note that fixes are a best-effort attempt. Seems to get it correct in most cases, but there is a
- * chance it correct an anomoly that results in placing an incorrect link (say, if there were two
+ * chance it correct an anomaly that results in placing an incorrect link (say, if there were two
  * links in the data). Users should take care to not overwrite work until manually checking the
  * result.
  */

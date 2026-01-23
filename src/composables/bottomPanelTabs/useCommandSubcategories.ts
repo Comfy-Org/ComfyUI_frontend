@@ -1,13 +1,14 @@
-import { type ComputedRef, computed } from 'vue'
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
 
-import { type ComfyCommandImpl } from '@/stores/commandStore'
+import type { ComfyCommandImpl } from '@/stores/commandStore'
 
-export type SubcategoryRule = {
+type SubcategoryRule = {
   pattern: string | RegExp
   subcategory: string
 }
 
-export type SubcategoryConfig = {
+type SubcategoryConfig = {
   defaultSubcategory: string
   rules: SubcategoryRule[]
 }

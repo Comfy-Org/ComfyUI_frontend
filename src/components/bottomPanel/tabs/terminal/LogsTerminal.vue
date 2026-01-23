@@ -1,11 +1,11 @@
 <template>
-  <div class="bg-black h-full w-full">
+  <div class="h-full w-full bg-transparent">
     <p v-if="errorMessage" class="p-4 text-center">
       {{ errorMessage }}
     </p>
     <ProgressSpinner
       v-else-if="loading"
-      class="relative inset-0 flex justify-center items-center h-full z-10"
+      class="relative inset-0 z-10 flex h-full items-center justify-center"
     />
     <BaseTerminal v-show="!loading" @created="terminalCreated" />
   </div>
@@ -15,10 +15,11 @@
 import { until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import ProgressSpinner from 'primevue/progressspinner'
-import { Ref, onMounted, onUnmounted, ref } from 'vue'
+import type { Ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
-import { LogEntry, LogsWsMessage, TerminalSize } from '@/schemas/apiSchema'
+import type { LogEntry, LogsWsMessage } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 
@@ -31,27 +32,22 @@ const terminalCreated = (
   { terminal, useAutoSize }: ReturnType<typeof useTerminal>,
   root: Ref<HTMLElement | undefined>
 ) => {
-  // `autoCols` is false because we don't want the progress bar in the terminal
-  // to render incorrectly as the progress bar is rendered based on the
-  // server's terminal size.
-  // Apply a min cols of 80 for colab environments
+  // Auto-size terminal to fill container width.
+  // minCols: 80 ensures minimum width for colab environments.
   // See https://github.com/comfyanonymous/ComfyUI/issues/6396
-  useAutoSize({ root, autoRows: true, autoCols: false, minCols: 80 })
+  useAutoSize({ root, autoRows: true, autoCols: true, minCols: 80 })
 
-  const update = (entries: Array<LogEntry>, size?: TerminalSize) => {
-    if (size) {
-      terminal.resize(size.cols, terminal.rows)
-    }
+  const update = (entries: Array<LogEntry>) => {
     terminal.write(entries.map((e) => e.m).join(''))
   }
 
   const logReceived = (e: CustomEvent<LogsWsMessage>) => {
-    update(e.detail.entries, e.detail.size)
+    update(e.detail.entries)
   }
 
   const loadLogEntries = async () => {
     const logs = await api.getRawLogs()
-    update(logs.entries, logs.size)
+    update(logs.entries)
   }
 
   const watchLogs = async () => {
@@ -68,7 +64,7 @@ const terminalCreated = (
       await loadLogEntries()
     } catch (err) {
       console.error('Error loading logs', err)
-      // On older backends the endpoints wont exist
+      // On older backends the endpoints won't exist
       errorMessage.value =
         'Unable to load logs, please ensure you have updated your ComfyUI backend.'
       return
@@ -93,7 +89,6 @@ const terminalCreated = (
 }
 
 :deep(.p-terminal) .xterm-screen {
-  background-color: black;
   overflow-y: hidden;
 }
 </style>

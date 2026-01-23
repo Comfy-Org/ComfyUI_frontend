@@ -7,8 +7,8 @@ import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { nextTick, watch } from 'vue'
 
-import { useSettingStore } from '@/stores/settingStore'
-import { useToastStore } from '@/stores/toastStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const toast = useToast()
 const toastStore = useToastStore()
@@ -64,8 +64,9 @@ function updateToastPosition() {
 
   styleElement.textContent = `
     .p-toast.p-component.p-toast-top-right {
-      top: ${rect.top + 20}px !important;
+      top: ${rect.top + 100}px !important;
       right: ${window.innerWidth - (rect.left + rect.width) + 20}px !important;
+       z-index: 10000 !important;
     }
   `
 }

@@ -1,7 +1,8 @@
-import { FuseSearchOptions } from 'fuse.js'
+import type { FuseSearchOptions } from 'fuse.js'
 
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { FuseFilter, FuseFilterWithValue, FuseSearch } from '@/utils/fuseUtil'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { FuseFilter, FuseSearch } from '@/utils/fuseUtil'
 
 export class NodeSearchService {
   public readonly nodeFuseSearch: FuseSearch<ComfyNodeDefImpl>
@@ -13,7 +14,7 @@ export class NodeSearchService {
   constructor(data: ComfyNodeDefImpl[]) {
     this.nodeFuseSearch = new FuseSearch(data, {
       fuseOptions: {
-        keys: ['name', 'display_name'],
+        keys: ['name', 'display_name', 'search_aliases'],
         includeScore: true,
         threshold: 0.3,
         shouldSort: false,
@@ -34,7 +35,9 @@ export class NodeSearchService {
       name: 'Input Type',
       invokeSequence: 'i',
       getItemOptions: (node) =>
-        Object.values(node.inputs).map((input) => input.type),
+        Object.values(node.inputs ?? []).flatMap((input) =>
+          input.type.split(',')
+        ),
       fuseOptions
     })
 
@@ -42,7 +45,8 @@ export class NodeSearchService {
       id: 'output',
       name: 'Output Type',
       invokeSequence: 'o',
-      getItemOptions: (node) => node.outputs.map((output) => output.type),
+      getItemOptions: (node) =>
+        node.outputs.flatMap((output) => output.type.split(',')),
       fuseOptions
     })
 
@@ -78,9 +82,22 @@ export class NodeSearchService {
     const results = matchedNodes.filter((node) => {
       return filters.every((filterAndValue) => {
         const { filterDef, value } = filterAndValue
-        return filterDef.matches(node, value, { wildcard })
+        return filterDef.matches(node, value)
       })
     })
+    if (matchWildcards) {
+      const alreadyValid = new Set(results.map((result) => result.name))
+      results.push(
+        ...matchedNodes
+          .filter((node) => !alreadyValid.has(node.name))
+          .filter((node) => {
+            return filters.every((filterAndValue) => {
+              const { filterDef, value } = filterAndValue
+              return filterDef.matches(node, value, { wildcard })
+            })
+          })
+      )
+    }
 
     return options?.limit ? results.slice(0, options.limit) : results
   }

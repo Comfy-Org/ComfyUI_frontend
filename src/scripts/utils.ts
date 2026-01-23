@@ -21,7 +21,7 @@ export function clone<T>(obj: T): T {
  * There are external callers to this function, so we need to keep it for now
  */
 export function applyTextReplacements(app: ComfyApp, value: string): string {
-  return _applyTextReplacements(app.graph, value)
+  return _applyTextReplacements(app.rootGraph, value)
 }
 
 export async function addStylesheet(
@@ -49,20 +49,7 @@ export async function addStylesheet(
   })
 }
 
-export function downloadBlob(filename: string, blob: Blob) {
-  const url = URL.createObjectURL(blob)
-  const a = $el('a', {
-    href: url,
-    download: filename,
-    style: { display: 'none' },
-    parent: document.body
-  })
-  a.click()
-  setTimeout(function () {
-    a.remove()
-    window.URL.revokeObjectURL(url)
-  }, 0)
-}
+export { downloadBlob } from '@/base/common/downloadUtil'
 
 export function uploadFile(accept: string) {
   return new Promise<File>((resolve, reject) => {

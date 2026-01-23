@@ -2,9 +2,10 @@ import { useTitle } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { t } from '@/i18n'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const DEFAULT_TITLE = 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
@@ -13,6 +14,7 @@ export const useBrowserTabTitle = () => {
   const executionStore = useExecutionStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
+  const workspaceStore = useWorkspaceStore()
 
   const executionText = computed(() =>
     executionStore.isIdle
@@ -24,11 +26,27 @@ export const useBrowserTabTitle = () => {
     () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
   )
 
+  const isAutoSaveEnabled = computed(
+    () => settingStore.get('Comfy.Workflow.AutoSave') === 'after delay'
+  )
+
+  const isActiveWorkflowModified = computed(
+    () => !!workflowStore.activeWorkflow?.isModified
+  )
+  const isActiveWorkflowPersisted = computed(
+    () => !!workflowStore.activeWorkflow?.isPersisted
+  )
+
+  const shouldShowUnsavedIndicator = computed(() => {
+    if (workspaceStore.shiftDown) return false
+    if (isAutoSaveEnabled.value) return false
+    if (!isActiveWorkflowPersisted.value) return true
+    if (isActiveWorkflowModified.value) return true
+    return false
+  })
+
   const isUnsavedText = computed(() =>
-    workflowStore.activeWorkflow?.isModified ||
-    !workflowStore.activeWorkflow?.isPersisted
-      ? ' *'
-      : ''
+    shouldShowUnsavedIndicator.value ? ' *' : ''
   )
   const workflowNameText = computed(() => {
     const workflowName = workflowStore.activeWorkflow?.filename

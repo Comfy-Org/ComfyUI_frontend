@@ -1,4 +1,4 @@
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -34,6 +34,18 @@ export class ComboWidget
 
   override get _displayValue() {
     if (this.computedDisabled) return ''
+
+    if (this.options.getOptionLabel) {
+      try {
+        return this.options.getOptionLabel(
+          this.value ? String(this.value) : null
+        )
+      } catch (e) {
+        console.error('Failed to map value:', e)
+        return this.value ? String(this.value) : ''
+      }
+    }
+
     const { values: rawValues } = this.options
     if (rawValues) {
       const values = typeof rawValues === 'function' ? rawValues() : rawValues
@@ -45,7 +57,7 @@ export class ComboWidget
     return typeof this.value === 'number' ? String(this.value) : this.value
   }
 
-  #getValues(node: LGraphNode): Values {
+  private getValues(node: LGraphNode): Values {
     const { values } = this.options
     if (values == null) throw new Error('[ComboWidget]: values is required')
 
@@ -57,7 +69,7 @@ export class ComboWidget
    * @param increment `true` if checking the use of the increment button, `false` for decrement
    * @returns `true` if the value is at the given index, otherwise `false`.
    */
-  #canUseButton(increment: boolean): boolean {
+  private canUseButton(increment: boolean): boolean {
     const { values } = this.options
     // If using legacy duck-typed method, false is the most permissive return value
     if (typeof values === 'function') return false
@@ -78,23 +90,23 @@ export class ComboWidget
    * Handles edge case where the value is both the first and last item in the list.
    */
   override canIncrement(): boolean {
-    return this.#canUseButton(true)
+    return this.canUseButton(true)
   }
 
   override canDecrement(): boolean {
-    return this.#canUseButton(false)
+    return this.canUseButton(false)
   }
 
   override incrementValue(options: WidgetEventOptions): void {
-    this.#tryChangeValue(1, options)
+    this.tryChangeValue(1, options)
   }
 
   override decrementValue(options: WidgetEventOptions): void {
-    this.#tryChangeValue(-1, options)
+    this.tryChangeValue(-1, options)
   }
 
-  #tryChangeValue(delta: number, options: WidgetEventOptions): void {
-    const values = this.#getValues(options.node)
+  private tryChangeValue(delta: number, options: WidgetEventOptions): void {
+    const values = this.getValues(options.node)
     const indexedValues = toArray(values)
 
     // avoids double click event
@@ -128,10 +140,34 @@ export class ComboWidget
     if (x > width - 40) return this.incrementValue({ e, node, canvas })
 
     // Otherwise, show dropdown menu
-    const values = this.#getValues(node)
+    const values = this.getValues(node)
     const values_list = toArray(values)
 
-    // Handle center click - show dropdown menu
+    // Use addItem to solve duplicate filename issues
+    if (this.options.getOptionLabel) {
+      const menuOptions = {
+        scale: Math.max(1, canvas.ds.scale),
+        event: e,
+        className: 'dark',
+        callback: (value: string) => {
+          this.setValue(value, { e, node, canvas })
+        }
+      }
+      const menu = new LiteGraph.ContextMenu([], menuOptions)
+
+      for (const value of values_list) {
+        try {
+          const label = this.options.getOptionLabel(String(value))
+          menu.addItem(label, value, menuOptions)
+        } catch (err) {
+          console.error('Failed to map value:', err)
+          menu.addItem(String(value), value, menuOptions)
+        }
+      }
+      return
+    }
+
+    // Show dropdown menu when user clicks on widget label
     const text_values = values != values_list ? Object.values(values) : values
     new LiteGraph.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),

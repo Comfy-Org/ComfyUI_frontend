@@ -5,7 +5,7 @@
     :title="t('missingModelsDialog.missingModels')"
     :message="t('missingModelsDialog.missingModelsMessage')"
   />
-  <div class="flex gap-1 mb-4">
+  <div class="mb-4 flex gap-1">
     <Checkbox v-model="doNotAskAgain" binary input-id="doNotAskAgain" />
     <label for="doNotAskAgain">{{
       t('missingModelsDialog.doNotAskAgain')
@@ -39,7 +39,7 @@ import { useI18n } from 'vue-i18n'
 import ElectronFileDownload from '@/components/common/ElectronFileDownload.vue'
 import FileDownload from '@/components/common/FileDownload.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { isElectron } from '@/utils/envUtil'
 
 // TODO: Read this from server internal API rather than hardcoding here

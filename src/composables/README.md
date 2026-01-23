@@ -4,13 +4,31 @@ This directory contains Vue composables for the ComfyUI frontend application. Co
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Composable Architecture](#composable-architecture)
-- [Composable Categories](#composable-categories)
-- [Usage Guidelines](#usage-guidelines)
-- [VueUse Library](#vueuse-library)
-- [Development Guidelines](#development-guidelines)
-- [Common Patterns](#common-patterns)
+- [Composables](#composables)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+  - [Composable Architecture](#composable-architecture)
+  - [Composable Categories](#composable-categories)
+    - [Auth](#auth)
+    - [Bottom Panel Tabs](#bottom-panel-tabs)
+    - [Element](#element)
+    - [Functional](#functional)
+    - [Manager](#manager)
+      - [Node Pack](#node-pack)
+    - [Node](#node)
+    - [Settings](#settings)
+    - [Sidebar Tabs](#sidebar-tabs)
+    - [Tree](#tree)
+    - [Widgets](#widgets)
+    - [Root-level Composables](#root-level-composables)
+  - [Usage Guidelines](#usage-guidelines)
+  - [VueUse Library](#vueuse-library)
+  - [Development Guidelines](#development-guidelines)
+    - [Composable Template](#composable-template)
+  - [Common Patterns](#common-patterns)
+    - [State Management](#state-management)
+    - [Event Handling with VueUse](#event-handling-with-vueuse)
+    - [Fetch \& Load with VueUse](#fetch--load-with-vueuse)
 
 ## Overview
 
@@ -103,14 +121,22 @@ Utility composables for common patterns:
 | `useChainCallback` | Chains multiple callbacks together |
 
 ### Manager
-Composables for ComfyUI Manager integration:
+Composables for ComfyUI Manager integration (located in
+`@/workbench/extensions/manager/composables`):
 
 | Composable | Description |
 |------------|-------------|
 | `useManagerStatePersistence` | Persists manager UI state |
+| `useManagerState` | Determines availability of manager UI modes |
+| `useManagerQueue` | Handles manager task queue state |
+| `useConflictAcknowledgment` | Tracks conflict dismissal state |
+| `useConflictDetection` | Orchestrates conflict detection workflow |
+| `useImportFailedDetection` | Handles import-failed conflict dialogs |
+| `useRegistrySearch` | Manages registry search UI state |
 
-### Node Pack
-Composables for node package management:
+#### Node Pack
+Node package helpers live under
+`@/workbench/extensions/manager/composables/nodePack`:
 
 | Composable | Description |
 |------------|-------------|
@@ -118,6 +144,9 @@ Composables for node package management:
 | `useMissingNodes` | Detects and handles missing nodes |
 | `useNodePacks` | Core node package functionality |
 | `usePackUpdateStatus` | Tracks package update availability |
+| `usePacksSelection` | Provides selection helpers for pack lists |
+| `usePacksStatus` | Aggregates status across multiple packs |
+| `useUpdateAvailableNodes` | Detects available updates for nodes |
 | `useWorkflowPacks` | Manages packages used in workflows |
 
 ### Node
@@ -128,7 +157,6 @@ Composables for node-specific functionality:
 | `useNodeAnimatedImage` | Handles animated images in nodes |
 | `useNodeBadge` | Handles node badge display and interaction |
 | `useNodeCanvasImagePreview` | Canvas-based image preview for nodes |
-| `useNodeChatHistory` | Manages chat history for nodes |
 | `useNodeDragAndDrop` | Handles drag and drop for nodes |
 | `useNodeFileInput` | Manages file input widgets in nodes |
 | `useNodeImage` | Manages node image preview |
@@ -153,7 +181,6 @@ Composables for sidebar functionality:
 |------------|-------------|
 | `useModelLibrarySidebarTab` | Manages the model library sidebar tab |
 | `useNodeLibrarySidebarTab` | Manages the node library sidebar tab |
-| `useQueueSidebarTab` | Manages the queue sidebar tab |
 | `useWorkflowsSidebarTab` | Manages the workflows sidebar tab |
 
 ### Tree
@@ -169,7 +196,6 @@ Composables for widget functionality:
 | Composable | Description |
 |------------|-------------|
 | `useBooleanWidget` | Manages boolean widget interactions |
-| `useChatHistoryWidget` | Handles chat history widget |
 | `useComboWidget` | Manages combo box widget interactions |
 | `useFloatWidget` | Manages float input widget interactions |
 | `useImagePreviewWidget` | Manages image preview widget |

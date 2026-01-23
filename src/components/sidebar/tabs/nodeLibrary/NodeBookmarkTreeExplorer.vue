@@ -22,7 +22,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, h, nextTick, ref, render, watch } from 'vue'
+import {
+  computed,
+  getCurrentInstance,
+  h,
+  nextTick,
+  ref,
+  render,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FolderCustomizationDialog from '@/components/common/CustomizationDialog.vue'
@@ -33,14 +41,16 @@ import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { TreeNode } from '@/types/treeExplorerTypes'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
   RenderedTreeExplorerNode,
   TreeExplorerDragAndDropData,
-  TreeExplorerNode
+  TreeExplorerNode,
+  TreeNode
 } from '@/types/treeExplorerTypes'
 
+const instance = getCurrentInstance()!
+const appContext = instance.appContext
 const props = defineProps<{
   filteredNodeDefs: ComfyNodeDefImpl[]
   openNodeHelp: (nodeDef: ComfyNodeDefImpl) => void
@@ -154,6 +164,7 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         },
         renderDragPreview(container) {
           const vnode = h(NodePreview, { nodeDef: node.data })
+          vnode.appContext = appContext
           render(vnode, container)
           return () => {
             render(null, container)

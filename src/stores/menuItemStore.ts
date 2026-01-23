@@ -1,15 +1,26 @@
+import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
-import { ComfyExtension } from '@/types/comfy'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
 
 export const useMenuItemStore = defineStore('menuItem', () => {
+  const canvasStore = useCanvasStore()
   const commandStore = useCommandStore()
   const menuItems = ref<MenuItem[]>([])
+  const menuItemHasActiveStateChildren = ref<Record<string, boolean>>({})
+  const hasSeenLinear = ref(false)
+
+  whenever(
+    () => canvasStore.linearMode,
+    () => (hasSeenLinear.value = true),
+    { immediate: true, once: true }
+  )
 
   const registerMenuGroup = (path: string[], items: MenuItem[]) => {
     let currentLevel = menuItems.value
@@ -45,6 +56,14 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     }
     // Add the new items to the last level
     currentLevel.push(...items)
+
+    // Store if any of the children have active state as we will hide the icon if they do
+    const parentPath = path.join('.')
+    if (!menuItemHasActiveStateChildren.value[parentPath]) {
+      menuItemHasActiveStateChildren.value[parentPath] = items.some(
+        (item) => item.comfyCommand?.active
+      )
+    }
   }
 
   const registerCommands = (path: string[], commandIds: string[]) => {
@@ -57,7 +76,8 @@ export const useMenuItemStore = defineStore('menuItem', () => {
             label: command.menubarLabel,
             icon: command.icon,
             tooltip: command.tooltip,
-            comfyCommand: command
+            comfyCommand: command,
+            parentPath: path.join('.')
           }) as MenuItem
       )
     registerMenuGroup(path, items)
@@ -92,6 +112,8 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerMenuGroup,
     registerCommands,
     loadExtensionMenuCommands,
-    registerCoreMenuCommands
+    registerCoreMenuCommands,
+    menuItemHasActiveStateChildren,
+    hasSeenLinear
   }
 })

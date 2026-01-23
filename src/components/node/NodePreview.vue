@@ -1,12 +1,16 @@
 <!-- Reference:
 https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c683087a3e168db/app/js/functions/sb_fn.js#L149
 -->
-
 <template>
-  <div class="_sb_node_preview">
+  <LGraphNodePreview
+    v-if="shouldRenderVueNodes"
+    :node-def="nodeDef"
+    :position="position"
+  />
+  <div v-else class="_sb_node_preview bg-component-node-background">
     <div class="_sb_table">
       <div
-        class="node_header overflow-ellipsis mr-4"
+        class="node_header mr-4 text-ellipsis"
         :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
@@ -82,17 +86,22 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
 </template>
 
 <script setup lang="ts">
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { computed } from 'vue'
 
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-const { nodeDef } = defineProps<{
+const { nodeDef, position = 'absolute' } = defineProps<{
   nodeDef: ComfyNodeDefV2
+  position?: 'absolute' | 'relative'
 }>()
+
+const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const colorPaletteStore = useColorPaletteStore()
 const litegraphColors = computed(
@@ -196,9 +205,6 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 }
 
 ._sb_node_preview {
-  background-color: var(--comfy-menu-bg);
-  font-family: 'Open Sans', sans-serif;
-  font-size: small;
   color: var(--descrip-text);
   border: 1px solid var(--descrip-text);
   min-width: 300px;
@@ -261,7 +267,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 ._long_field {
   background: var(--bg-color);
   border: 2px solid var(--border-color);
-  margin: 5px 5px 0 5px;
+  margin: 5px 5px 0;
   border-radius: 10px;
   line-height: 1.7;
   text-wrap: nowrap;
@@ -274,7 +280,7 @@ const truncateDefaultValue = (value: any, charLimit: number = 32): string => {
 ._sb_preview_badge {
   text-align: center;
   background: var(--comfy-input-bg);
-  font-weight: bold;
+  font-weight: 700;
   color: var(--error-text);
 }
 </style>

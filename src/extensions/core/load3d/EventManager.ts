@@ -1,16 +1,16 @@
-import { EventCallback, EventManagerInterface } from './interfaces'
+import { type EventCallback, type EventManagerInterface } from './interfaces'
 
 export class EventManager implements EventManagerInterface {
-  private listeners: { [key: string]: EventCallback[] } = {}
+  private listeners: Record<string, EventCallback[]> = {}
 
-  addEventListener(event: string, callback: EventCallback): void {
+  addEventListener<T>(event: string, callback: EventCallback<T>): void {
     if (!this.listeners[event]) {
       this.listeners[event] = []
     }
-    this.listeners[event].push(callback)
+    this.listeners[event].push(callback as EventCallback)
   }
 
-  removeEventListener(event: string, callback: EventCallback): void {
+  removeEventListener<T>(event: string, callback: EventCallback<T>): void {
     if (this.listeners[event]) {
       this.listeners[event] = this.listeners[event].filter(
         (cb) => cb !== callback
@@ -18,7 +18,7 @@ export class EventManager implements EventManagerInterface {
     }
   }
 
-  emitEvent(event: string, data?: any): void {
+  emitEvent<T>(event: string, data: T): void {
     if (this.listeners[event]) {
       this.listeners[event].forEach((callback) => callback(data))
     }

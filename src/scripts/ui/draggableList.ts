@@ -23,11 +23,8 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
-import { $el } from '../ui'
-
-$el('style', {
-  parent: document.head,
-  textContent: `
+const styleElement = document.createElement('style')
+styleElement.textContent = `
         .draggable-item {
             position: relative;
             will-change: transform;
@@ -40,7 +37,7 @@ $el('style', {
             z-index: 10;
         }
     `
-})
+document.head.append(styleElement)
 
 export class DraggableList extends EventTarget {
   listContainer
@@ -75,6 +72,8 @@ export class DraggableList extends EventTarget {
     this.off.push(this.on(document, 'mouseup', this.dragEnd))
     // @ts-expect-error fixme ts strict error
     this.off.push(this.on(document, 'touchend', this.dragEnd))
+    // @ts-expect-error fixme ts strict error
+    this.off.push(this.on(document, 'pointercancel', this.dragEnd))
   }
 
   getAllItems() {
@@ -116,6 +115,8 @@ export class DraggableList extends EventTarget {
 
   // @ts-expect-error fixme ts strict error
   dragStart(e) {
+    if (e.button > 0) return
+
     if (e.target.classList.contains(this.handleClass)) {
       this.draggableItem = e.target.closest(this.itemSelector)
     }

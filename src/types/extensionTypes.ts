@@ -1,19 +1,21 @@
-import { Component } from 'vue'
+import type { Component } from 'vue'
 
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'
 
-export interface BaseSidebarTabExtension {
+interface BaseSidebarTabExtension {
   id: string
   title: string
-  icon?: string
+  icon?: string | Component
   iconBadge?: string | (() => string | null)
   tooltip?: string
+  label?: string
 }
 
-export interface BaseBottomPanelExtension {
+interface BaseBottomPanelExtension {
   id: string
-  title: string
+  title?: string // For extensions that provide static titles
+  titleKey?: string // For core tabs with i18n keys
   targetPanel?: 'terminal' | 'shortcuts'
 }
 
@@ -30,16 +32,14 @@ export interface CustomExtension {
   destroy?: () => void
 }
 
-export type VueSidebarTabExtension = BaseSidebarTabExtension & VueExtension
-export type CustomSidebarTabExtension = BaseSidebarTabExtension &
-  CustomExtension
+type VueSidebarTabExtension = BaseSidebarTabExtension & VueExtension
+type CustomSidebarTabExtension = BaseSidebarTabExtension & CustomExtension
 export type SidebarTabExtension =
   | VueSidebarTabExtension
   | CustomSidebarTabExtension
 
-export type VueBottomPanelExtension = BaseBottomPanelExtension & VueExtension
-export type CustomBottomPanelExtension = BaseBottomPanelExtension &
-  CustomExtension
+type VueBottomPanelExtension = BaseBottomPanelExtension & VueExtension
+type CustomBottomPanelExtension = BaseBottomPanelExtension & CustomExtension
 export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension
@@ -67,7 +67,7 @@ export interface ToastMessageOptions {
   /**
    * Detail content of the message.
    */
-  detail?: any | undefined
+  detail?: string
   /**
    * Whether the message can be closed manually using the close icon.
    * @defaultValue true
@@ -84,11 +84,12 @@ export interface ToastMessageOptions {
   /**
    * Style class of the message.
    */
-  styleClass?: any
+  styleClass?: string | string[] | Record<string, boolean>
   /**
    * Style class of the content.
+   * Matches PrimeVue Toast API which accepts Vue class bindings.
    */
-  contentStyleClass?: any
+  contentStyleClass?: string | string[] | Record<string, boolean>
 }
 
 export type ToastManager = {
@@ -107,12 +108,18 @@ export interface ExtensionManager {
   dialog: ReturnType<typeof useDialogService>
   command: CommandManager
   setting: {
-    get: (id: string) => any
-    set: (id: string, value: any) => void
+    get: <T = unknown>(id: string) => T | undefined
+    set: <T = unknown>(id: string, value: T) => void
   }
 }
 
 export interface CommandManager {
   commands: ComfyCommand[]
-  execute(command: string, errorHandler?: (error: any) => void): void
+  execute(
+    command: string,
+    options?: {
+      errorHandler?: (error: unknown) => void
+      metadata?: Record<string, unknown>
+    }
+  ): void
 }

@@ -1,11 +1,8 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
 
-import {
-  BaseWidget,
-  type DrawWidgetOptions,
-  type WidgetEventOptions
-} from './BaseWidget'
+import { BaseWidget } from './BaseWidget'
+import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 
 export class ButtonWidget
   extends BaseWidget<IButtonWidget>
@@ -68,7 +65,7 @@ export class ButtonWidget
     this.clicked = true
     canvas.setDirty(true)
 
-    // Call the callback with widget instance and other context
-    this.callback?.(this, canvas, node, pos, e)
+    // Call the callback with widget value
+    this.callback?.(this.value, canvas, node, pos, e)
   }
 }

@@ -1,8 +1,28 @@
+import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
+import { get } from 'es-toolkit/compat'
+import { trimEnd } from 'es-toolkit'
 
-import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json'
+import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import type {
-  DisplayComponentWsMessage,
+  ModelFile,
+  ModelFolderInfo
+} from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { IFuseOptions } from 'fuse.js'
+import {
+  type TemplateInfo,
+  type WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON,
+  NodeId
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type {
+  AssetDownloadWsMessage,
+  CustomNodesI18n,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -13,15 +33,14 @@ import type {
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
   FeatureFlagsWsMessage,
-  HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
-  PendingTaskItem,
+  NotificationWsMessage,
+  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
-  RunningTaskItem,
   Settings,
   StatusWsMessage,
   StatusWsMessageStatus,
@@ -30,13 +49,18 @@ import type {
   UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/schemas/comfyWorkflowSchema'
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { WorkflowTemplates } from '@/types/workflowTemplateTypes'
+import {
+  fetchHistory,
+  fetchJobDetail,
+  fetchQueue
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -77,6 +101,11 @@ interface QueuePromptRequestBody {
      * ```
      */
     api_key_comfy_org?: string
+    /**
+     * Override the preview method for this prompt execution.
+     * 'default' uses the server's CLI setting.
+     */
+    preview_method?: PreviewMethod
   }
   front?: boolean
   number?: number
@@ -92,6 +121,11 @@ interface QueuePromptOptions {
    * Format: Colon-separated path of node IDs (e.g., "123:456:789")
    */
   partialExecutionTargets?: NodeExecutionId[]
+  /**
+   * Override the preview method for this prompt execution.
+   * 'default' uses the server's CLI setting and is not sent to backend.
+   */
+  previewMethod?: PreviewMethod
 }
 
 /** Dictionary of Frontend-generated API calls */
@@ -109,6 +143,7 @@ interface BackendApiCalls {
   executing: ExecutingWsMessage
   executed: ExecutedWsMessage
   status: StatusWsMessage
+  notification: NotificationWsMessage
   execution_start: ExecutionStartWsMessage
   execution_success: ExecutionSuccessWsMessage
   execution_error: ExecutionErrorWsMessage
@@ -128,8 +163,8 @@ interface BackendApiCalls {
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
-  display_component: DisplayComponentWsMessage
   feature_flags: FeatureFlagsWsMessage
+  asset_download: AssetDownloadWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -194,6 +229,22 @@ type SimpleApiEvents = keyof PickNevers<ApiEventTypes>
 /** Keys (names) of API events that pass a {@link CustomEvent} `detail` object. */
 type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
 
+export type GlobalSubgraphData = {
+  name: string
+  info: { node_pack: string }
+  data: string | Promise<string>
+}
+
+function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
+  if (Array.isArray(headers)) {
+    headers.push([key, value])
+  } else if (headers instanceof Headers) {
+    headers.set(key, value)
+  } else {
+    headers[key] = value
+  }
+}
+
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
   addEventListener<TEvent extends keyof ApiEvents>(
@@ -257,6 +308,11 @@ export class ComfyApi extends EventTarget {
   user: string
   socket: WebSocket | null = null
 
+  /**
+   * Cache Firebase auth store composable function.
+   */
+  private authStoreComposable?: typeof useFirebaseAuthStore
+
   reportedUnknownMessageTypes = new Set<string>()
 
   /**
@@ -294,8 +350,9 @@ export class ComfyApi extends EventTarget {
     super()
     this.user = ''
     this.api_host = location.host
-    this.api_base = location.pathname.split('/').slice(0, -1).join('/')
-    console.log('Running on', this.api_host)
+    this.api_base = isCloud
+      ? ''
+      : location.pathname.split('/').slice(0, -1).join('/')
     this.initialClientId = sessionStorage.getItem('clientId')
   }
 
@@ -311,25 +368,77 @@ export class ComfyApi extends EventTarget {
     return this.api_base + route
   }
 
-  fetchApi(route: string, options?: RequestInit) {
-    if (!options) {
-      options = {}
+  /**
+   * Gets the Firebase auth store instance using cached composable function.
+   * Caches the composable function on first call, then reuses it.
+   * Returns null for non-cloud distributions.
+   * @returns The Firebase auth store instance, or null if not in cloud
+   */
+  private async getAuthStore() {
+    if (isCloud) {
+      if (!this.authStoreComposable) {
+        const module = await import('@/stores/firebaseAuthStore')
+        this.authStoreComposable = module.useFirebaseAuthStore
+      }
+
+      return this.authStoreComposable()
     }
-    if (!options.headers) {
-      options.headers = {}
+  }
+
+  /**
+   * Waits for Firebase auth to be initialized before proceeding.
+   * Includes 10-second timeout to prevent infinite hanging.
+   */
+  private async waitForAuthInitialization(): Promise<void> {
+    if (isCloud) {
+      const authStore = await this.getAuthStore()
+      if (!authStore) return
+
+      if (authStore.isInitialized) return
+
+      try {
+        await Promise.race([
+          until(authStore.isInitialized),
+          promiseTimeout(10000)
+        ])
+      } catch {
+        console.warn('Firebase auth initialization timeout after 10 seconds')
+      }
     }
-    if (!options.cache) {
-      options.cache = 'no-cache'
+  }
+
+  async fetchApi(route: string, options?: RequestInit) {
+    const headers: HeadersInit = options?.headers ?? {}
+
+    if (isCloud) {
+      await this.waitForAuthInitialization()
+
+      // Get Firebase JWT token if user is logged in
+      const getAuthHeaderIfAvailable = async (): Promise<AuthHeader | null> => {
+        try {
+          const authStore = await this.getAuthStore()
+          return authStore ? await authStore.getAuthHeader() : null
+        } catch (error) {
+          console.warn('Failed to get auth header:', error)
+          return null
+        }
+      }
+
+      const authHeader = await getAuthHeaderIfAvailable()
+
+      if (authHeader) {
+        for (const [key, value] of Object.entries(authHeader)) {
+          addHeaderEntry(headers, key, value)
+        }
+      }
     }
 
-    if (Array.isArray(options.headers)) {
-      options.headers.push(['Comfy-User', this.user])
-    } else if (options.headers instanceof Headers) {
-      options.headers.set('Comfy-User', this.user)
-    } else {
-      options.headers['Comfy-User'] = this.user
-    }
-    return fetch(this.apiURL(route), options)
+    addHeaderEntry(headers, 'Comfy-User', this.user)
+    return fetch(this.apiURL(route), {
+      cache: 'no-cache',
+      ...options,
+      headers
+    })
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(
@@ -396,19 +505,44 @@ export class ComfyApi extends EventTarget {
    * Creates and connects a WebSocket for realtime updates
    * @param {boolean} isReconnect If the socket is connection is a reconnect attempt
    */
-  #createSocket(isReconnect?: boolean) {
+  private async createSocket(isReconnect?: boolean) {
     if (this.socket) {
       return
     }
 
     let opened = false
     let existingSession = window.name
+
+    // Build WebSocket URL with query parameters
+    const params = new URLSearchParams()
+
     if (existingSession) {
-      existingSession = '?clientId=' + existingSession
+      params.set('clientId', existingSession)
     }
-    this.socket = new WebSocket(
-      `ws${window.location.protocol === 'https:' ? 's' : ''}://${this.api_host}${this.api_base}/ws${existingSession}`
-    )
+
+    // Get auth token and set cloud params if available
+    if (isCloud) {
+      try {
+        const authStore = await this.getAuthStore()
+        const authToken = await authStore?.getIdToken()
+        if (authToken) {
+          params.set('token', authToken)
+        }
+      } catch (error) {
+        // Continue without auth token if there's an error
+        console.warn(
+          'Could not get auth token for WebSocket connection:',
+          error
+        )
+      }
+    }
+
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    const query = params.toString()
+    const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
+
+    this.socket = new WebSocket(wsUrl)
     this.socket.binaryType = 'arraybuffer'
 
     this.socket.addEventListener('open', () => {
@@ -435,9 +569,9 @@ export class ComfyApi extends EventTarget {
     })
 
     this.socket.addEventListener('close', () => {
-      setTimeout(() => {
+      setTimeout(async () => {
         this.socket = null
-        this.#createSocket(true)
+        await this.createSocket(true)
       }, 300)
       if (opened) {
         this.dispatchCustomEvent('status', null)
@@ -518,7 +652,7 @@ export class ComfyApi extends EventTarget {
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
-                window.name = clientId // use window name so it isnt reused when duplicating tabs
+                window.name = clientId // use window name so it isn't reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)
@@ -541,6 +675,7 @@ export class ComfyApi extends EventTarget {
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
+            case 'notification':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
@@ -573,7 +708,7 @@ export class ComfyApi extends EventTarget {
    * Initialises sockets and realtime updates
    */
   init() {
-    this.#createSocket()
+    this.createSocket()
   }
 
   /**
@@ -597,11 +732,28 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets the index of core workflow templates.
+   * @param locale Optional locale code (e.g., 'en', 'fr', 'zh') to load localized templates
    */
-  async getCoreWorkflowTemplates(): Promise<WorkflowTemplates[]> {
-    const res = await axios.get(this.fileURL('/templates/index.json'))
-    const contentType = res.headers['content-type']
-    return contentType?.includes('application/json') ? res.data : []
+  async getCoreWorkflowTemplates(
+    locale?: string
+  ): Promise<WorkflowTemplates[]> {
+    const fileName =
+      locale && locale !== 'en' ? `index.${locale}.json` : 'index.json'
+    try {
+      const res = await axios.get(this.fileURL(`/templates/${fileName}`))
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : []
+    } catch (error) {
+      // Fallback to default English version if localized version doesn't exist
+      if (locale && locale !== 'en') {
+        console.warn(
+          `Localized templates for '${locale}' not found, falling back to English`
+        )
+        return this.getCoreWorkflowTemplates()
+      }
+      console.error('Error loading core workflow templates:', error)
+      return []
+    }
   }
 
   /**
@@ -644,7 +796,11 @@ export class ComfyApi extends EventTarget {
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
-        extra_pnginfo: { workflow }
+        extra_pnginfo: { workflow },
+        ...(options?.previewMethod &&
+          options.previewMethod !== 'default' && {
+            preview_method: options.previewMethod
+          })
       }
     }
 
@@ -673,14 +829,14 @@ export class ComfyApi extends EventTarget {
    * Gets a list of model folder keys (eg ['checkpoints', 'loras', ...])
    * @returns The list of model folder keys
    */
-  async getModelFolders(): Promise<{ name: string; folders: string[] }[]> {
+  async getModelFolders(): Promise<ModelFolderInfo[]> {
     const res = await this.fetchApi(`/experiment/models`)
     if (res.status === 404) {
       return []
     }
     const folderBlacklist = ['configs', 'custom_nodes']
     return (await res.json()).filter(
-      (folder: string) => !folderBlacklist.includes(folder)
+      (folder: ModelFolderInfo) => !folderBlacklist.includes(folder.name)
     )
   }
 
@@ -689,9 +845,7 @@ export class ComfyApi extends EventTarget {
    * @param {string} folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
-  async getModels(
-    folder: string
-  ): Promise<{ name: string; pathIndex: number }[]> {
+  async getModels(folder: string): Promise<ModelFile[]> {
     const res = await this.fetchApi(`/experiment/models/${folder}`)
     if (res.status === 404) {
       return []
@@ -744,27 +898,13 @@ export class ComfyApi extends EventTarget {
    * @returns The currently running and queued items
    */
   async getQueue(): Promise<{
-    Running: RunningTaskItem[]
-    Pending: PendingTaskItem[]
+    Running: JobListItem[]
+    Pending: JobListItem[]
   }> {
     try {
-      const res = await this.fetchApi('/queue')
-      const data = await res.json()
-      return {
-        // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: Record<number, any>) => ({
-          taskType: 'Running',
-          prompt,
-          // prompt[1] is the prompt id
-          remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
-        })),
-        Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
-          taskType: 'Pending',
-          prompt
-        }))
-      }
+      return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
-      console.error(error)
+      console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }
   }
@@ -774,21 +914,28 @@ export class ComfyApi extends EventTarget {
    * @returns Prompt history including node outputs
    */
   async getHistory(
-    max_items: number = 200
-  ): Promise<{ History: HistoryTaskItem[] }> {
+    max_items: number = 200,
+    options?: { offset?: number }
+  ): Promise<JobListItem[]> {
     try {
-      const res = await this.fetchApi(`/history?max_items=${max_items}`)
-      const json: Promise<HistoryTaskItem[]> = await res.json()
-      return {
-        History: Object.values(json).map((item) => ({
-          ...item,
-          taskType: 'History'
-        }))
-      }
+      return await fetchHistory(
+        this.fetchApi.bind(this),
+        max_items,
+        options?.offset
+      )
     } catch (error) {
       console.error(error)
-      return { History: [] }
+      return []
     }
+  }
+
+  /**
+   * Gets detailed job info including outputs and workflow
+   * @param jobId The job/prompt ID
+   * @returns Full job details or undefined if not found
+   */
+  async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
+    return fetchJobDetail(this.fetchApi.bind(this), jobId)
   }
 
   /**
@@ -805,7 +952,7 @@ export class ComfyApi extends EventTarget {
    * @param {*} type The endpoint to post to
    * @param {*} body Optional POST data
    */
-  async #postItem(type: string, body: any) {
+  async #postItem(type: string, body?: Record<string, unknown>) {
     try {
       await this.fetchApi('/' + type, {
         method: 'POST',
@@ -928,7 +1075,7 @@ export class ComfyApi extends EventTarget {
    */
   async storeUserData(
     file: string,
-    data: any,
+    data: unknown,
     options: RequestInit & {
       overwrite?: boolean
       stringify?: boolean
@@ -945,7 +1092,7 @@ export class ComfyApi extends EventTarget {
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
-        body: options?.stringify ? JSON.stringify(data) : data,
+        body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
         ...options
       }
     )
@@ -989,35 +1136,115 @@ export class ComfyApi extends EventTarget {
   }
 
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
+    const trimmedDir = trimEnd(dir, '/')
     const resp = await this.fetchApi(
-      `/userdata?dir=${encodeURIComponent(dir)}&recurse=true&split=false&full_info=true`
+      `/userdata?dir=${encodeURIComponent(trimmedDir)}&recurse=true&split=false&full_info=true`
     )
     if (resp.status === 404) return []
     if (resp.status !== 200) {
       throw new Error(
-        `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
+        `Error getting user data list '${trimmedDir}': ${resp.status} ${resp.statusText}`
       )
     }
     return resp.json()
   }
 
+  async getGlobalSubgraphData(id: string): Promise<string> {
+    const resp = await api.fetchApi('/global_subgraphs/' + id)
+    if (resp.status !== 200) return ''
+    const subgraph: GlobalSubgraphData = await resp.json()
+    return subgraph?.data ?? ''
+  }
+  async getGlobalSubgraphs(): Promise<Record<string, GlobalSubgraphData>> {
+    const resp = await api.fetchApi('/global_subgraphs')
+    if (resp.status !== 200) return {}
+    const subgraphs: Record<string, GlobalSubgraphData> = await resp.json()
+    for (const [k, v] of Object.entries(subgraphs)) {
+      if (!v.data) v.data = this.getGlobalSubgraphData(k)
+    }
+    return subgraphs
+  }
+
   async getLogs(): Promise<string> {
-    return (await axios.get(this.internalURL('/logs'))).data
+    const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
+    return (await axios.get(url)).data
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
-    return (await axios.get(this.internalURL('/logs/raw'))).data
+    const url = isCloud
+      ? this.apiURL('/logs/raw')
+      : this.internalURL('/logs/raw')
+    return (await axios.get(url)).data
   }
 
   async subscribeLogs(enabled: boolean): Promise<void> {
-    return await axios.patch(this.internalURL('/logs/subscribe'), {
+    const url = isCloud
+      ? this.apiURL('/logs/subscribe')
+      : this.internalURL('/logs/subscribe')
+    return await axios.patch(url, {
       enabled,
       clientId: this.clientId
     })
   }
 
   async getFolderPaths(): Promise<Record<string, string[]>> {
-    return (await axios.get(this.internalURL('/folder_paths'))).data
+    const response = await axios
+      .get(this.internalURL('/folder_paths'))
+      .catch(() => null)
+    if (!response) {
+      return {} // Fallback: no filesystem paths known when API unavailable
+    }
+    return response.data
+  }
+
+  /* Frees memory by unloading models and optionally freeing execution cache
+   * @param {Object} options - The options object
+   * @param {boolean} options.freeExecutionCache - If true, also frees execution cache
+   */
+  async freeMemory(options: { freeExecutionCache: boolean }) {
+    try {
+      let mode = ''
+      if (options.freeExecutionCache) {
+        mode = '{"unload_models": true, "free_memory": true}'
+      } else {
+        mode = '{"unload_models": true}'
+      }
+
+      const res = await this.fetchApi(`/free`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: mode
+      })
+
+      if (res.status === 200) {
+        if (options.freeExecutionCache) {
+          useToastStore().add({
+            severity: 'success',
+            summary: 'Models and Execution Cache have been cleared.',
+            life: 3000
+          })
+        } else {
+          useToastStore().add({
+            severity: 'success',
+            summary: 'Models have been unloaded.',
+            life: 3000
+          })
+        }
+      } else {
+        useToastStore().add({
+          severity: 'error',
+          summary:
+            'Unloading of models failed. Installed ComfyUI may be an outdated version.',
+          life: 5000
+        })
+      }
+    } catch (error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: 'An error occurred while trying to unload models.',
+        life: 5000
+      })
+    }
   }
 
   /**
@@ -1025,27 +1252,27 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<Record<string, any>> {
+  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 
   /**
    * Checks if the server supports a specific feature.
-   * @param featureName The name of the feature to check
+   * @param featureName The name of the feature to check (supports dot notation for nested values)
    * @returns true if the feature is supported, false otherwise
    */
   serverSupportsFeature(featureName: string): boolean {
-    return this.serverFeatureFlags[featureName] === true
+    return get(this.serverFeatureFlags, featureName) === true
   }
 
   /**
    * Gets a server feature flag value.
-   * @param featureName The name of the feature to get
+   * @param featureName The name of the feature to get (supports dot notation for nested values)
    * @param defaultValue The default value if the feature is not found
    * @returns The feature value or default
    */
   getServerFeature<T = unknown>(featureName: string, defaultValue?: T): T {
-    return (this.serverFeatureFlags[featureName] ?? defaultValue) as T
+    return get(this.serverFeatureFlags, featureName, defaultValue) as T
   }
 
   /**
@@ -1054,6 +1281,24 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
+  }
+
+  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
+    try {
+      const res = await axios.get(
+        this.fileURL('/templates/fuse_options.json'),
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : null
+    } catch (error) {
+      console.error('Error loading fuse options:', error)
+      return null
+    }
   }
 }
 

@@ -1,27 +1,29 @@
 <template>
   <div class="flex flex-col">
-    <div class="relative show-export-formats">
+    <div class="show-export-formats relative">
       <Button
-        class="p-button-rounded p-button-text"
+        v-tooltip.right="{
+          value: $t('load3d.exportModel'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="$t('load3d.exportModel')"
         @click="toggleExportFormats"
       >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.exportModel'),
-            showDelay: 300
-          }"
-          class="pi pi-download text-white text-lg"
-        />
+        <i class="pi pi-download text-lg text-base-foreground" />
       </Button>
       <div
         v-show="showExportFormats"
-        class="absolute left-12 top-0 bg-black bg-opacity-50 rounded-lg shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
       >
         <div class="flex flex-col">
           <Button
             v-for="format in exportFormats"
             :key="format.value"
-            class="p-button-text text-white"
+            variant="textonly"
+            class="text-base-foreground"
             @click="exportModel(format.value)"
           >
             {{ format.label }}
@@ -33,13 +35,9 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
-import Button from 'primevue/button'
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import { t } from '@/i18n'
-
-const vTooltip = Tooltip
+import Button from '@/components/ui/button/Button.vue'
 
 const emit = defineEmits<{
   (e: 'exportModel', format: string): void
@@ -53,17 +51,17 @@ const exportFormats = [
   { label: 'STL', value: 'stl' }
 ]
 
-const toggleExportFormats = () => {
+function toggleExportFormats() {
   showExportFormats.value = !showExportFormats.value
 }
 
-const exportModel = (format: string) => {
+function exportModel(format: string) {
   emit('exportModel', format)
 
   showExportFormats.value = false
 }
 
-const closeExportFormatsList = (e: MouseEvent) => {
+function closeExportFormatsList(e: MouseEvent) {
   const target = e.target as HTMLElement
 
   if (!target.closest('.show-export-formats')) {

@@ -1,75 +1,74 @@
 import type { KnipConfig } from 'knip'
 
 const config: KnipConfig = {
-  entry: [
-    'src/main.ts',
-    'vite.config.mts',
-    'vite.electron.config.mts',
-    'vite.types.config.mts',
-    'eslint.config.js',
-    'tailwind.config.js',
-    'postcss.config.js',
-    'playwright.config.ts',
-    'playwright.i18n.config.ts',
-    'vitest.config.ts',
-    'scripts/**/*.{js,ts}'
-  ],
-  project: [
-    'src/**/*.{js,ts,vue}',
-    'tests-ui/**/*.{js,ts,vue}',
-    'browser_tests/**/*.{js,ts}',
-    'scripts/**/*.{js,ts}'
-  ],
-  ignore: [
-    // Generated files
-    'dist/**',
-    'types/**',
-    'node_modules/**',
-    // Config files that might not show direct usage
-    '.husky/**',
-    // Temporary or cache files
-    '.vite/**',
-    'coverage/**',
-    // i18n config
-    '.i18nrc.cjs',
-    // Test setup files
-    'browser_tests/globalSetup.ts',
-    'browser_tests/globalTeardown.ts',
-    'browser_tests/utils/**',
-    // Scripts
-    'scripts/**',
-    // Vite config files
-    'vite.electron.config.mts',
-    'vite.types.config.mts',
-    // Auto generated manager types
-    'src/types/generatedManagerTypes.ts'
-  ],
-  ignoreExportsUsedInFile: true,
-  // Vue-specific configuration
-  vue: true,
-  // Only check for unused files, disable all other rules
-  // TODO: Gradually enable other rules - see https://github.com/Comfy-Org/ComfyUI_frontend/issues/4888
-  rules: {
-    binaries: 'off',
-    classMembers: 'off',
-    dependencies: 'off',
-    devDependencies: 'off',
-    duplicates: 'off',
-    enumMembers: 'off',
-    exports: 'off',
-    nsExports: 'off',
-    nsTypes: 'off',
-    types: 'off',
-    unlisted: 'off'
-  },
-  // Include dependencies analysis
-  includeEntryExports: true,
-  // Workspace configuration for monorepo-like structure
   workspaces: {
     '.': {
-      entry: ['src/main.ts']
+      entry: [
+        '{build,scripts}/**/*.{js,ts}',
+        'src/assets/css/style.css',
+        'src/main.ts',
+        'src/scripts/ui/menu/index.ts',
+        'src/types/index.ts',
+        'src/storybook/mocks/**/*.ts'
+      ],
+      project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
+    },
+    'apps/desktop-ui': {
+      entry: ['src/main.ts', 'src/i18n.ts'],
+      project: ['src/**/*.{js,ts,vue}']
+    },
+    'packages/tailwind-utils': {
+      project: ['src/**/*.{js,ts}']
+    },
+    'packages/design-system': {
+      entry: ['src/**/*.ts'],
+      project: ['src/**/*.{js,ts}', '*.{js,ts,mts}']
+    },
+    'packages/registry-types': {
+      project: ['src/**/*.{js,ts}']
     }
-  }
+  },
+  ignoreBinaries: ['python3', 'gh'],
+  ignoreDependencies: [
+    // Weird importmap things
+    '@iconify/json',
+    '@primeuix/forms',
+    '@primeuix/styled',
+    '@primeuix/utils',
+    '@primevue/icons'
+  ],
+  ignore: [
+    // Auto generated manager types
+    'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
+    'packages/registry-types/src/comfyRegistryTypes.ts',
+    // Used by a custom node (that should move off of this)
+    'src/scripts/ui/components/splitButton.ts'
+  ],
+  compilers: {
+    // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199
+    css: (text: string) =>
+      [...text.replaceAll('plugin', 'import').matchAll(/(?<=@)import[^;]+/g)]
+        .map((match) => match[0].replace(/url\(['"]?([^'"()]+)['"]?\)/, '$1'))
+        .join('\n')
+  },
+  vite: {
+    config: ['vite?(.*).config.mts']
+  },
+  vitest: {
+    config: ['vitest?(.*).config.ts'],
+    entry: [
+      '**/*.{bench,test,test-d,spec}.?(c|m)[jt]s?(x)',
+      '**/__mocks__/**/*.[jt]s?(x)'
+    ]
+  },
+  playwright: {
+    config: ['playwright?(.*).config.ts'],
+    entry: ['**/*.@(spec|test).?(c|m)[jt]s?(x)', 'browser_tests/**/*.ts']
+  },
+  tags: [
+    '-knipIgnoreUnusedButUsedByCustomNodes',
+    '-knipIgnoreUnusedButUsedByVueNodesBranch'
+  ]
 }
 
 export default config

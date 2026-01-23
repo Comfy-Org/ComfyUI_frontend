@@ -2,52 +2,92 @@
   "version": 1.1,
   "atDirectives": [
     {
-      "name": "@tailwind",
-      "description": "Use the `@tailwind` directive to insert Tailwind's `base`, `components`, `utilities` and `screens` styles into your CSS.",
+      "name": "@import",
+      "description": "Use the `@import` directive to inline CSS files, including Tailwind itself, into your stylesheet.",
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#tailwind"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#import-directive"
+        }
+      ]
+    },
+    {
+      "name": "@theme",
+      "description": "Use the `@theme` directive to define custom design tokens like fonts, colors, and breakpoints.",
+      "references": [
+        {
+          "name": "Tailwind Documentation",
+          "url": "https://tailwindcss.com/docs/functions-and-directives#theme-directive"
+        }
+      ]
+    },
+    {
+      "name": "@layer",
+      "description": "Use the `@layer` directive inside `@theme` to organize custom styles into different layers like `base`, `components`, and `utilities`.",
+      "references": [
+        {
+          "name": "Tailwind Documentation",
+          "url": "https://tailwindcss.com/docs/theme#layers"
         }
       ]
     },
     {
       "name": "@apply",
-      "description": "Use the `@apply` directive to inline any existing utility classes into your own custom CSS. This is useful when you find a common utility pattern in your HTML that you’d like to extract to a new component.",
+      "description": "DO NOT USE. IF YOU ARE CAUGHT USING @apply YOU WILL FACE SEVERE CONSEQUENCES.",
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#apply"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#apply-directive"
         }
       ]
     },
     {
-      "name": "@responsive",
-      "description": "You can generate responsive variants of your own classes by wrapping their definitions in the `@responsive` directive:\n```css\n@responsive {\n  .alert {\n    background-color: #E53E3E;\n  }\n}\n```\n",
+      "name": "@config",
+      "description": "Use the `@config` directive to load a legacy JavaScript-based Tailwind configuration file.",
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#responsive"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#config-directive"
         }
       ]
     },
     {
-      "name": "@screen",
-      "description": "The `@screen` directive allows you to create media queries that reference your breakpoints by **name** instead of duplicating their values in your own CSS:\n```css\n@screen sm {\n  /* ... */\n}\n```\n…gets transformed into this:\n```css\n@media (min-width: 640px) {\n  /* ... */\n}\n```\n",
+      "name": "@reference",
+      "description": "Use the `@reference` directive to import theme variables, custom utilities, and custom variants from other files without duplicating CSS.",
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#screen"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#reference-directive"
         }
       ]
     },
     {
-      "name": "@variants",
-      "description": "Generate `hover`, `focus`, `active` and other **variants** of your own utilities by wrapping their definitions in the `@variants` directive:\n```css\n@variants hover, focus {\n   .btn-brand {\n    background-color: #3182CE;\n  }\n}\n```\n",
+      "name": "@plugin",
+      "description": "Use the `@plugin` directive to load a legacy JavaScript-based Tailwind plugin.",
       "references": [
         {
           "name": "Tailwind Documentation",
-          "url": "https://tailwindcss.com/docs/functions-and-directives#variants"
+          "url": "https://tailwindcss.com/docs/functions-and-directives#plugin-directive"
+        }
+      ]
+    },
+    {
+      "name": "@custom-variant",
+      "description": "Use the `@custom-variant` directive to add a custom variant to your project. Custom variants can be used with utilities like `hover`, `focus`, and responsive breakpoints. Use `@slot` inside the variant to indicate where the utility's styles should be inserted.",
+      "references": [
+        {
+          "name": "Tailwind Documentation",
+          "url": "https://tailwindcss.com/docs/adding-custom-styles#adding-custom-variants"
+        }
+      ]
+    },
+    {
+      "name": "@utility",
+      "description": "Use the `@utility` directive to add custom utilities to your project. Custom utilities work with all variants like `hover`, `focus`, and responsive variants. Use `--value()` to create functional utilities that accept arguments.",
+      "references": [
+        {
+          "name": "Tailwind Documentation",
+          "url": "https://tailwindcss.com/docs/adding-custom-styles#adding-custom-utilities"
         }
       ]
     }

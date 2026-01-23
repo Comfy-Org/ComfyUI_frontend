@@ -38,21 +38,19 @@ import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
-import { Point } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphNode,
-  LiteGraph,
-  LiteGraphCanvasEvent
-} from '@/lib/litegraph/src/litegraph'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useCanvasStore } from '@/stores/graphStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
-import { useWorkflowStore } from '@/stores/workflowStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
-import { FuseFilterWithValue } from '@/utils/fuseUtil'
+import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBox from './NodeSearchBox.vue'
 
@@ -61,47 +59,44 @@ let listenerController: AbortController | null = null
 let disconnectOnReset = false
 
 const settingStore = useSettingStore()
+const searchBoxStore = useSearchBoxStore()
 const litegraphService = useLitegraphService()
 
-const { visible } = storeToRefs(useSearchBoxStore())
+const { visible, newSearchBoxEnabled } = storeToRefs(searchBoxStore)
 const dismissable = ref(true)
-const getNewNodeLocation = (): Point => {
+function getNewNodeLocation(): Point {
   return triggerEvent
     ? [triggerEvent.canvasX, triggerEvent.canvasY]
     : litegraphService.getCanvasCenter()
 }
 const nodeFilters = ref<FuseFilterWithValue<ComfyNodeDefImpl, string>[]>([])
-const addFilter = (filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) => {
+function addFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
   nodeFilters.value.push(filter)
 }
-const removeFilter = (
-  filter: FuseFilterWithValue<ComfyNodeDefImpl, string>
-) => {
+function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
   nodeFilters.value = nodeFilters.value.filter(
     (f) => toRaw(f) !== toRaw(filter)
   )
 }
-const clearFilters = () => {
+function clearFilters() {
   nodeFilters.value = []
 }
-const closeDialog = () => {
+function closeDialog() {
   visible.value = false
 }
 const canvasStore = useCanvasStore()
 
-const addNode = (nodeDef: ComfyNodeDefImpl) => {
-  if (!triggerEvent) {
-    console.warn('The trigger event was undefined when addNode was called.')
-    return
-  }
-
+function addNode(nodeDef: ComfyNodeDefImpl) {
   const node = litegraphService.addNodeOnGraph(nodeDef, {
     pos: getNewNodeLocation()
   })
 
-  if (disconnectOnReset) {
+  if (disconnectOnReset && triggerEvent) {
     canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
+  } else if (!triggerEvent) {
+    console.warn('The trigger event was undefined when addNode was called.')
   }
+
   disconnectOnReset = false
 
   // Notify changeTracker - new step should be added
@@ -109,12 +104,9 @@ const addNode = (nodeDef: ComfyNodeDefImpl) => {
   window.requestAnimationFrame(closeDialog)
 }
 
-const newSearchBoxEnabled = computed(
-  () => settingStore.get('Comfy.NodeSearchBoxImpl') === 'default'
-)
-const showSearchBox = (e: CanvasPointerEvent) => {
+function showSearchBox(e: CanvasPointerEvent | null) {
   if (newSearchBoxEnabled.value) {
-    if (e.pointerType === 'touch') {
+    if (e?.pointerType === 'touch') {
       setTimeout(() => {
         showNewSearchBox(e)
       }, 128)
@@ -126,11 +118,12 @@ const showSearchBox = (e: CanvasPointerEvent) => {
   }
 }
 
-const getFirstLink = () =>
-  canvasStore.getCanvas().linkConnector.renderLinks.at(0)
+function getFirstLink() {
+  return canvasStore.getCanvas().linkConnector.renderLinks.at(0)
+}
 
 const nodeDefStore = useNodeDefStore()
-const showNewSearchBox = (e: CanvasPointerEvent) => {
+function showNewSearchBox(e: CanvasPointerEvent | null) {
   const firstLink = getFirstLink()
   if (firstLink) {
     const filter =
@@ -155,7 +148,7 @@ const showNewSearchBox = (e: CanvasPointerEvent) => {
   }, 300)
 }
 
-const showContextMenu = (e: CanvasPointerEvent) => {
+function showContextMenu(e: CanvasPointerEvent) {
   const firstLink = getFirstLink()
   if (!firstLink) return
 
@@ -232,7 +225,7 @@ watchEffect(() => {
   )
 })
 
-const canvasEventHandler = (e: LiteGraphCanvasEvent) => {
+function canvasEventHandler(e: LiteGraphCanvasEvent) {
   if (e.detail.subType === 'empty-double-click') {
     showSearchBox(e.detail.originalEvent)
   } else if (e.detail.subType === 'group-double-click') {
@@ -255,8 +248,10 @@ const linkReleaseActionShift = computed(() =>
 )
 
 // Prevent normal LinkConnector reset (called by CanvasPointer.finally)
-const preventDefault = (e: Event) => e.preventDefault()
-const cancelNextReset = (e: CustomEvent<CanvasPointerEvent>) => {
+function preventDefault(e: Event) {
+  return e.preventDefault()
+}
+function cancelNextReset(e: CustomEvent<CanvasPointerEvent>) {
   e.preventDefault()
 
   const canvas = canvasStore.getCanvas()
@@ -266,7 +261,7 @@ const cancelNextReset = (e: CustomEvent<CanvasPointerEvent>) => {
   })
 }
 
-const handleDroppedOnCanvas = (e: CustomEvent<CanvasPointerEvent>) => {
+function handleDroppedOnCanvas(e: CustomEvent<CanvasPointerEvent>) {
   disconnectOnReset = true
   const action = e.detail.shiftKey
     ? linkReleaseActionShift.value
@@ -287,7 +282,7 @@ const handleDroppedOnCanvas = (e: CustomEvent<CanvasPointerEvent>) => {
 }
 
 // Resets litegraph state
-const reset = () => {
+function reset() {
   listenerController?.abort()
   listenerController = null
   triggerEvent = null
@@ -306,6 +301,7 @@ watch(visible, () => {
 })
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
+defineExpose({ showSearchBox })
 </script>
 
 <style>

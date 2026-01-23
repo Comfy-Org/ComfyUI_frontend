@@ -1,17 +1,17 @@
 <template>
   <div class="flex flex-col gap-6">
-    <div class="flex flex-col gap-4 mb-8">
-      <h1 class="text-2xl font-medium leading-normal my-0">
+    <div class="mb-8 flex flex-col gap-4">
+      <h1 class="my-0 text-2xl leading-normal font-medium">
         {{ t('auth.apiKey.title') }}
       </h1>
       <div class="flex flex-col gap-2">
-        <p class="text-base my-0 text-muted">
+        <p class="my-0 text-base text-muted">
           {{ t('auth.apiKey.description') }}
         </p>
         <a
           href="https://docs.comfy.org/interface/user#logging-in-with-an-api-key"
           target="_blank"
-          class="text-blue-500 cursor-pointer"
+          class="cursor-pointer text-blue-500"
         >
           {{ t('g.learnMore') }}
         </a>
@@ -30,7 +30,7 @@
 
       <div class="flex flex-col gap-2">
         <label
-          class="opacity-80 text-base font-medium mb-2"
+          class="mb-2 text-base font-medium opacity-80"
           for="comfy-org-api-key"
         >
           {{ t('auth.apiKey.label') }}
@@ -48,9 +48,9 @@
           <small class="text-muted">
             {{ t('auth.apiKey.helpText') }}
             <a
-              :href="`${COMFY_PLATFORM_BASE_URL}/login`"
+              :href="`${comfyPlatformBaseUrl}/login`"
               target="_blank"
-              class="text-blue-500 cursor-pointer"
+              class="cursor-pointer text-blue-500"
             >
               {{ t('auth.apiKey.generateKey') }}
             </a>
@@ -58,7 +58,7 @@
             <a
               href="https://docs.comfy.org/tutorials/api-nodes/overview#log-in-with-api-key-on-non-whitelisted-websites"
               target="_blank"
-              class="text-blue-500 cursor-pointer"
+              class="cursor-pointer text-blue-500"
             >
               {{ t('auth.apiKey.whitelistInfo') }}
             </a>
@@ -66,11 +66,16 @@
         </div>
       </div>
 
-      <div class="flex justify-between items-center mt-4">
-        <Button type="button" link @click="$emit('back')">
+      <div class="mt-4 flex items-center justify-between">
+        <Button type="button" variant="textonly" @click="$emit('back')">
           {{ t('g.back') }}
         </Button>
-        <Button type="submit" :loading="loading" :disabled="loading">
+        <Button
+          type="submit"
+          variant="primary"
+          :loading="loading"
+          :disabled="loading"
+        >
           {{ t('g.save') }}
         </Button>
       </div>
@@ -79,15 +84,20 @@
 </template>
 
 <script setup lang="ts">
-import { Form, FormSubmitEvent } from '@primevue/forms'
+import type { FormSubmitEvent } from '@primevue/forms'
+import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import Button from '@/components/ui/button/Button.vue'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import {
+  configValueOrDefault,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -95,6 +105,13 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 const authStore = useFirebaseAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
 const loading = computed(() => authStore.loading)
+const comfyPlatformBaseUrl = computed(() =>
+  configValueOrDefault(
+    remoteConfig.value,
+    'comfy_platform_base_url',
+    getComfyPlatformBaseUrl()
+  )
+)
 
 const { t } = useI18n()
 

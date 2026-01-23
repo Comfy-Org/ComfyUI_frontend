@@ -4,7 +4,7 @@ import type {
   SearchResponse
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
-import { memoize, omit } from 'lodash'
+import { memoize, omit } from 'es-toolkit/compat'
 
 import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
@@ -16,7 +16,6 @@ import type {
   SearchAttribute,
   SearchNodePacksParams
 } from '@/types/algoliaTypes'
-import { SortableAlgoliaField } from '@/types/comfyManagerTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
@@ -24,6 +23,7 @@ import type {
   SortableField
 } from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
+import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 

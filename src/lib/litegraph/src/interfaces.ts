@@ -1,10 +1,12 @@
 import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
+import type { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { LinkDirection, RenderShape } from './types/globalEnums'
@@ -63,7 +65,7 @@ export interface HasBoundingRect {
 }
 
 /** An object containing a set of child objects */
-export interface Parent<TChild> {
+interface Parent<TChild> {
   /** All objects owned by the parent object. */
   readonly children?: ReadonlySet<TChild>
 }
@@ -81,6 +83,7 @@ export interface Positionable extends Parent<Positionable>, HasBoundingRect {
    * @default 0,0
    */
   readonly pos: Point
+  readonly size?: Size
   /** true if this object is part of the selection, otherwise false. */
   selected?: boolean
 
@@ -192,7 +195,7 @@ export interface LinkSegment {
   /** The last canvas 2D path that was used to render this segment */
   path?: Path2D
   /** Centre point of the {@link path}.  Calculated during render only - can be inaccurate */
-  readonly _pos: Float32Array
+  readonly _pos: Point
   /**
    * Y-forward along the {@link path} from its centre point, in radians.
    * `undefined` if using circles for link centres.
@@ -209,7 +212,7 @@ export interface LinkSegment {
   readonly origin_slot: number | undefined
 }
 
-export interface IInputOrOutput {
+interface IInputOrOutput {
   // If an input, this will be defined
   input?: INodeInputSlot | null
   // If an output, this will be defined
@@ -224,65 +227,41 @@ export interface IFoundSlot extends IInputOrOutput {
 }
 
 /** A point represented as `[x, y]` co-ordinates */
-export type Point = [x: number, y: number] | Float32Array | Float64Array
+export type Point = [x: number, y: number]
 
 /** A size represented as `[width, height]` */
-export type Size = [width: number, height: number] | Float32Array | Float64Array
-
-/** A very firm array */
-type ArRect = [x: number, y: number, width: number, height: number]
+export type Size = [width: number, height: number]
 
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` */
-export type Rect = ArRect | Float32Array | Float64Array
-
-/** A point represented as `[x, y]` co-ordinates that will not be modified */
-export type ReadOnlyPoint =
-  | readonly [x: number, y: number]
-  | ReadOnlyTypedArray<Float32Array>
-  | ReadOnlyTypedArray<Float64Array>
-
-/** A size represented as `[width, height]` that will not be modified */
-export type ReadOnlySize =
-  | readonly [width: number, height: number]
-  | ReadOnlyTypedArray<Float32Array>
-  | ReadOnlyTypedArray<Float64Array>
+export type Rect =
+  | [x: number, y: number, width: number, height: number]
+  | Float64Array
 
 /** A rectangle starting at top-left coordinates `[x, y, width, height]` that will not be modified */
 export type ReadOnlyRect =
   | readonly [x: number, y: number, width: number, height: number]
-  | ReadOnlyTypedArray<Float32Array>
   | ReadOnlyTypedArray<Float64Array>
 
-type TypedArrays =
-  | Int8Array
-  | Uint8Array
-  | Uint8ClampedArray
-  | Int16Array
-  | Uint16Array
-  | Int32Array
-  | Uint32Array
-  | Float32Array
-  | Float64Array
-
-type TypedBigIntArrays = BigInt64Array | BigUint64Array
-export type ReadOnlyTypedArray<T extends TypedArrays | TypedBigIntArrays> =
-  Omit<
-    Readonly<T>,
-    'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
-  >
+export type ReadOnlyTypedArray<T extends Float64Array> = Omit<
+  Readonly<T>,
+  'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
+>
 
 /** Union of property names that are of type Match */
-export type KeysOfType<T, Match> = Exclude<
+type KeysOfType<T, Match> = Exclude<
   { [P in keyof T]: T[P] extends Match ? P : never }[keyof T],
   undefined
 >
 
-/** A new type that contains only the properties of T that are of type Match */
-export type PickByType<T, Match> = { [P in keyof T]: Extract<T[P], Match> }
-
 /** The names of all (optional) methods and functions in T */
 export type MethodNames<T> = KeysOfType<T, ((...args: any) => any) | undefined>
-
+export interface NewNodePosition {
+  node: LGraphNode
+  newPos: {
+    x: number
+    y: number
+  }
+}
 export interface IBoundaryNodes {
   top: LGraphNode
   right: LGraphNode
@@ -331,7 +310,7 @@ export interface INodeSlot extends HasBoundingRect {
   nameLocked?: boolean
   pos?: Point
   /** @remarks Automatically calculated; not included in serialisation. */
-  boundingRect: Rect
+  boundingRect: ReadOnlyRect
   /**
    * A list of floating link IDs that are connected to this slot.
    * This is calculated at runtime; it is **not** serialized.
@@ -360,11 +339,13 @@ export interface INodeFlags {
  */
 export interface IWidgetLocator {
   name: string
+  type?: string
 }
 
 export interface INodeInputSlot extends INodeSlot {
   link: LinkId | null
   widget?: IWidgetLocator
+  alwaysVisible?: boolean
 
   /**
    * Internal use only; API is not finalised and may change at any time.
@@ -401,8 +382,10 @@ interface IContextMenuBase {
 }
 
 /** ContextMenu */
-export interface IContextMenuOptions<TValue = unknown, TExtra = unknown>
-  extends IContextMenuBase {
+export interface IContextMenuOptions<
+  TValue = unknown,
+  TExtra = unknown
+> extends IContextMenuBase {
   ignore_item_callbacks?: boolean
   parentMenu?: ContextMenu<TValue>
   event?: MouseEvent
@@ -421,7 +404,7 @@ export interface IContextMenuOptions<TValue = unknown, TExtra = unknown>
     event?: MouseEvent,
     previous_menu?: ContextMenu<TValue>,
     extra?: unknown
-  ): void | boolean
+  ): void | boolean | Promise<void | boolean>
 }
 
 export interface IContextMenuValue<
@@ -444,16 +427,18 @@ export interface IContextMenuValue<
     event?: MouseEvent,
     previous_menu?: ContextMenu<TValue>,
     extra?: TExtra
-  ): void | boolean
+  ): void | boolean | Promise<void | boolean>
 }
 
-export interface IContextMenuSubmenu<TValue = unknown>
-  extends IContextMenuOptions<TValue> {
+interface IContextMenuSubmenu<
+  TValue = unknown
+> extends IContextMenuOptions<TValue> {
   options: ConstructorParameters<typeof ContextMenu<TValue>>[0]
 }
 
-export interface ContextMenuDivElement<TValue = unknown>
-  extends HTMLDivElement {
+export interface ContextMenuDivElement<
+  TValue = unknown
+> extends HTMLDivElement {
   value?: string | IContextMenuValue<TValue>
   onclick_callback?: never
 }
@@ -471,6 +456,7 @@ export interface DefaultConnectionColors {
 
 export interface ISubgraphInput extends INodeInputSlot {
   _listenerController?: AbortController
+  _subgraphSlot: SubgraphInput
 }
 
 /**
@@ -507,4 +493,69 @@ export interface Hoverable extends HasBoundingRect {
   onPointerMove(e: CanvasPointerEvent): void
   onPointerEnter?(e?: CanvasPointerEvent): void
   onPointerLeave?(e?: CanvasPointerEvent): void
+}
+
+/**
+ * Callback for panel widget value changes.
+ */
+export type PanelWidgetCallback = (
+  name: string | undefined,
+  value: TWidgetValue,
+  options: PanelWidgetOptions
+) => void
+
+/**
+ * Options for panel widgets.
+ */
+export interface PanelWidgetOptions {
+  label?: string
+  type?: string
+  widget?: string
+  values?: Array<string | IContextMenuValue<unknown, unknown, unknown> | null>
+  callback?: PanelWidgetCallback
+}
+
+/**
+ * A button element with optional options property.
+ */
+export interface PanelButton extends HTMLButtonElement {
+  options?: unknown
+}
+
+/**
+ * A widget element with options and value properties.
+ */
+export interface PanelWidget extends HTMLDivElement {
+  options?: PanelWidgetOptions
+  value?: TWidgetValue
+}
+
+/**
+ * A dialog panel created by LGraphCanvas.createPanel().
+ * Extends HTMLDivElement with additional properties and methods for panel management.
+ */
+export interface Panel extends HTMLDivElement {
+  header: HTMLElement
+  title_element: HTMLSpanElement
+  content: HTMLDivElement
+  alt_content: HTMLDivElement
+  footer: HTMLDivElement
+  node?: LGraphNode
+  onOpen?: () => void
+  onClose?: () => void
+  close(): void
+  toggleAltContent(force?: boolean): void
+  toggleFooterVisibility(force?: boolean): void
+  clear(): void
+  addHTML(code: string, classname?: string, on_footer?: boolean): HTMLDivElement
+  addButton(name: string, callback: () => void, options?: unknown): PanelButton
+  addSeparator(): void
+  addWidget(
+    type: string,
+    name: string,
+    value: TWidgetValue,
+    options?: PanelWidgetOptions,
+    callback?: PanelWidgetCallback
+  ): PanelWidget
+  inner_showCodePad?(property: string): void
 }

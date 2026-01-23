@@ -1,13 +1,13 @@
 <template>
   <div class="shortcuts-list flex justify-center">
-    <div class="grid gap-4 md:gap-24 h-full grid-cols-1 md:grid-cols-3 w-[90%]">
+    <div class="grid h-full w-[90%] grid-cols-1 gap-4 md:grid-cols-3 md:gap-24">
       <div
         v-for="(subcategoryCommands, subcategory) in filteredSubcategories"
         :key="subcategory"
         class="flex flex-col"
       >
         <h3
-          class="subcategory-title text-xs font-bold uppercase tracking-wide text-surface-600 dark-theme:text-surface-400 mb-4"
+          class="subcategory-title mb-4 text-xs font-bold tracking-wide text-text-secondary uppercase"
         >
           {{ getSubcategoryTitle(subcategory) }}
         </h3>
@@ -16,15 +16,15 @@
           <div
             v-for="command in subcategoryCommands"
             :key="command.id"
-            class="shortcut-item flex justify-between items-center py-2 rounded hover:bg-surface-100 dark-theme:hover:bg-surface-700 transition-colors duration-200"
+            class="shortcut-item flex items-center justify-between rounded py-2 transition-colors duration-200"
           >
-            <div class="shortcut-info flex-grow pr-4">
+            <div class="shortcut-info grow pr-4">
               <div class="shortcut-name text-sm font-medium">
-                {{ command.label || command.id }}
+                {{ t(`commands.${normalizeI18nKey(command.id)}.label`) }}
               </div>
             </div>
 
-            <div class="keybinding-display flex-shrink-0">
+            <div class="keybinding-display shrink-0">
               <div
                 class="keybinding-combo flex gap-1"
                 :aria-label="`Keyboard shortcut: ${command.keybinding!.combo.getKeySequences().join(' + ')}`"
@@ -32,7 +32,7 @@
                 <span
                   v-for="key in command.keybinding!.combo.getKeySequences()"
                   :key="key"
-                  class="key-badge px-2 py-1 text-xs font-mono bg-surface-200 dark-theme:bg-surface-600 rounded border min-w-6 text-center"
+                  class="key-badge min-w-6 rounded bg-muted-background px-2 py-1 text-center font-mono text-xs"
                 >
                   {{ formatKey(key) }}
                 </span>
@@ -50,11 +50,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ComfyCommandImpl } from '@/stores/commandStore'
+import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const { t } = useI18n()
 
 const { subcategories } = defineProps<{
-  commands: ComfyCommandImpl[]
   subcategories: Record<string, ComfyCommandImpl[]>
 }>()
 
@@ -99,21 +99,3 @@ const formatKey = (key: string): string => {
   return keyMap[key] || key
 }
 </script>
-
-<style scoped>
-.subcategory-title {
-  color: var(--p-text-muted-color);
-}
-
-.key-badge {
-  background-color: var(--p-surface-200);
-  border: 1px solid var(--p-surface-300);
-  min-width: 1.5rem;
-  text-align: center;
-}
-
-.dark-theme .key-badge {
-  background-color: var(--p-surface-600);
-  border-color: var(--p-surface-500);
-}
-</style>

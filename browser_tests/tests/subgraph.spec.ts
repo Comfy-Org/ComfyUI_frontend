@@ -52,7 +52,7 @@ test.describe('Subgraph Operations', () => {
 
   test.describe('I/O Slot Management', () => {
     test('Can add input slots to subgraph', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -68,7 +68,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Can add output slots to subgraph', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -84,7 +84,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Can remove input slots from subgraph', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -104,7 +104,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Can remove output slots from subgraph', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -124,7 +124,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Can rename I/O slots', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -157,7 +157,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Can rename input slots via double-click', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -189,7 +189,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Can rename output slots via double-click', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -224,7 +224,7 @@ test.describe('Subgraph Operations', () => {
     test('Right-click context menu still works alongside double-click', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -261,7 +261,7 @@ test.describe('Subgraph Operations', () => {
     test('Can double-click on slot label text to rename', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -308,8 +308,6 @@ test.describe('Subgraph Operations', () => {
         }
       })
 
-      // Wait for dialog to appear
-      await comfyPage.page.waitForTimeout(200)
       await comfyPage.nextFrame()
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
@@ -330,6 +328,15 @@ test.describe('Subgraph Operations', () => {
 
       expect(newInputName).toBe(labelClickRenamedName)
       expect(newInputName).not.toBe(initialInputLabel)
+    })
+    test('Can create widget from link with compressed target_slot', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('subgraphs/subgraph-compressed-target-slot')
+      const step = await comfyPage.page.evaluate(() => {
+        return window['app'].graph.nodes[0].widgets[0].options.step
+      })
+      expect(step).toBe(10)
     })
   })
 
@@ -355,7 +362,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Can delete subgraph node', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       expect(await subgraphNode.exists()).toBe(true)
@@ -377,7 +384,7 @@ test.describe('Subgraph Operations', () => {
       test('Can copy subgraph node by dragging + alt', async ({
         comfyPage
       }) => {
-        await comfyPage.loadWorkflow('basic-subgraph')
+        await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
         const subgraphNode = await comfyPage.getNodeRefById('2')
 
@@ -406,7 +413,7 @@ test.describe('Subgraph Operations', () => {
       test('Copying subgraph node by dragging + alt creates a new subgraph node with unique type', async ({
         comfyPage
       }) => {
-        await comfyPage.loadWorkflow('basic-subgraph')
+        await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
         const subgraphNode = await comfyPage.getNodeRefById('2')
 
@@ -438,7 +445,7 @@ test.describe('Subgraph Operations', () => {
 
   test.describe('Operations Inside Subgraphs', () => {
     test('Can copy and paste nodes in subgraph', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -469,7 +476,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Can undo and redo operations in subgraph', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
       const subgraphNode = await comfyPage.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
@@ -506,7 +513,7 @@ test.describe('Subgraph Operations', () => {
     test('Breadcrumb updates when subgraph node title is changed', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('nested-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/nested-subgraph')
       await comfyPage.nextFrame()
 
       const subgraphNode = await comfyPage.getNodeRefById('10')
@@ -558,7 +565,9 @@ test.describe('Subgraph Operations', () => {
     test('DOM widget visibility persists through subgraph navigation', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('subgraph-with-promoted-text-widget')
+      await comfyPage.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
       await comfyPage.nextFrame()
 
       // Verify promoted widget is visible in parent graph
@@ -589,7 +598,9 @@ test.describe('Subgraph Operations', () => {
     test('DOM widget content is preserved through navigation', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('subgraph-with-promoted-text-widget')
+      await comfyPage.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
 
       const textarea = comfyPage.page.locator(SELECTORS.domWidget)
       await textarea.fill(TEST_WIDGET_CONTENT)
@@ -610,7 +621,9 @@ test.describe('Subgraph Operations', () => {
     test('DOM elements are cleaned up when subgraph node is removed', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('subgraph-with-promoted-text-widget')
+      await comfyPage.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
 
       const initialCount = await comfyPage.page
         .locator(SELECTORS.domWidget)
@@ -635,7 +648,7 @@ test.describe('Subgraph Operations', () => {
       // Enable new menu for breadcrumb navigation
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
 
-      const workflowName = 'subgraph-with-promoted-text-widget'
+      const workflowName = 'subgraphs/subgraph-with-promoted-text-widget'
       await comfyPage.loadWorkflow(workflowName)
 
       const textareaCount = await comfyPage.page
@@ -650,7 +663,6 @@ test.describe('Subgraph Operations', () => {
 
       await comfyPage.rightClickSubgraphInputSlot('text')
       await comfyPage.clickLitegraphContextMenuItem('Remove Slot')
-      await comfyPage.page.waitForTimeout(200)
 
       // Wait for breadcrumb to be visible
       await comfyPage.page.waitForSelector(SELECTORS.breadcrumb, {
@@ -661,13 +673,12 @@ test.describe('Subgraph Operations', () => {
       // Click breadcrumb to navigate back to parent graph
       const homeBreadcrumb = comfyPage.page.getByRole('link', {
         // In the subgraph navigation breadcrumbs, the home/top level
-        // breadcrumb is just the workflow name
-        name: workflowName
+        // breadcrumb is just the workflow name without the folder path
+        name: 'subgraph-with-promoted-text-widget'
       })
       await homeBreadcrumb.waitFor({ state: 'visible' })
       await homeBreadcrumb.click()
       await comfyPage.nextFrame()
-      await comfyPage.page.waitForTimeout(300)
 
       // Check that the subgraph node has no widgets after removing the text slot
       const widgetCount = await comfyPage.page.evaluate(() => {
@@ -680,7 +691,9 @@ test.describe('Subgraph Operations', () => {
     test('Multiple promoted widgets are handled correctly', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('subgraph-with-multiple-promoted-widgets')
+      await comfyPage.loadWorkflow(
+        'subgraphs/subgraph-with-multiple-promoted-widgets'
+      )
 
       const parentCount = await comfyPage.page
         .locator(SELECTORS.domWidget)
@@ -711,7 +724,7 @@ test.describe('Subgraph Operations', () => {
     })
 
     test('Navigation hotkey can be customized', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
       // Change the Exit Subgraph keybinding from Escape to Alt+Q
@@ -767,7 +780,7 @@ test.describe('Subgraph Operations', () => {
     test('Escape prioritizes closing dialogs over exiting subgraph', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('basic-subgraph')
+      await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
       const subgraphNode = await comfyPage.getNodeRefById('2')

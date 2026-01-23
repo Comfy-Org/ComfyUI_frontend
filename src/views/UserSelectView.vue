@@ -2,7 +2,7 @@
   <BaseViewTemplate dark>
     <main
       id="comfy-user-selection"
-      class="min-w-84 relative rounded-lg bg-[var(--comfy-menu-bg)] p-5 px-10 shadow-lg"
+      class="relative min-w-84 rounded-lg bg-(--comfy-menu-bg) p-5 px-10 shadow-lg"
     >
       <h1 class="my-2.5 mb-7 font-normal">ComfyUI</h1>
       <div class="flex w-full flex-col items-center">
@@ -34,7 +34,7 @@
           </Message>
         </div>
         <footer class="mt-5">
-          <Button :label="$t('userSelect.next')" @click="login" />
+          <Button @click="login">{{ $t('userSelect.next') }}</Button>
         </footer>
       </div>
     </main>
@@ -42,7 +42,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
@@ -50,7 +49,9 @@ import Select from 'primevue/select'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { User, useUserStore } from '@/stores/userStore'
+import Button from '@/components/ui/button/Button.vue'
+import type { User } from '@/stores/userStore'
+import { useUserStore } from '@/stores/userStore'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'
 
 const userStore = useUserStore()

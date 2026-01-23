@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type { NodeId } from '../../../src/schemas/comfyWorkflowSchema'
+import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import { ManageGroupNode } from '../../helpers/manageGroupNode'
 import type { ComfyPage } from '../ComfyPage'
 import type { Position, Size } from '../types'
@@ -79,48 +79,15 @@ export class SubgraphSlotReference {
 
         const node =
           type === 'input' ? currentGraph.inputNode : currentGraph.outputNode
-        const slots =
-          type === 'input' ? currentGraph.inputs : currentGraph.outputs
 
         if (!node) {
           throw new Error(`No ${type} node found in subgraph`)
         }
 
-        // Calculate position for next available slot
-        // const nextSlotIndex = slots?.length || 0
-        // const slotHeight = 20
-        // const slotY = node.pos[1] + 30 + nextSlotIndex * slotHeight
-
-        // Find last slot position
-        const lastSlot = slots.at(-1)
-        let slotX: number
-        let slotY: number
-
-        if (lastSlot) {
-          // If there are existing slots, position the new one below the last one
-          const gapHeight = 20
-          slotX = lastSlot.pos[0]
-          slotY = lastSlot.pos[1] + gapHeight
-        } else {
-          // No existing slots - use slotAnchorX if available, otherwise calculate from node position
-          if (currentGraph.slotAnchorX !== undefined) {
-            // The actual slot X position seems to be slotAnchorX - 10
-            slotX = currentGraph.slotAnchorX - 10
-          } else {
-            // Fallback: calculate from node edge
-            slotX =
-              type === 'input'
-                ? node.pos[0] + node.size[0] - 10 // Right edge for input node
-                : node.pos[0] + 10 // Left edge for output node
-          }
-          // For Y position when no slots exist, use middle of node
-          slotY = node.pos[1] + node.size[1] / 2
-        }
-
         // Convert from offset to canvas coordinates
         const canvasPos = window['app'].canvas.ds.convertOffsetToCanvas([
-          slotX,
-          slotY
+          node.emptySlot.pos[0],
+          node.emptySlot.pos[1]
         ])
         return canvasPos
       },
@@ -134,7 +101,7 @@ export class SubgraphSlotReference {
   }
 }
 
-export class NodeSlotReference {
+class NodeSlotReference {
   constructor(
     readonly type: 'input' | 'output',
     readonly index: number,
@@ -151,8 +118,8 @@ export class NodeSlotReference {
         const convertedPos =
           window['app'].canvas.ds.convertOffsetToCanvas(rawPos)
 
-        // Debug logging - convert Float32Arrays to regular arrays for visibility
-        console.log(
+        // Debug logging - convert Float64Arrays to regular arrays for visibility
+        console.warn(
           `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
           {
             nodePos: [node.pos[0], node.pos[1]],
@@ -201,7 +168,7 @@ export class NodeSlotReference {
   }
 }
 
-export class NodeWidgetReference {
+class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference
@@ -461,7 +428,6 @@ export class NodeReference {
   async convertToSubgraph() {
     await this.clickContextMenuOption('Convert to Subgraph')
     await this.comfyPage.nextFrame()
-    await this.comfyPage.page.waitForTimeout(256)
     const nodes = await this.comfyPage.getNodeRefsByTitle('New Subgraph')
     if (nodes.length !== 1) {
       throw new Error(
@@ -502,7 +468,7 @@ export class NodeReference {
       for (const position of clickPositions) {
         // Clear any selection first
         await this.comfyPage.canvas.click({
-          position: { x: 50, y: 50 },
+          position: { x: 250, y: 250 },
           force: true
         })
         await this.comfyPage.nextFrame()
@@ -510,7 +476,6 @@ export class NodeReference {
         // Double-click to enter subgraph
         await this.comfyPage.canvas.dblclick({ position, force: true })
         await this.comfyPage.nextFrame()
-        await this.comfyPage.page.waitForTimeout(500)
 
         // Check if we successfully entered the subgraph
         isInSubgraph = await this.comfyPage.page.evaluate(() => {

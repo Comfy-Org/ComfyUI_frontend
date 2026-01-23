@@ -8,7 +8,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 
 const { result } = defineProps<{
   result: ResultItemImpl

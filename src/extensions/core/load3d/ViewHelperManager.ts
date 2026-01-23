@@ -2,7 +2,10 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 
-import { NodeStorageInterface, ViewHelperManagerInterface } from './interfaces'
+import {
+  type EventManagerInterface,
+  type ViewHelperManagerInterface
+} from './interfaces'
 
 export class ViewHelperManager implements ViewHelperManagerInterface {
   viewHelper: ViewHelper = {} as ViewHelper
@@ -10,20 +13,17 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
 
   private getActiveCamera: () => THREE.Camera
   private getControls: () => OrbitControls
-  private nodeStorage: NodeStorageInterface
-  // @ts-expect-error unused variable
-  private renderer: THREE.WebGLRenderer
+  private eventManager: EventManagerInterface
 
   constructor(
-    renderer: THREE.WebGLRenderer,
+    _renderer: THREE.WebGLRenderer,
     getActiveCamera: () => THREE.Camera,
     getControls: () => OrbitControls,
-    nodeStorage: NodeStorageInterface
+    eventManager: EventManagerInterface
   ) {
-    this.renderer = renderer
     this.getActiveCamera = getActiveCamera
     this.getControls = getControls
-    this.nodeStorage = nodeStorage
+    this.eventManager = eventManager
   }
 
   init(): void {}
@@ -71,7 +71,7 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
       this.viewHelper.update(delta)
 
       if (!this.viewHelper.animating) {
-        this.nodeStorage.storeNodeProperty('Camera Info', {
+        const cameraState = {
           position: this.getActiveCamera().position.clone(),
           target: this.getControls().target.clone(),
           zoom:
@@ -82,7 +82,9 @@ export class ViewHelperManager implements ViewHelperManagerInterface {
             this.getActiveCamera() instanceof THREE.PerspectiveCamera
               ? 'perspective'
               : 'orthographic'
-        })
+        }
+
+        this.eventManager.emitEvent('cameraChanged', cameraState)
       }
     }
   }

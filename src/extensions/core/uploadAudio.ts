@@ -1,6 +1,5 @@
 import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recorder'
 
-import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { useNodeDragAndDrop } from '@/composables/node/useNodeDragAndDrop'
 import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
@@ -10,41 +9,30 @@ import type {
   IBaseWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import {
+  getResourceURL,
+  splitFilePath
+} from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { DOMWidget } from '@/scripts/domWidget'
 import { useAudioService } from '@/services/audioService'
-import { useToastStore } from '@/stores/toastStore'
-import { NodeLocatorId } from '@/types'
+import { type NodeLocatorId } from '@/types'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 
-function splitFilePath(path: string): [string, string] {
-  const folder_separator = path.lastIndexOf('/')
-  if (folder_separator === -1) {
-    return ['', path]
-  }
-  return [
-    path.substring(0, folder_separator),
-    path.substring(folder_separator + 1)
-  ]
-}
-
-function getResourceURL(
-  subfolder: string,
-  filename: string,
-  type: ResultItemType = 'input'
-): string {
-  const params = [
-    'filename=' + encodeURIComponent(filename),
-    'type=' + type,
-    'subfolder=' + subfolder,
-    app.getRandParam().substring(1)
-  ].join('&')
-
-  return `/view?${params}`
+function updateUIWidget(
+  audioUIWidget: DOMWidget<HTMLAudioElement, string>,
+  url: string = ''
+) {
+  audioUIWidget.element.src = url
+  audioUIWidget.value = url
+  audioUIWidget.callback?.(url)
+  if (url) audioUIWidget.element.classList.remove('empty-audio-widget')
+  else audioUIWidget.element.classList.add('empty-audio-widget')
 }
 
 async function uploadFile(
@@ -77,10 +65,13 @@ async function uploadFile(
       }
 
       if (updateNode) {
-        audioUIWidget.element.src = api.apiURL(
-          getResourceURL(...splitFilePath(path))
+        updateUIWidget(
+          audioUIWidget,
+          api.apiURL(getResourceURL(...splitFilePath(path)))
         )
-        audioWidget.value = path
+
+        // Manually trigger the callback to update VueNodes
+        audioWidget.callback?.(path)
       }
     } else {
       useToastStore().addAlert(resp.status + ' - ' + resp.statusText)
@@ -123,7 +114,6 @@ app.registerExtension({
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
         audioUIWidget.serialize = false
-
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
 
@@ -133,49 +123,47 @@ app.registerExtension({
           audioUIWidget.element.classList.add('empty-audio-widget')
           // Populate the audio widget UI on node execution.
           const onExecuted = node.onExecuted
-          node.onExecuted = function (message: any) {
-            // @ts-expect-error fixme ts strict error
-            onExecuted?.apply(this, arguments)
-            const audios = message.audio
-            if (!audios) return
+          node.onExecuted = function (output: NodeExecutionOutput) {
+            onExecuted?.call(this, output)
+            const audios = output.audio
+            if (!audios?.length) return
             const audio = audios[0]
-            audioUIWidget.element.src = api.apiURL(
-              getResourceURL(audio.subfolder, audio.filename, audio.type)
+            const resourceUrl = getResourceURL(
+              audio.subfolder ?? '',
+              audio.filename ?? '',
+              audio.type
             )
-            audioUIWidget.element.classList.remove('empty-audio-widget')
+            updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
           }
         }
 
-        audioUIWidget.onRemove = useChainCallback(
-          audioUIWidget.onRemove,
-          () => {
-            if (!audioUIWidget.element) return
-            audioUIWidget.element.pause()
-            audioUIWidget.element.src = ''
-            audioUIWidget.element.remove()
-          }
-        )
+        let value = ''
+        audioUIWidget.options.getValue = () => value
+        audioUIWidget.options.setValue = (v) => (value = v)
 
         return { widget: audioUIWidget }
       }
     }
   },
-  onNodeOutputsUpdated(nodeOutputs: Record<NodeLocatorId, any>) {
+  onNodeOutputsUpdated(
+    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
+  ) {
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
-      if ('audio' in output) {
-        const node = getNodeByLocatorId(app.graph, nodeLocatorId)
-        if (!node) continue
+      if (!output.audio?.length) continue
 
-        // @ts-expect-error fixme ts strict error
-        const audioUIWidget = node.widgets.find(
-          (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement, string>
-        const audio = output.audio[0]
-        audioUIWidget.element.src = api.apiURL(
-          getResourceURL(audio.subfolder, audio.filename, audio.type)
-        )
-        audioUIWidget.element.classList.remove('empty-audio-widget')
-      }
+      const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
+      if (!node) continue
+
+      const audioUIWidget = node.widgets?.find(
+        (w) => w.name === 'audioUI'
+      ) as unknown as DOMWidget<HTMLAudioElement, string>
+      const audio = output.audio[0]
+      const resourceUrl = getResourceURL(
+        audio.subfolder ?? '',
+        audio.filename ?? '',
+        audio.type
+      )
+      updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
     }
   }
 })
@@ -201,14 +189,16 @@ app.registerExtension({
         ) as unknown as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
-          audioUIWidget.element.src = api.apiURL(
-            getResourceURL(...splitFilePath(audioWidget.value as string))
+          updateUIWidget(
+            audioUIWidget,
+            api.apiURL(
+              getResourceURL(...splitFilePath(audioWidget.value ?? ''))
+            )
           )
         }
         // Initially load default audio file to audioUIWidget.
-        if (audioWidget.value) {
-          onAudioWidgetUpdate()
-        }
+        onAudioWidgetUpdate()
+
         audioWidget.callback = onAudioWidgetUpdate
 
         // Load saved audio file widget values if restoring from workflow
@@ -216,9 +206,7 @@ app.registerExtension({
         node.onGraphConfigured = function () {
           // @ts-expect-error fixme ts strict error
           onGraphConfigured?.apply(this, arguments)
-          if (audioWidget.value) {
-            onAudioWidgetUpdate()
-          }
+          onAudioWidgetUpdate()
         }
 
         const handleUpload = async (files: File[]) => {
@@ -241,7 +229,7 @@ app.registerExtension({
           inputName,
           '',
           openFileSelection,
-          { serialize: false }
+          { serialize: false, canvasOnly: true }
         )
         uploadWidget.label = t('g.choose_file_to_upload')
 
@@ -273,9 +261,9 @@ app.registerExtension({
         audio.controls = true
         audio.classList.add('comfy-audio')
         audio.setAttribute('name', 'media')
-
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+        audioUIWidget.options.canvasOnly = false
 
         let mediaRecorder: MediaRecorder | null = null
         let isRecording = false
@@ -342,7 +330,7 @@ app.registerExtension({
                     URL.revokeObjectURL(audioUIWidget.element.src)
                   }
 
-                  audioUIWidget.element.src = URL.createObjectURL(audioBlob)
+                  updateUIWidget(audioUIWidget, URL.createObjectURL(audioBlob))
 
                   isRecording = false
 
@@ -398,10 +386,12 @@ app.registerExtension({
               mediaRecorder.stop()
             }
           },
-          { serialize: false }
+          { serialize: false, canvasOnly: false }
         )
 
         recordWidget.label = t('g.startRecording')
+        // Override the type for Vue rendering while keeping 'button' for LiteGraph
+        recordWidget.type = 'audiorecord'
 
         const originalOnRemoved = node.onRemoved
         node.onRemoved = function () {

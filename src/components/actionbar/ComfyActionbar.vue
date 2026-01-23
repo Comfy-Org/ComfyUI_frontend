@@ -1,65 +1,93 @@
 <template>
-  <Panel
-    class="actionbar w-fit"
-    :style="style"
-    :class="{ 'is-dragging': isDragging, 'is-docked': isDocked }"
-  >
-    <div ref="panelRef" class="actionbar-content flex items-center select-none">
-      <span ref="dragHandleRef" class="drag-handle cursor-move mr-2 p-0!" />
-      <ComfyQueueButton />
+  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
+    <div
+      v-if="isDragging && !isDocked"
+      :class="actionbarClass"
+      @mouseenter="onMouseEnterDropZone"
+      @mouseleave="onMouseLeaveDropZone"
+    >
+      {{ t('actionbar.dockToTop') }}
     </div>
-  </Panel>
+
+    <Panel
+      class="pointer-events-auto"
+      :style="style"
+      :class="panelClass"
+      :pt="{
+        header: { class: 'hidden' },
+        content: { class: isDocked ? 'p-0' : 'p-1' }
+      }"
+    >
+      <div ref="panelRef" class="flex items-center select-none gap-2">
+        <span
+          ref="dragHandleRef"
+          :class="
+            cn(
+              'drag-handle cursor-grab w-3 h-max',
+              isDragging && 'cursor-grabbing'
+            )
+          "
+        />
+        <Suspense @resolve="comfyRunButtonResolved">
+          <ComfyRunButton />
+        </Suspense>
+        <Button
+          v-tooltip.bottom="cancelJobTooltipConfig"
+          variant="destructive"
+          size="icon"
+          :disabled="isExecutionIdle"
+          :aria-label="t('menu.interrupt')"
+          @click="cancelCurrentJob"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </Button>
+      </div>
+    </Panel>
+  </div>
 </template>
 
 <script lang="ts" setup>
 import {
   useDraggable,
-  useElementBounding,
-  useEventBus,
   useEventListener,
   useLocalStorage,
   watchDebounced
 } from '@vueuse/core'
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit/compat'
+import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
-import { Ref, computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { useSettingStore } from '@/stores/settingStore'
+import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { cn } from '@/utils/tailwindUtil'
 
-import ComfyQueueButton from './ComfyQueueButton.vue'
+import ComfyRunButton from './ComfyRunButton'
 
 const settingsStore = useSettingStore()
+const commandStore = useCommandStore()
+const { t } = useI18n()
+const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
-
 const visible = computed(() => position.value !== 'Disabled')
 
-const topMenuRef = inject<Ref<HTMLDivElement | null>>('topMenuRef')
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', false)
+const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const {
-  x,
-  y,
-  style: style,
-  isDragging
-} = useDraggable(panelRef, {
+const { x, y, style, isDragging } = useDraggable(panelRef, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
-  containerElement: document.body,
-  onMove: (event) => {
-    // Prevent dragging the menu over the top of the tabs
-    if (position.value === 'Top') {
-      const minY = topMenuRef?.value?.getBoundingClientRect().top ?? 40
-      if (event.y < minY) {
-        event.y = minY
-      }
-    }
-  }
+  containerElement: document.body
 })
 
 // Update storedPosition when x or y changes
@@ -104,11 +132,27 @@ const setInitialPosition = () => {
     }
   }
 }
-onMounted(setInitialPosition)
+
+//The ComfyRunButton is a dynamic import. Which means it will not be loaded onMount in this component.
+//So we must use suspense resolve to ensure that is has loaded and updated the DOM before calling setInitialPosition()
+async function comfyRunButtonResolved() {
+  await nextTick()
+  setInitialPosition()
+}
+
 watch(visible, async (newVisible) => {
   if (newVisible) {
     await nextTick(setInitialPosition)
   }
+})
+
+/**
+ * Track run button handle drag start using mousedown on the drag handle.
+ */
+useEventListener(dragHandleRef, 'mousedown', () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'actionbar_run_handle_drag_start'
+  })
 })
 
 const lastDragState = ref({
@@ -192,70 +236,65 @@ const adjustMenuPosition = () => {
 
 useEventListener(window, 'resize', adjustMenuPosition)
 
-const topMenuBounds = useElementBounding(topMenuRef)
-const overlapThreshold = 20 // pixels
-const isOverlappingWithTopMenu = computed(() => {
-  if (!panelRef.value) {
-    return false
+// Drop zone state
+const isMouseOverDropZone = ref(false)
+
+// Mouse event handlers for self-contained drop zone
+const onMouseEnterDropZone = () => {
+  if (isDragging.value) {
+    isMouseOverDropZone.value = true
   }
-  const { height } = panelRef.value.getBoundingClientRect()
-  const actionbarBottom = y.value + height
-  const topMenuBottom = topMenuBounds.bottom.value
+}
 
-  const overlapPixels =
-    Math.min(actionbarBottom, topMenuBottom) -
-    Math.max(y.value, topMenuBounds.top.value)
-  return overlapPixels > overlapThreshold
-})
+const onMouseLeaveDropZone = () => {
+  if (isDragging.value) {
+    isMouseOverDropZone.value = false
+  }
+}
 
-watch(isDragging, (newIsDragging) => {
-  if (!newIsDragging) {
-    // Stop dragging
-    isDocked.value = isOverlappingWithTopMenu.value
+// Handle drag state changes
+watch(isDragging, (dragging) => {
+  if (dragging) {
+    // Starting to drag - undock if docked
+    if (isDocked.value) {
+      isDocked.value = false
+    }
   } else {
-    // Start dragging
-    isDocked.value = false
+    // Stopped dragging - dock if mouse is over drop zone
+    if (isMouseOverDropZone.value) {
+      isDocked.value = true
+    }
+    // Reset drop zone state
+    isMouseOverDropZone.value = false
   }
 })
 
-const eventBus = useEventBus<string>('topMenu')
-watch([isDragging, isOverlappingWithTopMenu], ([dragging, overlapping]) => {
-  eventBus.emit('updateHighlight', {
-    isDragging: dragging,
-    isOverlapping: overlapping
-  })
-})
+const cancelJobTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menu.interrupt'))
+)
+
+const cancelCurrentJob = async () => {
+  if (isExecutionIdle.value) return
+  await commandStore.execute('Comfy.Interrupt')
+}
+
+const actionbarClass = computed(() =>
+  cn(
+    'w-[200px] border-dashed border-blue-500 opacity-80',
+    'm-1.5 flex items-center justify-center self-stretch',
+    'rounded-md before:w-50 before:-ml-50 before:h-full',
+    'pointer-events-auto',
+    isMouseOverDropZone.value &&
+      'border-[3px] opacity-100 scale-105 shadow-[0_0_20px] shadow-blue-500'
+  )
+)
+const panelClass = computed(() =>
+  cn(
+    'actionbar pointer-events-auto z-1300',
+    isDragging.value && 'select-none pointer-events-none',
+    isDocked.value
+      ? 'p-0 static border-none bg-transparent'
+      : 'fixed shadow-interface'
+  )
+)
 </script>
-
-<style scoped>
-.actionbar {
-  pointer-events: all;
-  position: fixed;
-  z-index: 1000;
-}
-
-.actionbar.is-docked {
-  position: static;
-  @apply bg-transparent border-none p-0;
-}
-
-.actionbar.is-dragging {
-  user-select: none;
-}
-
-:deep(.p-panel-content) {
-  @apply p-1;
-}
-
-.is-docked :deep(.p-panel-content) {
-  @apply p-0;
-}
-
-:deep(.p-panel-header) {
-  display: none;
-}
-
-.drag-handle {
-  @apply w-3 h-max;
-}
-</style>

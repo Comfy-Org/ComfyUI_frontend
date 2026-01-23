@@ -1,19 +1,15 @@
 <template>
   <div
     ref="positionRef"
-    class="absolute left-1/2 -translate-x-1/2"
-    :class="positions.positioner"
+    class="absolute bottom-0 left-1/2 -translate-x-1/2"
   ></div>
   <Popover
     ref="popoverRef"
     append-to="body"
     :pt="{
       root: {
-        class: 'workflow-popover-fade fit-content ' + positions.root,
-        'data-popover-id': id,
-        style: {
-          transform: positions.active
-        }
+        class: 'workflow-popover-fade fit-content',
+        'data-popover-id': id
       }
     }"
     @mouseenter="cancelHidePopover"
@@ -26,7 +22,7 @@
       >
         <img
           :src="thumbnailUrl"
-          class="block h-[200px] object-cover rounded-lg p-2"
+          class="block h-[200px] rounded-lg object-cover p-2"
           :style="{ width: `${POPOVER_WIDTH}px` }"
         />
       </div>
@@ -39,9 +35,7 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
-import { computed, nextTick, ref, toRefs, useId } from 'vue'
-
-import { useSettingStore } from '@/stores/settingStore'
+import { nextTick, ref, toRefs, useId } from 'vue'
 
 const POPOVER_WIDTH = 250
 
@@ -53,29 +47,6 @@ interface Props {
 
 const props = defineProps<Props>()
 const { thumbnailUrl, isActiveTab } = toRefs(props)
-
-const settingStore = useSettingStore()
-const positions = computed<{
-  positioner: string
-  root?: string
-  active?: string
-}>(() => {
-  if (
-    settingStore.get('Comfy.Workflow.WorkflowTabsPosition') === 'Topbar' &&
-    settingStore.get('Comfy.UseNewMenu') === 'Bottom'
-  ) {
-    return {
-      positioner: 'top-0',
-      root: 'p-popover-flipped',
-      active: isActiveTab.value ? 'translateY(-100%)' : undefined
-    }
-  }
-
-  return {
-    positioner: 'bottom-0'
-  }
-})
-
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 const positionRef = ref<HTMLElement | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
@@ -169,10 +140,12 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference '../../assets/css/style.css';
+
 .workflow-preview-content {
   @apply flex flex-col rounded-xl overflow-hidden;
   max-width: var(--popover-width);
-  background-color: var(--comfy-menu-secondary-bg);
+  background-color: var(--comfy-menu-bg);
   color: var(--fg-color);
 }
 
@@ -182,11 +155,7 @@ defineExpose({
 
 .workflow-preview-thumbnail img {
   @apply shadow-md;
-  background-color: color-mix(
-    in srgb,
-    var(--comfy-menu-secondary-bg) 70%,
-    black
-  );
+  background-color: color-mix(in srgb, var(--comfy-menu-bg) 70%, black);
 }
 
 .dark-theme .workflow-preview-thumbnail img {
@@ -204,6 +173,8 @@ defineExpose({
 </style>
 
 <style>
+@reference '../../assets/css/style.css';
+
 .workflow-popover-fade {
   --p-popover-background: transparent;
   --p-popover-content-padding: 0;
@@ -219,8 +190,8 @@ defineExpose({
   @apply shadow-2xl;
 }
 
-.workflow-popover-fade.p-popover:after,
-.workflow-popover-fade.p-popover:before {
+.workflow-popover-fade.p-popover::after,
+.workflow-popover-fade.p-popover::before {
   --p-popover-border-color: var(--comfy-menu-secondary-bg);
   left: 50%;
   transform: translateX(calc(-50% + var(--shift)));

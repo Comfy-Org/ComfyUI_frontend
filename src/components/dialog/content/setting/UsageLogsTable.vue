@@ -30,7 +30,7 @@
           <div class="event-details">
             <!-- Credits Added -->
             <template v-if="data.event_type === EventType.CREDIT_ADDED">
-              <div class="text-green-500 font-semibold">
+              <div class="font-semibold text-green-500">
                 {{ $t('credits.added') }} ${{
                   customerEventService.formatAmount(data.params?.amount)
                 }}
@@ -50,7 +50,7 @@
                 <div class="font-semibold">
                   {{ data.params?.api_name || 'API' }}
                 </div>
-                <div class="text-sm text-gray-400">
+                <div class="text-sm text-smoke-400">
                   {{ $t('credits.model') }}: {{ data.params?.model || '-' }}
                 </div>
               </div>
@@ -78,9 +78,12 @@
                 }
               }
             }"
-            icon="pi pi-info-circle"
-            class="p-button-text p-button-sm"
-          />
+            variant="textonly"
+            size="icon-sm"
+            :aria-label="$t('credits.additionalInfo')"
+          >
+            <i class="pi pi-info-circle" />
+          </Button>
         </template>
       </Column>
     </DataTable>
@@ -89,15 +92,16 @@
 
 <script setup lang="ts">
 import Badge from 'primevue/badge'
-import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
+import type { AuditLog } from '@/services/customerEventsService'
 import {
-  AuditLog,
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
@@ -159,6 +163,9 @@ const loadEvents = async () => {
       if (response.totalPages) {
         pagination.value.totalPages = response.totalPages
       }
+
+      // Check if a pending top-up has completed
+      useTelemetry()?.checkForCompletedTopup(response.events)
     } else {
       error.value = customerEventService.error.value || 'Failed to load events'
     }

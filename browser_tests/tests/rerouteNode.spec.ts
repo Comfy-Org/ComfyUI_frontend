@@ -15,10 +15,10 @@ test.describe('Reroute Node', () => {
   test('loads from inserted workflow', async ({ comfyPage }) => {
     const workflowName = 'single_connected_reroute_node.json'
     await comfyPage.setupWorkflowsDirectory({
-      [workflowName]: workflowName
+      [workflowName]: 'links/single_connected_reroute_node.json'
     })
     await comfyPage.setup()
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Workflow', 'New'])
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
 
     // Insert the workflow
     const workflowsTab = comfyPage.menu.workflowsTab
@@ -40,6 +40,7 @@ test.describe('Reroute Node', () => {
 
 test.describe('LiteGraph Native Reroute Node', () => {
   test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
     await comfyPage.setSetting('LiteGraph.Reroute.SplineOffset', 80)
   })
 

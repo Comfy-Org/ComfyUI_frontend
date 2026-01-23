@@ -1,4 +1,3 @@
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   DeviceStats,
   EmbeddingsResponse,
@@ -14,7 +13,7 @@ import type {
   UserData,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
-import { ComfyApp } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 
 import type {
   BottomPanelExtension,
@@ -65,12 +64,29 @@ export type {
   ToastMessageOptions
 }
 
+interface CapturedMessages {
+  clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
+  serverFeatureFlags: Record<string, unknown> | null
+}
+
+interface AppReadiness {
+  featureFlagsReceived: boolean
+  apiInitialized: boolean
+  appInitialized: boolean
+}
+
 declare global {
   interface Window {
     /** For use by extensions and in the browser console. Where possible, import `app` from '@/scripts/app' instead. */
     app?: ComfyApp
 
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
-    graph?: LGraph
+    graph?: unknown
+
+    /** For use in tests to capture WebSocket messages */
+    __capturedMessages?: CapturedMessages
+
+    /** For use in tests to track app initialization state */
+    __appReadiness?: AppReadiness
   }
 }

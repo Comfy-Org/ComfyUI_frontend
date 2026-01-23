@@ -1,19 +1,50 @@
-import { computed } from 'vue'
+import { whenever } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { t } from '@/i18n'
+import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { AuthUserInfo } from '@/types/authTypes'
 
 export const useCurrentUser = () => {
   const authStore = useFirebaseAuthStore()
   const commandStore = useCommandStore()
   const apiKeyStore = useApiKeyAuthStore()
+  const dialogService = useDialogService()
+  const { deleteAccount } = useFirebaseAuthActions()
 
   const firebaseUser = computed(() => authStore.currentUser)
   const isApiKeyLogin = computed(() => apiKeyStore.isAuthenticated)
   const isLoggedIn = computed(
     () => !!isApiKeyLogin.value || firebaseUser.value !== null
   )
+
+  const resolvedUserInfo = computed<AuthUserInfo | null>(() => {
+    if (isApiKeyLogin.value && apiKeyStore.currentUser) {
+      return { id: apiKeyStore.currentUser.id }
+    }
+
+    if (firebaseUser.value) {
+      return { id: firebaseUser.value.uid }
+    }
+
+    return null
+  })
+
+  const onUserResolved = (callback: (user: AuthUserInfo) => void) =>
+    whenever(resolvedUserInfo, callback, { immediate: true })
+
+  const onTokenRefreshed = (callback: () => void) =>
+    whenever(() => authStore.tokenRefreshTrigger, callback)
+
+  const onUserLogout = (callback: () => void) => {
+    watch(resolvedUserInfo, (user, prevUser) => {
+      if (prevUser && !user) callback()
+    })
+  }
 
   const userDisplayName = computed(() => {
     if (isApiKeyLogin.value) {
@@ -85,6 +116,18 @@ export const useCurrentUser = () => {
     await commandStore.execute('Comfy.User.OpenSignInDialog')
   }
 
+  const handleDeleteAccount = async () => {
+    const confirmed = await dialogService.confirm({
+      title: t('auth.deleteAccount.confirmTitle'),
+      message: t('auth.deleteAccount.confirmMessage'),
+      type: 'delete'
+    })
+
+    if (confirmed) {
+      await deleteAccount()
+    }
+  }
+
   return {
     loading: authStore.loading,
     isLoggedIn,
@@ -95,7 +138,12 @@ export const useCurrentUser = () => {
     userPhotoUrl,
     providerName,
     providerIcon,
+    resolvedUserInfo,
     handleSignOut,
-    handleSignIn
+    handleSignIn,
+    handleDeleteAccount,
+    onUserResolved,
+    onTokenRefreshed,
+    onUserLogout
   }
 }

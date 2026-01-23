@@ -1,11 +1,11 @@
 <template>
   <div
-    class="relative w-full text-xs min-h-[28px] max-h-[200px] rounded-lg px-4 py-2 overflow-y-auto"
+    class="relative max-h-[200px] min-h-[28px] w-full overflow-y-auto rounded-lg px-4 py-2 text-xs"
   >
     <div class="flex items-center gap-2">
-      <div class="flex-1 break-all flex items-center gap-2">
+      <div class="flex flex-1 items-center gap-2 break-all">
         <span v-html="formattedText"></span>
-        <Skeleton v-if="isParentNodeExecuting" class="!flex-1 !h-4" />
+        <Skeleton v-if="isParentNodeExecuting" class="h-4! flex-1!" />
       </div>
     </div>
   </div>
@@ -15,19 +15,44 @@
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
 const props = defineProps<{
-  widget?: object
   nodeId: NodeId
 }>()
 
 const executionStore = useExecutionStore()
 const isParentNodeExecuting = ref(true)
-const formattedText = computed(() => nl2br(linkifyHtml(modelValue.value)))
+const formattedText = computed(() => {
+  const src = modelValue.value
+  // Turn [[label|url]] into placeholders to avoid interfering with linkifyHtml
+  const tokens: { label: string; url: string }[] = []
+  const holed = src.replace(
+    /\[\[([^|\]]+)\|([^\]]+)\]\]/g,
+    (_m, label, url) => {
+      tokens.push({ label: String(label), url: String(url) })
+      return `__LNK${tokens.length - 1}__`
+    }
+  )
+
+  // Keep current behavior (auto-link bare URLs + \n -> <br>)
+  let html = nl2br(linkifyHtml(holed))
+
+  // Restore placeholders as <a>...</a> (minimal escaping + http default)
+  html = html.replace(/__LNK(\d+)__/g, (_m, i) => {
+    const { label, url } = tokens[+i]
+    const safeHref = url.replace(/"/g, '&quot;')
+    const safeLabel = label.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return /^https?:\/\//i.test(url)
+      ? `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`
+      : safeLabel
+  })
+
+  return html
+})
 
 let parentNodeId: NodeId | null = null
 onMounted(() => {

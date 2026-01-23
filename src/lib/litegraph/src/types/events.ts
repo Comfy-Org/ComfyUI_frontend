@@ -6,7 +6,7 @@ import type { LGraphNode } from '../LGraphNode'
 import type { LinkReleaseContextExtended } from '../litegraph'
 
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
-export interface ICanvasPosition {
+interface ICanvasPosition {
   /** X co-ordinate of the event, in graph space (NOT canvas space) */
   canvasX: number
   /** Y co-ordinate of the event, in graph space (NOT canvas space) */
@@ -14,7 +14,7 @@ export interface ICanvasPosition {
 }
 
 /** For Canvas*Event */
-export interface IDeltaPosition {
+interface IDeltaPosition {
   deltaX: number
   deltaY: number
 }
@@ -23,7 +23,7 @@ export interface IDeltaPosition {
  * Workaround for Firefox returning 0 on offsetX/Y props
  * See https://github.com/Comfy-Org/litegraph.js/issues/403 for details
  */
-export interface IOffsetWorkaround {
+interface IOffsetWorkaround {
   /** See {@link MouseEvent.offsetX}.  This workaround is required (2024-12-31) to support Firefox, which always returns 0 */
   safeOffsetX: number
   /** See {@link MouseEvent.offsetY}.  This workaround is required (2024-12-31) to support Firefox, which always returns 0 */
@@ -45,13 +45,8 @@ interface LegacyMouseEvent {
 export interface CanvasPointerEvent extends PointerEvent, CanvasMouseEvent {}
 
 /** MouseEvent with canvasX/Y and deltaX/Y properties */
-export interface CanvasMouseEvent
-  extends MouseEvent,
-    Readonly<CanvasPointerExtensions>,
-    LegacyMouseEvent {}
-
-/** DragEvent with canvasX/Y and deltaX/Y properties */
-export interface CanvasDragEvent extends DragEvent, CanvasPointerExtensions {}
+interface CanvasMouseEvent
+  extends MouseEvent, Readonly<CanvasPointerExtensions>, LegacyMouseEvent {}
 
 export type CanvasEventDetail =
   | GenericEventDetail
@@ -60,29 +55,29 @@ export type CanvasEventDetail =
   | EmptyDoubleClickEventDetail
   | EmptyReleaseEventDetail
 
-export interface GenericEventDetail {
+interface GenericEventDetail {
   subType: 'before-change' | 'after-change'
 }
 
-export interface OriginalEvent {
+interface OriginalEvent {
   originalEvent: CanvasPointerEvent
 }
 
-export interface EmptyReleaseEventDetail extends OriginalEvent {
+interface EmptyReleaseEventDetail extends OriginalEvent {
   subType: 'empty-release'
   linkReleaseContext: LinkReleaseContextExtended
 }
 
-export interface EmptyDoubleClickEventDetail extends OriginalEvent {
+interface EmptyDoubleClickEventDetail extends OriginalEvent {
   subType: 'empty-double-click'
 }
 
-export interface GroupDoubleClickEventDetail extends OriginalEvent {
+interface GroupDoubleClickEventDetail extends OriginalEvent {
   subType: 'group-double-click'
   group: LGraphGroup
 }
 
-export interface NodeDoubleClickEventDetail extends OriginalEvent {
+interface NodeDoubleClickEventDetail extends OriginalEvent {
   subType: 'node-double-click'
   node: LGraphNode
 }

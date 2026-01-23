@@ -5,9 +5,9 @@
     :value="allGalleryItems"
     :show-indicators="false"
     change-item-on-indicator-hover
-    show-item-navigators
+    :show-item-navigators="hasMultiple"
     full-screen
-    circular
+    :circular="hasMultiple"
     :show-thumbnails="false"
     :pt="{
       mask: {
@@ -42,10 +42,10 @@
 
 <script setup lang="ts">
 import Galleria from 'primevue/galleria'
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 
 import ResultAudio from './ResultAudio.vue'
 import ResultVideo from './ResultVideo.vue'
@@ -60,6 +60,8 @@ const props = defineProps<{
   allGalleryItems: ResultItemImpl[]
   activeIndex: number
 }>()
+
+const hasMultiple = computed(() => props.allGalleryItems.length > 1)
 
 let maskMouseDownTarget: EventTarget | null = null
 

@@ -1,36 +1,39 @@
-<!-- Prompt user that the workflow contains API nodes that needs login to run -->
 <template>
-  <div class="flex flex-col gap-4 max-w-96 h-110 p-2">
-    <div class="text-2xl font-medium mb-2">
+  <div class="flex h-110 max-w-96 flex-col gap-4 p-2">
+    <div class="mb-2 text-2xl font-medium">
       {{ t('apiNodesSignInDialog.title') }}
     </div>
 
-    <div class="text-base mb-4">
+    <div class="mb-4 text-base">
       {{ t('apiNodesSignInDialog.message') }}
     </div>
 
     <ApiNodesList :node-names="apiNodeNames" />
 
-    <div class="flex justify-between items-center">
-      <Button :label="t('g.learnMore')" link @click="handleLearnMoreClick" />
+    <div class="flex items-center justify-between">
+      <Button variant="textonly" @click="handleLearnMoreClick">
+        {{ t('g.learnMore') }}
+      </Button>
       <div class="flex gap-2">
-        <Button
-          :label="t('g.cancel')"
-          outlined
-          severity="secondary"
-          @click="onCancel?.()"
-        />
-        <Button :label="t('g.login')" @click="onLogin?.()" />
+        <Button variant="secondary" @click="onCancel?.()">
+          {{ t('g.cancel') }}
+        </Button>
+        <Button @click="onLogin?.()">
+          {{ t('g.login') }}
+        </Button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import { useExternalLink } from '@/composables/useExternalLink'
+
 const { t } = useI18n()
+const { buildDocsUrl } = useExternalLink()
 
 const { apiNodeNames, onLogin, onCancel } = defineProps<{
   apiNodeNames: string[]
@@ -39,6 +42,9 @@ const { apiNodeNames, onLogin, onCancel } = defineProps<{
 }>()
 
 const handleLearnMoreClick = () => {
-  window.open('https://docs.comfy.org/tutorials/api-nodes/faq', '_blank')
+  window.open(
+    buildDocsUrl('/tutorials/api-nodes/faq', { includeLocale: true }),
+    '_blank'
+  )
 }
 </script>

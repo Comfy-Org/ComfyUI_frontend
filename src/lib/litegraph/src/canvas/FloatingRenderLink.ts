@@ -8,11 +8,11 @@ import {
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
+  INodeInputSlot,
   INodeOutputSlot,
-  LinkNetwork
+  LinkNetwork,
+  Point
 } from '@/lib/litegraph/src/interfaces'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
@@ -133,6 +133,10 @@ export class FloatingRenderLink implements RenderLink {
       if (reroute.origin_id === this.outputNode?.id) return false
     }
     return true
+  }
+
+  canConnectToSubgraphInput(input: SubgraphInput): boolean {
+    return this.toType === 'output' && input.isValidTarget(this.fromSlot)
   }
 
   connectToInput(

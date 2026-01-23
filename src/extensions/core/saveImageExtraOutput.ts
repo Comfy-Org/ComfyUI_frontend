@@ -4,6 +4,7 @@ import { app } from '../../scripts/app'
 
 const saveNodeTypes = new Set([
   'SaveImage',
+  'SaveVideo',
   'SaveAnimatedWEBP',
   'SaveWEBM',
   'SaveAudio',

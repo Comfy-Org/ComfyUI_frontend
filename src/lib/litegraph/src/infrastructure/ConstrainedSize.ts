@@ -1,10 +1,6 @@
-import { clamp } from 'lodash'
+import { clamp } from 'es-toolkit/compat'
 
-import type {
-  ReadOnlyRect,
-  ReadOnlySize,
-  Size
-} from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect, Size } from '@/lib/litegraph/src/interfaces'
 
 /**
  * Basic width and height, with min/max constraints.
@@ -55,7 +51,7 @@ export class ConstrainedSize {
     this.desiredHeight = height
   }
 
-  static fromSize(size: ReadOnlySize): ConstrainedSize {
+  static fromSize(size: Readonly<Size>): ConstrainedSize {
     return new ConstrainedSize(size[0], size[1])
   }
 
@@ -63,7 +59,7 @@ export class ConstrainedSize {
     return new ConstrainedSize(rect[2], rect[3])
   }
 
-  setSize(size: ReadOnlySize): void {
+  setSize(size: Readonly<Size>): void {
     this.desiredWidth = size[0]
     this.desiredHeight = size[1]
   }

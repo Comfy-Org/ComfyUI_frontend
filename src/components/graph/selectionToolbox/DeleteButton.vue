@@ -2,29 +2,30 @@
   <Button
     v-show="isDeletable"
     v-tooltip.top="{
-      value: t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
+      value: $t('commands.Comfy_Canvas_DeleteSelectedItems.label'),
       showDelay: 1000
     }"
-    severity="danger"
-    text
-    icon="pi pi-trash"
+    variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Canvas_DeleteSelectedItems.label')"
+    data-testid="delete-button"
     @click="() => commandStore.execute('Comfy.Canvas.DeleteSelectedItems')"
-  />
+  >
+    <i class="icon-[lucide--trash-2]" />
+  </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 
-const { t } = useI18n()
 const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
+const { selectedItems } = useSelectionState()
 
 const isDeletable = computed(() =>
-  canvasStore.selectedItems.some((x) => x.removable !== false)
+  selectedItems.value.some((x: Positionable) => x.removable !== false)
 )
 </script>

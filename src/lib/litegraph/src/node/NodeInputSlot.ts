@@ -5,10 +5,11 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   OptionalProps,
-  ReadOnlyPoint
+  Point
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { type IDrawOptions, NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
+import type { IDrawOptions } from '@/lib/litegraph/src/node/NodeSlot'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -16,6 +17,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   link: LinkId | null
+  alwaysVisible?: boolean
 
   get isWidgetInputSlot(): boolean {
     return !!this.widget
@@ -32,7 +34,7 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     this.#widget = widget ? new WeakRef(widget) : undefined
   }
 
-  get collapsedPos(): ReadOnlyPoint {
+  get collapsedPos(): Readonly<Point> {
     return [0, LiteGraph.NODE_TITLE_HEIGHT * -0.5]
   }
 

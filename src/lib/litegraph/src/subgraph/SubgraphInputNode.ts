@@ -188,7 +188,7 @@ export class SubgraphInputNode
 
     const subgraphInput = this.slots.at(subgraphInputIndex)
     if (!subgraphInput) {
-      console.debug(
+      console.warn(
         'disconnectNodeInput: subgraphInput not found',
         this,
         subgraphInputIndex
@@ -201,19 +201,21 @@ export class SubgraphInputNode
     if (index !== -1) {
       subgraphInput.linkIds.splice(index, 1)
     } else {
-      console.debug(
+      console.warn(
         'disconnectNodeInput: link ID not found in subgraphInput linkIds',
         link.id
       )
     }
-
-    node.onConnectionsChange?.(
-      NodeSlotType.OUTPUT,
-      index,
-      false,
-      link,
-      subgraphInput
-    )
+    const slotIndex = node.inputs.findIndex((inp) => inp === input)
+    if (slotIndex !== -1) {
+      node.onConnectionsChange?.(
+        NodeSlotType.INPUT,
+        slotIndex,
+        false,
+        link,
+        subgraphInput
+      )
+    }
   }
 
   override drawProtected(

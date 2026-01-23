@@ -1,5 +1,5 @@
+import type { FormItem } from '@/platform/settings/types'
 import {
-  AutoLaunch,
   CrossAttentionMethod,
   CudaMalloc,
   FloatingPointPrecision,
@@ -8,7 +8,6 @@ import {
   LogLevel,
   VramManagement
 } from '@/types/serverArgs'
-import { FormItem } from '@/types/settingTypes'
 
 export type ServerConfigValue = string | number | true | null | undefined
 
@@ -19,32 +18,6 @@ export interface ServerConfig<T> extends FormItem {
   // Override the default value getter with a custom function.
   getValue?: (value: T) => Record<string, ServerConfigValue>
 }
-
-export const WEB_ONLY_CONFIG_ITEMS: ServerConfig<any>[] = [
-  // Launch behavior
-  {
-    id: 'auto-launch',
-    name: 'Automatically opens in the browser on startup',
-    category: ['Launch'],
-    type: 'combo',
-    options: Object.values(AutoLaunch),
-    defaultValue: AutoLaunch.Auto,
-    getValue: (value: AutoLaunch) => {
-      switch (value) {
-        case AutoLaunch.Auto:
-          return {}
-        case AutoLaunch.Enable:
-          return {
-            ['auto-launch']: true
-          }
-        case AutoLaunch.Disable:
-          return {
-            ['disable-auto-launch']: true
-          }
-      }
-    }
-  }
-]
 
 export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   // Network settings
@@ -371,7 +344,7 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
     type: 'number',
     defaultValue: null,
     tooltip:
-      'Set the amount of vram in GB you want to reserve for use by your OS/other software. By default some amount is reverved depending on your OS.'
+      'Set the amount of vram in GB you want to reserve for use by your OS/other software. By default some amount is reserved depending on your OS.'
   },
 
   // Misc settings
@@ -413,6 +386,13 @@ export const SERVER_CONFIG_ITEMS: ServerConfig<any>[] = [
   {
     id: 'disable-metadata',
     name: 'Disable saving prompt metadata in files.',
+    type: 'boolean',
+    defaultValue: false
+  },
+  {
+    id: 'enable-manager-legacy-ui',
+    name: 'Use legacy Manager UI',
+    tooltip: 'Uses the legacy ComfyUI-Manager UI instead of the new UI.',
     type: 'boolean',
     defaultValue: false
   },

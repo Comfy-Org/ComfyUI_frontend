@@ -24,7 +24,7 @@ Add your language code to the `outputLocales` array:
 ```javascript
 module.exports = defineConfig({
   // ... existing config
-  outputLocales: ['zh', 'zh-TW', 'ru', 'ja', 'ko', 'fr', 'es'], // Add your language here
+  outputLocales: ['zh', 'zh-TW', 'ru', 'ja', 'ko', 'fr', 'es', 'tr'], // Add your language here
   reference: `Special names to keep untranslated: flux, photomaker, clip, vae, cfg, stable audio, stable cascade, stable zero, controlnet, lora, HiDream.
   'latent' is the short form of 'latent space'.
   'mask' is in the context of image processing.
@@ -79,19 +79,20 @@ const messages = {
 #### Option A: Local Generation (Optional)
 ```bash
 # Only if you have OpenAI API key configured
-npm run locale
+pnpm locale
 ```
 
 #### Option B: Let CI Handle It (Recommended)
 - Create your PR with the configuration changes above
-- Our GitHub CI will automatically generate translation files
-- Empty JSON files are fine - they'll be populated by the workflow
+- **Important**: Translation files will be generated during release PRs, not feature PRs
+- Empty JSON files are fine - they'll be populated during the next release workflow
+- For urgent translation needs, maintainers can manually trigger the workflow
 
 ### Step 3: Test Your Changes
 
 ```bash
-npm run typecheck  # Check for TypeScript errors
-npm run dev        # Start development server
+pnpm typecheck  # Check for TypeScript errors
+pnpm dev        # Start development server
 ```
 
 **Testing checklist:**
@@ -110,11 +111,23 @@ npm run dev        # Start development server
 
 ## What Happens in CI
 
-Our automated translation workflow:
+Our automated translation workflow now runs on release PRs (version-bump-* branches) to improve development performance:
+
+### For Feature PRs (Regular Development)
+- **No automatic translations** - faster reviews and fewer conflicts
+- **English-only development** - new strings show in English until release
+- **Focus on functionality** - reviewers see only your actual changes
+
+### For Release PRs (version-bump-* branches)
 1. **Collects strings**: Scans the UI for translatable text
-2. **Updates English files**: Ensures all strings are captured
+2. **Updates English files**: Ensures all strings are captured  
 3. **Generates translations**: Uses OpenAI API to translate to all configured languages
-4. **Commits back**: Automatically updates your PR with complete translations
+4. **Commits back**: Automatically updates the release PR with complete translations
+
+### Manual Translation Updates
+If urgent translation updates are needed outside of releases, maintainers can:
+- Trigger the "Update Locales" workflow manually from GitHub Actions
+- The workflow supports manual dispatch for emergency translation updates
 
 ## File Structure
 

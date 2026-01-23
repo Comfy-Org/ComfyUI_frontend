@@ -1,11 +1,13 @@
 // We should consider moving to https://primevue.org/dynamicdialog/ once everything is in Vue.
 // Currently we need to bridge between legacy app code and Vue app with a Pinia store.
-import { merge } from 'lodash'
+import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import type { DialogPassThroughOptions } from 'primevue/dialog'
-import { type Component, markRaw, ref } from 'vue'
+import { markRaw, ref } from 'vue'
+import type { Component } from 'vue'
 
 import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 type DialogPosition =
   | 'center'
@@ -28,30 +30,44 @@ interface CustomDialogComponentProps {
   pt?: DialogPassThroughOptions
   closeOnEscape?: boolean
   dismissableMask?: boolean
+  unstyled?: boolean
+  headless?: boolean
 }
 
-type DialogComponentProps = InstanceType<typeof GlobalDialog>['$props'] &
+export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
   CustomDialogComponentProps
 
-interface DialogInstance {
+interface DialogInstance<
+  H extends Component = Component,
+  B extends Component = Component,
+  F extends Component = Component
+> {
   key: string
   visible: boolean
   title?: string
-  headerComponent?: Component
-  component: Component
-  contentProps: Record<string, any>
-  footerComponent?: Component
+  headerComponent?: H
+  headerProps?: ComponentAttrs<H>
+  component: B
+  contentProps: ComponentAttrs<B>
+  footerComponent?: F
+  footerProps?: ComponentAttrs<F>
   dialogComponentProps: DialogComponentProps
   priority: number
 }
 
-export interface ShowDialogOptions {
+export interface ShowDialogOptions<
+  H extends Component = Component,
+  B extends Component = Component,
+  F extends Component = Component
+> {
   key?: string
   title?: string
-  headerComponent?: Component
-  footerComponent?: Component
-  component: Component
-  props?: Record<string, any>
+  headerComponent?: H
+  footerComponent?: F
+  component: B
+  props?: ComponentAttrs<B>
+  headerProps?: ComponentAttrs<H>
+  footerProps?: ComponentAttrs<F>
   dialogComponentProps?: DialogComponentProps
   /**
    * Optional priority for dialog stacking.
@@ -118,16 +134,11 @@ export const useDialogStore = defineStore('dialog', () => {
     updateCloseOnEscapeStates()
   }
 
-  function createDialog(options: {
-    key: string
-    title?: string
-    headerComponent?: Component
-    footerComponent?: Component
-    component: Component
-    props?: Record<string, any>
-    dialogComponentProps?: DialogComponentProps
-    priority?: number
-  }) {
+  function createDialog<
+    H extends Component = Component,
+    B extends Component = Component,
+    F extends Component = Component
+  >(options: ShowDialogOptions<H, B, F> & { key: string }) {
     if (dialogStack.value.length >= 10) {
       dialogStack.value.shift()
     }
@@ -143,7 +154,9 @@ export const useDialogStore = defineStore('dialog', () => {
         ? markRaw(options.footerComponent)
         : undefined,
       component: markRaw(options.component),
+      headerProps: { ...options.headerProps },
       contentProps: { ...options.props },
+      footerProps: { ...options.footerProps },
       priority: options.priority ?? 1,
       dialogComponentProps: {
         maximizable: false,
@@ -196,7 +209,11 @@ export const useDialogStore = defineStore('dialog', () => {
     })
   }
 
-  function showDialog(options: ShowDialogOptions) {
+  function showDialog<
+    H extends Component = Component,
+    B extends Component = Component,
+    F extends Component = Component
+  >(options: ShowDialogOptions<H, B, F>) {
     const dialogKey = options.key || genDialogKey()
 
     let dialog = dialogStack.value.find((d) => d.key === dialogKey)

@@ -1,19 +1,20 @@
-import { Ref } from 'vue'
+import type { Ref } from 'vue'
 
+import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { usePragmaticDroppable } from '@/composables/usePragmaticDragAndDrop'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
-import { useWorkflowService } from '@/services/workflowService'
 import { ComfyModelDef } from '@/stores/modelStore'
-import { ModelNodeProvider } from '@/stores/modelToNodeStore'
+import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
-import { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
-export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
+export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
   const modelToNodeStore = useModelToNodeStore()
   const litegraphService = useLitegraphService()
   const workflowService = useWorkflowService()
@@ -27,17 +28,20 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
 
       if (dndData.type === 'tree-explorer-node') {
         const node = dndData.data as RenderedTreeExplorerNode
+        const conv = useSharedCanvasPositionConversion()
+        const basePos = conv.clientPosToCanvasPos([loc.clientX, loc.clientY])
+
         if (node.data instanceof ComfyNodeDefImpl) {
           const nodeDef = node.data
-          const pos = comfyApp.clientPosToCanvasPos([loc.clientX, loc.clientY])
+          const pos = [...basePos]
           // Add an offset on y to make sure after adding the node, the cursor
           // is on the node (top left corner)
           pos[1] += LiteGraph.NODE_TITLE_HEIGHT
           litegraphService.addNodeOnGraph(nodeDef, { pos })
         } else if (node.data instanceof ComfyModelDef) {
           const model = node.data
-          const pos = comfyApp.clientPosToCanvasPos([loc.clientX, loc.clientY])
-          const nodeAtPos = comfyApp.graph.getNodeOnPos(pos[0], pos[1])
+          const pos = basePos
+          const nodeAtPos = comfyApp.canvas.graph?.getNodeOnPos(pos[0], pos[1])
           let targetProvider: ModelNodeProvider | null = null
           let targetGraphNode: LGraphNode | null = null
           if (nodeAtPos) {
@@ -73,11 +77,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement>) => {
           }
         } else if (node.data instanceof ComfyWorkflow) {
           const workflow = node.data
-          const position = comfyApp.clientPosToCanvasPos([
-            loc.clientX,
-            loc.clientY
-          ])
-          await workflowService.insertWorkflow(workflow, { position })
+          await workflowService.insertWorkflow(workflow, { position: basePos })
         }
       }
     }

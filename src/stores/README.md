@@ -100,57 +100,63 @@ The following diagram illustrates the store architecture and data flow:
 
 ## Core Stores
 
-The following table lists ALL stores in the system as of 2025-01-30:
+The following table lists ALL 46 store instances in the system as of 2025-09-01:
 
 ### Main Stores
 
-| Store | Description | Category |
-|-------|-------------|----------|
-| aboutPanelStore.ts | Manages the About panel state and badges | UI |
-| apiKeyAuthStore.ts | Handles API key authentication | Auth |
-| comfyManagerStore.ts | Manages ComfyUI application state | Core |
-| comfyRegistryStore.ts | Handles extensions registry | Registry |
-| commandStore.ts | Manages commands and command execution | Core |
-| dialogStore.ts | Controls dialog/modal display and state | UI |
-| domWidgetStore.ts | Manages DOM widget state | Widgets |
-| electronDownloadStore.ts | Handles Electron-specific download operations | Platform |
-| executionStore.ts | Tracks workflow execution state | Execution |
-| extensionStore.ts | Manages extension registration and state | Extensions |
-| firebaseAuthStore.ts | Handles Firebase authentication | Auth |
-| graphStore.ts | Manages the graph canvas state | Core |
-| imagePreviewStore.ts | Controls image preview functionality | Media |
-| keybindingStore.ts | Manages keyboard shortcuts | Input |
-| maintenanceTaskStore.ts | Handles system maintenance tasks | System |
-| menuItemStore.ts | Handles menu items and their state | UI |
-| modelStore.ts | Manages AI models information | Models |
-| modelToNodeStore.ts | Maps models to compatible nodes | Models |
-| nodeBookmarkStore.ts | Manages node bookmarks and favorites | Nodes |
-| nodeDefStore.ts | Manages node definitions | Nodes |
-| queueStore.ts | Handles the execution queue | Execution |
-| releaseStore.ts | Manages application release information | System |
-| serverConfigStore.ts | Handles server configuration | Config |
-| settingStore.ts | Manages application settings | Config |
-| subgraphNavigationStore.ts | Handles subgraph navigation state | Navigation |
-| systemStatsStore.ts | Tracks system performance statistics | System |
-| toastStore.ts | Manages toast notifications | UI |
-| userFileStore.ts | Manages user file operations | Files |
-| userStore.ts | Manages user data and preferences | User |
-| versionCompatibilityStore.ts | Manages frontend/backend version compatibility warnings | Core |
-| widgetStore.ts | Manages widget configurations | Widgets |
-| workflowStore.ts | Handles workflow data and operations | Workflows |
-| workflowTemplatesStore.ts | Manages workflow templates | Workflows |
-| workspaceStore.ts | Manages overall workspace state | Workspace |
+| File | Store | Description | Category |
+|------|-------|-------------|----------|
+| aboutPanelStore.ts | useAboutPanelStore | Manages the About panel state and badges | UI |
+| apiKeyAuthStore.ts | useApiKeyAuthStore | Handles API key authentication | Auth |
+| comfyManagerStore.ts | useComfyManagerStore | Manages ComfyUI application state | Core |
+| comfyRegistryStore.ts | useComfyRegistryStore | Handles extensions registry | Registry |
+| commandStore.ts | useCommandStore | Manages commands and command execution | Core |
+| dialogStore.ts | useDialogStore | Controls dialog/modal display and state | UI |
+| domWidgetStore.ts | useDomWidgetStore | Manages DOM widget state | Widgets |
+| electronDownloadStore.ts | useElectronDownloadStore | Handles Electron-specific download operations | Platform |
+| executionStore.ts | useExecutionStore | Tracks workflow execution state | Execution |
+| extensionStore.ts | useExtensionStore | Manages extension registration and state | Extensions |
+| firebaseAuthStore.ts | useFirebaseAuthStore | Handles Firebase authentication | Auth |
+| graphStore.ts | useTitleEditorStore | Manages title editing for nodes and groups | UI |
+| graphStore.ts | useCanvasStore | Manages the graph canvas state and interactions | Core |
+| helpCenterStore.ts | useHelpCenterStore | Manages help center visibility and state | UI |
+| imagePreviewStore.ts | useNodeOutputStore | Manages node outputs and execution results | Media |
+| keybindingStore.ts | useKeybindingStore | Manages keyboard shortcuts | Input |
+| maintenanceTaskStore.ts | useMaintenanceTaskStore | Handles system maintenance tasks | System |
+| menuItemStore.ts | useMenuItemStore | Handles menu items and their state | UI |
+| modelStore.ts | useModelStore | Manages AI models information | Models |
+| modelToNodeStore.ts | useModelToNodeStore | Maps models to compatible nodes | Models |
+| nodeBookmarkStore.ts | useNodeBookmarkStore | Manages node bookmarks and favorites | Nodes |
+| nodeDefStore.ts | useNodeDefStore | Manages node definitions and schemas | Nodes |
+| nodeDefStore.ts | useNodeFrequencyStore | Tracks node usage frequency | Nodes |
+| queueStore.ts | useQueueStore | Manages execution queue and task history | Execution |
+| queueStore.ts | useQueuePendingTaskCountStore | Tracks pending task counts | Execution |
+| queueStore.ts | useQueueSettingsStore | Manages queue execution settings | Execution |
+| releaseStore.ts | useReleaseStore | Manages application release information | System |
+| serverConfigStore.ts | useServerConfigStore | Handles server configuration | Config |
+| settingStore.ts | useSettingStore | Manages application settings | Config |
+| subgraphNavigationStore.ts | useSubgraphNavigationStore | Handles subgraph navigation state | Navigation |
+| systemStatsStore.ts | useSystemStatsStore | Tracks system performance statistics | System |
+| toastStore.ts | useToastStore | Manages toast notifications | UI |
+| userFileStore.ts | useUserFileStore | Manages user file operations | Files |
+| userStore.ts | useUserStore | Manages user data and preferences | User |
+| versionCompatibilityStore.ts | useVersionCompatibilityStore | Manages frontend/backend version compatibility warnings | Core |
+| widgetStore.ts | useWidgetStore | Manages widget configurations | Widgets |
+| workflowStore.ts | useWorkflowStore | Handles workflow data and operations | Workflows |
+| workflowStore.ts | useWorkflowBookmarkStore | Manages workflow bookmarks and favorites | Workflows |
+| workflowTemplatesStore.ts | useWorkflowTemplatesStore | Manages workflow templates | Workflows |
+| workspaceStore.ts | useWorkspaceStore | Manages overall workspace state | Workspace |
 
 ### Workspace Stores
 Located in `stores/workspace/`:
 
-| Store | Description |
-|-------|-------------|
-| bottomPanelStore.ts | Controls bottom panel visibility and state |
-| colorPaletteStore.ts | Manages color palette configurations |
-| nodeHelpStore.ts | Handles node help and documentation display |
-| searchBoxStore.ts | Manages search box functionality |
-| sidebarTabStore.ts | Controls sidebar tab states and navigation |
+| File | Store | Description | Category |
+|------|-------|-------------|----------|
+| bottomPanelStore.ts | useBottomPanelStore | Controls bottom panel visibility and state | UI |
+| colorPaletteStore.ts | useColorPaletteStore | Manages color palette configurations | UI |
+| nodeHelpStore.ts | useNodeHelpStore | Handles node help and documentation display | UI |
+| searchBoxStore.ts | useSearchBoxStore | Manages search box functionality | UI |
+| sidebarTabStore.ts | useSidebarTabStore | Controls sidebar tab states and navigation | UI |
 
 ## Store Development Guidelines
 
@@ -189,7 +195,7 @@ export const useExampleStore = defineStore('example', () => {
   async function fetchItems() {
     isLoading.value = true
     error.value = null
-    
+
     try {
       const response = await fetch('/api/items')
       const data = await response.json()
@@ -207,11 +213,11 @@ export const useExampleStore = defineStore('example', () => {
     items,
     isLoading,
     error,
-    
+
     // Getters
     itemCount,
     hasError,
-    
+
     // Actions
     addItem,
     fetchItems
@@ -238,7 +244,7 @@ export const useDataStore = defineStore('data', () => {
   async function fetchData() {
     loading.value = true
     try {
-      const result = await api.getData()
+      const result = await api.getExtensions()
       data.value = result
     } catch (err) {
       error.value = err.message
@@ -266,21 +272,21 @@ import { useOtherStore } from './otherStore'
 export const useComposedStore = defineStore('composed', () => {
   const otherStore = useOtherStore()
   const { someData } = storeToRefs(otherStore)
-  
+
   // Local state
   const localState = ref(0)
-  
+
   // Computed value based on other store
   const derivedValue = computed(() => {
     return computeFromOtherData(someData.value, localState.value)
   })
-  
+
   // Action that uses another store
   async function complexAction() {
     await otherStore.someAction()
     localState.value += 1
   }
-  
+
   return {
     localState,
     derivedValue,
@@ -299,20 +305,20 @@ export const usePreferencesStore = defineStore('preferences', () => {
   // Load from localStorage if available
   const theme = ref(localStorage.getItem('theme') || 'light')
   const fontSize = ref(parseInt(localStorage.getItem('fontSize') || '14'))
-  
+
   // Save to localStorage when changed
   watch(theme, (newTheme) => {
     localStorage.setItem('theme', newTheme)
   })
-  
+
   watch(fontSize, (newSize) => {
     localStorage.setItem('fontSize', newSize.toString())
   })
-  
+
   function setTheme(newTheme) {
     theme.value = newTheme
   }
-  
+
   return {
     theme,
     fontSize,
@@ -347,7 +353,7 @@ describe('useExampleStore', () => {
     // Create a fresh pinia instance and make it active
     setActivePinia(createPinia())
     store = useExampleStore()
-    
+
     // Clear all mocks
     vi.clearAllMocks()
   })
@@ -363,14 +369,14 @@ describe('useExampleStore', () => {
     expect(store.items).toEqual(['test'])
     expect(store.itemCount).toBe(1)
   })
-  
+
   it('should fetch items', async () => {
     // Setup mock response
     vi.mocked(api.getData).mockResolvedValue(['item1', 'item2'])
-    
+
     // Call the action
     await store.fetchItems()
-    
+
     // Verify state changes
     expect(store.isLoading).toBe(false)
     expect(store.items).toEqual(['item1', 'item2'])

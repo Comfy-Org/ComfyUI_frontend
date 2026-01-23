@@ -1,30 +1,34 @@
 <template>
   <div class="flex flex-col">
     <Button
-      class="p-button-rounded p-button-text"
-      :class="{ 'p-button-outlined': showGrid }"
+      v-tooltip.right="{ value: $t('load3d.showGrid'), showDelay: 300 }"
+      variant="textonly"
+      size="icon"
+      :class="cn('rounded-full', showGrid && 'ring-2 ring-white/50')"
+      :aria-label="$t('load3d.showGrid')"
       @click="toggleGrid"
     >
-      <i
-        v-tooltip.right="{ value: t('load3d.showGrid'), showDelay: 300 }"
-        class="pi pi-table text-white text-lg"
-      />
+      <i class="pi pi-table text-lg text-base-foreground" />
     </Button>
 
     <div v-if="!hasBackgroundImage">
-      <Button class="p-button-rounded p-button-text" @click="openColorPicker">
-        <i
-          v-tooltip.right="{
-            value: t('load3d.backgroundColor'),
-            showDelay: 300
-          }"
-          class="pi pi-palette text-white text-lg"
-        />
+      <Button
+        v-tooltip.right="{
+          value: $t('load3d.backgroundColor'),
+          showDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        :aria-label="$t('load3d.backgroundColor')"
+        @click="openColorPicker"
+      >
+        <i class="pi pi-palette text-lg text-base-foreground" />
         <input
           ref="colorPickerRef"
           type="color"
           :value="backgroundColor"
-          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+          class="pointer-events-none absolute m-0 h-0 w-0 p-0 opacity-0"
           @input="
             updateBackgroundColor(($event.target as HTMLInputElement).value)
           "
@@ -33,19 +37,23 @@
     </div>
 
     <div v-if="!hasBackgroundImage">
-      <Button class="p-button-rounded p-button-text" @click="openImagePicker">
-        <i
-          v-tooltip.right="{
-            value: t('load3d.uploadBackgroundImage'),
-            showDelay: 300
-          }"
-          class="pi pi-image text-white text-lg"
-        />
+      <Button
+        v-tooltip.right="{
+          value: $t('load3d.uploadBackgroundImage'),
+          showDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        :aria-label="$t('load3d.uploadBackgroundImage')"
+        @click="openImagePicker"
+      >
+        <i class="pi pi-image text-lg text-base-foreground" />
         <input
           ref="imagePickerRef"
           type="file"
           accept="image/*"
-          class="absolute opacity-0 w-0 h-0 p-0 m-0 pointer-events-none"
+          class="pointer-events-none absolute m-0 h-0 w-0 p-0 opacity-0"
           @change="uploadBackgroundImage"
         />
       </Button>
@@ -53,76 +61,82 @@
 
     <div v-if="hasBackgroundImage">
       <Button
-        class="p-button-rounded p-button-text"
+        v-tooltip.right="{
+          value: $t('load3d.panoramaMode'),
+          showDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        :class="
+          cn(
+            'rounded-full',
+            backgroundRenderMode === 'panorama' && 'ring-2 ring-white/50'
+          )
+        "
+        :aria-label="$t('load3d.panoramaMode')"
+        @click="toggleBackgroundRenderMode"
+      >
+        <i class="pi pi-globe text-lg text-base-foreground" />
+      </Button>
+    </div>
+
+    <PopupSlider
+      v-if="hasBackgroundImage && backgroundRenderMode === 'panorama'"
+      v-model="fov"
+      :tooltip-text="$t('load3d.fov')"
+    />
+
+    <div v-if="hasBackgroundImage">
+      <Button
+        v-tooltip.right="{
+          value: $t('load3d.removeBackgroundImage'),
+          showDelay: 300
+        }"
+        variant="textonly"
+        size="icon"
+        class="rounded-full"
+        :aria-label="$t('load3d.removeBackgroundImage')"
         @click="removeBackgroundImage"
       >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.removeBackgroundImage'),
-            showDelay: 300
-          }"
-          class="pi pi-times text-white text-lg"
-        />
+        <i class="pi pi-times text-lg text-base-foreground" />
       </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
-import Button from 'primevue/button'
-import { ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
-import { t } from '@/i18n'
-
-const vTooltip = Tooltip
-
-const props = defineProps<{
-  backgroundColor: string
-  showGrid: boolean
-  hasBackgroundImage?: boolean
-}>()
+import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
+import Button from '@/components/ui/button/Button.vue'
+import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
+import { cn } from '@/utils/tailwindUtil'
 
 const emit = defineEmits<{
-  (e: 'toggleGrid', value: boolean): void
-  (e: 'updateBackgroundColor', color: string): void
   (e: 'updateBackgroundImage', file: File | null): void
 }>()
 
-const backgroundColor = ref(props.backgroundColor)
-const showGrid = ref(props.showGrid)
-const hasBackgroundImage = ref(props.hasBackgroundImage)
+const showGrid = defineModel<boolean>('showGrid')
+const backgroundColor = defineModel<string>('backgroundColor')
+const backgroundImage = defineModel<string>('backgroundImage')
+const backgroundRenderMode = defineModel<BackgroundRenderModeType>(
+  'backgroundRenderMode',
+  { default: 'tiled' }
+)
+const fov = defineModel<number>('fov')
+const hasBackgroundImage = computed(
+  () => backgroundImage.value && backgroundImage.value !== ''
+)
+
 const colorPickerRef = ref<HTMLInputElement | null>(null)
 const imagePickerRef = ref<HTMLInputElement | null>(null)
 
-watch(
-  () => props.backgroundColor,
-  (newValue) => {
-    backgroundColor.value = newValue
-  }
-)
-
-watch(
-  () => props.showGrid,
-  (newValue) => {
-    showGrid.value = newValue
-  }
-)
-
-watch(
-  () => props.hasBackgroundImage,
-  (newValue) => {
-    hasBackgroundImage.value = newValue
-  }
-)
-
 const toggleGrid = () => {
   showGrid.value = !showGrid.value
-  emit('toggleGrid', showGrid.value)
 }
 
 const updateBackgroundColor = (color: string) => {
-  emit('updateBackgroundColor', color)
+  backgroundColor.value = color
 }
 
 const openColorPicker = () => {
@@ -143,5 +157,10 @@ const uploadBackgroundImage = (event: Event) => {
 
 const removeBackgroundImage = () => {
   emit('updateBackgroundImage', null)
+}
+
+const toggleBackgroundRenderMode = () => {
+  backgroundRenderMode.value =
+    backgroundRenderMode.value === 'panorama' ? 'tiled' : 'panorama'
 }
 </script>

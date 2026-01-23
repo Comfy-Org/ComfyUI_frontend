@@ -1,24 +1,30 @@
 <template>
   <SidebarTabTemplate
     :title="$t('sideToolbar.workflows')"
-    class="workflows-sidebar-tab bg-[var(--p-tree-background)]"
+    v-bind="$attrs"
+    class="workflows-sidebar-tab"
   >
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
-        icon="pi pi-refresh"
-        severity="secondary"
-        text
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.refresh')"
         @click="workflowStore.syncWorkflows()"
-      />
+      >
+        <i class="icon-[lucide--refresh-cw] size-4" />
+      </Button>
     </template>
     <template #header>
-      <SearchBox
-        v-model:modelValue="searchQuery"
-        class="workflows-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.searchWorkflows') + '...'"
-        @search="handleSearch"
-      />
+      <div class="px-2 2xl:px-4">
+        <SearchBox
+          ref="searchBoxRef"
+          v-model:model-value="searchQuery"
+          class="workflows-search-box"
+          :placeholder="$t('g.searchWorkflows') + '...'"
+          @search="handleSearch"
+        />
+      </div>
     </template>
     <template #body>
       <div v-if="!isSearching" class="comfyui-workflows-panel">
@@ -32,7 +38,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-model:expandedKeys="dummyExpandedKeys"
+            v-model:expanded-keys="dummyExpandedKeys"
             :root="renderTreeNode(openWorkflowsTree, WorkflowTreeType.Open)"
             :selection-keys="selectionKeys"
           >
@@ -49,16 +55,17 @@
                 <template #actions="{ node: treeNode }">
                   <Button
                     class="close-workflow-button"
-                    icon="pi pi-times"
-                    text
-                    :severity="
-                      workspaceStore.shiftDown ? 'danger' : 'secondary'
+                    :variant="
+                      workspaceStore.shiftDown ? 'destructive' : 'textonly'
                     "
-                    size="small"
+                    size="icon-sm"
+                    :aria-label="$t('g.close')"
                     @click.stop="
                       handleCloseWorkflow(treeNode.data as ComfyWorkflow)
                     "
-                  />
+                  >
+                    <i class="icon-[lucide--x] size-3" />
+                  </Button>
                 </template>
               </TreeExplorerTreeNode>
             </template>
@@ -74,7 +81,7 @@
             class="ml-2"
           />
           <TreeExplorer
-            v-model:expandedKeys="dummyExpandedKeys"
+            v-model:expanded-keys="dummyExpandedKeys"
             :root="
               renderTreeNode(
                 bookmarkedWorkflowsTree,
@@ -96,7 +103,7 @@
           />
           <TreeExplorer
             v-if="workflowStore.persistedWorkflows.length > 0"
-            v-model:expandedKeys="expandedKeys"
+            v-model:expanded-keys="expandedKeys"
             :root="renderTreeNode(workflowsTree, WorkflowTreeType.Browse)"
             :selection-keys="selectionKeys"
           >
@@ -114,7 +121,7 @@
       </div>
       <div v-else class="comfyui-workflows-search-panel">
         <TreeExplorer
-          v-model:expandedKeys="expandedKeys"
+          v-model:expanded-keys="expandedKeys"
           :root="renderTreeNode(filteredRoot, WorkflowTreeType.Browse)"
         >
           <template #node="{ node }">
@@ -128,7 +135,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -140,17 +146,17 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
-import { useWorkflowService } from '@/services/workflowService'
-import { useSettingStore } from '@/stores/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
+  ComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
-} from '@/stores/workflowStore'
-import { ComfyWorkflow } from '@/stores/workflowStore'
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import type { TreeNode } from '@/types/treeExplorerTypes'
-import { TreeExplorerNode } from '@/types/treeExplorerTypes'
+import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 
@@ -158,6 +164,8 @@ const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
+
+const searchBoxRef = ref()
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
@@ -265,6 +273,14 @@ const renderTreeNode = (
                 const workflow = node.data
                 await workflowService.insertWorkflow(workflow)
               }
+            },
+            {
+              label: t('g.duplicate'),
+              icon: 'pi pi-file-export',
+              command: async () => {
+                const workflow = node.data
+                await workflowService.duplicateWorkflow(workflow)
+              }
             }
           ]
         },
@@ -288,6 +304,7 @@ const selectionKeys = computed(() => ({
 
 const workflowBookmarkStore = useWorkflowBookmarkStore()
 onMounted(async () => {
+  searchBoxRef.value?.focus()
   await workflowBookmarkStore.loadBookmarks()
 })
 </script>

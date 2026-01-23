@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Combo text widget', () => {
   test('Truncates text when resized', async ({ comfyPage }) => {
     await comfyPage.resizeLoadCheckpointNode(0.2, 1)
@@ -38,7 +42,7 @@ test.describe('Combo text widget', () => {
           .options.values
       })
 
-    await comfyPage.loadWorkflow('optional_combo_input')
+    await comfyPage.loadWorkflow('inputs/optional_combo_input')
     const initialComboValues = await getComboValues()
 
     // Focus canvas
@@ -57,7 +61,7 @@ test.describe('Combo text widget', () => {
   test('Should refresh combo values of nodes with v2 combo input spec', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('node_with_v2_combo_input')
+    await comfyPage.loadWorkflow('inputs/node_with_v2_combo_input')
     // click canvas to focus
     await comfyPage.page.mouse.click(400, 300)
     // press R to trigger refresh
@@ -90,8 +94,7 @@ test.describe('Boolean widget', () => {
 
 test.describe('Slider widget', () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('simple_slider')
-    await comfyPage.page.waitForTimeout(300)
+    await comfyPage.loadWorkflow('inputs/simple_slider')
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
 
@@ -113,7 +116,6 @@ test.describe('Slider widget', () => {
 test.describe('Number widget', () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/seed_widget')
-    await comfyPage.page.waitForTimeout(300)
 
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
@@ -136,8 +138,7 @@ test.describe('Dynamic widget manipulation', () => {
   test('Auto expand node when widget is added dynamically', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('single_ksampler')
-    await comfyPage.page.waitForTimeout(300)
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
 
     await comfyPage.page.evaluate(() => {
       window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
@@ -193,7 +194,10 @@ test.describe('Image widget', () => {
     const comboEntry = comfyPage.page.getByRole('menuitem', {
       name: 'image32x32.webp'
     })
-    await comboEntry.click({ noWaitAfter: true })
+    await comboEntry.click()
+
+    // Stabilization for the image swap
+    await comfyPage.nextFrame()
 
     // Expect the image preview to change automatically
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -203,6 +207,32 @@ test.describe('Image widget', () => {
     // Expect the filename combo value to be updated
     const filename = await fileComboWidget.getValue()
     expect(filename).toBe('image32x32.webp')
+  })
+  test('Displays buttons when viewing single image of batch', async ({
+    comfyPage
+  }) => {
+    const [x, y] = await comfyPage.page.evaluate(() => {
+      const src =
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='768' height='512' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' stroke='black'/%3E%3C/svg%3E"
+      const image1 = new Image()
+      image1.src = src
+      const image2 = new Image()
+      image2.src = src
+      const targetNode = graph.nodes[6]
+      targetNode.imgs = [image1, image2]
+      targetNode.imageIndex = 1
+      app.canvas.setDirty(true)
+
+      const x = targetNode.pos[0] + targetNode.size[0] - 41
+      const y = targetNode.pos[1] + targetNode.widgets.at(-1).last_y + 30
+      return app.canvasPosToClientPos([x, y])
+    })
+
+    const clip = { x, y, width: 35, height: 35 }
+    await expect(comfyPage.page).toHaveScreenshot(
+      'image_preview_close_button.png',
+      { clip }
+    )
   })
 })
 
@@ -230,9 +260,6 @@ test.describe('Animated image widget', () => {
       'animated_image_preview_drag_and_dropped.png'
     )
 
-    // Wait for animation to go to next frame
-    await comfyPage.page.waitForTimeout(512)
-
     // Move mouse and click on canvas to trigger render
     await comfyPage.page.mouse.click(64, 64)
 
@@ -254,7 +281,8 @@ test.describe('Animated image widget', () => {
 
     // Drag and drop image file onto the load animated webp node
     await comfyPage.dragAndDropFile('animated_webp.webp', {
-      dropPosition: { x, y }
+      dropPosition: { x, y },
+      waitForUpload: true
     })
 
     // Expect the filename combo value to be updated
@@ -290,27 +318,22 @@ test.describe('Animated image widget', () => {
       ([loadId, saveId]) => {
         // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
         window['app'].nodeOutputs[saveId] = window['app'].nodeOutputs[loadId]
+        app.canvas.setDirty(true)
       },
       [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
     )
-    await comfyPage.nextFrame()
-
-    // Wait for animation to go to next frame
-    await comfyPage.page.waitForTimeout(512)
-
-    // Move mouse and click on canvas to trigger render
-    await comfyPage.page.mouse.click(64, 64)
-
-    // Expect the SaveAnimatedWEBP node to have an output preview
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'animated_image_preview_saved_webp.png'
-    )
+    await expect(
+      comfyPage.page.locator('.dom-widget').locator('img')
+    ).toHaveCount(2)
   })
 })
 
 test.describe('Load audio widget', () => {
   test('Can load audio', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_audio_widget')
+    // Wait for the audio widget to be rendered in the DOM
+    await comfyPage.page.waitForSelector('.comfy-audio', { state: 'attached' })
+    await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
   })
 })

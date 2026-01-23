@@ -33,11 +33,11 @@
 
 The project follows a structured release process for each minor version, consisting of three distinct phases:
 
-1. **Development Phase** - 1 week
+1. **Development Phase** - 2 weeks
    - Active development of new features
    - Code changes merged to the development branch
 
-2. **Feature Freeze** - 1 week
+2. **Feature Freeze** - 2 weeks
    - No new features accepted
    - Only bug fixes are cherry-picked to the release branch
    - Testing and stabilization of the codebase
@@ -56,16 +56,16 @@ To use the latest nightly release, add the following command line argument to yo
 ```
 
 ## Overlapping Release Cycles
-The development of successive minor versions overlaps. For example, while version 1.1 is in feature freeze, development for version 1.2 begins simultaneously.
+The development of successive minor versions overlaps. For example, while version 1.1 is in feature freeze, development for version 1.2 begins simultaneously. Each feature has approximately 4 weeks from merge to ComfyUI stable release (2 weeks on main, 2 weeks frozen on RC).
 
 ### Example Release Cycle
 
 | Week | Date Range | Version 1.1 | Version 1.2 | Version 1.3 | Patch Releases |
 |------|------------|-------------|-------------|-------------|----------------|
-| 1 | Mar 1-7 | Development | - | - | - |
-| 2 | Mar 8-14 | Feature Freeze | Development | - | 1.1.0 through 1.1.6 (daily) |
-| 3 | Mar 15-21 | Released | Feature Freeze | Development | 1.1.7 through 1.1.13 (daily)<br>1.2.0 through 1.2.6 (daily) |
-| 4 | Mar 22-28 | - | Released | Feature Freeze | 1.2.7 through 1.2.13 (daily)<br>1.3.0 through 1.3.6 (daily) |
+| 1-2 | Mar 1-14 | Development | - | - | - |
+| 3-4 | Mar 15-28 | Feature Freeze | Development | - | 1.1.0 through 1.1.13 (daily) |
+| 5-6 | Mar 29-Apr 11 | Released | Feature Freeze | Development | 1.1.14+ (daily)<br>1.2.0 through 1.2.13 (daily) |
+| 7-8 | Apr 12-25 | - | Released | Feature Freeze | 1.2.14+ (daily)<br>1.3.0 through 1.3.13 (daily) |
 
 ## Release Summary
 
@@ -528,6 +528,10 @@ For detailed development setup, testing procedures, and technical information, p
 ### i18n
 
 See [locales/README.md](src/locales/README.md) for details.
+
+### Storybook
+
+See [.storybook/README.md](.storybook/README.md) for component development and visual testing documentation.
 
 ## Troubleshooting
 

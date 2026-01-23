@@ -2,6 +2,10 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Settings Search functionality', () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Register test settings to verify hidden/deprecated filtering
@@ -146,7 +150,6 @@ test.describe('Settings Search functionality', () => {
 
     // Type in search box
     await searchBox.fill('graph')
-    await comfyPage.page.waitForTimeout(200) // Wait for debounce
 
     // Verify that the search input is handled
     await expect(searchBox).toHaveValue('graph')
@@ -178,9 +181,6 @@ test.describe('Settings Search functionality', () => {
     await searchBox.fill('abc')
     await searchBox.fill('abcd')
 
-    // Wait for debounce
-    await comfyPage.page.waitForTimeout(200)
-
     // Verify final value
     await expect(searchBox).toHaveValue('abcd')
   })
@@ -196,7 +196,6 @@ test.describe('Settings Search functionality', () => {
     // Search for our test settings
     const searchBox = comfyPage.page.locator('.settings-search-box input')
     await searchBox.fill('Test')
-    await comfyPage.page.waitForTimeout(300) // Wait for debounce
 
     // Get all settings content
     const settingsContent = comfyPage.page.locator('.settings-tab-panels')
@@ -217,7 +216,6 @@ test.describe('Settings Search functionality', () => {
     // Search for our test settings
     const searchBox = comfyPage.page.locator('.settings-search-box input')
     await searchBox.fill('Test')
-    await comfyPage.page.waitForTimeout(300) // Wait for debounce
 
     // Get all settings content
     const settingsContent = comfyPage.page.locator('.settings-tab-panels')
@@ -238,7 +236,6 @@ test.describe('Settings Search functionality', () => {
     // Search for our test settings
     const searchBox = comfyPage.page.locator('.settings-search-box input')
     await searchBox.fill('Test')
-    await comfyPage.page.waitForTimeout(300) // Wait for debounce
 
     // Get all settings content
     const settingsContent = comfyPage.page.locator('.settings-tab-panels')
@@ -265,7 +262,6 @@ test.describe('Settings Search functionality', () => {
     // Search specifically for hidden setting by name
     await searchBox.clear()
     await searchBox.fill('Hidden')
-    await comfyPage.page.waitForTimeout(300)
 
     // Should not show the hidden setting even when searching by name
     await expect(settingsContent).not.toContainText('Test Hidden Setting')
@@ -273,7 +269,6 @@ test.describe('Settings Search functionality', () => {
     // Search specifically for deprecated setting by name
     await searchBox.clear()
     await searchBox.fill('Deprecated')
-    await comfyPage.page.waitForTimeout(300)
 
     // Should not show the deprecated setting even when searching by name
     await expect(settingsContent).not.toContainText('Test Deprecated Setting')
@@ -281,7 +276,6 @@ test.describe('Settings Search functionality', () => {
     // Search for visible setting by name - should work
     await searchBox.clear()
     await searchBox.fill('Visible')
-    await comfyPage.page.waitForTimeout(300)
 
     // Should show the visible setting
     await expect(settingsContent).toContainText('Test Visible Setting')

@@ -4,6 +4,10 @@ import type { ComfyApp } from '../../src/scripts/app'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Node Badge', () => {
   test('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
@@ -66,7 +70,7 @@ test.describe('Node source badge', () => {
   Object.values(NodeBadgeMode).forEach(async (mode) => {
     test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
       // Execution error workflow has both custom node and core node.
-      await comfyPage.loadWorkflow('execution_error')
+      await comfyPage.loadWorkflow('nodes/execution_error')
       await comfyPage.setSetting('Comfy.NodeBadge.NodeSourceBadgeMode', mode)
       await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', mode)
       await comfyPage.nextFrame()

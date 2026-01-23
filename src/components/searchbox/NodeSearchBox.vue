@@ -1,24 +1,26 @@
 <template>
   <div
-    class="comfy-vue-node-search-container flex justify-center items-center w-full min-w-96"
+    class="comfy-vue-node-search-container flex w-full min-w-96 items-center justify-center"
   >
     <div
-      v-if="enableNodePreview"
-      class="comfy-vue-node-preview-container absolute left-[-350px] top-[50px]"
+      v-if="enableNodePreview && hoveredSuggestion"
+      class="comfy-vue-node-preview-container absolute top-[50px] left-[-375px] z-50 cursor-pointer"
+      @mousedown.stop="onAddNode(hoveredSuggestion!)"
     >
       <NodePreview
-        v-if="hoveredSuggestion"
         :key="hoveredSuggestion?.name || ''"
         :node-def="hoveredSuggestion"
       />
     </div>
 
     <Button
-      icon="pi pi-filter"
-      severity="secondary"
+      variant="secondary"
+      :aria-label="$t('g.addNodeFilterCondition')"
       class="filter-button z-10"
       @click="nodeSearchFilterVisible = true"
-    />
+    >
+      <i class="pi pi-filter" />
+    </Button>
     <Dialog
       v-model:visible="nodeSearchFilterVisible"
       class="min-w-96"
@@ -35,23 +37,23 @@
     </Dialog>
 
     <AutoCompletePlus
+      ref="autoCompletePlus"
       :model-value="filters"
-      class="comfy-vue-node-search-box z-10 flex-grow"
+      class="comfy-vue-node-search-box z-10 grow"
       scroll-height="40vh"
       :placeholder="placeholder"
       :input-id="inputId"
       append-to="self"
       :suggestions="suggestions"
-      :min-length="0"
       :delay="100"
       :loading="!nodeFrequencyStore.isLoaded"
       complete-on-focus
       auto-option-focus
       force-selection
       multiple
-      :option-label="'display_name'"
+      option-label="display_name"
       @complete="search($event.query)"
-      @option-select="emit('addNode', $event.value)"
+      @option-select="onAddNode($event.value)"
       @focused-option-changed="setHoverSuggestion($event)"
     >
       <template #option="{ option }">
@@ -78,7 +80,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import { debounce } from 'es-toolkit/compat'
 import Dialog from 'primevue/dialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -87,18 +89,18 @@ import NodePreview from '@/components/node/NodePreview.vue'
 import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
-import {
-  ComfyNodeDefImpl,
-  useNodeDefStore,
-  useNodeFrequencyStore
-} from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
+import Button from '@/components/ui/button/Button.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import SearchFilterChip from '../common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()
+const telemetry = useTelemetry()
 
 const enableNodePreview = computed(() =>
   settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview')
@@ -109,6 +111,7 @@ const { filters, searchLimit = 64 } = defineProps<{
   searchLimit?: number
 }>()
 
+const autoCompletePlus = ref()
 const nodeSearchFilterVisible = ref(false)
 const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
@@ -120,6 +123,14 @@ const placeholder = computed(() => {
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
+
+// Debounced search tracking (500ms as per implementation plan)
+const debouncedTrackSearch = debounce((query: string) => {
+  if (query.trim()) {
+    telemetry?.trackNodeSearch({ query })
+  }
+}, 500)
+
 const search = (query: string) => {
   const queryIsEmpty = query === '' && filters.length === 0
   currentQuery.value = query
@@ -130,9 +141,21 @@ const search = (query: string) => {
           limit: searchLimit
         })
       ]
+
+  // Track search queries with debounce
+  debouncedTrackSearch(query)
 }
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
+
+// Track node selection and emit addNode event
+const onAddNode = (nodeDef: ComfyNodeDefImpl) => {
+  telemetry?.trackNodeSearchResultSelected({
+    node_type: nodeDef.name,
+    last_query: currentQuery.value
+  })
+  emit('addNode', nodeDef)
+}
 
 let inputElement: HTMLInputElement | null = null
 const reFocusInput = async () => {
@@ -143,7 +166,13 @@ const reFocusInput = async () => {
   }
 }
 
-onMounted(reFocusInput)
+onMounted(() => {
+  inputElement ??= document.getElementById(inputId) as HTMLInputElement
+  if (inputElement) inputElement.focus()
+  autoCompletePlus.value.hide = () => search('')
+  search('')
+  autoCompletePlus.value.show()
+})
 const onAddFilter = (
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
 ) => {

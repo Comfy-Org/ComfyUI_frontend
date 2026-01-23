@@ -32,12 +32,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
-      key: 'q'
-    },
-    commandId: 'Workspace.ToggleSidebarTab.queue'
-  },
-  {
-    combo: {
       key: 'w'
     },
     commandId: 'Workspace.ToggleSidebarTab.workflows'
@@ -122,14 +116,14 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: '.'
     },
     commandId: 'Comfy.Canvas.FitView',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
       key: 'p'
     },
     commandId: 'Comfy.Canvas.ToggleSelected.Pin',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -137,7 +131,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       alt: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Collapse',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -145,7 +139,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Bypass',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -153,7 +147,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Comfy.Canvas.ToggleSelectedNodes.Mute',
-    targetElementId: 'graph-canvas'
+    targetElementId: 'graph-canvas-container'
   },
   {
     combo: {
@@ -161,12 +155,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Workspace.ToggleBottomPanelTab.logs-terminal'
-  },
-  {
-    combo: {
-      key: 'f'
-    },
-    commandId: 'Workspace.ToggleFocusMode'
   },
   {
     combo: {
@@ -190,6 +178,18 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       key: 'k'
     },
     commandId: 'Workspace.ToggleBottomPanel.Shortcuts'
+  },
+  {
+    combo: {
+      key: 'v'
+    },
+    commandId: 'Comfy.Canvas.Unlock'
+  },
+  {
+    combo: {
+      key: 'h'
+    },
+    commandId: 'Comfy.Canvas.Lock'
   },
   {
     combo: {

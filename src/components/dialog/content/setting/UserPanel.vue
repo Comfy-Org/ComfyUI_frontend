@@ -1,7 +1,7 @@
 <template>
   <TabPanel value="User" class="user-settings-container h-full">
-    <div class="flex flex-col h-full">
-      <h2 class="text-2xl font-bold mb-2">{{ $t('userSettings.title') }}</h2>
+    <div class="flex h-full flex-col">
+      <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
       <Divider class="mb-3" />
 
       <!-- Normal User Panel -->
@@ -35,7 +35,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.provider') }}
           </h3>
-          <div class="text-muted flex items-center gap-1">
+          <div class="flex items-center gap-1 text-muted">
             <i :class="providerIcon" />
             {{ providerName }}
             <Button
@@ -44,55 +44,63 @@
                 value: $t('userSettings.updatePassword'),
                 showDelay: 300
               }"
-              icon="pi pi-pen-to-square"
-              severity="secondary"
-              text
+              variant="muted-textonly"
+              size="icon-sm"
               @click="dialogService.showUpdatePasswordDialog()"
-            />
+            >
+              <i class="pi pi-pen-to-square" />
+            </Button>
           </div>
         </div>
 
         <ProgressSpinner
           v-if="loading"
-          class="w-8 h-8 mt-4"
+          class="mt-4 h-8 w-8"
           style="--pc-spinner-color: #000"
         />
-        <Button
-          v-else
-          class="mt-4 w-32"
-          severity="secondary"
-          :label="$t('auth.signOut.signOut')"
-          icon="pi pi-sign-out"
-          @click="handleSignOut"
-        />
+        <div v-else class="mt-4 flex flex-col gap-2">
+          <Button class="w-32" variant="secondary" @click="handleSignOut">
+            <i class="pi pi-sign-out" />
+            {{ $t('auth.signOut.signOut') }}
+          </Button>
+          <Button
+            v-if="!isApiKeyLogin"
+            class="w-fit"
+            variant="destructive-textonly"
+            @click="handleDeleteAccount"
+          >
+            {{ $t('auth.deleteAccount.deleteAccount') }}
+          </Button>
+        </div>
       </div>
 
       <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
-        <p class="text-gray-600">
+        <p class="text-smoke-600">
           {{ $t('auth.login.title') }}
         </p>
 
         <Button
           class="w-52"
-          severity="primary"
+          variant="primary"
           :loading="loading"
-          :label="$t('auth.login.signInOrSignUp')"
-          icon="pi pi-user"
           @click="handleSignIn"
-        />
+        >
+          <i class="pi pi-user" />
+          {{ $t('auth.login.signInOrSignUp') }}
+        </Button>
       </div>
     </div>
   </TabPanel>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogService } from '@/services/dialogService'
 
@@ -100,6 +108,7 @@ const dialogService = useDialogService()
 const {
   loading,
   isLoggedIn,
+  isApiKeyLogin,
   isEmailProvider,
   userDisplayName,
   userEmail,
@@ -107,6 +116,7 @@ const {
   providerName,
   providerIcon,
   handleSignOut,
-  handleSignIn
+  handleSignIn,
+  handleDeleteAccount
 } = useCurrentUser()
 </script>

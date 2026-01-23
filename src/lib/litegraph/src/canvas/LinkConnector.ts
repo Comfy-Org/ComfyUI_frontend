@@ -9,13 +9,11 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
   ConnectingLink,
+  INodeInputSlot,
+  INodeOutputSlot,
   ItemLocator,
   LinkNetwork,
   LinkSegment
-} from '@/lib/litegraph/src/interfaces'
-import type {
-  INodeInputSlot,
-  INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
@@ -44,7 +42,7 @@ import { ToOutputRenderLink } from './ToOutputRenderLink'
  * References are only held atomically within a function, never passed.
  * The concrete implementation may be replaced or proxied without side-effects.
  */
-export interface LinkConnectorState {
+interface LinkConnectorState {
   /**
    * The type of slot that links are being connected **to**.
    * - When `undefined`, no operation is being performed.
@@ -68,7 +66,7 @@ type RenderLinkUnion =
   | ToInputFromIoNodeLink
   | ToOutputFromIoNodeLink
 
-export interface LinkConnectorExport {
+interface LinkConnectorExport {
   renderLinks: RenderLink[]
   inputLinks: LLink[]
   outputLinks: LLink[]
@@ -314,6 +312,27 @@ export class LinkConnector {
         this.outputLinks.push(link)
 
         try {
+          if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+            if (!(network instanceof Subgraph)) {
+              console.warn(
+                'Subgraph output link found in non-subgraph network.'
+              )
+              continue
+            }
+
+            const output = network.outputs.at(link.target_slot)
+            if (!output) throw new Error('No subgraph output found for link.')
+
+            const renderLink = new ToOutputFromIoNodeLink(
+              network,
+              network.outputNode,
+              output
+            )
+            renderLink.fromDirection = LinkDirection.NONE
+            renderLinks.push(renderLink)
+
+            continue
+          }
           const renderLink = new MovingOutputLink(
             network,
             link,
@@ -681,6 +700,20 @@ export class LinkConnector {
       let targetSlot = input
 
       for (const link of renderLinks) {
+        // Validate the connection type before proceeding
+        if (
+          'canConnectToSubgraphInput' in link &&
+          !link.canConnectToSubgraphInput(targetSlot)
+        ) {
+          console.warn(
+            'Invalid connection type',
+            link.fromSlot.type,
+            '->',
+            targetSlot.type
+          )
+          continue
+        }
+
         link.connectToSubgraphInput(targetSlot, this.events)
 
         // If we just connected to an EmptySubgraphInput, check if we should reuse the slot
@@ -871,7 +904,6 @@ export class LinkConnector {
     if (connectingTo === 'output') {
       // Dropping new output link
       const output = node.findOutputByType(firstLink.fromSlot.type)?.slot
-      console.debug('out', node, output, firstLink.fromSlot)
       if (output === undefined) {
         console.warn(
           `Could not find slot for link type: [${firstLink.fromSlot.type}].`
@@ -883,7 +915,6 @@ export class LinkConnector {
     } else if (connectingTo === 'input') {
       // Dropping new input link
       const input = node.findInputByType(firstLink.fromSlot.type)?.slot
-      console.debug('in', node, input, firstLink.fromSlot)
       if (input === undefined) {
         console.warn(
           `Could not find slot for link type: [${firstLink.fromSlot.type}].`
@@ -938,6 +969,14 @@ export class LinkConnector {
 
     return node.inputs.some((input) =>
       this.renderLinks.some((link) => link.canConnectToInput(node, input))
+    )
+  }
+
+  isSubgraphInputValidDrop(input: SubgraphInput): boolean {
+    return this.renderLinks.some(
+      (link) =>
+        'canConnectToSubgraphInput' in link &&
+        link.canConnectToSubgraphInput(input)
     )
   }
 

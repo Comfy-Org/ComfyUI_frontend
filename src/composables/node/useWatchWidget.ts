@@ -1,10 +1,11 @@
 import { computedWithControl } from '@vueuse/core'
-import { type ComputedRef, ref } from 'vue'
+import { ref } from 'vue'
+import type { ComputedRef } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-export interface UseComputedWithWidgetWatchOptions {
+interface UseComputedWithWidgetWatchOptions {
   /**
    * Names of widgets to observe for changes.
    * If not provided, all widgets will be observed.
@@ -75,6 +76,29 @@ export const useComputedWithWidgetWatch = (
         }
       })
     })
+    if (widgetNames && widgetNames.length > widgetsToObserve.length) {
+      //Inputs have been included
+      const indexesToObserve = widgetNames
+        .map((name) =>
+          widgetsToObserve.some((w) => w.name == name)
+            ? -1
+            : node.inputs.findIndex((i) => i.name == name)
+        )
+        .filter((i) => i >= 0)
+      node.onConnectionsChange = useChainCallback(
+        node.onConnectionsChange,
+        (_type: unknown, index: number, isConnected: boolean) => {
+          if (!indexesToObserve.includes(index)) return
+          widgetValues.value = {
+            ...widgetValues.value,
+            [indexesToObserve[index]]: isConnected
+          }
+          if (triggerCanvasRedraw) {
+            node.graph?.setDirtyCanvas(true, true)
+          }
+        }
+      )
+    }
   }
 
   // Returns a function that creates a computed that responds to widget changes.

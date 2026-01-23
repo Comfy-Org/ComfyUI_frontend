@@ -2,7 +2,11 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import Load3dUtils from './Load3dUtils'
-import { EventManagerInterface, SceneManagerInterface } from './interfaces'
+import {
+  type BackgroundRenderModeType,
+  type EventManagerInterface,
+  type SceneManagerInterface
+} from './interfaces'
 
 export class SceneManager implements SceneManagerInterface {
   scene: THREE.Scene
@@ -13,6 +17,8 @@ export class SceneManager implements SceneManagerInterface {
   backgroundMesh: THREE.Mesh | null = null
   backgroundTexture: THREE.Texture | null = null
 
+  backgroundRenderMode: 'tiled' | 'panorama' = 'tiled'
+
   backgroundColorMaterial: THREE.MeshBasicMaterial | null = null
   currentBackgroundType: 'color' | 'image' = 'color'
   currentBackgroundColor: string = '#282828'
@@ -21,13 +27,11 @@ export class SceneManager implements SceneManagerInterface {
   private renderer: THREE.WebGLRenderer
 
   private getActiveCamera: () => THREE.Camera
-  // @ts-expect-error unused variable
-  private getControls: () => OrbitControls
 
   constructor(
     renderer: THREE.WebGLRenderer,
     getActiveCamera: () => THREE.Camera,
-    getControls: () => OrbitControls,
+    _getControls: () => OrbitControls,
     eventManager: EventManagerInterface
   ) {
     this.renderer = renderer
@@ -35,7 +39,6 @@ export class SceneManager implements SceneManagerInterface {
     this.scene = new THREE.Scene()
 
     this.getActiveCamera = getActiveCamera
-    this.getControls = getControls
 
     this.gridHelper = new THREE.GridHelper(20, 20)
     this.gridHelper.position.set(0, 0, 0)
@@ -86,6 +89,10 @@ export class SceneManager implements SceneManagerInterface {
       }
     }
 
+    if (this.scene.background) {
+      this.scene.background = null
+    }
+
     this.scene.clear()
   }
 
@@ -100,6 +107,15 @@ export class SceneManager implements SceneManagerInterface {
   setBackgroundColor(color: string): void {
     this.currentBackgroundColor = color
     this.currentBackgroundType = 'color'
+
+    if (this.scene.background instanceof THREE.Texture) {
+      this.scene.background = null
+    }
+
+    if (this.backgroundRenderMode === 'panorama') {
+      this.backgroundRenderMode = 'tiled'
+      this.eventManager.emitEvent('backgroundRenderModeChange', 'tiled')
+    }
 
     if (!this.backgroundMesh || !this.backgroundColorMaterial) {
       this.initBackgroundScene()
@@ -131,9 +147,20 @@ export class SceneManager implements SceneManagerInterface {
 
     this.eventManager.emitEvent('backgroundImageLoadingStart', null)
 
-    let imageUrl = Load3dUtils.getResourceURL(
-      ...Load3dUtils.splitFilePath(uploadPath)
-    )
+    let type = 'input'
+    let pathParts = Load3dUtils.splitFilePath(uploadPath)
+    let subfolder = pathParts[0]
+    let filename = pathParts[1]
+
+    if (subfolder === 'temp') {
+      type = 'temp'
+      pathParts = ['', filename]
+    } else if (subfolder === 'output') {
+      type = 'output'
+      pathParts = ['', filename]
+    }
+
+    let imageUrl = Load3dUtils.getResourceURL(...pathParts, type)
 
     if (!imageUrl.startsWith('/api')) {
       imageUrl = '/api' + imageUrl
@@ -154,36 +181,41 @@ export class SceneManager implements SceneManagerInterface {
       this.backgroundTexture = texture
       this.currentBackgroundType = 'image'
 
-      if (!this.backgroundMesh) {
-        this.initBackgroundScene()
-      }
-
-      const imageMaterial = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        depthWrite: false,
-        depthTest: false,
-        side: THREE.DoubleSide
-      })
-
-      if (this.backgroundMesh) {
-        if (
-          this.backgroundMesh.material !== this.backgroundColorMaterial &&
-          this.backgroundMesh.material instanceof THREE.Material
-        ) {
-          this.backgroundMesh.material.dispose()
+      if (this.backgroundRenderMode === 'panorama') {
+        texture.mapping = THREE.EquirectangularReflectionMapping
+        this.scene.background = texture
+      } else {
+        if (!this.backgroundMesh) {
+          this.initBackgroundScene()
         }
 
-        this.backgroundMesh.material = imageMaterial
-        this.backgroundMesh.position.set(0, 0, 0)
-      }
+        const imageMaterial = new THREE.MeshBasicMaterial({
+          map: texture,
+          transparent: true,
+          depthWrite: false,
+          depthTest: false,
+          side: THREE.DoubleSide
+        })
 
-      this.updateBackgroundSize(
-        this.backgroundTexture,
-        this.backgroundMesh,
-        this.renderer.domElement.width,
-        this.renderer.domElement.height
-      )
+        if (this.backgroundMesh) {
+          if (
+            this.backgroundMesh.material !== this.backgroundColorMaterial &&
+            this.backgroundMesh.material instanceof THREE.Material
+          ) {
+            this.backgroundMesh.material.dispose()
+          }
+
+          this.backgroundMesh.material = imageMaterial
+          this.backgroundMesh.position.set(0, 0, 0)
+        }
+
+        this.updateBackgroundSize(
+          this.backgroundTexture,
+          this.backgroundMesh,
+          this.renderer.domElement.clientWidth,
+          this.renderer.domElement.clientHeight
+        )
+      }
 
       this.eventManager.emitEvent('backgroundImageChange', uploadPath)
       this.eventManager.emitEvent('backgroundImageLoadingEnd', null)
@@ -197,6 +229,35 @@ export class SceneManager implements SceneManagerInterface {
   removeBackgroundImage(): void {
     this.setBackgroundColor(this.currentBackgroundColor)
     this.eventManager.emitEvent('backgroundImageLoadingEnd', null)
+  }
+
+  setBackgroundRenderMode(mode: BackgroundRenderModeType): void {
+    if (this.backgroundRenderMode === mode) return
+
+    this.backgroundRenderMode = mode
+
+    if (this.currentBackgroundType === 'image' && this.backgroundTexture) {
+      try {
+        if (mode === 'panorama') {
+          this.backgroundTexture.mapping =
+            THREE.EquirectangularReflectionMapping
+          this.scene.background = this.backgroundTexture
+        } else {
+          this.scene.background = null
+          if (
+            this.backgroundMesh &&
+            this.backgroundMesh.material instanceof THREE.MeshBasicMaterial
+          ) {
+            this.backgroundMesh.material.map = this.backgroundTexture
+            this.backgroundMesh.material.needsUpdate = true
+          }
+        }
+      } catch (error) {
+        console.error('Error set background render mode:', error)
+      }
+    }
+
+    this.eventManager.emitEvent('backgroundRenderModeChange', mode)
   }
 
   updateBackgroundSize(
@@ -240,7 +301,11 @@ export class SceneManager implements SceneManagerInterface {
   }
 
   renderBackground(): void {
-    if (this.backgroundMesh) {
+    if (
+      (this.backgroundRenderMode === 'tiled' ||
+        this.currentBackgroundType === 'color') &&
+      this.backgroundMesh
+    ) {
       const currentToneMapping = this.renderer.toneMapping
       const currentExposure = this.renderer.toneMappingExposure
 
@@ -265,7 +330,7 @@ export class SceneManager implements SceneManagerInterface {
   captureScene(
     width: number,
     height: number
-  ): Promise<{ scene: string; mask: string; normal: string; lineart: string }> {
+  ): Promise<{ scene: string; mask: string; normal: string }> {
     return new Promise(async (resolve, reject) => {
       try {
         const originalWidth = this.renderer.domElement.width
@@ -356,59 +421,8 @@ export class SceneManager implements SceneManagerInterface {
           }
         })
 
-        let lineartModel: THREE.Group | null = null
-
-        const originalSceneVisible: Map<THREE.Object3D, boolean> = new Map()
-
-        this.scene.traverse((child) => {
-          if (child instanceof THREE.Group && child.name === 'lineartModel') {
-            lineartModel = child as THREE.Group
-          }
-
-          if (
-            child instanceof THREE.Mesh &&
-            !(child.parent?.name === 'lineartModel')
-          ) {
-            originalSceneVisible.set(child, child.visible)
-
-            child.visible = false
-          }
-        })
-
         this.renderer.setClearColor(0xffffff, 1)
         this.renderer.clear()
-
-        if (lineartModel !== null) {
-          lineartModel = lineartModel as THREE.Group
-
-          const originalLineartVisibleMap: Map<THREE.Object3D, boolean> =
-            new Map()
-
-          lineartModel.traverse((child: THREE.Object3D) => {
-            if (child instanceof THREE.Mesh) {
-              originalLineartVisibleMap.set(child, child.visible)
-
-              child.visible = true
-            }
-          })
-
-          const originalLineartVisible = lineartModel.visible
-          lineartModel.visible = true
-
-          this.renderer.render(this.scene, this.getActiveCamera())
-
-          lineartModel.visible = originalLineartVisible
-
-          originalLineartVisibleMap.forEach((visible, object) => {
-            object.visible = visible
-          })
-        }
-
-        const lineartData = this.renderer.domElement.toDataURL('image/png')
-
-        originalSceneVisible.forEach((visible, object) => {
-          object.visible = visible
-        })
 
         this.gridHelper.visible = gridVisible
 
@@ -421,8 +435,7 @@ export class SceneManager implements SceneManagerInterface {
         resolve({
           scene: sceneData,
           mask: maskData,
-          normal: normalData,
-          lineart: lineartData
+          normal: normalData
         })
       } catch (error) {
         reject(error)

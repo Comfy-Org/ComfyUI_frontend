@@ -1,72 +1,68 @@
 <template>
-  <div class="relative bg-gray-700 bg-opacity-30 rounded-lg">
+  <div class="relative rounded-lg bg-backdrop/30">
     <div class="flex flex-col gap-2">
       <Button
-        class="p-button-rounded p-button-text"
-        @click="resizeNodeMatchOutput"
-      >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.resizeNodeMatchOutput'),
-            showDelay: 300
-          }"
-          class="pi pi-window-maximize text-white text-lg"
-        />
-      </Button>
-      <Button
-        class="p-button-rounded p-button-text"
-        :class="{
-          'p-button-danger': isRecording,
-          'recording-button-blink': isRecording
+        v-tooltip.right="{
+          value: isRecording
+            ? $t('load3d.stopRecording')
+            : $t('load3d.startRecording'),
+          showDelay: 300
         }"
+        size="icon"
+        variant="textonly"
+        :class="
+          cn(
+            'rounded-full',
+            isRecording && 'text-red-500 recording-button-blink'
+          )
+        "
+        :aria-label="
+          isRecording ? $t('load3d.stopRecording') : $t('load3d.startRecording')
+        "
         @click="toggleRecording"
       >
         <i
-          v-tooltip.right="{
-            value: isRecording
-              ? t('load3d.stopRecording')
-              : t('load3d.startRecording'),
-            showDelay: 300
-          }"
           :class="[
             'pi',
             isRecording ? 'pi-circle-fill' : 'pi-video',
-            'text-white text-lg'
+            'text-lg text-base-foreground'
           ]"
         />
       </Button>
 
       <Button
         v-if="hasRecording && !isRecording"
-        class="p-button-rounded p-button-text"
-        @click="exportRecording"
+        v-tooltip.right="{
+          value: $t('load3d.exportRecording'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="$t('load3d.exportRecording')"
+        @click="handleExportRecording"
       >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.exportRecording'),
-            showDelay: 300
-          }"
-          class="pi pi-download text-white text-lg"
-        />
+        <i class="pi pi-download text-lg text-base-foreground" />
       </Button>
 
       <Button
         v-if="hasRecording && !isRecording"
-        class="p-button-rounded p-button-text"
-        @click="clearRecording"
+        v-tooltip.right="{
+          value: $t('load3d.clearRecording'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="$t('load3d.clearRecording')"
+        @click="handleClearRecording"
       >
-        <i
-          v-tooltip.right="{
-            value: t('load3d.clearRecording'),
-            showDelay: 300
-          }"
-          class="pi pi-trash text-white text-lg"
-        />
+        <i class="pi pi-trash text-lg text-base-foreground" />
       </Button>
 
       <div
-        v-if="recordingDuration > 0 && !isRecording"
-        class="text-xs text-white text-center mt-1"
+        v-if="recordingDuration && recordingDuration > 0 && !isRecording"
+        class="mt-1 text-center text-xs text-base-foreground"
       >
         {{ formatDuration(recordingDuration) }}
       </div>
@@ -75,21 +71,12 @@
 </template>
 
 <script setup lang="ts">
-import { Tooltip } from 'primevue'
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
-import { t } from '@/i18n'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useLoad3dService } from '@/services/load3dService'
-
-const vTooltip = Tooltip
-
-const { hasRecording, isRecording, node, recordingDuration } = defineProps<{
-  hasRecording: boolean
-  isRecording: boolean
-  node: LGraphNode
-  recordingDuration: number
-}>()
+const hasRecording = defineModel<boolean>('hasRecording')
+const isRecording = defineModel<boolean>('isRecording')
+const recordingDuration = defineModel<number>('recordingDuration')
 
 const emit = defineEmits<{
   (e: 'startRecording'): void
@@ -98,53 +85,23 @@ const emit = defineEmits<{
   (e: 'clearRecording'): void
 }>()
 
-const resizeNodeMatchOutput = () => {
-  const outputWidth = node.widgets?.find((w) => w.name === 'width')
-  const outputHeight = node.widgets?.find((w) => w.name === 'height')
-
-  if (outputWidth && outputHeight && outputHeight.value && outputWidth.value) {
-    const [oldWidth, oldHeight] = node.size
-
-    const scene = node.widgets?.find((w) => w.name === 'image')
-
-    const sceneHeight = scene?.computedHeight
-
-    if (sceneHeight) {
-      const sceneWidth = oldWidth - 20
-
-      const outputRatio = Number(outputHeight.value) / Number(outputWidth.value)
-      const expectSceneHeight = sceneWidth * outputRatio
-
-      node.setSize([oldWidth, oldHeight + (expectSceneHeight - sceneHeight)])
-
-      node.graph?.setDirtyCanvas(true, true)
-
-      const load3d = useLoad3dService().getLoad3d(node as LGraphNode)
-
-      if (load3d) {
-        load3d.refreshViewport()
-      }
-    }
-  }
-}
-
-const toggleRecording = () => {
-  if (isRecording) {
+function toggleRecording() {
+  if (isRecording.value) {
     emit('stopRecording')
   } else {
     emit('startRecording')
   }
 }
 
-const exportRecording = () => {
+function handleExportRecording() {
   emit('exportRecording')
 }
 
-const clearRecording = () => {
+function handleClearRecording() {
   emit('clearRecording')
 }
 
-const formatDuration = (seconds: number): string => {
+function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = Math.floor(seconds % 60)
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`

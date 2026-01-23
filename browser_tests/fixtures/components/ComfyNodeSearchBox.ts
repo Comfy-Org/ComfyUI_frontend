@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 export class ComfyNodeSearchFilterSelectionPanel {
   constructor(public readonly page: Page) {}
@@ -30,7 +30,7 @@ export class ComfyNodeSearchFilterSelectionPanel {
   async addFilter(filterValue: string, filterType: string) {
     await this.selectFilterType(filterType)
     await this.selectFilterValue(filterValue)
-    await this.page.locator('.p-button-label:has-text("Add")').click()
+    await this.page.locator('button:has-text("Add")').click()
   }
 }
 
@@ -60,9 +60,6 @@ export class ComfyNodeSearchBox {
     await this.input.waitFor({ state: 'visible' })
     await this.input.fill(nodeName)
     await this.dropdown.waitFor({ state: 'visible' })
-    // Wait for some time for the auto complete list to update.
-    // The auto complete list is debounced and may take some time to update.
-    await this.page.waitForTimeout(500)
     await this.dropdown
       .locator('li')
       .nth(options?.suggestionIndex || 0)

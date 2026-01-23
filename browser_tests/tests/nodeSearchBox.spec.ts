@@ -3,6 +3,10 @@ import {
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Node search box', () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.LinkRelease.Action', 'search box')
@@ -16,7 +20,7 @@ test.describe('Node search box', () => {
   })
 
   test(`Can trigger on group body double click`, async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('single_group_only')
+    await comfyPage.loadWorkflow('groups/single_group_only')
     await comfyPage.page.mouse.dblclick(50, 50, { delay: 5 })
     await comfyPage.nextFrame()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
@@ -59,7 +63,7 @@ test.describe('Node search box', () => {
   })
 
   test('Can auto link batch moved node', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('batch_move_links')
+    await comfyPage.loadWorkflow('links/batch_move_links')
 
     const outputSlot1Pos = {
       x: 304,
@@ -100,9 +104,6 @@ test.describe('Node search box', () => {
     await comfyPage.searchBox.input.waitFor({ state: 'visible' })
     await comfyPage.searchBox.input.fill(node)
     await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
-    // Wait for some time for the auto complete list to update.
-    // The auto complete list is debounced and may take some time to update.
-    await comfyPage.page.waitForTimeout(500)
 
     const firstResult = comfyPage.searchBox.dropdown.locator('li').first()
     await expect(firstResult).toHaveAttribute('aria-label', node)
@@ -110,7 +111,7 @@ test.describe('Node search box', () => {
 
   test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
     await comfyPage.closeMenu()
-    await comfyPage.loadWorkflow('single_ksampler')
+    await comfyPage.loadWorkflow('nodes/single_ksampler')
     const screenCenter = {
       x: 200,
       y: 400
@@ -121,7 +122,6 @@ test.describe('Node search box', () => {
     await comfyPage.canvas.tap({
       position: screenCenter
     })
-    await comfyPage.page.waitForTimeout(256)
     await expect(comfyPage.searchBox.input).not.toHaveCount(0)
   })
 
@@ -260,6 +260,12 @@ test.describe('Release context menu', () => {
 
   test('Can trigger on link release', async ({ comfyPage }) => {
     await comfyPage.disconnectEdge()
+    const contextMenu = comfyPage.page.locator('.litecontextmenu')
+    // Wait for context menu with correct title (slot name | slot type)
+    // The title shows the output slot name and type from the disconnected link
+    await expect(contextMenu.locator('.litemenu-title')).toContainText(
+      'CLIP | CLIP'
+    )
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(

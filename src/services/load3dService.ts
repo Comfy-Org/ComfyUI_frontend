@@ -1,20 +1,16 @@
 import { toRaw } from 'vue'
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils'
 
+import { nodeToLoad3dMap } from '@/composables/useLoad3d'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
-import Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dAnimation from '@/extensions/core/load3d/Load3dAnimation'
+import type Load3d from '@/extensions/core/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { NodeId } from '@/schemas/comfyWorkflowSchema'
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-
-type Load3dReadyCallback = (load3d: Load3d | Load3dAnimation) => void
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const viewerInstances = new Map<NodeId, any>()
 
 export class Load3dService {
   private static instance: Load3dService
-  private nodeToLoad3dMap = new Map<LGraphNode, Load3d | Load3dAnimation>()
-  private pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
 
   private constructor() {}
 
@@ -25,84 +21,14 @@ export class Load3dService {
     return Load3dService.instance
   }
 
-  registerLoad3d(
-    node: LGraphNode,
-    container: HTMLElement,
-    inputSpec: CustomInputSpec
-  ) {
+  getLoad3d(node: LGraphNode): Load3d | null {
     const rawNode = toRaw(node)
 
-    if (this.nodeToLoad3dMap.has(rawNode)) {
-      this.removeLoad3d(rawNode)
-    }
-
-    const type = inputSpec.type
-
-    const isAnimation = type.includes('Animation')
-
-    const Load3dClass = isAnimation ? Load3dAnimation : Load3d
-
-    const instance = new Load3dClass(container, {
-      node: rawNode,
-      inputSpec: inputSpec
-    })
-
-    rawNode.onMouseEnter = function () {
-      instance.refreshViewport()
-
-      instance.updateStatusMouseOnNode(true)
-    }
-
-    rawNode.onMouseLeave = function () {
-      instance.updateStatusMouseOnNode(false)
-    }
-
-    rawNode.onResize = function () {
-      instance.handleResize()
-    }
-
-    rawNode.onDrawBackground = function () {
-      instance.renderer.domElement.hidden = this.flags.collapsed ?? false
-    }
-
-    this.nodeToLoad3dMap.set(rawNode, instance)
-
-    const callbacks = this.pendingCallbacks.get(rawNode)
-
-    if (callbacks) {
-      callbacks.forEach((callback) => callback(instance))
-      this.pendingCallbacks.delete(rawNode)
-    }
-
-    return instance
+    return nodeToLoad3dMap.get(rawNode) || null
   }
 
-  getLoad3d(node: LGraphNode): Load3d | Load3dAnimation | null {
-    const rawNode = toRaw(node)
-
-    return this.nodeToLoad3dMap.get(rawNode) || null
-  }
-
-  waitForLoad3d(node: LGraphNode, callback: Load3dReadyCallback): void {
-    const rawNode = toRaw(node)
-
-    const existingInstance = this.nodeToLoad3dMap.get(rawNode)
-
-    if (existingInstance) {
-      callback(existingInstance)
-
-      return
-    }
-
-    if (!this.pendingCallbacks.has(rawNode)) {
-      this.pendingCallbacks.set(rawNode, [])
-    }
-
-    this.pendingCallbacks.get(rawNode)!.push(callback)
-  }
-
-  getNodeByLoad3d(load3d: Load3d | Load3dAnimation): LGraphNode | null {
-    for (const [node, instance] of this.nodeToLoad3dMap) {
+  getNodeByLoad3d(load3d: Load3d): LGraphNode | null {
+    for (const [node, instance] of nodeToLoad3dMap) {
       if (instance === load3d) {
         return node
       }
@@ -113,22 +39,19 @@ export class Load3dService {
   removeLoad3d(node: LGraphNode) {
     const rawNode = toRaw(node)
 
-    const instance = this.nodeToLoad3dMap.get(rawNode)
+    const instance = nodeToLoad3dMap.get(rawNode)
 
     if (instance) {
       instance.remove()
 
-      this.nodeToLoad3dMap.delete(rawNode)
+      nodeToLoad3dMap.delete(rawNode)
     }
-
-    this.pendingCallbacks.delete(rawNode)
   }
 
   clear() {
-    for (const [node] of this.nodeToLoad3dMap) {
+    for (const [node] of nodeToLoad3dMap) {
       this.removeLoad3d(node)
     }
-    this.pendingCallbacks.clear()
   }
 
   getOrCreateViewer(node: LGraphNode) {
@@ -149,27 +72,55 @@ export class Load3dService {
     viewerInstances.delete(node.id)
   }
 
-  async copyLoad3dState(source: Load3d, target: Load3d | Load3dAnimation) {
+  async copyLoad3dState(source: Load3d, target: Load3d) {
     const sourceModel = source.modelManager.currentModel
 
     if (sourceModel) {
-      const modelClone = sourceModel.clone()
+      // Remove existing model from target scene before adding new one
+      const existingModel = target.getModelManager().currentModel
+      if (existingModel) {
+        target.getSceneManager().scene.remove(existingModel)
+      }
 
-      target.getModelManager().currentModel = modelClone
-      target.getSceneManager().scene.add(modelClone)
+      if (source.isSplatModel()) {
+        const originalURL = source.modelManager.originalURL
+        if (originalURL) {
+          await target.loadModel(originalURL)
+        }
+      } else {
+        // Use SkeletonUtils.clone for proper skeletal animation support
+        const modelClone = SkeletonUtils.clone(sourceModel)
 
-      target.getModelManager().materialMode =
-        source.getModelManager().materialMode
+        target.getModelManager().currentModel = modelClone
+        target.getSceneManager().scene.add(modelClone)
 
-      target.getModelManager().currentUpDirection =
-        source.getModelManager().currentUpDirection
+        const sourceOriginalModel = source.getModelManager().originalModel
 
-      target.setMaterialMode(source.getModelManager().materialMode)
-      target.setUpDirection(source.getModelManager().currentUpDirection)
+        if (sourceOriginalModel) {
+          target.getModelManager().originalModel = sourceOriginalModel
+        }
 
-      if (source.getModelManager().appliedTexture) {
-        target.getModelManager().appliedTexture =
-          source.getModelManager().appliedTexture
+        target.getModelManager().materialMode =
+          source.getModelManager().materialMode
+
+        target.getModelManager().currentUpDirection =
+          source.getModelManager().currentUpDirection
+
+        target.setMaterialMode(source.getModelManager().materialMode)
+        target.setUpDirection(source.getModelManager().currentUpDirection)
+
+        if (source.getModelManager().appliedTexture) {
+          target.getModelManager().appliedTexture =
+            source.getModelManager().appliedTexture
+        }
+
+        // Copy animation state
+        if (source.hasAnimations()) {
+          target.animationManager.setupModelAnimations(
+            modelClone,
+            sourceOriginalModel
+          )
+        }
       }
     }
 
@@ -188,12 +139,13 @@ export class Load3dService {
       .getCurrentBackgroundInfo()
     if (sourceBackgroundInfo.type === 'image') {
       const sourceNode = this.getNodeByLoad3d(source)
-      const backgroundPath = sourceNode?.properties?.[
-        'Background Image'
-      ] as string
+      const sceneConfig = sourceNode?.properties?.['Scene Config'] as any
+      const backgroundPath = sceneConfig?.backgroundImage
       if (backgroundPath) {
         await target.setBackgroundImage(backgroundPath)
       }
+    } else {
+      await target.setBackgroundImage('')
     }
 
     target.setLightIntensity(
@@ -202,11 +154,6 @@ export class Load3dService {
 
     if (sourceCameraType === 'perspective') {
       target.setFOV(source.getCameraManager().perspectiveCamera.fov)
-    }
-
-    const sourceNode = this.getNodeByLoad3d(source)
-    if (sourceNode?.properties?.['Edge Threshold']) {
-      target.setEdgeThreshold(sourceNode.properties['Edge Threshold'] as number)
     }
   }
 
@@ -230,6 +177,11 @@ export class Load3dService {
 
     if (viewer.needApplyChanges.value) {
       await viewer.applyChanges()
+
+      // Sync configuration back to the node's UI
+      if ((node as any).syncLoad3dConfig) {
+        ;(node as any).syncLoad3dConfig()
+      }
     }
 
     useLoad3dService().removeViewer(node)

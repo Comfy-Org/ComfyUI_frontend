@@ -14,7 +14,8 @@
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { type CSSProperties, computed, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import type { CSSProperties } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { useAbsolutePosition } from '@/composables/element/useAbsolutePosition'
@@ -24,9 +25,12 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  useCanvasStore,
+  useTitleEditorStore
+} from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useCanvasStore, useTitleEditorStore } from '@/stores/graphStore'
-import { useSettingStore } from '@/stores/settingStore'
 
 const settingStore = useSettingStore()
 
@@ -44,7 +48,7 @@ const canvasStore = useCanvasStore()
 const previousCanvasDraggable = ref(true)
 
 const onEdit = (newValue: string) => {
-  if (titleEditorStore.titleEditorTarget && newValue.trim() !== '') {
+  if (titleEditorStore.titleEditorTarget && newValue?.trim()) {
     const trimmedTitle = newValue.trim()
     titleEditorStore.titleEditorTarget.title = trimmedTitle
 
@@ -54,7 +58,7 @@ const onEdit = (newValue: string) => {
       target.subgraph.name = trimmedTitle
     }
 
-    app.graph.setDirtyCanvas(true, true)
+    app.canvas.setDirty(true, true)
   }
   showInput.value = false
   titleEditorStore.titleEditorTarget = null

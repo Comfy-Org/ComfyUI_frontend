@@ -1,9 +1,9 @@
-import {
-  type ExportedSubgraph,
-  type ExportedSubgraphInstance,
-  type Subgraph
+import type {
+  ExportedSubgraph,
+  ExportedSubgraphInstance,
+  Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/schemas/comfyWorkflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { app as comfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -67,8 +67,8 @@ export const useSubgraphService = () => {
     // Assertion: overriding Zod schema
     for (const subgraphData of subgraphs as ExportedSubgraph[]) {
       const subgraph =
-        comfyApp.graph.subgraphs.get(subgraphData.id) ??
-        comfyApp.graph.createSubgraph(subgraphData)
+        comfyApp.rootGraph.subgraphs.get(subgraphData.id) ??
+        comfyApp.rootGraph.createSubgraph(subgraphData)
 
       registerNewSubgraph(subgraph, subgraphData)
     }

@@ -5,7 +5,7 @@
     </div>
     <div v-if="['cancelled', 'error'].includes(download.status ?? '')">
       <Chip
-        class="h-6 text-sm font-light bg-red-700 mt-2"
+        class="mt-2 h-6 bg-red-700 text-sm font-light"
         removable
         @remove="handleRemoveDownload"
       >
@@ -30,47 +30,50 @@
       <Button
         v-if="download.status === 'in_progress'"
         v-tooltip.top="t('electronFileDownload.pause')"
-        class="file-action-button w-[22px] h-[22px]"
-        size="small"
-        rounded
-        icon="pi pi-pause"
+        class="size-[22px] rounded-full"
+        variant="secondary"
+        size="icon-sm"
+        :aria-label="t('electronFileDownload.pause')"
         @click="triggerPauseDownload"
-      />
+      >
+        <i class="icon-[lucide--pause] size-3" />
+      </Button>
 
       <Button
         v-if="download.status === 'paused'"
         v-tooltip.top="t('electronFileDownload.resume')"
-        class="file-action-button w-[22px] h-[22px]"
-        size="small"
-        rounded
-        icon="pi pi-play"
+        class="size-[22px] rounded-full"
+        variant="secondary"
+        size="icon-sm"
+        :aria-label="t('electronFileDownload.resume')"
         @click="triggerResumeDownload"
-      />
+      >
+        <i class="icon-[lucide--play] size-3" />
+      </Button>
 
       <Button
         v-if="['in_progress', 'paused'].includes(download.status ?? '')"
         v-tooltip.top="t('electronFileDownload.cancel')"
-        class="file-action-button w-[22px] h-[22px] p-red"
-        size="small"
-        rounded
-        severity="danger"
-        icon="pi pi-times-circle"
+        class="size-[22px] rounded-full"
+        variant="destructive"
+        size="icon-sm"
+        :aria-label="t('electronFileDownload.cancel')"
         @click="triggerCancelDownload"
-      />
+      >
+        <i class="icon-[lucide--x-circle] size-3" />
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Chip from 'primevue/chip'
 import ProgressBar from 'primevue/progressbar'
 import { useI18n } from 'vue-i18n'
 
-import {
-  type ElectronDownload,
-  useElectronDownloadStore
-} from '@/stores/electronDownloadStore'
+import Button from '@/components/ui/button/Button.vue'
+import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
 const { t } = useI18n()
 

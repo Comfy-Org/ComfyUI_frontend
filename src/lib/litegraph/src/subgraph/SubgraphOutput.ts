@@ -1,4 +1,4 @@
-import { pull } from 'lodash'
+import { pull } from 'es-toolkit/compat'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
@@ -152,5 +152,25 @@ export class SubgraphOutput extends SubgraphSlot {
     }
 
     return false
+  }
+  override disconnect() {
+    const { subgraph } = this.parent
+    //should never have more than one connection
+    for (const linkId of this.linkIds) {
+      const link = subgraph.links[linkId]
+      if (!link) continue
+      subgraph.removeLink(linkId)
+      const { output, outputNode } = link.resolve(subgraph)
+      if (output)
+        output.links = output.links?.filter((id) => id !== linkId) ?? null
+      outputNode?.onConnectionsChange?.(
+        NodeSlotType.OUTPUT,
+        link.origin_slot,
+        false,
+        link,
+        this
+      )
+    }
+    this.linkIds.length = 0
   }
 }

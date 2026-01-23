@@ -1,4 +1,4 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 
 import type {
   ComfyLinkObject,
@@ -6,7 +6,7 @@ import type {
   NodeId,
   Reroute,
   WorkflowJSON04
-} from '@/schemas/comfyWorkflowSchema'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 
 type RerouteNode = ComfyNode & {
   type: 'Reroute'

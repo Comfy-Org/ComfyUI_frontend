@@ -1,75 +1,45 @@
 <template>
-  <div class="flex items-center gap-2">
-    <Tag
-      severity="secondary"
-      icon="pi pi-dollar"
-      rounded
-      class="text-amber-400 p-1"
-    />
-    <InputNumber
-      v-if="editable"
-      v-model="customAmount"
-      :min="1"
-      :max="1000"
-      :step="1"
-      show-buttons
-      :allow-empty="false"
-      :highlight-on-focus="true"
-      pt:pc-input-text:root="w-24"
-      @blur="(e: InputNumberBlurEvent) => (customAmount = Number(e.value))"
-      @input="(e: InputNumberInputEvent) => (customAmount = Number(e.value))"
-    />
-    <span v-else class="text-xl">{{ amount }}</span>
+  <div
+    class="flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all duration-200"
+    :class="[
+      selected
+        ? 'bg-secondary-background border-2 border-border-default'
+        : 'bg-component-node-disabled hover:bg-secondary-background border-2 border-transparent'
+    ]"
+    @click="$emit('select')"
+  >
+    <span class="text-base font-bold text-base-foreground">
+      {{ formattedCredits }}
+    </span>
+    <span class="text-sm font-normal text-muted-foreground">
+      {{ description }}
+    </span>
   </div>
-  <ProgressSpinner v-if="loading" class="w-8 h-8" />
-  <Button
-    v-else
-    :severity="preselected ? 'primary' : 'secondary'"
-    :outlined="!preselected"
-    :label="$t('credits.topUp.buyNow')"
-    @click="handleBuyNow"
-  />
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import InputNumber, {
-  type InputNumberBlurEvent,
-  type InputNumberInputEvent
-} from 'primevue/inputnumber'
-import ProgressSpinner from 'primevue/progressspinner'
-import Tag from 'primevue/tag'
-import { onBeforeUnmount, ref } from 'vue'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { formatCredits } from '@/base/credits/comfyCredits'
 
-const authActions = useFirebaseAuthActions()
-
-const {
-  amount,
-  preselected,
-  editable = false
-} = defineProps<{
-  amount: number
-  preselected: boolean
-  editable?: boolean
+const { credits, description, selected } = defineProps<{
+  credits: number
+  description: string
+  selected: boolean
 }>()
 
-const customAmount = ref(amount)
-const didClickBuyNow = ref(false)
-const loading = ref(false)
+defineEmits<{
+  select: []
+}>()
 
-const handleBuyNow = async () => {
-  loading.value = true
-  await authActions.purchaseCredits(editable ? customAmount.value : amount)
-  loading.value = false
-  didClickBuyNow.value = true
-}
+const { locale } = useI18n()
 
-onBeforeUnmount(() => {
-  if (didClickBuyNow.value) {
-    // If clicked buy now, then returned back to the dialog and closed, fetch the balance
-    void authActions.fetchBalance()
-  }
+const formattedCredits = computed(() => {
+  return formatCredits({
+    value: credits,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
 })
 </script>

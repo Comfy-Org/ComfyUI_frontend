@@ -1,11 +1,18 @@
 import * as fs from 'fs'
 
+// Import Vite define shim to make __DISTRIBUTION__ and other define variables available
+import './vite-define-shim'
+
+import { DESKTOP_DIALOGS } from '../apps/desktop-ui/src/constants/desktopDialogs'
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import {
+  formatCamelCase,
+  normalizeI18nKey
+} from '../packages/shared-frontend-utils/src/formatUtil'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
+import type { FormItem, SettingParams } from '../src/platform/settings/types'
 import type { ComfyCommandImpl } from '../src/stores/commandStore'
-import type { FormItem, SettingParams } from '../src/types/settingTypes'
-import { formatCamelCase, normalizeI18nKey } from '../src/utils/formatUtil'
 
 const localePath = './src/locales/en/main.json'
 const commandsPath = './src/locales/en/commands.json'
@@ -131,6 +138,23 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     ])
   )
 
+  // Desktop Dialogs
+  const allDesktopDialogsLocale = Object.fromEntries(
+    Object.values(DESKTOP_DIALOGS).map((dialog) => [
+      normalizeI18nKey(dialog.id),
+      {
+        title: dialog.title,
+        message: dialog.message,
+        buttons: Object.fromEntries(
+          dialog.buttons.map((button) => [
+            normalizeI18nKey(button.label),
+            button.label
+          ])
+        )
+      }
+    ])
+  )
+
   fs.writeFileSync(
     localePath,
     JSON.stringify(
@@ -144,7 +168,8 @@ test('collect-i18n-general', async ({ comfyPage }) => {
           ...allSettingCategoriesLocale
         },
         serverConfigItems: allServerConfigsLocale,
-        serverConfigCategories: allServerConfigCategoriesLocale
+        serverConfigCategories: allServerConfigCategoriesLocale,
+        desktopDialogs: allDesktopDialogsLocale
       },
       null,
       2

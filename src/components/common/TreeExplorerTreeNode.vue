@@ -28,7 +28,7 @@
       />
     </div>
     <div
-      class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
+      class="node-actions flex gap-1 touch:opacity-100 motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
     >
       <slot name="actions" :node="props.node" />
     </div>
@@ -45,10 +45,10 @@ import {
   usePragmaticDraggable,
   usePragmaticDroppable
 } from '@/composables/usePragmaticDragAndDrop'
-import {
-  InjectKeyHandleEditLabelFunction,
-  type RenderedTreeExplorerNode,
-  type TreeExplorerDragAndDropData
+import { InjectKeyHandleEditLabelFunction } from '@/types/treeExplorerTypes'
+import type {
+  RenderedTreeExplorerNode,
+  TreeExplorerDragAndDropData
 } from '@/types/treeExplorerTypes'
 
 const props = defineProps<{

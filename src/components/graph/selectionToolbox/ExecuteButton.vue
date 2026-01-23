@@ -1,47 +1,41 @@
 <template>
   <Button
-    v-show="canvasStore.nodeSelected"
     v-tooltip.top="{
-      value: isDisabled
-        ? t('selectionToolbox.executeButton.disabledTooltip')
-        : t('selectionToolbox.executeButton.tooltip'),
+      value: t('selectionToolbox.executeButton.tooltip'),
       showDelay: 1000
     }"
-    :severity="isDisabled ? 'secondary' : 'success'"
-    text
-    :disabled="isDisabled"
+    variant="primary"
+    :aria-label="t('selectionToolbox.executeButton.tooltip')"
     @mouseenter="() => handleMouseEnter()"
     @mouseleave="() => handleMouseLeave()"
     @click="handleClick"
   >
-    <i-lucide:play />
+    <i class="icon-[lucide--play]" />
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useCanvasStore } from '@/stores/graphStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { isOutputNode } from '@/utils/nodeFilterUtil'
 
 const { t } = useI18n()
-const canvasStore = useCanvasStore()
 const commandStore = useCommandStore()
+const canvasStore = useCanvasStore()
+const { selectedNodes } = useSelectionState()
 
 const canvas = canvasStore.getCanvas()
 const buttonHovered = ref(false)
-const selectedOutputNodes = computed(
-  () =>
-    canvasStore.selectedItems.filter(
-      (item) => isLGraphNode(item) && item.constructor.nodeData?.output_node
-    ) as LGraphNode[]
+const selectedOutputNodes = computed(() =>
+  selectedNodes.value.filter(isLGraphNode).filter(isOutputNode)
 )
-
-const isDisabled = computed(() => selectedOutputNodes.value.length === 0)
 
 function outputNodeStokeStyle(this: LGraphNode) {
   if (

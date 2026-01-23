@@ -1,20 +1,20 @@
-import {
-  type DownloadState,
-  DownloadStatus
-} from '@comfyorg/comfyui-electron-types'
+import { DownloadStatus } from '@comfyorg/comfyui-electron-types'
+import type { DownloadState } from '@comfyorg/comfyui-electron-types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { electronAPI, isElectron } from '@/utils/envUtil'
 
-export interface ElectronDownload
-  extends Pick<DownloadState, 'url' | 'filename'> {
+export interface ElectronDownload extends Pick<
+  DownloadState,
+  'url' | 'filename'
+> {
   progress?: number
   savePath?: string
   status?: DownloadStatus
 }
 
-/** Electron donwloads store handler */
+/** Electron downloads store handler */
 export const useElectronDownloadStore = defineStore('downloads', () => {
   const downloads = ref<ElectronDownload[]>([])
   const { DownloadManager } = electronAPI()

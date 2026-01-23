@@ -3,6 +3,10 @@ import { expect } from '@playwright/test'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+test.beforeEach(async ({ comfyPage }) => {
+  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+})
+
 test.describe('Canvas Right Click Menu', () => {
   test('Can add node', async ({ comfyPage }) => {
     await comfyPage.rightClickCanvas()
@@ -24,11 +28,11 @@ test.describe('Canvas Right Click Menu', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('add-group-group-added.png')
   })
 
-  test.skip('Can convert to group node', async ({ comfyPage }) => {
+  test('Can convert to group node', async ({ comfyPage }) => {
     await comfyPage.select2Nodes()
     await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
     await comfyPage.rightClickCanvas()
-    await comfyPage.clickContextMenuItem('Convert to Group Node')
+    await comfyPage.clickContextMenuItem('Convert to Group Node (Deprecated)')
     await comfyPage.promptDialogInput.fill('GroupNode2CLIP')
     await comfyPage.page.keyboard.press('Enter')
     await comfyPage.promptDialogInput.waitFor({ state: 'hidden' })
@@ -114,7 +118,6 @@ test.describe('Node Right Click Menu', () => {
     await comfyPage.rightClickEmptyLatentNode()
     await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
     await comfyPage.nextFrame()
-    await comfyPage.page.waitForTimeout(256)
     await comfyPage.dragAndDrop({ x: 496, y: 618 }, { x: 200, y: 590 })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-unpinned-node-moved.png'

@@ -39,8 +39,6 @@ test.describe('Minimap', () => {
 
     await expect(toggleButton).toBeVisible()
 
-    await expect(toggleButton).toHaveClass(/minimap-active/)
-
     const minimapContainer = comfyPage.page.locator('.litegraph-minimap')
     await expect(minimapContainer).toBeVisible()
   })
@@ -50,19 +48,16 @@ test.describe('Minimap', () => {
     const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
 
     await expect(minimapContainer).toBeVisible()
-    await expect(toggleButton).toHaveClass(/minimap-active/)
 
     await toggleButton.click()
     await comfyPage.nextFrame()
 
     await expect(minimapContainer).not.toBeVisible()
-    await expect(toggleButton).not.toHaveClass(/minimap-active/)
 
     await toggleButton.click()
     await comfyPage.nextFrame()
 
     await expect(minimapContainer).toBeVisible()
-    await expect(toggleButton).toHaveClass(/minimap-active/)
   })
 
   test('Validate minimap keyboard shortcut Alt+M', async ({ comfyPage }) => {

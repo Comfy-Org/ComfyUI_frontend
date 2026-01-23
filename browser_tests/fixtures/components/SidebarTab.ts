@@ -1,4 +1,4 @@
-import { Locator, Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 class SidebarTab {
   constructor(
@@ -116,7 +116,6 @@ export class WorkflowsSidebarTab extends SidebarTab {
   async switchToWorkflow(workflowName: string) {
     const workflowLocator = this.getOpenedItem(workflowName)
     await workflowLocator.click()
-    await this.page.waitForTimeout(300)
   }
 
   getOpenedItem(name: string) {
@@ -138,7 +137,13 @@ export class WorkflowsSidebarTab extends SidebarTab {
       .click()
     await this.page.keyboard.type(newName)
     await this.page.keyboard.press('Enter')
-    await this.page.waitForTimeout(300)
+
+    // Wait for workflow service to finish renaming
+    await this.page.waitForFunction(
+      () => !window['app']?.extensionManager?.workflow?.isBusy,
+      undefined,
+      { timeout: 3000 }
+    )
   }
 
   async insertWorkflow(locator: Locator) {
@@ -146,126 +151,5 @@ export class WorkflowsSidebarTab extends SidebarTab {
     await this.page
       .locator('.p-contextmenu-item-content', { hasText: 'Insert' })
       .click()
-  }
-}
-
-export class QueueSidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
-    super(page, 'queue')
-  }
-
-  get root() {
-    return this.page.locator('.sidebar-content-container', { hasText: 'Queue' })
-  }
-
-  get tasks() {
-    return this.root.locator('[data-virtual-grid-item]')
-  }
-
-  get visibleTasks() {
-    return this.tasks.locator('visible=true')
-  }
-
-  get clearButton() {
-    return this.root.locator('.clear-all-button')
-  }
-
-  get collapseTasksButton() {
-    return this.getToggleExpandButton(false)
-  }
-
-  get expandTasksButton() {
-    return this.getToggleExpandButton(true)
-  }
-
-  get noResultsPlaceholder() {
-    return this.root.locator('.no-results-placeholder')
-  }
-
-  get galleryImage() {
-    return this.page.locator('.galleria-image')
-  }
-
-  private getToggleExpandButton(isExpanded: boolean) {
-    const iconSelector = isExpanded ? '.pi-image' : '.pi-images'
-    return this.root.locator(`.toggle-expanded-button ${iconSelector}`)
-  }
-
-  async open() {
-    await super.open()
-    return this.root.waitFor({ state: 'visible' })
-  }
-
-  async close() {
-    await super.close()
-    await this.root.waitFor({ state: 'hidden' })
-  }
-
-  async expandTasks() {
-    await this.expandTasksButton.click()
-    await this.collapseTasksButton.waitFor({ state: 'visible' })
-  }
-
-  async collapseTasks() {
-    await this.collapseTasksButton.click()
-    await this.expandTasksButton.waitFor({ state: 'visible' })
-  }
-
-  async waitForTasks() {
-    return Promise.all([
-      this.tasks.first().waitFor({ state: 'visible' }),
-      this.tasks.last().waitFor({ state: 'visible' })
-    ])
-  }
-
-  async scrollTasks(direction: 'up' | 'down') {
-    const scrollToEl =
-      direction === 'up' ? this.tasks.last() : this.tasks.first()
-    await scrollToEl.scrollIntoViewIfNeeded()
-    await this.waitForTasks()
-  }
-
-  async clearTasks() {
-    await this.clearButton.click()
-    const confirmButton = this.page.getByLabel('Delete')
-    await confirmButton.click()
-    await this.noResultsPlaceholder.waitFor({ state: 'visible' })
-  }
-
-  /** Set the width of the tab (out of 100). Must call before opening the tab */
-  async setTabWidth(width: number) {
-    if (width < 0 || width > 100) {
-      throw new Error('Width must be between 0 and 100')
-    }
-    return this.page.evaluate((width) => {
-      localStorage.setItem('queue', JSON.stringify([width, 100 - width]))
-    }, width)
-  }
-
-  getTaskPreviewButton(taskIndex: number) {
-    return this.tasks.nth(taskIndex).getByRole('button')
-  }
-
-  async openTaskPreview(taskIndex: number) {
-    const previewButton = this.getTaskPreviewButton(taskIndex)
-    await previewButton.click()
-    return this.galleryImage.waitFor({ state: 'visible' })
-  }
-
-  getGalleryImage(imageFilename: string) {
-    return this.galleryImage.and(this.page.getByAltText(imageFilename))
-  }
-
-  getTaskImage(imageFilename: string) {
-    return this.tasks.getByAltText(imageFilename)
-  }
-
-  /** Trigger the queue store and tasks to update */
-  async triggerTasksUpdate() {
-    await this.page.evaluate(() => {
-      window['app']['api'].dispatchCustomEvent('status', {
-        exec_info: { queue_remaining: 0 }
-      })
-    })
   }
 }

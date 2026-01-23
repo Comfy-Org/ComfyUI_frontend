@@ -1,10 +1,3 @@
-import { useBooleanWidget } from '@/composables/widgets/useBooleanWidget'
-import { useComboWidget } from '@/composables/widgets/useComboWidget'
-import { useFloatWidget } from '@/composables/widgets/useFloatWidget'
-import { useImageUploadWidget } from '@/composables/widgets/useImageUploadWidget'
-import { useIntWidget } from '@/composables/widgets/useIntWidget'
-import { useMarkdownWidget } from '@/composables/widgets/useMarkdownWidget'
-import { useStringWidget } from '@/composables/widgets/useStringWidget'
 import { t } from '@/i18n'
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type {
@@ -12,10 +5,24 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
+import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
+import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
+import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
+import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
+import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
+import { useFloatWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
+import { useGalleriaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useGalleriaWidget'
+import { useImageCompareWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageCompareWidget'
+import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
+import { useIntWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useIntWidget'
+import { useMarkdownWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget'
+import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
+import { useTextareaWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useTextareaWidget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { useSettingStore } from '@/stores/settingStore'
 
 import type { ComfyApp } from './app'
 import './domWidget'
@@ -124,15 +131,18 @@ export function addValueControlWidgets(
     function () {},
     {
       values: ['fixed', 'increment', 'decrement', 'randomize'],
-      serialize: false // Don't include this in prompt.
+      serialize: false, // Don't include this in prompt.
+      canvasOnly: true
     }
   ) as IComboWidget
 
   valueControl.tooltip =
     'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
-  // @ts-ignore index with symbol
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
+  Object.defineProperty(valueControl, 'disabled', {
+    get: () => targetWidget.computedDisabled
+  })
   const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
 
   const isCombo = isComboWidget(targetWidget)
@@ -154,6 +164,9 @@ export function addValueControlWidgets(
     updateControlWidgetLabel(comboFilter)
     comboFilter.tooltip =
       "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'."
+    Object.defineProperty(comboFilter, 'disabled', {
+      get: () => targetWidget.computedDisabled
+    })
 
     widgets.push(comboFilter)
   }
@@ -263,12 +276,10 @@ export function addValueControlWidgets(
   valueControl.beforeQueued = () => {
     if (controlValueRunBefore()) {
       // Don't run on first execution
-      // @ts-ignore index with symbol
       if (valueControl[HAS_EXECUTED]) {
         applyWidgetControl()
       }
     }
-    // @ts-ignore index with symbol
     valueControl[HAS_EXECUTED] = true
   }
 
@@ -281,12 +292,25 @@ export function addValueControlWidgets(
   return widgets
 }
 
-export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
+export const ComfyWidgets = {
   INT: transformWidgetConstructorV2ToV1(useIntWidget()),
   FLOAT: transformWidgetConstructorV2ToV1(useFloatWidget()),
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),
   STRING: transformWidgetConstructorV2ToV1(useStringWidget()),
   MARKDOWN: transformWidgetConstructorV2ToV1(useMarkdownWidget()),
   COMBO: transformWidgetConstructorV2ToV1(useComboWidget()),
-  IMAGEUPLOAD: useImageUploadWidget()
+  IMAGEUPLOAD: useImageUploadWidget(),
+  COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
+  IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
+  BOUNDINGBOX: transformWidgetConstructorV2ToV1(useBoundingBoxWidget()),
+  CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
+  GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
+  TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
+  ...dynamicWidgets
+} as const
+
+export function isValidWidgetType(
+  key: unknown
+): key is keyof typeof ComfyWidgets {
+  return ComfyWidgets[key as keyof typeof ComfyWidgets] !== undefined
 }

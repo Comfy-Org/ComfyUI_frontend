@@ -1,21 +1,12 @@
+import { SplatMesh } from '@sparkjsdev/spark'
 import * as THREE from 'three'
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial'
-import { LineSegments2 } from 'three/examples/jsm/lines/LineSegments2'
-import { LineSegmentsGeometry } from 'three/examples/jsm/lines/LineSegmentsGeometry'
-import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
-import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils'
+import { type GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
-import { ColoredShadowMaterial } from './conditional-lines/ColoredShadowMaterial'
-import { ConditionalEdgesGeometry } from './conditional-lines/ConditionalEdgesGeometry'
-import { ConditionalEdgesShader } from './conditional-lines/ConditionalEdgesShader.js'
-import { ConditionalLineMaterial } from './conditional-lines/Lines2/ConditionalLineMaterial'
-import { ConditionalLineSegmentsGeometry } from './conditional-lines/Lines2/ConditionalLineSegmentsGeometry'
 import {
-  EventManagerInterface,
-  Load3DOptions,
-  MaterialMode,
-  ModelManagerInterface,
-  UpDirection
+  type EventManagerInterface,
+  type MaterialMode,
+  type ModelManagerInterface,
+  type UpDirection
 } from './interfaces'
 
 export class SceneModelManager implements ModelManagerInterface {
@@ -39,31 +30,21 @@ export class SceneModelManager implements ModelManagerInterface {
   originalURL: string | null = null
   appliedTexture: THREE.Texture | null = null
   textureLoader: THREE.TextureLoader
+  skeletonHelper: THREE.SkeletonHelper | null = null
+  showSkeleton: boolean = false
 
   private scene: THREE.Scene
   private renderer: THREE.WebGLRenderer
   private eventManager: EventManagerInterface
   private activeCamera: THREE.Camera
   private setupCamera: (size: THREE.Vector3) => void
-  private lineartModel: THREE.Group
-  private createLineartModel: boolean = false
-
-  LIGHT_MODEL = 0xffffff
-  LIGHT_LINES = 0x455a64
-
-  conditionalModel: THREE.Object3D | null = null
-  edgesModel: THREE.Object3D | null = null
-  backgroundModel: THREE.Object3D | null = null
-  shadowModel: THREE.Object3D | null = null
-  depthModel: THREE.Object3D | null = null
 
   constructor(
     scene: THREE.Scene,
     renderer: THREE.WebGLRenderer,
     eventManager: EventManagerInterface,
     getActiveCamera: () => THREE.Camera,
-    setupCamera: (size: THREE.Vector3) => void,
-    options: Load3DOptions
+    setupCamera: (size: THREE.Vector3) => void
   ) {
     this.scene = scene
     this.renderer = renderer
@@ -71,14 +52,6 @@ export class SceneModelManager implements ModelManagerInterface {
     this.activeCamera = getActiveCamera()
     this.setupCamera = setupCamera
     this.textureLoader = new THREE.TextureLoader()
-
-    if (
-      options &&
-      !options.inputSpec?.isPreview &&
-      !options.inputSpec?.isAnimation
-    ) {
-      this.createLineartModel = true
-    }
 
     this.normalMaterial = new THREE.MeshNormalMaterial({
       flatShading: false,
@@ -101,10 +74,6 @@ export class SceneModelManager implements ModelManagerInterface {
     })
 
     this.standardMaterial = this.createSTLMaterial()
-
-    this.lineartModel = new THREE.Group()
-
-    this.lineartModel.name = 'lineartModel'
   }
 
   init(): void {}
@@ -120,8 +89,6 @@ export class SceneModelManager implements ModelManagerInterface {
       this.appliedTexture.dispose()
       this.appliedTexture = null
     }
-
-    this.disposeLineartModel()
   }
 
   createSTLMaterial(): THREE.MeshStandardMaterial {
@@ -134,358 +101,143 @@ export class SceneModelManager implements ModelManagerInterface {
     })
   }
 
-  disposeLineartModel(): void {
-    this.disposeEdgesModel()
-    this.disposeShadowModel()
-    this.disposeBackgroundModel()
-    this.disposeDepthModel()
-    this.disposeConditionalModel()
-  }
+  private handlePLYModeSwitch(mode: MaterialMode): void {
+    if (!(this.originalModel instanceof THREE.BufferGeometry)) {
+      return
+    }
 
-  disposeEdgesModel(): void {
-    if (this.edgesModel) {
-      if (this.edgesModel.parent) {
-        this.edgesModel.parent.remove(this.edgesModel)
+    const plyGeometry = this.originalModel.clone()
+    const hasVertexColors = plyGeometry.attributes.color !== undefined
+
+    // Find and remove ALL MainModel instances by name to ensure deletion
+    const oldMainModels: THREE.Object3D[] = []
+    this.scene.traverse((obj) => {
+      if (obj.name === 'MainModel') {
+        oldMainModels.push(obj)
       }
+    })
 
-      this.edgesModel.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
+    // Remove and dispose all found MainModels
+    oldMainModels.forEach((oldModel) => {
+      oldModel.traverse((child) => {
+        if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
+          child.geometry?.dispose()
           if (Array.isArray(child.material)) {
             child.material.forEach((m) => m.dispose())
           } else {
-            child.material.dispose()
+            child.material?.dispose()
           }
         }
       })
-    }
-  }
-
-  initEdgesModel() {
-    this.disposeEdgesModel()
-
-    if (!this.currentModel) {
-      return
-    }
-
-    this.edgesModel = this.currentModel.clone()
-    this.lineartModel.add(this.edgesModel)
-
-    const meshes: THREE.Mesh[] = []
-
-    this.edgesModel.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        meshes.push(child)
-      }
+      this.scene.remove(oldModel)
     })
 
-    for (const key in meshes) {
-      const mesh = meshes[key]
-      const parent = mesh.parent
+    this.currentModel = null
 
-      let lineGeom = new THREE.EdgesGeometry(mesh.geometry, 85)
+    let newModel: THREE.Object3D
 
-      const line = new THREE.LineSegments(
-        lineGeom,
-        new THREE.LineBasicMaterial({ color: this.LIGHT_LINES })
-      )
-      line.position.copy(mesh.position)
-      line.scale.copy(mesh.scale)
-      line.rotation.copy(mesh.rotation)
+    if (mode === 'pointCloud') {
+      // Use Points rendering for point cloud mode
+      plyGeometry.computeBoundingSphere()
+      if (plyGeometry.boundingSphere) {
+        const center = plyGeometry.boundingSphere.center
+        const radius = plyGeometry.boundingSphere.radius
 
-      const thickLineGeom = new LineSegmentsGeometry().fromEdgesGeometry(
-        lineGeom
-      )
-      const thickLines = new LineSegments2(
-        thickLineGeom,
-        new LineMaterial({ color: this.LIGHT_LINES, linewidth: 13 })
-      )
-      thickLines.position.copy(mesh.position)
-      thickLines.scale.copy(mesh.scale)
-      thickLines.rotation.copy(mesh.rotation)
+        plyGeometry.translate(-center.x, -center.y, -center.z)
 
-      parent?.remove(mesh)
-      parent?.add(line)
-      parent?.add(thickLines)
-    }
+        if (radius > 0) {
+          const scale = 1.0 / radius
+          plyGeometry.scale(scale, scale, scale)
+        }
+      }
 
-    this.edgesModel.traverse((child) => {
+      const pointMaterial = hasVertexColors
+        ? new THREE.PointsMaterial({
+            size: 0.005,
+            vertexColors: true,
+            sizeAttenuation: true
+          })
+        : new THREE.PointsMaterial({
+            size: 0.005,
+            color: 0xcccccc,
+            sizeAttenuation: true
+          })
+
+      const points = new THREE.Points(plyGeometry, pointMaterial)
+      newModel = new THREE.Group()
+      newModel.add(points)
+    } else {
+      // Use Mesh rendering for other modes
+      let meshMaterial: THREE.Material = hasVertexColors
+        ? new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            metalness: 0.0,
+            roughness: 0.5,
+            side: THREE.DoubleSide
+          })
+        : this.standardMaterial.clone()
+
       if (
-        child instanceof THREE.Mesh &&
-        child.material &&
-        child.material.resolution
+        !hasVertexColors &&
+        meshMaterial instanceof THREE.MeshStandardMaterial
       ) {
-        this.renderer.getSize(child.material.resolution)
-        child.material.resolution.multiplyScalar(window.devicePixelRatio)
-        child.material.linewidth = 1
-      }
-    })
-  }
-
-  setEdgeThreshold(threshold: number): void {
-    if (!this.edgesModel || !this.currentModel) {
-      return
-    }
-
-    const linesToRemove: THREE.Object3D[] = []
-    this.edgesModel.traverse((child) => {
-      if (
-        child instanceof THREE.LineSegments ||
-        child instanceof LineSegments2
-      ) {
-        linesToRemove.push(child)
-      }
-    })
-
-    for (const line of linesToRemove) {
-      if (line.parent) {
-        line.parent.remove(line)
-      }
-    }
-
-    const meshes: THREE.Mesh[] = []
-    this.currentModel.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        meshes.push(child)
-      }
-    })
-
-    for (const mesh of meshes) {
-      const meshClone = mesh.clone()
-
-      let lineGeom = new THREE.EdgesGeometry(meshClone.geometry, threshold)
-
-      const line = new THREE.LineSegments(
-        lineGeom,
-        new THREE.LineBasicMaterial({ color: this.LIGHT_LINES })
-      )
-      line.position.copy(mesh.position)
-      line.scale.copy(mesh.scale)
-      line.rotation.copy(mesh.rotation)
-
-      const thickLineGeom = new LineSegmentsGeometry().fromEdgesGeometry(
-        lineGeom
-      )
-      const thickLines = new LineSegments2(
-        thickLineGeom,
-        new LineMaterial({ color: this.LIGHT_LINES, linewidth: 13 })
-      )
-      thickLines.position.copy(mesh.position)
-      thickLines.scale.copy(mesh.scale)
-      thickLines.rotation.copy(mesh.rotation)
-
-      this.edgesModel.add(line)
-      this.edgesModel.add(thickLines)
-    }
-
-    this.edgesModel.traverse((child) => {
-      if (
-        child instanceof THREE.Mesh &&
-        child.material &&
-        child.material.resolution
-      ) {
-        this.renderer.getSize(child.material.resolution)
-        child.material.resolution.multiplyScalar(window.devicePixelRatio)
-        child.material.linewidth = 1
-      }
-    })
-    this.eventManager.emitEvent('edgeThresholdChange', threshold)
-  }
-
-  disposeBackgroundModel(): void {
-    if (this.backgroundModel) {
-      if (this.backgroundModel.parent) {
-        this.backgroundModel.parent.remove(this.backgroundModel)
+        meshMaterial.side = THREE.DoubleSide
       }
 
-      this.backgroundModel.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.material.dispose()
-        }
-      })
-    }
-  }
+      const mesh = new THREE.Mesh(plyGeometry, meshMaterial)
+      this.originalMaterials.set(mesh, meshMaterial)
 
-  disposeShadowModel(): void {
-    if (this.shadowModel) {
-      if (this.shadowModel.parent) {
-        this.shadowModel.parent.remove(this.shadowModel)
-      }
+      newModel = new THREE.Group()
+      newModel.add(mesh)
 
-      this.shadowModel.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.material.dispose()
-        }
-      })
-    }
-  }
-
-  disposeDepthModel(): void {
-    if (this.depthModel) {
-      if (this.depthModel.parent) {
-        this.depthModel.parent.remove(this.depthModel)
-      }
-
-      this.depthModel.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.material.dispose()
-        }
-      })
-    }
-  }
-
-  disposeConditionalModel(): void {
-    if (this.conditionalModel) {
-      if (this.conditionalModel.parent) {
-        this.conditionalModel.parent.remove(this.conditionalModel)
-      }
-
-      this.conditionalModel.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.material.dispose()
-        }
-      })
-    }
-  }
-
-  initBackgroundModel() {
-    this.disposeBackgroundModel()
-    this.disposeShadowModel()
-    this.disposeDepthModel()
-
-    if (!this.currentModel) {
-      return
-    }
-
-    this.backgroundModel = this.currentModel.clone()
-    this.backgroundModel.visible = true
-    this.backgroundModel.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.material = new THREE.MeshBasicMaterial({
-          color: this.LIGHT_MODEL
+      // Apply the requested material mode
+      if (mode === 'normal') {
+        mesh.material = new THREE.MeshNormalMaterial({
+          flatShading: false,
+          side: THREE.DoubleSide
         })
-        child.material.polygonOffset = true
-        child.material.polygonOffsetFactor = 1
-        child.material.polygonOffsetUnits = 1
-        child.renderOrder = 2
-        child.material.transparent = false
-        child.material.opacity = 0.25
-      }
-    })
-
-    this.lineartModel.add(this.backgroundModel)
-
-    this.shadowModel = this.currentModel.clone()
-
-    // TODO this has some error, need to fix later
-    this.shadowModel.visible = false
-
-    this.shadowModel.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.material = new ColoredShadowMaterial({
-          color: this.LIGHT_MODEL,
-          shininess: 1.0
+      } else if (mode === 'wireframe') {
+        mesh.material = new THREE.MeshBasicMaterial({
+          color: 0xffffff,
+          wireframe: true
         })
-        child.material.polygonOffset = true
-        child.material.polygonOffsetFactor = 1
-        child.material.polygonOffsetUnits = 1
-        child.receiveShadow = true
-        child.renderOrder = 2
       }
-    })
-
-    this.lineartModel.add(this.shadowModel)
-
-    this.depthModel = this.currentModel.clone()
-    this.depthModel.visible = true
-    this.depthModel.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.material = new THREE.MeshBasicMaterial({
-          color: this.LIGHT_MODEL
-        })
-        child.material.polygonOffset = true
-        child.material.polygonOffsetFactor = 1
-        child.material.polygonOffsetUnits = 1
-        child.material.colorWrite = false
-        child.renderOrder = 1
-      }
-    })
-
-    this.lineartModel.add(this.depthModel)
-  }
-
-  initConditionalModel() {
-    this.disposeConditionalModel()
-
-    if (!this.currentModel) {
-      return
     }
 
-    this.conditionalModel = this.currentModel.clone()
-    this.lineartModel.add(this.conditionalModel)
-    this.conditionalModel.visible = true
-
-    const meshes: THREE.Mesh[] = []
-
-    this.conditionalModel.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        meshes.push(child)
+    // Double check: remove any remaining MainModel before adding new one
+    const remainingMainModels: THREE.Object3D[] = []
+    this.scene.traverse((obj) => {
+      if (obj.name === 'MainModel') {
+        remainingMainModels.push(obj)
       }
     })
+    remainingMainModels.forEach((obj) => this.scene.remove(obj))
 
-    for (const key in meshes) {
-      const mesh = meshes[key]
-      const parent = mesh.parent
+    this.currentModel = newModel
+    newModel.name = 'MainModel'
 
-      const mergedGeom = mesh.geometry.clone()
-      for (const key in mergedGeom.attributes) {
-        if (key !== 'position') {
-          mergedGeom.deleteAttribute(key)
-        }
-      }
+    // Setup the new model
+    if (mode === 'pointCloud') {
+      this.scene.add(newModel)
+    } else {
+      const box = new THREE.Box3().setFromObject(newModel)
+      const size = box.getSize(new THREE.Vector3())
+      const center = box.getCenter(new THREE.Vector3())
 
-      const lineGeom = new ConditionalEdgesGeometry(mergeVertices(mergedGeom))
-      const material = new THREE.ShaderMaterial(ConditionalEdgesShader)
-      material.uniforms.diffuse.value.set(this.LIGHT_LINES)
+      const maxDim = Math.max(size.x, size.y, size.z)
+      const targetSize = 5
+      const scale = targetSize / maxDim
+      newModel.scale.multiplyScalar(scale)
 
-      const line = new THREE.LineSegments(lineGeom, material)
-      line.position.copy(mesh.position)
-      line.scale.copy(mesh.scale)
-      line.rotation.copy(mesh.rotation)
+      box.setFromObject(newModel)
+      box.getCenter(center)
+      box.getSize(size)
 
-      const thickLineGeom =
-        new ConditionalLineSegmentsGeometry().fromConditionalEdgesGeometry(
-          lineGeom
-        )
-
-      const conditionalLineMaterial = new ConditionalLineMaterial({
-        color: this.LIGHT_LINES,
-        linewidth: 2
-      })
-
-      const thickLines = new LineSegments2(
-        thickLineGeom,
-        conditionalLineMaterial
-      )
-      thickLines.position.copy(mesh.position)
-      thickLines.scale.copy(mesh.scale)
-      thickLines.rotation.copy(mesh.rotation)
-
-      parent?.remove(mesh)
-      parent?.add(line)
-      parent?.add(thickLines)
+      newModel.position.set(-center.x, -box.min.y, -center.z)
+      this.scene.add(newModel)
     }
 
-    this.conditionalModel.traverse((child) => {
-      if (
-        child instanceof THREE.Mesh &&
-        child.material &&
-        child.material.resolution
-      ) {
-        this.renderer.getSize(child.material.resolution)
-        child.material.resolution.multiplyScalar(window.devicePixelRatio)
-        child.material.linewidth = 1
-      }
-    })
+    this.eventManager.emitEvent('materialModeChange', mode)
   }
 
   setMaterialMode(mode: MaterialMode): void {
@@ -495,6 +247,12 @@ export class SceneModelManager implements ModelManagerInterface {
 
     this.materialMode = mode
 
+    // Handle PLY files specially - they need to be recreated for mode switch
+    if (this.originalModel instanceof THREE.BufferGeometry) {
+      this.handlePLYModeSwitch(mode)
+      return
+    }
+
     if (mode === 'depth') {
       this.renderer.outputColorSpace = THREE.LinearSRGBColorSpace
     } else {
@@ -502,11 +260,7 @@ export class SceneModelManager implements ModelManagerInterface {
     }
 
     if (this.currentModel) {
-      this.currentModel.visible = mode !== 'lineart'
-    }
-
-    if (this.lineartModel) {
-      this.lineartModel.visible = mode === 'lineart'
+      this.currentModel.visible = true
     }
 
     this.currentModel.traverse((child) => {
@@ -580,6 +334,7 @@ export class SceneModelManager implements ModelManagerInterface {
             })
             break
           case 'original':
+          case 'pointCloud':
             const originalMaterial = this.originalMaterials.get(child)
             if (originalMaterial) {
               child.material = originalMaterial
@@ -649,6 +404,7 @@ export class SceneModelManager implements ModelManagerInterface {
 
   reset(): void {
     this.currentModel = null
+    this.originalModel = null
     this.originalRotation = null
     this.currentUpDirection = 'original'
     this.setMaterialMode('original')
@@ -660,17 +416,90 @@ export class SceneModelManager implements ModelManagerInterface {
       this.appliedTexture = null
     }
 
+    if (this.skeletonHelper) {
+      this.scene.remove(this.skeletonHelper)
+      this.skeletonHelper.dispose()
+      this.skeletonHelper = null
+    }
+    this.showSkeleton = false
+
     this.originalMaterials = new WeakMap()
+  }
+
+  hasSkeleton(): boolean {
+    if (!this.currentModel) return false
+    let found = false
+    this.currentModel.traverse((child) => {
+      if (child instanceof THREE.SkinnedMesh && child.skeleton) {
+        found = true
+      }
+    })
+    return found
+  }
+
+  setShowSkeleton(show: boolean): void {
+    this.showSkeleton = show
+
+    if (show) {
+      if (!this.skeletonHelper && this.currentModel) {
+        let rootBone: THREE.Bone | null = null
+        this.currentModel.traverse((child) => {
+          if (child instanceof THREE.Bone && !rootBone) {
+            if (!(child.parent instanceof THREE.Bone)) {
+              rootBone = child
+            }
+          }
+        })
+
+        if (rootBone) {
+          this.skeletonHelper = new THREE.SkeletonHelper(rootBone)
+          this.scene.add(this.skeletonHelper)
+        } else {
+          let skinnedMesh: THREE.SkinnedMesh | null = null
+          this.currentModel.traverse((child) => {
+            if (child instanceof THREE.SkinnedMesh && !skinnedMesh) {
+              skinnedMesh = child
+            }
+          })
+
+          if (skinnedMesh) {
+            this.skeletonHelper = new THREE.SkeletonHelper(skinnedMesh)
+            this.scene.add(this.skeletonHelper)
+          }
+        }
+      } else if (this.skeletonHelper) {
+        this.skeletonHelper.visible = true
+      }
+    } else {
+      if (this.skeletonHelper) {
+        this.skeletonHelper.visible = false
+      }
+    }
+
+    this.eventManager.emitEvent('skeletonVisibilityChange', show)
   }
 
   addModelToScene(model: THREE.Object3D): void {
     this.currentModel = model
+    model.name = 'MainModel'
 
     this.scene.add(this.currentModel)
   }
 
   async setupModel(model: THREE.Object3D): Promise<void> {
     this.currentModel = model
+    model.name = 'MainModel'
+
+    // Check if model is or contains a SplatMesh (3D Gaussian Splatting)
+    const isSplatModel = this.containsSplatMesh(model)
+
+    if (isSplatModel) {
+      // SplatMesh handles its own rendering, just add to scene
+      this.scene.add(model)
+      // Set a default camera distance for splat models
+      this.setupCamera(new THREE.Vector3(5, 5, 5))
+      return
+    }
 
     const box = new THREE.Box3().setFromObject(model)
     const size = box.getSize(new THREE.Vector3())
@@ -699,20 +528,17 @@ export class SceneModelManager implements ModelManagerInterface {
     this.setupModelMaterials(model)
 
     this.setupCamera(size)
-
-    if (this.createLineartModel) {
-      this.setupLineartModel()
-    }
   }
 
-  setupLineartModel(): void {
-    this.scene.add(this.lineartModel)
-
-    this.initEdgesModel()
-    this.initBackgroundModel()
-    this.initConditionalModel()
-
-    this.lineartModel.visible = false
+  containsSplatMesh(model?: THREE.Object3D | null): boolean {
+    const target = model ?? this.currentModel
+    if (!target) return false
+    if (target instanceof SplatMesh) return true
+    let found = false
+    target.traverse((child) => {
+      if (child instanceof SplatMesh) found = true
+    })
+    return found
   }
 
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void {
@@ -730,7 +556,6 @@ export class SceneModelManager implements ModelManagerInterface {
 
     if (this.originalRotation) {
       this.currentModel.rotation.copy(this.originalRotation)
-      this.lineartModel.rotation.copy(this.originalRotation)
     }
 
     switch (direction) {
@@ -754,8 +579,6 @@ export class SceneModelManager implements ModelManagerInterface {
         this.currentModel.rotation.x = -Math.PI / 2
         break
     }
-
-    this.lineartModel.rotation.copy(this.currentModel.rotation)
 
     this.eventManager.emitEvent('upDirectionChange', direction)
   }

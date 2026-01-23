@@ -1,8 +1,10 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, type ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { LLink } from '@/lib/litegraph/src/LLink'
+import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -27,7 +29,7 @@ import { SubgraphInputNode } from './SubgraphInputNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
-export interface FilteredItems {
+interface FilteredItems {
   nodes: Set<LGraphNode>
   reroutes: Set<Reroute>
   groups: Set<LGraphGroup>
@@ -116,7 +118,7 @@ export function getBoundaryLinks(
 
           const resolved = LLink.resolve(input.link, graph)
           if (!resolved) {
-            console.debug(`Failed to resolve link ID [${input.link}]`)
+            console.warn(`Failed to resolve link ID [${input.link}]`)
             continue
           }
 
@@ -220,11 +222,13 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
     const newNode = LiteGraph.createNode(node.type)
     if (!newNode) {
       console.warn('Failed to create node', node.type)
+      const serializedData = structuredClone(node.serialize())
+      clonedNodes.push(serializedData)
       continue
     }
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
-    const data = LiteGraph.cloneObject(node.serialize())
+    const data = structuredClone(node.serialize())
     newNode.configure(data)
 
     clonedNodes.push(newNode.serialize())
@@ -256,10 +260,29 @@ export function groupResolvedByOutput(
 
   return groupedByOutput
 }
+function mapReroutes(
+  link: SerialisableLLink,
+  reroutes: Map<RerouteId, Reroute>
+) {
+  let child: SerialisableLLink | Reroute = link
+  let nextReroute =
+    child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+
+  while (child.parentId !== undefined && nextReroute) {
+    child = nextReroute
+    nextReroute =
+      child.parentId === undefined ? undefined : reroutes.get(child.parentId)
+  }
+
+  const lastId = child.parentId
+  child.parentId = undefined
+  return lastId
+}
 
 export function mapSubgraphInputsAndLinks(
   resolvedInputLinks: ResolvedConnection[],
-  links: SerialisableLLink[]
+  links: SerialisableLLink[],
+  reroutes: Map<RerouteId, Reroute>
 ): SubgraphIO[] {
   // Group matching links
   const groupedByOutput = groupResolvedByOutput(resolvedInputLinks)
@@ -276,8 +299,10 @@ export function mapSubgraphInputsAndLinks(
       if (!input) continue
 
       const linkData = link.asSerialisable()
+      link.parentId = mapReroutes(link, reroutes)
       linkData.origin_id = SUBGRAPH_INPUT_ID
       linkData.origin_slot = inputs.length
+
       links.push(linkData)
       inputLinks.push(linkData)
     }
@@ -337,7 +362,8 @@ export function mapSubgraphInputsAndLinks(
  */
 export function mapSubgraphOutputsAndLinks(
   resolvedOutputLinks: ResolvedConnection[],
-  links: SerialisableLLink[]
+  links: SerialisableLLink[],
+  reroutes: Map<RerouteId, Reroute>
 ): SubgraphIO[] {
   // Group matching links
   const groupedByOutput = groupResolvedByOutput(resolvedOutputLinks)
@@ -352,10 +378,11 @@ export function mapSubgraphOutputsAndLinks(
       const { link, output } = resolved
       if (!output) continue
 
-      // Link
       const linkData = link.asSerialisable()
+      linkData.parentId = mapReroutes(link, reroutes)
       linkData.target_id = SUBGRAPH_OUTPUT_ID
       linkData.target_slot = outputs.length
+
       links.push(linkData)
       outputLinks.push(linkData)
     }

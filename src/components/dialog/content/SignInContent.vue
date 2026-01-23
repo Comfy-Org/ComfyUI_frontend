@@ -1,5 +1,5 @@
 <template>
-  <div class="w-96 p-2 overflow-x-hidden">
+  <div class="w-96 overflow-x-hidden p-2">
     <ApiKeyForm
       v-if="showApiKeyForm"
       @back="showApiKeyForm = false"
@@ -7,11 +7,11 @@
     />
     <template v-else>
       <!-- Header -->
-      <div class="flex flex-col gap-4 mb-8">
-        <h1 class="text-2xl font-medium leading-normal my-0">
+      <div class="mb-8 flex flex-col gap-4">
+        <h1 class="my-0 text-2xl leading-normal font-medium">
           {{ isSignIn ? t('auth.login.title') : t('auth.signup.title') }}
         </h1>
-        <p class="text-base my-0">
+        <p class="my-0 text-base">
           <span class="text-muted">{{
             isSignIn
               ? t('auth.login.newUser')
@@ -45,58 +45,57 @@
         <span class="text-muted">{{ t('auth.login.orContinueWith') }}</span>
       </Divider>
 
-      <!-- Social Login Buttons -->
+      <!-- Social Login Buttons (hidden if host not whitelisted) -->
       <div class="flex flex-col gap-6">
-        <Button
-          type="button"
-          class="h-10"
-          severity="secondary"
-          outlined
-          @click="signInWithGoogle"
-        >
-          <i class="pi pi-google mr-2"></i>
-          {{
-            isSignIn
-              ? t('auth.login.loginWithGoogle')
-              : t('auth.signup.signUpWithGoogle')
-          }}
-        </Button>
+        <template v-if="ssoAllowed">
+          <Button
+            type="button"
+            class="h-10"
+            variant="secondary"
+            @click="signInWithGoogle"
+          >
+            <i class="pi pi-google mr-2"></i>
+            {{
+              isSignIn
+                ? t('auth.login.loginWithGoogle')
+                : t('auth.signup.signUpWithGoogle')
+            }}
+          </Button>
+
+          <Button
+            type="button"
+            class="h-10"
+            variant="secondary"
+            @click="signInWithGithub"
+          >
+            <i class="pi pi-github mr-2"></i>
+            {{
+              isSignIn
+                ? t('auth.login.loginWithGithub')
+                : t('auth.signup.signUpWithGithub')
+            }}
+          </Button>
+        </template>
 
         <Button
           type="button"
           class="h-10"
-          severity="secondary"
-          outlined
-          @click="signInWithGithub"
-        >
-          <i class="pi pi-github mr-2"></i>
-          {{
-            isSignIn
-              ? t('auth.login.loginWithGithub')
-              : t('auth.signup.signUpWithGithub')
-          }}
-        </Button>
-
-        <Button
-          type="button"
-          class="h-10"
-          severity="secondary"
-          outlined
+          variant="secondary"
           @click="showApiKeyForm = true"
         >
           <img
             src="/assets/images/comfy-logo-mono.svg"
-            class="w-5 h-5 mr-2"
-            alt="Comfy"
+            class="mr-2 h-5 w-5"
+            :alt="$t('g.comfy')"
           />
           {{ t('auth.login.useApiKey') }}
         </Button>
-        <small class="text-muted text-center">
+        <small class="text-center text-muted">
           {{ t('auth.apiKey.helpText') }}
           <a
-            :href="`${COMFY_PLATFORM_BASE_URL}/login`"
+            :href="`${comfyPlatformBaseUrl}/login`"
             target="_blank"
-            class="text-blue-500 cursor-pointer"
+            class="cursor-pointer text-blue-500"
           >
             {{ t('auth.apiKey.generateKey') }}
           </a>
@@ -113,12 +112,12 @@
       </div>
 
       <!-- Terms & Contact -->
-      <p class="text-xs text-muted mt-8">
+      <p class="mt-8 text-xs text-muted">
         {{ t('auth.login.termsText') }}
         <a
           href="https://www.comfy.org/terms-of-service"
           target="_blank"
-          class="text-blue-500 cursor-pointer"
+          class="cursor-pointer text-blue-500"
         >
           {{ t('auth.login.termsLink') }}
         </a>
@@ -126,12 +125,12 @@
         <a
           href="https://www.comfy.org/privacy"
           target="_blank"
-          class="text-blue-500 cursor-pointer"
+          class="cursor-pointer text-blue-500"
         >
           {{ t('auth.login.privacyLink') }} </a
         >.
         {{ t('auth.login.questionsContactPrefix') }}
-        <a href="mailto:hello@comfy.org" class="text-blue-500 cursor-pointer">
+        <a href="mailto:hello@comfy.org" class="cursor-pointer text-blue-500">
           hello@comfy.org</a
         >.
       </p>
@@ -140,15 +139,20 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
-import { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import {
+  configValueOrDefault,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
+import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 import { isInChina } from '@/utils/networkUtil'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -164,6 +168,14 @@ const authActions = useFirebaseAuthActions()
 const isSecureContext = window.isSecureContext
 const isSignIn = ref(true)
 const showApiKeyForm = ref(false)
+const ssoAllowed = isHostWhitelisted(normalizeHost(window.location.hostname))
+const comfyPlatformBaseUrl = computed(() =>
+  configValueOrDefault(
+    remoteConfig.value,
+    'comfy_platform_base_url',
+    getComfyPlatformBaseUrl()
+  )
+)
 
 const toggleState = () => {
   isSignIn.value = !isSignIn.value

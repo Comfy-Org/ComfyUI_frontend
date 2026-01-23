@@ -1,5 +1,10 @@
 <template>
-  <SidebarIcon icon="pi pi-sign-out" :tooltip="tooltip" @click="logout" />
+  <SidebarIcon
+    icon="pi pi-sign-out"
+    :tooltip="tooltip"
+    :label="$t('sideToolbar.logout')"
+    @click="logout"
+  />
 </template>
 
 <script setup lang="ts">

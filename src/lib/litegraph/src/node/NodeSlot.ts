@@ -8,8 +8,7 @@ import type {
   INodeSlot,
   ISubgraphInput,
   OptionalProps,
-  Point,
-  ReadOnlyPoint
+  Point
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { getCentre } from '@/lib/litegraph/src/measure'
@@ -31,12 +30,14 @@ export interface IDrawOptions {
   highlight?: boolean
 }
 
+const ROTATION_OFFSET = -Math.PI
+
 /** Shared base class for {@link LGraphNode} input and output slots. */
 export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
 
   /** The offset from the parent node to the centre point of this slot. */
-  get #centreOffset(): ReadOnlyPoint {
+  get #centreOffset(): Readonly<Point> {
     const nodePos = this.node.pos
     const { boundingRect } = this
 
@@ -52,7 +53,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   }
 
   /** The center point of this slot when the node is collapsed. */
-  abstract get collapsedPos(): ReadOnlyPoint
+  abstract get collapsedPos(): Readonly<Point>
 
   #node: LGraphNode
   get node(): LGraphNode {
@@ -73,7 +74,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     slot: OptionalProps<INodeSlot, 'boundingRect'>,
     node: LGraphNode
   ) {
-    // Workaround: Ensure internal properties are not copied to the slot (_listenerController
+    // @ts-expect-error Workaround: Ensure internal properties are not copied to the slot (_listenerController
     // https://github.com/Comfy-Org/litegraph.js/issues/1138
     const maybeSubgraphSlot: OptionalProps<
       ISubgraphInput,
@@ -131,6 +132,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       slot_type === SlotType.Array ? SlotShape.Grid : this.shape
     ) as SlotShape
 
+    ctx.save()
     ctx.beginPath()
     let doFill = true
 
@@ -164,16 +166,52 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       if (lowQuality) {
         ctx.rect(pos[0] - 4, pos[1] - 4, 8, 8)
       } else {
-        let radius: number
         if (slot_shape === SlotShape.HollowCircle) {
+          const path = new Path2D()
+          path.arc(pos[0], pos[1], 10, 0, Math.PI * 2)
+          path.arc(pos[0], pos[1], highlight ? 2.5 : 1.5, 0, Math.PI * 2)
+          ctx.clip(path, 'evenodd')
+        }
+        const radius = highlight ? 5 : 4
+        const typesSet = new Set(
+          `${this.type}`
+            .split(',')
+            .map(
+              this.isConnected
+                ? (type) => colorContext.getConnectedColor(type)
+                : (type) => colorContext.getDisconnectedColor(type)
+            )
+        )
+        const types = [...typesSet].slice(0, 3)
+        if (types.length > 1) {
           doFill = false
-          doStroke = true
-          ctx.lineWidth = 3
-          ctx.strokeStyle = ctx.fillStyle
-          radius = highlight ? 4 : 3
-        } else {
-          // Normal circle
-          radius = highlight ? 5 : 4
+          const arcLen = (Math.PI * 2) / types.length
+          types.forEach((type, idx) => {
+            ctx.moveTo(pos[0], pos[1])
+            ctx.fillStyle = type
+            ctx.arc(
+              pos[0],
+              pos[1],
+              radius,
+              arcLen * idx + ROTATION_OFFSET,
+              Math.PI * 2 + ROTATION_OFFSET
+            )
+            ctx.fill()
+            ctx.beginPath()
+          })
+          //add stroke dividers
+          ctx.save()
+          ctx.strokeStyle = 'black'
+          ctx.lineWidth = 0.5
+          types.forEach((_, idx) => {
+            ctx.moveTo(pos[0], pos[1])
+            const xOffset = Math.cos(arcLen * idx + ROTATION_OFFSET) * radius
+            const yOffset = Math.sin(arcLen * idx + ROTATION_OFFSET) * radius
+            ctx.lineTo(pos[0] + xOffset, pos[1] + yOffset)
+          })
+          ctx.stroke()
+          ctx.restore()
+          ctx.beginPath()
         }
         ctx.arc(pos[0], pos[1], radius, 0, Math.PI * 2)
       }
@@ -181,6 +219,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
 
     if (doFill) ctx.fill()
     if (!lowQuality && doStroke) ctx.stroke()
+    ctx.restore()
 
     // render slot label
     const hideLabel = lowQuality || this.isWidgetInputSlot

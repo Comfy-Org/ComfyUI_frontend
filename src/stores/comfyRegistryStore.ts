@@ -1,5 +1,5 @@
 import QuickLRU from '@alloc/quick-lru'
-import { partition } from 'lodash'
+import { partition } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 
 import { useCachedRequest } from '@/composables/useCachedRequest'

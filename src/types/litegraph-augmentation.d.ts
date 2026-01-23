@@ -1,15 +1,16 @@
 import '@/lib/litegraph/src/litegraph'
-import type { LLink, Size } from '@/lib/litegraph/src/litegraph'
 import type {
   ExecutableLGraphNode,
-  ExecutionId
+  ExecutionId,
+  LLink,
+  Size
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
-
-import type { NodeId } from '../schemas/comfyWorkflowSchema'
 
 /** ComfyUI extensions of litegraph */
 declare module '@/lib/litegraph/src/types/widgets' {
@@ -83,7 +84,7 @@ declare module '@/lib/litegraph/src/litegraph' {
   }
 
   // Add interface augmentations into the class itself
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+
   interface BaseWidget extends IBaseWidget {}
 
   interface LGraphNode {
@@ -94,7 +95,12 @@ declare module '@/lib/litegraph/src/litegraph' {
      */
     onAfterGraphConfigured?(): void
     onGraphConfigured?(): void
-    onExecuted?(output: any): void
+    /**
+     * Callback fired when node execution completes.
+     * Output contains known media properties (images, audio, video) plus
+     * arbitrary node-specific outputs (text, ui, custom properties).
+     */
+    onExecuted?(output: NodeExecutionOutput): void
     onNodeCreated?(this: LGraphNode): void
     /** @deprecated groupNode */
     setInnerNodes?(nodes: LGraphNode[]): void

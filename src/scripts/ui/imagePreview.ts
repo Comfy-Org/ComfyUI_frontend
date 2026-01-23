@@ -1,3 +1,5 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import { app } from '../app'
 import { $el } from '../ui'
 
@@ -48,8 +50,8 @@ export function calculateImageGrid(
   return { cellWidth, cellHeight, cols, rows, shiftX }
 }
 
-// @ts-expect-error fixme ts strict error
-export function createImageHost(node) {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export function createImageHost(node: LGraphNode) {
   const el = $el('div.comfy-img-preview')
   // @ts-expect-error fixme ts strict error
   let currentImgs
@@ -108,8 +110,8 @@ export function createImageHost(node) {
         }
         el.replaceChildren(...imgs)
         currentImgs = imgs
-        node.onResize(node.size)
-        node.graph.setDirtyCanvas(true, true)
+        node.onResize?.(node.size)
+        node.graph?.setDirtyCanvas(true, true)
       }
     },
     getHeight() {

@@ -54,7 +54,7 @@ export interface TreeExplorerNode<T = any> extends TreeNode {
     event: MouseEvent
   ) => void | Promise<void>
   /** Function to handle errors */
-  handleError?: (this: TreeExplorerNode<T>, error: Error) => void
+  handleError?: (this: TreeExplorerNode<T>, error: unknown) => void
   /** Extra context menu items */
   contextMenuItems?:
     | MenuItem[]

@@ -1,8 +1,9 @@
 import axios from 'axios'
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
@@ -13,14 +14,13 @@ import type {
 import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,
-  ComfyOutputTypesSpec as ComfyOutputSpecV1
+  ComfyOutputTypesSpec as ComfyOutputSpecV1,
+  PriceBadge
 } from '@/schemas/nodeDefSchema'
 import { NodeSearchService } from '@/services/nodeSearchService'
-import {
-  type NodeSource,
-  NodeSourceType,
-  getNodeSource
-} from '@/types/nodeSource'
+import { useSubgraphStore } from '@/stores/subgraphStore'
+import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
+import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
@@ -63,6 +63,16 @@ export class ComfyNodeDefImpl
    * @deprecated Use `outputs[n].tooltip` instead
    */
   readonly output_tooltips?: string[]
+  /**
+   * Order of inputs for each category (required, optional, hidden)
+   */
+  readonly input_order?: Record<string, string[]>
+  /**
+   * Price badge definition for API nodes.
+   * Contains a JSONata expression to calculate pricing based on widget values
+   * and input connectivity.
+   */
+  readonly price_badge?: PriceBadge
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -130,6 +140,8 @@ export class ComfyNodeDefImpl
     this.output_is_list = obj.output_is_list
     this.output_name = obj.output_name
     this.output_tooltips = obj.output_tooltips
+    this.input_order = obj.input_order
+    this.price_badge = obj.price_badge
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -195,7 +207,10 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     name: 'Note',
     display_name: 'Note',
     category: 'utils',
-    input: { required: {}, optional: {} },
+    input: {
+      required: { text: ['STRING', { multiline: true }] },
+      optional: {}
+    },
     output: [],
     output_name: [],
     output_is_list: [],
@@ -207,7 +222,10 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     name: 'MarkdownNote',
     display_name: 'Markdown Note',
     category: 'utils',
-    input: { required: {}, optional: {} },
+    input: {
+      required: { text: ['STRING', { multiline: true }] },
+      optional: {}
+    },
     output: [],
     output_name: [],
     output_is_list: [],
@@ -218,7 +236,7 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
   }
 }
 
-export interface BuildNodeDefTreeOptions {
+interface BuildNodeDefTreeOptions {
   /**
    * Custom function to extract the tree path from a node definition.
    * If not provided, uses the default path based on nodeDef.nodePath.
@@ -287,7 +305,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const showExperimental = ref(false)
   const nodeDefFilters = ref<NodeDefFilter[]>([])
 
-  const nodeDefs = computed(() => Object.values(nodeDefsByName.value))
+  const nodeDefs = computed(() => {
+    const subgraphStore = useSubgraphStore()
+    // Blueprints first for discoverability in the node library sidebar
+    return [
+      ...subgraphStore.subgraphBlueprints,
+      ...Object.values(nodeDefsByName.value)
+    ]
+  })
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
@@ -333,11 +358,31 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByDisplayName.value[nodeDef.display_name] = nodeDefImpl
   }
   function fromLGraphNode(node: LGraphNode): ComfyNodeDefImpl | null {
-    // Frontend-only nodes don't have nodeDef
-    const nodeTypeName = node.constructor?.nodeData?.name
+    const nodeTypeName = node.constructor?.nodeData?.name ?? node.type
     if (!nodeTypeName) return null
     const nodeDef = nodeDefsByName.value[nodeTypeName] ?? null
     return nodeDef
+  }
+
+  function getInputSpecForWidget(
+    node: LGraphNode,
+    widgetName: string
+  ): InputSpecV2 | undefined {
+    if (!node.isSubgraphNode()) {
+      const nodeDef = fromLGraphNode(node)
+      if (!nodeDef) return undefined
+
+      return nodeDef.inputs[widgetName]
+    }
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    //TODO: resolve spec for linked
+    if (!widget || !isProxyWidget(widget)) return undefined
+
+    const { nodeId, widgetName: subWidgetName } = widget._overlay
+    const subNode = node.subgraph.getNodeById(nodeId)
+    if (!subNode) return undefined
+
+    return getInputSpecForWidget(subNode, subWidgetName)
   }
 
   /**
@@ -378,7 +423,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     })
 
     // Subgraph nodes filter
-    // @todo Remove this filter when subgraph v2 is released
+    // Filter out litegraph typed subgraphs, saved blueprints are added in separately
     registerNodeDefFilter({
       id: 'core.subgraph',
       name: 'Hide Subgraph Nodes',
@@ -412,6 +457,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     updateNodeDefs,
     addNodeDef,
     fromLGraphNode,
+    getInputSpecForWidget,
     registerNodeDefFilter,
     unregisterNodeDefFilter
   }

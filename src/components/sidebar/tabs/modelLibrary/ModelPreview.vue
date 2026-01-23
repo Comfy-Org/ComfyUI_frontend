@@ -49,7 +49,6 @@ const modelDef = props.modelDef
 <style scoped>
 .model_preview {
   background-color: var(--comfy-menu-bg);
-  font-family: 'Open Sans', sans-serif;
   color: var(--descrip-text);
   border: 1px solid var(--descrip-text);
   min-width: 300px;
@@ -72,7 +71,7 @@ const modelDef = props.modelDef
   object-fit: contain;
 }
 .model_preview_title {
-  font-weight: bold;
+  font-weight: 700;
   text-align: center;
   font-size: 14px;
 }
@@ -89,6 +88,6 @@ const modelDef = props.modelDef
   font-size: 10px;
 }
 .model_preview_prefix {
-  font-weight: bold;
+  font-weight: 700;
 }
 </style>

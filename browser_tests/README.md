@@ -16,15 +16,20 @@ Without this flag, parallel tests will conflict and fail randomly.
 
 ### ComfyUI devtools
 
-Clone <https://github.com/Comfy-Org/ComfyUI_devtools> to your `custom_nodes` directory.  
+ComfyUI_devtools is included in this repository under `tools/devtools/`. During CI/CD, these files are automatically copied to the `custom_nodes` directory.  
 _ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing._
+
+For local development, copy the devtools files to your ComfyUI installation:
+```bash
+cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
+```
 
 ### Node.js & Playwright Prerequisites
 
 Ensure you have Node.js v20 or v22 installed. Then, set up the Chromium test driver:
 
 ```bash
-npx playwright install chromium --with-deps
+pnpm exec playwright install chromium --with-deps
 ```
 
 ### Environment Configuration
@@ -51,14 +56,6 @@ TEST_COMFYUI_DIR=/path/to/your/ComfyUI
 
 ### Common Setup Issues
 
-**Most tests require the new menu system** - Add to your test:
-
-```typescript
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-})
-```
-
 ### Release API Mocking
 
 By default, all tests mock the release API (`api.comfy.org/releases`) to prevent release notification popups from interfering with test execution. This is necessary because the release notifications can appear over UI elements and block test interactions.
@@ -76,7 +73,7 @@ For tests that specifically need to test release functionality, see the example 
 **Always use UI mode for development:**
 
 ```bash
-npx playwright test --ui
+pnpm exec playwright test --ui
 ```
 
 UI mode features:
@@ -87,13 +84,13 @@ UI mode features:
 - **Console/Network Tabs**: View logs and API calls at each step
 - **Attachments Tab**: View all snapshots with expected and actual images
 
-![Playwright UI Mode](https://github.com/user-attachments/assets/c158c93f-b39a-44c5-a1a1-e0cc975ee9f2)
+![Playwright UI Mode](https://github.com/user-attachments/assets/9b9cb09f-6da7-4fa0-81df-2effceced755)
 
 For CI or headless testing:
 
 ```bash
-npx playwright test                    # Run all tests
-npx playwright test widget.spec.ts     # Run specific test file
+pnpm exec playwright test                    # Run all tests
+pnpm exec playwright test widget.spec.ts     # Run specific test file
 ```
 
 ### Local Development Config
@@ -389,18 +386,8 @@ export default defineConfig({
 Option 2 - Generate local baselines for comparison:
 
 ```bash
-npx playwright test --update-snapshots
+pnpm exec playwright test --update-snapshots
 ```
-
-### Getting Test Artifacts from GitHub Actions
-
-When tests fail in CI, you can download screenshots and traces:
-
-1. Go to the failed workflow run in GitHub Actions
-2. Scroll to "Artifacts" section at the bottom
-3. Download `playwright-report` or `test-results`
-4. Extract and open the HTML report locally
-5. View actual vs expected screenshots and execution traces
 
 ### Creating New Screenshot Baselines
 
@@ -411,6 +398,33 @@ For PRs from `Comfy-Org/ComfyUI_frontend` branches:
 3. CI will generate and commit the Linux baseline screenshots
 
 > **Note:** Fork PRs cannot auto-commit screenshots. A maintainer will need to commit the screenshots manually for you (don't worry, they'll do it).
+
+## Viewing Test Reports
+
+### Automated Test Deployment
+
+The project automatically deploys Playwright test reports to Cloudflare Pages for every PR and push to main branches.
+
+### Accessing Test Reports
+
+- **From PR comments**: Click the "View Report" links for each browser
+- **Direct URLs**: Reports are available at `https://[branch].comfyui-playwright-[browser].pages.dev` (branch-specific deployments)
+- **From GitHub Actions**: Download artifacts from failed runs
+
+### How It Works
+
+1. **Test execution**: All browser tests run in parallel across multiple browsers
+2. **Report generation**: HTML reports are generated for each browser configuration
+3. **Cloudflare deployment**: Each browser's report deploys to its own Cloudflare Pages project with branch isolation:
+   - `comfyui-playwright-chromium` (with branch-specific URLs)
+   - `comfyui-playwright-mobile-chrome` (with branch-specific URLs)
+   - `comfyui-playwright-chromium-2x` (2x scale, with branch-specific URLs)
+   - `comfyui-playwright-chromium-0-5x` (0.5x scale, with branch-specific URLs)
+
+4. **PR comments**: GitHub automatically updates PR comments with:
+   - ✅/❌ Test status for each browser
+   - Direct links to interactive test reports
+   - Real-time progress updates as tests complete
 
 ## Resources
 

@@ -4,11 +4,12 @@ import { computed, ref } from 'vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { type KeybindingImpl, useKeybindingStore } from './keybindingStore'
+import { useKeybindingStore } from './keybindingStore'
+import type { KeybindingImpl } from './keybindingStore'
 
 export interface ComfyCommand {
   id: string
-  function: () => void | Promise<void>
+  function: (metadata?: Record<string, unknown>) => void | Promise<void>
 
   label?: string | (() => string)
   icon?: string | (() => string)
@@ -17,12 +18,13 @@ export interface ComfyCommand {
   versionAdded?: string
   confirmation?: string // If non-nullish, this command will prompt for confirmation
   source?: string
+  active?: () => boolean // Getter to check if the command is active/toggled on
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
 }
 
 export class ComfyCommandImpl implements ComfyCommand {
   id: string
-  function: () => void | Promise<void>
+  function: (metadata?: Record<string, unknown>) => void | Promise<void>
   _label?: string | (() => string)
   _icon?: string | (() => string)
   _tooltip?: string | (() => string)
@@ -30,6 +32,7 @@ export class ComfyCommandImpl implements ComfyCommand {
   versionAdded?: string
   confirmation?: string
   source?: string
+  active?: () => boolean
   category?: 'essentials' | 'view-controls'
 
   constructor(command: ComfyCommand) {
@@ -42,6 +45,7 @@ export class ComfyCommandImpl implements ComfyCommand {
     this.versionAdded = command.versionAdded
     this.confirmation = command.confirmation
     this.source = command.source
+    this.active = command.active
     this.category = command.category
   }
 
@@ -92,11 +96,17 @@ export const useCommandStore = defineStore('command', () => {
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const execute = async (
     commandId: string,
-    errorHandler?: (error: any) => void
+    options?: {
+      errorHandler?: (error: unknown) => void
+      metadata?: Record<string, unknown>
+    }
   ) => {
     const command = getCommand(commandId)
     if (command) {
-      await wrapWithErrorHandlingAsync(command.function, errorHandler)()
+      await wrapWithErrorHandlingAsync(
+        () => command.function(options?.metadata),
+        options?.errorHandler
+      )()
     } else {
       throw new Error(`Command ${commandId} not found`)
     }
@@ -117,6 +127,13 @@ export const useCommandStore = defineStore('command', () => {
     }
   }
 
+  const formatKeySequence = (command: ComfyCommandImpl): string => {
+    const sequences = command.keybinding?.combo.getKeySequences() || []
+    return sequences
+      .map((seq) => seq.replace(/Control/g, 'Ctrl').replace(/Shift/g, 'Shift'))
+      .join(' + ')
+  }
+
   return {
     commands,
     execute,
@@ -124,6 +141,7 @@ export const useCommandStore = defineStore('command', () => {
     registerCommand,
     registerCommands,
     isRegistered,
-    loadExtensionCommands
+    loadExtensionCommands,
+    formatKeySequence
   }
 })

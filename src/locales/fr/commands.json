@@ -3,7 +3,7 @@
     "label": "Vérifier les mises à jour"
   },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Ouvrir le dossier des nœuds personnalisés"
+    "label": "Ouvrir le dossier des Custom Nodes"
   },
   "Comfy-Desktop_Folders_OpenInputsFolder": {
     "label": "Ouvrir le dossier des entrées"
@@ -24,7 +24,7 @@
     "label": "Ouvrir les outils de développement"
   },
   "Comfy-Desktop_OpenUserGuide": {
-    "label": "Guide de l'utilisateur du bureau"
+    "label": "Guide d'utilisation du bureau"
   },
   "Comfy-Desktop_Quit": {
     "label": "Quitter"
@@ -38,17 +38,20 @@
   "Comfy_3DViewer_Open3DViewer": {
     "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
   },
+  "Comfy_BrowseModelAssets": {
+    "label": "Expérimental : Parcourir les ressources de modèles"
+  },
   "Comfy_BrowseTemplates": {
     "label": "Parcourir les modèles"
-  },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "Ajouter/Modifier une étape de modèle"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Supprimer les éléments sélectionnés"
   },
   "Comfy_Canvas_FitView": {
     "label": "Ajuster la vue aux nœuds sélectionnés"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "Verrouiller la toile"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "Déplacer les nœuds sélectionnés vers le bas"
@@ -92,6 +95,9 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Épingler/Désépingler les éléments sélectionnés"
   },
+  "Comfy_Canvas_Unlock": {
+    "label": "Déverrouiller le Canvas"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom avant"
   },
@@ -107,6 +113,9 @@
   "Comfy_ContactSupport": {
     "label": "Contacter le support"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Afficher le sélecteur de modèle (Dev)"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "Dupliquer le flux de travail actuel"
   },
@@ -116,11 +125,11 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "Exporter le flux de travail (format API)"
   },
-  "Comfy_Feedback": {
-    "label": "Retour d'information"
-  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convertir la sélection en sous-graphe"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Modifier les widgets de sous-graphe"
   },
   "Comfy_Graph_ExitSubgraph": {
     "label": "Quitter le sous-graphe"
@@ -130,6 +139,12 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Grouper les nœuds sélectionnés"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Activer/désactiver la promotion du widget survolé"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Décompresser le sous-graphe sélectionné"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "Convertir les nœuds sélectionnés en nœud de groupe"
@@ -161,11 +176,20 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "Charger le flux de travail par défaut"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "Gestionnaire de Nœuds Personnalisés"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "Nœuds personnalisés (Beta)"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Basculer la boîte de dialogue de progression"
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Nœuds personnalisés (hérités)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Menu du gestionnaire (héritage)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Installer manquants"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Vérifier les mises à jour"
   },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Réduire la taille du pinceau dans MaskEditor"
@@ -173,8 +197,29 @@
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Augmenter la taille du pinceau dans MaskEditor"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Ouvrir le sélecteur de couleur dans MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Miroir horizontal dans MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Miroir vertical dans MaskEditor"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Ouvrir l'éditeur de masque pour le nœud sélectionné"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Rotation à gauche dans MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Rotation à droite dans MaskEditor"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "Décharger les modèles"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "Décharger les modèles et le cache d'exécution"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"
@@ -182,8 +227,14 @@
   "Comfy_OpenClipspace": {
     "label": "Espace de clip"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "Gestionnaire"
+  },
   "Comfy_OpenWorkflow": {
     "label": "Ouvrir le flux de travail"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "Publier le sous-graphe"
   },
   "Comfy_QueuePrompt": {
     "label": "Invite de file d'attente"
@@ -194,11 +245,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "Mettre en file d’attente les nœuds de sortie sélectionnés"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Afficher/masquer l'historique des tâches"
+  },
   "Comfy_Redo": {
     "label": "Refaire"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "Actualiser les définitions de nœud"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Renommer le workflow"
   },
   "Comfy_SaveWorkflow": {
     "label": "Enregistrer le flux de travail"
@@ -208,6 +265,21 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "Afficher la boîte de dialogue des paramètres"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Expérimental : Activer AssetAPI"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Performance du canvas"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Centre d'aide"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "basculer en mode linéaire"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Basculer vers Queue Panel V2"
   },
   "Comfy_ToggleTheme": {
     "label": "Changer de thème (Sombre/Clair)"
@@ -220,6 +292,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "Se déconnecter"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Expérimental : Activer les nœuds Vue"
   },
   "Workspace_CloseWorkflow": {
     "label": "Fermer le flux de travail actuel"
@@ -254,6 +329,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Basculer le mode focus"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Afficher/Masquer la barre latérale des ressources",
+    "tooltip": "Ressources"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "Basculer la barre latérale de la bibliothèque de modèles",
     "tooltip": "Bibliothèque de modèles"
@@ -261,10 +340,6 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "Basculer la barre latérale de la bibliothèque de nœuds",
     "tooltip": "Bibliothèque de nœuds"
-  },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Basculer la barre latérale de la file d'attente",
-    "tooltip": "File d'attente"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "Basculer la barre latérale des flux de travail",

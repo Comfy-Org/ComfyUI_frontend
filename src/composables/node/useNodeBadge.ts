@@ -1,20 +1,18 @@
-import _ from 'lodash'
+import _ from 'es-toolkit/compat'
 import { computed, onMounted, watch } from 'vue'
 
 import { useNodePricing } from '@/composables/node/useNodePricing'
+import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
-import {
-  BadgePosition,
-  LGraphBadge,
-  type LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { BadgePosition, LGraphBadge } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
-import { useSettingStore } from '@/stores/settingStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { adjustColor } from '@/utils/colorUtil'
 
 /**
  * Add LGraphBadge to LGraphNode based on settings.
@@ -29,6 +27,7 @@ export const useNodeBadge = () => {
   const settingStore = useSettingStore()
   const extensionStore = useExtensionStore()
   const colorPaletteStore = useColorPaletteStore()
+  const priceBadge = usePriceBadge()
 
   const nodeSourceBadgeMode = computed(
     () =>
@@ -56,7 +55,7 @@ export const useNodeBadge = () => {
       showApiPricingBadge
     ],
     () => {
-      app.graph?.setDirtyCanvas(true, true)
+      app.canvas?.setDirty(true, true)
     }
   )
 
@@ -74,6 +73,14 @@ export const useNodeBadge = () => {
   onMounted(() => {
     const nodePricing = useNodePricing()
 
+    watch(
+      () => nodePricing.pricingRevision.value,
+      () => {
+        if (!showApiPricingBadge.value) return
+        app.canvas?.setDirty(true, true)
+      }
+    )
+
     extensionStore.registerExtension({
       name: 'Comfy.NodeBadge',
       nodeCreated(node: LGraphNode) {
@@ -88,10 +95,10 @@ export const useNodeBadge = () => {
                   ? `#${node.id}`
                   : '',
                 badgeTextVisible(nodeDef, nodeLifeCycleBadgeMode.value)
-                  ? nodeDef?.nodeLifeCycleBadgeText ?? ''
+                  ? (nodeDef?.nodeLifeCycleBadgeText ?? '')
                   : '',
                 badgeTextVisible(nodeDef, nodeSourceBadgeMode.value)
-                  ? nodeDef?.nodeSource?.badgeText ?? ''
+                  ? (nodeDef?.nodeSource?.badgeText ?? '')
                   : ''
               ]
                 .filter((s) => s.length > 0)
@@ -112,39 +119,16 @@ export const useNodeBadge = () => {
         node.badges.push(() => badge.value)
 
         if (node.constructor.nodeData?.api_node && showApiPricingBadge.value) {
-          // Get the pricing function to determine if this node has dynamic pricing
+          // JSONata rules are dynamic if they depend on any widgets/inputs/input_groups
           const pricingConfig = nodePricing.getNodePricingConfig(node)
           const hasDynamicPricing =
-            typeof pricingConfig?.displayPrice === 'function'
+            !!pricingConfig &&
+            ((pricingConfig.depends_on?.widgets?.length ?? 0) > 0 ||
+              (pricingConfig.depends_on?.inputs?.length ?? 0) > 0 ||
+              (pricingConfig.depends_on?.input_groups?.length ?? 0) > 0)
 
-          let creditsBadge
-          const createBadge = () => {
-            const price = nodePricing.getNodeDisplayPrice(node)
-
-            const isLightTheme =
-              colorPaletteStore.completedActivePalette.light_theme
-            return new LGraphBadge({
-              text: price,
-              iconOptions: {
-                unicode: '\ue96b',
-                fontFamily: 'PrimeIcons',
-                color: isLightTheme
-                  ? adjustColor('#FABC25', { lightness: 0.5 })
-                  : '#FABC25',
-                bgColor: isLightTheme
-                  ? adjustColor('#654020', { lightness: 0.5 })
-                  : '#654020',
-                fontSize: 8
-              },
-              fgColor:
-                colorPaletteStore.completedActivePalette.colors.litegraph_base
-                  .BADGE_FG_COLOR,
-              bgColor: isLightTheme
-                ? adjustColor('#8D6932', { lightness: 0.5 })
-                : '#8D6932'
-            })
-          }
-
+          // Keep the existing widget-watch wiring ONLY to trigger redraws on widget change.
+          // (We no longer rely on it to hold the current badge value.)
           if (hasDynamicPricing) {
             // For dynamic pricing nodes, use computed that watches widget changes
             const relevantWidgetNames = nodePricing.getRelevantWidgetNames(
@@ -156,14 +140,81 @@ export const useNodeBadge = () => {
               triggerCanvasRedraw: true
             })
 
-            creditsBadge = computedWithWidgetWatch(createBadge)
-          } else {
-            // For static pricing nodes, use regular computed
-            creditsBadge = computed(createBadge)
+            // Ensure watchers are installed; ignore the returned value.
+            // (This call is what registers the widget listeners in most implementations.)
+            computedWithWidgetWatch(() => 0)
+
+            // Hook into connection changes to trigger price recalculation
+            // This handles both connect and disconnect in VueNodes mode
+            const relevantInputs = pricingConfig?.depends_on?.inputs ?? []
+            const inputGroupPrefixes =
+              pricingConfig?.depends_on?.input_groups ?? []
+            const hasRelevantInputs =
+              relevantInputs.length > 0 || inputGroupPrefixes.length > 0
+
+            if (hasRelevantInputs) {
+              const originalOnConnectionsChange = node.onConnectionsChange
+              node.onConnectionsChange = function (
+                type,
+                slotIndex,
+                isConnected,
+                link,
+                ioSlot
+              ) {
+                originalOnConnectionsChange?.call(
+                  this,
+                  type,
+                  slotIndex,
+                  isConnected,
+                  link,
+                  ioSlot
+                )
+                // Only trigger if this input affects pricing
+                const inputName = ioSlot?.name
+                if (!inputName) return
+                const isRelevantInput =
+                  relevantInputs.includes(inputName) ||
+                  inputGroupPrefixes.some((prefix) =>
+                    inputName.startsWith(prefix + '.')
+                  )
+                if (isRelevantInput) {
+                  nodePricing.triggerPriceRecalculation(node)
+                }
+              }
+            }
           }
 
-          node.badges.push(() => creditsBadge.value)
+          let lastLabel = nodePricing.getNodeDisplayPrice(node)
+          let lastBadge = priceBadge.getCreditsBadge(lastLabel)
+
+          const creditsBadgeGetter: () => LGraphBadge = () => {
+            const label = nodePricing.getNodeDisplayPrice(node)
+            if (label !== lastLabel) {
+              lastLabel = label
+              lastBadge = priceBadge.getCreditsBadge(label)
+            }
+            return lastBadge
+          }
+
+          node.badges.push(creditsBadgeGetter)
         }
+      },
+      init() {
+        app.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+          'litegraph:set-graph',
+          () => {
+            for (const node of app.canvas.graph?.nodes ?? [])
+              priceBadge.updateSubgraphCredits(node)
+          }
+        )
+        app.canvas.canvas.addEventListener<'subgraph-converted'>(
+          'subgraph-converted',
+          (e) => priceBadge.updateSubgraphCredits(e.detail.subgraphNode)
+        )
+      },
+      afterConfigureGraph() {
+        for (const node of app.canvas.graph?.nodes ?? [])
+          priceBadge.updateSubgraphCredits(node)
       }
     })
   })

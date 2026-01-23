@@ -1,27 +1,27 @@
 {
   "Comfy-Desktop_CheckForUpdates": {
-    "label": "更新を確認する"
+    "label": "アップデートを確認"
   },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "カスタムノードフォルダを開く"
+    "label": "カスタムノードフォルダーを開く"
   },
   "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "入力フォルダを開く"
+    "label": "入力フォルダーを開く"
   },
   "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "ログフォルダを開く"
+    "label": "ログフォルダーを開く"
   },
   "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "extra_model_paths.yamlを開く"
+    "label": "extra_model_paths.yaml を開く"
   },
   "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "モデルフォルダを開く"
+    "label": "モデルフォルダーを開く"
   },
   "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "出力フォルダを開く"
+    "label": "出力フォルダーを開く"
   },
   "Comfy-Desktop_OpenDevTools": {
-    "label": "DevToolsを開く"
+    "label": "開発者ツールを開く"
   },
   "Comfy-Desktop_OpenUserGuide": {
     "label": "デスクトップユーザーガイド"
@@ -38,17 +38,20 @@
   "Comfy_3DViewer_Open3DViewer": {
     "label": "選択したノードの3Dビューアー（ベータ）を開く"
   },
+  "Comfy_BrowseModelAssets": {
+    "label": "実験的: モデルアセットを参照"
+  },
   "Comfy_BrowseTemplates": {
     "label": "テンプレートを参照"
-  },
-  "Comfy_Canvas_AddEditModelStep": {
-    "label": "編集モデルステップを追加"
   },
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "選択したアイテムを削除"
   },
   "Comfy_Canvas_FitView": {
     "label": "選択したノードにビューを合わせる"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "キャンバスをロック"
   },
   "Comfy_Canvas_MoveSelectedNodes_Down": {
     "label": "選択したノードを下に移動"
@@ -92,6 +95,9 @@
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "選択したアイテムのピン留め/ピン留め解除"
   },
+  "Comfy_Canvas_Unlock": {
+    "label": "キャンバスをロック解除"
+  },
   "Comfy_Canvas_ZoomIn": {
     "label": "ズームイン"
   },
@@ -107,6 +113,9 @@
   "Comfy_ContactSupport": {
     "label": "サポートに連絡"
   },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "モデルセレクターを表示（開発用）"
+  },
   "Comfy_DuplicateWorkflow": {
     "label": "現在のワークフローを複製"
   },
@@ -116,11 +125,11 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "ワークフローをエクスポート（API形式）"
   },
-  "Comfy_Feedback": {
-    "label": "フィードバック"
-  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "選択範囲をサブグラフに変換"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "サブグラフウィジェットを編集"
   },
   "Comfy_Graph_ExitSubgraph": {
     "label": "サブグラフを終了"
@@ -130,6 +139,12 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "選択したノードをグループ化"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "ホバー中のウィジェットの優先表示を切り替え"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "選択したサブグラフを展開"
   },
   "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
     "label": "選択したノードをグループノードに変換"
@@ -161,11 +176,20 @@
   "Comfy_LoadDefaultWorkflow": {
     "label": "デフォルトのワークフローを読み込む"
   },
-  "Comfy_Manager_CustomNodesManager": {
-    "label": "カスタムノードマネージャ"
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "カスタムノード（ベータ版）"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "プログレスダイアログの切り替え"
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "カスタムノード（レガシー）"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "マネージャーメニュー（レガシー）"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "不足しているパックをインストール"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "更新を確認"
   },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "マスクエディタでブラシサイズを縮小"
@@ -173,8 +197,29 @@
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "マスクエディタでブラシサイズを大きくする"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditorでカラーピッカーを開く"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "マスクエディタで左右反転"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "マスクエディタで上下反転"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "選択したノードのマスクエディタを開く"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "マスクエディタで左回転"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "マスクエディタで右回転"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "モデルのアンロード"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "モデルと実行キャッシュのアンロード"
   },
   "Comfy_NewBlankWorkflow": {
     "label": "新しい空のワークフロー"
@@ -182,8 +227,14 @@
   "Comfy_OpenClipspace": {
     "label": "クリップスペース"
   },
+  "Comfy_OpenManagerDialog": {
+    "label": "マネージャー"
+  },
   "Comfy_OpenWorkflow": {
     "label": "ワークフローを開く"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "サブグラフを公開"
   },
   "Comfy_QueuePrompt": {
     "label": "キュープロンプト"
@@ -194,11 +245,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "選択した出力ノードをキューに追加"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "ジョブ履歴を切り替え"
+  },
   "Comfy_Redo": {
     "label": "やり直す"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "ノード定義を更新"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "ワークフローの名前を変更"
   },
   "Comfy_SaveWorkflow": {
     "label": "ワークフローを保存する"
@@ -208,6 +265,21 @@
   },
   "Comfy_ShowSettingsDialog": {
     "label": "設定ダイアログを表示"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "実験的: AssetAPIを有効化"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "キャンバスパフォーマンス"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "ヘルプセンター"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "リニアモードを切り替え"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Queue Panel V2 を切り替え"
   },
   "Comfy_ToggleTheme": {
     "label": "テーマの切り替え（ダーク/ライト）"
@@ -220,6 +292,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "サインアウト"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "実験的: Vueノードを有効化"
   },
   "Workspace_CloseWorkflow": {
     "label": "現在のワークフローを閉じる"
@@ -254,6 +329,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "フォーカスモードの切り替え"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "アセットサイドバーの表示切り替え",
+    "tooltip": "アセット"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "モデルライブラリサイドバーの切り替え",
     "tooltip": "モデルライブラリ"
@@ -261,10 +340,6 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "ノードライブラリサイドバーの切り替え",
     "tooltip": "ノードライブラリ"
-  },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "キューサイドバーの切り替え",
-    "tooltip": "キュー"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "ワークフローサイドバーの切り替え",

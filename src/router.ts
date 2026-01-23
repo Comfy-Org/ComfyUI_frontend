@@ -1,30 +1,40 @@
+import { until } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import {
-  NavigationGuardNext,
-  RouteLocationNormalized,
   createRouter,
   createWebHashHistory,
   createWebHistory
 } from 'vue-router'
+import type { RouteLocationNormalized } from 'vue-router'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { useDialogService } from '@/services/dialogService'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useUserStore } from '@/stores/userStore'
+import { isElectron } from '@/utils/envUtil'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
-import { useUserStore } from './stores/userStore'
-import { isElectron } from './utils/envUtil'
+import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { cloudOnboardingRoutes } from './platform/cloud/onboarding/onboardingCloudRoutes'
 
 const isFileProtocol = window.location.protocol === 'file:'
-const basePath = isElectron() ? '/' : window.location.pathname
 
-const guardElectronAccess = (
-  _to: RouteLocationNormalized,
-  _from: RouteLocationNormalized,
-  next: NavigationGuardNext
-) => {
-  if (isElectron()) {
-    next()
-  } else {
-    next('/')
-  }
+/**
+ * Determine base path for the router.
+ * - Electron: always root
+ * - Cloud: use Vite's BASE_URL (configured at build time)
+ * - Standard web (including reverse proxy subpaths): use window.location.pathname
+ *   to support deployments like http://mysite.com/ComfyUI/
+ */
+function getBasePath(): string {
+  if (isElectron()) return '/'
+  if (isCloud) return import.meta.env?.BASE_URL || '/'
+  return window.location.pathname
 }
+
+const basePath = getBasePath()
 
 const router = createRouter({
   history: isFileProtocol
@@ -34,6 +44,7 @@ const router = createRouter({
       // we need this base path or assets will incorrectly resolve from 'http://localhost:7801/'
       createWebHistory(basePath),
   routes: [
+    ...(isCloud ? cloudOnboardingRoutes : []),
     {
       path: '/',
       component: LayoutDefault,
@@ -43,6 +54,7 @@ const router = createRouter({
           name: 'GraphView',
           component: () => import('@/views/GraphView.vue'),
           beforeEnter: async (_to, _from, next) => {
+            // Then check user store
             const userStore = useUserStore()
             await userStore.initialize()
             if (userStore.needsLogin) {
@@ -56,66 +68,6 @@ const router = createRouter({
           path: 'user-select',
           name: 'UserSelectView',
           component: () => import('@/views/UserSelectView.vue')
-        },
-        {
-          path: 'server-start',
-          name: 'ServerStartView',
-          component: () => import('@/views/ServerStartView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'install',
-          name: 'InstallView',
-          component: () => import('@/views/InstallView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'welcome',
-          name: 'WelcomeView',
-          component: () => import('@/views/WelcomeView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'not-supported',
-          name: 'NotSupportedView',
-          component: () => import('@/views/NotSupportedView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'download-git',
-          name: 'DownloadGitView',
-          component: () => import('@/views/DownloadGitView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'manual-configuration',
-          name: 'ManualConfigurationView',
-          component: () => import('@/views/ManualConfigurationView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: '/metrics-consent',
-          name: 'MetricsConsentView',
-          component: () => import('@/views/MetricsConsentView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'desktop-start',
-          name: 'DesktopStartView',
-          component: () => import('@/views/DesktopStartView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'maintenance',
-          name: 'MaintenanceView',
-          component: () => import('@/views/MaintenanceView.vue'),
-          beforeEnter: guardElectronAccess
-        },
-        {
-          path: 'desktop-update',
-          name: 'DesktopUpdateView',
-          component: () => import('@/views/DesktopUpdateView.vue'),
-          beforeEnter: guardElectronAccess
         }
       ]
     }
@@ -129,5 +81,130 @@ const router = createRouter({
     }
   }
 })
+
+installPreservedQueryTracker(router, [
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,
+    keys: ['template', 'source', 'mode']
+  }
+])
+
+if (isCloud) {
+  const { flags } = useFeatureFlags()
+  const PUBLIC_ROUTE_NAMES = new Set([
+    'cloud-login',
+    'cloud-signup',
+    'cloud-forgot-password',
+    'cloud-sorry-contact-support'
+  ])
+  const PUBLIC_ROUTE_PATHS = new Set([
+    '/cloud/login',
+    '/cloud/signup',
+    '/cloud/forgot-password',
+    '/cloud/sorry-contact-support'
+  ])
+
+  function isPublicRoute(to: RouteLocationNormalized) {
+    const name = String(to.name)
+    if (PUBLIC_ROUTE_NAMES.has(name)) return true
+    const path = to.path
+    return PUBLIC_ROUTE_PATHS.has(path)
+  }
+  // Global authentication guard
+  router.beforeEach(async (to, _from, next) => {
+    const authStore = useFirebaseAuthStore()
+
+    // Wait for Firebase auth to initialize
+    // Timeout after 16 seconds
+    if (!authStore.isInitialized) {
+      try {
+        const { isInitialized } = storeToRefs(authStore)
+        await until(isInitialized).toBe(true, { timeout: 16_000 })
+      } catch (error) {
+        console.error('Auth initialization failed:', error)
+        return next({ name: 'cloud-auth-timeout' })
+      }
+    }
+
+    // Pass authenticated users
+    const authHeader = await authStore.getAuthHeader()
+    const isLoggedIn = !!authHeader
+
+    // Allow public routes
+    if (isPublicRoute(to)) {
+      return next()
+    }
+
+    // Special handling for user-check
+    // These routes need auth but handle their own routing logic
+    if (to.name === 'cloud-user-check') {
+      if (to.meta.requiresAuth && !isLoggedIn) {
+        return next({ name: 'cloud-login' })
+      }
+      return next()
+    }
+
+    // Prevent redirect loop when coming from user-check
+    if (_from.name === 'cloud-user-check' && to.path === '/') {
+      return next()
+    }
+
+    const query =
+      to.fullPath === '/'
+        ? undefined
+        : { previousFullPath: encodeURIComponent(to.fullPath) }
+
+    // Check if route requires authentication
+    if (to.meta.requiresAuth && !isLoggedIn) {
+      return next({
+        name: 'cloud-login',
+        query
+      })
+    }
+
+    // Handle other protected routes
+    if (!isLoggedIn) {
+      // For Electron, use dialog
+      if (isElectron()) {
+        const dialogService = useDialogService()
+        const loginSuccess = await dialogService.showSignInDialog()
+        return loginSuccess ? next() : next(false)
+      }
+
+      // For web, redirect to login
+      return next({
+        name: 'cloud-login',
+        query
+      })
+    }
+
+    // User is logged in - check if they need onboarding (when enabled)
+    // For root path, check actual user status to handle waitlisted users
+    if (!isElectron() && isLoggedIn && to.path === '/') {
+      if (!flags.onboardingSurveyEnabled) {
+        return next()
+      }
+      // Import auth functions dynamically to avoid circular dependency
+      const { getSurveyCompletedStatus } =
+        await import('@/platform/cloud/onboarding/auth')
+      try {
+        // Check user's actual status
+        const surveyCompleted = await getSurveyCompletedStatus()
+
+        // Survey is required for all users (when feature flag enabled)
+        if (!surveyCompleted) {
+          return next({ name: 'cloud-survey' })
+        }
+      } catch (error) {
+        console.error('Failed to check user status:', error)
+        // On error, redirect to user-check as fallback
+        return next({ name: 'cloud-user-check' })
+      }
+    }
+
+    // User is logged in and accessing protected route
+    return next()
+  })
+}
 
 export default router

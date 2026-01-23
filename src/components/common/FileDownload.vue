@@ -11,7 +11,7 @@
         icon="pi pi-exclamation-triangle"
         size="small"
         variant="outlined"
-        class="h-min my-2 px-1 max-w-xs"
+        class="my-2 h-min max-w-xs px-1"
         :title="props.error"
         :pt="{
           text: { class: 'overflow-hidden text-ellipsis' }
@@ -22,31 +22,27 @@
     </div>
     <div>
       <Button
-        :label="$t('g.download') + ' (' + fileSize + ')'"
-        size="small"
-        outlined
+        variant="secondary"
         :disabled="!!props.error"
         :title="props.url"
         @click="download.triggerBrowserDownload"
-      />
+      >
+        {{ $t('g.download') + ' (' + fileSize + ')' }}
+      </Button>
     </div>
     <div>
-      <Button
-        :label="$t('g.copyURL')"
-        size="small"
-        outlined
-        :disabled="!!props.error"
-        @click="copyURL"
-      />
+      <Button variant="secondary" :disabled="!!props.error" @click="copyURL">
+        {{ $t('g.copyURL') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Message from 'primevue/message'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
 import { formatSize } from '@/utils/formatUtil'
