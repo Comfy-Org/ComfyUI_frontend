@@ -60,6 +60,7 @@ function createWrapper(pinia = createTestingPinia({ createSpy: vi.fn })) {
       stubs: {
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
+        QueueInlineProgressSummary: true,
         CurrentUserButton: true,
         LoginButton: true,
         ContextMenu: {

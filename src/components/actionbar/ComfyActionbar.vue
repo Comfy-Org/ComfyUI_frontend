@@ -18,7 +18,7 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none gap-2">
+      <div ref="panelRef" class="relative flex items-center select-none gap-2">
         <span
           ref="dragHandleRef"
           :class="
@@ -43,6 +43,13 @@
         </Button>
       </div>
     </Panel>
+
+    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+      <QueueInlineProgress
+        :hidden="queueOverlayExpanded"
+        data-testid="queue-inline-progress"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -59,6 +66,7 @@ import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -69,6 +77,11 @@ import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
+const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
+  topMenuContainer?: HTMLElement | null
+  queueOverlayExpanded?: boolean
+}>()
+
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
 const { t } = useI18n()
@@ -76,6 +89,9 @@ const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
+const isQueuePanelV2Enabled = computed(() =>
+  settingsStore.get('Comfy.Queue.QPOV2')
+)
 
 const panelRef = ref<HTMLElement | null>(null)
 const dragHandleRef = ref<HTMLElement | null>(null)
@@ -251,6 +267,12 @@ const onMouseLeaveDropZone = () => {
     isMouseOverDropZone.value = false
   }
 }
+
+const inlineProgressTarget = computed(() => {
+  if (!visible.value || !isQueuePanelV2Enabled.value) return null
+  if (isDocked.value) return topMenuContainer ?? null
+  return panelRef.value
+})
 
 // Handle drag state changes
 watch(isDragging, (dragging) => {

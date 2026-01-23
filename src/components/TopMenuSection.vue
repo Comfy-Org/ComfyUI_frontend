@@ -1,101 +1,121 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex gap-x-0.5 pt-1"
+    class="ml-1 flex flex-col gap-1 pt-1"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
-    <div class="min-w-0 flex-1">
-      <SubgraphBreadcrumb />
+    <div class="flex gap-x-0.5">
+      <div class="min-w-0 flex-1">
+        <SubgraphBreadcrumb />
+      </div>
+
+      <div class="mx-1 flex flex-col items-end gap-1">
+        <div class="flex items-center gap-2">
+          <div
+            v-if="managerState.shouldShowManagerButtons.value"
+            class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+          >
+            <Button
+              v-tooltip.bottom="customNodesManagerTooltipConfig"
+              variant="secondary"
+              size="icon"
+              :aria-label="t('menu.customNodesManager')"
+              class="relative"
+              @click="openCustomNodeManager"
+            >
+              <i class="icon-[lucide--puzzle] size-4" />
+              <span
+                v-if="shouldShowRedDot"
+                class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+              />
+            </Button>
+          </div>
+
+          <div
+            ref="actionbarContainerRef"
+            class="actionbar-container relative pointer-events-auto flex gap-2 h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
+          >
+            <ActionBarButtons />
+            <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
+            <div
+              ref="legacyCommandsContainerRef"
+              class="[&:not(:has(*>*:not(:empty)))]:hidden"
+            ></div>
+            <ComfyActionbar
+              :top-menu-container="actionbarContainerRef"
+              :queue-overlay-expanded="isQueueOverlayExpanded"
+            />
+            <Button
+              v-tooltip.bottom="queueHistoryTooltipConfig"
+              type="destructive"
+              size="md"
+              :aria-pressed="
+                isQueuePanelV2Enabled
+                  ? activeSidebarTabId === 'assets'
+                  : isQueueProgressOverlayVisible
+                    ? isQueueOverlayExpanded
+                    : undefined
+              "
+              class="px-3"
+              data-testid="queue-overlay-toggle"
+              @click="toggleQueueOverlay"
+              @contextmenu.stop.prevent="showQueueContextMenu"
+            >
+              <span class="text-sm font-normal tabular-nums">
+                {{ activeJobsLabel }}
+              </span>
+              <span class="sr-only">
+                {{
+                  isQueuePanelV2Enabled
+                    ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                    : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+                }}
+              </span>
+            </Button>
+            <ContextMenu
+              ref="queueContextMenu"
+              :model="queueContextMenuItems"
+            />
+            <CurrentUserButton
+              v-if="isLoggedIn && !isIntegratedTabBar"
+              class="shrink-0"
+            />
+            <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
+            <Button
+              v-if="!isRightSidePanelOpen"
+              v-tooltip.bottom="rightSidePanelTooltipConfig"
+              type="secondary"
+              size="icon"
+              :aria-label="t('rightSidePanel.togglePanel')"
+              @click="rightSidePanelStore.togglePanel"
+            >
+              <i class="icon-[lucide--panel-right] size-4" />
+            </Button>
+          </div>
+        </div>
+        <QueueProgressOverlay
+          v-if="isQueueProgressOverlayVisible"
+          v-model:expanded="isQueueOverlayExpanded"
+          :menu-hovered="isTopMenuHovered"
+        />
+      </div>
     </div>
 
-    <div class="mx-1 flex flex-col items-end gap-1">
-      <div class="flex items-center gap-2">
-        <div
-          v-if="managerState.shouldShowManagerButtons.value"
-          class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
-        >
-          <Button
-            v-tooltip.bottom="customNodesManagerTooltipConfig"
-            variant="secondary"
-            size="icon"
-            :aria-label="t('menu.customNodesManager')"
-            class="relative"
-            @click="openCustomNodeManager"
-          >
-            <i class="icon-[lucide--puzzle] size-4" />
-            <span
-              v-if="shouldShowRedDot"
-              class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
-            />
-          </Button>
-        </div>
-
-        <div
-          class="actionbar-container pointer-events-auto flex gap-2 h-12 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
-        >
-          <ActionBarButtons />
-          <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
-          <div
-            ref="legacyCommandsContainerRef"
-            class="[&:not(:has(*>*:not(:empty)))]:hidden"
-          ></div>
-          <ComfyActionbar />
-          <Button
-            v-tooltip.bottom="queueHistoryTooltipConfig"
-            type="destructive"
-            size="md"
-            :aria-pressed="
-              isQueuePanelV2Enabled
-                ? activeSidebarTabId === 'assets'
-                : isQueueProgressOverlayVisible
-                  ? isQueueOverlayExpanded
-                  : undefined
-            "
-            class="px-3"
-            data-testid="queue-overlay-toggle"
-            @click="toggleQueueOverlay"
-            @contextmenu.stop.prevent="showQueueContextMenu"
-          >
-            <span class="text-sm font-normal tabular-nums">
-              {{ activeJobsLabel }}
-            </span>
-            <span class="sr-only">
-              {{
-                isQueuePanelV2Enabled
-                  ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
-                  : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
-              }}
-            </span>
-          </Button>
-          <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
-          <CurrentUserButton
-            v-if="isLoggedIn && !isIntegratedTabBar"
-            class="shrink-0"
-          />
-          <LoginButton v-else-if="isDesktop && !isIntegratedTabBar" />
-          <Button
-            v-if="!isRightSidePanelOpen"
-            v-tooltip.bottom="rightSidePanelTooltipConfig"
-            type="secondary"
-            size="icon"
-            :aria-label="t('rightSidePanel.togglePanel')"
-            @click="rightSidePanelStore.togglePanel"
-          >
-            <i class="icon-[lucide--panel-right] size-4" />
-          </Button>
-        </div>
-      </div>
-      <QueueProgressOverlay
-        v-if="isQueueProgressOverlayVisible"
-        v-model:expanded="isQueueOverlayExpanded"
-        :menu-hovered="isTopMenuHovered"
+    <div>
+      <QueueInlineProgressSummary
+        v-if="
+          isInlineProgressVisible && isActionbarEnabled && !isActionbarFloating
+        "
+        class="pr-1"
+        :hidden="isQueueOverlayExpanded"
       />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
@@ -104,6 +124,7 @@ import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
+import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -147,6 +168,15 @@ const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
+const actionbarContainerRef = ref<HTMLElement>()
+const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
+const isActionbarEnabled = computed(
+  () => actionbarPosition.value !== 'Disabled'
+)
+const isActionbarFloating = computed(
+  () => isActionbarEnabled.value && !isActionbarDocked.value
+)
 const activeJobsLabel = computed(() => {
   const count = activeJobsCount.value
   return t(
@@ -164,6 +194,7 @@ const isQueuePanelV2Enabled = computed(() =>
 const isQueueProgressOverlayVisible = computed(
   () => !isQueuePanelV2Enabled.value
 )
+const isInlineProgressVisible = computed(() => isQueuePanelV2Enabled.value)
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
 )

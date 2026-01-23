@@ -742,6 +742,7 @@
       "title": "Queue Progress",
       "total": "Total: {percent}",
       "colonPercent": ": {percent}",
+      "inlineTotalLabel": "Total",
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
       "viewList": "List view",
