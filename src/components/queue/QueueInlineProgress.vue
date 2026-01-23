@@ -2,7 +2,9 @@
   <div
     v-if="shouldShow"
     aria-hidden="true"
-    class="pointer-events-none absolute inset-0 overflow-hidden rounded-[7px]"
+    :class="
+      cn('pointer-events-none absolute inset-0 overflow-hidden', radiusClass)
+    "
   >
     <div
       class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-primary transition-[width]"
@@ -19,15 +21,16 @@
 import { computed } from 'vue'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { cn } from '@/utils/tailwindUtil'
 
-const props = defineProps<{
+const { hidden = false, radiusClass = 'rounded-[7px]' } = defineProps<{
   hidden?: boolean
+  radiusClass?: string
 }>()
 
 const { totalPercent, currentNodePercent } = useQueueProgress()
 
 const shouldShow = computed(
-  () =>
-    !props.hidden && (totalPercent.value > 0 || currentNodePercent.value > 0)
+  () => !hidden && (totalPercent.value > 0 || currentNodePercent.value > 0)
 )
 </script>

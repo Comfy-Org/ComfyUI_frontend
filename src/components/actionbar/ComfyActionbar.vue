@@ -48,6 +48,7 @@
     <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
       <QueueInlineProgress
         :hidden="queueOverlayExpanded"
+        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
         data-testid="queue-inline-progress"
       />
     </Teleport>
