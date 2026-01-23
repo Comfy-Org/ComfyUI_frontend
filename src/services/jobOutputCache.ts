@@ -11,6 +11,7 @@ import QuickLRU from '@alloc/quick-lru'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ResultItem, TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { ResultItemImpl } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
@@ -73,6 +74,42 @@ export async function getOutputsForTask(
     console.warn('Failed to load full outputs, using preview:', error)
     return [...task.previewableOutputs]
   }
+}
+
+function mapTaskOutputToResultItems(outputs: TaskOutput): ResultItemImpl[] {
+  return Object.entries(outputs).flatMap(([nodeId, nodeOutputs]) =>
+    Object.entries(nodeOutputs)
+      .filter(([mediaType, items]) => mediaType !== 'animated' && items)
+      .flatMap(([mediaType, items]) => {
+        if (!Array.isArray(items)) {
+          return []
+        }
+
+        return (items as ResultItem[])
+          .filter((item) => typeof item === 'object' && item !== null)
+          .map(
+            (item) =>
+              new ResultItemImpl({
+                ...item,
+                nodeId,
+                mediaType
+              })
+          )
+      })
+  )
+}
+
+function getPreviewableOutputsFromTaskOutput(
+  outputs?: TaskOutput
+): ResultItemImpl[] {
+  if (!outputs) return []
+  return ResultItemImpl.filterPreviewable(mapTaskOutputToResultItems(outputs))
+}
+
+export function getPreviewableOutputsFromJobDetail(
+  jobDetail?: JobDetail
+): ResultItemImpl[] {
+  return getPreviewableOutputsFromTaskOutput(jobDetail?.outputs)
 }
 
 // ===== Job Detail Caching =====

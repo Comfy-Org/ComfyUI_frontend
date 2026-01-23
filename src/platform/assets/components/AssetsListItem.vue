@@ -84,10 +84,21 @@
         size="md"
         class="gap-1 font-bold"
         :aria-label="stackIndicatorLabel || undefined"
+        @click.stop="emit('stack-toggle')"
       >
         <i aria-hidden="true" class="icon-[lucide--layers] size-4" />
         <span class="text-xs leading-none">{{ stackCount }}</span>
-        <i aria-hidden="true" class="icon-[lucide--chevron-down] size-3" />
+        <i
+          aria-hidden="true"
+          :class="
+            cn(
+              stackExpanded
+                ? 'icon-[lucide--chevron-down]'
+                : 'icon-[lucide--chevron-right]',
+              'size-3'
+            )
+          "
+        />
       </Button>
     </div>
   </div>
@@ -97,6 +108,10 @@
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
+
+const emit = defineEmits<{
+  'stack-toggle': []
+}>()
 
 const {
   previewUrl,
@@ -109,6 +124,7 @@ const {
   secondaryText,
   stackCount,
   stackIndicatorLabel,
+  stackExpanded = false,
   progressTotalPercent,
   progressCurrentPercent
 } = defineProps<{
@@ -122,6 +138,7 @@ const {
   secondaryText?: string
   stackCount?: number
   stackIndicatorLabel?: string
+  stackExpanded?: boolean
   progressTotalPercent?: number
   progressCurrentPercent?: number
 }>()

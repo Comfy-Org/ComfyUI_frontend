@@ -72,7 +72,12 @@
               type: getMediaTypeFromFilename(item.asset.name)
             })
           "
-          :class="getAssetCardClass(isSelected(item.asset.id))"
+          :class="
+            cn(
+              getAssetCardClass(isSelected(item.asset.id)),
+              item.isChild && 'pl-6'
+            )
+          "
           :preview-url="item.asset.preview_url"
           :preview-alt="item.asset.name"
           :icon-name="
@@ -82,10 +87,12 @@
           :secondary-text="getAssetSecondaryText(item.asset)"
           :stack-count="getStackCount(item.asset)"
           :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
+          :stack-expanded="isStackExpanded(item.asset)"
           @mouseenter="onAssetEnter(item.asset.id)"
           @mouseleave="onAssetLeave(item.asset.id)"
           @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
-          @click.stop="emit('select-asset', item.asset)"
+          @click.stop="emit('select-asset', item.asset, selectableAssets)"
+          @stack-toggle="toggleStack(item.asset)"
         >
           <template v-if="hoveredAssetId === item.asset.id" #actions>
             <Button
@@ -104,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
@@ -113,9 +120,18 @@ import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  mapOutputsToAssetItems,
+  shouldLoadFullOutputs
+} from '@/platform/assets/utils/outputAssetUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
+import {
+  getJobDetail,
+  getPreviewableOutputsFromJobDetail
+} from '@/services/jobOutputCache'
 import { isActiveJobState } from '@/utils/queueUtil'
 import {
   formatDuration,
@@ -137,17 +153,25 @@ const {
 }>()
 
 const emit = defineEmits<{
-  (e: 'select-asset', asset: AssetItem): void
+  (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
+  (e: 'assets-change', assets: AssetItem[]): void
 }>()
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
 const hoveredJobId = ref<string | null>(null)
 const hoveredAssetId = ref<string | null>(null)
+const expandedStackPromptIds = ref<Set<string>>(new Set())
+const stackChildrenByPromptId = ref<Record<string, AssetItem[]>>({})
+const loadingStackPromptIds = ref<Set<string>>(new Set())
 
-type AssetListItem = { key: string; asset: AssetItem }
+type AssetListItem = {
+  key: string
+  asset: AssetItem
+  isChild?: boolean
+}
 
 const activeJobItems = computed(() =>
   jobItems.value.filter((item) => isActiveJobState(item.state))
@@ -160,11 +184,43 @@ const hoveredJob = computed(() =>
 )
 const { cancelAction, canCancelJob, runCancelJob } = useJobActions(hoveredJob)
 
-const assetItems = computed<AssetListItem[]>(() =>
-  assets.map((asset) => ({
-    key: `asset-${asset.id}`,
-    asset
-  }))
+const assetItems = computed<AssetListItem[]>(() => {
+  const items: AssetListItem[] = []
+
+  for (const asset of assets) {
+    const promptId = getStackPromptId(asset)
+    items.push({
+      key: `asset-${asset.id}`,
+      asset
+    })
+
+    if (!promptId || !expandedStackPromptIds.value.has(promptId)) {
+      continue
+    }
+
+    const children = stackChildrenByPromptId.value[promptId] ?? []
+    for (const child of children) {
+      items.push({
+        key: `asset-${child.id}`,
+        asset: child,
+        isChild: true
+      })
+    }
+  }
+
+  return items
+})
+
+const selectableAssets = computed(() =>
+  assetItems.value.map((item) => item.asset)
+)
+
+watch(
+  selectableAssets,
+  (nextAssets) => {
+    emit('assets-change', nextAssets)
+  },
+  { immediate: true }
 )
 
 const listGridStyle = {
@@ -196,6 +252,11 @@ function getAssetSecondaryText(asset: AssetItem): string {
   return ''
 }
 
+function getStackPromptId(asset: AssetItem): string | null {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  return metadata?.promptId ?? null
+}
+
 function getStackCount(asset: AssetItem): number | undefined {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (typeof metadata?.outputCount === 'number') {
@@ -207,6 +268,89 @@ function getStackCount(asset: AssetItem): number | undefined {
   }
 
   return undefined
+}
+
+function isStackExpanded(asset: AssetItem): boolean {
+  const promptId = getStackPromptId(asset)
+  if (!promptId) return false
+  return expandedStackPromptIds.value.has(promptId)
+}
+
+async function toggleStack(asset: AssetItem) {
+  const promptId = getStackPromptId(asset)
+  if (!promptId) return
+
+  if (expandedStackPromptIds.value.has(promptId)) {
+    const next = new Set(expandedStackPromptIds.value)
+    next.delete(promptId)
+    expandedStackPromptIds.value = next
+    return
+  }
+
+  if (!stackChildrenByPromptId.value[promptId]?.length) {
+    if (loadingStackPromptIds.value.has(promptId)) {
+      return
+    }
+    const nextLoading = new Set(loadingStackPromptIds.value)
+    nextLoading.add(promptId)
+    loadingStackPromptIds.value = nextLoading
+
+    const children = await resolveStackChildren(asset)
+
+    const afterLoading = new Set(loadingStackPromptIds.value)
+    afterLoading.delete(promptId)
+    loadingStackPromptIds.value = afterLoading
+
+    if (!children.length) {
+      return
+    }
+
+    stackChildrenByPromptId.value = {
+      ...stackChildrenByPromptId.value,
+      [promptId]: children
+    }
+  }
+
+  const nextExpanded = new Set(expandedStackPromptIds.value)
+  nextExpanded.add(promptId)
+  expandedStackPromptIds.value = nextExpanded
+}
+
+async function resolveStackOutputs(metadata: OutputAssetMetadata) {
+  const outputsToDisplay = metadata.allOutputs ?? []
+  if (!shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
+    return outputsToDisplay
+  }
+
+  try {
+    const jobDetail = await getJobDetail(metadata.promptId)
+    const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
+    return previewableOutputs.length ? previewableOutputs : outputsToDisplay
+  } catch (error) {
+    console.error('Failed to fetch job detail for stack children:', error)
+    return outputsToDisplay
+  }
+}
+
+async function resolveStackChildren(asset: AssetItem): Promise<AssetItem[]> {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (!metadata) {
+    return []
+  }
+
+  const outputsToDisplay = await resolveStackOutputs(metadata)
+  if (!outputsToDisplay.length) {
+    return []
+  }
+
+  return mapOutputsToAssetItems({
+    promptId: metadata.promptId,
+    outputs: outputsToDisplay,
+    createdAt: asset.created_at,
+    executionTimeInSeconds: metadata.executionTimeInSeconds,
+    workflow: metadata.workflow,
+    excludeFilename: asset.name
+  })
 }
 
 function getAssetCardClass(selected: boolean): string {

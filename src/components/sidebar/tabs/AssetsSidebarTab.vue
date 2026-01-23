@@ -102,6 +102,7 @@
           :is-selected="isSelected"
           :asset-type="activeTab"
           @select-asset="handleAssetSelect"
+          @assets-change="handleListViewAssetsChange"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
@@ -225,24 +226,26 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import {
+  mapOutputsToAssetItems,
+  shouldLoadFullOutputs
+} from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { getJobDetail } from '@/services/jobOutputCache'
+import {
+  getJobDetail,
+  getPreviewableOutputsFromJobDetail
+} from '@/services/jobOutputCache'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
-
-interface JobOutputItem {
-  filename: string
-  subfolder: string
-  type: string
-}
 
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
@@ -384,7 +387,13 @@ const displayAssets = computed(() => {
   return filteredAssets.value
 })
 
-const selectedAssets = computed(() => getSelectedAssets(displayAssets.value))
+const listViewAssets = ref<AssetItem[]>([])
+
+const selectionAssets = computed(() =>
+  isListView.value ? listViewAssets.value : displayAssets.value
+)
+
+const selectedAssets = computed(() => getSelectedAssets(selectionAssets.value))
 
 const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
@@ -462,9 +471,14 @@ watch(
   { immediate: true }
 )
 
-const handleAssetSelect = (asset: AssetItem) => {
-  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
-  handleAssetClick(asset, index, displayAssets.value)
+const handleAssetSelect = (asset: AssetItem, assets?: AssetItem[]) => {
+  const assetList = assets ?? selectionAssets.value
+  const index = assetList.findIndex((a) => a.id === asset.id)
+  handleAssetClick(asset, index, assetList)
+}
+
+const handleListViewAssetsChange = (assets: AssetItem[]) => {
+  listViewAssets.value = assets
 }
 
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
@@ -543,6 +557,17 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 }
 
+async function resolveFolderOutputs(metadata: OutputAssetMetadata) {
+  const outputsToDisplay = metadata.allOutputs ?? []
+  if (!shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
+    return outputsToDisplay
+  }
+
+  const jobDetail = await getJobDetail(metadata.promptId)
+  const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
+  return previewableOutputs.length ? previewableOutputs : outputsToDisplay
+}
+
 const enterFolderView = async (asset: AssetItem) => {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (!metadata) {
@@ -550,7 +575,7 @@ const enterFolderView = async (asset: AssetItem) => {
     return
   }
 
-  const { promptId, allOutputs, executionTimeInSeconds, outputCount } = metadata
+  const { promptId, executionTimeInSeconds } = metadata
 
   if (!promptId) {
     console.warn('Missing required folder view data')
@@ -560,62 +585,20 @@ const enterFolderView = async (asset: AssetItem) => {
   folderPromptId.value = promptId
   folderExecutionTime.value = executionTimeInSeconds
 
-  // Determine which outputs to display
-  let outputsToDisplay = allOutputs ?? []
-
-  // If outputCount indicates more outputs than we have, fetch full outputs
-  const needsFullOutputs =
-    typeof outputCount === 'number' &&
-    outputCount > 1 &&
-    outputsToDisplay.length < outputCount
-
-  if (needsFullOutputs) {
-    try {
-      const jobDetail = await getJobDetail(promptId)
-      if (jobDetail?.outputs) {
-        // Convert job outputs to ResultItemImpl array
-        outputsToDisplay = Object.entries(jobDetail.outputs).flatMap(
-          ([nodeId, nodeOutputs]) =>
-            Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-              (items as JobOutputItem[])
-                .map(
-                  (item) =>
-                    new ResultItemImpl({
-                      ...item,
-                      nodeId,
-                      mediaType
-                    })
-                )
-                .filter((r) => r.supportsPreview)
-            )
-        )
-      }
-    } catch (error) {
-      console.error('Failed to fetch job detail for folder view:', error)
-      outputsToDisplay = []
-    }
-  }
+  const outputsToDisplay = await resolveFolderOutputs(metadata)
 
   if (outputsToDisplay.length === 0) {
     console.warn('No outputs available for folder view')
     return
   }
 
-  folderAssets.value = outputsToDisplay.map((output) => ({
-    id: `${output.nodeId}-${output.filename}`,
-    name: output.filename,
-    size: 0,
-    created_at: asset.created_at,
-    tags: ['output'],
-    preview_url: output.url,
-    user_metadata: {
-      promptId,
-      nodeId: output.nodeId,
-      subfolder: output.subfolder,
-      executionTimeInSeconds,
-      workflow: metadata.workflow
-    }
-  }))
+  folderAssets.value = mapOutputsToAssetItems({
+    promptId,
+    outputs: outputsToDisplay,
+    createdAt: asset.created_at,
+    executionTimeInSeconds,
+    workflow: metadata.workflow
+  })
 }
 
 const exitFolderView = () => {
