@@ -226,8 +226,8 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
-import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
@@ -389,6 +389,10 @@ const displayAssets = computed(() => {
 
 const listViewAssets = ref<AssetItem[]>([])
 
+const galleryAssets = computed(() =>
+  isListView.value ? listViewAssets.value : displayAssets.value
+)
+
 const selectionAssets = computed(() =>
   isListView.value ? listViewAssets.value : displayAssets.value
 )
@@ -413,7 +417,7 @@ const showEmptyState = computed(
     activeJobsCount.value === 0
 )
 
-watch(displayAssets, (newAssets) => {
+watch(galleryAssets, (newAssets) => {
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
     const newIndex = newAssets.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
@@ -431,7 +435,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return displayAssets.value.map((asset) => {
+  return galleryAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -551,7 +555,7 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
+  const index = galleryAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index
   }
