@@ -10,36 +10,31 @@ import { createNode, isAudioNode, isImageNode, isVideoNode } from '@/utils/liteg
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {
-  const persistent = new DataTransfer()
+  const persistent = new DataTransfer();
 
   // Copy string data
   for (const type of original.types) {
-    const data = original.getData(type)
+    const data = original.getData(type);
     if (data) {
-      persistent.setData(type, data)
+      persistent.setData(type, data);
     }
   }
 
-  // Copy files
-  for (const file of original.files) {
-    persistent.items.add(file)
-  }
-
-  // Also handle any file-kind items that might not be in .files
+  // Copy files (items.add() is idempotent - won't create duplicates)
   for (const item of original.items) {
     if (item.kind === 'file') {
-      const file = item.getAsFile()
+      const file = item.getAsFile();
       if (file) {
-        persistent.items.add(file)
+        persistent.items.add(file);
       }
     }
   }
 
   // Preserve dropEffect and effectAllowed
-  persistent.dropEffect = original.dropEffect
-  persistent.effectAllowed = original.effectAllowed
+  persistent.dropEffect = original.dropEffect;
+  persistent.effectAllowed = original.effectAllowed;
 
-  return persistent
+  return persistent;
 }
 
 function pasteClipboardItems(data: DataTransfer): boolean {
