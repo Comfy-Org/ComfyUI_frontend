@@ -862,9 +862,10 @@ export class LGraph
   /**
    * Adds a new node instance to this graph
    * @param node the instance of the node
+   * @param skip_compute_order
    */
   add(
-    node: LGraphNode | LGraphGroup,
+    node: LGraphNode | LGraphGroup | null,
     skip_compute_order?: boolean
   ): LGraphNode | null | undefined {
     if (!node) return
