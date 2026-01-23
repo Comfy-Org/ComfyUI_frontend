@@ -1,10 +1,13 @@
 <template>
   <div
     role="status"
+    tabindex="0"
     :aria-label="t('sideToolbar.activeJobStatus', { status: statusText })"
     class="flex flex-col gap-2 p-2 rounded-lg"
     @mouseenter="hovered = true"
     @mouseleave="hovered = false"
+    @focusin="hovered = true"
+    @focusout="hovered = false"
   >
     <!-- Thumbnail -->
     <div class="relative aspect-square overflow-hidden rounded-lg">
@@ -87,9 +90,7 @@ const { job } = defineProps<{ job: JobListItem }>()
 const { t } = useI18n()
 const hovered = ref(false)
 
-const { cancelAction, canCancelJob, runCancelJob } = useJobActions(
-  computed(() => (hovered.value ? job : null))
-)
+const { cancelAction, canCancelJob, runCancelJob } = useJobActions(() => job)
 
 const { progressBarPrimaryClass, hasProgressPercent, progressPercentStyle } =
   useProgressBarBackground()
