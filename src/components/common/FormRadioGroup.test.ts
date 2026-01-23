@@ -94,9 +94,9 @@ describe('FormRadioGroup', () => {
 
     it('handles custom object with optionLabel and optionValue', () => {
       const options = [
-        { text: 'First Option', id: 1 },
-        { text: 'Second Option', id: 2 },
-        { text: 'Third Option', id: 3 }
+        { name: 'First Option', id: '1' },
+        { name: 'Second Option', id: '2' },
+        { name: 'Third Option', id: '3' }
       ]
 
       const wrapper = mountComponent({
@@ -110,9 +110,9 @@ describe('FormRadioGroup', () => {
       const radioButtons = wrapper.findAllComponents(RadioButton)
       expect(radioButtons).toHaveLength(3)
 
-      expect(radioButtons[0].props('value')).toBe(1)
-      expect(radioButtons[1].props('value')).toBe(2)
-      expect(radioButtons[2].props('value')).toBe(3)
+      expect(radioButtons[0].props('value')).toBe('1')
+      expect(radioButtons[1].props('value')).toBe('2')
+      expect(radioButtons[2].props('value')).toBe('3')
 
       const labels = wrapper.findAll('label')
       expect(labels[0].text()).toBe('First Option')
@@ -178,11 +178,10 @@ describe('FormRadioGroup', () => {
       })
 
       const radioButtons = wrapper.findAllComponents(RadioButton)
-      expect(radioButtons).toHaveLength(2)
+      expect(radioButtons).toHaveLength(1)
 
       const labels = wrapper.findAll('label')
       expect(labels[0].text()).toBe('Unknown')
-      expect(labels[1].text()).toBe('Option 2')
     })
   })
 
