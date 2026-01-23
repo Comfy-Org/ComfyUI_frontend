@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import * as Sentry from '@sentry/vue'
+import { captureException } from '@sentry/vue'
 import { useEventListener } from '@vueuse/core'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -50,9 +50,10 @@ onMounted(() => {
   }
 
   window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault()
     // eslint-disable-next-line no-undef
     if (__DISTRIBUTION__ === 'cloud') {
-      Sentry.captureException(event.payload, {
+      captureException(event.payload, {
         tags: { error_type: 'vite_preload_error' }
       })
     } else {
