@@ -64,12 +64,12 @@ export type {
   ToastMessageOptions
 }
 
-export interface CapturedMessages {
+interface CapturedMessages {
   clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
   serverFeatureFlags: Record<string, unknown> | null
 }
 
-export interface AppReadiness {
+interface AppReadiness {
   featureFlagsReceived: boolean
   apiInitialized: boolean
   appInitialized: boolean
