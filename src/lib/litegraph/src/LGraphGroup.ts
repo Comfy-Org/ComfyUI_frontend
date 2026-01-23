@@ -269,12 +269,15 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     }
 
     // Move groups we wholly contain and recursively compute their children
+    const containedGroups: LGraphGroup[] = []
     for (const group of groups) {
       if (group !== this && containsRect(this._bounding, group._bounding)) {
         children.add(group)
-        group.recomputeInsideNodes(maxDepth - 1)
+        containedGroups.push(group)
       }
     }
+    for (const group of containedGroups)
+      group.recomputeInsideNodes(maxDepth - 1)
 
     groups.sort((a, b) => {
       if (a === this) {
