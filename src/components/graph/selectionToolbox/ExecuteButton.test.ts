@@ -2,10 +2,12 @@ import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -36,11 +38,21 @@ vi.mock('@/composables/graph/useSelectionState', () => ({
   }))
 }))
 
+type MockCanvas = {
+  setDirty: Mock
+}
+
+type MockCanvasStore = ReturnType<typeof useCanvasStore>
+
+type MockCommandStore = ReturnType<typeof useCommandStore> & {
+  execute: Mock
+}
+
 describe('ExecuteButton', () => {
-  let mockCanvas: any
-  let mockCanvasStore: any
-  let mockCommandStore: any
-  let mockSelectedNodes: any[]
+  let mockCanvas: MockCanvas
+  let mockCanvasStore: MockCanvasStore
+  let mockCommandStore: MockCommandStore
+  let mockSelectedNodes: LGraphNode[]
 
   const i18n = createI18n({
     legacy: false,
@@ -68,16 +80,27 @@ describe('ExecuteButton', () => {
 
     mockCanvasStore = {
       getCanvas: vi.fn(() => mockCanvas),
-      selectedItems: []
-    }
+      selectedItems: [],
+      $id: 'canvas',
+      $state: {
+        selectedItems: []
+      },
+      $patch: vi.fn(),
+      $reset: vi.fn(),
+      $subscribe: vi.fn(),
+      $onAction: vi.fn(),
+      $dispose: vi.fn(),
+      _customProperties: new Set(),
+      _p: {}
+    } as unknown as MockCanvasStore
 
     mockCommandStore = {
       execute: vi.fn()
-    }
+    } as MockCommandStore
 
     // Setup store mocks
-    vi.mocked(useCanvasStore).mockReturnValue(mockCanvasStore as any)
-    vi.mocked(useCommandStore).mockReturnValue(mockCommandStore as any)
+    vi.mocked(useCanvasStore).mockReturnValue(mockCanvasStore)
+    vi.mocked(useCommandStore).mockReturnValue(mockCommandStore)
 
     // Update the useSelectionState mock
     const { useSelectionState } = vi.mocked(
@@ -87,7 +110,7 @@ describe('ExecuteButton', () => {
       selectedNodes: {
         value: mockSelectedNodes
       }
-    } as any)
+    } as ReturnType<typeof useSelectionState>)
 
     vi.clearAllMocks()
   })

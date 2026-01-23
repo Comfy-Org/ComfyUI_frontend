@@ -9,12 +9,12 @@ const mockCanvasHistory = {
 }
 
 const mockStore = {
-  maskCtx: null as any,
-  imgCtx: null as any,
-  maskCanvas: null as any,
-  imgCanvas: null as any,
-  rgbCtx: null as any,
-  rgbCanvas: null as any,
+  maskCtx: null! as CanvasRenderingContext2D,
+  imgCtx: null! as CanvasRenderingContext2D,
+  maskCanvas: null! as HTMLCanvasElement,
+  imgCanvas: null! as HTMLCanvasElement,
+  rgbCtx: null! as CanvasRenderingContext2D,
+  rgbCanvas: null! as HTMLCanvasElement,
   maskColor: { r: 255, g: 255, b: 255 },
   paintBucketTolerance: 10,
   fillOpacity: 100,
@@ -57,34 +57,40 @@ describe('useCanvasTools', () => {
       mockImgImageData.data[i + 3] = 255
     }
 
-    mockStore.maskCtx = {
+    const partialMaskCtx: Partial<CanvasRenderingContext2D> = {
       getImageData: vi.fn(() => mockMaskImageData),
       putImageData: vi.fn(),
       clearRect: vi.fn()
     }
+    mockStore.maskCtx = partialMaskCtx as CanvasRenderingContext2D
 
-    mockStore.imgCtx = {
+    const partialImgCtx: Partial<CanvasRenderingContext2D> = {
       getImageData: vi.fn(() => mockImgImageData)
     }
+    mockStore.imgCtx = partialImgCtx as CanvasRenderingContext2D
 
-    mockStore.rgbCtx = {
+    const partialRgbCtx: Partial<CanvasRenderingContext2D> = {
       clearRect: vi.fn()
     }
+    mockStore.rgbCtx = partialRgbCtx as CanvasRenderingContext2D
 
-    mockStore.maskCanvas = {
+    const partialMaskCanvas: Partial<HTMLCanvasElement> = {
       width: 100,
       height: 100
     }
+    mockStore.maskCanvas = partialMaskCanvas as HTMLCanvasElement
 
-    mockStore.imgCanvas = {
+    const partialImgCanvas: Partial<HTMLCanvasElement> = {
       width: 100,
       height: 100
     }
+    mockStore.imgCanvas = partialImgCanvas as HTMLCanvasElement
 
-    mockStore.rgbCanvas = {
+    const partialRgbCanvas: Partial<HTMLCanvasElement> = {
       width: 100,
       height: 100
     }
+    mockStore.rgbCanvas = partialRgbCanvas as HTMLCanvasElement
 
     mockStore.maskColor = { r: 255, g: 255, b: 255 }
     mockStore.paintBucketTolerance = 10
@@ -158,7 +164,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when canvas missing', () => {
-      mockStore.maskCanvas = null
+      mockStore.maskCanvas = null! as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
@@ -243,7 +249,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when canvas missing', async () => {
-      mockStore.imgCanvas = null
+      mockStore.imgCanvas = null! as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
@@ -363,7 +369,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when canvas missing', () => {
-      mockStore.maskCanvas = null
+      mockStore.maskCanvas = null! as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
@@ -373,7 +379,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when context missing', () => {
-      mockStore.maskCtx = null
+      mockStore.maskCtx = null! as CanvasRenderingContext2D
 
       const tools = useCanvasTools()
 
@@ -395,7 +401,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should handle missing mask canvas', () => {
-      mockStore.maskCanvas = null
+      mockStore.maskCanvas = null! as HTMLCanvasElement
 
       const tools = useCanvasTools()
 
@@ -406,7 +412,7 @@ describe('useCanvasTools', () => {
     })
 
     it('should handle missing rgb canvas', () => {
-      mockStore.rgbCanvas = null
+      mockStore.rgbCanvas = null! as HTMLCanvasElement
 
       const tools = useCanvasTools()
 

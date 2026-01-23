@@ -11,13 +11,18 @@ vi.mock('@/platform/distribution/types', () => ({
 
 const downloadFileMock = vi.fn()
 vi.mock('@/base/common/downloadUtil', () => ({
-  downloadFile: (...args: any[]) => downloadFileMock(...args)
+  downloadFile: (url: string, filename?: string) => {
+    if (filename === undefined) {
+      return downloadFileMock(url)
+    }
+    return downloadFileMock(url, filename)
+  }
 }))
 
 const copyToClipboardMock = vi.fn()
 vi.mock('@/composables/useCopyToClipboard', () => ({
   useCopyToClipboard: () => ({
-    copyToClipboard: (...args: any[]) => copyToClipboardMock(...args)
+    copyToClipboard: (text: string) => copyToClipboardMock(text)
   })
 }))
 
@@ -30,8 +35,8 @@ vi.mock('@/i18n', () => ({
 
 const mapTaskOutputToAssetItemMock = vi.fn()
 vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
-  mapTaskOutputToAssetItem: (...args: any[]) =>
-    mapTaskOutputToAssetItemMock(...args)
+  mapTaskOutputToAssetItem: (taskItem: TaskItemImpl, output: ResultItemImpl) =>
+    mapTaskOutputToAssetItemMock(taskItem, output)
 }))
 
 const mediaAssetActionsMock = {
@@ -67,14 +72,16 @@ const interruptMock = vi.fn()
 const deleteItemMock = vi.fn()
 vi.mock('@/scripts/api', () => ({
   api: {
-    interrupt: (...args: any[]) => interruptMock(...args),
-    deleteItem: (...args: any[]) => deleteItemMock(...args)
+    interrupt: (runningPromptId: string | null) =>
+      interruptMock(runningPromptId),
+    deleteItem: (type: string, id: string) => deleteItemMock(type, id)
   }
 }))
 
 const downloadBlobMock = vi.fn()
 vi.mock('@/scripts/utils', () => ({
-  downloadBlob: (...args: any[]) => downloadBlobMock(...args)
+  downloadBlob: (filename: string, blob: Blob) =>
+    downloadBlobMock(filename, blob)
 }))
 
 const dialogServiceMock = {
@@ -95,7 +102,7 @@ vi.mock('@/services/litegraphService', () => ({
 }))
 
 const nodeDefStoreMock = {
-  nodeDefsByName: {} as Record<string, any>
+  nodeDefsByName: {} as Record<string, { id: string }>
 }
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => nodeDefStoreMock
@@ -118,12 +125,13 @@ vi.mock('@/stores/executionStore', () => ({
 
 const getJobWorkflowMock = vi.fn()
 vi.mock('@/services/jobOutputCache', () => ({
-  getJobWorkflow: (...args: any[]) => getJobWorkflowMock(...args)
+  getJobWorkflow: (jobId: string) => getJobWorkflowMock(jobId)
 }))
 
 const createAnnotatedPathMock = vi.fn()
 vi.mock('@/utils/createAnnotatedPath', () => ({
-  createAnnotatedPath: (...args: any[]) => createAnnotatedPathMock(...args)
+  createAnnotatedPath: (filename: string, subfolder: string, type: string) =>
+    createAnnotatedPathMock(filename, subfolder, type)
 }))
 
 const appendJsonExtMock = vi.fn((value: string) =>
@@ -135,7 +143,7 @@ vi.mock('@/utils/formatUtil', () => ({
 }))
 
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import type { TaskItemImpl } from '@/stores/queueStore'
+import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 type MockTaskRef = Record<string, unknown>
 
@@ -257,7 +265,7 @@ describe('useJobMenu', () => {
     ['initialization', interruptMock, deleteItemMock]
   ])('cancels %s job via interrupt', async (state) => {
     const { cancelJob } = mountJobMenu()
-    setCurrentItem(createJobItem({ state: state as any }))
+    setCurrentItem(createJobItem({ state: state as JobListItem['state'] }))
 
     await cancelJob()
 
@@ -292,7 +300,9 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: 'Something went wrong' } as any
+        taskRef: {
+          errorMessage: 'Something went wrong'
+        } as Partial<TaskItemImpl>
       })
     )
 
@@ -324,7 +334,7 @@ describe('useJobMenu', () => {
           errorMessage: 'CUDA out of memory',
           executionError,
           createTime: 12345
-        } as any
+        } as Partial<TaskItemImpl>
       })
     )
 
@@ -344,7 +354,9 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: 'Job failed with error' } as any
+        taskRef: {
+          errorMessage: 'Job failed with error'
+        } as Partial<TaskItemImpl>
       })
     )
 
@@ -366,7 +378,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: undefined } as any
+        taskRef: { errorMessage: undefined } as Partial<TaskItemImpl>
       })
     )
 
@@ -514,7 +526,12 @@ describe('useJobMenu', () => {
 
   it('ignores add-to-current entry when preview missing entirely', async () => {
     const { jobMenuEntries } = mountJobMenu()
-    setCurrentItem(createJobItem({ state: 'completed', taskRef: {} as any }))
+    setCurrentItem(
+      createJobItem({
+        state: 'completed',
+        taskRef: {} as Partial<TaskItemImpl>
+      })
+    )
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'add-to-current')
@@ -543,7 +560,12 @@ describe('useJobMenu', () => {
 
   it('ignores download request when preview missing', async () => {
     const { jobMenuEntries } = mountJobMenu()
-    setCurrentItem(createJobItem({ state: 'completed', taskRef: {} as any }))
+    setCurrentItem(
+      createJobItem({
+        state: 'completed',
+        taskRef: {} as Partial<TaskItemImpl>
+      })
+    )
 
     await nextTick()
     const entry = findActionEntry(jobMenuEntries.value, 'download')
@@ -751,7 +773,7 @@ describe('useJobMenu', () => {
     setCurrentItem(
       createJobItem({
         state: 'failed',
-        taskRef: { errorMessage: 'Some error' } as any
+        taskRef: { errorMessage: 'Some error' } as Partial<TaskItemImpl>
       })
     )
 
