@@ -183,7 +183,7 @@ onMounted(() => {
 
 const toggleQueueOverlay = () => {
   if (isQueuePanelV2Enabled.value) {
-    sidebarTabStore.activeSidebarTabId = 'assets'
+    sidebarTabStore.toggleSidebarTab('assets')
     return
   }
   commandStore.execute('Comfy.Queue.ToggleOverlay')

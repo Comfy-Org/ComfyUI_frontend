@@ -156,7 +156,7 @@ describe('TopMenuSection', () => {
   })
 
   it('opens the assets sidebar tab when QPO V2 is enabled', async () => {
-    const pinia = createTestingPinia({ createSpy: vi.fn })
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
     const settingStore = useSettingStore(pinia)
     vi.mocked(settingStore.get).mockImplementation((key) =>
       key === 'Comfy.Queue.QPOV2' ? true : undefined
@@ -167,5 +167,22 @@ describe('TopMenuSection', () => {
     await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
 
     expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+  })
+
+  it('toggles the assets sidebar tab when QPO V2 is enabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const wrapper = createWrapper(pinia)
+    const sidebarTabStore = useSidebarTabStore(pinia)
+    const toggleButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
+
+    await toggleButton.trigger('click')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+
+    await toggleButton.trigger('click')
+    expect(sidebarTabStore.activeSidebarTabId).toBe(null)
   })
 })
