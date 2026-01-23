@@ -2129,6 +2129,7 @@
     "NodeLibrary": "Библиотека нод",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Настройки уведомлений",
+    "Other": "Другое",
     "PLY": "PLY",
     "PlanCredits": "План и кредиты",
     "Pointer": "Указатель",
@@ -2148,7 +2149,8 @@
     "Vue Nodes": "Vue Nodes",
     "VueNodes": "Vue узлы",
     "Window": "Окно",
-    "Workflow": "Рабочий процесс"
+    "Workflow": "Рабочий процесс",
+    "Workspace": "Рабочее пространство"
   },
   "shape": {
     "CARD": "Карточка",
@@ -2315,9 +2317,11 @@
     "beta": "БЕТА",
     "billedMonthly": "Оплата ежемесячно",
     "billedYearly": "{total} Оплата ежегодно",
+    "cancelSubscription": "Отменить подписку",
     "changeTo": "Перейти на {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Логотип Comfy Cloud",
+    "contactOwnerToSubscribe": "Свяжитесь с владельцем рабочего пространства для оформления подписки",
     "contactUs": "Связаться с нами",
     "creditsRemainingThisMonth": "Кредитов осталось в этом месяце",
     "creditsRemainingThisYear": "Кредитов осталось в этом году",
@@ -2330,6 +2334,7 @@
     "haveQuestions": "Есть вопросы или интересует корпоративное решение?",
     "invoiceHistory": "История счетов",
     "learnMore": "Узнать больше",
+    "managePayment": "Управление оплатой",
     "managePlan": "Управление планом",
     "manageSubscription": "Управление подпиской",
     "maxDuration": {
@@ -2365,6 +2370,7 @@
     "subscribeToComfyCloud": "Подписаться на Comfy Cloud",
     "subscribeToRun": "Подписаться",
     "subscribeToRunFull": "Подписаться для запуска",
+    "subscriptionRequiredMessage": "Для запуска рабочих процессов в облаке участникам требуется подписка",
     "tierNameYearly": "{name} Ежегодно",
     "tiers": {
       "creator": {
@@ -2396,6 +2402,7 @@
     "viewMoreDetails": "Подробнее",
     "viewMoreDetailsPlans": "Подробнее о планах и ценах",
     "viewUsageHistory": "История использования",
+    "workspaceNotSubscribed": "Это рабочее пространство не имеет подписки",
     "yearly": "Ежегодно",
     "yearlyCreditsLabel": "Годовые кредиты",
     "yearlyDiscount": "СКИДКА 20%",
@@ -2545,7 +2552,8 @@
     "notSet": "Не задано",
     "provider": "Способ входа",
     "title": "Настройки пользователя",
-    "updatePassword": "Обновить пароль"
+    "updatePassword": "Обновить пароль",
+    "workspaceSettings": "Настройки рабочего пространства"
   },
   "validation": {
     "descriptionRequired": "Описание обязательно",
@@ -2649,6 +2657,57 @@
       "tokenExchangeFailed": "Не удалось выполнить аутентификацию с рабочим пространством: {error}",
       "workspaceNotFound": "Рабочее пространство не найдено"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "Создать",
+      "message": "Рабочие пространства позволяют участникам использовать общий пул кредитов. После создания вы станете владельцем.",
+      "nameLabel": "Название рабочего пространства*",
+      "namePlaceholder": "Введите название рабочего пространства",
+      "title": "Создать новое рабочее пространство"
+    },
+    "deleteDialog": {
+      "message": "Все неиспользованные кредиты или несохранённые ресурсы будут потеряны. Это действие необратимо.",
+      "messageWithName": "Удалить «{name}»? Все неиспользованные кредиты или несохранённые ресурсы будут потеряны. Это действие необратимо.",
+      "title": "Удалить это рабочее пространство?"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "Название рабочего пространства",
+      "save": "Сохранить",
+      "title": "Редактировать детали рабочего пространства"
+    },
+    "leaveDialog": {
+      "leave": "Покинуть",
+      "message": "Вы не сможете присоединиться снова, если не свяжетесь с владельцем рабочего пространства.",
+      "title": "Покинуть это рабочее пространство?"
+    },
+    "menu": {
+      "deleteWorkspace": "Удалить рабочее пространство",
+      "deleteWorkspaceDisabledTooltip": "Сначала отмените активную подписку рабочего пространства",
+      "editWorkspace": "Редактировать детали рабочего пространства",
+      "leaveWorkspace": "Покинуть рабочее пространство"
+    },
+    "tabs": {
+      "planCredits": "Тариф и кредиты"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "Не удалось создать рабочее пространство",
+      "failedToDeleteWorkspace": "Не удалось удалить рабочее пространство",
+      "failedToLeaveWorkspace": "Не удалось покинуть рабочее пространство",
+      "failedToUpdateWorkspace": "Не удалось обновить рабочее пространство",
+      "workspaceUpdated": {
+        "message": "Детали рабочего пространства сохранены.",
+        "title": "Рабочее пространство обновлено"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "Создать новое рабочее пространство",
+    "maxWorkspacesReached": "Вы можете владеть только 10 рабочими пространствами. Удалите одно, чтобы создать новое.",
+    "roleMember": "Участник",
+    "roleOwner": "Владелец",
+    "subscribe": "Оформить подписку",
+    "switchWorkspace": "Сменить рабочее пространство"
   },
   "zoomControls": {
     "hideMinimap": "Скрыть миникарту",

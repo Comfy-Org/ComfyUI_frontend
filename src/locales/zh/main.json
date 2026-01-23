@@ -2129,6 +2129,7 @@
     "NodeLibrary": "节点库",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "通知偏好",
+    "Other": "其他",
     "PLY": "PLY",
     "PlanCredits": "计划与积分",
     "Pointer": "指针",
@@ -2148,7 +2149,8 @@
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Window": "窗口",
-    "Workflow": "工作流"
+    "Workflow": "工作流",
+    "Workspace": "工作区"
   },
   "shape": {
     "CARD": "卡片",
@@ -2326,9 +2328,11 @@
     "beta": "测试版",
     "billedMonthly": "每月付款",
     "billedYearly": "{total} 每年付款",
+    "cancelSubscription": "取消订阅",
     "changeTo": "更改为 {plan}",
     "comfyCloud": "Comfy 云",
     "comfyCloudLogo": "Comfy Cloud Logo",
+    "contactOwnerToSubscribe": "请联系工作区所有者进行订阅",
     "contactUs": "联系我们",
     "creditsRemainingThisMonth": "本月剩余积分",
     "creditsRemainingThisYear": "今年剩余积分",
@@ -2341,6 +2345,7 @@
     "haveQuestions": "对企业级有疑问？",
     "invoiceHistory": "发票历史",
     "learnMore": "了解更多",
+    "managePayment": "管理付款",
     "managePlan": "管理订阅",
     "manageSubscription": "管理订阅",
     "maxDuration": {
@@ -2376,6 +2381,7 @@
     "subscribeToComfyCloud": "订阅 Comfy Cloud",
     "subscribeToRun": "订阅",
     "subscribeToRunFull": "订阅 Run",
+    "subscriptionRequiredMessage": "成员在云端运行工作流需要订阅",
     "tierNameYearly": "{name} 年度",
     "tiers": {
       "creator": {
@@ -2407,6 +2413,7 @@
     "viewMoreDetails": "查看更多详情",
     "viewMoreDetailsPlans": "查看有关订阅和定价的更多信息",
     "viewUsageHistory": "查看使用历史",
+    "workspaceNotSubscribed": "此工作区未订阅",
     "yearly": "年度",
     "yearlyCreditsLabel": "总共年度积分",
     "yearlyDiscount": "20% 减免",
@@ -2556,7 +2563,8 @@
     "notSet": "未设置",
     "provider": "登录方式",
     "title": "我的用户设置",
-    "updatePassword": "更新密码"
+    "updatePassword": "更新密码",
+    "workspaceSettings": "工作区设置"
   },
   "validation": {
     "descriptionRequired": "描述是必填的",
@@ -2660,6 +2668,57 @@
       "tokenExchangeFailed": "与工作区认证失败：{error}",
       "workspaceNotFound": "未找到工作区"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "创建",
+      "message": "工作区让成员共享积分池。创建后您将成为所有者。",
+      "nameLabel": "工作区名称*",
+      "namePlaceholder": "请输入工作区名称",
+      "title": "创建新工作区"
+    },
+    "deleteDialog": {
+      "message": "任何未使用的积分或未保存的资源都将丢失。此操作无法撤销。",
+      "messageWithName": "删除“{name}”？任何未使用的积分或未保存的资源都将丢失。此操作无法撤销。",
+      "title": "删除此工作区？"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "工作区名称",
+      "save": "保存",
+      "title": "编辑工作区详情"
+    },
+    "leaveDialog": {
+      "leave": "离开",
+      "message": "除非联系工作区所有者，否则您将无法重新加入。",
+      "title": "离开此工作区？"
+    },
+    "menu": {
+      "deleteWorkspace": "删除工作区",
+      "deleteWorkspaceDisabledTooltip": "请先取消工作区的有效订阅",
+      "editWorkspace": "编辑工作区详情",
+      "leaveWorkspace": "离开工作区"
+    },
+    "tabs": {
+      "planCredits": "套餐与积分"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "创建工作区失败",
+      "failedToDeleteWorkspace": "删除工作区失败",
+      "failedToLeaveWorkspace": "离开工作区失败",
+      "failedToUpdateWorkspace": "更新工作区失败",
+      "workspaceUpdated": {
+        "message": "工作区详情已保存。",
+        "title": "工作区已更新"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "创建新工作区",
+    "maxWorkspacesReached": "您最多只能拥有10个工作区。请删除一个以创建新工作区。",
+    "roleMember": "成员",
+    "roleOwner": "所有者",
+    "subscribe": "订阅",
+    "switchWorkspace": "切换工作区"
   },
   "zoomControls": {
     "hideMinimap": "隐藏小地图",

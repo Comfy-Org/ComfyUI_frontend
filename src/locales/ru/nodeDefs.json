@@ -2093,7 +2093,9 @@
       "choice": {
         "name": "выбор"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -15713,6 +15715,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "выход аудиоэнкодера 1"
+      },
+      "audio_scale": {
+        "name": "масштаб аудио"
+      },
+      "clip_vision_output": {
+        "name": "выход clip vision"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "mode": {
+        "name": "режим"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_patch": {
+        "name": "патч модели"
+      },
+      "motion_frame_count": {
+        "name": "количество кадров движения",
+        "tooltip": "Количество предыдущих кадров, используемых как контекст движения."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "previous_frames": {
+        "name": "предыдущие кадры"
+      },
+      "start_image": {
+        "name": "стартовое изображение"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "модель",
+        "tooltip": null
+      },
+      "1": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "негативный",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "обрезанное изображение",
         "tooltip": null
       }
     }

@@ -2129,6 +2129,7 @@
     "NodeLibrary": "ノードライブラリ",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "通知設定",
+    "Other": "その他",
     "PLY": "PLY",
     "PlanCredits": "プランとクレジット",
     "Pointer": "ポインタ",
@@ -2148,7 +2149,8 @@
     "Vue Nodes": "Vueノード",
     "VueNodes": "Vueノード",
     "Window": "ウィンドウ",
-    "Workflow": "ワークフロー"
+    "Workflow": "ワークフロー",
+    "Workspace": "ワークスペース"
   },
   "shape": {
     "CARD": "カード",
@@ -2315,9 +2317,11 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "cancelSubscription": "サブスクリプションをキャンセル",
     "changeTo": "{plan}に変更",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud ロゴ",
+    "contactOwnerToSubscribe": "サブスクリプションのためにワークスペースのオーナーに連絡してください",
     "contactUs": "お問い合わせ",
     "creditsRemainingThisMonth": "今月残りのクレジット",
     "creditsRemainingThisYear": "今年残りのクレジット",
@@ -2330,6 +2334,7 @@
     "haveQuestions": "ご質問やエンタープライズについてのお問い合わせはこちら",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
+    "managePayment": "支払いを管理",
     "managePlan": "プランを管理",
     "manageSubscription": "サブスクリプションを管理",
     "maxDuration": {
@@ -2365,6 +2370,7 @@
     "subscribeToComfyCloud": "Comfy Cloudを購読",
     "subscribeToRun": "購読する",
     "subscribeToRunFull": "実行を購読",
+    "subscriptionRequiredMessage": "クラウドでワークフローを実行するにはメンバーにサブスクリプションが必要です",
     "tierNameYearly": "{name} 年間",
     "tiers": {
       "creator": {
@@ -2396,6 +2402,7 @@
     "viewMoreDetails": "詳細を表示",
     "viewMoreDetailsPlans": "プランと価格の詳細を見る",
     "viewUsageHistory": "利用履歴を表示",
+    "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
     "yearly": "年額",
     "yearlyCreditsLabel": "年間合計クレジット",
     "yearlyDiscount": "20%割引",
@@ -2545,7 +2552,8 @@
     "notSet": "未設定",
     "provider": "サインイン方法",
     "title": "ユーザー設定",
-    "updatePassword": "パスワードを更新"
+    "updatePassword": "パスワードを更新",
+    "workspaceSettings": "ワークスペース設定"
   },
   "validation": {
     "descriptionRequired": "説明が必要です",
@@ -2649,6 +2657,57 @@
       "tokenExchangeFailed": "ワークスペースの認証に失敗しました: {error}",
       "workspaceNotFound": "ワークスペースが見つかりません"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "作成",
+      "message": "ワークスペースはメンバーでクレジットプールを共有できます。作成後、あなたがオーナーになります。",
+      "nameLabel": "ワークスペース名*",
+      "namePlaceholder": "ワークスペース名を入力",
+      "title": "新しいワークスペースを作成"
+    },
+    "deleteDialog": {
+      "message": "未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
+      "messageWithName": "「{name}」を削除しますか？未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
+      "title": "このワークスペースを削除しますか？"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "ワークスペース名",
+      "save": "保存",
+      "title": "ワークスペースの詳細を編集"
+    },
+    "leaveDialog": {
+      "leave": "退出",
+      "message": "ワークスペースのオーナーに連絡しない限り、再参加できません。",
+      "title": "このワークスペースを退出しますか？"
+    },
+    "menu": {
+      "deleteWorkspace": "ワークスペースを削除",
+      "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
+      "editWorkspace": "ワークスペースの詳細を編集",
+      "leaveWorkspace": "ワークスペースを退出"
+    },
+    "tabs": {
+      "planCredits": "プランとクレジット"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "ワークスペースの作成に失敗しました",
+      "failedToDeleteWorkspace": "ワークスペースの削除に失敗しました",
+      "failedToLeaveWorkspace": "ワークスペースの退出に失敗しました",
+      "failedToUpdateWorkspace": "ワークスペースの更新に失敗しました",
+      "workspaceUpdated": {
+        "message": "ワークスペースの詳細が保存されました。",
+        "title": "ワークスペースが更新されました"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "新しいワークスペースを作成",
+    "maxWorkspacesReached": "所有できるワークスペースは10個までです。新しく作成するには1つ削除してください。",
+    "roleMember": "メンバー",
+    "roleOwner": "オーナー",
+    "subscribe": "サブスクライブ",
+    "switchWorkspace": "ワークスペースを切り替え"
   },
   "zoomControls": {
     "hideMinimap": "ミニマップを非表示",

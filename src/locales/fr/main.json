@@ -2129,6 +2129,7 @@
     "NodeLibrary": "Bibliothèque de Nœuds",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Préférences de notification",
+    "Other": "Autre",
     "PLY": "PLY",
     "PlanCredits": "Forfait et crédits",
     "Pointer": "Pointeur",
@@ -2148,7 +2149,8 @@
     "Vue Nodes": "Nœuds Vue",
     "VueNodes": "Nœuds Vue",
     "Window": "Fenêtre",
-    "Workflow": "Flux de Travail"
+    "Workflow": "Flux de Travail",
+    "Workspace": "Espace de travail"
   },
   "shape": {
     "CARD": "Carte",
@@ -2315,9 +2317,11 @@
     "beta": "BÊTA",
     "billedMonthly": "Facturé mensuellement",
     "billedYearly": "{total} facturé annuellement",
+    "cancelSubscription": "Annuler l’abonnement",
     "changeTo": "Changer pour {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo Comfy Cloud",
+    "contactOwnerToSubscribe": "Contactez le propriétaire de l’espace de travail pour vous abonner",
     "contactUs": "Contactez-nous",
     "creditsRemainingThisMonth": "Crédits restants ce mois-ci",
     "creditsRemainingThisYear": "Crédits restants cette année",
@@ -2330,6 +2334,7 @@
     "haveQuestions": "Des questions ou besoin d'une offre entreprise ?",
     "invoiceHistory": "Historique des factures",
     "learnMore": "En savoir plus",
+    "managePayment": "Gérer le paiement",
     "managePlan": "Gérer le forfait",
     "manageSubscription": "Gérer l'abonnement",
     "maxDuration": {
@@ -2365,6 +2370,7 @@
     "subscribeToComfyCloud": "S'abonner à Comfy Cloud",
     "subscribeToRun": "S'abonner",
     "subscribeToRunFull": "S'abonner pour exécuter",
+    "subscriptionRequiredMessage": "Un abonnement est requis pour que les membres puissent exécuter des workflows sur le Cloud",
     "tierNameYearly": "{name} Annuel",
     "tiers": {
       "creator": {
@@ -2396,6 +2402,7 @@
     "viewMoreDetails": "Voir plus de détails",
     "viewMoreDetailsPlans": "Voir plus de détails sur les forfaits et tarifs",
     "viewUsageHistory": "Voir l'historique d'utilisation",
+    "workspaceNotSubscribed": "Cet espace de travail n’a pas d’abonnement",
     "yearly": "Annuel",
     "yearlyCreditsLabel": "Crédits annuels totaux",
     "yearlyDiscount": "20% DE RÉDUCTION",
@@ -2545,7 +2552,8 @@
     "notSet": "Non défini",
     "provider": "Méthode de connexion",
     "title": "Paramètres utilisateur",
-    "updatePassword": "Mettre à jour le mot de passe"
+    "updatePassword": "Mettre à jour le mot de passe",
+    "workspaceSettings": "Paramètres de l’espace de travail"
   },
   "validation": {
     "descriptionRequired": "La description est requise",
@@ -2649,6 +2657,57 @@
       "tokenExchangeFailed": "Échec de l’authentification avec l’espace de travail : {error}",
       "workspaceNotFound": "Espace de travail introuvable"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "Créer",
+      "message": "Les espaces de travail permettent aux membres de partager un même pool de crédits. Vous deviendrez le propriétaire après la création.",
+      "nameLabel": "Nom de l’espace de travail*",
+      "namePlaceholder": "Saisissez le nom de l’espace de travail",
+      "title": "Créer un nouvel espace de travail"
+    },
+    "deleteDialog": {
+      "message": "Tout crédit inutilisé ou ressource non enregistrée sera perdu. Cette action est irréversible.",
+      "messageWithName": "Supprimer « {name} » ? Tout crédit inutilisé ou ressource non enregistrée sera perdu. Cette action est irréversible.",
+      "title": "Supprimer cet espace de travail ?"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "Nom de l’espace de travail",
+      "save": "Enregistrer",
+      "title": "Modifier les détails de l’espace de travail"
+    },
+    "leaveDialog": {
+      "leave": "Quitter",
+      "message": "Vous ne pourrez pas le rejoindre à nouveau sans contacter le propriétaire de l’espace de travail.",
+      "title": "Quitter cet espace de travail ?"
+    },
+    "menu": {
+      "deleteWorkspace": "Supprimer l’espace de travail",
+      "deleteWorkspaceDisabledTooltip": "Annulez d’abord l’abonnement actif de votre espace de travail",
+      "editWorkspace": "Modifier les détails de l’espace de travail",
+      "leaveWorkspace": "Quitter l’espace de travail"
+    },
+    "tabs": {
+      "planCredits": "Forfait & Crédits"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "Échec de la création de l’espace de travail",
+      "failedToDeleteWorkspace": "Échec de la suppression de l’espace de travail",
+      "failedToLeaveWorkspace": "Échec de la sortie de l’espace de travail",
+      "failedToUpdateWorkspace": "Échec de la mise à jour de l’espace de travail",
+      "workspaceUpdated": {
+        "message": "Les détails de l’espace de travail ont été enregistrés.",
+        "title": "Espace de travail mis à jour"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "Créer un nouvel espace de travail",
+    "maxWorkspacesReached": "Vous ne pouvez posséder que 10 espaces de travail. Supprimez-en un pour en créer un nouveau.",
+    "roleMember": "Membre",
+    "roleOwner": "Propriétaire",
+    "subscribe": "S’abonner",
+    "switchWorkspace": "Changer d’espace de travail"
   },
   "zoomControls": {
     "hideMinimap": "Masquer la mini-carte",

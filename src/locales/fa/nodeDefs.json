@@ -2095,7 +2095,9 @@
       "choice": {
         "name": "انتخاب"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -15744,6 +15746,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "خروجی رمزگذار صوتی ۱"
+      },
+      "audio_scale": {
+        "name": "مقیاس صوتی"
+      },
+      "clip_vision_output": {
+        "name": "خروجی بینایی clip"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "mode": {
+        "name": "حالت"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_patch": {
+        "name": "patch مدل"
+      },
+      "motion_frame_count": {
+        "name": "تعداد فریم‌های حرکتی",
+        "tooltip": "تعداد فریم‌های قبلی که به عنوان زمینه حرکت استفاده می‌شود."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "previous_frames": {
+        "name": "فریم‌های قبلی"
+      },
+      "start_image": {
+        "name": "تصویر شروع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "2": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "تصویر برش‌خورده",
         "tooltip": null
       }
     }

@@ -2093,7 +2093,9 @@
       "choice": {
         "name": "選択"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -15713,6 +15715,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "オーディオエンコーダ出力1"
+      },
+      "audio_scale": {
+        "name": "オーディオスケール"
+      },
+      "clip_vision_output": {
+        "name": "clipビジョン出力"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_patch": {
+        "name": "モデルパッチ"
+      },
+      "motion_frame_count": {
+        "name": "モーションフレーム数",
+        "tooltip": "動きのコンテキストとして使用する前のフレーム数。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "previous_frames": {
+        "name": "前のフレーム"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "ネガティブ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "潜在",
+        "tooltip": null
+      },
+      "4": {
+        "name": "トリム画像",
         "tooltip": null
       }
     }

@@ -2093,7 +2093,9 @@
       "choice": {
         "name": "اختيار"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -15713,6 +15715,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "مخرجات ترميز الصوت ١"
+      },
+      "audio_scale": {
+        "name": "مقياس الصوت"
+      },
+      "clip_vision_output": {
+        "name": "مخرجات clip للرؤية"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "mode": {
+        "name": "الوضع"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_patch": {
+        "name": "تصحيح النموذج"
+      },
+      "motion_frame_count": {
+        "name": "عدد إطارات الحركة",
+        "tooltip": "عدد الإطارات السابقة المستخدمة كسياق للحركة."
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "previous_frames": {
+        "name": "الإطارات السابقة"
+      },
+      "start_image": {
+        "name": "صورة البداية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "3": {
+        "name": "الفضاء الكامن",
+        "tooltip": null
+      },
+      "4": {
+        "name": "قص الصورة",
         "tooltip": null
       }
     }
