@@ -69,7 +69,7 @@
           <slot name="contentFilter" />
           <h2
             v-if="!hasLeftPanel"
-            class="text-xxl m-0 px-6 pt-2 pb-6 capitalize"
+            class="text-xxl m-0 select-none px-6 pt-2 pb-6 capitalize"
           >
             {{ contentTitle }}
           </h2>
@@ -94,7 +94,10 @@
             data-component-id="RightPanelHeader"
             class="flex h-18 shrink-0 items-center gap-2 px-6"
           >
-            <h2 v-if="rightPanelTitle" class="flex-1 text-base font-semibold">
+            <h2
+              v-if="rightPanelTitle"
+              class="flex-1 select-none text-base font-semibold"
+            >
               {{ rightPanelTitle }}
             </h2>
             <div v-else class="flex-1">
