@@ -209,6 +209,7 @@ async function customSearcher(
         :items="sortedItems"
         :is-selected="internalIsSelected"
         :max-selectable="maxSelectable"
+        :update-key="items"
         @close="closeDropdown"
         @item-click="handleSelection"
       />
