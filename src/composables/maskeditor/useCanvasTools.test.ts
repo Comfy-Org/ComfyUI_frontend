@@ -4,17 +4,37 @@ import { ColorComparisonMethod } from '@/extensions/core/maskeditor/types'
 
 import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 
+// Mock store interface matching the real store's nullable fields
+interface MockMaskEditorStore {
+  maskCtx: CanvasRenderingContext2D | null
+  imgCtx: CanvasRenderingContext2D | null
+  maskCanvas: HTMLCanvasElement | null
+  imgCanvas: HTMLCanvasElement | null
+  rgbCtx: CanvasRenderingContext2D | null
+  rgbCanvas: HTMLCanvasElement | null
+  maskColor: { r: number; g: number; b: number }
+  paintBucketTolerance: number
+  fillOpacity: number
+  colorSelectTolerance: number
+  colorComparisonMethod: ColorComparisonMethod
+  selectionOpacity: number
+  applyWholeImage: boolean
+  maskBoundary: boolean
+  maskTolerance: number
+  canvasHistory: { saveState: ReturnType<typeof vi.fn> }
+}
+
 const mockCanvasHistory = {
   saveState: vi.fn()
 }
 
-const mockStore = {
-  maskCtx: null! as CanvasRenderingContext2D,
-  imgCtx: null! as CanvasRenderingContext2D,
-  maskCanvas: null! as HTMLCanvasElement,
-  imgCanvas: null! as HTMLCanvasElement,
-  rgbCtx: null! as CanvasRenderingContext2D,
-  rgbCanvas: null! as HTMLCanvasElement,
+const mockStore: MockMaskEditorStore = {
+  maskCtx: null,
+  imgCtx: null,
+  maskCanvas: null,
+  imgCanvas: null,
+  rgbCtx: null,
+  rgbCanvas: null,
   maskColor: { r: 255, g: 255, b: 255 },
   paintBucketTolerance: 10,
   fillOpacity: 100,
@@ -109,13 +129,13 @@ describe('useCanvasTools', () => {
 
       tools.paintBucketFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.getImageData).toHaveBeenCalledWith(
+      expect(mockStore.maskCtx!.getImageData).toHaveBeenCalledWith(
         0,
         0,
         100,
         100
       )
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalledWith(
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalledWith(
         mockMaskImageData,
         0,
         0
@@ -160,17 +180,17 @@ describe('useCanvasTools', () => {
 
       tools.paintBucketFill({ x: -1, y: 50 })
 
-      expect(mockStore.maskCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).not.toHaveBeenCalled()
     })
 
     it('should return early when canvas missing', () => {
-      mockStore.maskCanvas = null! as HTMLCanvasElement
+      mockStore.maskCanvas = null
 
       const tools = useCanvasTools()
 
       tools.paintBucketFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.getImageData).not.toHaveBeenCalled()
+      expect(mockStore.maskCtx?.getImageData).not.toHaveBeenCalled()
     })
 
     it('should apply fill opacity', () => {
@@ -204,14 +224,19 @@ describe('useCanvasTools', () => {
 
       await tools.colorSelectFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.getImageData).toHaveBeenCalledWith(
+      expect(mockStore.maskCtx!.getImageData).toHaveBeenCalledWith(
         0,
         0,
         100,
         100
       )
-      expect(mockStore.imgCtx.getImageData).toHaveBeenCalledWith(0, 0, 100, 100)
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.imgCtx!.getImageData).toHaveBeenCalledWith(
+        0,
+        0,
+        100,
+        100
+      )
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
       expect(mockCanvasHistory.saveState).toHaveBeenCalled()
     })
 
@@ -222,7 +247,7 @@ describe('useCanvasTools', () => {
 
       await tools.colorSelectFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
 
     it('should respect color tolerance', async () => {
@@ -245,17 +270,17 @@ describe('useCanvasTools', () => {
 
       await tools.colorSelectFill({ x: -1, y: 50 })
 
-      expect(mockStore.maskCtx.putImageData).not.toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).not.toHaveBeenCalled()
     })
 
     it('should return early when canvas missing', async () => {
-      mockStore.imgCanvas = null! as HTMLCanvasElement
+      mockStore.imgCanvas = null
 
       const tools = useCanvasTools()
 
       await tools.colorSelectFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.getImageData).not.toHaveBeenCalled()
+      expect(mockStore.maskCtx?.getImageData).not.toHaveBeenCalled()
     })
 
     it('should apply selection opacity', async () => {
@@ -276,7 +301,7 @@ describe('useCanvasTools', () => {
 
       await tools.colorSelectFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
 
     it('should use LAB color comparison method', async () => {
@@ -286,7 +311,7 @@ describe('useCanvasTools', () => {
 
       await tools.colorSelectFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
 
     it('should respect mask boundary', async () => {
@@ -301,7 +326,7 @@ describe('useCanvasTools', () => {
 
       await tools.colorSelectFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
 
     it('should update last color select point', async () => {
@@ -309,7 +334,7 @@ describe('useCanvasTools', () => {
 
       await tools.colorSelectFill({ x: 30, y: 40 })
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
   })
 
@@ -326,13 +351,13 @@ describe('useCanvasTools', () => {
 
       tools.invertMask()
 
-      expect(mockStore.maskCtx.getImageData).toHaveBeenCalledWith(
+      expect(mockStore.maskCtx!.getImageData).toHaveBeenCalledWith(
         0,
         0,
         100,
         100
       )
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalledWith(
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalledWith(
         mockMaskImageData,
         0,
         0
@@ -369,17 +394,17 @@ describe('useCanvasTools', () => {
     })
 
     it('should return early when canvas missing', () => {
-      mockStore.maskCanvas = null! as HTMLCanvasElement
+      mockStore.maskCanvas = null
 
       const tools = useCanvasTools()
 
       tools.invertMask()
 
-      expect(mockStore.maskCtx.getImageData).not.toHaveBeenCalled()
+      expect(mockStore.maskCtx?.getImageData).not.toHaveBeenCalled()
     })
 
     it('should return early when context missing', () => {
-      mockStore.maskCtx = null! as CanvasRenderingContext2D
+      mockStore.maskCtx = null
 
       const tools = useCanvasTools()
 
@@ -395,31 +420,31 @@ describe('useCanvasTools', () => {
 
       tools.clearMask()
 
-      expect(mockStore.maskCtx.clearRect).toHaveBeenCalledWith(0, 0, 100, 100)
-      expect(mockStore.rgbCtx.clearRect).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockStore.maskCtx!.clearRect).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockStore.rgbCtx!.clearRect).toHaveBeenCalledWith(0, 0, 100, 100)
       expect(mockCanvasHistory.saveState).toHaveBeenCalled()
     })
 
     it('should handle missing mask canvas', () => {
-      mockStore.maskCanvas = null! as HTMLCanvasElement
+      mockStore.maskCanvas = null
 
       const tools = useCanvasTools()
 
       tools.clearMask()
 
-      expect(mockStore.maskCtx.clearRect).not.toHaveBeenCalled()
+      expect(mockStore.maskCtx?.clearRect).not.toHaveBeenCalled()
       expect(mockCanvasHistory.saveState).toHaveBeenCalled()
     })
 
     it('should handle missing rgb canvas', () => {
-      mockStore.rgbCanvas = null! as HTMLCanvasElement
+      mockStore.rgbCanvas = null
 
       const tools = useCanvasTools()
 
       tools.clearMask()
 
-      expect(mockStore.maskCtx.clearRect).toHaveBeenCalledWith(0, 0, 100, 100)
-      expect(mockStore.rgbCtx.clearRect).not.toHaveBeenCalled()
+      expect(mockStore.maskCtx?.clearRect).toHaveBeenCalledWith(0, 0, 100, 100)
+      expect(mockStore.rgbCtx?.clearRect).not.toHaveBeenCalled()
       expect(mockCanvasHistory.saveState).toHaveBeenCalled()
     })
   })
@@ -432,26 +457,26 @@ describe('useCanvasTools', () => {
 
       tools.clearLastColorSelectPoint()
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
   })
 
   describe('edge cases', () => {
     it('should handle small canvas', () => {
-      mockStore.maskCanvas.width = 1
-      mockStore.maskCanvas.height = 1
+      mockStore.maskCanvas!.width = 1
+      mockStore.maskCanvas!.height = 1
       mockMaskImageData = {
         data: new Uint8ClampedArray(1 * 1 * 4),
         width: 1,
         height: 1
       } as ImageData
-      mockStore.maskCtx.getImageData = vi.fn(() => mockMaskImageData)
+      mockStore.maskCtx!.getImageData = vi.fn(() => mockMaskImageData)
 
       const tools = useCanvasTools()
 
       tools.paintBucketFill({ x: 0, y: 0 })
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
 
     it('should handle fractional coordinates', () => {
@@ -459,7 +484,7 @@ describe('useCanvasTools', () => {
 
       tools.paintBucketFill({ x: 50.7, y: 50.3 })
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
 
     it('should handle maximum tolerance', () => {
@@ -469,7 +494,7 @@ describe('useCanvasTools', () => {
 
       tools.paintBucketFill({ x: 50, y: 50 })
 
-      expect(mockStore.maskCtx.putImageData).toHaveBeenCalled()
+      expect(mockStore.maskCtx!.putImageData).toHaveBeenCalled()
     })
 
     it('should handle zero opacity', () => {
