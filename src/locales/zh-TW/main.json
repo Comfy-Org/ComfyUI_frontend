@@ -24,6 +24,7 @@
     "assets": "資產",
     "baseModels": "基礎模型",
     "browseAssets": "瀏覽資產",
+    "byType": "依類型",
     "checkpoints": "Checkpoints",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "範例：",
@@ -45,6 +46,10 @@
       "failed": "下載失敗",
       "inProgress": "正在下載 {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "尚未匯入模型。點擊「匯入模型」以新增您的模型。",
+      "restricted": "個人模型僅限 Creator 方案及以上等級使用。"
+    },
     "errorFileTooLarge": "檔案超過允許的最大大小限制",
     "errorFormatNotAllowed": "僅允許 SafeTensor 格式",
     "errorModelTypeNotSupported": "不支援此模型類型",
@@ -61,6 +66,7 @@
     "finish": "完成",
     "genericLinkPlaceholder": "請在此貼上連結",
     "importAnother": "匯入其他",
+    "imported": "已匯入",
     "jobId": "工作 ID",
     "loadingModels": "正在載入 {type}...",
     "maxFileSize": "最大檔案大小：{size}",
@@ -70,6 +76,30 @@
       "threeDModelPlaceholder": "3D 模型"
     },
     "modelAssociatedWithLink": "您提供的連結所對應的模型：",
+    "modelInfo": {
+      "addBaseModel": "新增基礎模型...",
+      "addTag": "新增標籤...",
+      "additionalTags": "其他標籤",
+      "baseModelUnknown": "基礎模型未知",
+      "basicInfo": "基本資訊",
+      "compatibleBaseModels": "相容基礎模型",
+      "description": "描述",
+      "descriptionNotSet": "尚未設定描述",
+      "descriptionPlaceholder": "為此模型新增描述...",
+      "displayName": "顯示名稱",
+      "editDisplayName": "編輯顯示名稱",
+      "fileName": "檔案名稱",
+      "modelDescription": "模型描述",
+      "modelTagging": "模型標籤",
+      "modelType": "模型類型",
+      "noAdditionalTags": "沒有其他標籤",
+      "selectModelPrompt": "選擇模型以查看其資訊",
+      "selectModelType": "選擇模型類型...",
+      "source": "來源",
+      "title": "模型資訊",
+      "triggerPhrases": "觸發詞",
+      "viewOnSource": "在 {source} 上檢視"
+    },
     "modelName": "模型名稱",
     "modelNamePlaceholder": "請輸入此模型的名稱",
     "modelTypeSelectorLabel": "這是什麼類型的模型？",
@@ -238,6 +268,12 @@
       "title": "建立帳戶"
     }
   },
+  "boundingBox": {
+    "height": "高度",
+    "width": "寬度",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "清除工作流程",
     "deleteBlueprint": "刪除藍圖",
@@ -298,6 +334,7 @@
     },
     "retry": "再試一次",
     "retrying": "正在重試...",
+    "skipToCloudApp": "跳至雲端應用程式",
     "start": {
       "desc": "無需任何設定。可在任何裝置上使用。",
       "download": "下載 ComfyUI",
@@ -432,6 +469,7 @@
     "Expand": "展開",
     "Expand Node": "展開節點",
     "Extensions": "擴充功能",
+    "FavoriteWidget": "收藏元件",
     "Horizontal": "水平",
     "Inputs": "輸入",
     "Left": "左側",
@@ -462,6 +500,7 @@
     "Shapes": "形狀",
     "Title": "標題",
     "Top": "頂部",
+    "UnfavoriteWidget": "取消收藏元件",
     "Unpack Subgraph": "解包子圖",
     "Unpin": "取消釘選",
     "Vertical": "垂直",
@@ -565,6 +604,8 @@
     "LUMA_REF": "LUMA 參考",
     "MASK": "遮罩",
     "MESH": "網格",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "模型",
     "MODEL_PATCH": "模型修補",
     "MODEL_TASK_ID": "模型任務ID",
@@ -653,6 +694,7 @@
     "amount": "數量",
     "apply": "套用",
     "architecture": "架構",
+    "asset": "{count} 筆資產",
     "audioFailedToLoad": "無法載入音訊",
     "audioProgress": "音訊進度",
     "author": "作者",
@@ -672,6 +714,7 @@
     "clearAll": "全部清除",
     "clearFilters": "清除篩選",
     "close": "關閉",
+    "closeDialog": "關閉對話框",
     "color": "顏色",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrg 標誌",
@@ -688,6 +731,7 @@
     "control_before_generate": "生成前控制",
     "copied": "已複製",
     "copy": "複製",
+    "copyAll": "全部複製",
     "copyJobId": "複製工作 ID",
     "copyToClipboard": "複製到剪貼簿",
     "copyURL": "複製網址",
@@ -750,6 +794,8 @@
     "goToNode": "前往節點",
     "graphNavigation": "圖形導覽",
     "halfSpeed": "0.5倍速",
+    "hideLeftPanel": "隱藏左側面板",
+    "hideRightPanel": "隱藏右側面板",
     "icon": "圖示",
     "imageFailedToLoad": "無法載入圖片",
     "imagePreview": "圖片預覽 - 使用方向鍵在圖片間導航",
@@ -791,6 +837,7 @@
     "name": "名稱",
     "newFolder": "新資料夾",
     "next": "下一步",
+    "nightly": "NIGHTLY",
     "no": "否",
     "noAudioRecorded": "沒有錄製到音訊",
     "noItems": "沒有項目",
@@ -805,6 +852,7 @@
     "nodeSlotsError": "節點插槽錯誤",
     "nodeWidgetsError": "節點小工具錯誤",
     "nodes": "節點",
+    "nodesCount": "{count} 個節點 | {count} 個節點 | {count} 個節點",
     "nodesRunning": "節點執行中",
     "none": "無",
     "nothingToCopy": "沒有可複製的項目",
@@ -842,6 +890,7 @@
     "releaseTitle": "{package} {version} 版本發佈",
     "reloadToApplyChanges": "重新載入以套用變更",
     "removeImage": "移除圖片",
+    "removeTag": "移除標籤",
     "removeVideo": "移除影片",
     "rename": "重新命名",
     "reportIssue": "送出回報",
@@ -878,7 +927,9 @@
     "selectedFile": "已選取的檔案",
     "setAsBackground": "設為背景",
     "settings": "設定",
+    "showLeftPanel": "顯示左側面板",
     "showReport": "顯示報告",
+    "showRightPanel": "顯示右側面板",
     "singleSelectDropdown": "單選下拉式選單",
     "sort": "排序",
     "source": "來源",
@@ -901,6 +952,7 @@
     "updating": "更新中",
     "upload": "上傳",
     "usageHint": "使用提示",
+    "use": "使用",
     "user": "使用者",
     "versionMismatchWarning": "版本相容性警告",
     "versionMismatchWarningMessage": "{warning}：{detail} 請參閱 https://docs.comfy.org/installation/update_comfyui#common-update-issues 以取得更新說明。",
@@ -974,6 +1026,11 @@
   },
   "imageCompare": {
     "noImages": "沒有可比較的圖像"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "裁切預覽",
+    "loading": "載入中...",
+    "noInputImage": "未連接輸入影像"
   },
   "importFailed": {
     "copyError": "複製錯誤",
@@ -1097,8 +1154,14 @@
     "helpFix": "協助修復此問題"
   },
   "linearMode": {
-    "openWorkflow": "開啟工作流程",
-    "share": "分享"
+    "beta": "Beta - 提供回饋",
+    "downloadAll": "全部下載",
+    "dragAndDropImage": "拖曳圖片到此",
+    "graphMode": "圖形模式",
+    "linearMode": "簡易模式",
+    "rerun": "重新執行",
+    "reuseParameters": "重用參數",
+    "runCount": "執行次數："
   },
   "load3d": {
     "applyingTexture": "正在套用材質貼圖...",
@@ -1352,11 +1415,11 @@
   },
   "mediaAsset": {
     "actions": {
-      "addToWorkflow": "加入目前工作流程",
       "copyJobId": "複製作業 ID",
       "delete": "刪除",
       "download": "下載",
       "exportWorkflow": "匯出工作流程",
+      "insertAsNodeInWorkflow": "插入為工作流程節點",
       "inspect": "檢查資產",
       "more": "更多選項",
       "moreOptions": "更多選項",
@@ -1392,10 +1455,22 @@
       "downloadSelectedAll": "全部下載",
       "downloadStarted": "正在下載 {count} 個檔案...",
       "downloadsStarted": "已開始下載 {count} 個檔案",
+      "exportWorkflowAll": "全部匯出工作流程",
+      "failedToAddNodes": "加入節點至工作流程失敗",
       "failedToDeleteAssets": "刪除選取資源失敗",
+      "insertAllAssetsAsNodes": "將所有資產插入為節點",
       "multipleSelectedAssets": "已選取多個資產",
+      "noWorkflowsFound": "所選資產中未找到工作流程資料",
+      "noWorkflowsToExport": "未找到可匯出的工作流程資料",
+      "nodesAddedToWorkflow": "已將 {count} 個節點加入工作流程",
+      "openWorkflowAll": "全部開啟工作流程",
+      "partialAddNodesSuccess": "成功加入 {succeeded} 個，失敗 {failed} 個",
       "partialDeleteSuccess": "{succeeded} 刪除成功，{failed} 刪除失敗",
-      "selectedCount": "已選取資源：{count}"
+      "partialWorkflowsExported": "成功匯出 {succeeded} 個，失敗 {failed} 個",
+      "partialWorkflowsOpened": "已開啟 {succeeded} 個工作流程，失敗 {failed} 個",
+      "selectedCount": "已選取資源：{count}",
+      "workflowsExported": "成功匯出 {count} 個工作流程",
+      "workflowsOpened": "已在新分頁開啟 {count} 個工作流程"
     },
     "unsupportedFileType": "此載入節點不支援的檔案類型",
     "workflowExportedSuccessfully": "工作流程匯出成功",
@@ -1537,6 +1612,7 @@
     "Toggle Logs Bottom Panel": "切換日誌底部面板",
     "Toggle Queue Panel V2": "切換佇列面板 V2",
     "Toggle Search Box": "切換搜尋框",
+    "Toggle Simple Mode": "切換簡易模式",
     "Toggle Terminal Bottom Panel": "切換終端機底部面板",
     "Toggle Theme (Dark/Light)": "切換主題（深色/淺色）",
     "Toggle View Controls Bottom Panel": "切換檢視控制底部面板",
@@ -1551,8 +1627,7 @@
     "Workflows": "工作流程",
     "Zoom In": "放大",
     "Zoom Out": "縮小",
-    "Zoom to fit": "縮放至適合大小",
-    "toggle linear mode": "切換線性模式"
+    "Zoom to fit": "縮放至適合大小"
   },
   "minimap": {
     "nodeColors": "節點顏色",
@@ -1581,17 +1656,25 @@
       "title": "此工作流程有缺少的節點"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "預覽版本",
+      "tooltip": "您正在使用 ComfyUI 的夜間版本。請使用反饋按鈕分享您對這些功能的看法。"
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3D",
     "3d_models": "3D 模型",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Gemini": "雙子星",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "月谷馬雷",
     "OpenAI": "OpenAI",
@@ -1606,6 +1689,7 @@
     "Veo": "Veo",
     "Vidu": "維度",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_for_testing",
     "advanced": "進階",
     "animation": "動畫",
@@ -1786,22 +1870,58 @@
     "whatsNew": "有什麼新功能？"
   },
   "rightSidePanel": {
+    "addFavorite": "收藏",
+    "advancedInputs": "進階輸入",
     "bypass": "繞過",
     "color": "節點顏色",
+    "fallbackGroupTitle": "群組",
+    "fallbackNodeTitle": "節點",
+    "favorites": "已收藏輸入",
+    "favoritesNone": "尚無已收藏輸入",
+    "favoritesNoneDesc": "你收藏的輸入會顯示在這裡",
+    "favoritesNoneTooltip": "將元件加星標，快速存取無需選擇節點",
+    "globalSettings": {
+      "canvas": "畫布",
+      "connectionLinks": "連接線",
+      "gridSpacing": "網格間距",
+      "linkShape": "連線形狀",
+      "nodes": "節點",
+      "nodes2": "節點 2.0",
+      "searchPlaceholder": "搜尋快速設定...",
+      "showAdvanced": "顯示進階參數",
+      "showAdvancedTooltip": "這是一個重要設定，設為 TRUE 時會顯示所有節點的進階參數",
+      "showConnectedLinks": "顯示已連接線",
+      "showInfoBadges": "顯示資訊徽章",
+      "showToolbox": "選取時顯示工具箱",
+      "snapNodesToGrid": "節點貼齊網格",
+      "title": "全域設定",
+      "viewAllSettings": "檢視所有設定"
+    },
+    "groupSettings": "群組設定",
+    "groups": "群組",
+    "hideInput": "隱藏輸入",
     "info": "資訊",
     "inputs": "輸入",
     "inputsNone": "無輸入",
     "inputsNoneTooltip": "此節點沒有輸入",
+    "locateNode": "在畫布上定位節點",
     "mute": "靜音",
     "noSelection": "請選擇節點以檢視其屬性與資訊。",
     "nodeState": "節點狀態",
+    "nodes": "節點",
+    "nodesNoneDesc": "無節點",
+    "noneSearchDesc": "沒有符合搜尋的項目",
     "normal": "一般",
     "parameters": "參數",
     "pinned": "已釘選",
     "properties": "屬性",
+    "removeFavorite": "取消收藏",
     "settings": "設定",
+    "showAdvancedInputsButton": "顯示進階輸入",
+    "showInput": "顯示輸入",
     "title": "未選取節點 | 已選取 1 個節點 | 已選取 {count} 個節點",
-    "togglePanel": "切換屬性面板"
+    "togglePanel": "切換屬性面板",
+    "workflowOverview": "工作流程總覽"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "繞過群組節點",
@@ -2011,6 +2131,7 @@
     "NodeLibrary": "節點庫",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "通知偏好設定",
+    "Other": "其他",
     "PLY": "PLY",
     "PlanCredits": "方案與點數",
     "Pointer": "指標",
@@ -2030,7 +2151,8 @@
     "Vue Nodes": "Vue 節點",
     "VueNodes": "Vue 節點",
     "Window": "視窗",
-    "Workflow": "工作流程"
+    "Workflow": "工作流程",
+    "Workspace": "工作區"
   },
   "shape": {
     "CARD": "卡片",
@@ -2056,12 +2178,14 @@
     "viewControls": "檢視控制"
   },
   "sideToolbar": {
+    "activeJobStatus": "進行中作業：{status}",
     "assets": "資源",
     "backToAssets": "返回所有資源",
     "browseTemplates": "瀏覽範例模板",
     "downloads": "下載",
     "generatedAssetsHeader": "已產生資產",
     "helpCenter": "說明中心",
+    "importedAssetsHeader": "已匯入資產",
     "labels": {
       "assets": "資源",
       "console": "控制台",
@@ -2106,6 +2230,7 @@
     "queue": "佇列",
     "queueProgressOverlay": {
       "activeJobs": "{count} 個執行中作業",
+      "activeJobsShort": "{count} 個進行中",
       "activeJobsSuffix": "執行中作業",
       "cancelJobTooltip": "取消作業",
       "clearHistory": "清除作業佇列歷史",
@@ -2194,9 +2319,11 @@
     "beta": "測試版",
     "billedMonthly": "每月收費",
     "billedYearly": "每年收費 {total}",
+    "cancelSubscription": "取消訂閱",
     "changeTo": "切換至 {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud 標誌",
+    "contactOwnerToSubscribe": "請聯絡工作區擁有者以訂閱",
     "contactUs": "聯絡我們",
     "creditsRemainingThisMonth": "本月剩餘點數",
     "creditsRemainingThisYear": "本年剩餘點數",
@@ -2209,6 +2336,7 @@
     "haveQuestions": "有疑問或想了解企業方案？",
     "invoiceHistory": "發票記錄",
     "learnMore": "了解更多",
+    "managePayment": "管理付款",
     "managePlan": "管理方案",
     "manageSubscription": "管理訂閱",
     "maxDuration": {
@@ -2244,6 +2372,7 @@
     "subscribeToComfyCloud": "訂閱 Comfy Cloud",
     "subscribeToRun": "訂閱",
     "subscribeToRunFull": "訂閱運行方案",
+    "subscriptionRequiredMessage": "會員需訂閱才能在雲端執行工作流程",
     "tierNameYearly": "{name} 年度方案",
     "tiers": {
       "creator": {
@@ -2275,6 +2404,7 @@
     "viewMoreDetails": "查看更多詳情",
     "viewMoreDetailsPlans": "查看更多方案與價格細節",
     "viewUsageHistory": "檢視使用記錄",
+    "workspaceNotSubscribed": "此工作區尚未訂閱",
     "yearly": "每年",
     "yearlyCreditsLabel": "年度總點數",
     "yearlyDiscount": "八折優惠",
@@ -2424,7 +2554,8 @@
     "notSet": "未設定",
     "provider": "登入提供者",
     "title": "使用者設定",
-    "updatePassword": "更新密碼"
+    "updatePassword": "更新密碼",
+    "workspaceSettings": "工作區設定"
   },
   "validation": {
     "descriptionRequired": "說明為必填項目",
@@ -2513,6 +2644,72 @@
     "enterFilename": "輸入檔案名稱",
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
+      "title": "未儲存的變更"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "您沒有存取此工作區的權限",
+      "invalidFirebaseToken": "驗證失敗。請重新登入。",
+      "notAuthenticated": "您必須登入才能存取工作區",
+      "tokenExchangeFailed": "與工作區驗證失敗：{error}",
+      "workspaceNotFound": "找不到工作區"
+    }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "建立",
+      "message": "工作區可讓成員共用點數池。建立後您將成為擁有者。",
+      "nameLabel": "工作區名稱*",
+      "namePlaceholder": "輸入工作區名稱",
+      "title": "建立新工作區"
+    },
+    "deleteDialog": {
+      "message": "任何未使用的點數或未儲存的資產都將遺失。此操作無法復原。",
+      "messageWithName": "刪除「{name}」？任何未使用的點數或未儲存的資產都將遺失。此操作無法復原。",
+      "title": "確定要刪除此工作區？"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "工作區名稱",
+      "save": "儲存",
+      "title": "編輯工作區詳細資料"
+    },
+    "leaveDialog": {
+      "leave": "離開",
+      "message": "除非聯絡工作區擁有者，否則您將無法再次加入。",
+      "title": "確定要離開此工作區？"
+    },
+    "menu": {
+      "deleteWorkspace": "刪除工作區",
+      "deleteWorkspaceDisabledTooltip": "請先取消工作區的有效訂閱",
+      "editWorkspace": "編輯工作區詳細資料",
+      "leaveWorkspace": "離開工作區"
+    },
+    "tabs": {
+      "planCredits": "方案與點數"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "建立工作區失敗",
+      "failedToDeleteWorkspace": "刪除工作區失敗",
+      "failedToLeaveWorkspace": "離開工作區失敗",
+      "failedToUpdateWorkspace": "更新工作區失敗",
+      "workspaceUpdated": {
+        "message": "工作區詳細資料已儲存。",
+        "title": "工作區已更新"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "建立新工作區",
+    "maxWorkspacesReached": "您最多只能擁有 10 個工作區。請刪除一個以建立新工作區。",
+    "roleMember": "成員",
+    "roleOwner": "擁有者",
+    "subscribe": "訂閱",
+    "switchWorkspace": "切換工作區"
   },
   "zoomControls": {
     "hideMinimap": "隱藏小地圖",

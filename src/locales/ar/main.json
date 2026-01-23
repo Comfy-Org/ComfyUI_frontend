@@ -24,6 +24,7 @@
     "assets": "الأصول",
     "baseModels": "النماذج الأساسية",
     "browseAssets": "تصفح الأصول",
+    "byType": "حسب النوع",
     "checkpoints": "نقاط التحقق",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "مثال:",
@@ -45,6 +46,10 @@
       "failed": "فشل التنزيل",
       "inProgress": "جاري تنزيل {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "لا توجد نماذج مستوردة بعد. انقر على \"استيراد نموذج\" لإضافة نموذجك الخاص.",
+      "restricted": "النماذج الشخصية متاحة فقط لمستوى Creator وما فوق."
+    },
     "errorFileTooLarge": "الملف يتجاوز الحد الأقصى المسموح به للحجم",
     "errorFormatNotAllowed": "يسمح فقط بصيغة SafeTensor",
     "errorModelTypeNotSupported": "نوع النموذج هذا غير مدعوم",
@@ -61,6 +66,7 @@
     "finish": "إنهاء",
     "genericLinkPlaceholder": "الصق الرابط هنا",
     "importAnother": "استيراد آخر",
+    "imported": "مستوردة",
     "jobId": "معرّف المهمة",
     "loadingModels": "جارٍ تحميل {type}...",
     "maxFileSize": "الحد الأقصى لحجم الملف: {size}",
@@ -70,6 +76,30 @@
       "threeDModelPlaceholder": "نموذج ثلاثي الأبعاد"
     },
     "modelAssociatedWithLink": "النموذج المرتبط بالرابط الذي قدمته:",
+    "modelInfo": {
+      "addBaseModel": "أضف نموذجًا أساسيًا...",
+      "addTag": "أضف وسمًا...",
+      "additionalTags": "وسوم إضافية",
+      "baseModelUnknown": "النموذج الأساسي غير معروف",
+      "basicInfo": "معلومات أساسية",
+      "compatibleBaseModels": "نماذج أساسية متوافقة",
+      "description": "الوصف",
+      "descriptionNotSet": "لم يتم تعيين وصف",
+      "descriptionPlaceholder": "أضف وصفًا لهذا النموذج...",
+      "displayName": "اسم العرض",
+      "editDisplayName": "تعديل اسم العرض",
+      "fileName": "اسم الملف",
+      "modelDescription": "وصف النموذج",
+      "modelTagging": "تصنيف النموذج",
+      "modelType": "نوع النموذج",
+      "noAdditionalTags": "لا توجد وسوم إضافية",
+      "selectModelPrompt": "اختر نموذجًا لعرض معلوماته",
+      "selectModelType": "اختر نوع النموذج...",
+      "source": "المصدر",
+      "title": "معلومات النموذج",
+      "triggerPhrases": "عبارات التفعيل",
+      "viewOnSource": "عرض على {source}"
+    },
     "modelName": "اسم النموذج",
     "modelNamePlaceholder": "أدخل اسمًا لهذا النموذج",
     "modelTypeSelectorLabel": "ما نوع هذا النموذج؟",
@@ -238,6 +268,12 @@
       "title": "إنشاء حساب"
     }
   },
+  "boundingBox": {
+    "height": "الارتفاع",
+    "width": "العرض",
+    "x": "س",
+    "y": "ص"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "مسح سير العمل",
     "deleteBlueprint": "حذف المخطط",
@@ -298,6 +334,7 @@
     },
     "retry": "حاول مرة أخرى",
     "retrying": "إعادة المحاولة...",
+    "skipToCloudApp": "تخطي إلى تطبيق السحابة",
     "start": {
       "desc": "لا حاجة لإعداد مسبق. يعمل على أي جهاز.",
       "download": "تنزيل ComfyUI",
@@ -432,6 +469,7 @@
     "Expand": "توسيع",
     "Expand Node": "توسيع العقدة",
     "Extensions": "الإضافات",
+    "FavoriteWidget": "إضافة إلى المفضلة",
     "Horizontal": "أفقي",
     "Inputs": "المدخلات",
     "Left": "يسار",
@@ -462,6 +500,7 @@
     "Shapes": "الأشكال",
     "Title": "العنوان",
     "Top": "أعلى",
+    "UnfavoriteWidget": "إزالة من المفضلة",
     "Unpack Subgraph": "فك الرسم البياني الفرعي",
     "Unpin": "إلغاء التثبيت",
     "Vertical": "عمودي",
@@ -565,6 +604,8 @@
     "LUMA_REF": "مرجع Luma",
     "MASK": "قناع",
     "MESH": "شبكة",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "نموذج",
     "MODEL_PATCH": "ترقيع النموذج",
     "MODEL_TASK_ID": "معرّف مهمة النموذج",
@@ -653,6 +694,7 @@
     "amount": "الكمية",
     "apply": "تطبيق",
     "architecture": "الهندسة المعمارية",
+    "asset": "{count} أصل | {count} أصل | {count} أصول",
     "audioFailedToLoad": "فشل تحميل الصوت",
     "audioProgress": "تقدم الصوت",
     "author": "المؤلف",
@@ -672,6 +714,7 @@
     "clearAll": "مسح الكل",
     "clearFilters": "مسح الفلاتر",
     "close": "إغلاق",
+    "closeDialog": "إغلاق الحوار",
     "color": "اللون",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "شعار ComfyOrg",
@@ -688,6 +731,7 @@
     "control_before_generate": "التحكم قبل التوليد",
     "copied": "تم النسخ",
     "copy": "نسخ",
+    "copyAll": "نسخ الكل",
     "copyJobId": "نسخ معرف المهمة",
     "copyToClipboard": "نسخ إلى الحافظة",
     "copyURL": "نسخ الرابط",
@@ -750,6 +794,8 @@
     "goToNode": "الانتقال إلى العقدة",
     "graphNavigation": "التنقل في الرسم البياني",
     "halfSpeed": "0.5x",
+    "hideLeftPanel": "إخفاء اللوحة اليسرى",
+    "hideRightPanel": "إخفاء اللوحة اليمنى",
     "icon": "أيقونة",
     "imageFailedToLoad": "فشل تحميل الصورة",
     "imagePreview": "معاينة الصورة - استخدم مفاتيح الأسهم للتنقل بين الصور",
@@ -791,6 +837,7 @@
     "name": "الاسم",
     "newFolder": "مجلد جديد",
     "next": "التالي",
+    "nightly": "NIGHTLY",
     "no": "لا",
     "noAudioRecorded": "لم يتم تسجيل أي صوت",
     "noItems": "لا توجد عناصر",
@@ -805,6 +852,7 @@
     "nodeSlotsError": "خطأ في فتحات العقدة",
     "nodeWidgetsError": "خطأ في عناصر واجهة العقدة",
     "nodes": "العُقَد",
+    "nodesCount": "{count} عقدة | {count} عقدة | {count} عقدة",
     "nodesRunning": "العُقَد قيد التشغيل",
     "none": "لا شيء",
     "nothingToCopy": "لا يوجد ما يمكن نسخه",
@@ -842,6 +890,7 @@
     "releaseTitle": "إصدار {package} {version}",
     "reloadToApplyChanges": "أعد التحميل لتطبيق التغييرات",
     "removeImage": "إزالة الصورة",
+    "removeTag": "إزالة الوسم",
     "removeVideo": "إزالة الفيديو",
     "rename": "إعادة تسمية",
     "reportIssue": "إرسال تقرير",
@@ -878,7 +927,9 @@
     "selectedFile": "الملف المحدد",
     "setAsBackground": "تعيين كخلفية",
     "settings": "الإعدادات",
+    "showLeftPanel": "إظهار اللوحة اليسرى",
     "showReport": "عرض التقرير",
+    "showRightPanel": "إظهار اللوحة اليمنى",
     "singleSelectDropdown": "قائمة منسدلة اختيار واحد",
     "sort": "فرز",
     "source": "المصدر",
@@ -901,6 +952,7 @@
     "updating": "جارٍ التحديث",
     "upload": "رفع",
     "usageHint": "تلميح الاستخدام",
+    "use": "استخدم",
     "user": "المستخدم",
     "versionMismatchWarning": "تحذير توافق الإصدارات",
     "versionMismatchWarningMessage": "{warning}: {detail} زر https://docs.comfy.org/installation/update_comfyui#common-update-issues للحصول على تعليمات التحديث.",
@@ -974,6 +1026,11 @@
   },
   "imageCompare": {
     "noImages": "لا توجد صور للمقارنة"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "معاينة الاقتصاص",
+    "loading": "جارٍ التحميل...",
+    "noInputImage": "لا توجد صورة إدخال متصلة"
   },
   "importFailed": {
     "copyError": "خطأ في النسخ",
@@ -1097,8 +1154,14 @@
     "helpFix": "المساعدة في الإصلاح"
   },
   "linearMode": {
-    "openWorkflow": "فتح سير العمل",
-    "share": "مشاركة"
+    "beta": "تجريبي - أرسل ملاحظاتك",
+    "downloadAll": "تنزيل الكل",
+    "dragAndDropImage": "اسحب وأسقط صورة",
+    "graphMode": "وضع الرسم البياني",
+    "linearMode": "الوضع البسيط",
+    "rerun": "تشغيل مجدد",
+    "reuseParameters": "إعادة استخدام المعلمات",
+    "runCount": "عدد مرات التشغيل:"
   },
   "load3d": {
     "applyingTexture": "جارٍ تطبيق الخامة...",
@@ -1352,11 +1415,11 @@
   },
   "mediaAsset": {
     "actions": {
-      "addToWorkflow": "إضافة إلى سير العمل الحالي",
       "copyJobId": "نسخ معرف المهمة",
       "delete": "حذف",
       "download": "تنزيل",
       "exportWorkflow": "تصدير سير العمل",
+      "insertAsNodeInWorkflow": "إدراج كعقدة في سير العمل",
       "inspect": "تفقد الأصل",
       "more": "خيارات أخرى",
       "moreOptions": "خيارات أخرى",
@@ -1392,10 +1455,22 @@
       "downloadSelectedAll": "تحميل الكل",
       "downloadStarted": "جاري تحميل {count} ملف(ملفات)...",
       "downloadsStarted": "بدأ تنزيل {count} ملف(ملفات)",
+      "exportWorkflowAll": "تصدير جميع سير العمل",
+      "failedToAddNodes": "فشل في إضافة العقد إلى سير العمل",
       "failedToDeleteAssets": "فشل في حذف الأصول المحددة",
+      "insertAllAssetsAsNodes": "إدراج جميع الأصول كعقد",
       "multipleSelectedAssets": "تم تحديد عدة ملفات",
+      "noWorkflowsFound": "لم يتم العثور على بيانات سير العمل في الأصول المحددة",
+      "noWorkflowsToExport": "لم يتم العثور على بيانات سير العمل للتصدير",
+      "nodesAddedToWorkflow": "تمت إضافة {count} عقدة إلى سير العمل",
+      "openWorkflowAll": "فتح جميع سير العمل",
+      "partialAddNodesSuccess": "تمت إضافة {succeeded} بنجاح، وفشل {failed}",
       "partialDeleteSuccess": "{succeeded} تم حذفها بنجاح، {failed} فشلت",
-      "selectedCount": "الأصول المحددة: {count}"
+      "partialWorkflowsExported": "تم تصدير {succeeded} بنجاح، وفشل {failed}",
+      "partialWorkflowsOpened": "تم فتح {succeeded} سير عمل، وفشل {failed}",
+      "selectedCount": "الأصول المحددة: {count}",
+      "workflowsExported": "تم تصدير {count} سير عمل بنجاح",
+      "workflowsOpened": "تم فتح {count} سير عمل في علامات تبويب جديدة"
     },
     "unsupportedFileType": "نوع الملف غير مدعوم لعقدة التحميل",
     "workflowExportedSuccessfully": "تم تصدير سير العمل بنجاح",
@@ -1537,6 +1612,7 @@
     "Toggle Logs Bottom Panel": "تبديل لوحة السجلات السفلية",
     "Toggle Queue Panel V2": "تبديل لوحة قائمة الانتظار V2",
     "Toggle Search Box": "تبديل مربع البحث",
+    "Toggle Simple Mode": "تبديل وضع البسيط",
     "Toggle Terminal Bottom Panel": "تبديل لوحة الطرفية السفلية",
     "Toggle Theme (Dark/Light)": "تبديل السمة (داكن/فاتح)",
     "Toggle View Controls Bottom Panel": "تبديل لوحة عناصر التحكم في العرض السفلية",
@@ -1551,8 +1627,7 @@
     "Workflows": "سير العمل",
     "Zoom In": "تكبير",
     "Zoom Out": "تصغير",
-    "Zoom to fit": "تكبير لتناسب",
-    "toggle linear mode": "تبديل الوضع الخطي"
+    "Zoom to fit": "تكبير لتناسب"
   },
   "minimap": {
     "nodeColors": "ألوان العقد",
@@ -1581,17 +1656,25 @@
       "title": "سير العمل هذا يحتوي على عقد مفقودة"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "إصدار معاينة",
+      "tooltip": "أنت تستخدم إصدارًا ليليًا من ComfyUI. يرجى استخدام زر الملاحظات لمشاركة آرائك حول هذه الميزات."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "ثلاثي الأبعاد",
     "3d_models": "نماذج ثلاثية الأبعاد",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "Gemini": "جيميني",
     "Ideogram": "إيديوغرام",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "مون فالي ماري",
     "OpenAI": "OpenAI",
@@ -1606,6 +1689,7 @@
     "Veo": "Veo",
     "Vidu": "فيدو",
     "Wan": "وان",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_للاختبار",
     "advanced": "متقدم",
     "animation": "الرسوم المتحركة",
@@ -1786,22 +1870,58 @@
     "whatsNew": "ما الجديد؟"
   },
   "rightSidePanel": {
+    "addFavorite": "إضافة إلى المفضلة",
+    "advancedInputs": "مدخلات متقدمة",
     "bypass": "تجاوز",
     "color": "لون العقدة",
+    "fallbackGroupTitle": "مجموعة",
+    "fallbackNodeTitle": "عقدة",
+    "favorites": "المدخلات المفضلة",
+    "favoritesNone": "لا توجد مدخلات مفضلة",
+    "favoritesNoneDesc": "ستظهر المدخلات التي تضعها في المفضلة هنا",
+    "favoritesNoneTooltip": "قم بوضع نجمة على الأدوات للوصول السريع إليها دون اختيار العقد",
+    "globalSettings": {
+      "canvas": "اللوحة",
+      "connectionLinks": "روابط الاتصال",
+      "gridSpacing": "تباعد الشبكة",
+      "linkShape": "شكل الرابط",
+      "nodes": "العقد",
+      "nodes2": "العقد 2.0",
+      "searchPlaceholder": "بحث في الإعدادات السريعة...",
+      "showAdvanced": "إظهار المعلمات المتقدمة",
+      "showAdvancedTooltip": "هذا إعداد مهم، عند تفعيله، يعرض جميع المعلمات المتقدمة للعقد",
+      "showConnectedLinks": "إظهار الروابط المتصلة",
+      "showInfoBadges": "إظهار شارات المعلومات",
+      "showToolbox": "إظهار صندوق الأدوات عند التحديد",
+      "snapNodesToGrid": "محاذاة العقد مع الشبكة",
+      "title": "الإعدادات العامة",
+      "viewAllSettings": "عرض جميع الإعدادات"
+    },
+    "groupSettings": "إعدادات المجموعة",
+    "groups": "المجموعات",
+    "hideInput": "إخفاء المدخل",
     "info": "معلومات",
     "inputs": "المدخلات",
     "inputsNone": "لا توجد مدخلات",
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
+    "locateNode": "تحديد موقع العقدة على اللوحة",
     "mute": "كتم",
     "noSelection": "حدد عقدة لعرض خصائصها ومعلوماتها.",
     "nodeState": "حالة العقدة",
+    "nodes": "العقد",
+    "nodesNoneDesc": "لا توجد عقد",
+    "noneSearchDesc": "لا توجد عناصر مطابقة لبحثك",
     "normal": "عادي",
     "parameters": "المعلمات",
     "pinned": "مثبت",
     "properties": "الخصائص",
+    "removeFavorite": "إزالة من المفضلة",
     "settings": "الإعدادات",
+    "showAdvancedInputsButton": "إظهار المدخلات المتقدمة",
+    "showInput": "إظهار المدخل",
     "title": "لا توجد عقد محددة | عقدة واحدة محددة | {count} عقد محددة",
-    "togglePanel": "تبديل لوحة الخصائص"
+    "togglePanel": "تبديل لوحة الخصائص",
+    "workflowOverview": "نظرة عامة على سير العمل"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "تجاوز عقد المجموعة",
@@ -2011,6 +2131,7 @@
     "NodeLibrary": "مكتبة العقد",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "تفضيلات الإشعارات",
+    "Other": "أخرى",
     "PLY": "PLY",
     "PlanCredits": "الخطة والاعتمادات",
     "Pointer": "المؤشر",
@@ -2030,7 +2151,8 @@
     "Vue Nodes": "عقد Vue",
     "VueNodes": "عقد Vue",
     "Window": "النافذة",
-    "Workflow": "سير العمل"
+    "Workflow": "سير العمل",
+    "Workspace": "مساحة العمل"
   },
   "shape": {
     "CARD": "بطاقة",
@@ -2056,12 +2178,14 @@
     "viewControls": "عناصر تحكم العرض"
   },
   "sideToolbar": {
+    "activeJobStatus": "المهمة النشطة: {status}",
     "assets": "الأصول",
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
     "generatedAssetsHeader": "الأصول المُولدة",
     "helpCenter": "مركز المساعدة",
+    "importedAssetsHeader": "الأصول المستوردة",
     "labels": {
       "assets": "الأصول",
       "console": "وحدة التحكم",
@@ -2106,6 +2230,7 @@
     "queue": "قائمة الانتظار",
     "queueProgressOverlay": {
       "activeJobs": "{count} مهمة نشطة | {count} مهام نشطة",
+      "activeJobsShort": "{count} نشط | {count} نشط",
       "activeJobsSuffix": "مهام نشطة",
       "cancelJobTooltip": "إلغاء المهمة",
       "clearHistory": "مسح سجل قائمة الانتظار",
@@ -2194,9 +2319,11 @@
     "beta": "نسخة تجريبية",
     "billedMonthly": "يتم الفوترة شهريًا",
     "billedYearly": "{total} يتم الفوترة سنويًا",
+    "cancelSubscription": "إلغاء الاشتراك",
     "changeTo": "تغيير إلى {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "شعار Comfy Cloud",
+    "contactOwnerToSubscribe": "يرجى التواصل مع مالك مساحة العمل للاشتراك",
     "contactUs": "تواصل معنا",
     "creditsRemainingThisMonth": "الرصيد المتبقي لهذا الشهر",
     "creditsRemainingThisYear": "الرصيد المتبقي لهذا العام",
@@ -2209,6 +2336,7 @@
     "haveQuestions": "هل لديك أسئلة أو ترغب في معرفة المزيد عن المؤسسات؟",
     "invoiceHistory": "سجل الفواتير",
     "learnMore": "معرفة المزيد",
+    "managePayment": "إدارة الدفع",
     "managePlan": "إدارة الخطة",
     "manageSubscription": "إدارة الاشتراك",
     "maxDuration": {
@@ -2244,6 +2372,7 @@
     "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
     "subscribeToRun": "اشتراك",
     "subscribeToRunFull": "الاشتراك للتشغيل",
+    "subscriptionRequiredMessage": "الاشتراك مطلوب للأعضاء لتشغيل سير العمل على السحابة",
     "tierNameYearly": "{name} سنوي",
     "tiers": {
       "creator": {
@@ -2275,6 +2404,7 @@
     "viewMoreDetails": "عرض المزيد من التفاصيل",
     "viewMoreDetailsPlans": "عرض المزيد من التفاصيل حول الخطط والأسعار",
     "viewUsageHistory": "عرض سجل الاستخدام",
+    "workspaceNotSubscribed": "هذه مساحة العمل ليست مشتركة",
     "yearly": "سنوي",
     "yearlyCreditsLabel": "إجمالي الرصيد السنوي",
     "yearlyDiscount": "خصم 20%",
@@ -2424,7 +2554,8 @@
     "notSet": "غير محدد",
     "provider": "مزود تسجيل الدخول",
     "title": "إعدادات المستخدم",
-    "updatePassword": "تحديث كلمة المرور"
+    "updatePassword": "تحديث كلمة المرور",
+    "workspaceSettings": "إعدادات مساحة العمل"
   },
   "validation": {
     "descriptionRequired": "الوصف مطلوب",
@@ -2513,6 +2644,72 @@
     "enterFilename": "أدخل اسم الملف",
     "exportWorkflow": "تصدير سير العمل",
     "saveWorkflow": "حفظ سير العمل"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "لديك تغييرات غير محفوظة. هل تريد تجاهلها والانتقال إلى مساحة عمل أخرى؟",
+      "title": "تغييرات غير محفوظة"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "ليس لديك صلاحية الوصول إلى هذه مساحة العمل",
+      "invalidFirebaseToken": "فشل التحقق من الهوية. يرجى محاولة تسجيل الدخول مرة أخرى.",
+      "notAuthenticated": "يجب تسجيل الدخول للوصول إلى مساحات العمل",
+      "tokenExchangeFailed": "فشل التحقق من مساحة العمل: {error}",
+      "workspaceNotFound": "لم يتم العثور على مساحة العمل"
+    }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "إنشاء",
+      "message": "تتيح مساحات العمل للأعضاء مشاركة رصيد واحد. ستصبح المالك بعد الإنشاء.",
+      "nameLabel": "اسم مساحة العمل*",
+      "namePlaceholder": "أدخل اسم مساحة العمل",
+      "title": "إنشاء مساحة عمل جديدة"
+    },
+    "deleteDialog": {
+      "message": "سيتم فقدان أي أرصدة غير مستخدمة أو أصول غير محفوظة. لا يمكن التراجع عن هذا الإجراء.",
+      "messageWithName": "حذف \"{name}\"؟ سيتم فقدان أي أرصدة غير مستخدمة أو أصول غير محفوظة. لا يمكن التراجع عن هذا الإجراء.",
+      "title": "حذف هذه المساحة؟"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "اسم مساحة العمل",
+      "save": "حفظ",
+      "title": "تعديل تفاصيل مساحة العمل"
+    },
+    "leaveDialog": {
+      "leave": "مغادرة",
+      "message": "لن تتمكن من الانضمام مرة أخرى إلا إذا تواصلت مع مالك مساحة العمل.",
+      "title": "مغادرة هذه المساحة؟"
+    },
+    "menu": {
+      "deleteWorkspace": "حذف مساحة العمل",
+      "deleteWorkspaceDisabledTooltip": "يرجى إلغاء الاشتراك النشط لمساحة العمل أولاً",
+      "editWorkspace": "تعديل تفاصيل مساحة العمل",
+      "leaveWorkspace": "مغادرة مساحة العمل"
+    },
+    "tabs": {
+      "planCredits": "الخطة والأرصدة"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "فشل في إنشاء مساحة العمل",
+      "failedToDeleteWorkspace": "فشل في حذف مساحة العمل",
+      "failedToLeaveWorkspace": "فشل في مغادرة مساحة العمل",
+      "failedToUpdateWorkspace": "فشل في تحديث مساحة العمل",
+      "workspaceUpdated": {
+        "message": "تم حفظ تفاصيل مساحة العمل.",
+        "title": "تم تحديث مساحة العمل"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "إنشاء مساحة عمل جديدة",
+    "maxWorkspacesReached": "يمكنك امتلاك ١٠ مساحات عمل فقط. احذف واحدة لإنشاء مساحة جديدة.",
+    "roleMember": "عضو",
+    "roleOwner": "المالك",
+    "subscribe": "اشترك",
+    "switchWorkspace": "تبديل مساحة العمل"
   },
   "zoomControls": {
     "hideMinimap": "إخفاء الخريطة المصغرة",

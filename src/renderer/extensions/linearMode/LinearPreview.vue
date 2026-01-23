@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { d, t } from '@/i18n'
@@ -12,6 +11,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
+import Preview3d from '@/renderer/extensions/linearMode/Preview3d.vue'
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import {
   getMediaType,
@@ -45,7 +45,7 @@ const timeOptions = {
   second: 'numeric'
 } as const
 
-function formatTime(time: string) {
+function formatTime(time?: string) {
   if (!time) return ''
   const date = new Date(time)
   return `${d(date, dateOptions)} | ${d(date, timeOptions)}`
@@ -159,7 +159,7 @@ async function rerun(e: Event) {
   <VideoPreview
     v-else-if="getMediaType(selectedOutput) === 'video'"
     :src="selectedOutput!.url"
-    class="object-contain flex-1 contain-size"
+    class="object-contain flex-1 md:contain-size"
   />
   <audio
     v-else-if="getMediaType(selectedOutput) === 'audio'"
@@ -172,13 +172,13 @@ async function rerun(e: Event) {
     class="w-full max-w-128 m-auto my-12 overflow-y-auto"
     v-text="selectedOutput!.url"
   />
-  <Load3dViewerContent
+  <Preview3d
     v-else-if="getMediaType(selectedOutput) === '3d'"
     :model-url="selectedOutput!.url"
   />
   <img
     v-else
-    class="pointer-events-none object-contain flex-1 max-h-full brightness-50 opacity-10"
+    class="pointer-events-none flex-1 max-h-full md:contain-size brightness-50 opacity-10"
     src="/assets/images/comfy-logo-mono.svg"
   />
 </template>

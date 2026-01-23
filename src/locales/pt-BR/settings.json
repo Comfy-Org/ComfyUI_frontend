@@ -332,6 +332,10 @@
     "name": "Tamanho do histórico da fila",
     "tooltip": "O número máximo de tarefas exibidas no histórico da fila."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Usar a fila de tarefas unificada no painel lateral de Assets",
+    "tooltip": "Substitui o painel flutuante de fila de tarefas por uma fila de tarefas equivalente incorporada ao painel lateral de Assets. Você pode desativar isso para voltar ao layout do painel flutuante."
+  },
   "Comfy_Sidebar_Location": {
     "name": "Localização da barra lateral",
     "options": {

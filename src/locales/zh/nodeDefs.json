@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "使用 Bria 最新模型编辑图像",
+    "display_name": "Bria 图像编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "数值越高，图像越贴合 prompt。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "如未指定，编辑将应用于整个图像。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "内容审核设置"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "prompt_content_moderation"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "visual_input_moderation"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "visual_output_moderation"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "编辑图像的指令"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "包含结构化编辑提示的 JSON 字符串。使用此项可实现更精确、可编程的控制，替代常规 prompt。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "使用提示词和首尾帧生成视频。",
     "display_name": "字节跳动首尾帧转视频",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "第一帧",
         "tooltip": "用于视频的第一帧。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
       },
       "last_frame": {
         "name": "最后一帧",
@@ -527,6 +593,10 @@
         "name": "时长",
         "tooltip": "输出视频的时长（以秒为单位）。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
+      },
       "image": {
         "name": "图片",
         "tooltip": "用于视频的第一帧。"
@@ -633,6 +703,10 @@
       "duration": {
         "name": "时长",
         "tooltip": "输出视频的时长（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "此参数仅对 seedance-1-5-pro 模型有效，其他模型将被忽略。"
       },
       "model": {
         "name": "模型"
@@ -2021,7 +2095,9 @@
       "choice": {
         "name": "选择"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -6897,6 +6973,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "description": "为已绑定骨骼的角色应用特定动画动作。",
+    "display_name": "Meshy：动画模型",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "访问 https://docs.meshy.ai/en/api/animation-library 查看可用值列表。"
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy：图像转模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "指定生成模型的姿态模式。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "设置为 false 时，返回未处理的三角网格。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "决定是否生成纹理。设置为 false 跳过纹理阶段，返回无纹理的网格。"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy：多图像转模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "指定生成模型的姿态模式。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "设置为 false 时，返回未处理的三角网格。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "决定是否生成纹理。设置为 false 跳过纹理阶段，返回无纹理的网格。"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "对先前创建的草稿模型进行精细化处理。",
+    "display_name": "Meshy：精细化草稿模型",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "在基础色之外生成PBR贴图（金属度、粗糙度、法线）。注意：使用雕塑风格时应设置为false，因为雕塑风格会生成其专属的PBR贴图。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "‘texture_image’和‘texture_prompt’只能二选一。"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "提供文本提示以引导材质生成。最多600个字符。不能与'texture_image'同时使用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "以标准格式提供带骨骼的角色模型。自动骨骼绑定目前不适用于无贴图网格、非类人资产或肢体结构不清晰的类人资产。",
+    "display_name": "Meshy：骨骼绑定模型",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "角色模型的大致高度（米），有助于缩放和骨骼绑定的准确性。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "模型的UV展开基础色贴图。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy：文本生成模型",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "指定生成模型的姿态模式。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed用于控制节点是否重新运行；无论seed如何，结果都是非确定性的。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "设置为false时，返回未处理的三角网格。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy：纹理模型",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "启用原始UV",
+        "tooltip": "使用模型的原始UV，而不是生成新的UV。启用后，Meshy会保留上传模型中已有的纹理。如果模型没有原始UV，输出质量可能会有所下降。"
+      },
+      "image_style": {
+        "name": "图像风格",
+        "tooltip": "用于引导纹理生成的2D图像。不能与“text_style_prompt”同时使用。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "text_style_prompt": {
+        "name": "文本风格提示",
+        "tooltip": "用文本描述你想要的物体纹理风格。最多600个字符。不能与“image_style”同时使用。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "description": "使用新的 MiniMax Hailuo-02 模型从提示词生成视频，可选择起始帧。",
     "display_name": "MiniMax 海螺视频",
@@ -10939,19 +11289,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "使用多种缩放方法调整图像或 mask 的大小。",
     "display_name": "调整图像/掩码大小",
     "inputs": {
       "input": {
         "name": "输入"
       },
       "resize_type": {
-        "name": "调整类型"
+        "name": "调整类型",
+        "tooltip": "选择如何调整大小：按精确尺寸、缩放因子、匹配另一张图像等。"
       },
-      "resize_type_multiplier": {
-        "name": "倍数"
+      "resize_type_crop": {
+        "name": "裁剪"
+      },
+      "resize_type_height": {
+        "name": "高度"
+      },
+      "resize_type_width": {
+        "name": "宽度"
       },
       "scale_method": {
-        "name": "缩放方法"
+        "name": "缩放方法",
+        "tooltip": "插值算法。'area' 适合缩小，'lanczos' 适合放大，'nearest-exact' 适合像素艺术。"
       }
     },
     "outputs": {
@@ -13191,6 +13550,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "auto_resize_images"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      },
+      "image3": {
+        "name": "image3"
+      },
+      "image_encoder": {
+        "name": "image_encoder"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "文本半角",
     "inputs": {
@@ -15366,6 +15759,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "音频编码器输出1"
+      },
+      "audio_scale": {
+        "name": "音频缩放"
+      },
+      "clip_vision_output": {
+        "name": "clip视觉输出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型补丁"
+      },
+      "motion_frame_count": {
+        "name": "运动帧数",
+        "tooltip": "用作运动上下文的前置帧数量。"
+      },
+      "negative": {
+        "name": "负向提示"
+      },
+      "positive": {
+        "name": "正向提示"
+      },
+      "previous_frames": {
+        "name": "前置帧"
+      },
+      "start_image": {
+        "name": "起始图像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": null
+      },
+      "1": {
+        "name": "正向提示",
+        "tooltip": null
+      },
+      "2": {
+        "name": "负向提示",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "裁剪图像",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMove合并轨道",
     "inputs": {
@@ -15878,6 +16344,43 @@
       },
       "3": {
         "name": "裁剪latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "快速高质量的视频超分辨率工具，可提升分辨率并恢复低分辨率或模糊视频的清晰度。",
+    "display_name": "FlashVSR 视频超分辨率",
+    "inputs": {
+      "target_resolution": {
+        "name": "target_resolution"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "提升图像分辨率和质量，将照片放大至 4K 或 8K，获得清晰细致的效果。",
+    "display_name": "WaveSpeed 图像超分辨率",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "target_resolution"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

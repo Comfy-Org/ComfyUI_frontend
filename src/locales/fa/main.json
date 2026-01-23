@@ -24,6 +24,7 @@
     "assets": "دارایی‌ها",
     "baseModels": "مدل‌های پایه",
     "browseAssets": "مرور دارایی‌ها",
+    "byType": "بر اساس نوع",
     "checkpoints": "چک‌پوینت‌ها",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "مثال:",
@@ -45,6 +46,10 @@
       "failed": "دانلود ناموفق بود",
       "inProgress": "در حال دانلود {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "هنوز مدلی وارد نشده است. برای افزودن مدل خود، روی «وارد کردن مدل» کلیک کنید.",
+      "restricted": "مدل‌های شخصی فقط برای سطح Creator و بالاتر در دسترس هستند."
+    },
     "errorFileTooLarge": "فایل از حداکثر اندازه مجاز بزرگ‌تر است",
     "errorFormatNotAllowed": "فقط فرمت SafeTensor مجاز است",
     "errorModelTypeNotSupported": "این نوع مدل پشتیبانی نمی‌شود",
@@ -61,6 +66,7 @@
     "finish": "پایان",
     "genericLinkPlaceholder": "لینک را اینجا وارد کنید",
     "importAnother": "وارد کردن مورد دیگر",
+    "imported": "وارد شده",
     "jobId": "شناسه کار: {jobId}",
     "loadingModels": "در حال بارگذاری {type}...",
     "maxFileSize": "حداکثر اندازه فایل: {size}",
@@ -70,6 +76,30 @@
       "threeDModelPlaceholder": "مدل سه‌بعدی"
     },
     "modelAssociatedWithLink": "مدل مرتبط با لینکی که وارد کردید:",
+    "modelInfo": {
+      "addBaseModel": "افزودن مدل پایه...",
+      "addTag": "افزودن برچسب...",
+      "additionalTags": "برچسب‌های اضافی",
+      "baseModelUnknown": "مدل پایه نامشخص",
+      "basicInfo": "اطلاعات پایه",
+      "compatibleBaseModels": "مدل‌های پایه سازگار",
+      "description": "توضیحات",
+      "descriptionNotSet": "توضیحی تنظیم نشده است",
+      "descriptionPlaceholder": "یک توضیح برای این مدل اضافه کنید...",
+      "displayName": "نام نمایشی",
+      "editDisplayName": "ویرایش نام نمایشی",
+      "fileName": "نام فایل",
+      "modelDescription": "توضیحات مدل",
+      "modelTagging": "برچسب‌گذاری مدل",
+      "modelType": "نوع مدل",
+      "noAdditionalTags": "برچسب اضافی وجود ندارد",
+      "selectModelPrompt": "یک مدل را برای مشاهده اطلاعات آن انتخاب کنید",
+      "selectModelType": "انتخاب نوع مدل...",
+      "source": "منبع",
+      "title": "اطلاعات مدل",
+      "triggerPhrases": "عبارات فعال‌ساز",
+      "viewOnSource": "مشاهده در {source}"
+    },
     "modelName": "نام مدل",
     "modelNamePlaceholder": "یک نام برای این مدل وارد کنید",
     "modelTypeSelectorLabel": "نوع مدل چیست؟",
@@ -238,6 +268,12 @@
       "title": "ایجاد حساب کاربری"
     }
   },
+  "boundingBox": {
+    "height": "ارتفاع",
+    "width": "عرض",
+    "x": "ایکس",
+    "y": "وای"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "پاک‌سازی workflow",
     "deleteBlueprint": "حذف blueprint",
@@ -298,6 +334,7 @@
     },
     "retry": "تلاش دوباره",
     "retrying": "در حال تلاش مجدد...",
+    "skipToCloudApp": "رفتن به برنامه ابری",
     "start": {
       "desc": "بدون نیاز به تنظیمات اولیه. روی هر دستگاهی کار می‌کند.",
       "download": "دانلود ComfyUI",
@@ -432,6 +469,7 @@
     "Expand": "باز کردن",
     "Expand Node": "بزرگ‌نمایی Node",
     "Extensions": "افزونه‌ها",
+    "FavoriteWidget": "افزودن به علاقه‌مندی‌ها",
     "Horizontal": "افقی",
     "Inputs": "ورودی‌ها",
     "Left": "چپ",
@@ -462,6 +500,7 @@
     "Shapes": "اشکال",
     "Title": "عنوان",
     "Top": "بالا",
+    "UnfavoriteWidget": "حذف از علاقه‌مندی‌ها",
     "Unpack Subgraph": "باز کردن Subgraph",
     "Unpin": "برداشتن سنجاق",
     "Vertical": "عمودی",
@@ -565,6 +604,8 @@
     "LUMA_REF": "مرجع Luma",
     "MASK": "ماسک",
     "MESH": "مش",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "مدل",
     "MODEL_PATCH": "وصله مدل",
     "MODEL_TASK_ID": "شناسه وظیفه مدل",
@@ -653,6 +694,7 @@
     "amount": "مقدار",
     "apply": "اعمال",
     "architecture": "معماری",
+    "asset": "{count} دارایی | {count} دارایی | {count} دارایی",
     "audioFailedToLoad": "بارگذاری صوت ناموفق بود",
     "audioProgress": "پیشرفت صوت",
     "author": "نویسنده",
@@ -672,6 +714,7 @@
     "clearAll": "پاک‌سازی همه",
     "clearFilters": "پاک‌سازی فیلترها",
     "close": "بستن",
+    "closeDialog": "بستن پنجره",
     "color": "رنگ",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "لوگوی ComfyOrg",
@@ -688,6 +731,7 @@
     "control_before_generate": "کنترل پیش از تولید",
     "copied": "کپی شد",
     "copy": "کپی",
+    "copyAll": "کپی همه",
     "copyJobId": "کپی شناسه وظیفه",
     "copyToClipboard": "کپی در کلیپ‌بورد",
     "copyURL": "کپی آدرس",
@@ -750,6 +794,8 @@
     "goToNode": "رفتن به node",
     "graphNavigation": "ناوبری گراف",
     "halfSpeed": "۰.۵x",
+    "hideLeftPanel": "پنهان کردن پنل چپ",
+    "hideRightPanel": "پنهان کردن پنل راست",
     "icon": "آیکون",
     "imageFailedToLoad": "بارگذاری تصویر ناموفق بود",
     "imagePreview": "پیش‌نمایش تصویر - برای جابجایی بین تصاویر از کلیدهای جهت‌دار استفاده کنید",
@@ -791,6 +837,7 @@
     "name": "نام",
     "newFolder": "پوشه جدید",
     "next": "بعدی",
+    "nightly": "نسخه شبانه",
     "no": "خیر",
     "noAudioRecorded": "هیچ صدایی ضبط نشد",
     "noItems": "هیچ موردی وجود ندارد",
@@ -805,6 +852,7 @@
     "nodeSlotsError": "خطا در slotهای node",
     "nodeWidgetsError": "خطا در ابزارک‌های node",
     "nodes": "nodeها",
+    "nodesCount": "{count} نود | {count} نود | {count} نود",
     "nodesRunning": "nodeها در حال اجرا هستند",
     "none": "هیچ‌کدام",
     "nothingToCopy": "موردی برای کپی وجود ندارد",
@@ -842,6 +890,7 @@
     "releaseTitle": "انتشار {package} نسخه {version}",
     "reloadToApplyChanges": "برای اعمال تغییرات بارگذاری مجدد کنید",
     "removeImage": "حذف تصویر",
+    "removeTag": "حذف برچسب",
     "removeVideo": "حذف ویدیو",
     "rename": "تغییر نام",
     "reportIssue": "ارسال گزارش",
@@ -878,7 +927,9 @@
     "selectedFile": "فایل انتخاب‌شده",
     "setAsBackground": "تنظیم به عنوان پس‌زمینه",
     "settings": "تنظیمات",
+    "showLeftPanel": "نمایش پنل چپ",
     "showReport": "نمایش گزارش",
+    "showRightPanel": "نمایش پنل راست",
     "singleSelectDropdown": "لیست کشویی تک‌انتخابی",
     "sort": "مرتب‌سازی",
     "source": "منبع",
@@ -901,6 +952,7 @@
     "updating": "در حال به‌روزرسانی {id}",
     "upload": "بارگذاری",
     "usageHint": "راهنمای استفاده",
+    "use": "استفاده",
     "user": "کاربر",
     "versionMismatchWarning": "هشدار ناسازگاری نسخه",
     "versionMismatchWarningMessage": "{warning}: {detail} برای راهنمای به‌روزرسانی به https://docs.comfy.org/installation/update_comfyui#common-update-issues مراجعه کنید.",
@@ -974,6 +1026,11 @@
   },
   "imageCompare": {
     "noImages": "تصویری برای مقایسه وجود ندارد"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "پیش‌نمایش برش",
+    "loading": "در حال بارگذاری...",
+    "noInputImage": "هیچ تصویر ورودی متصل نیست"
   },
   "importFailed": {
     "copyError": "خطا در کپی",
@@ -1097,8 +1154,14 @@
     "helpFix": "کمک به رفع این مشکل"
   },
   "linearMode": {
-    "openWorkflow": "باز کردن workflow",
-    "share": "اشتراک‌گذاری"
+    "beta": "بتا - ارسال بازخورد",
+    "downloadAll": "دانلود همه",
+    "dragAndDropImage": "تصویر را بکشید و رها کنید",
+    "graphMode": "حالت گراف",
+    "linearMode": "حالت ساده",
+    "rerun": "اجرای مجدد",
+    "reuseParameters": "استفاده مجدد از پارامترها",
+    "runCount": "تعداد اجرا: "
   },
   "load3d": {
     "applyingTexture": "در حال اعمال تکسچر...",
@@ -1352,11 +1415,11 @@
   },
   "mediaAsset": {
     "actions": {
-      "addToWorkflow": "افزودن به workflow جاری",
       "copyJobId": "کپی شناسه job",
       "delete": "حذف",
       "download": "دانلود",
       "exportWorkflow": "خروجی گرفتن از workflow",
+      "insertAsNodeInWorkflow": "افزودن به عنوان node در workflow",
       "inspect": "بررسی دارایی",
       "more": "گزینه‌های بیشتر",
       "moreOptions": "گزینه‌های بیشتر",
@@ -1392,10 +1455,22 @@
       "downloadSelectedAll": "دانلود همه",
       "downloadStarted": "در حال دانلود {count} فایل...",
       "downloadsStarted": "دانلود {count} فایل آغاز شد",
+      "exportWorkflowAll": "خروجی گرفتن از همه workflowها",
+      "failedToAddNodes": "افزودن nodeها به workflow ناموفق بود",
       "failedToDeleteAssets": "حذف دارایی‌های انتخاب‌شده ناموفق بود",
+      "insertAllAssetsAsNodes": "افزودن همه دارایی‌ها به عنوان node",
       "multipleSelectedAssets": "چندین دارایی انتخاب شده‌اند",
+      "noWorkflowsFound": "هیچ داده‌ای از workflow در دارایی‌های انتخاب‌شده یافت نشد",
+      "noWorkflowsToExport": "هیچ داده‌ای برای خروجی گرفتن از workflow یافت نشد",
+      "nodesAddedToWorkflow": "{count} node به workflow افزوده شد",
+      "openWorkflowAll": "باز کردن همه workflowها",
+      "partialAddNodesSuccess": "{succeeded} با موفقیت افزوده شد، {failed} ناموفق",
       "partialDeleteSuccess": "{succeeded} با موفقیت حذف شد، {failed} ناموفق بود",
-      "selectedCount": "دارایی‌های انتخاب‌شده: {count}"
+      "partialWorkflowsExported": "{succeeded} با موفقیت خروجی گرفته شد، {failed} ناموفق",
+      "partialWorkflowsOpened": "{succeeded} workflow باز شد، {failed} ناموفق",
+      "selectedCount": "دارایی‌های انتخاب‌شده: {count}",
+      "workflowsExported": "{count} workflow با موفقیت خروجی گرفته شد",
+      "workflowsOpened": "{count} workflow در تب جدید باز شد"
     },
     "unsupportedFileType": "نوع فایل پشتیبانی نمی‌شود برای node بارگذار",
     "workflowExportedSuccessfully": "workflow با موفقیت خروجی گرفته شد",
@@ -1537,6 +1612,7 @@
     "Toggle Logs Bottom Panel": "تغییر وضعیت پنل لاگ پایین",
     "Toggle Queue Panel V2": "تغییر وضعیت پنل صف V2",
     "Toggle Search Box": "تغییر وضعیت جعبه جستجو",
+    "Toggle Simple Mode": "تغییر حالت ساده",
     "Toggle Terminal Bottom Panel": "تغییر وضعیت پنل ترمینال پایین",
     "Toggle Theme (Dark/Light)": "تغییر وضعیت تم (تاریک/روشن)",
     "Toggle View Controls Bottom Panel": "تغییر وضعیت کنترل‌های نمای پایین",
@@ -1551,8 +1627,7 @@
     "Workflows": "Workflowها",
     "Zoom In": "بزرگ‌نمایی",
     "Zoom Out": "کوچک‌نمایی",
-    "Zoom to fit": "بزرگ‌نمایی برای تطبیق",
-    "toggle linear mode": "تغییر وضعیت حالت خطی"
+    "Zoom to fit": "بزرگ‌نمایی برای تطبیق"
   },
   "minimap": {
     "nodeColors": "رنگ‌های نود",
@@ -1581,17 +1656,25 @@
       "title": "این workflow دارای nodeهای مفقود است"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "نسخه پیش‌نمایش",
+      "tooltip": "شما در حال استفاده از نسخه شبانه ComfyUI هستید. لطفاً با استفاده از دکمه بازخورد، نظرات خود را درباره این قابلیت‌ها به اشتراک بگذارید."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "سه‌بعدی",
     "3d_models": "مدل‌های سه‌بعدی",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
@@ -1606,6 +1689,7 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_for_testing",
     "advanced": "پیشرفته",
     "animation": "انیمیشن",
@@ -1786,22 +1870,58 @@
     "whatsNew": "مشاهده تغییرات جدید"
   },
   "rightSidePanel": {
+    "addFavorite": "افزودن به علاقه‌مندی‌ها",
+    "advancedInputs": "ورودی‌های پیشرفته",
     "bypass": "عبور",
     "color": "رنگ نود",
+    "fallbackGroupTitle": "گروه",
+    "fallbackNodeTitle": "node",
+    "favorites": "ورودی‌های علاقه‌مندی",
+    "favoritesNone": "هیچ ورودی علاقه‌مندی وجود ندارد",
+    "favoritesNoneDesc": "ورودی‌هایی که به علاقه‌مندی‌ها اضافه کنید اینجا نمایش داده می‌شوند",
+    "favoritesNoneTooltip": "برای دسترسی سریع، ویجت‌ها را ستاره‌دار کنید تا بدون انتخاب nodeها به آن‌ها دسترسی داشته باشید",
+    "globalSettings": {
+      "canvas": "canvas",
+      "connectionLinks": "اتصالات",
+      "gridSpacing": "فاصله شبکه",
+      "linkShape": "شکل اتصال",
+      "nodes": "nodeها",
+      "nodes2": "nodeها ۲.۰",
+      "searchPlaceholder": "جستجوی تنظیمات سریع...",
+      "showAdvanced": "نمایش پارامترهای پیشرفته",
+      "showAdvancedTooltip": "این یک تنظیم مهم است که در صورت فعال بودن، همه پارامترهای پیشرفته nodeها را نمایش می‌دهد",
+      "showConnectedLinks": "نمایش اتصالات متصل",
+      "showInfoBadges": "نمایش نشان‌های اطلاعاتی",
+      "showToolbox": "نمایش جعبه ابزار هنگام انتخاب",
+      "snapNodesToGrid": "چسباندن nodeها به شبکه",
+      "title": "تنظیمات کلی",
+      "viewAllSettings": "مشاهده همه تنظیمات"
+    },
+    "groupSettings": "تنظیمات گروه",
+    "groups": "گروه‌ها",
+    "hideInput": "مخفی کردن ورودی",
     "info": "اطلاعات",
     "inputs": "ورودی‌ها",
     "inputsNone": "بدون ورودی",
     "inputsNoneTooltip": "این نود ورودی ندارد",
+    "locateNode": "یافتن node در canvas",
     "mute": "بی‌صدا",
     "noSelection": "یک نود را انتخاب کنید تا ویژگی‌ها و اطلاعات آن نمایش داده شود.",
     "nodeState": "وضعیت نود",
+    "nodes": "nodeها",
+    "nodesNoneDesc": "هیچ nodeی وجود ندارد",
+    "noneSearchDesc": "هیچ موردی با جستجوی شما مطابقت ندارد",
     "normal": "عادی",
     "parameters": "پارامترها",
     "pinned": "سنجاق شده",
     "properties": "ویژگی‌ها",
+    "removeFavorite": "حذف از علاقه‌مندی‌ها",
     "settings": "تنظیمات",
+    "showAdvancedInputsButton": "نمایش ورودی‌های پیشرفته",
+    "showInput": "نمایش ورودی",
     "title": "هیچ نودی انتخاب نشده است | ۱ نود انتخاب شده است | {count} نود انتخاب شده‌اند",
-    "togglePanel": "نمایش/پنهان کردن پنل ویژگی‌ها"
+    "togglePanel": "نمایش/پنهان کردن پنل ویژگی‌ها",
+    "workflowOverview": "نمای کلی workflow"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "عبور از نودهای گروه",
@@ -2011,6 +2131,7 @@
     "NodeLibrary": "کتابخانه Node",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "تنظیمات اعلان",
+    "Other": "سایر",
     "PLY": "PLY",
     "PlanCredits": "طرح و اعتبارات",
     "Pointer": "اشاره‌گر",
@@ -2030,7 +2151,8 @@
     "Vue Nodes": "Nodes 2.0",
     "VueNodes": "Nodes 2.0",
     "Window": "پنجره",
-    "Workflow": "Workflow"
+    "Workflow": "Workflow",
+    "Workspace": "محیط کاری"
   },
   "shape": {
     "CARD": "کارت",
@@ -2056,12 +2178,14 @@
     "viewControls": "کنترل‌های نمایش"
   },
   "sideToolbar": {
+    "activeJobStatus": "وضعیت کار فعال: {status}",
     "assets": "دارایی‌ها",
     "backToAssets": "بازگشت به همه دارایی‌ها",
     "browseTemplates": "مرور قالب‌های نمونه",
     "downloads": "دانلودها",
     "generatedAssetsHeader": "دارایی‌های تولیدشده",
     "helpCenter": "مرکز راهنما",
+    "importedAssetsHeader": "دارایی‌های واردشده",
     "labels": {
       "assets": "دارایی‌ها",
       "console": "کنسول",
@@ -2079,6 +2203,7 @@
       "filter3D": "سه‌بعدی",
       "filterAudio": "صوت",
       "filterImage": "تصویر",
+      "filterText": "متن",
       "filterVideo": "ویدیو",
       "sortFastestFirst": "زمان تولید (کمترین ابتدا)",
       "sortLongestFirst": "زمان تولید (بیشترین ابتدا)",
@@ -2116,6 +2241,7 @@
     "queue": "صف",
     "queueProgressOverlay": {
       "activeJobs": "{count} کار فعال",
+      "activeJobsShort": "{count} فعال | {count} فعال",
       "activeJobsSuffix": "کار فعال",
       "cancelJobTooltip": "لغو کار",
       "clearHistory": "پاک‌سازی تاریخچه صف کار",
@@ -2204,9 +2330,11 @@
     "beta": "بتا",
     "billedMonthly": "صورتحساب ماهانه",
     "billedYearly": "{total} صورتحساب سالانه",
+    "cancelSubscription": "لغو اشتراک",
     "changeTo": "تغییر به {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "لوگوی Comfy Cloud",
+    "contactOwnerToSubscribe": "برای فعال‌سازی اشتراک با مالک محیط کاری تماس بگیرید",
     "contactUs": "تماس با ما",
     "creditsRemainingThisMonth": "شامل شده (شارژ مجدد {date})",
     "creditsRemainingThisYear": "شامل شده (شارژ مجدد {date})",
@@ -2219,6 +2347,7 @@
     "haveQuestions": "سوالی دارید یا به دنبال راهکار سازمانی هستید؟",
     "invoiceHistory": "تاریخچه فاکتورها",
     "learnMore": "اطلاعات بیشتر",
+    "managePayment": "مدیریت پرداخت",
     "managePlan": "مدیریت طرح",
     "manageSubscription": "مدیریت اشتراک",
     "maxDuration": {
@@ -2254,6 +2383,7 @@
     "subscribeToComfyCloud": "اشتراک در Comfy Cloud",
     "subscribeToRun": "اشتراک",
     "subscribeToRunFull": "اشتراک برای اجرا",
+    "subscriptionRequiredMessage": "برای اجرای workflowها در Cloud، اشتراک لازم است.",
     "tierNameYearly": "{name} سالانه",
     "tiers": {
       "creator": {
@@ -2285,6 +2415,7 @@
     "viewMoreDetails": "مشاهده جزئیات بیشتر",
     "viewMoreDetailsPlans": "مشاهده جزئیات بیشتر درباره طرح‌ها و قیمت‌ها",
     "viewUsageHistory": "مشاهده تاریخچه استفاده",
+    "workspaceNotSubscribed": "این محیط کاری اشتراک فعال ندارد",
     "yearly": "سالانه",
     "yearlyCreditsLabel": "کل اعتبار سالانه",
     "yearlyDiscount": "٪۲۰ تخفیف",
@@ -2434,7 +2565,8 @@
     "notSet": "تنظیم نشده",
     "provider": "ارائه‌دهنده ورود",
     "title": "تنظیمات حساب کاربری من",
-    "updatePassword": "به‌روزرسانی گذرواژه"
+    "updatePassword": "به‌روزرسانی گذرواژه",
+    "workspaceSettings": "تنظیمات محیط کاری"
   },
   "validation": {
     "descriptionRequired": "توضیحات الزامی است",
@@ -2523,6 +2655,72 @@
     "enterFilename": "نام فایل را وارد کنید",
     "exportWorkflow": "خروجی گرفتن از workflow",
     "saveWorkflow": "ذخیره workflow"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "شما تغییرات ذخیره‌نشده دارید. آیا می‌خواهید آن‌ها را رها کرده و فضای کاری را تغییر دهید؟",
+      "title": "تغییرات ذخیره‌نشده"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "شما به این فضای کاری دسترسی ندارید.",
+      "invalidFirebaseToken": "احراز هویت ناموفق بود. لطفاً دوباره وارد شوید.",
+      "notAuthenticated": "برای دسترسی به فضاهای کاری باید وارد شوید.",
+      "tokenExchangeFailed": "احراز هویت با فضای کاری ناموفق بود: {error}",
+      "workspaceNotFound": "فضای کاری پیدا نشد."
+    }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "ایجاد",
+      "message": "محیط‌های کاری به اعضا اجازه می‌دهند از یک اعتبار مشترک استفاده کنند. پس از ایجاد، شما مالک خواهید بود.",
+      "nameLabel": "نام محیط کاری*",
+      "namePlaceholder": "نام محیط کاری را وارد کنید",
+      "title": "ایجاد محیط کاری جدید"
+    },
+    "deleteDialog": {
+      "message": "هرگونه اعتبار یا دارایی ذخیره‌نشده از بین خواهد رفت. این عملیات قابل بازگشت نیست.",
+      "messageWithName": "حذف «{name}»؟ هرگونه اعتبار یا دارایی ذخیره‌نشده از بین خواهد رفت. این عملیات قابل بازگشت نیست.",
+      "title": "حذف این محیط کاری؟"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "نام محیط کاری",
+      "save": "ذخیره",
+      "title": "ویرایش جزئیات محیط کاری"
+    },
+    "leaveDialog": {
+      "leave": "خروج",
+      "message": "تا زمانی که با مالک محیط کاری تماس نگیرید، امکان پیوستن مجدد نخواهید داشت.",
+      "title": "خروج از این محیط کاری؟"
+    },
+    "menu": {
+      "deleteWorkspace": "حذف محیط کاری",
+      "deleteWorkspaceDisabledTooltip": "ابتدا اشتراک فعال محیط کاری خود را لغو کنید",
+      "editWorkspace": "ویرایش جزئیات محیط کاری",
+      "leaveWorkspace": "خروج از محیط کاری"
+    },
+    "tabs": {
+      "planCredits": "پلن و اعتبارها"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "ایجاد محیط کاری ناموفق بود",
+      "failedToDeleteWorkspace": "حذف محیط کاری ناموفق بود",
+      "failedToLeaveWorkspace": "خروج از محیط کاری ناموفق بود",
+      "failedToUpdateWorkspace": "به‌روزرسانی محیط کاری ناموفق بود",
+      "workspaceUpdated": {
+        "message": "جزئیات محیط کاری ذخیره شد.",
+        "title": "محیط کاری به‌روزرسانی شد"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "ایجاد محیط کاری جدید",
+    "maxWorkspacesReached": "شما فقط می‌توانید مالک ۱۰ محیط کاری باشید. برای ایجاد محیط کاری جدید، یکی را حذف کنید.",
+    "roleMember": "عضو",
+    "roleOwner": "مالک",
+    "subscribe": "اشتراک",
+    "switchWorkspace": "تغییر محیط کاری"
   },
   "zoomControls": {
     "hideMinimap": "مخفی‌سازی نقشه کوچک",

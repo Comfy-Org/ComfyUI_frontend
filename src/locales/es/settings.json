@@ -332,6 +332,10 @@
     "name": "Tamaño del historial de la cola",
     "tooltip": "El número máximo de tareas que se muestran en el historial de la cola."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Usar la cola de trabajos unificada en el panel lateral de Activos",
+    "tooltip": "Reemplaza el panel flotante de la cola de trabajos por una cola de trabajos equivalente integrada en el panel lateral de Activos. Puedes desactivar esto para volver al diseño del panel flotante."
+  },
   "Comfy_Sidebar_Location": {
     "name": "Ubicación de la barra lateral",
     "options": {

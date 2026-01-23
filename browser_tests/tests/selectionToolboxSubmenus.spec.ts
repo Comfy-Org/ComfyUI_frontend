@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -15,7 +16,7 @@ test.describe('Selection Toolbox - More Options Submenus', () => {
     await comfyPage.nextFrame()
   })
 
-  const openMoreOptions = async (comfyPage: any) => {
+  const openMoreOptions = async (comfyPage: ComfyPage) => {
     const ksamplerNodes = await comfyPage.getNodeRefsByTitle('KSampler')
     if (ksamplerNodes.length === 0) {
       throw new Error('No KSampler nodes found')

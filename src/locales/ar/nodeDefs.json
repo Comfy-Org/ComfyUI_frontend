@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "حرر الصور باستخدام أحدث نموذج من Bria",
+    "display_name": "تحرير صورة Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "guidance_scale": {
+        "name": "مقياس التوجيه",
+        "tooltip": "القيمة الأعلى تجعل الصورة تتبع التوجيه بشكل أدق."
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "mask": {
+        "name": "القناع",
+        "tooltip": "إذا لم يتم تحديده، سيتم تطبيق التحرير على الصورة بالكامل."
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "moderation": {
+        "name": "الإشراف",
+        "tooltip": "إعدادات الإشراف"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "إشراف محتوى التوجيه"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "إشراف الإدخال البصري"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "إشراف الإخراج البصري"
+      },
+      "negative_prompt": {
+        "name": "توجيه سلبي"
+      },
+      "prompt": {
+        "name": "التوجيه",
+        "tooltip": "تعليمات لتحرير الصورة"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "steps": {
+        "name": "الخطوات"
+      },
+      "structured_prompt": {
+        "name": "توجيه منظم",
+        "tooltip": "سلسلة نصية تحتوي على توجيه التحرير المنظم بصيغة JSON. استخدم هذا بدلاً من التوجيه المعتاد للتحكم الدقيق والبرمجي."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "توجيه منظم",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام المطالبة النصية والإطار الأول والأخير.",
     "display_name": "تحويل الإطار الأول-الأخير من ByteDance إلى فيديو",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "الإطار_الأول",
         "tooltip": "الإطار الأول الذي سيتم استخدامه للفيديو."
+      },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "يتم تجاهل هذا المعامل لجميع النماذج باستثناء seedance-1-5-pro."
       },
       "last_frame": {
         "name": "الإطار_الأخير",
@@ -527,6 +593,10 @@
         "name": "duration",
         "tooltip": "مدة الفيديو الناتج بالثواني."
       },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "يتم تجاهل هذا المعامل لجميع النماذج باستثناء seedance-1-5-pro."
+      },
       "image": {
         "name": "image",
         "tooltip": "الإطار الأول الذي سيتم استخدامه للفيديو."
@@ -633,6 +703,10 @@
       "duration": {
         "name": "المدة",
         "tooltip": "مدة الفيديو الناتج بالثواني."
+      },
+      "generate_audio": {
+        "name": "توليد الصوت",
+        "tooltip": "يتم تجاهل هذا المعامل لجميع النماذج باستثناء seedance-1-5-pro."
       },
       "model": {
         "name": "النموذج"
@@ -2019,7 +2093,9 @@
       "choice": {
         "name": "اختيار"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -6881,6 +6957,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "description": "تطبيق حركة أنيميشن محددة على شخصية تم تجهيزها مسبقًا.",
+    "display_name": "Meshy: تحريك النموذج",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "قم بزيارة https://docs.meshy.ai/en/api/animation-library للاطلاع على قائمة القيم المتاحة."
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: من صورة إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "حدد وضعية النموذج الناتج."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "عند التعيين إلى false، يتم إرجاع شبكة مثلثية غير معالجة."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "يحدد ما إذا كان سيتم توليد الخامات. إذا تم تعيينه إلى false، يتم تخطي مرحلة الخامات وإرجاع شبكة بدون خامات."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: من صور متعددة إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "حدد وضعية النموذج الناتج."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "عند التعيين إلى false، يتم إرجاع شبكة مثلثية غير معالجة."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "يحدد ما إذا كان سيتم توليد الخامات. إذا تم تعيينه إلى false، يتم تخطي مرحلة الخامات وإرجاع شبكة بدون خامات."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "تحسين نموذج أولي تم إنشاؤه مسبقًا.",
+    "display_name": "Meshy: تحسين النموذج الأولي",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "توليد خرائط PBR (معدنية، خشونة، عادية) بالإضافة إلى اللون الأساسي. ملاحظة: يجب ضبط هذا الخيار على 'غير مفعل' عند استخدام نمط Sculpture، حيث أن نمط Sculpture يولد مجموعته الخاصة من خرائط PBR."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "يمكن استخدام أحد الخيارين فقط: 'texture_image' أو 'texture_prompt' في نفس الوقت."
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "أدخل نصًا لتوجيه عملية الإكساء. الحد الأقصى ٦٠٠ حرف. لا يمكن استخدامه مع 'texture_image' في نفس الوقت."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "يوفر شخصية مجهزة بالحركة بصيغ قياسية. التجهيز التلقائي غير مناسب حاليًا للنماذج غير المكسوة، أو الأصول غير البشرية، أو الأصول البشرية ذات البنية غير الواضحة للأطراف والجسم.",
+    "display_name": "Meshy: تجهيز النموذج بالحركة",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "الارتفاع التقريبي لنموذج الشخصية بالمتر. يساعد ذلك في دقة القياس والتجهيز."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "صورة الإكساء الأساسية (UV-unwrapped) للنموذج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: تحويل النص إلى نموذج",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "حدد وضعية النموذج المُنتج."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "الرقم العشوائي (seed) يتحكم في ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن قيمة seed."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "عند ضبطه على 'غير مفعل'، يتم إرجاع شبكة مثلثية غير معالجة."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: نموذج النسيج",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "تفعيل UV الأصلي",
+        "tooltip": "استخدم UV الأصلي للنموذج بدلاً من إنشاء UV جديد. عند التفعيل، يحتفظ Meshy بالخامات الأصلية من النموذج المرفوع. إذا لم يكن لدى النموذج UV أصلي، قد لا تكون جودة الناتج جيدة."
+      },
+      "image_style": {
+        "name": "نمط الصورة",
+        "tooltip": "صورة ثنائية الأبعاد لتوجيه عملية النسيج. لا يمكن استخدامها مع 'text_style_prompt' في نفس الوقت."
+      },
+      "meshy_task_id": {
+        "name": "معرّف مهمة Meshy"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "text_style_prompt": {
+        "name": "وصف نمط النسيج بالنص",
+        "tooltip": "صف نمط النسيج المطلوب للكائن باستخدام النص. الحد الأقصى ٦٠٠ حرف. لا يمكن استخدامه مع 'image_style' في نفس الوقت."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ملف النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معرّف مهمة Meshy",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "description": "ينشئ مقاطع فيديو من المُوجِّه، مع إطار أول اختياري باستخدام نموذج MiniMax Hailuo-02 الجديد.",
     "display_name": "MiniMax Hailuo فيديو",
@@ -10923,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "تغيير حجم صورة أو قناع باستخدام طرق تحجيم مختلفة.",
     "display_name": "تغيير حجم الصورة/القناع",
     "inputs": {
       "input": {
         "name": "الإدخال"
       },
       "resize_type": {
-        "name": "نوع تغيير الحجم"
+        "name": "نوع تغيير الحجم",
+        "tooltip": "اختر طريقة تغيير الحجم: حسب الأبعاد الدقيقة، عامل التحجيم، مطابقة صورة أخرى، إلخ."
       },
-      "resize_type_multiplier": {
-        "name": "المضاعف"
+      "resize_type_crop": {
+        "name": "قص"
+      },
+      "resize_type_height": {
+        "name": "الارتفاع"
+      },
+      "resize_type_width": {
+        "name": "العرض"
       },
       "scale_method": {
-        "name": "طريقة التحجيم"
+        "name": "طريقة التحجيم",
+        "tooltip": "خوارزمية الاستيفاء. 'area' هي الأفضل لتصغير الحجم، و'lanczos' لتكبير الحجم، و'nearest-exact' لفن البكسل."
       }
     },
     "outputs": {
@@ -13164,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "تغيير حجم الصور تلقائياً"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "الصورة ١"
+      },
+      "image2": {
+        "name": "الصورة ٢"
+      },
+      "image3": {
+        "name": "الصورة ٣"
+      },
+      "image_encoder": {
+        "name": "مُرمّز الصورة"
+      },
+      "prompt": {
+        "name": "التوجيه"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "تحويل النص إلى أحرف صغيرة",
     "inputs": {
@@ -15335,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "مخرجات ترميز الصوت ١"
+      },
+      "audio_scale": {
+        "name": "مقياس الصوت"
+      },
+      "clip_vision_output": {
+        "name": "مخرجات clip للرؤية"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "mode": {
+        "name": "الوضع"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_patch": {
+        "name": "تصحيح النموذج"
+      },
+      "motion_frame_count": {
+        "name": "عدد إطارات الحركة",
+        "tooltip": "عدد الإطارات السابقة المستخدمة كسياق للحركة."
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "previous_frames": {
+        "name": "الإطارات السابقة"
+      },
+      "start_image": {
+        "name": "صورة البداية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "3": {
+        "name": "الفضاء الكامن",
+        "tooltip": null
+      },
+      "4": {
+        "name": "قص الصورة",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -15847,6 +16313,43 @@
       },
       "3": {
         "name": "اقتطاع المضمر",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "مُرقّي فيديو سريع وعالي الجودة يعزز الدقة ويعيد الوضوح للمقاطع منخفضة الدقة أو الضبابية.",
+    "display_name": "ترقية فيديو FlashVSR",
+    "inputs": {
+      "target_resolution": {
+        "name": "الدقة المستهدفة"
+      },
+      "video": {
+        "name": "الفيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "عزز دقة وجودة الصورة، وارفع الصور إلى دقة 4K أو 8K للحصول على نتائج حادة ومفصلة.",
+    "display_name": "ترقية صورة WaveSpeed",
+    "inputs": {
+      "image": {
+        "name": "الصورة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "target_resolution": {
+        "name": "الدقة المستهدفة"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

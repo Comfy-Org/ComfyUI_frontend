@@ -24,6 +24,7 @@
     "assets": "アセット",
     "baseModels": "ベースモデル",
     "browseAssets": "アセットを閲覧",
+    "byType": "タイプ別",
     "checkpoints": "チェックポイント",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "例：",
@@ -45,6 +46,10 @@
       "failed": "ダウンロードに失敗しました",
       "inProgress": "{assetName}をダウンロード中..."
     },
+    "emptyImported": {
+      "canImport": "まだインポートされたモデルはありません。「モデルをインポート」をクリックして追加してください。",
+      "restricted": "パーソナルモデルはCreator以上のプランでのみ利用可能です。"
+    },
     "errorFileTooLarge": "ファイルが許可された最大サイズを超えています",
     "errorFormatNotAllowed": "SafeTensor形式のみ許可されています",
     "errorModelTypeNotSupported": "このモデルタイプはサポートされていません",
@@ -61,6 +66,7 @@
     "finish": "完了",
     "genericLinkPlaceholder": "ここにリンクを貼り付けてください",
     "importAnother": "別のファイルをインポート",
+    "imported": "インポート済み",
     "jobId": "ジョブID",
     "loadingModels": "{type}を読み込み中...",
     "maxFileSize": "最大ファイルサイズ：{size}",
@@ -70,6 +76,30 @@
       "threeDModelPlaceholder": "3Dモデル"
     },
     "modelAssociatedWithLink": "ご提供いただいたリンクに関連付けられているモデル：",
+    "modelInfo": {
+      "addBaseModel": "ベースモデルを追加...",
+      "addTag": "タグを追加...",
+      "additionalTags": "追加タグ",
+      "baseModelUnknown": "ベースモデル不明",
+      "basicInfo": "基本情報",
+      "compatibleBaseModels": "互換性のあるベースモデル",
+      "description": "説明",
+      "descriptionNotSet": "説明が設定されていません",
+      "descriptionPlaceholder": "このモデルの説明を追加...",
+      "displayName": "表示名",
+      "editDisplayName": "表示名を編集",
+      "fileName": "ファイル名",
+      "modelDescription": "モデル説明",
+      "modelTagging": "モデルタグ付け",
+      "modelType": "モデルタイプ",
+      "noAdditionalTags": "追加タグなし",
+      "selectModelPrompt": "モデルを選択して情報を表示してください",
+      "selectModelType": "モデルタイプを選択...",
+      "source": "ソース",
+      "title": "モデル情報",
+      "triggerPhrases": "トリガーフレーズ",
+      "viewOnSource": "{source} で表示"
+    },
     "modelName": "モデル名",
     "modelNamePlaceholder": "このモデルの名前を入力してください",
     "modelTypeSelectorLabel": "モデルの種類は何ですか？",
@@ -238,6 +268,12 @@
       "title": "アカウントを作成する"
     }
   },
+  "boundingBox": {
+    "height": "高さ",
+    "width": "幅",
+    "x": "X",
+    "y": "Y"
+  },
   "breadcrumbsMenu": {
     "clearWorkflow": "ワークフローをクリア",
     "deleteBlueprint": "ブループリントを削除",
@@ -298,6 +334,7 @@
     },
     "retry": "再試行",
     "retrying": "再試行中...",
+    "skipToCloudApp": "クラウドアプリへスキップ",
     "start": {
       "desc": "セットアップ不要。あらゆるデバイスで動作します。",
       "download": "ComfyUIをダウンロード",
@@ -432,6 +469,7 @@
     "Expand": "展開",
     "Expand Node": "ノードを展開",
     "Extensions": "拡張機能",
+    "FavoriteWidget": "ウィジェットをお気に入りに追加",
     "Horizontal": "水平",
     "Inputs": "入力",
     "Left": "左",
@@ -462,6 +500,7 @@
     "Shapes": "形",
     "Title": "タイトル",
     "Top": "上",
+    "UnfavoriteWidget": "ウィジェットのお気に入りを解除",
     "Unpack Subgraph": "サブグラフを展開",
     "Unpin": "ピンを解除",
     "Vertical": "垂直",
@@ -565,6 +604,8 @@
     "LUMA_REF": "Luma参照",
     "MASK": "マスク",
     "MESH": "メッシュ",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "モデル",
     "MODEL_PATCH": "モデルパッチ",
     "MODEL_TASK_ID": "モデルタスクID",
@@ -653,6 +694,7 @@
     "amount": "量",
     "apply": "適用する",
     "architecture": "アーキテクチャ",
+    "asset": "{count} 個のアセット | {count} 個のアセット | {count} 個のアセット",
     "audioFailedToLoad": "オーディオの読み込みに失敗しました",
     "audioProgress": "オーディオの進捗",
     "author": "作者",
@@ -672,6 +714,7 @@
     "clearAll": "すべてクリア",
     "clearFilters": "フィルターをクリア",
     "close": "閉じる",
+    "closeDialog": "ダイアログを閉じる",
     "color": "色",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrgロゴ",
@@ -688,6 +731,7 @@
     "control_before_generate": "生成前の制御",
     "copied": "コピーしました",
     "copy": "コピー",
+    "copyAll": "すべてコピー",
     "copyJobId": "ジョブIDをコピー",
     "copyToClipboard": "クリップボードにコピー",
     "copyURL": "URLをコピー",
@@ -750,6 +794,8 @@
     "goToNode": "ノードに移動",
     "graphNavigation": "グラフナビゲーション",
     "halfSpeed": "0.5倍速",
+    "hideLeftPanel": "左パネルを非表示",
+    "hideRightPanel": "右パネルを非表示",
     "icon": "アイコン",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
     "imagePreview": "画像プレビュー - 矢印キーで画像を切り替え",
@@ -791,6 +837,7 @@
     "name": "名前",
     "newFolder": "新しいフォルダー",
     "next": "次へ",
+    "nightly": "NIGHTLY",
     "no": "いいえ",
     "noAudioRecorded": "音声が録音されていません",
     "noItems": "項目がありません",
@@ -805,6 +852,7 @@
     "nodeSlotsError": "ノードスロットエラー",
     "nodeWidgetsError": "ノードウィジェットエラー",
     "nodes": "ノード",
+    "nodesCount": "{count} ノード | {count} ノード | {count} ノード",
     "nodesRunning": "ノードが実行中",
     "none": "なし",
     "nothingToCopy": "コピーするものがありません",
@@ -842,6 +890,7 @@
     "releaseTitle": "{package} {version} リリース",
     "reloadToApplyChanges": "変更を適用するには再読み込みしてください",
     "removeImage": "画像を削除",
+    "removeTag": "タグを削除",
     "removeVideo": "ビデオを削除",
     "rename": "名前を変更",
     "reportIssue": "報告する",
@@ -878,7 +927,9 @@
     "selectedFile": "選択されたファイル",
     "setAsBackground": "背景として設定",
     "settings": "設定",
+    "showLeftPanel": "左パネルを表示",
     "showReport": "レポートを表示",
+    "showRightPanel": "右パネルを表示",
     "singleSelectDropdown": "単一選択ドロップダウン",
     "sort": "並び替え",
     "source": "ソース",
@@ -901,6 +952,7 @@
     "updating": "更新中",
     "upload": "アップロード",
     "usageHint": "使用ヒント",
+    "use": "使用",
     "user": "ユーザー",
     "versionMismatchWarning": "バージョン互換性の警告",
     "versionMismatchWarningMessage": "{warning}: {detail} 更新手順については https://docs.comfy.org/installation/update_comfyui#common-update-issues をご覧ください。",
@@ -974,6 +1026,11 @@
   },
   "imageCompare": {
     "noImages": "比較する画像がありません"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "切り抜きプレビュー",
+    "loading": "読み込み中...",
+    "noInputImage": "入力画像が接続されていません"
   },
   "importFailed": {
     "copyError": "コピーエラー",
@@ -1097,8 +1154,14 @@
     "helpFix": "これを修正するのを助ける"
   },
   "linearMode": {
-    "openWorkflow": "ワークフローを開く",
-    "share": "共有"
+    "beta": "ベータ版 - フィードバックを送る",
+    "downloadAll": "すべてダウンロード",
+    "dragAndDropImage": "画像をドラッグ＆ドロップ",
+    "graphMode": "グラフモード",
+    "linearMode": "シンプルモード",
+    "rerun": "再実行",
+    "reuseParameters": "パラメータを再利用",
+    "runCount": "実行回数："
   },
   "load3d": {
     "applyingTexture": "テクスチャを適用中...",
@@ -1352,11 +1415,11 @@
   },
   "mediaAsset": {
     "actions": {
-      "addToWorkflow": "現在のワークフローに追加",
       "copyJobId": "ジョブIDをコピー",
       "delete": "削除",
       "download": "ダウンロード",
       "exportWorkflow": "ワークフローをエクスポート",
+      "insertAsNodeInWorkflow": "ワークフローにノードとして挿入",
       "inspect": "アセットを確認",
       "more": "その他のオプション",
       "moreOptions": "その他のオプション",
@@ -1392,10 +1455,22 @@
       "downloadSelectedAll": "すべてダウンロード",
       "downloadStarted": "{count} ファイルをダウンロード中...",
       "downloadsStarted": "{count} ファイルのダウンロードを開始しました",
+      "exportWorkflowAll": "すべてのワークフローをエクスポート",
+      "failedToAddNodes": "ノードのワークフローへの追加に失敗しました",
       "failedToDeleteAssets": "選択したアセットの削除に失敗しました",
+      "insertAllAssetsAsNodes": "すべてのアセットをノードとして挿入",
       "multipleSelectedAssets": "複数のアセットが選択されています",
+      "noWorkflowsFound": "選択したアセットにワークフローデータが見つかりません",
+      "noWorkflowsToExport": "エクスポートするワークフローデータが見つかりません",
+      "nodesAddedToWorkflow": "{count} 個のノードがワークフローに追加されました",
+      "openWorkflowAll": "すべてのワークフローを開く",
+      "partialAddNodesSuccess": "{succeeded} 件が正常に追加され、{failed} 件が失敗しました",
       "partialDeleteSuccess": "{succeeded}件の削除に成功、{failed}件の削除に失敗しました",
-      "selectedCount": "選択されたアセット: {count}"
+      "partialWorkflowsExported": "{succeeded} 件が正常にエクスポートされ、{failed} 件が失敗しました",
+      "partialWorkflowsOpened": "{succeeded} 件のワークフローが開かれ、{failed} 件が失敗しました",
+      "selectedCount": "選択されたアセット: {count}",
+      "workflowsExported": "{count} 件のワークフローが正常にエクスポートされました",
+      "workflowsOpened": "{count} 件のワークフローが新しいタブで開かれました"
     },
     "unsupportedFileType": "ローダーノードでサポートされていないファイルタイプです",
     "workflowExportedSuccessfully": "ワークフローのエクスポートに成功しました",
@@ -1537,6 +1612,7 @@
     "Toggle Logs Bottom Panel": "ログ下部パネルの切り替え",
     "Toggle Queue Panel V2": "キューパネルV2を切り替え",
     "Toggle Search Box": "検索ボックスの切り替え",
+    "Toggle Simple Mode": "シンプルモードを切り替え",
     "Toggle Terminal Bottom Panel": "ターミナル下部パネルの切り替え",
     "Toggle Theme (Dark/Light)": "テーマを切り替え（ダーク/ライト）",
     "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
@@ -1551,8 +1627,7 @@
     "Workflows": "ワークフロー",
     "Zoom In": "ズームイン",
     "Zoom Out": "ズームアウト",
-    "Zoom to fit": "全体表示にズーム",
-    "toggle linear mode": "リニアモードを切り替え"
+    "Zoom to fit": "全体表示にズーム"
   },
   "minimap": {
     "nodeColors": "ノードの色",
@@ -1581,17 +1656,25 @@
       "title": "このワークフローには不足しているノードがあります"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "プレビュー版",
+      "tooltip": "現在、ComfyUI のナイトリーバージョンを使用しています。これらの機能についてご意見があれば、フィードバックボタンからお知らせください。"
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
     "3d_models": "3Dモデル",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
@@ -1606,6 +1689,7 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_テスト用",
     "advanced": "高度な機能",
     "animation": "アニメーション",
@@ -1786,22 +1870,58 @@
     "whatsNew": "新機能"
   },
   "rightSidePanel": {
+    "addFavorite": "お気に入りに追加",
+    "advancedInputs": "詳細入力",
     "bypass": "バイパス",
     "color": "ノードカラー",
+    "fallbackGroupTitle": "グループ",
+    "fallbackNodeTitle": "ノード",
+    "favorites": "お気に入り入力",
+    "favoritesNone": "お気に入り入力なし",
+    "favoritesNoneDesc": "お気に入りに追加した入力がここに表示されます",
+    "favoritesNoneTooltip": "ウィジェットにスターを付けると、ノードを選択せずにすぐアクセスできます",
+    "globalSettings": {
+      "canvas": "キャンバス",
+      "connectionLinks": "接続リンク",
+      "gridSpacing": "グリッド間隔",
+      "linkShape": "リンクの形状",
+      "nodes": "ノード",
+      "nodes2": "ノード 2.0",
+      "searchPlaceholder": "クイック設定を検索...",
+      "showAdvanced": "詳細パラメータを表示",
+      "showAdvancedTooltip": "この設定をTRUEにすると、ノードのすべての詳細パラメータが表示されます",
+      "showConnectedLinks": "接続されたリンクを表示",
+      "showInfoBadges": "情報バッジを表示",
+      "showToolbox": "選択時にツールボックスを表示",
+      "snapNodesToGrid": "ノードをグリッドにスナップ",
+      "title": "グローバル設定",
+      "viewAllSettings": "すべての設定を表示"
+    },
+    "groupSettings": "グループ設定",
+    "groups": "グループ",
+    "hideInput": "入力を非表示",
     "info": "情報",
     "inputs": "入力",
     "inputsNone": "入力なし",
     "inputsNoneTooltip": "このノードには入力がありません",
+    "locateNode": "キャンバス上でノードを探す",
     "mute": "ミュート",
     "noSelection": "ノードを選択すると、そのプロパティと情報が表示されます。",
     "nodeState": "ノードの状態",
+    "nodes": "ノード",
+    "nodesNoneDesc": "ノードなし",
+    "noneSearchDesc": "検索条件に一致する項目がありません",
     "normal": "ノーマル",
     "parameters": "パラメータ",
     "pinned": "ピン留め",
     "properties": "プロパティ",
+    "removeFavorite": "お気に入りを解除",
     "settings": "設定",
+    "showAdvancedInputsButton": "詳細入力を表示",
+    "showInput": "入力を表示",
     "title": "ノードが選択されていません | 1件のノードが選択されています | {count}件のノードが選択されています",
-    "togglePanel": "プロパティパネルの切り替え"
+    "togglePanel": "プロパティパネルの切り替え",
+    "workflowOverview": "ワークフロー概要"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "グループノードをバイパス",
@@ -2011,6 +2131,7 @@
     "NodeLibrary": "ノードライブラリ",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "通知設定",
+    "Other": "その他",
     "PLY": "PLY",
     "PlanCredits": "プランとクレジット",
     "Pointer": "ポインタ",
@@ -2030,7 +2151,8 @@
     "Vue Nodes": "Vueノード",
     "VueNodes": "Vueノード",
     "Window": "ウィンドウ",
-    "Workflow": "ワークフロー"
+    "Workflow": "ワークフロー",
+    "Workspace": "ワークスペース"
   },
   "shape": {
     "CARD": "カード",
@@ -2056,12 +2178,14 @@
     "viewControls": "ビューコントロール"
   },
   "sideToolbar": {
+    "activeJobStatus": "アクティブジョブ: {status}",
     "assets": "アセット",
     "backToAssets": "すべてのアセットに戻る",
     "browseTemplates": "サンプルテンプレートを表示",
     "downloads": "ダウンロード",
     "generatedAssetsHeader": "生成されたアセット",
     "helpCenter": "ヘルプセンター",
+    "importedAssetsHeader": "インポート済みアセット",
     "labels": {
       "assets": "アセット",
       "console": "コンソール",
@@ -2106,6 +2230,7 @@
     "queue": "キュー",
     "queueProgressOverlay": {
       "activeJobs": "{count}件のアクティブジョブ",
+      "activeJobsShort": "{count} 件のアクティブ | {count} 件のアクティブ",
       "activeJobsSuffix": "アクティブジョブ",
       "cancelJobTooltip": "ジョブをキャンセル",
       "clearHistory": "ジョブキュー履歴をクリア",
@@ -2194,9 +2319,11 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "cancelSubscription": "サブスクリプションをキャンセル",
     "changeTo": "{plan}に変更",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud ロゴ",
+    "contactOwnerToSubscribe": "サブスクリプションのためにワークスペースのオーナーに連絡してください",
     "contactUs": "お問い合わせ",
     "creditsRemainingThisMonth": "今月残りのクレジット",
     "creditsRemainingThisYear": "今年残りのクレジット",
@@ -2209,6 +2336,7 @@
     "haveQuestions": "ご質問やエンタープライズについてのお問い合わせはこちら",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
+    "managePayment": "支払いを管理",
     "managePlan": "プランを管理",
     "manageSubscription": "サブスクリプションを管理",
     "maxDuration": {
@@ -2244,6 +2372,7 @@
     "subscribeToComfyCloud": "Comfy Cloudを購読",
     "subscribeToRun": "購読する",
     "subscribeToRunFull": "実行を購読",
+    "subscriptionRequiredMessage": "クラウドでワークフローを実行するにはメンバーにサブスクリプションが必要です",
     "tierNameYearly": "{name} 年間",
     "tiers": {
       "creator": {
@@ -2275,6 +2404,7 @@
     "viewMoreDetails": "詳細を表示",
     "viewMoreDetailsPlans": "プランと価格の詳細を見る",
     "viewUsageHistory": "利用履歴を表示",
+    "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
     "yearly": "年額",
     "yearlyCreditsLabel": "年間合計クレジット",
     "yearlyDiscount": "20%割引",
@@ -2424,7 +2554,8 @@
     "notSet": "未設定",
     "provider": "サインイン方法",
     "title": "ユーザー設定",
-    "updatePassword": "パスワードを更新"
+    "updatePassword": "パスワードを更新",
+    "workspaceSettings": "ワークスペース設定"
   },
   "validation": {
     "descriptionRequired": "説明が必要です",
@@ -2513,6 +2644,72 @@
     "enterFilename": "ファイル名を入力",
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存"
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
+      "title": "未保存の変更"
+    }
+  },
+  "workspaceAuth": {
+    "errors": {
+      "accessDenied": "このワークスペースへのアクセス権がありません",
+      "invalidFirebaseToken": "認証に失敗しました。もう一度ログインしてください。",
+      "notAuthenticated": "ワークスペースにアクセスするにはログインが必要です",
+      "tokenExchangeFailed": "ワークスペースの認証に失敗しました: {error}",
+      "workspaceNotFound": "ワークスペースが見つかりません"
+    }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "作成",
+      "message": "ワークスペースはメンバーでクレジットプールを共有できます。作成後、あなたがオーナーになります。",
+      "nameLabel": "ワークスペース名*",
+      "namePlaceholder": "ワークスペース名を入力",
+      "title": "新しいワークスペースを作成"
+    },
+    "deleteDialog": {
+      "message": "未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
+      "messageWithName": "「{name}」を削除しますか？未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
+      "title": "このワークスペースを削除しますか？"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "ワークスペース名",
+      "save": "保存",
+      "title": "ワークスペースの詳細を編集"
+    },
+    "leaveDialog": {
+      "leave": "退出",
+      "message": "ワークスペースのオーナーに連絡しない限り、再参加できません。",
+      "title": "このワークスペースを退出しますか？"
+    },
+    "menu": {
+      "deleteWorkspace": "ワークスペースを削除",
+      "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
+      "editWorkspace": "ワークスペースの詳細を編集",
+      "leaveWorkspace": "ワークスペースを退出"
+    },
+    "tabs": {
+      "planCredits": "プランとクレジット"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "ワークスペースの作成に失敗しました",
+      "failedToDeleteWorkspace": "ワークスペースの削除に失敗しました",
+      "failedToLeaveWorkspace": "ワークスペースの退出に失敗しました",
+      "failedToUpdateWorkspace": "ワークスペースの更新に失敗しました",
+      "workspaceUpdated": {
+        "message": "ワークスペースの詳細が保存されました。",
+        "title": "ワークスペースが更新されました"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "新しいワークスペースを作成",
+    "maxWorkspacesReached": "所有できるワークスペースは10個までです。新しく作成するには1つ削除してください。",
+    "roleMember": "メンバー",
+    "roleOwner": "オーナー",
+    "subscribe": "サブスクライブ",
+    "switchWorkspace": "ワークスペースを切り替え"
   },
   "zoomControls": {
     "hideMinimap": "ミニマップを非表示",

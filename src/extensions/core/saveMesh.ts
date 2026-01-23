@@ -4,9 +4,15 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import { useLoad3d } from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import { type CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
+
+type SaveMeshOutput = NodeOutputWith<{
+  '3d'?: ResultItem[]
+}>
+import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
 import { useLoad3dService } from '@/services/load3dService'
@@ -70,22 +76,37 @@ useExtensionService().registerExtension({
 
     const onExecuted = node.onExecuted
 
-    node.onExecuted = function (message: any) {
-      onExecuted?.apply(this, arguments as any)
+    node.onExecuted = function (output: SaveMeshOutput) {
+      onExecuted?.call(this, output)
 
-      const fileInfo = message['3d'][0]
+      const fileInfo = output['3d']?.[0]
+
+      if (!fileInfo) return
 
       useLoad3d(node).waitForLoad3d((load3d) => {
         const modelWidget = node.widgets?.find((w) => w.name === 'image')
 
         if (load3d && modelWidget) {
-          const filePath = fileInfo['subfolder'] + '/' + fileInfo['filename']
+          const filePath =
+            (fileInfo.subfolder ?? '') + '/' + (fileInfo.filename ?? '')
 
           modelWidget.value = filePath
 
           const config = new Load3DConfiguration(load3d, node.properties)
 
-          config.configureForSaveMesh(fileInfo['type'], filePath)
+          const loadFolder = fileInfo.type as 'input' | 'output'
+
+          const onModelLoaded = () => {
+            load3d.removeEventListener('modelLoadingEnd', onModelLoaded)
+            void Load3dUtils.generateThumbnailIfNeeded(
+              load3d,
+              filePath,
+              loadFolder
+            )
+          }
+          load3d.addEventListener('modelLoadingEnd', onModelLoaded)
+
+          config.configureForSaveMesh(loadFolder, filePath)
         }
       })
     }

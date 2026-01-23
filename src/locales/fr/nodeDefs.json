@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Modifiez des images en utilisant le dernier modèle Bria",
+    "display_name": "Bria Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "guidance_scale": {
+        "name": "échelle de guidage",
+        "tooltip": "Une valeur plus élevée fait suivre l'image à l'invite de façon plus précise."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "masque",
+        "tooltip": "Si omis, la modification s'applique à l'image entière."
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "moderation": {
+        "name": "modération",
+        "tooltip": "Paramètres de modération"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "modération_du_contenu_de_l'invite"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "modération_de_l'entrée_visuelle"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "modération_de_la_sortie_visuelle"
+      },
+      "negative_prompt": {
+        "name": "invite négative"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Instruction pour modifier l'image"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "steps": {
+        "name": "étapes"
+      },
+      "structured_prompt": {
+        "name": "invite structurée",
+        "tooltip": "Une chaîne contenant l'invite d'édition structurée au format JSON. Utilisez ceci à la place de l'invite habituelle pour un contrôle précis et programmatique."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "invite structurée",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Générer une vidéo en utilisant l'invite et les première et dernière images.",
     "display_name": "ByteDance Première-Dernière Image vers Vidéo",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "première_image",
         "tooltip": "Première image à utiliser pour la vidéo."
+      },
+      "generate_audio": {
+        "name": "générer_audio",
+        "tooltip": "Ce paramètre est ignoré pour tout modèle sauf seedance-1-5-pro."
       },
       "last_frame": {
         "name": "dernière_image",
@@ -527,6 +593,10 @@
         "name": "durée",
         "tooltip": "La durée de la vidéo en sortie en secondes."
       },
+      "generate_audio": {
+        "name": "générer_audio",
+        "tooltip": "Ce paramètre est ignoré pour tout modèle sauf seedance-1-5-pro."
+      },
       "image": {
         "name": "image",
         "tooltip": "Première image à utiliser pour la vidéo."
@@ -633,6 +703,10 @@
       "duration": {
         "name": "duration",
         "tooltip": "La durée de la vidéo de sortie en secondes."
+      },
+      "generate_audio": {
+        "name": "générer_audio",
+        "tooltip": "Ce paramètre est ignoré pour tout modèle sauf seedance-1-5-pro."
       },
       "model": {
         "name": "model"
@@ -2019,7 +2093,9 @@
       "choice": {
         "name": "choix"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -6881,6 +6957,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "description": "Appliquez une action d’animation spécifique à un personnage déjà riggé.",
+    "display_name": "Meshy : Animer le modèle",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "Visitez https://docs.meshy.ai/en/api/animation-library pour la liste des valeurs disponibles."
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy : Image vers modèle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Spécifiez le mode de pose pour le modèle généré."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Si défini sur faux, retourne un maillage triangulaire non traité."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Détermine si des textures sont générées. Si défini sur faux, la phase de texturage est ignorée et un maillage sans textures est retourné."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy : Multi-image vers modèle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Spécifiez le mode de pose pour le modèle généré."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Le seed contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit le seed."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Si défini sur faux, retourne un maillage triangulaire non traité."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Détermine si des textures sont générées. Si défini sur faux, la phase de texturage est ignorée et un maillage sans textures est retourné."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "Affinez un modèle brouillon précédemment créé.",
+    "display_name": "Meshy : Affiner le modèle brouillon",
+    "inputs": {
+      "enable_pbr": {
+        "name": "activer_pbr",
+        "tooltip": "Générer des cartes PBR (métallique, rugosité, normale) en plus de la couleur de base. Remarque : cela doit être désactivé lors de l’utilisation du style Sculpture, car le style Sculpture génère ses propres cartes PBR."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "texture_image": {
+        "name": "image_texture",
+        "tooltip": "Seul l’un de 'texture_image' ou 'texture_prompt' peut être utilisé à la fois."
+      },
+      "texture_prompt": {
+        "name": "invite_texture",
+        "tooltip": "Fournissez une invite textuelle pour guider le processus de texturage. Maximum 600 caractères. Ne peut pas être utilisé en même temps que 'texture_image'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "Fournit un personnage riggé dans des formats standards. L’auto-rigging n’est actuellement pas adapté aux maillages non texturés, aux assets non humanoïdes ou aux assets humanoïdes avec une structure de membres et de corps peu claire.",
+    "display_name": "Meshy : Rig du modèle",
+    "inputs": {
+      "height_meters": {
+        "name": "hauteur_mètres",
+        "tooltip": "La hauteur approximative du modèle de personnage en mètres. Cela aide à l’échelle et à la précision du rigging."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "image_texture",
+        "tooltip": "L’image de texture couleur de base UV-dépliée du modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy : Texte vers modèle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "pose_mode": {
+        "name": "mode_pose",
+        "tooltip": "Spécifiez le mode de pose pour le modèle généré."
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
+      },
+      "should_remesh": {
+        "name": "doit_remesher",
+        "tooltip": "Si désactivé, retourne un maillage triangulaire non traité."
+      },
+      "should_remesh_target_polycount": {
+        "name": "cible_polygones"
+      },
+      "should_remesh_topology": {
+        "name": "topologie"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "mode_symétrie"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy : Modèle de texture",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "activer_uv_original",
+        "tooltip": "Utiliser l’UV original du modèle au lieu de générer de nouveaux UV. Lorsque cette option est activée, Meshy préserve les textures existantes du modèle importé. Si le modèle ne possède pas d’UV original, la qualité du résultat peut être moins bonne."
+      },
+      "image_style": {
+        "name": "style_image",
+        "tooltip": "Une image 2D pour guider le processus de texturisation. Ne peut pas être utilisée en même temps que « text_style_prompt »."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "text_style_prompt": {
+        "name": "invite_style_texte",
+        "tooltip": "Décrivez le style de texture souhaité pour l’objet en utilisant du texte. 600 caractères maximum. Ne peut pas être utilisé en même temps que « image_style »."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "description": "Génère des vidéos à partir d'un prompt, avec option d'image de départ utilisant le nouveau modèle MiniMax Hailuo-02.",
     "display_name": "MiniMax Hailuo Vidéo",
@@ -10923,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Redimensionner une image ou un mask en utilisant différentes méthodes de mise à l'échelle.",
     "display_name": "Redimensionner image/masque",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Sélectionnez la méthode de redimensionnement : par dimensions exactes, facteur d'échelle, correspondance avec une autre image, etc."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "rogner"
+      },
+      "resize_type_height": {
+        "name": "hauteur"
+      },
+      "resize_type_width": {
+        "name": "largeur"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Algorithme d'interpolation. 'area' est optimal pour la réduction, 'lanczos' pour l'agrandissement, 'nearest-exact' pour le pixel art."
       }
     },
     "outputs": {
@@ -13164,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "redimensionnement automatique des images"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      },
+      "image3": {
+        "name": "image3"
+      },
+      "image_encoder": {
+        "name": "encodeur d'image"
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Texte en minuscules",
     "inputs": {
@@ -15335,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "sortie encodeur audio 1"
+      },
+      "audio_scale": {
+        "name": "échelle audio"
+      },
+      "clip_vision_output": {
+        "name": "sortie vision clip"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_patch": {
+        "name": "correctif du modèle"
+      },
+      "motion_frame_count": {
+        "name": "nombre d’images de mouvement",
+        "tooltip": "Nombre d’images précédentes à utiliser comme contexte de mouvement."
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "previous_frames": {
+        "name": "images précédentes"
+      },
+      "start_image": {
+        "name": "image de départ"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modèle",
+        "tooltip": null
+      },
+      "1": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "image rognée",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -15847,6 +16313,43 @@
       },
       "3": {
         "name": "latent_coupé",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Upscaler vidéo rapide et de haute qualité qui augmente la résolution et restaure la clarté des séquences basse résolution ou floues.",
+    "display_name": "FlashVSR Upscale Vidéo",
+    "inputs": {
+      "target_resolution": {
+        "name": "résolution cible"
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Augmentez la résolution et la qualité de l'image, en upscalant les photos en 4K ou 8K pour des résultats nets et détaillés.",
+    "display_name": "WaveSpeed Upscale Image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "target_resolution": {
+        "name": "résolution cible"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

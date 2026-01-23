@@ -57,7 +57,7 @@
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="$t('g.learnMore')"
-          @click.stop="props.openNodeHelp(nodeDef)"
+          @click.stop="onHelpClick"
         >
           <i class="pi pi-question size-3.5" />
         </Button>
@@ -85,6 +85,7 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -111,6 +112,13 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 
 const toggleBookmark = async () => {
   await nodeBookmarkStore.toggleBookmark(nodeDef.value)
+}
+
+const onHelpClick = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'node_library_help_button'
+  })
+  props.openNodeHelp(nodeDef.value)
 }
 const editBlueprint = async () => {
   if (!props.node.data)

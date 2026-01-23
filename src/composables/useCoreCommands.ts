@@ -1234,9 +1234,12 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
-      label: 'toggle linear mode',
-      function: () => {
+      label: 'Toggle Simple Mode',
+      function: (metadata?: Record<string, unknown>) => {
+        const source =
+          typeof metadata?.source === 'string' ? metadata.source : 'keybind'
         const newMode = !canvasStore.linearMode
+        if (newMode) useTelemetry()?.trackEnterLinear({ source })
         app.rootGraph.extra.linearMode = newMode
         workflowStore.activeWorkflow?.changeTracker?.checkState()
         canvasStore.linearMode = newMode

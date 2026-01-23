@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "display_name": "Bria FIBO Image Edit",
+    "description": "Edit images using Bria latest model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Instruction to edit image"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "A string containing the structured edit prompt in JSON format. Use this instead of usual prompt for precise, programmatic control."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "Higher value makes the image follow the prompt more closely."
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "If omitted, the edit applies to the entire image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "prompt_content_moderation"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "visual_input_moderation"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "visual_output_moderation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "display_name": "ByteDance First-Last-Frame to Video",
     "description": "Generate video using prompt and first and last frames.",
@@ -370,6 +432,10 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -547,6 +613,10 @@
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -649,6 +719,10 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -2021,7 +2095,8 @@
       "choice": {
         "name": "choice"
       },
-      "option0": {}
+      "index": {},
+      "option1": {}
     },
     "outputs": {
       "0": {
@@ -6891,6 +6966,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "display_name": "Meshy: Animate Model",
+    "description": "Apply a specific animation action to a previously rigged character.",
+    "inputs": {
+      "rig_task_id": {
+        "name": "rig_task_id"
+      },
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "Visit https://docs.meshy.ai/en/api/animation-library for a list of available values."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: Image to Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "When set to false, returns an unprocessed triangular mesh."
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Determines whether textures are generated. Setting it to false skips the texture phase and returns a mesh without textures."
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Specify the pose mode for the generated model."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: Multi-Image to Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "images": {
+        "name": "images"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "When set to false, returns an unprocessed triangular mesh."
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Determines whether textures are generated. Setting it to false skips the texture phase and returns a mesh without textures."
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Specify the pose mode for the generated model."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "display_name": "Meshy: Refine Draft Model",
+    "description": "Refine a previously created draft model.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "Generate PBR Maps (metallic, roughness, normal) in addition to the base color. Note: this should be set to false when using Sculpture style, as Sculpture style generates its own set of PBR maps."
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Provide a text prompt to guide the texturing process. Maximum 600 characters. Cannot be used at the same time as 'texture_image'."
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "Only one of 'texture_image' or 'texture_prompt' may be used at the same time."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "display_name": "Meshy: Rig Model",
+    "description": "Provides a rigged character in standard formats. Auto-rigging is currently not suitable for untextured meshes, non-humanoid assets, or humanoid assets with unclear limb and body structure.",
+    "inputs": {
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "The approximate height of the character model in meters. This aids in scaling and rigging accuracy."
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "The model's UV-unwrapped base color texture image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: Text to Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "style": {
+        "name": "style"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "When set to false, returns an unprocessed triangular mesh."
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Specify the pose mode for the generated model."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: Texture Model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "enable_original_uv": {
+        "name": "enable_original_uv",
+        "tooltip": "Use the original UV of the model instead of generating new UVs. When enabled, Meshy preserves existing textures from the uploaded model. If the model has no original UV, the quality of the output might not be as good."
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "text_style_prompt": {
+        "name": "text_style_prompt",
+        "tooltip": "Describe your desired texture style of the object using text. Maximum 600 characters.Maximum 600 characters. Cannot be used at the same time as 'image_style'."
+      },
+      "image_style": {
+        "name": "image_style",
+        "tooltip": "A 2d image to guide the texturing process. Can not be used at the same time with 'text_style_prompt'."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "display_name": "MiniMax Hailuo Video",
     "description": "Generates videos from prompt, with optional start frame using the new MiniMax Hailuo-02 model.",
@@ -9509,8 +9858,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "display_name": "OpenAI GPT Image 1",
-    "description": "Generates images synchronously via OpenAI's GPT Image 1 endpoint.",
+    "display_name": "OpenAI GPT Image 1.5",
+    "description": "Generates images synchronously via OpenAI's GPT Image endpoint.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -10932,18 +11281,27 @@
   },
   "ResizeImageMaskNode": {
     "display_name": "Resize Image/Mask",
+    "description": "Resize an image or mask using various scaling methods.",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Select how to resize: by exact dimensions, scale factor, matching another image, etc."
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Interpolation algorithm. 'area' is best for downscaling, 'lanczos' for upscaling, 'nearest-exact' for pixel art."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "crop"
+      },
+      "resize_type_height": {
+        "name": "height"
+      },
+      "resize_type_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -13183,6 +13541,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "auto_resize_images": {
+        "name": "auto_resize_images"
+      },
+      "image_encoder": {
+        "name": "image_encoder"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      },
+      "image3": {
+        "name": "image3"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Text to Lowercase",
     "inputs": {
@@ -15397,6 +15789,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "mode": {
+        "name": "mode"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "audio_encoder_output_1": {
+        "name": "audio_encoder_output_1"
+      },
+      "motion_frame_count": {
+        "name": "motion_frame_count",
+        "tooltip": "Number of previous frames to use as motion context."
+      },
+      "audio_scale": {
+        "name": "audio_scale"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "previous_frames": {
+        "name": "previous_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -15909,6 +16374,43 @@
       },
       "3": {
         "name": "trim_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "display_name": "FlashVSR Video Upscale",
+    "description": "Fast, high-quality video upscaler that boosts resolution and restores clarity for low-resolution or blurry footage.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "target_resolution": {
+        "name": "target_resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "display_name": "WaveSpeed Image Upscale",
+    "description": "Boost image resolution and quality, upscaling photos to 4K or 8K for sharp, detailed results.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "target_resolution": {
+        "name": "target_resolution"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Bria 최신 모델을 사용하여 이미지를 편집합니다",
+    "display_name": "Bria 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "guidance_scale": {
+        "name": "가이던스 스케일",
+        "tooltip": "값이 높을수록 프롬프트를 더 엄격하게 따릅니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "마스크",
+        "tooltip": "생략하면 전체 이미지에 편집이 적용됩니다."
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "모더레이션",
+        "tooltip": "모더레이션 설정"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "프롬프트 콘텐츠 모더레이션"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "비주얼 입력 모더레이션"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "비주얼 출력 모더레이션"
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 편집을 위한 지시문"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "steps": {
+        "name": "스텝"
+      },
+      "structured_prompt": {
+        "name": "구조화된 프롬프트",
+        "tooltip": "JSON 형식의 구조화된 편집 프롬프트 문자열입니다. 더 정확하고 프로그래밍적으로 제어하려면 일반 프롬프트 대신 사용하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "구조화된 프롬프트",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "프롬프트와 첫 번째 및 마지막 프레임을 사용하여 비디오를 생성합니다.",
     "display_name": "ByteDance 첫-마지막-프레임에서 비디오 생성",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "first_frame",
         "tooltip": "비디오에 사용될 첫 번째 프레임입니다."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "이 매개변수는 seedance-1-5-pro 모델을 제외한 모든 모델에서 무시됩니다."
       },
       "last_frame": {
         "name": "last_frame",
@@ -527,6 +593,10 @@
         "name": "지속 시간",
         "tooltip": "출력 비디오의 지속 시간(초)입니다."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "이 매개변수는 seedance-1-5-pro 모델을 제외한 모든 모델에서 무시됩니다."
+      },
       "image": {
         "name": "이미지",
         "tooltip": "비디오에 사용할 첫 번째 프레임입니다."
@@ -633,6 +703,10 @@
       "duration": {
         "name": "duration",
         "tooltip": "출력 비디오의 지속 시간(초)입니다."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "이 매개변수는 seedance-1-5-pro 모델을 제외한 모든 모델에서 무시됩니다."
       },
       "model": {
         "name": "model"
@@ -2019,7 +2093,9 @@
       "choice": {
         "name": "선택"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -6881,6 +6957,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "description": "이전에 리깅된 캐릭터에 특정 애니메이션 동작을 적용합니다.",
+    "display_name": "Meshy: 모델 애니메이션",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "사용 가능한 값 목록은 https://docs.meshy.ai/en/api/animation-library 를 방문하세요."
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: 이미지 → 모델",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "생성된 모델의 포즈 모드를 지정합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "거짓으로 설정하면, 가공되지 않은 삼각형 메시를 반환합니다."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "텍스처 생성 여부를 결정합니다. 거짓으로 설정하면 텍스처 단계가 생략되고 텍스처 없는 메시가 반환됩니다."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: 다중 이미지 → 모델",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "생성된 모델의 포즈 모드를 지정합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "거짓으로 설정하면, 가공되지 않은 삼각형 메시를 반환합니다."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "텍스처 생성 여부를 결정합니다. 거짓으로 설정하면 텍스처 단계가 생략되고 텍스처 없는 메시가 반환됩니다."
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "이전에 생성된 초안 모델을 다듬습니다.",
+    "display_name": "Meshy: 모델 다듬기",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "기본 색상 외에 PBR 맵(금속, 거칠기, 노멀)을 생성합니다. 참고: Sculpture 스타일을 사용할 때는 Sculpture 스타일이 자체 PBR 맵을 생성하므로 false로 설정해야 합니다."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "'texture_image' 또는 'texture_prompt' 중 하나만 동시에 사용할 수 있습니다."
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "텍스처링 과정을 안내할 텍스트 프롬프트를 입력하세요. 최대 600자. 'texture_image'와 동시에 사용할 수 없습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "표준 포맷으로 리깅된 캐릭터를 제공합니다. 자동 리깅은 텍스처가 없는 메시, 비휴머노이드 자산, 또는 팔다리와 신체 구조가 불분명한 휴머노이드 자산에는 적합하지 않습니다.",
+    "display_name": "Meshy: 모델 리깅",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "캐릭터 모델의 대략적인 높이(미터 단위)입니다. 스케일링과 리깅 정확도에 도움이 됩니다."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "모델의 UV 언랩된 기본 색상 텍스처 이미지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: 텍스트 → 모델",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "생성된 모델의 포즈 모드를 지정합니다."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "false로 설정하면 가공되지 않은 삼각형 메시를 반환합니다."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: 텍스처 모델",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "원본 UV 사용",
+        "tooltip": "새로운 UV를 생성하는 대신 모델의 원본 UV를 사용합니다. 활성화하면 Meshy는 업로드된 모델의 기존 텍스처를 보존합니다. 모델에 원본 UV가 없을 경우 출력 품질이 저하될 수 있습니다."
+      },
+      "image_style": {
+        "name": "이미지 스타일",
+        "tooltip": "텍스처링 과정을 안내할 2D 이미지를 사용합니다. 'text_style_prompt'와 동시에 사용할 수 없습니다."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "text_style_prompt": {
+        "name": "텍스트 스타일 프롬프트",
+        "tooltip": "오브젝트의 원하는 텍스처 스타일을 텍스트로 설명하세요. 최대 600자까지 입력할 수 있습니다. 'image_style'과 동시에 사용할 수 없습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "description": "새로운 MiniMax Hailuo-02 모델을 사용하여 프롬프트로 비디오를 생성하며, 선택적으로 시작 프레임을 사용할 수 있습니다.",
     "display_name": "MiniMax Hailuo 비디오",
@@ -10923,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "여러 가지 스케일링 방법을 사용하여 이미지 또는 mask를 리사이즈합니다.",
     "display_name": "이미지/마스크 크기 조정",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "리사이즈 방법을 선택하세요: 정확한 크기, 배율, 다른 이미지와 일치 등."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "crop"
+      },
+      "resize_type_height": {
+        "name": "height"
+      },
+      "resize_type_width": {
+        "name": "width"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "보간 알고리즘입니다. 'area'는 축소에, 'lanczos'는 확대에, 'nearest-exact'는 픽셀 아트에 적합합니다."
       }
     },
     "outputs": {
@@ -13164,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "이미지 자동 크기 조정"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "이미지1"
+      },
+      "image2": {
+        "name": "이미지2"
+      },
+      "image3": {
+        "name": "이미지3"
+      },
+      "image_encoder": {
+        "name": "이미지 인코더"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "텍스트 소문자 변환",
     "inputs": {
@@ -15335,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "audio_encoder_output_1"
+      },
+      "audio_scale": {
+        "name": "audio_scale"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "motion_frame_count": {
+        "name": "motion_frame_count",
+        "tooltip": "이전 프레임 수를 모션 컨텍스트로 사용합니다."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "previous_frames": {
+        "name": "previous_frames"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -15847,6 +16313,43 @@
       },
       "3": {
         "name": "잘린 잠재 비디오",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "저해상도 또는 흐릿한 영상의 해상도를 높이고 선명도를 복원하는 빠르고 고품질의 비디오 업스케일러입니다.",
+    "display_name": "FlashVSR 비디오 업스케일",
+    "inputs": {
+      "target_resolution": {
+        "name": "목표 해상도"
+      },
+      "video": {
+        "name": "비디오"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "이미지 해상도와 품질을 높여 사진을 4K 또는 8K로 업스케일하여 선명하고 디테일한 결과를 제공합니다.",
+    "display_name": "WaveSpeed 이미지 업스케일",
+    "inputs": {
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "목표 해상도"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

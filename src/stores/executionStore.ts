@@ -396,10 +396,8 @@ export const useExecutionStore = defineStore('execution', () => {
         error: e.detail.exception_message
       })
     }
-    const pid = e.detail?.prompt_id
-    // Clear initialization for errored prompt if present
-    if (e.detail?.prompt_id) clearInitializationByPromptId(e.detail.prompt_id)
-    resetExecutionState(pid)
+    clearInitializationByPromptId(e.detail.prompt_id)
+    resetExecutionState(e.detail.prompt_id)
   }
 
   /**
@@ -424,6 +422,18 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!initializingPromptIds.value.has(promptId)) return
     const next = new Set(initializingPromptIds.value)
     next.delete(promptId)
+    initializingPromptIds.value = next
+  }
+
+  function clearInitializationByPromptIds(promptIds: string[]) {
+    if (!promptIds.length) return
+    const current = initializingPromptIds.value
+    const toRemove = promptIds.filter((id) => current.has(id))
+    if (!toRemove.length) return
+    const next = new Set(current)
+    for (const id of toRemove) {
+      next.delete(id)
+    }
     initializingPromptIds.value = next
   }
 
@@ -652,6 +662,8 @@ export const useExecutionStore = defineStore('execution', () => {
     runningWorkflowCount,
     initializingPromptIds,
     isPromptInitializing,
+    clearInitializationByPromptId,
+    clearInitializationByPromptIds,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,

@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Bria'nın en son modeliyle görüntüleri düzenleyin",
+    "display_name": "Bria Görüntü Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "guidance_scale": {
+        "name": "yönlendirme_ölçeği",
+        "tooltip": "Daha yüksek değer, görüntünün isteme daha yakın olmasını sağlar."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Atlanırsa, düzenleme tüm görüntüye uygulanır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "denetleme",
+        "tooltip": "Denetleme ayarları"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "istem_içeriği_denetleme"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "görsel_girdi_denetleme"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "görsel_çıktı_denetleme"
+      },
+      "negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntüyü düzenlemek için talimat"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "steps": {
+        "name": "adımlar"
+      },
+      "structured_prompt": {
+        "name": "yapılandırılmış_istem",
+        "tooltip": "JSON formatında yapılandırılmış düzenleme istemi içeren bir dize. Hassas ve programatik kontrol için normal istem yerine bunu kullanın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "İlk ve son kareleri kullanarak video oluşturun.",
     "display_name": "ByteDance İlk-Son-Kare'den Videoya",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "ilk_kare",
         "tooltip": "Video için kullanılacak ilk kare."
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
       },
       "last_frame": {
         "name": "son_kare",
@@ -527,6 +593,10 @@
         "name": "süre",
         "tooltip": "Oluşturulan videonun saniye cinsinden süresi."
       },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
+      },
       "image": {
         "name": "görüntü",
         "tooltip": "Video için kullanılacak ilk kare."
@@ -633,6 +703,10 @@
       "duration": {
         "name": "süre",
         "tooltip": "Çıktı videosunun saniye cinsinden süresi."
+      },
+      "generate_audio": {
+        "name": "ses_oluştur",
+        "tooltip": "Bu parametre, seedance-1-5-pro modeli dışında tüm modeller için yok sayılır."
       },
       "model": {
         "name": "model"
@@ -2019,7 +2093,9 @@
       "choice": {
         "name": "seçim"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -6881,6 +6957,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "description": "Daha önce rig işlemi uygulanmış bir karaktere belirli bir animasyon hareketi uygula.",
+    "display_name": "Meshy: Modeli Canlandır",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "Mevcut değerlerin listesi için https://docs.meshy.ai/en/api/animation-library adresini ziyaret edin."
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy: Görüntüden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Oluşturulan model için poz modunu belirtin."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Yanlış olarak ayarlanırsa, işlenmemiş üçgen ağ döndürülür."
+      },
+      "should_remesh_target_polycount": {
+        "name": "hedef_poligon_sayısı"
+      },
+      "should_remesh_topology": {
+        "name": "topoloji"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Doku oluşturulup oluşturulmayacağını belirler. Yanlış olarak ayarlanırsa doku aşaması atlanır ve dokusuz bir ağ döndürülür."
+      },
+      "should_texture_enable_pbr": {
+        "name": "pbr_aktif_et"
+      },
+      "should_texture_texture_prompt": {
+        "name": "doku_isteği"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy: Çoklu Görüntüden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Oluşturulan model için poz modunu belirtin."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Yanlış olarak ayarlanırsa, işlenmemiş üçgen ağ döndürülür."
+      },
+      "should_remesh_target_polycount": {
+        "name": "hedef_poligon_sayısı"
+      },
+      "should_remesh_topology": {
+        "name": "topoloji"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "Doku oluşturulup oluşturulmayacağını belirler. Yanlış olarak ayarlanırsa doku aşaması atlanır ve dokusuz bir ağ döndürülür."
+      },
+      "should_texture_enable_pbr": {
+        "name": "pbr_aktif_et"
+      },
+      "should_texture_texture_prompt": {
+        "name": "doku_isteği"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "Önceden oluşturulmuş bir taslak modeli iyileştirir.",
+    "display_name": "Meshy: Taslak Modeli İyileştir",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "Temel renge ek olarak PBR Haritaları (metalik, pürüzlülük, normal) oluşturur. Not: Heykel tarzı kullanıldığında bu seçenek kapalı olmalıdır, çünkü Heykel tarzı kendi PBR haritalarını üretir."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "'texture_image' veya 'texture_prompt' seçeneklerinden yalnızca biri aynı anda kullanılabilir."
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Kaplama sürecini yönlendirmek için bir metin istemi girin. Maksimum 600 karakter. 'texture_image' ile aynı anda kullanılamaz."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "Standart formatlarda riglenmiş bir karakter sağlar. Otomatik rigleme, şu anda dokusuz meshler, insan olmayan varlıklar veya uzuv ve vücut yapısı belirsiz olan insan benzeri varlıklar için uygun değildir.",
+    "display_name": "Meshy: Modeli Rigle",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "Karakter modelinin yaklaşık yüksekliği (metre cinsinden). Ölçekleme ve rigleme doğruluğu için yardımcı olur."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "Modelin UV-unwrap edilmiş temel renk doku görseli."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy: Metinden Modele",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "Oluşturulan model için poz modu belirtin."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, nodun tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "Kapalı olarak ayarlanırsa, işlenmemiş üçgen mesh döndürülür."
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy: Doku Modeli",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "orijinal UV'yi etkinleştir",
+        "tooltip": "Modelin yeni UV'leri oluşturmak yerine orijinal UV'sini kullan. Etkinleştirildiğinde, Meshy yüklenen modeldeki mevcut dokuları korur. Modelin orijinal UV'si yoksa, çıktı kalitesi o kadar iyi olmayabilir."
+      },
+      "image_style": {
+        "name": "görsel stil",
+        "tooltip": "Dokulandırma sürecine rehberlik edecek 2D bir görsel. 'text_style_prompt' ile aynı anda kullanılamaz."
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pbr": {
+        "name": "pbr"
+      },
+      "text_style_prompt": {
+        "name": "metin stil istemi",
+        "tooltip": "Nesnenin istediğiniz doku stilini metinle tanımlayın. En fazla 600 karakter. 'image_style' ile aynı anda kullanılamaz."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "description": "Yeni MiniMax Hailuo-02 modelini kullanarak prompt'tan video oluşturur, isteğe bağlı başlangıç karesi ile.",
     "display_name": "MiniMax Hailuo Video",
@@ -10923,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Bir görüntüyü veya maskeyi çeşitli ölçeklendirme yöntemleriyle yeniden boyutlandırın.",
     "display_name": "Görsel/Maske Yeniden Boyutlandır",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Yeniden boyutlandırma yöntemini seçin: tam boyutlar, ölçek faktörü, başka bir görüntüyle eşleştirme vb."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "kırp"
+      },
+      "resize_type_height": {
+        "name": "yükseklik"
+      },
+      "resize_type_width": {
+        "name": "genişlik"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Enterpolasyon algoritması. 'area' küçültme için en iyisidir, 'lanczos' büyütme için uygundur, 'nearest-exact' piksel sanatı için idealdir."
       }
     },
     "outputs": {
@@ -13164,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "görüntüleri_otomatik_yeniden_boyutlandır"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "görüntü1"
+      },
+      "image2": {
+        "name": "görüntü2"
+      },
+      "image3": {
+        "name": "görüntü3"
+      },
+      "image_encoder": {
+        "name": "görüntü_kodlayıcı"
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Metni Küçük Harfe Çevir",
     "inputs": {
@@ -15335,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "audio_encoder_output_1"
+      },
+      "audio_scale": {
+        "name": "audio_scale"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "mode": {
+        "name": "mod"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "motion_frame_count": {
+        "name": "hareket_kare_sayısı",
+        "tooltip": "Hareket bağlamı olarak kullanılacak önceki karelerin sayısı."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "previous_frames": {
+        "name": "önceki_kareler"
+      },
+      "start_image": {
+        "name": "başlangıç_görseli"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": null
+      },
+      "1": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "kırpılmış_görsel",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -15847,6 +16313,43 @@
       },
       "3": {
         "name": "gizliyi_kırp",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Düşük çözünürlüklü veya bulanık videolar için hızlı, yüksek kaliteli video yükseltici; çözünürlüğü artırır ve netliği geri kazandırır.",
+    "display_name": "FlashVSR Video Yükseltme",
+    "inputs": {
+      "target_resolution": {
+        "name": "hedef_çözünürlük"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Görüntü çözünürlüğünü ve kalitesini artırın, fotoğrafları keskin ve ayrıntılı sonuçlar için 4K veya 8K'ya yükseltin.",
+    "display_name": "WaveSpeed Görüntü Yükseltme",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "hedef_çözünürlük"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

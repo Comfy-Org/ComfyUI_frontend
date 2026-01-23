@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Briaの最新モデルを使って画像を編集します",
+    "display_name": "Bria画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後コントロール"
+      },
+      "guidance_scale": {
+        "name": "ガイダンススケール",
+        "tooltip": "値が高いほどプロンプトに忠実な画像になります。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "mask": {
+        "name": "マスク",
+        "tooltip": "省略した場合、編集は画像全体に適用されます。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "プロンプト内容モデレーション"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "入力画像モデレーション"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "出力画像モデレーション"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像編集の指示"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "steps": {
+        "name": "ステップ数"
+      },
+      "structured_prompt": {
+        "name": "構造化プロンプト",
+        "tooltip": "JSON形式の構造化編集プロンプトを含む文字列。より正確でプログラム的な制御が必要な場合は通常のプロンプトの代わりに使用してください。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "構造化プロンプト",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "プロンプトと最初・最後のフレームを使用して動画を生成します。",
     "display_name": "ByteDance 最初-最後フレームから動画生成",
@@ -350,6 +412,10 @@
       "first_frame": {
         "name": "最初のフレーム",
         "tooltip": "動画に使用する最初のフレーム。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
       },
       "last_frame": {
         "name": "最後のフレーム",
@@ -527,6 +593,10 @@
         "name": "duration",
         "tooltip": "出力動画の長さ（秒単位）。"
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
+      },
       "image": {
         "name": "image",
         "tooltip": "動画の最初のフレームとして使用する画像。"
@@ -633,6 +703,10 @@
       "duration": {
         "name": "長さ",
         "tooltip": "出力動画の長さ（秒単位）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "このパラメータは、seedance-1-5-pro 以外のモデルでは無視されます。"
       },
       "model": {
         "name": "モデル"
@@ -2019,7 +2093,9 @@
       "choice": {
         "name": "選択"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -6881,6 +6957,280 @@
       }
     }
   },
+  "MeshyAnimateModelNode": {
+    "description": "事前にリギングされたキャラクターに特定のアニメーションアクションを適用します。",
+    "display_name": "Meshy：アニメートモデル",
+    "inputs": {
+      "action_id": {
+        "name": "action_id",
+        "tooltip": "利用可能な値の一覧は https://docs.meshy.ai/en/api/animation-library をご覧ください。"
+      },
+      "rig_task_id": {
+        "name": "rig_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyImageToModelNode": {
+    "display_name": "Meshy：画像からモデルへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "生成されるモデルのポーズモードを指定します。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "falseに設定すると、未処理の三角メッシュが返されます。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "テクスチャを生成するかどうかを決定します。falseに設定するとテクスチャ工程をスキップし、テクスチャなしのメッシュが返されます。"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyMultiImageToModelNode": {
+    "display_name": "Meshy：複数画像からモデルへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "images": {
+        "name": "images"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "生成されるモデルのポーズモードを指定します。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "falseに設定すると、未処理の三角メッシュが返されます。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "should_texture": {
+        "name": "should_texture",
+        "tooltip": "テクスチャを生成するかどうかを決定します。falseに設定するとテクスチャ工程をスキップし、テクスチャなしのメッシュが返されます。"
+      },
+      "should_texture_enable_pbr": {
+        "name": "enable_pbr"
+      },
+      "should_texture_texture_prompt": {
+        "name": "texture_prompt"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRefineNode": {
+    "description": "以前に作成したドラフトモデルをリファインします。",
+    "display_name": "Meshy：ドラフトモデルのリファイン",
+    "inputs": {
+      "enable_pbr": {
+        "name": "enable_pbr",
+        "tooltip": "ベースカラーに加えてPBRマップ（金属度、粗さ、法線）を生成します。注意：Sculptureスタイルを使用する場合はfalseに設定してください。Sculptureスタイルは独自のPBRマップを生成します。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "model"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "「texture_image」と「texture_prompt」は同時に使用できません。"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "テクスチャリングプロセスをガイドするテキストプロンプトを入力してください。最大600文字。「texture_image」と同時に使用することはできません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyRigModelNode": {
+    "description": "標準フォーマットでリギング済みキャラクターを提供します。自動リギングは、テクスチャのないメッシュ、非ヒューマノイドアセット、または手足や体の構造が不明瞭なヒューマノイドアセットには適していません。",
+    "display_name": "Meshy：モデルのリギング",
+    "inputs": {
+      "height_meters": {
+        "name": "height_meters",
+        "tooltip": "キャラクターモデルのおおよその高さ（メートル単位）。スケーリングやリギングの精度向上に役立ちます。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "texture_image": {
+        "name": "texture_image",
+        "tooltip": "モデルのUV展開されたベースカラーテクスチャ画像です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "rig_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextToModelNode": {
+    "display_name": "Meshy：テキストからモデル生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "pose_mode": {
+        "name": "pose_mode",
+        "tooltip": "生成されるモデルのポーズモードを指定します。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      },
+      "should_remesh": {
+        "name": "should_remesh",
+        "tooltip": "falseに設定すると、未処理の三角メッシュを返します。"
+      },
+      "should_remesh_target_polycount": {
+        "name": "target_polycount"
+      },
+      "should_remesh_topology": {
+        "name": "topology"
+      },
+      "style": {
+        "name": "style"
+      },
+      "symmetry_mode": {
+        "name": "symmetry_mode"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
+  "MeshyTextureNode": {
+    "display_name": "Meshy：テクスチャモデル",
+    "inputs": {
+      "enable_original_uv": {
+        "name": "元のUVを使用",
+        "tooltip": "新しいUVを生成する代わりにモデルの元のUVを使用します。有効にすると、Meshyはアップロードされたモデルの既存のテクスチャを保持します。モデルに元のUVがない場合、出力の品質が低下する可能性があります。"
+      },
+      "image_style": {
+        "name": "イメージスタイル",
+        "tooltip": "テクスチャリングプロセスをガイドする2D画像です。'text_style_prompt'と同時に使用することはできません。"
+      },
+      "meshy_task_id": {
+        "name": "meshy_task_id"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "pbr": {
+        "name": "PBR"
+      },
+      "text_style_prompt": {
+        "name": "テキストスタイルプロンプト",
+        "tooltip": "オブジェクトの希望するテクスチャスタイルをテキストで説明してください。最大600文字。'image_style'と同時に使用することはできません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "meshy_task_id",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuoVideoNode": {
     "description": "新しいMiniMax Hailuo-02モデルを使用して、プロンプトから動画を生成します（開始フレームはオプション）。",
     "display_name": "MiniMax Hailuo 動画",
@@ -10923,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "さまざまなスケーリング方法で画像またはマスクをリサイズします。",
     "display_name": "画像/マスクのリサイズ",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "リサイズ方法を選択します：正確な寸法、スケール係数、他の画像に合わせるなど。"
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "切り抜き"
+      },
+      "resize_type_height": {
+        "name": "高さ"
+      },
+      "resize_type_width": {
+        "name": "幅"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "補間アルゴリズム。「area」は縮小に最適、「lanczos」は拡大に最適、「nearest-exact」はドット絵に最適です。"
       }
     },
     "outputs": {
@@ -13164,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "画像自動リサイズ"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "画像1"
+      },
+      "image2": {
+        "name": "画像2"
+      },
+      "image3": {
+        "name": "画像3"
+      },
+      "image_encoder": {
+        "name": "画像エンコーダ"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "テキストを小文字に変換",
     "inputs": {
@@ -15335,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "オーディオエンコーダ出力1"
+      },
+      "audio_scale": {
+        "name": "オーディオスケール"
+      },
+      "clip_vision_output": {
+        "name": "clipビジョン出力"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_patch": {
+        "name": "モデルパッチ"
+      },
+      "motion_frame_count": {
+        "name": "モーションフレーム数",
+        "tooltip": "動きのコンテキストとして使用する前のフレーム数。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "previous_frames": {
+        "name": "前のフレーム"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "ネガティブ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "潜在",
+        "tooltip": null
+      },
+      "4": {
+        "name": "トリム画像",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -15847,6 +16313,43 @@
       },
       "3": {
         "name": "トリムlatent",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "低解像度やぼやけた映像の解像度を向上させ、鮮明さを復元する高速・高品質なビデオアップスケーラーです。",
+    "display_name": "FlashVSRビデオ高解像度化",
+    "inputs": {
+      "target_resolution": {
+        "name": "目標解像度"
+      },
+      "video": {
+        "name": "ビデオ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "画像の解像度と品質を向上させ、写真を4Kや8Kにアップスケールしてシャープで詳細な結果を得られます。",
+    "display_name": "WaveSpeed画像高解像度化",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "目標解像度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

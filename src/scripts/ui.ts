@@ -1,6 +1,6 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus, type TaskItem } from '@/schemas/apiSchema'
+import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -32,6 +32,17 @@ type Props = {
 }
 
 type Children = Element[] | Element | string | string[]
+
+/**
+ * @deprecated Legacy queue item structure from old history API.
+ * Will be removed when ComfyList is migrated to Jobs API.
+ */
+interface LegacyQueueItem {
+  prompt: [unknown, string, unknown, { extra_pnginfo: { workflow: unknown } }]
+  outputs?: Record<string, unknown>
+  meta?: Record<string, { display_node?: string }>
+  remove?: { name: string; cb: () => Promise<void> | void }
+}
 
 type ElementType<K extends string> = K extends keyof HTMLElementTagNameMap
   ? HTMLElementTagNameMap[K]
@@ -259,29 +270,28 @@ class ComfyList {
         $el('div.comfy-list-items', [
           // @ts-expect-error fixme ts strict error
           ...(this.#reverse ? items[section].reverse() : items[section]).map(
-            (item: TaskItem) => {
+            (item: LegacyQueueItem) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
-              const removeAction =
-                'remove' in item
-                  ? item.remove
-                  : {
-                      name: 'Delete',
-                      cb: () => api.deleteItem(this.#type, item.prompt[1])
-                    }
+              const removeAction = item.remove ?? {
+                name: 'Delete',
+                cb: () => api.deleteItem(this.#type, item.prompt[1])
+              }
               return $el('div', { textContent: item.prompt[0] + ': ' }, [
                 $el('button', {
                   textContent: 'Load',
                   onclick: async () => {
                     await app.loadGraphData(
-                      // @ts-expect-error fixme ts strict error
-                      item.prompt[3].extra_pnginfo.workflow,
+                      item.prompt[3].extra_pnginfo.workflow as Parameters<
+                        typeof app.loadGraphData
+                      >[0],
                       true,
                       false
                     )
-                    if ('outputs' in item) {
+                    if ('outputs' in item && item.outputs) {
                       app.nodeOutputs = {}
                       for (const [key, value] of Object.entries(item.outputs)) {
                         const realKey = item['meta']?.[key]?.display_node ?? key
+                        // @ts-expect-error fixme ts strict error
                         app.nodeOutputs[realKey] = value
                       }
                     }

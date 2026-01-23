@@ -100,34 +100,24 @@
           v-if="isListView"
           :assets="displayAssets"
           :is-selected="isSelected"
+          :asset-type="activeTab"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
-        <VirtualGrid
+        <AssetsSidebarGridView
           v-else
-          :items="mediaAssetsWithKey"
-          :grid-style="{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            padding: '0 0.5rem',
-            gap: '0.5rem'
-          }"
+          :assets="displayAssets"
+          :is-selected="isSelected"
+          :asset-type="activeTab"
+          :show-output-count="shouldShowOutputCount"
+          :get-output-count="getOutputCount"
+          @select-asset="handleAssetSelect"
+          @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
-        >
-          <template #item="{ item }">
-            <MediaAssetCard
-              :asset="item"
-              :selected="isSelected(item.id)"
-              :show-output-count="shouldShowOutputCount(item)"
-              :output-count="getOutputCount(item)"
-              @click="handleAssetSelect(item)"
-              @context-menu="handleAssetContextMenu"
-              @zoom="handleZoomClick(item)"
-              @output-count-click="enterFolderView(item)"
-            />
-          </template>
-        </VirtualGrid>
+          @zoom="handleZoomClick"
+          @output-count-click="enterFolderView"
+        />
       </div>
     </template>
     <template #footer>
@@ -212,6 +202,7 @@
 
 <script setup lang="ts">
 import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
@@ -219,15 +210,14 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
@@ -240,15 +230,25 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { getJobDetail } from '@/services/jobOutputCache'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+interface JobOutputItem {
+  filename: string
+  subfolder: string
+  type: string
+}
+
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
+const { activeJobsCount } = storeToRefs(queueStore)
+const executionStore = useExecutionStore()
 const settingStore = useSettingStore()
 
 const activeTab = ref<'input' | 'output'>('output')
@@ -294,9 +294,6 @@ const formattedExecutionTime = computed(() => {
 })
 
 const queuedCount = computed(() => queueStore.pendingTasks.length)
-const activeJobsCount = computed(
-  () => queueStore.pendingTasks.length + queueStore.runningTasks.length
-)
 const activeJobsLabel = computed(() => {
   const count = activeJobsCount.value
   return t(
@@ -397,14 +394,14 @@ const showLoadingState = computed(
   () =>
     loading.value &&
     displayAssets.value.length === 0 &&
-    (!isListView.value || activeJobsCount.value === 0)
+    activeJobsCount.value === 0
 )
 
 const showEmptyState = computed(
   () =>
     !loading.value &&
     displayAssets.value.length === 0 &&
-    (!isListView.value || activeJobsCount.value === 0)
+    activeJobsCount.value === 0
 )
 
 watch(displayAssets, (newAssets) => {
@@ -446,14 +443,6 @@ const galleryItems = computed(() => {
   })
 })
 
-// Add key property for VirtualGrid
-const mediaAssetsWithKey = computed(() => {
-  return displayAssets.value.map((asset) => ({
-    ...asset,
-    key: asset.id
-  }))
-})
-
 const refreshAssets = async () => {
   await currentAssets.value.fetchMediaList()
   if (error.value) {
@@ -486,7 +475,45 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
 }
 
 function handleContextMenuHide() {
-  contextMenuAsset.value = null
+  // Delay clearing to allow command callbacks to emit before component unmounts
+  requestAnimationFrame(() => {
+    contextMenuAsset.value = null
+  })
+}
+
+const handleBulkDownload = (assets: AssetItem[]) => {
+  downloadMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleBulkDelete = async (assets: AssetItem[]) => {
+  await deleteMultipleAssets(assets)
+  clearSelection()
+}
+
+const handleClearQueue = async () => {
+  const pendingPromptIds = queueStore.pendingTasks
+    .map((task) => task.promptId)
+    .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+  await commandStore.execute('Comfy.ClearPendingTasks')
+
+  executionStore.clearInitializationByPromptIds(pendingPromptIds)
+}
+
+const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
+  await addMultipleToWorkflow(assets)
+  clearSelection()
+}
+
+const handleBulkOpenWorkflow = async (assets: AssetItem[]) => {
+  await openMultipleWorkflows(assets)
+  clearSelection()
+}
+
+const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
+  await exportMultipleWorkflows(assets)
+  clearSelection()
 }
 
 const handleZoomClick = (asset: AssetItem) => {
@@ -516,16 +543,16 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 }
 
-const enterFolderView = (asset: AssetItem) => {
+const enterFolderView = async (asset: AssetItem) => {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (!metadata) {
     console.warn('Invalid output asset metadata')
     return
   }
 
-  const { promptId, allOutputs, executionTimeInSeconds } = metadata
+  const { promptId, allOutputs, executionTimeInSeconds, outputCount } = metadata
 
-  if (!promptId || !Array.isArray(allOutputs) || allOutputs.length === 0) {
+  if (!promptId) {
     console.warn('Missing required folder view data')
     return
   }
@@ -533,7 +560,48 @@ const enterFolderView = (asset: AssetItem) => {
   folderPromptId.value = promptId
   folderExecutionTime.value = executionTimeInSeconds
 
-  folderAssets.value = allOutputs.map((output) => ({
+  // Determine which outputs to display
+  let outputsToDisplay = allOutputs ?? []
+
+  // If outputCount indicates more outputs than we have, fetch full outputs
+  const needsFullOutputs =
+    typeof outputCount === 'number' &&
+    outputCount > 1 &&
+    outputsToDisplay.length < outputCount
+
+  if (needsFullOutputs) {
+    try {
+      const jobDetail = await getJobDetail(promptId)
+      if (jobDetail?.outputs) {
+        // Convert job outputs to ResultItemImpl array
+        outputsToDisplay = Object.entries(jobDetail.outputs).flatMap(
+          ([nodeId, nodeOutputs]) =>
+            Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
+              (items as JobOutputItem[])
+                .map(
+                  (item) =>
+                    new ResultItemImpl({
+                      ...item,
+                      nodeId,
+                      mediaType
+                    })
+                )
+                .filter((r) => r.supportsPreview)
+            )
+        )
+      }
+    } catch (error) {
+      console.error('Failed to fetch job detail for folder view:', error)
+      outputsToDisplay = []
+    }
+  }
+
+  if (outputsToDisplay.length === 0) {
+    console.warn('No outputs available for folder view')
+    return
+  }
+
+  folderAssets.value = outputsToDisplay.map((output) => ({
     id: `${output.nodeId}-${output.filename}`,
     name: output.filename,
     size: 0,
@@ -604,35 +672,6 @@ const handleDownloadSelected = () => {
 const handleDeleteSelected = async () => {
   await deleteMultipleAssets(selectedAssets.value)
   clearSelection()
-}
-
-const handleBulkDownload = (assets: AssetItem[]) => {
-  downloadMultipleAssets(assets)
-  clearSelection()
-}
-
-const handleBulkDelete = async (assets: AssetItem[]) => {
-  await deleteMultipleAssets(assets)
-  clearSelection()
-}
-
-const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
-  await addMultipleToWorkflow(assets)
-  clearSelection()
-}
-
-const handleBulkOpenWorkflow = async (assets: AssetItem[]) => {
-  await openMultipleWorkflows(assets)
-  clearSelection()
-}
-
-const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
-  await exportMultipleWorkflows(assets)
-  clearSelection()
-}
-
-const handleClearQueue = async () => {
-  await commandStore.execute('Comfy.ClearPendingTasks')
 }
 
 const handleApproachEnd = useDebounceFn(async () => {

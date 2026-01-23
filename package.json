@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.38.1",
+  "version": "1.38.10",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -22,10 +22,8 @@
     "dev:no-vue": "cross-env DISABLE_VUE_PLUGINS=true nx serve",
     "dev": "nx serve",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
-    "format:check:no-cache": "prettier --check './**/*.{js,ts,tsx,vue,mts}'",
-    "format:check": "prettier --check './**/*.{js,ts,tsx,vue,mts}' --cache",
-    "format:no-cache": "prettier --write './**/*.{js,ts,tsx,vue,mts}' --list-different",
-    "format": "prettier --write './**/*.{js,ts,tsx,vue,mts}' --cache --list-different",
+    "format:check": "oxfmt --check",
+    "format": "oxfmt --write",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
@@ -63,14 +61,12 @@
     "@nx/vite": "catalog:",
     "@pinia/testing": "catalog:",
     "@playwright/test": "catalog:",
-    "@prettier/plugin-oxc": "catalog:",
     "@sentry/vite-plugin": "catalog:",
     "@storybook/addon-docs": "catalog:",
     "@storybook/addon-mcp": "catalog:",
     "@storybook/vue3": "catalog:",
     "@storybook/vue3-vite": "catalog:",
     "@tailwindcss/vite": "catalog:",
-    "@trivago/prettier-plugin-sort-imports": "catalog:",
     "@types/fs-extra": "catalog:",
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",
@@ -101,11 +97,11 @@
     "markdown-table": "catalog:",
     "mixpanel-browser": "catalog:",
     "nx": "catalog:",
+    "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "oxlint-tsgolint": "catalog:",
     "picocolors": "catalog:",
     "postcss-html": "catalog:",
-    "prettier": "catalog:",
     "pretty-bytes": "catalog:",
     "rollup-plugin-visualizer": "catalog:",
     "storybook": "catalog:",
@@ -173,6 +169,7 @@
     "firebase": "catalog:",
     "fuse.js": "^7.0.0",
     "glob": "^11.0.3",
+    "jsonata": "catalog:",
     "jsondiffpatch": "^0.6.0",
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
@@ -192,5 +189,10 @@
     "yjs": "catalog:",
     "zod": "catalog:",
     "zod-validation-error": "catalog:"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "^8.0.0-beta.8"
+    }
   }
 }

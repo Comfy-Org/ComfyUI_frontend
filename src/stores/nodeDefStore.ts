@@ -14,7 +14,8 @@ import type {
 import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,
-  ComfyOutputTypesSpec as ComfyOutputSpecV1
+  ComfyOutputTypesSpec as ComfyOutputSpecV1,
+  PriceBadge
 } from '@/schemas/nodeDefSchema'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -66,6 +67,12 @@ export class ComfyNodeDefImpl
    * Order of inputs for each category (required, optional, hidden)
    */
   readonly input_order?: Record<string, string[]>
+  /**
+   * Price badge definition for API nodes.
+   * Contains a JSONata expression to calculate pricing based on widget values
+   * and input connectivity.
+   */
+  readonly price_badge?: PriceBadge
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -134,6 +141,7 @@ export class ComfyNodeDefImpl
     this.output_name = obj.output_name
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
+    this.price_badge = obj.price_badge
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -299,9 +307,10 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
   const nodeDefs = computed(() => {
     const subgraphStore = useSubgraphStore()
+    // Blueprints first for discoverability in the node library sidebar
     return [
-      ...Object.values(nodeDefsByName.value),
-      ...subgraphStore.subgraphBlueprints
+      ...subgraphStore.subgraphBlueprints,
+      ...Object.values(nodeDefsByName.value)
     ]
   })
   const nodeDataTypes = computed(() => {

@@ -1,12 +1,18 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
+import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import type {
+  JobListItem,
+  JobStatus
+} from '@/platform/remote/comfyui/jobs/jobTypes'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { isElectron } from '@/utils/envUtil'
 
 const mockData = vi.hoisted(() => ({ isLoggedIn: false }))
@@ -36,7 +42,9 @@ function createWrapper() {
         sideToolbar: {
           queueProgressOverlay: {
             viewJobHistory: 'View job history',
-            expandCollapsedQueue: 'Expand collapsed queue'
+            expandCollapsedQueue: 'Expand collapsed queue',
+            activeJobsShort: '{count} active | {count} active',
+            clearQueueTooltip: 'Clear queue'
           }
         }
       }
@@ -50,13 +58,31 @@ function createWrapper() {
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
         CurrentUserButton: true,
-        LoginButton: true
+        LoginButton: true,
+        ContextMenu: {
+          name: 'ContextMenu',
+          props: ['model'],
+          template: '<div />'
+        }
       },
       directives: {
         tooltip: () => {}
       }
     }
   })
+}
+
+function createJob(id: string, status: JobStatus): JobListItem {
+  return {
+    id,
+    status,
+    create_time: 0,
+    priority: 0
+  }
+}
+
+function createTask(id: string, status: JobStatus): TaskItemImpl {
+  return new TaskItemImpl(createJob(id, status))
 }
 
 describe('TopMenuSection', () => {
@@ -99,5 +125,40 @@ describe('TopMenuSection', () => {
         })
       })
     })
+  })
+
+  it('shows the active jobs label with the current count', async () => {
+    const wrapper = createWrapper()
+    const queueStore = useQueueStore()
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+    queueStore.runningTasks = [
+      createTask('running-1', 'in_progress'),
+      createTask('running-2', 'in_progress')
+    ]
+
+    await nextTick()
+
+    const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
+    expect(queueButton.text()).toContain('3 active')
+  })
+
+  it('disables the clear queue context menu item when no queued jobs exist', () => {
+    const wrapper = createWrapper()
+    const menu = wrapper.findComponent({ name: 'ContextMenu' })
+    const model = menu.props('model') as MenuItem[]
+    expect(model[0]?.label).toBe('Clear queue')
+    expect(model[0]?.disabled).toBe(true)
+  })
+
+  it('enables the clear queue context menu item when queued jobs exist', async () => {
+    const wrapper = createWrapper()
+    const queueStore = useQueueStore()
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+
+    await nextTick()
+
+    const menu = wrapper.findComponent({ name: 'ContextMenu' })
+    const model = menu.props('model') as MenuItem[]
+    expect(model[0]?.disabled).toBe(false)
   })
 })
