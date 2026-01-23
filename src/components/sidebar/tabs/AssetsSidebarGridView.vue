@@ -6,7 +6,11 @@
       class="grid max-h-[50%] scrollbar-custom overflow-y-auto"
       :style="gridStyle"
     >
-      <ActiveMediaAssetCard v-for="job in activeJobItems" :key="job.id" :job="job" />
+      <ActiveMediaAssetCard
+        v-for="job in activeJobItems"
+        :key="job.id"
+        :job="job"
+      />
     </div>
 
     <!-- Assets Header -->
