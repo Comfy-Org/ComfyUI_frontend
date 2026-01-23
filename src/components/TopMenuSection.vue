@@ -53,35 +53,7 @@
               {{ t('sideToolbar.queueProgressOverlay.expandCollapsedQueue') }}
             </span>
           </Button>
-          <ContextMenu
-            ref="queueContextMenu"
-            :model="queueContextMenuItems"
-            unstyled
-            :pt="{
-              root: {
-                class:
-                  'rounded-lg border border-border-default bg-base-background p-2 shadow-[0px_2px_12px_0_rgba(0,0,0,0.1)] font-inter'
-              },
-              rootList: { class: 'm-0 flex list-none flex-col gap-1 p-0' },
-              item: { class: 'm-0 p-0' }
-            }"
-          >
-            <template #item="{ item, props }">
-              <a
-                v-bind="props.action"
-                :class="
-                  cn(
-                    'flex h-8 w-full items-center gap-2 rounded-sm px-2 text-sm font-normal',
-                    item.class,
-                    item.disabled && 'opacity-50'
-                  )
-                "
-              >
-                <i v-if="item.icon" :class="cn(item.icon, 'size-4')" />
-                <span>{{ item.label }}</span>
-              </a>
-            </template>
-          </ContextMenu>
+          <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
           <CurrentUserButton
             v-if="isLoggedIn && !isIntegratedTabBar"
             class="shrink-0"
@@ -130,7 +102,6 @@ import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
-import { cn } from '@/utils/tailwindUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -174,8 +145,8 @@ const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [
   {
     label: t('sideToolbar.queueProgressOverlay.clearQueueTooltip'),
-    icon: 'icon-[lucide--list-x]',
-    class: 'text-destructive-background',
+    icon: 'icon-[lucide--list-x] text-destructive-background',
+    class: '*:text-destructive-background',
     disabled: queueStore.pendingTasks.length === 0,
     command: () => {
       void handleClearQueue()
