@@ -116,7 +116,7 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import { computed, provide, ref, watch } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
@@ -174,14 +174,7 @@ const { canTryNightlyUpdate, isUpdateAvailable } = usePackUpdateStatus(
   () => nodePack
 )
 
-const isAllInstalled = ref(false)
-watch(
-  () => managerStore.installedPacks,
-  () => {
-    isAllInstalled.value = isPackInstalled(nodePack.id)
-  },
-  { immediate: true }
-)
+const isAllInstalled = computed(() => isPackInstalled(nodePack.id))
 
 const { checkNodeCompatibility } = useConflictDetection()
 
