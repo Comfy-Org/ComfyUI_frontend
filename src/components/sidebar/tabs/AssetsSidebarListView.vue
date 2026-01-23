@@ -80,6 +80,8 @@
           "
           :primary-text="getAssetPrimaryText(item.asset)"
           :secondary-text="getAssetSecondaryText(item.asset)"
+          :stack-count="getStackCount(item.asset)"
+          :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
           @mouseenter="onAssetEnter(item.asset.id)"
           @mouseleave="onAssetLeave(item.asset.id)"
           @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
@@ -192,6 +194,19 @@ function getAssetSecondaryText(asset: AssetItem): string {
   }
 
   return ''
+}
+
+function getStackCount(asset: AssetItem): number | undefined {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (typeof metadata?.outputCount === 'number') {
+    return metadata.outputCount
+  }
+
+  if (Array.isArray(metadata?.allOutputs)) {
+    return metadata.allOutputs.length
+  }
+
+  return undefined
 }
 
 function getAssetCardClass(selected: boolean): string {

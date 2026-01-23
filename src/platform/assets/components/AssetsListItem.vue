@@ -71,6 +71,22 @@
       </div>
     </div>
 
+    <div
+      v-if="typeof stackCount === 'number' && stackCount > 1"
+      class="relative z-1 flex shrink-0 items-center"
+    >
+      <Button
+        variant="secondary"
+        size="md"
+        class="gap-1 font-bold"
+        :aria-label="stackIndicatorLabel || undefined"
+      >
+        <i aria-hidden="true" class="icon-[lucide--layers] size-4" />
+        <span class="text-xs leading-none">{{ stackCount }}</span>
+        <i aria-hidden="true" class="icon-[lucide--chevron-down] size-3" />
+      </Button>
+    </div>
+
     <div v-if="$slots.actions" class="relative z-1 flex items-center gap-2">
       <slot name="actions" />
     </div>
@@ -79,6 +95,7 @@
 
 <script setup lang="ts">
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
@@ -90,6 +107,8 @@ const {
   iconWrapperClass,
   primaryText,
   secondaryText,
+  stackCount,
+  stackIndicatorLabel,
   progressTotalPercent,
   progressCurrentPercent
 } = defineProps<{
@@ -101,6 +120,8 @@ const {
   iconWrapperClass?: string
   primaryText?: string
   secondaryText?: string
+  stackCount?: number
+  stackIndicatorLabel?: string
   progressTotalPercent?: number
   progressCurrentPercent?: number
 }>()
