@@ -20,7 +20,6 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
     }
   }
 
-  // Copy files (items.add() is idempotent - won't create duplicates)
   for (const item of original.items) {
     if (item.kind === 'file') {
       const file = item.getAsFile();
