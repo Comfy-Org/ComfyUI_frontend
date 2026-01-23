@@ -3,6 +3,8 @@
     role="status"
     :aria-label="t('sideToolbar.activeJobStatus', { status: statusText })"
     class="flex flex-col gap-2 p-2 rounded-lg"
+    @mouseenter="hovered = true"
+    @mouseleave="hovered = false"
   >
     <!-- Thumbnail -->
     <div class="relative aspect-square overflow-hidden rounded-lg">
@@ -34,6 +36,17 @@
           class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
         />
       </div>
+      <!-- Cancel button overlay -->
+      <Button
+        v-if="hovered && canCancelJob"
+        :variant="cancelAction.variant"
+        size="icon"
+        :aria-label="cancelAction.label"
+        class="absolute top-1 right-1"
+        @click.stop="runCancelJob()"
+      >
+        <i :class="cancelAction.icon" class="size-3" />
+      </Button>
     </div>
 
     <!-- Footer: Progress bar or status text -->
@@ -61,15 +74,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 
 const { job } = defineProps<{ job: JobListItem }>()
 
 const { t } = useI18n()
+const hovered = ref(false)
+
+const { cancelAction, canCancelJob, runCancelJob } = useJobActions(
+  computed(() => (hovered.value ? job : null))
+)
 
 const { progressBarPrimaryClass, hasProgressPercent, progressPercentStyle } =
   useProgressBarBackground()
