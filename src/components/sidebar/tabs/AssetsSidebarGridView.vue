@@ -6,7 +6,7 @@
       class="grid max-h-[50%] scrollbar-custom overflow-y-auto"
       :style="gridStyle"
     >
-      <ActiveJobCard v-for="job in activeJobItems" :key="job.id" :job="job" />
+      <ActiveMediaAssetCard v-for="job in activeJobItems" :key="job.id" :job="job" />
     </div>
 
     <!-- Assets Header -->
@@ -55,7 +55,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import ActiveJobCard from '@/platform/assets/components/ActiveJobCard.vue'
+import ActiveMediaAssetCard from '@/platform/assets/components/ActiveMediaAssetCard.vue'
 import { useJobList } from '@/composables/queue/useJobList'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
