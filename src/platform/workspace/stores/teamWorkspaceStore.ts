@@ -85,6 +85,8 @@ function setLastWorkspaceId(workspaceId: string): void {
 
 const MAX_OWNED_WORKSPACES = 10
 const MAX_WORKSPACE_MEMBERS = 50
+const MAX_INIT_RETRIES = 3
+const BASE_RETRY_DELAY_MS = 1000
 
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const initState = ref<InitState>('uninitialized')
@@ -174,6 +176,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Initialize the workspace store.
    * Fetches workspaces and resolves the active workspace from session/localStorage.
    * Delegates token management to workspaceAuthStore.
+   * Retries on transient failures with exponential backoff.
    * Call once on app boot.
    */
   async function initialize(): Promise<void> {
@@ -185,60 +188,115 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     const workspaceAuthStore = useWorkspaceAuthStore()
 
-    try {
-      // 1. Try to restore workspace context from session (page refresh case)
-      const hasValidSession = workspaceAuthStore.initializeFromSession()
+    for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
+      try {
+        // 1. Try to restore workspace context from session (page refresh case)
+        const hasValidSession = workspaceAuthStore.initializeFromSession()
 
-      if (hasValidSession && workspaceAuthStore.currentWorkspace) {
-        // Valid session exists - fetch workspace list and sync state
+        if (hasValidSession && workspaceAuthStore.currentWorkspace) {
+          // Valid session exists - fetch workspace list and verify access
+          const response = await workspaceApi.list()
+          workspaces.value = response.workspaces.map(createWorkspaceState)
+
+          if (workspaces.value.length === 0) {
+            throw new Error('No workspaces available')
+          }
+
+          // Verify session workspace exists in fetched list
+          const sessionWorkspaceId = workspaceAuthStore.currentWorkspace.id
+          const sessionWorkspaceExists = workspaces.value.some(
+            (w) => w.id === sessionWorkspaceId
+          )
+
+          if (sessionWorkspaceExists) {
+            activeWorkspaceId.value = sessionWorkspaceId
+            initState.value = 'ready'
+            isFetchingWorkspaces.value = false
+            return
+          }
+
+          // Session workspace not found (deleted/access revoked) - fallback to default
+          workspaceAuthStore.clearWorkspaceContext()
+
+          const personal = workspaces.value.find((w) => w.type === 'personal')
+          const fallbackWorkspaceId = personal?.id ?? workspaces.value[0].id
+
+          try {
+            await workspaceAuthStore.switchWorkspace(fallbackWorkspaceId)
+          } catch {
+            console.error(
+              '[teamWorkspaceStore] Token exchange failed during fallback'
+            )
+          }
+
+          activeWorkspaceId.value = fallbackWorkspaceId
+          setLastWorkspaceId(fallbackWorkspaceId)
+          initState.value = 'ready'
+          isFetchingWorkspaces.value = false
+          return
+        }
+
+        // 2. No valid session - fetch workspaces and pick default
         const response = await workspaceApi.list()
         workspaces.value = response.workspaces.map(createWorkspaceState)
-        activeWorkspaceId.value = workspaceAuthStore.currentWorkspace.id
+
+        if (workspaces.value.length === 0) {
+          throw new Error('No workspaces available')
+        }
+
+        // 3. Determine target workspace (priority: localStorage > personal)
+        let targetWorkspaceId: string | null = null
+
+        const lastId = getLastWorkspaceId()
+        if (lastId && workspaces.value.some((w) => w.id === lastId)) {
+          targetWorkspaceId = lastId
+        }
+
+        if (!targetWorkspaceId) {
+          const personal = workspaces.value.find((w) => w.type === 'personal')
+          targetWorkspaceId = personal?.id ?? workspaces.value[0].id
+        }
+
+        // 4. Exchange Firebase token for workspace token
+        try {
+          await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
+        } catch {
+          // Log but don't fail initialization - API calls will fall back to Firebase token
+          console.error(
+            '[teamWorkspaceStore] Token exchange failed during init'
+          )
+        }
+
+        // 5. Set active workspace
+        activeWorkspaceId.value = targetWorkspaceId
+        setLastWorkspaceId(targetWorkspaceId)
+
         initState.value = 'ready'
+        isFetchingWorkspaces.value = false
         return
+      } catch (e) {
+        const isNoWorkspacesError =
+          e instanceof Error && e.message === 'No workspaces available'
+
+        // Don't retry on permanent errors (no workspaces available)
+        if (isNoWorkspacesError || attempt >= MAX_INIT_RETRIES) {
+          error.value = e instanceof Error ? e : new Error('Unknown error')
+          initState.value = 'error'
+          isFetchingWorkspaces.value = false
+          throw e
+        }
+
+        // Retry with exponential backoff for transient errors
+        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt)
+        const errorMessage = e instanceof Error ? e.message : String(e)
+        console.warn(
+          `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms: ${errorMessage}`
+        )
+        await new Promise((resolve) => setTimeout(resolve, delay))
       }
-
-      // 2. No valid session - fetch workspaces and pick default
-      const response = await workspaceApi.list()
-      workspaces.value = response.workspaces.map(createWorkspaceState)
-
-      if (workspaces.value.length === 0) {
-        throw new Error('No workspaces available')
-      }
-
-      // 3. Determine target workspace (priority: localStorage > personal)
-      let targetWorkspaceId: string | null = null
-
-      const lastId = getLastWorkspaceId()
-      if (lastId && workspaces.value.some((w) => w.id === lastId)) {
-        targetWorkspaceId = lastId
-      }
-
-      if (!targetWorkspaceId) {
-        const personal = workspaces.value.find((w) => w.type === 'personal')
-        targetWorkspaceId = personal?.id ?? workspaces.value[0].id
-      }
-
-      // 4. Exchange Firebase token for workspace token
-      try {
-        await workspaceAuthStore.switchWorkspace(targetWorkspaceId)
-      } catch {
-        // Log but don't fail initialization - API calls will fall back to Firebase token
-        console.error('[teamWorkspaceStore] Token exchange failed during init')
-      }
-
-      // 5. Set active workspace
-      activeWorkspaceId.value = targetWorkspaceId
-      setLastWorkspaceId(targetWorkspaceId)
-
-      initState.value = 'ready'
-    } catch (e) {
-      error.value = e instanceof Error ? e : new Error('Unknown error')
-      initState.value = 'error'
-      throw e
-    } finally {
-      isFetchingWorkspaces.value = false
     }
+
+    isFetchingWorkspaces.value = false
   }
 
   /**

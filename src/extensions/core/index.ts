@@ -32,11 +32,15 @@ if (isCloud) {
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
-  await import('./cloudFeedbackTopbarButton')
 
   if (window.__CONFIG__?.subscription_required) {
     await import('./cloudSubscription')
   }
+}
+
+// Feedback button for cloud and nightly builds
+if (isCloud || isNightly) {
+  await import('./cloudFeedbackTopbarButton')
 }
 
 // Nightly-only extensions

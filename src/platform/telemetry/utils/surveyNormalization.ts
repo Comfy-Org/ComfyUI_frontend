@@ -526,7 +526,7 @@ const useCaseFuse = new Fuse(USE_CASE_CATEGORIES, FUSE_OPTIONS)
 /**
  * Normalize industry responses using Fuse.js fuzzy search
  */
-export function normalizeIndustry(rawIndustry: string): string {
+export function normalizeIndustry(rawIndustry: unknown): string {
   if (!rawIndustry || typeof rawIndustry !== 'string') {
     return 'Other / Undefined'
   }
@@ -554,7 +554,7 @@ export function normalizeIndustry(rawIndustry: string): string {
 /**
  * Normalize use case responses using Fuse.js fuzzy search
  */
-export function normalizeUseCase(rawUseCase: string): string {
+export function normalizeUseCase(rawUseCase: unknown): string {
   if (!rawUseCase || typeof rawUseCase !== 'string') {
     return 'Other / Undefined'
   }
