@@ -175,16 +175,15 @@ const createStoryTemplate = (args: StoryArgs) => ({
   template: `
     <div>
       <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+        <!-- Left Panel Header Title -->
+        <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
+          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+          <span class="text-neutral text-base">Title</span>
+        </template>
+
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
-          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
-            <template #header-icon>
-              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-            </template>
-            <template #header-title>
-              <span class="text-neutral text-base">Title</span>
-            </template>
-          </LeftSidePanel>
+          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation" />
         </template>
 
         <!-- Header -->
@@ -299,16 +298,15 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
       <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
         <!-- Same content but WITH right panel -->
+        <!-- Left Panel Header Title -->
+        <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
+          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+          <span class="text-neutral text-base">Title</span>
+        </template>
+
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
-          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
-            <template #header-icon>
-              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-            </template>
-            <template #header-title>
-              <span class="text-neutral text-base">Title</span>
-            </template>
-          </LeftSidePanel>
+          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation" />
         </template>
 
         <!-- Header -->
