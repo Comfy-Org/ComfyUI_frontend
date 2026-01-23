@@ -33,7 +33,7 @@ defineProps<{
     >
       {{ label }}
 
-      <span
+      <i
         v-if="tooltip"
         class="icon-[lucide--info] ml-0.5 size-3 relative top-[1px] group-hover:text-primary"
       />
