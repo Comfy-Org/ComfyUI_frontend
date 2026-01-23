@@ -1,24 +1,15 @@
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
-
-// Mock the stores
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn()
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: vi.fn()
-}))
 
 // Mock the utils
 vi.mock('@/utils/litegraphUtil', () => ({
@@ -38,16 +29,8 @@ vi.mock('@/composables/graph/useSelectionState', () => ({
   }))
 }))
 
-type MockCanvas = {
-  setDirty: Mock
-}
-
-type MockCanvasStore = ReturnType<typeof useCanvasStore>
-
 describe('ExecuteButton', () => {
-  let mockCanvas: MockCanvas
-  let mockCanvasStore: MockCanvasStore
-  let mockCommandStore: ReturnType<typeof useCommandStore>
+  let mockCanvas: LGraphCanvas
   let mockSelectedNodes: LGraphNode[]
 
   const i18n = createI18n({
@@ -65,40 +48,27 @@ describe('ExecuteButton', () => {
   })
 
   beforeEach(async () => {
-    setActivePinia(createPinia())
+    // Set up Pinia with testing utilities
+    setActivePinia(
+      createTestingPinia({
+        createSpy: vi.fn
+      })
+    )
 
     // Reset mocks
-    mockCanvas = {
+    const partialCanvas: Partial<LGraphCanvas> = {
       setDirty: vi.fn()
     }
+    mockCanvas = partialCanvas as Partial<LGraphCanvas> as LGraphCanvas
 
     mockSelectedNodes = []
 
-    mockCanvasStore = {
-      getCanvas: vi.fn(() => mockCanvas),
-      selectedItems: [],
-      $id: 'canvas',
-      $state: {
-        selectedItems: []
-      },
-      $patch: vi.fn(),
-      $reset: vi.fn(),
-      $subscribe: vi.fn(),
-      $onAction: vi.fn(),
-      $dispose: vi.fn(),
-      _customProperties: new Set(),
-      _p: {}
-    } as unknown as MockCanvasStore
+    // Get store instances and mock methods
+    const canvasStore = useCanvasStore()
+    const commandStore = useCommandStore()
 
-    mockCommandStore = {
-      execute: vi.fn()
-    } as Partial<ReturnType<typeof useCommandStore>> as ReturnType<
-      typeof useCommandStore
-    >
-
-    // Setup store mocks
-    vi.mocked(useCanvasStore).mockReturnValue(mockCanvasStore)
-    vi.mocked(useCommandStore).mockReturnValue(mockCommandStore)
+    vi.spyOn(canvasStore, 'getCanvas').mockReturnValue(mockCanvas)
+    vi.spyOn(commandStore, 'execute').mockResolvedValue()
 
     // Update the useSelectionState mock
     const { useSelectionState } = vi.mocked(
@@ -135,15 +105,16 @@ describe('ExecuteButton', () => {
 
   describe('Click Handler', () => {
     it('should execute Comfy.QueueSelectedOutputNodes command on click', async () => {
+      const commandStore = useCommandStore()
       const wrapper = mountComponent()
       const button = wrapper.find('button')
 
       await button.trigger('click')
 
-      expect(mockCommandStore.execute).toHaveBeenCalledWith(
+      expect(commandStore.execute).toHaveBeenCalledWith(
         'Comfy.QueueSelectedOutputNodes'
       )
-      expect(mockCommandStore.execute).toHaveBeenCalledTimes(1)
+      expect(commandStore.execute).toHaveBeenCalledTimes(1)
     })
   })
 })
