@@ -15,7 +15,6 @@ import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'
-import RightSidePanel from '../panel/RightSidePanel.vue'
 import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
@@ -69,7 +68,6 @@ const createStoryTemplate = (args: StoryArgs) => ({
   components: {
     BaseModalLayout,
     LeftSidePanel,
-    RightSidePanel,
     SearchBox,
     MultiSelect,
     SingleSelect,
@@ -413,7 +411,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Right Panel - Only when hasRightPanel is true -->
         <template #rightPanel>
-          <RightSidePanel />
+          <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
         </template>
       </BaseModalLayout>
     </div>
