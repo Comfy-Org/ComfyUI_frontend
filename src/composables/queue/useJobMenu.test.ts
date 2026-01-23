@@ -101,11 +101,14 @@ vi.mock('@/services/litegraphService', () => ({
   useLitegraphService: () => litegraphServiceMock
 }))
 
-const nodeDefStoreMock = {
-  nodeDefsByName: {} as Record<string, { id: string }>
+const nodeDefStoreMock: {
+  nodeDefsByName: Record<string, Partial<ComfyNodeDefImpl>>
+} = {
+  nodeDefsByName: {}
 }
 vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => nodeDefStoreMock
+  useNodeDefStore: () => nodeDefStoreMock,
+  ComfyNodeDefImpl: class {}
 }))
 
 const queueStoreMock = {
@@ -143,6 +146,7 @@ vi.mock('@/utils/formatUtil', () => ({
 }))
 
 import { useJobMenu } from '@/composables/queue/useJobMenu'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
 type MockTaskRef = Record<string, unknown>
@@ -201,9 +205,9 @@ describe('useJobMenu', () => {
     }))
     createAnnotatedPathMock.mockReturnValue('annotated-path')
     nodeDefStoreMock.nodeDefsByName = {
-      LoadImage: { id: 'LoadImage' },
-      LoadVideo: { id: 'LoadVideo' },
-      LoadAudio: { id: 'LoadAudio' }
+      LoadImage: { name: 'LoadImage' },
+      LoadVideo: { name: 'LoadVideo' },
+      LoadAudio: { name: 'LoadAudio' }
     }
     // Default: no workflow available via lazy loading
     getJobWorkflowMock.mockResolvedValue(undefined)
