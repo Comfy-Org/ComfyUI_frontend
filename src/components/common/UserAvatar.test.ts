@@ -1,3 +1,5 @@
+import type { ComponentProps } from 'vue-component-type-helpers'
+
 import { mount } from '@vue/test-utils'
 import Avatar from 'primevue/avatar'
 import PrimeVue from 'primevue/config'
@@ -27,7 +29,7 @@ describe('UserAvatar', () => {
     app.use(PrimeVue)
   })
 
-  const mountComponent = (props: any = {}) => {
+  const mountComponent = (props: ComponentProps<typeof UserAvatar> = {}) => {
     return mount(UserAvatar, {
       global: {
         plugins: [PrimeVue, i18n],

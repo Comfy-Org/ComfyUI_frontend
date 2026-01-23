@@ -270,6 +270,11 @@ export const zComfyNodeDef = z.object({
    */
   input_order: z.record(z.array(z.string())).optional(),
   /**
+   * Alternative names for search. Useful for synonyms, abbreviations,
+   * or old names after renaming a node.
+   */
+  search_aliases: z.array(z.string()).optional(),
+  /**
    * Price badge definition for API nodes.
    * Contains a JSONata expression to calculate pricing based on widget values
    * and input connectivity.
