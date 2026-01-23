@@ -11273,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Bir görüntüyü veya maskeyi çeşitli ölçeklendirme yöntemleriyle yeniden boyutlandırın.",
     "display_name": "Görsel/Maske Yeniden Boyutlandır",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Yeniden boyutlandırma yöntemini seçin: tam boyutlar, ölçek faktörü, başka bir görüntüyle eşleştirme vb."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "kırp"
+      },
+      "resize_type_height": {
+        "name": "yükseklik"
+      },
+      "resize_type_width": {
+        "name": "genişlik"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Enterpolasyon algoritması. 'area' küçültme için en iyisidir, 'lanczos' büyütme için uygundur, 'nearest-exact' piksel sanatı için idealdir."
       }
     },
     "outputs": {

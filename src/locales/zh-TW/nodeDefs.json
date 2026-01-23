@@ -11273,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "使用各種縮放方法調整圖像或 mask 的大小。",
     "display_name": "調整影像／遮罩大小",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "選擇調整大小的方式：依照精確尺寸、縮放比例、匹配其他圖像等。"
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "裁切"
+      },
+      "resize_type_height": {
+        "name": "高度"
+      },
+      "resize_type_width": {
+        "name": "寬度"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "插值演算法。'area' 適合縮小，'lanczos' 適合放大，'nearest-exact' 適合像素藝術。"
       }
     },
     "outputs": {

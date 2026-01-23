@@ -11273,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "さまざまなスケーリング方法で画像またはマスクをリサイズします。",
     "display_name": "画像/マスクのリサイズ",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "リサイズ方法を選択します：正確な寸法、スケール係数、他の画像に合わせるなど。"
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "切り抜き"
+      },
+      "resize_type_height": {
+        "name": "高さ"
+      },
+      "resize_type_width": {
+        "name": "幅"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "補間アルゴリズム。「area」は縮小に最適、「lanczos」は拡大に最適、「nearest-exact」はドット絵に最適です。"
       }
     },
     "outputs": {

@@ -11273,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Изменить размер изображения или mask с помощью различных методов масштабирования.",
     "display_name": "Изменить размер изображения/маски",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Выберите способ изменения размера: по точным размерам, коэффициенту масштабирования, подгонке под другое изображение и т.д."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "обрезка"
+      },
+      "resize_type_height": {
+        "name": "высота"
+      },
+      "resize_type_width": {
+        "name": "ширина"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Алгоритм интерполяции. 'area' лучше всего подходит для уменьшения, 'lanczos' — для увеличения, 'nearest-exact' — для пиксель-арта."
       }
     },
     "outputs": {

@@ -11289,19 +11289,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Redimensione uma imagem ou mask usando vários métodos de escala.",
     "display_name": "Redimensionar Imagem/Máscara",
     "inputs": {
       "input": {
         "name": "entrada"
       },
       "resize_type": {
-        "name": "tipo_de_redimensionamento"
+        "name": "tipo_de_redimensionamento",
+        "tooltip": "Selecione como redimensionar: por dimensões exatas, fator de escala, correspondendo a outra imagem, etc."
       },
-      "resize_type_multiplier": {
-        "name": "multiplicador"
+      "resize_type_crop": {
+        "name": "cortar"
+      },
+      "resize_type_height": {
+        "name": "altura"
+      },
+      "resize_type_width": {
+        "name": "largura"
       },
       "scale_method": {
-        "name": "método_de_escala"
+        "name": "método_de_escala",
+        "tooltip": "Algoritmo de interpolação. 'area' é melhor para reduzir, 'lanczos' para aumentar, 'nearest-exact' para pixel art."
       }
     },
     "outputs": {

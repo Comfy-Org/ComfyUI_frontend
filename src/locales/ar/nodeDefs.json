@@ -11273,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "تغيير حجم صورة أو قناع باستخدام طرق تحجيم مختلفة.",
     "display_name": "تغيير حجم الصورة/القناع",
     "inputs": {
       "input": {
         "name": "الإدخال"
       },
       "resize_type": {
-        "name": "نوع تغيير الحجم"
+        "name": "نوع تغيير الحجم",
+        "tooltip": "اختر طريقة تغيير الحجم: حسب الأبعاد الدقيقة، عامل التحجيم، مطابقة صورة أخرى، إلخ."
       },
-      "resize_type_multiplier": {
-        "name": "المضاعف"
+      "resize_type_crop": {
+        "name": "قص"
+      },
+      "resize_type_height": {
+        "name": "الارتفاع"
+      },
+      "resize_type_width": {
+        "name": "العرض"
       },
       "scale_method": {
-        "name": "طريقة التحجيم"
+        "name": "طريقة التحجيم",
+        "tooltip": "خوارزمية الاستيفاء. 'area' هي الأفضل لتصغير الحجم، و'lanczos' لتكبير الحجم، و'nearest-exact' لفن البكسل."
       }
     },
     "outputs": {

@@ -11273,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "여러 가지 스케일링 방법을 사용하여 이미지 또는 mask를 리사이즈합니다.",
     "display_name": "이미지/마스크 크기 조정",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "리사이즈 방법을 선택하세요: 정확한 크기, 배율, 다른 이미지와 일치 등."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "crop"
+      },
+      "resize_type_height": {
+        "name": "height"
+      },
+      "resize_type_width": {
+        "name": "width"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "보간 알고리즘입니다. 'area'는 축소에, 'lanczos'는 확대에, 'nearest-exact'는 픽셀 아트에 적합합니다."
       }
     },
     "outputs": {

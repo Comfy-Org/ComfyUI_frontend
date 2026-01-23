@@ -11289,19 +11289,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "تغییر اندازه تصویر یا mask با استفاده از روش‌های مختلف مقیاس‌گذاری.",
     "display_name": "تغییر اندازه تصویر/ماسک",
     "inputs": {
       "input": {
         "name": "ورودی"
       },
       "resize_type": {
-        "name": "نوع تغییر اندازه"
+        "name": "نوع تغییر اندازه",
+        "tooltip": "نحوه تغییر اندازه را انتخاب کنید: بر اساس ابعاد دقیق، ضریب مقیاس، تطبیق با تصویر دیگر و غیره."
       },
-      "resize_type_multiplier": {
-        "name": "ضریب"
+      "resize_type_crop": {
+        "name": "برش"
+      },
+      "resize_type_height": {
+        "name": "ارتفاع"
+      },
+      "resize_type_width": {
+        "name": "عرض"
       },
       "scale_method": {
-        "name": "روش مقیاس‌دهی"
+        "name": "روش مقیاس‌دهی",
+        "tooltip": "الگوریتم درون‌یابی. 'area' برای کاهش اندازه بهترین است، 'lanczos' برای افزایش اندازه، و 'nearest-exact' برای هنر پیکسلی مناسب است."
       }
     },
     "outputs": {

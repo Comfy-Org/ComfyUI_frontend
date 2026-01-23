@@ -11281,18 +11281,27 @@
   },
   "ResizeImageMaskNode": {
     "display_name": "Resize Image/Mask",
+    "description": "Resize an image or mask using various scaling methods.",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Select how to resize: by exact dimensions, scale factor, matching another image, etc."
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Interpolation algorithm. 'area' is best for downscaling, 'lanczos' for upscaling, 'nearest-exact' for pixel art."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "crop"
+      },
+      "resize_type_height": {
+        "name": "height"
+      },
+      "resize_type_width": {
+        "name": "width"
       }
     },
     "outputs": {
