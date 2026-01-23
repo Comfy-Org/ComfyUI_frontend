@@ -2,11 +2,13 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 import { fitToViewInstant } from '../helpers/fitToView'
+import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 // TODO: there might be a better solution for this
 // Helper function to pan canvas and select node
-async function selectNodeWithPan(comfyPage: any, nodeRef: any) {
+async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
   const nodePos = await nodeRef.getPosition()
 
   await comfyPage.page.evaluate((pos) => {
@@ -345,7 +347,9 @@ This is documentation for a custom node.
 
       // Find and select a custom/group node
       const nodeRefs = await comfyPage.page.evaluate(() => {
-        return window['app'].graph.nodes.map((n: any) => n.id)
+        return window['app'].graph.nodes.map(
+          (n: Record<string, unknown>) => n.id
+        )
       })
       if (nodeRefs.length > 0) {
         const firstNode = await comfyPage.getNodeRefById(nodeRefs[0])

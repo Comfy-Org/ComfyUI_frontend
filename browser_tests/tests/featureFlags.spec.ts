@@ -2,6 +2,22 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
+interface CapturedMessages {
+  clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
+  serverFeatureFlags: Record<string, unknown> | null
+}
+
+interface AppReadiness {
+  featureFlagsReceived: boolean
+  apiInitialized: boolean
+  appInitialized: boolean
+}
+
+interface TestWindow extends Window {
+  __capturedMessages: CapturedMessages
+  __appReadiness: AppReadiness
+}
+
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
@@ -274,7 +290,8 @@ test.describe('Feature Flags', () => {
     // Set up monitoring before navigation
     await newPage.addInitScript(() => {
       // Track when various app components are ready
-      ;(window as any).__appReadiness = {
+      const testWindow = window as TestWindow
+      testWindow.__appReadiness = {
         featureFlagsReceived: false,
         apiInitialized: false,
         appInitialized: false
@@ -286,7 +303,11 @@ test.describe('Feature Flags', () => {
           window['app']?.api?.serverFeatureFlags?.supports_preview_metadata !==
           undefined
         ) {
-          ;(window as any).__appReadiness.featureFlagsReceived = true
+          const testWindow = window as TestWindow
+          testWindow.__appReadiness = {
+            ...testWindow.__appReadiness,
+            featureFlagsReceived: true
+          }
           clearInterval(checkFeatureFlags)
         }
       }, 10)
@@ -294,7 +315,11 @@ test.describe('Feature Flags', () => {
       // Monitor API initialization
       const checkApi = setInterval(() => {
         if (window['app']?.api) {
-          ;(window as any).__appReadiness.apiInitialized = true
+          const testWindow = window as TestWindow
+          testWindow.__appReadiness = {
+            ...testWindow.__appReadiness,
+            apiInitialized: true
+          }
           clearInterval(checkApi)
         }
       }, 10)
@@ -302,7 +327,11 @@ test.describe('Feature Flags', () => {
       // Monitor app initialization
       const checkApp = setInterval(() => {
         if (window['app']?.graph) {
-          ;(window as any).__appReadiness.appInitialized = true
+          const testWindow = window as TestWindow
+          testWindow.__appReadiness = {
+            ...testWindow.__appReadiness,
+            appInitialized: true
+          }
           clearInterval(checkApp)
         }
       }, 10)
@@ -330,8 +359,9 @@ test.describe('Feature Flags', () => {
 
     // Get readiness state
     const readiness = await newPage.evaluate(() => {
+      const testWindow = window as TestWindow
       return {
-        ...(window as any).__appReadiness,
+        ...testWindow.__appReadiness,
         currentFlags: window['app'].api.serverFeatureFlags
       }
     })
