@@ -1,5 +1,5 @@
 <template>
-  <PanelTemplate value="About" class="about-container">
+  <div class="about-container flex flex-col gap-2">
     <h2 class="mb-2 text-2xl font-bold">
       {{ $t('g.about') }}
     </h2>
@@ -28,7 +28,7 @@
       v-if="systemStatsStore.systemStats"
       :stats="systemStatsStore.systemStats"
     />
-  </PanelTemplate>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -38,8 +38,6 @@ import Tag from 'primevue/tag'
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-
-import PanelTemplate from './PanelTemplate.vue'
 
 const systemStatsStore = useSystemStatsStore()
 const aboutPanelStore = useAboutPanelStore()

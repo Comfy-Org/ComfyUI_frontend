@@ -9,12 +9,12 @@ export class SettingDialog {
   ) {}
 
   get root() {
-    return this.page.locator('div.settings-container')
+    return this.page.locator('[data-testid="settings-dialog"]')
   }
 
   async open() {
     await this.comfyPage.executeCommand('Comfy.ShowSettingsDialog')
-    await this.page.waitForSelector('div.settings-container')
+    await this.page.waitForSelector('[data-testid="settings-dialog"]')
   }
 
   /**
@@ -23,9 +23,7 @@ export class SettingDialog {
    * @param value - The value to set
    */
   async setStringSetting(id: string, value: string) {
-    const settingInputDiv = this.page.locator(
-      `div.settings-container div[id="${id}"]`
-    )
+    const settingInputDiv = this.root.locator(`div[id="${id}"]`)
     await settingInputDiv.locator('input').fill(value)
   }
 
@@ -34,15 +32,15 @@ export class SettingDialog {
    * @param id - The id of the setting
    */
   async toggleBooleanSetting(id: string) {
-    const settingInputDiv = this.page.locator(
-      `div.settings-container div[id="${id}"]`
-    )
+    const settingInputDiv = this.root.locator(`div[id="${id}"]`)
     await settingInputDiv.locator('input').click()
   }
 
   async goToAboutPanel() {
-    const aboutButton = this.page.locator('li[aria-label="About"]')
+    const aboutButton = this.root.locator('nav [role="button"]', {
+      hasText: 'About'
+    })
     await aboutButton.click()
-    await this.page.waitForSelector('div.about-container')
+    await this.page.waitForSelector('.about-container')
   }
 }

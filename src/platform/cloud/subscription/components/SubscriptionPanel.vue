@@ -1,5 +1,5 @@
 <template>
-  <TabPanel value="PlanCredits" class="subscription-container h-full">
+  <div class="subscription-container h-full">
     <div class="flex h-full flex-col gap-6">
       <div class="flex items-center gap-2">
         <span class="text-2xl font-inter font-semibold leading-tight">
@@ -63,11 +63,10 @@
         </Button>
       </div>
     </div>
-  </TabPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
-import TabPanel from 'primevue/tabpanel'
 import { defineAsyncComponent } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'

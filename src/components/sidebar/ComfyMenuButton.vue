@@ -108,15 +108,13 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
-import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useCommandStore } from '@/stores/commandStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -129,7 +127,7 @@ const commandStore = useCommandStore()
 const menuItemStore = useMenuItemStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
-const dialogStore = useDialogStore()
+const settingsDialog = useSettingsDialog()
 const managerState = useManagerState()
 const settingStore = useSettingStore()
 
@@ -167,14 +165,7 @@ const translateMenuItem = (item: MenuItem): MenuItem => {
 }
 
 const showSettings = (defaultPanel?: string) => {
-  dialogStore.showDialog({
-    key: 'global-settings',
-    headerComponent: SettingDialogHeader,
-    component: SettingDialogContent,
-    props: {
-      defaultPanel
-    }
-  })
+  settingsDialog.show(defaultPanel as Parameters<typeof settingsDialog.show>[0])
 }
 
 const showManageExtensions = async () => {

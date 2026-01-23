@@ -1,5 +1,5 @@
 <template>
-  <TabPanel value="Credits" class="credits-container h-full">
+  <div class="credits-container h-full">
     <!-- Legacy Design -->
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">
@@ -102,7 +102,7 @@
         </Button>
       </div>
     </div>
-  </TabPanel>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -110,7 +110,6 @@ import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
-import TabPanel from 'primevue/tabpanel'
 import { computed, ref, watch } from 'vue'
 
 import UserCredit from '@/components/common/UserCredit.vue'

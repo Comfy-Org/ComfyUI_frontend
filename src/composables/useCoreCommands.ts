@@ -34,6 +34,7 @@ import {
 } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyCommand } from '@/stores/commandStore'
@@ -73,6 +74,7 @@ const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
+  const settingsDialog = useSettingsDialog()
   const dialogService = useDialogService()
   const colorPaletteStore = useColorPaletteStore()
   const firebaseAuthActions = useFirebaseAuthActions()
@@ -581,7 +583,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.7',
       category: 'view-controls' as const,
       function: () => {
-        dialogService.showSettingsDialog()
+        settingsDialog.show()
       }
     },
     {
@@ -830,7 +832,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'About ComfyUI',
       versionAdded: '1.6.4',
       function: () => {
-        dialogService.showSettingsDialog('about')
+        settingsDialog.showAbout()
       }
     },
     {

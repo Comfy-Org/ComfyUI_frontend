@@ -1,0 +1,195 @@
+<template>
+  <BaseModalLayout content-title="" data-testid="settings-dialog">
+    <template #leftPanel>
+      <div class="flex h-full w-full flex-col bg-modal-panel-background">
+        <PanelHeader>
+          <template #icon>
+            <WorkspaceProfilePic
+              v-if="teamWorkspacesEnabled"
+              class="size-6 text-xs"
+              :workspace-name="workspaceName"
+            />
+            <i v-else class="pi pi-cog" />
+          </template>
+          <span class="text-neutral text-base">
+            {{ teamWorkspacesEnabled ? workspaceName : $t('g.settings') }}
+          </span>
+          <Tag
+            v-if="isStaging"
+            value="staging"
+            severity="warn"
+            class="ml-2 text-xs"
+          />
+        </PanelHeader>
+
+        <div class="px-3">
+          <SearchBox
+            v-model:model-value="searchQuery"
+            size="md"
+            :placeholder="$t('g.searchSettings') + '...'"
+            :debounce-time="128"
+            @search="handleSearch"
+          />
+        </div>
+
+        <nav
+          class="scrollbar-hide flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4"
+        >
+          <div
+            v-for="(group, index) in navGroups"
+            :key="index"
+            class="flex flex-col gap-2"
+          >
+            <NavTitle :title="group.title" />
+            <NavItem
+              v-for="item in group.items"
+              :key="item.id"
+              :icon="item.icon"
+              :badge="item.badge"
+              :active="activeCategoryKey === item.id"
+              @click="activeCategoryKey = item.id"
+            >
+              {{ item.label }}
+            </NavItem>
+          </div>
+        </nav>
+      </div>
+    </template>
+
+    <template #header />
+
+    <template #content>
+      <template v-if="inSearch">
+        <SettingsPanel :setting-groups="searchResults" />
+      </template>
+      <template v-else-if="activeSettingCategory">
+        <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
+        <ColorPaletteMessage
+          v-if="activeSettingCategory.label === 'Appearance'"
+        />
+        <SettingsPanel :setting-groups="sortedGroups(activeSettingCategory)" />
+      </template>
+      <template v-else-if="activePanel">
+        <Suspense>
+          <component :is="activePanel.component" v-bind="activePanel.props" />
+          <template #fallback>
+            <div>
+              {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
+            </div>
+          </template>
+        </Suspense>
+      </template>
+    </template>
+  </BaseModalLayout>
+</template>
+
+<script setup lang="ts">
+import Tag from 'primevue/tag'
+import { computed, provide, ref, watch } from 'vue'
+
+import SearchBox from '@/components/common/SearchBox.vue'
+import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
+import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
+import NavItem from '@/components/widget/nav/NavItem.vue'
+import NavTitle from '@/components/widget/nav/NavTitle.vue'
+import PanelHeader from '@/components/widget/panel/PanelHeader.vue'
+import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { isStaging } from '@/config/staging'
+import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
+import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
+import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
+import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
+import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type {
+  ISettingGroup,
+  SettingPanelType,
+  SettingParams
+} from '@/platform/settings/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { OnCloseKey } from '@/types/widgetTypes'
+import { flattenTree } from '@/utils/treeUtil'
+
+const { onClose, defaultPanel } = defineProps<{
+  onClose: () => void
+  defaultPanel?: SettingPanelType
+}>()
+
+provide(OnCloseKey, onClose)
+
+const {
+  defaultCategory,
+  settingCategories,
+  navGroups,
+  teamWorkspacesEnabled,
+  findCategoryByKey,
+  findPanelByKey
+} = useSettingUI(defaultPanel)
+
+const workspaceStore = useTeamWorkspaceStore()
+const workspaceName = computed(() => workspaceStore.workspaceName)
+
+const {
+  searchQuery,
+  inSearch,
+  handleSearch: handleSearchBase,
+  getSearchResults
+} = useSettingSearch()
+
+const authActions = useFirebaseAuthActions()
+
+const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
+
+const activeSettingCategory = computed<SettingTreeNode | null>(() => {
+  if (!activeCategoryKey.value) return null
+  return (
+    settingCategories.value.find((c) => c.key === activeCategoryKey.value) ??
+    null
+  )
+})
+
+const activePanel = computed(() => {
+  if (!activeCategoryKey.value) return null
+  return findPanelByKey(activeCategoryKey.value)
+})
+
+const getGroupSortOrder = (group: SettingTreeNode): number =>
+  Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))
+
+function sortedGroups(category: SettingTreeNode): ISettingGroup[] {
+  return [...(category.children ?? [])]
+    .sort((a, b) => {
+      const orderDiff = getGroupSortOrder(b) - getGroupSortOrder(a)
+      return orderDiff !== 0 ? orderDiff : a.label.localeCompare(b.label)
+    })
+    .map((group) => ({
+      label: group.label,
+      settings: flattenTree<SettingParams>(group).sort((a, b) => {
+        const sortOrderA = a.sortOrder ?? 0
+        const sortOrderB = b.sortOrder ?? 0
+        return sortOrderB - sortOrderA
+      })
+    }))
+}
+
+function handleSearch(query: string) {
+  handleSearchBase(query.trim())
+  activeCategoryKey.value = query ? null : (defaultCategory.value?.key ?? null)
+}
+
+const searchResults = computed<ISettingGroup[]>(() => {
+  const category = activeCategoryKey.value
+    ? findCategoryByKey(activeCategoryKey.value)
+    : null
+  return getSearchResults(category)
+})
+
+watch(activeCategoryKey, (newKey, oldKey) => {
+  if (!newKey && !inSearch.value) {
+    activeCategoryKey.value = oldKey
+  }
+  if (newKey === 'credits') {
+    void authActions.fetchBalance()
+  }
+})
+</script>

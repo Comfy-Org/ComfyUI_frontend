@@ -161,7 +161,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
-import { useDialogService } from '@/services/dialogService'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -172,7 +172,7 @@ const { isInsufficientCredits = false } = defineProps<{
 const { t } = useI18n()
 const authActions = useFirebaseAuthActions()
 const dialogStore = useDialogStore()
-const dialogService = useDialogService()
+const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
@@ -256,9 +256,7 @@ async function handleBuy() {
 
     // Close top-up dialog (keep tracking) and open credits panel to show updated balance
     handleClose(false)
-    dialogService.showSettingsDialog(
-      isSubscriptionEnabled() ? 'subscription' : 'credits'
-    )
+    settingsDialog.show(isSubscriptionEnabled() ? 'subscription' : 'credits')
   } catch (error) {
     console.error('Purchase failed:', error)
 
