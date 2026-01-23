@@ -32,6 +32,11 @@ defineProps<{
       "
     >
       {{ label }}
+
+      <span
+        v-if="tooltip"
+        class="icon-[lucide--info] size-3 ml-1 relative top-[1px]"
+      />
     </span>
     <slot />
   </div>

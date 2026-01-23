@@ -108,10 +108,12 @@ function openFullSettings() {
         <FieldSwitch
           v-model="showToolbox"
           :label="t('rightSidePanel.globalSettings.showToolbox')"
+          :tooltip="t('rightSidePanel.globalSettings.showToolboxTooltip')"
         />
         <FieldSwitch
           v-model="nodes2Enabled"
           :label="t('rightSidePanel.globalSettings.nodes2')"
+          :tooltip="t('rightSidePanel.globalSettings.nodes2Tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
@@ -152,6 +154,7 @@ function openFullSettings() {
         <FieldSwitch
           v-model="snapToGrid"
           :label="t('rightSidePanel.globalSettings.snapNodesToGrid')"
+          :tooltip="t('rightSidePanel.globalSettings.snapNodesToGridTooltip')"
         />
       </div>
     </PropertiesAccordionItem>
@@ -183,6 +186,9 @@ function openFullSettings() {
         <FieldSwitch
           v-model="showConnectedLinks"
           :label="t('rightSidePanel.globalSettings.showConnectedLinks')"
+          :tooltip="
+            t('rightSidePanel.globalSettings.showConnectedLinksTooltip')
+          "
         />
       </div>
     </PropertiesAccordionItem>
