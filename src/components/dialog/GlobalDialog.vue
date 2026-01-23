@@ -4,7 +4,12 @@
     v-for="item in dialogStore.dialogStack"
     :key="item.key"
     v-model:visible="item.visible"
-    class="global-dialog"
+    :class="[
+      'global-dialog',
+      item.key === 'global-settings' && teamWorkspacesEnabled
+        ? 'settings-dialog-workspace'
+        : ''
+    ]"
     v-bind="item.dialogComponentProps"
     :pt="item.dialogComponentProps.pt"
     :aria-labelledby="item.key"
@@ -37,8 +42,16 @@
 
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
+import { computed } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useDialogStore } from '@/stores/dialogStore'
+
+const { flags } = useFeatureFlags()
+const teamWorkspacesEnabled = computed(
+  () => isCloud && flags.teamWorkspacesEnabled
+)
 
 const dialogStore = useDialogStore()
 </script>
@@ -54,6 +67,16 @@ const dialogStore = useDialogStore()
 .global-dialog .p-dialog-content {
   @apply p-2 2xl:p-[var(--p-dialog-content-padding)];
   @apply pt-0;
+}
+
+/* Workspace mode: wider settings dialog */
+.settings-dialog-workspace {
+  width: 100%;
+  max-width: 1440px;
+}
+
+.settings-dialog-workspace .p-dialog-content {
+  width: 100%;
 }
 
 .manager-dialog {

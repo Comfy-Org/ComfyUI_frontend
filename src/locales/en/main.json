@@ -1279,7 +1279,10 @@
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
     "Execution": "Execution",
-    "PLY": "PLY"
+    "PLY": "PLY",
+    "Workspace": "Workspace",
+    "General": "General",
+    "Other": "Other"
   },
   "serverConfigItems": {
     "listen": {
@@ -1987,6 +1990,8 @@
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
+    "managePayment": "Manage Payment",
+    "cancelSubscription": "Cancel Subscription",
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
     "totalCredits": "Total credits",
@@ -2041,6 +2046,9 @@
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
+    "workspaceNotSubscribed": "This workspace is not on a subscription",
+    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
+    "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
@@ -2076,11 +2084,63 @@
   "userSettings": {
     "title": "My Account Settings",
     "accountSettings": "Account settings",
+    "workspaceSettings": "Workspace settings",
     "name": "Name",
     "email": "Email",
     "provider": "Sign-in Provider",
     "notSet": "Not set",
     "updatePassword": "Update Password"
+  },
+  "workspacePanel": {
+    "tabs": {
+      "planCredits": "Plan & Credits"
+    },
+    "menu": {
+      "editWorkspace": "Edit workspace details",
+      "leaveWorkspace": "Leave Workspace",
+      "deleteWorkspace": "Delete Workspace",
+      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+    },
+    "editWorkspaceDialog": {
+      "title": "Edit workspace details",
+      "nameLabel": "Workspace name",
+      "save": "Save"
+    },
+    "leaveDialog": {
+      "title": "Leave this workspace?",
+      "message": "You won't be able to join again unless you contact the workspace owner.",
+      "leave": "Leave"
+    },
+    "deleteDialog": {
+      "title": "Delete this workspace?",
+      "message": "Any unused credits or unsaved assets will be lost. This action cannot be undone.",
+      "messageWithName": "Delete \"{name}\"? Any unused credits or unsaved assets will be lost. This action cannot be undone."
+    },
+    "createWorkspaceDialog": {
+      "title": "Create a new workspace",
+      "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+      "nameLabel": "Workspace name*",
+      "namePlaceholder": "Enter workspace name",
+      "create": "Create"
+    },
+    "toast": {
+      "workspaceUpdated": {
+        "title": "Workspace updated",
+        "message": "Workspace details have been saved."
+      },
+      "failedToUpdateWorkspace": "Failed to update workspace",
+      "failedToCreateWorkspace": "Failed to create workspace",
+      "failedToDeleteWorkspace": "Failed to delete workspace",
+      "failedToLeaveWorkspace": "Failed to leave workspace"
+    }
+  },
+  "workspaceSwitcher": {
+    "switchWorkspace": "Switch workspace",
+    "subscribe": "Subscribe",
+    "roleOwner": "Owner",
+    "roleMember": "Member",
+    "createWorkspace": "Create new workspace",
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
   },
   "selectionToolbox": {
     "executeButton": {

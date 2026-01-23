@@ -208,14 +208,33 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockPersonalWorkspace.id)
     })
 
-    it('sets error state when workspaces fetch fails', async () => {
+    it('sets error state when workspaces fetch fails after retries', async () => {
+      vi.useFakeTimers()
       mockWorkspaceApi.list.mockRejectedValue(new Error('Network error'))
 
       const store = useTeamWorkspaceStore()
 
-      await expect(store.initialize()).rejects.toThrow('Network error')
+      // Start initialization and catch rejections to prevent unhandled promise warning
+      let initError: unknown = null
+      const initPromise = store.initialize().catch((e: unknown) => {
+        initError = e
+      })
+
+      // Fast-forward through all retry delays (1s, 2s, 4s)
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(4000)
+
+      await initPromise
+
+      expect(initError).toBeInstanceOf(Error)
+      expect((initError as Error).message).toBe('Network error')
       expect(store.initState).toBe('error')
       expect(store.error).toBeInstanceOf(Error)
+      // Should have been called 4 times (initial + 3 retries)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
+
+      vi.useRealTimers()
     })
 
     it('does not reinitialize if already initialized', async () => {

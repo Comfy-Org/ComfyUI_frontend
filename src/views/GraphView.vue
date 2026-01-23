@@ -48,6 +48,7 @@ import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
@@ -252,6 +253,27 @@ const onReconnected = () => {
   }
 }
 
+// Initialize workspace store when feature flag and auth become available
+// Uses watch because remoteConfig loads asynchronously after component mount
+if (isCloud) {
+  const { flags } = useFeatureFlags()
+
+  watch(
+    () => [flags.teamWorkspacesEnabled, firebaseAuthStore.isAuthenticated],
+    async ([enabled, isAuthenticated]) => {
+      if (!enabled || !isAuthenticated) return
+
+      const { useTeamWorkspaceStore } =
+        await import('@/platform/workspace/stores/teamWorkspaceStore')
+      const workspaceStore = useTeamWorkspaceStore()
+      if (workspaceStore.initState === 'uninitialized') {
+        await workspaceStore.initialize()
+      }
+    },
+    { immediate: true }
+  )
+}
+
 onMounted(() => {
   api.addEventListener('status', onStatus)
   api.addEventListener('execution_success', onExecutionSuccess)
@@ -352,7 +374,10 @@ const onGraphReady = () => {
         })
 
         // Broadcast our heartbeat
-        tabCountChannel?.postMessage({ type: 'heartbeat', tabId: currentTabId })
+        tabCountChannel?.postMessage({
+          type: 'heartbeat',
+          tabId: currentTabId
+        })
 
         // Track tab count (include current tab)
         const tabCount = activeTabs.size + 1
