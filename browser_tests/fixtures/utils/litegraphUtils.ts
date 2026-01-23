@@ -119,8 +119,7 @@ class NodeSlotReference {
           window['app'].canvas.ds.convertOffsetToCanvas(rawPos)
 
         // Debug logging - convert Float64Arrays to regular arrays for visibility
-        // eslint-disable-next-line no-console
-        console.log(
+        console.warn(
           `NodeSlotReference debug for ${type} slot ${index} on node ${id}:`,
           {
             nodePos: [node.pos[0], node.pos[1]],
