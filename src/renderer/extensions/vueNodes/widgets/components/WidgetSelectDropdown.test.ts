@@ -196,31 +196,46 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       expect(dropdownItems[0].id).toBe('missing-template_image.png')
     })
 
-    it('does not include fallback item when filter is "inputs" or "outputs"', async () => {
+    it('does not include fallback item when filter is "inputs"', async () => {
       const widget = createMockWidget('template_image.png', {
         values: ['img_001.png', 'photo_abc.jpg']
       })
       const wrapper = mountComponent(widget, 'template_image.png')
-
-      // Set filter to 'inputs'
-      await wrapper.setProps({ filterSelected: 'inputs' } as never)
-      await wrapper.vm.$nextTick()
 
       const vmWithFilter = wrapper.vm as unknown as {
         filterSelected: string
         dropdownItems: DropdownItem[]
       }
 
-      // Manually update filterSelected since it's a model
       vmWithFilter.filterSelected = 'inputs'
       await wrapper.vm.$nextTick()
 
-      // inputItems should not contain the missing value
-      expect(wrapper.vm.inputItems).toHaveLength(2)
+      const dropdownItems = vmWithFilter.dropdownItems
+      expect(dropdownItems).toHaveLength(2)
       expect(
-        wrapper.vm.inputItems.every(
-          (item) => !String(item.id).startsWith('missing-')
-        )
+        dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
+      ).toBe(true)
+    })
+
+    it('does not include fallback item when filter is "outputs"', async () => {
+      const widget = createMockWidget('template_image.png', {
+        values: ['img_001.png', 'photo_abc.jpg']
+      })
+      const wrapper = mountComponent(widget, 'template_image.png')
+
+      const vmWithFilter = wrapper.vm as unknown as {
+        filterSelected: string
+        dropdownItems: DropdownItem[]
+        outputItems: DropdownItem[]
+      }
+
+      vmWithFilter.filterSelected = 'outputs'
+      await wrapper.vm.$nextTick()
+
+      const dropdownItems = vmWithFilter.dropdownItems
+      expect(dropdownItems).toHaveLength(wrapper.vm.outputItems.length)
+      expect(
+        dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
       ).toBe(true)
     })
 

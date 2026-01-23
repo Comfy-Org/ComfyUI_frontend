@@ -164,9 +164,14 @@ const missingValueItem = computed<DropdownItem | null>(() => {
 
   if (existsInInputs || existsInOutputs) return null
 
+  const isOutput = currentValue.endsWith(' [output]')
+  const strippedValue = isOutput
+    ? currentValue.replace(' [output]', '')
+    : currentValue
+
   return {
     id: `missing-${currentValue}`,
-    mediaSrc: getMediaUrl(currentValue, 'input'),
+    mediaSrc: getMediaUrl(strippedValue, isOutput ? 'output' : 'input'),
     name: currentValue,
     label: getDisplayLabel(currentValue),
     metadata: ''
@@ -177,11 +182,11 @@ const allItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
     return assetData.dropdownItems.value
   }
-  const items = [...inputItems.value, ...outputItems.value]
-  if (missingValueItem.value) {
-    items.unshift(missingValueItem.value)
-  }
-  return items
+  return [
+    ...(missingValueItem.value ? [missingValueItem.value] : []),
+    ...inputItems.value,
+    ...outputItems.value
+  ]
 })
 
 const dropdownItems = computed<DropdownItem[]>(() => {
