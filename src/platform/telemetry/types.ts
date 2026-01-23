@@ -124,6 +124,10 @@ export interface WorkflowImportMetadata {
   open_source?: 'file_button' | 'file_drop' | 'template' | 'unknown'
 }
 
+export interface EnterLinearMetadata {
+  source?: string
+}
+
 /**
  * Workflow open metadata
  */
@@ -297,6 +301,7 @@ export interface TelemetryProvider {
   // Workflow management events
   trackWorkflowImported(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void
+  trackEnterLinear(metadata: EnterLinearMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void
@@ -372,6 +377,7 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
+  ENTER_LINEAR_MODE: 'app:toggle_linear_mode',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -441,3 +447,4 @@ export type TelemetryEventProperties =
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
+  | EnterLinearMetadata
