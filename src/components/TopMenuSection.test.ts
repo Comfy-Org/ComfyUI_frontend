@@ -13,6 +13,7 @@ import type {
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isElectron } from '@/utils/envUtil'
@@ -160,6 +161,22 @@ describe('TopMenuSection', () => {
     expect(
       wrapper.findComponent({ name: 'QueueProgressOverlay' }).exists()
     ).toBe(false)
+  })
+
+  it('toggles the queue progress overlay when QPO V2 is disabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    )
+    const wrapper = createWrapper(pinia)
+    const commandStore = useCommandStore(pinia)
+
+    await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
+
+    expect(commandStore.execute).toHaveBeenCalledWith(
+      'Comfy.Queue.ToggleOverlay'
+    )
   })
 
   it('opens the assets sidebar tab when QPO V2 is enabled', async () => {

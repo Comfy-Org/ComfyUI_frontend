@@ -46,7 +46,11 @@
             type="destructive"
             size="md"
             :aria-pressed="
-              isQueueProgressOverlayVisible ? isQueueOverlayExpanded : undefined
+              isQueuePanelV2Enabled
+                ? activeSidebarTabId === 'assets'
+                : isQueueProgressOverlayVisible
+                  ? isQueueOverlayExpanded
+                  : undefined
             "
             class="px-3"
             data-testid="queue-overlay-toggle"
@@ -137,6 +141,7 @@ const queueUIStore = useQueueUIStore()
 const sidebarTabStore = useSidebarTabStore()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
+const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 const releaseStore = useReleaseStore()
 const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
