@@ -1,71 +1,53 @@
 <template>
   <div
-    class="relative h-full w-full"
+    class="relative size-full"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @pointerdown.stop
+    @pointermove.stop
+    @pointerup.stop
   >
     <Load3DScene
-      ref="load3DSceneRef"
-      :node="node"
-      :input-spec="inputSpec"
-      :background-color="backgroundColor"
-      :show-grid="showGrid"
-      :light-intensity="lightIntensity"
-      :fov="fov"
-      :camera-type="cameraType"
-      :show-preview="showPreview"
-      :background-image="backgroundImage"
-      :up-direction="upDirection"
-      :material-mode="materialMode"
-      :edge-threshold="edgeThreshold"
-      @material-mode-change="listenMaterialModeChange"
-      @background-color-change="listenBackgroundColorChange"
-      @light-intensity-change="listenLightIntensityChange"
-      @fov-change="listenFOVChange"
-      @camera-type-change="listenCameraTypeChange"
-      @show-grid-change="listenShowGridChange"
-      @show-preview-change="listenShowPreviewChange"
-      @background-image-change="listenBackgroundImageChange"
-      @up-direction-change="listenUpDirectionChange"
-      @edge-threshold-change="listenEdgeThresholdChange"
-      @recording-status-change="listenRecordingStatusChange"
+      v-if="node"
+      :initialize-load3d="initializeLoad3d"
+      :cleanup="cleanup"
+      :loading="loading"
+      :loading-message="loadingMessage"
+      :on-model-drop="isPreview ? undefined : handleModelDrop"
+      :is-preview="isPreview"
     />
-    <Load3DControls
-      :input-spec="inputSpec"
-      :background-color="backgroundColor"
-      :show-grid="showGrid"
-      :show-preview="showPreview"
-      :light-intensity="lightIntensity"
-      :show-light-intensity-button="showLightIntensityButton"
-      :fov="fov"
-      :show-f-o-v-button="showFOVButton"
-      :show-preview-button="showPreviewButton"
-      :camera-type="cameraType"
-      :has-background-image="hasBackgroundImage"
-      :up-direction="upDirection"
-      :material-mode="materialMode"
-      :edge-threshold="edgeThreshold"
-      @update-background-image="handleBackgroundImageUpdate"
-      @switch-camera="switchCamera"
-      @toggle-grid="toggleGrid"
-      @update-background-color="handleBackgroundColorChange"
-      @update-light-intensity="handleUpdateLightIntensity"
-      @toggle-preview="togglePreview"
-      @update-f-o-v="handleUpdateFOV"
-      @update-up-direction="handleUpdateUpDirection"
-      @update-material-mode="handleUpdateMaterialMode"
-      @update-edge-threshold="handleUpdateEdgeThreshold"
-      @export-model="handleExportModel"
-    />
+    <div class="pointer-events-none absolute top-0 left-0 size-full">
+      <Load3DControls
+        v-model:scene-config="sceneConfig"
+        v-model:model-config="modelConfig"
+        v-model:camera-config="cameraConfig"
+        v-model:light-config="lightConfig"
+        :is-splat-model="isSplatModel"
+        :is-ply-model="isPlyModel"
+        :has-skeleton="hasSkeleton"
+        @update-background-image="handleBackgroundImageUpdate"
+        @export-model="handleExportModel"
+      />
+      <AnimationControls
+        v-if="animations && animations.length > 0"
+        v-model:animations="animations"
+        v-model:playing="playing"
+        v-model:selected-speed="selectedSpeed"
+        v-model:selected-animation="selectedAnimation"
+        v-model:animation-progress="animationProgress"
+        v-model:animation-duration="animationDuration"
+        @seek="handleSeek"
+      />
+    </div>
     <div
-      v-if="enable3DViewer"
+      v-if="enable3DViewer && node"
       class="pointer-events-auto absolute top-12 right-2 z-20"
     >
-      <ViewerControls :node="node" />
+      <ViewerControls :node="node as LGraphNode" />
     </div>
 
     <div
-      v-if="showRecordingControls"
+      v-if="!isPreview"
       class="pointer-events-auto absolute right-2 z-20"
       :class="{
         'top-12': !enable3DViewer,
@@ -73,10 +55,9 @@
       }"
     >
       <RecordingControls
-        :node="node"
-        :is-recording="isRecording"
-        :has-recording="hasRecording"
-        :recording-duration="recordingDuration"
+        v-model:is-recording="isRecording"
+        v-model:has-recording="hasRecording"
+        v-model:recording-duration="recordingDuration"
         @start-recording="handleStartRecording"
         @stop-recording="handleStopRecording"
         @export-recording="handleExportRecording"
@@ -87,250 +68,83 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, onMounted, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import Load3DControls from '@/components/load3d/Load3DControls.vue'
 import Load3DScene from '@/components/load3d/Load3DScene.vue'
+import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 import RecordingControls from '@/components/load3d/controls/RecordingControls.vue'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import type {
-  CameraType,
-  Load3DNodeType,
-  MaterialMode,
-  UpDirection
-} from '@/extensions/core/load3d/interfaces'
+import { useLoad3d } from '@/composables/useLoad3d'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { app } from '@/scripts/app'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const { t } = useI18n()
-const { widget } = defineProps<{
-  widget: ComponentWidget<string[]>
+const props = defineProps<{
+  widget: ComponentWidget<string[]> | SimplifiedWidget
+  nodeId?: NodeId
 }>()
 
-const inputSpec = widget.inputSpec as CustomInputSpec
+function isComponentWidget(
+  widget: ComponentWidget<string[]> | SimplifiedWidget
+): widget is ComponentWidget<string[]> {
+  return 'node' in widget && widget.node !== undefined
+}
 
-const node = widget.node
-const type = inputSpec.type as Load3DNodeType
+const node = ref<LGraphNode | null>(null)
 
-const backgroundColor = ref('#000000')
-const showGrid = ref(true)
-const showPreview = ref(false)
-const lightIntensity = ref(5)
-const showLightIntensityButton = ref(true)
-const fov = ref(75)
-const showFOVButton = ref(true)
-const cameraType = ref<CameraType>('perspective')
-const hasBackgroundImage = ref(false)
-const backgroundImage = ref('')
-const upDirection = ref<UpDirection>('original')
-const materialMode = ref<MaterialMode>('original')
-const edgeThreshold = ref(85)
-const load3DSceneRef = ref<InstanceType<typeof Load3DScene> | null>(null)
-const isRecording = ref(false)
-const hasRecording = ref(false)
-const recordingDuration = ref(0)
-const showRecordingControls = ref(!inputSpec.isPreview)
+if (isComponentWidget(props.widget)) {
+  node.value = props.widget.node
+} else if (props.nodeId) {
+  onMounted(() => {
+    node.value = app.rootGraph?.getNodeById(props.nodeId!) || null
+  })
+}
+
+const {
+  // configs
+  sceneConfig,
+  modelConfig,
+  cameraConfig,
+  lightConfig,
+
+  // other state
+  isRecording,
+  isPreview,
+  isSplatModel,
+  isPlyModel,
+  hasSkeleton,
+  hasRecording,
+  recordingDuration,
+  animations,
+  playing,
+  selectedSpeed,
+  selectedAnimation,
+  animationProgress,
+  animationDuration,
+  loading,
+  loadingMessage,
+
+  // Methods
+  initializeLoad3d,
+  handleMouseEnter,
+  handleMouseLeave,
+  handleStartRecording,
+  handleStopRecording,
+  handleExportRecording,
+  handleClearRecording,
+  handleSeek,
+  handleBackgroundImageUpdate,
+  handleExportModel,
+  handleModelDrop,
+  cleanup
+} = useLoad3d(node as Ref<LGraphNode | null>)
+
 const enable3DViewer = computed(() =>
   useSettingStore().get('Comfy.Load3D.3DViewerEnable')
 )
-
-const showPreviewButton = computed(() => {
-  return !type.includes('Preview')
-})
-
-const handleMouseEnter = () => {
-  if (load3DSceneRef.value?.load3d) {
-    load3DSceneRef.value.load3d.updateStatusMouseOnScene(true)
-  }
-}
-
-const handleMouseLeave = () => {
-  if (load3DSceneRef.value?.load3d) {
-    load3DSceneRef.value.load3d.updateStatusMouseOnScene(false)
-  }
-}
-
-const handleStartRecording = async () => {
-  if (load3DSceneRef.value?.load3d) {
-    await load3DSceneRef.value.load3d.startRecording()
-    isRecording.value = true
-  }
-}
-
-const handleStopRecording = () => {
-  if (load3DSceneRef.value?.load3d) {
-    load3DSceneRef.value.load3d.stopRecording()
-    isRecording.value = false
-    recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
-    hasRecording.value = recordingDuration.value > 0
-  }
-}
-
-const handleExportRecording = () => {
-  if (load3DSceneRef.value?.load3d) {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-    const filename = `${timestamp}-scene-recording.mp4`
-    load3DSceneRef.value.load3d.exportRecording(filename)
-  }
-}
-
-const handleClearRecording = () => {
-  if (load3DSceneRef.value?.load3d) {
-    load3DSceneRef.value.load3d.clearRecording()
-    hasRecording.value = false
-    recordingDuration.value = 0
-  }
-}
-
-const switchCamera = () => {
-  cameraType.value =
-    cameraType.value === 'perspective' ? 'orthographic' : 'perspective'
-
-  showFOVButton.value = cameraType.value === 'perspective'
-
-  node.properties['Camera Type'] = cameraType.value
-}
-
-const togglePreview = (value: boolean) => {
-  showPreview.value = value
-
-  node.properties['Show Preview'] = showPreview.value
-}
-
-const toggleGrid = (value: boolean) => {
-  showGrid.value = value
-
-  node.properties['Show Grid'] = showGrid.value
-}
-
-const handleUpdateLightIntensity = (value: number) => {
-  lightIntensity.value = value
-
-  node.properties['Light Intensity'] = lightIntensity.value
-}
-
-const handleBackgroundImageUpdate = async (file: File | null) => {
-  if (!file) {
-    hasBackgroundImage.value = false
-    backgroundImage.value = ''
-    node.properties['Background Image'] = ''
-    return
-  }
-
-  const resourceFolder = (node.properties['Resource Folder'] as string) || ''
-
-  const subfolder = resourceFolder.trim() ? `3d/${resourceFolder.trim()}` : '3d'
-
-  backgroundImage.value = await Load3dUtils.uploadFile(file, subfolder)
-
-  node.properties['Background Image'] = backgroundImage.value
-}
-
-const handleUpdateFOV = (value: number) => {
-  fov.value = value
-
-  node.properties['FOV'] = fov.value
-}
-
-const handleUpdateEdgeThreshold = (value: number) => {
-  edgeThreshold.value = value
-
-  node.properties['Edge Threshold'] = edgeThreshold.value
-}
-
-const handleBackgroundColorChange = (value: string) => {
-  backgroundColor.value = value
-
-  node.properties['Background Color'] = value
-}
-
-const handleUpdateUpDirection = (value: UpDirection) => {
-  upDirection.value = value
-
-  node.properties['Up Direction'] = value
-}
-
-const handleUpdateMaterialMode = (value: MaterialMode) => {
-  materialMode.value = value
-
-  node.properties['Material Mode'] = value
-}
-
-const handleExportModel = async (format: string) => {
-  if (!load3DSceneRef.value?.load3d) {
-    useToastStore().addAlert(t('toastMessages.no3dSceneToExport'))
-    return
-  }
-
-  try {
-    await load3DSceneRef.value.load3d.exportModel(format)
-  } catch (error) {
-    console.error('Error exporting model:', error)
-    useToastStore().addAlert(
-      t('toastMessages.failedToExportModel', {
-        format: format.toUpperCase()
-      })
-    )
-  }
-}
-
-const listenMaterialModeChange = (mode: MaterialMode) => {
-  materialMode.value = mode
-
-  showLightIntensityButton.value = mode === 'original'
-}
-
-const listenUpDirectionChange = (value: UpDirection) => {
-  upDirection.value = value
-}
-
-const listenEdgeThresholdChange = (value: number) => {
-  edgeThreshold.value = value
-}
-
-const listenRecordingStatusChange = (value: boolean) => {
-  isRecording.value = value
-
-  if (!value && load3DSceneRef.value?.load3d) {
-    recordingDuration.value = load3DSceneRef.value.load3d.getRecordingDuration()
-    hasRecording.value = recordingDuration.value > 0
-  }
-}
-
-const listenBackgroundColorChange = (value: string) => {
-  backgroundColor.value = value
-}
-
-const listenLightIntensityChange = (value: number) => {
-  lightIntensity.value = value
-}
-
-const listenFOVChange = (value: number) => {
-  fov.value = value
-}
-
-const listenCameraTypeChange = (value: CameraType) => {
-  cameraType.value = value
-  showFOVButton.value = cameraType.value === 'perspective'
-}
-
-const listenShowGridChange = (value: boolean) => {
-  showGrid.value = value
-}
-
-const listenShowPreviewChange = (value: boolean) => {
-  showPreview.value = value
-}
-
-const listenBackgroundImageChange = (value: string) => {
-  backgroundImage.value = value
-
-  if (backgroundImage.value && backgroundImage.value !== '') {
-    hasBackgroundImage.value = true
-  }
-}
 </script>

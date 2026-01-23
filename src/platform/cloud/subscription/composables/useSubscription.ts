@@ -1,48 +1,51 @@
 import { computed, ref, watch } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { COMFY_API_BASE_URL } from '@/config/comfyApi'
-import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
+import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { useDialogService } from '@/services/dialogService'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
+import { useDialogService } from '@/services/dialogService'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { operations } from '@/types/comfyRegistryTypes'
+import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
-interface CloudSubscriptionCheckoutResponse {
-  checkout_url: string
-}
+type CloudSubscriptionCheckoutResponse = NonNullable<
+  operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
+>
 
-interface CloudSubscriptionStatusResponse {
-  is_active: boolean
-  subscription_id: string
-  renewal_date: string
-}
+export type CloudSubscriptionStatusResponse = NonNullable<
+  operations['GetCloudSubscriptionStatus']['responses']['200']['content']['application/json']
+>
 
-const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+function useSubscriptionInternal() {
+  const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
+  const telemetry = useTelemetry()
+  const isInitialized = ref(false)
 
-const isActiveSubscription = computed(() => {
-  if (!isCloud || !window.__CONFIG__?.subscription_required) return true
+  const isSubscribedOrIsNotCloud = computed(() => {
+    if (!isCloud || !window.__CONFIG__?.subscription_required) return true
 
-  return subscriptionStatus.value?.is_active ?? false
-})
+    return subscriptionStatus.value?.is_active ?? false
+  })
+  const { reportError, accessBillingPortal } = useFirebaseAuthActions()
+  const { showSubscriptionRequiredDialog } = useDialogService()
 
-let isWatchSetup = false
-
-export function useSubscription() {
-  const authActions = useFirebaseAuthActions()
-  const dialogService = useDialogService()
-
-  const { getAuthHeader } = useFirebaseAuthStore()
+  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
-  const { reportError } = useFirebaseAuthActions()
 
   const { isLoggedIn } = useCurrentUser()
+
+  const isCancelled = computed(() => {
+    return !!subscriptionStatus.value?.end_date
+  })
 
   const formattedRenewalDate = computed(() => {
     if (!subscriptionStatus.value?.renewal_date) return ''
@@ -56,13 +59,46 @@ export function useSubscription() {
     })
   })
 
-  const formattedMonthlyPrice = computed(
-    () => `$${MONTHLY_SUBSCRIPTION_PRICE.toFixed(0)}`
+  const formattedEndDate = computed(() => {
+    if (!subscriptionStatus.value?.end_date) return ''
+
+    const endDate = new Date(subscriptionStatus.value.end_date)
+
+    return endDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  })
+
+  const subscriptionTier = computed(
+    () => subscriptionStatus.value?.subscription_tier ?? null
   )
 
-  const fetchStatus = wrapWithErrorHandlingAsync(async () => {
-    return await fetchSubscriptionStatus()
-  }, reportError)
+  const subscriptionDuration = computed(
+    () => subscriptionStatus.value?.subscription_duration ?? null
+  )
+
+  const isYearlySubscription = computed(
+    () => subscriptionDuration.value === 'ANNUAL'
+  )
+
+  const subscriptionTierName = computed(() => {
+    const tier = subscriptionTier.value
+    if (!tier) return ''
+    const key = TIER_TO_KEY[tier] ?? 'standard'
+    const baseName = t(`subscription.tiers.${key}.name`)
+    return isYearlySubscription.value
+      ? t('subscription.tierNameYearly', { name: baseName })
+      : baseName
+  })
+
+  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
+
+  const fetchStatus = wrapWithErrorHandlingAsync(
+    fetchSubscriptionStatus,
+    reportError
+  )
 
   const subscribe = wrapWithErrorHandlingAsync(async () => {
     const response = await initiateSubscriptionCheckout()
@@ -83,23 +119,40 @@ export function useSubscription() {
       useTelemetry()?.trackSubscription('modal_opened')
     }
 
-    dialogService.showSubscriptionRequiredDialog()
+    void showSubscriptionRequiredDialog()
   }
 
+  /**
+   * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
+   * Use to determine which UI to show (SubscriptionPanel vs LegacyCreditsPanel).
+   */
+  const isSubscriptionEnabled = (): boolean =>
+    Boolean(isCloud && window.__CONFIG__?.subscription_required)
+
+  const { startCancellationWatcher, stopCancellationWatcher } =
+    useSubscriptionCancellationWatcher({
+      fetchStatus,
+      isActiveSubscription: isSubscribedOrIsNotCloud,
+      subscriptionStatus,
+      telemetry,
+      shouldWatchCancellation: isSubscriptionEnabled
+    })
+
   const manageSubscription = async () => {
-    await authActions.accessBillingPortal()
+    await accessBillingPortal()
+    startCancellationWatcher()
   }
 
   const requireActiveSubscription = async (): Promise<void> => {
     await fetchSubscriptionStatus()
 
-    if (!isActiveSubscription.value) {
+    if (!isSubscribedOrIsNotCloud.value) {
       showSubscriptionDialog()
     }
   }
 
   const handleViewUsageHistory = () => {
-    window.open('https://platform.comfy.org/profile/usage', '_blank')
+    window.open(`${getComfyPlatformBaseUrl()}/profile/usage`, '_blank')
   }
 
   const handleLearnMore = () => {
@@ -107,64 +160,64 @@ export function useSubscription() {
   }
 
   const handleInvoiceHistory = async () => {
-    await authActions.accessBillingPortal()
+    await accessBillingPortal()
   }
 
   /**
    * Fetch the current cloud subscription status for the authenticated user
    * @returns Subscription status or null if no subscription exists
    */
-  const fetchSubscriptionStatus =
-    async (): Promise<CloudSubscriptionStatusResponse | null> => {
-      const authHeader = await getAuthHeader()
-      if (!authHeader) {
-        throw new FirebaseAuthStoreError(
-          t('toastMessages.userNotAuthenticated')
-        )
-      }
-
-      const response = await fetch(
-        `${COMFY_API_BASE_URL}/customers/cloud-subscription-status`,
-        {
-          headers: {
-            ...authHeader,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new FirebaseAuthStoreError(
-          t('toastMessages.failedToFetchSubscription', {
-            error: errorData.message
-          })
-        )
-      }
-
-      const statusData = await response.json()
-      subscriptionStatus.value = statusData
-      return statusData
+  async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
+    const authHeader = await getFirebaseAuthHeader()
+    if (!authHeader) {
+      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-  if (!isWatchSetup) {
-    isWatchSetup = true
-    watch(
-      () => isLoggedIn.value,
-      async (loggedIn) => {
-        if (loggedIn) {
-          await fetchSubscriptionStatus()
-        } else {
-          subscriptionStatus.value = null
+    const response = await fetch(
+      buildApiUrl('/customers/cloud-subscription-status'),
+      {
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
         }
-      },
-      { immediate: true }
+      }
     )
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new FirebaseAuthStoreError(
+        t('toastMessages.failedToFetchSubscription', {
+          error: errorData.message
+        })
+      )
+    }
+
+    const statusData = await response.json()
+    subscriptionStatus.value = statusData
+    return statusData
   }
+
+  watch(
+    () => isLoggedIn.value,
+    async (loggedIn) => {
+      if (loggedIn) {
+        try {
+          await fetchSubscriptionStatus()
+        } finally {
+          isInitialized.value = true
+        }
+      } else {
+        subscriptionStatus.value = null
+        stopCancellationWatcher()
+        isInitialized.value = true
+      }
+    },
+    { immediate: true }
+  )
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const authHeader = await getAuthHeader()
+      const authHeader = await getFirebaseAuthHeader()
       if (!authHeader) {
         throw new FirebaseAuthStoreError(
           t('toastMessages.userNotAuthenticated')
@@ -172,7 +225,7 @@ export function useSubscription() {
       }
 
       const response = await fetch(
-        `${COMFY_API_BASE_URL}/customers/cloud-subscription-checkout`,
+        buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',
           headers: {
@@ -196,9 +249,19 @@ export function useSubscription() {
 
   return {
     // State
-    isActiveSubscription,
+    isActiveSubscription: isSubscribedOrIsNotCloud,
+    isInitialized,
+    isCancelled,
     formattedRenewalDate,
-    formattedMonthlyPrice,
+    formattedEndDate,
+    subscriptionTier,
+    subscriptionDuration,
+    isYearlySubscription,
+    subscriptionTierName,
+    subscriptionStatus,
+
+    // Utilities
+    isSubscriptionEnabled,
 
     // Actions
     subscribe,
@@ -211,3 +274,5 @@ export function useSubscription() {
     handleInvoiceHistory
   }
 }
+
+export const useSubscription = createSharedComposable(useSubscriptionInternal)

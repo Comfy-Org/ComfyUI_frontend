@@ -2,6 +2,8 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -17,11 +19,7 @@ import type {
   Point,
   ReadonlyLinkNetwork
 } from './interfaces'
-import type {
-  Serialisable,
-  SerialisableLLink,
-  SubgraphIO
-} from './types/serialisation'
+import type { Serialisable, SerialisableLLink } from './types/serialisation'
 
 const layoutMutations = useLayoutMutations()
 
@@ -55,9 +53,9 @@ interface BaseResolvedConnection {
   /** The output the link is connected to (mutually exclusive with {@link subgraphInput}) */
   output?: INodeOutputSlot
   /** The subgraph output the link is connected to (mutually exclusive with {@link input}) */
-  subgraphOutput?: SubgraphIO
+  subgraphOutput?: SubgraphOutput
   /** The subgraph input the link is connected to (mutually exclusive with {@link output}) */
-  subgraphInput?: SubgraphIO
+  subgraphInput?: SubgraphInput
 }
 
 interface ResolvedNormalInput {
@@ -76,13 +74,13 @@ interface ResolvedSubgraphInput {
   inputNode?: undefined
   /** The actual input slot the link is connected to (mutually exclusive with {@link subgraphOutput}) */
   input?: undefined
-  subgraphOutput: SubgraphIO
+  subgraphOutput: SubgraphOutput
 }
 
 interface ResolvedSubgraphOutput {
   outputNode?: undefined
   output?: undefined
-  subgraphInput: SubgraphIO
+  subgraphInput: SubgraphInput
 }
 
 type BasicReadonlyNetwork = Pick<

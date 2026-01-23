@@ -7,6 +7,7 @@ import {
 
 export class LightingManager implements LightingManagerInterface {
   lights: THREE.Light[] = []
+  currentIntensity: number = 3
   private scene: THREE.Scene
   private eventManager: EventManagerInterface
 
@@ -58,6 +59,7 @@ export class LightingManager implements LightingManagerInterface {
   }
 
   setLightIntensity(intensity: number): void {
+    this.currentIntensity = intensity
     this.lights.forEach((light) => {
       if (light instanceof THREE.DirectionalLight) {
         if (light === this.lights[1]) {

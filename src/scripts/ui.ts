@@ -1,7 +1,9 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus, type TaskItem } from '@/schemas/apiSchema'
+import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -30,6 +32,17 @@ type Props = {
 }
 
 type Children = Element[] | Element | string | string[]
+
+/**
+ * @deprecated Legacy queue item structure from old history API.
+ * Will be removed when ComfyList is migrated to Jobs API.
+ */
+interface LegacyQueueItem {
+  prompt: [unknown, string, unknown, { extra_pnginfo: { workflow: unknown } }]
+  outputs?: Record<string, unknown>
+  meta?: Record<string, { display_node?: string }>
+  remove?: { name: string; cb: () => Promise<void> | void }
+}
 
 type ElementType<K extends string> = K extends keyof HTMLElementTagNameMap
   ? HTMLElementTagNameMap[K]
@@ -257,29 +270,28 @@ class ComfyList {
         $el('div.comfy-list-items', [
           // @ts-expect-error fixme ts strict error
           ...(this.#reverse ? items[section].reverse() : items[section]).map(
-            (item: TaskItem) => {
+            (item: LegacyQueueItem) => {
               // Allow items to specify a custom remove action (e.g. for interrupt current prompt)
-              const removeAction =
-                'remove' in item
-                  ? item.remove
-                  : {
-                      name: 'Delete',
-                      cb: () => api.deleteItem(this.#type, item.prompt[1])
-                    }
+              const removeAction = item.remove ?? {
+                name: 'Delete',
+                cb: () => api.deleteItem(this.#type, item.prompt[1])
+              }
               return $el('div', { textContent: item.prompt[0] + ': ' }, [
                 $el('button', {
                   textContent: 'Load',
                   onclick: async () => {
                     await app.loadGraphData(
-                      // @ts-expect-error fixme ts strict error
-                      item.prompt[3].extra_pnginfo.workflow,
+                      item.prompt[3].extra_pnginfo.workflow as Parameters<
+                        typeof app.loadGraphData
+                      >[0],
                       true,
                       false
                     )
-                    if ('outputs' in item) {
+                    if ('outputs' in item && item.outputs) {
                       app.nodeOutputs = {}
                       for (const [key, value] of Object.entries(item.outputs)) {
                         const realKey = item['meta']?.[key]?.display_node ?? key
+                        // @ts-expect-error fixme ts strict error
                         app.nodeOutputs[realKey] = value
                       }
                     }
@@ -391,9 +403,11 @@ export class ComfyUI {
       style: { display: 'none' },
       parent: document.body,
       onchange: async () => {
-        // @ts-expect-error fixme ts strict error
-        await app.handleFile(fileInput.files[0])
-        fileInput.value = ''
+        const file = fileInput.files?.[0]
+        if (file) {
+          await app.handleFile(file, 'file_button')
+          fileInput.value = ''
+        }
       }
     })
 
@@ -470,7 +484,13 @@ export class ComfyUI {
         $el('button.comfy-queue-btn', {
           id: 'queue-button',
           textContent: 'Queue Prompt',
-          onclick: () => app.queuePrompt(0, this.batchCount)
+          onclick: () => {
+            if (isCloud) {
+              useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
+              useTelemetry()?.trackWorkflowExecution()
+            }
+            app.queuePrompt(0, this.batchCount)
+          }
         }),
         $el('div', {}, [
           $el('label', { innerHTML: 'Extra options' }, [
@@ -572,7 +592,13 @@ export class ComfyUI {
           $el('button', {
             id: 'queue-front-button',
             textContent: 'Queue Front',
-            onclick: () => app.queuePrompt(-1, this.batchCount)
+            onclick: () => {
+              if (isCloud) {
+                useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
+                useTelemetry()?.trackWorkflowExecution()
+              }
+              app.queuePrompt(-1, this.batchCount)
+            }
           }),
           $el('button', {
             $: (b) => (this.queue.button = b as HTMLButtonElement),

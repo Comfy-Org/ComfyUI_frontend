@@ -1,1809 +1,654 @@
-import type { INodeInputSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+// JSONata-based pricing badge evaluation for API nodes.
+//
+// Pricing declarations are read from ComfyUI node definitions (price_badge field).
+// The Frontend evaluates these declarations locally using a JSONata engine.
+//
+// JSONata v2.x NOTE:
+// - jsonata(expression).evaluate(input) returns a Promise in JSONata 2.x.
+// - Therefore, pricing evaluation is async. This file implements:
+//   - sync getter (returns cached label / last-known label),
+//   - async evaluation + cache,
+//   - reactive tick to update UI when async evaluation completes.
+
+import { readonly, ref } from 'vue'
+import type { Ref } from 'vue'
+import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  ComfyNodeDef,
+  PriceBadge,
+  WidgetDependency
+} from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { Expression } from 'jsonata'
+import jsonata from 'jsonata'
 
 /**
- * Function that calculates dynamic pricing based on node widget values
+ * Determine if a number should display 1 decimal place.
+ * Shows decimal only when the first decimal digit is non-zero.
  */
-type PricingFunction = (node: LGraphNode) => string
+const shouldShowDecimal = (value: number): boolean => {
+  const rounded = Math.round(value * 10) / 10
+  return rounded % 1 !== 0
+}
 
-/**
- * Safely executes a pricing function with error handling
- * Returns null if the function throws an error, allowing the node to still render
- */
-function safePricingExecution(
-  fn: PricingFunction,
-  node: LGraphNode,
-  fallback: string = ''
-): string {
-  try {
-    return fn(node)
-  } catch (error) {
-    // Log error in development but don't throw to avoid breaking node rendering
-    if (process.env.NODE_ENV === 'development') {
-      console.warn(
-        'Pricing calculation failed for node:',
-        node.constructor?.nodeData?.name,
-        error
-      )
+const getNumberOptions = (credits: number): Intl.NumberFormatOptions => ({
+  minimumFractionDigits: 0,
+  maximumFractionDigits: shouldShowDecimal(credits) ? 1 : 0
+})
+
+type CreditFormatOptions = {
+  suffix?: string
+  note?: string
+  approximate?: boolean
+  separator?: string
+}
+
+const formatCreditsValue = (usd: number): string => {
+  // Use raw credits value (before rounding) to determine decimal display
+  const rawCredits = usd * CREDITS_PER_USD
+  return formatCredits({
+    value: rawCredits,
+    numberOptions: getNumberOptions(rawCredits)
+  })
+}
+
+const makePrefix = (approximate?: boolean) => (approximate ? '~' : '')
+
+const makeSuffix = (suffix?: string) => suffix ?? '/Run'
+
+const appendNote = (note?: string) => (note ? ` ${note}` : '')
+
+const formatCreditsLabel = (
+  usd: number,
+  { suffix, note, approximate }: CreditFormatOptions = {}
+): string =>
+  `${makePrefix(approximate)}${formatCreditsValue(usd)} credits${makeSuffix(suffix)}${appendNote(note)}`
+
+const formatCreditsRangeLabel = (
+  minUsd: number,
+  maxUsd: number,
+  { suffix, note, approximate }: CreditFormatOptions = {}
+): string => {
+  const min = formatCreditsValue(minUsd)
+  const max = formatCreditsValue(maxUsd)
+  const rangeValue = min === max ? min : `${min}-${max}`
+  return `${makePrefix(approximate)}${rangeValue} credits${makeSuffix(suffix)}${appendNote(note)}`
+}
+
+const formatCreditsListLabel = (
+  usdValues: number[],
+  { suffix, note, approximate, separator }: CreditFormatOptions = {}
+): string => {
+  const parts = usdValues.map((value) => formatCreditsValue(value))
+  const value = parts.join(separator ?? '/')
+  return `${makePrefix(approximate)}${value} credits${makeSuffix(suffix)}${appendNote(note)}`
+}
+
+// -----------------------------
+// JSONata pricing types
+// -----------------------------
+type PricingResult =
+  | { type: 'text'; text: string }
+  | { type: 'usd'; usd: number; format?: CreditFormatOptions }
+  | {
+      type: 'range_usd'
+      min_usd: number
+      max_usd: number
+      format?: CreditFormatOptions
     }
-    return fallback
-  }
-}
+  | { type: 'list_usd'; usd: number[]; format?: CreditFormatOptions }
 
-/**
- * Helper function to calculate Runway duration-based pricing
- * @param node - The LiteGraph node
- * @returns Formatted price string
- */
-const calculateRunwayDurationPrice = (node: LGraphNode): string => {
-  const durationWidget = node.widgets?.find(
-    (w) => w.name === 'duration'
-  ) as IComboWidget
+const PRICING_RESULT_TYPES = ['text', 'usd', 'range_usd', 'list_usd'] as const
 
-  if (!durationWidget) return '$0.05/second'
-
-  const duration = Number(durationWidget.value)
-  // If duration is 0 or NaN, don't fall back to 5 seconds - just use 0
-  const validDuration = isNaN(duration) ? 5 : duration
-  const cost = (0.05 * validDuration).toFixed(2)
-  return `$${cost}/Run`
-}
-
-const pixversePricingCalculator = (node: LGraphNode): string => {
-  const durationWidget = node.widgets?.find(
-    (w) => w.name === 'duration_seconds'
-  ) as IComboWidget
-  const qualityWidget = node.widgets?.find(
-    (w) => w.name === 'quality'
-  ) as IComboWidget
-  const motionModeWidget = node.widgets?.find(
-    (w) => w.name === 'motion_mode'
-  ) as IComboWidget
-
-  if (!durationWidget || !qualityWidget) {
-    return '$0.45-1.2/Run (varies with duration, quality & motion mode)'
-  }
-
-  const duration = String(durationWidget.value)
-  const quality = String(qualityWidget.value)
-  const motionMode = String(motionModeWidget?.value)
-
-  // Basic pricing based on duration and quality
-  if (duration.includes('5')) {
-    if (quality.includes('1080p')) return '$1.2/Run'
-    if (quality.includes('720p') && motionMode?.includes('fast'))
-      return '$1.2/Run'
-    if (quality.includes('720p') && motionMode?.includes('normal'))
-      return '$0.6/Run'
-    if (quality.includes('540p') && motionMode?.includes('fast'))
-      return '$0.9/Run'
-    if (quality.includes('540p') && motionMode?.includes('normal'))
-      return '$0.45/Run'
-    if (quality.includes('360p') && motionMode?.includes('fast'))
-      return '$0.9/Run'
-    if (quality.includes('360p') && motionMode?.includes('normal'))
-      return '$0.45/Run'
-    if (quality.includes('720p') && motionMode?.includes('fast'))
-      return '$1.2/Run'
-  } else if (duration.includes('8')) {
-    if (quality.includes('720p') && motionMode?.includes('normal'))
-      return '$1.2/Run'
-    if (quality.includes('540p') && motionMode?.includes('normal'))
-      return '$0.9/Run'
-    if (quality.includes('540p') && motionMode?.includes('fast'))
-      return '$1.2/Run'
-    if (quality.includes('360p') && motionMode?.includes('normal'))
-      return '$0.9/Run'
-    if (quality.includes('360p') && motionMode?.includes('fast'))
-      return '$1.2/Run'
-    if (quality.includes('1080p') && motionMode?.includes('normal'))
-      return '$1.2/Run'
-    if (quality.includes('1080p') && motionMode?.includes('fast'))
-      return '$1.2/Run'
-    if (quality.includes('720p') && motionMode?.includes('normal'))
-      return '$1.2/Run'
-    if (quality.includes('720p') && motionMode?.includes('fast'))
-      return '$1.2/Run'
-  }
-
-  return '$0.9/Run'
-}
-
-const byteDanceVideoPricingCalculator = (node: LGraphNode): string => {
-  const modelWidget = node.widgets?.find(
-    (w) => w.name === 'model'
-  ) as IComboWidget
-  const durationWidget = node.widgets?.find(
-    (w) => w.name === 'duration'
-  ) as IComboWidget
-  const resolutionWidget = node.widgets?.find(
-    (w) => w.name === 'resolution'
-  ) as IComboWidget
-
-  if (!modelWidget || !durationWidget || !resolutionWidget) return 'Token-based'
-
-  const model = String(modelWidget.value).toLowerCase()
-  const resolution = String(resolutionWidget.value).toLowerCase()
-  const seconds = parseFloat(String(durationWidget.value))
-  const priceByModel: Record<string, Record<string, [number, number]>> = {
-    'seedance-1-0-pro': {
-      '480p': [0.23, 0.24],
-      '720p': [0.51, 0.56],
-      '1080p': [1.18, 1.22]
-    },
-    'seedance-1-0-lite': {
-      '480p': [0.17, 0.18],
-      '720p': [0.37, 0.41],
-      '1080p': [0.85, 0.88]
-    }
-  }
-
-  const modelKey = model.includes('seedance-1-0-pro')
-    ? 'seedance-1-0-pro'
-    : model.includes('seedance-1-0-lite')
-      ? 'seedance-1-0-lite'
-      : ''
-
-  const resKey = resolution.includes('1080')
-    ? '1080p'
-    : resolution.includes('720')
-      ? '720p'
-      : resolution.includes('480')
-        ? '480p'
-        : ''
-
-  const baseRange =
-    modelKey && resKey ? priceByModel[modelKey]?.[resKey] : undefined
-  if (!baseRange) return 'Token-based'
-
-  const [min10s, max10s] = baseRange
-  const scale = seconds / 10
-  const minCost = min10s * scale
-  const maxCost = max10s * scale
-
-  const minStr = `$${minCost.toFixed(2)}/Run`
-  const maxStr = `$${maxCost.toFixed(2)}/Run`
-
-  return minStr === maxStr
-    ? minStr
-    : `$${minCost.toFixed(2)}-$${maxCost.toFixed(2)}/Run`
-}
-
-// ---- constants ----
-const SORA_SIZES = {
-  BASIC: new Set(['720x1280', '1280x720']),
-  PRO: new Set(['1024x1792', '1792x1024'])
-}
-const ALL_SIZES = new Set([...SORA_SIZES.BASIC, ...SORA_SIZES.PRO])
-
-// ---- sora-2 pricing helpers ----
-function validateSora2Selection(
-  modelRaw: string,
-  duration: number,
-  sizeRaw: string
-): string | undefined {
-  const model = modelRaw?.toLowerCase() ?? ''
-  const size = sizeRaw?.toLowerCase() ?? ''
-
-  if (!duration || Number.isNaN(duration)) return 'Set duration (4s / 8s / 12s)'
-  if (!size) return 'Set size (720x1280, 1280x720, 1024x1792, 1792x1024)'
-  if (!ALL_SIZES.has(size))
-    return 'Invalid size. Must be 720x1280, 1280x720, 1024x1792, or 1792x1024.'
-
-  if (model.includes('sora-2-pro')) return undefined
-
-  if (model.includes('sora-2') && !SORA_SIZES.BASIC.has(size))
-    return 'sora-2 supports only 720x1280 or 1280x720'
-
-  if (!model.includes('sora-2')) return 'Unsupported model'
-
-  return undefined
-}
-
-function perSecForSora2(modelRaw: string, sizeRaw: string): number {
-  const model = modelRaw?.toLowerCase() ?? ''
-  const size = sizeRaw?.toLowerCase() ?? ''
-
-  if (model.includes('sora-2-pro')) {
-    return SORA_SIZES.PRO.has(size) ? 0.5 : 0.3
-  }
-  if (model.includes('sora-2')) return 0.1
-
-  return SORA_SIZES.PRO.has(size) ? 0.5 : 0.1
-}
-
-function formatRunPrice(perSec: number, duration: number) {
-  return `$${(perSec * duration).toFixed(2)}/Run`
-}
-
-// ---- pricing calculator ----
-const sora2PricingCalculator: PricingFunction = (node: LGraphNode): string => {
-  const getWidgetValue = (name: string) =>
-    String(node.widgets?.find((w) => w.name === name)?.value ?? '')
-
-  const model = getWidgetValue('model')
-  const size = getWidgetValue('size')
-  const duration = Number(
-    node.widgets?.find((w) => ['duration', 'duration_s'].includes(w.name))
-      ?.value
+/** Type guard to validate that a value is a PricingResult. */
+const isPricingResult = (value: unknown): value is PricingResult =>
+  typeof value === 'object' &&
+  value !== null &&
+  'type' in value &&
+  typeof (value as { type: unknown }).type === 'string' &&
+  PRICING_RESULT_TYPES.includes(
+    (value as { type: string }).type as (typeof PRICING_RESULT_TYPES)[number]
   )
 
-  if (!model || !size || !duration) return 'Set model, duration & size'
+/**
+ * Widget values are normalized based on their declared type:
+ * - INT/FLOAT → number (or null if not parseable)
+ * - BOOLEAN → boolean (or null if not parseable)
+ * - STRING/COMBO/other → string (lowercased, trimmed)
+ */
+type NormalizedWidgetValue = string | number | boolean | null
 
-  const validationError = validateSora2Selection(model, duration, size)
-  if (validationError) return validationError
+type JsonataPricingRule = {
+  engine: 'jsonata'
+  depends_on: {
+    widgets: WidgetDependency[]
+    inputs: string[]
+    input_groups: string[]
+  }
+  expr: string
+  result_defaults?: CreditFormatOptions
+}
 
-  const perSec = perSecForSora2(model, size)
-  return formatRunPrice(perSec, duration)
+type CompiledJsonataPricingRule = JsonataPricingRule & {
+  _compiled: Expression | null
 }
 
 /**
- * Static pricing data for API nodes, now supporting both strings and functions
+ * Shape of nodeData attached to LGraphNode constructor for API nodes.
+ * Uses Pick from schema type to ensure consistency.
  */
-const apiNodeCosts: Record<string, { displayPrice: string | PricingFunction }> =
-  {
-    FluxProCannyNode: {
-      displayPrice: '$0.05/Run'
-    },
-    FluxProDepthNode: {
-      displayPrice: '$0.05/Run'
-    },
-    FluxProExpandNode: {
-      displayPrice: '$0.05/Run'
-    },
-    FluxProFillNode: {
-      displayPrice: '$0.05/Run'
-    },
-    FluxProUltraImageNode: {
-      displayPrice: '$0.06/Run'
-    },
-    FluxProKontextProNode: {
-      displayPrice: '$0.04/Run'
-    },
-    FluxProKontextMaxNode: {
-      displayPrice: '$0.08/Run'
-    },
-    OpenAIVideoSora2: {
-      displayPrice: sora2PricingCalculator
-    },
-    IdeogramV1: {
-      displayPrice: (node: LGraphNode): string => {
-        const numImagesWidget = node.widgets?.find(
-          (w) => w.name === 'num_images'
-        ) as IComboWidget
-        const turboWidget = node.widgets?.find(
-          (w) => w.name === 'turbo'
-        ) as IComboWidget
-
-        if (!numImagesWidget) return '$0.02-0.06 x num_images/Run'
-
-        const numImages = Number(numImagesWidget.value) || 1
-        const turbo = String(turboWidget?.value).toLowerCase() === 'true'
-        const basePrice = turbo ? 0.02 : 0.06
-        const cost = (basePrice * numImages).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    IdeogramV2: {
-      displayPrice: (node: LGraphNode): string => {
-        const numImagesWidget = node.widgets?.find(
-          (w) => w.name === 'num_images'
-        ) as IComboWidget
-        const turboWidget = node.widgets?.find(
-          (w) => w.name === 'turbo'
-        ) as IComboWidget
-
-        if (!numImagesWidget) return '$0.05-0.08 x num_images/Run'
-
-        const numImages = Number(numImagesWidget.value) || 1
-        const turbo = String(turboWidget?.value).toLowerCase() === 'true'
-        const basePrice = turbo ? 0.05 : 0.08
-        const cost = (basePrice * numImages).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    IdeogramV3: {
-      displayPrice: (node: LGraphNode): string => {
-        const renderingSpeedWidget = node.widgets?.find(
-          (w) => w.name === 'rendering_speed'
-        ) as IComboWidget
-        const numImagesWidget = node.widgets?.find(
-          (w) => w.name === 'num_images'
-        ) as IComboWidget
-        const characterInput = node.inputs?.find(
-          (i) => i.name === 'character_image'
-        ) as INodeInputSlot
-        const hasCharacter =
-          typeof characterInput?.link !== 'undefined' &&
-          characterInput.link != null
-
-        if (!renderingSpeedWidget)
-          return '$0.03-0.08 x num_images/Run (varies with rendering speed & num_images)'
-
-        const numImages = Number(numImagesWidget?.value) || 1
-        let basePrice = 0.06 // default balanced price
-
-        const renderingSpeed = String(renderingSpeedWidget.value)
-        if (renderingSpeed.toLowerCase().includes('quality')) {
-          if (hasCharacter) {
-            basePrice = 0.2
-          } else {
-            basePrice = 0.09
-          }
-        } else if (renderingSpeed.toLowerCase().includes('default')) {
-          if (hasCharacter) {
-            basePrice = 0.15
-          } else {
-            basePrice = 0.06
-          }
-        } else if (renderingSpeed.toLowerCase().includes('turbo')) {
-          if (hasCharacter) {
-            basePrice = 0.1
-          } else {
-            basePrice = 0.03
-          }
-        }
-
-        const totalCost = (basePrice * numImages).toFixed(2)
-        return `$${totalCost}/Run`
-      }
-    },
-    KlingCameraControlI2VNode: {
-      displayPrice: '$0.49/Run'
-    },
-    KlingCameraControlT2VNode: {
-      displayPrice: '$0.14/Run'
-    },
-    KlingDualCharacterVideoEffectNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modeWidget = node.widgets?.find(
-          (w) => w.name === 'mode'
-        ) as IComboWidget
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model_name'
-        ) as IComboWidget
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-        if (!modeWidget || !modelWidget || !durationWidget)
-          return '$0.14-2.80/Run (varies with model, mode & duration)'
-
-        const modeValue = String(modeWidget.value)
-        const durationValue = String(durationWidget.value)
-        const modelValue = String(modelWidget.value)
-
-        // Same pricing matrix as KlingTextToVideoNode
-        if (modelValue.includes('v1-6') || modelValue.includes('v1-5')) {
-          if (modeValue.includes('pro')) {
-            return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
-          } else {
-            return durationValue.includes('10') ? '$0.56/Run' : '$0.28/Run'
-          }
-        } else if (modelValue.includes('v1')) {
-          if (modeValue.includes('pro')) {
-            return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
-          } else {
-            return durationValue.includes('10') ? '$0.28/Run' : '$0.14/Run'
-          }
-        }
-
-        return '$0.14/Run'
-      }
-    },
-    KlingImage2VideoNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modeWidget = node.widgets?.find(
-          (w) => w.name === 'mode'
-        ) as IComboWidget
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model_name'
-        ) as IComboWidget
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-
-        if (!modeWidget) {
-          if (!modelWidget)
-            return '$0.14-2.80/Run (varies with model, mode & duration)'
-
-          const modelValue = String(modelWidget.value)
-          if (
-            modelValue.includes('v2-1-master') ||
-            modelValue.includes('v2-master')
-          ) {
-            return '$1.40/Run'
-          } else if (
-            modelValue.includes('v1-6') ||
-            modelValue.includes('v1-5')
-          ) {
-            return '$0.28/Run'
-          }
-          return '$0.14/Run'
-        }
-
-        const modeValue = String(modeWidget.value)
-        const durationValue = String(durationWidget.value)
-        const modelValue = String(modelWidget.value)
-
-        // Same pricing matrix as KlingTextToVideoNode
-        if (modelValue.includes('v2-5-turbo')) {
-          if (durationValue.includes('10')) {
-            return '$0.70/Run'
-          }
-          return '$0.35/Run' // 5s default
-        } else if (
-          modelValue.includes('v2-1-master') ||
-          modelValue.includes('v2-master')
-        ) {
-          if (durationValue.includes('10')) {
-            return '$2.80/Run'
-          }
-          return '$1.40/Run' // 5s default
-        } else if (
-          modelValue.includes('v2-1') ||
-          modelValue.includes('v1-6') ||
-          modelValue.includes('v1-5')
-        ) {
-          if (modeValue.includes('pro')) {
-            return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
-          } else {
-            return durationValue.includes('10') ? '$0.56/Run' : '$0.28/Run'
-          }
-        } else if (modelValue.includes('v1')) {
-          if (modeValue.includes('pro')) {
-            return durationValue.includes('10') ? '$0.98/Run' : '$0.49/Run'
-          } else {
-            return durationValue.includes('10') ? '$0.28/Run' : '$0.14/Run'
-          }
-        }
-
-        return '$0.14/Run'
-      }
-    },
-    KlingImageGenerationNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const imageInputWidget = node.inputs?.find((i) => i.name === 'image')
-        // If link is not null => image is connected => modality is image to image
-        const modality = imageInputWidget?.link
-          ? 'image to image'
-          : 'text to image'
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model_name'
-        ) as IComboWidget
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-
-        if (!modelWidget)
-          return '$0.0035-0.028 x n/Run (varies with modality & model)'
-
-        const model = String(modelWidget.value)
-        const n = Number(nWidget?.value) || 1
-        let basePrice = 0.014 // default
-
-        if (modality.includes('text to image')) {
-          if (model.includes('kling-v1-5') || model.includes('kling-v2')) {
-            basePrice = 0.014
-          } else if (model.includes('kling-v1')) {
-            basePrice = 0.0035
-          }
-        } else if (modality.includes('image to image')) {
-          if (model.includes('kling-v1-5')) {
-            basePrice = 0.028
-          } else if (model.includes('kling-v1')) {
-            basePrice = 0.0035
-          }
-        }
-
-        const totalCost = (basePrice * n).toFixed(4)
-        return `$${totalCost}/Run`
-      }
-    },
-    KlingLipSyncAudioToVideoNode: {
-      displayPrice: '~$0.10/Run'
-    },
-    KlingLipSyncTextToVideoNode: {
-      displayPrice: '~$0.10/Run'
-    },
-    KlingSingleImageVideoEffectNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const effectSceneWidget = node.widgets?.find(
-          (w) => w.name === 'effect_scene'
-        ) as IComboWidget
-
-        if (!effectSceneWidget)
-          return '$0.28-0.49/Run (varies with effect scene)'
-
-        const effectScene = String(effectSceneWidget.value)
-        if (
-          effectScene.includes('fuzzyfuzzy') ||
-          effectScene.includes('squish')
-        ) {
-          return '$0.28/Run'
-        } else if (effectScene.includes('dizzydizzy')) {
-          return '$0.49/Run'
-        } else if (effectScene.includes('bloombloom')) {
-          return '$0.49/Run'
-        } else if (effectScene.includes('expansion')) {
-          return '$0.28/Run'
-        }
-
-        return '$0.28/Run'
-      }
-    },
-    KlingStartEndFrameNode: {
-      displayPrice: (node: LGraphNode): string => {
-        // Same pricing as KlingTextToVideoNode per CSV ("Same as text to video")
-        const modeWidget = node.widgets?.find(
-          (w) => w.name === 'mode'
-        ) as IComboWidget
-        if (!modeWidget)
-          return '$0.14-2.80/Run (varies with model, mode & duration)'
-
-        const modeValue = String(modeWidget.value)
-
-        // Same pricing matrix as KlingTextToVideoNode
-        if (modeValue.includes('v2-1')) {
-          if (modeValue.includes('10s')) {
-            return '$0.98/Run' // pro, 10s
-          }
-          return '$0.49/Run' // pro, 5s default
-        } else if (modeValue.includes('v2-master')) {
-          if (modeValue.includes('10s')) {
-            return '$2.80/Run'
-          }
-          return '$1.40/Run' // 5s default
-        } else if (modeValue.includes('v1-6')) {
-          if (modeValue.includes('pro')) {
-            return modeValue.includes('10s') ? '$0.98/Run' : '$0.49/Run'
-          } else {
-            return modeValue.includes('10s') ? '$0.56/Run' : '$0.28/Run'
-          }
-        } else if (modeValue.includes('v1')) {
-          if (modeValue.includes('pro')) {
-            return modeValue.includes('10s') ? '$0.98/Run' : '$0.49/Run'
-          } else {
-            return modeValue.includes('10s') ? '$0.28/Run' : '$0.14/Run'
-          }
-        }
-
-        return '$0.14/Run'
-      }
-    },
-    KlingTextToVideoNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modeWidget = node.widgets?.find(
-          (w) => w.name === 'mode'
-        ) as IComboWidget
-        if (!modeWidget)
-          return '$0.14-2.80/Run (varies with model, mode & duration)'
-
-        const modeValue = String(modeWidget.value)
-
-        // Pricing matrix from CSV data based on mode string content
-        if (modeValue.includes('v2-5-turbo')) {
-          if (modeValue.includes('10')) {
-            return '$0.70/Run'
-          }
-          return '$0.35/Run' // 5s default
-        } else if (modeValue.includes('v2-1-master')) {
-          if (modeValue.includes('10s')) {
-            return '$2.80/Run' // price is the same as for v2-master model
-          }
-          return '$1.40/Run' // price is the same as for v2-master model
-        } else if (modeValue.includes('v2-master')) {
-          if (modeValue.includes('10s')) {
-            return '$2.80/Run'
-          }
-          return '$1.40/Run' // 5s default
-        } else if (modeValue.includes('v1-6')) {
-          if (modeValue.includes('pro')) {
-            return modeValue.includes('10s') ? '$0.98/Run' : '$0.49/Run'
-          } else {
-            return modeValue.includes('10s') ? '$0.56/Run' : '$0.28/Run'
-          }
-        } else if (modeValue.includes('v1')) {
-          if (modeValue.includes('pro')) {
-            return modeValue.includes('10s') ? '$0.98/Run' : '$0.49/Run'
-          } else {
-            return modeValue.includes('10s') ? '$0.28/Run' : '$0.14/Run'
-          }
-        }
-
-        return '$0.14/Run'
-      }
-    },
-    KlingVideoExtendNode: {
-      displayPrice: '$0.28/Run'
-    },
-    KlingVirtualTryOnNode: {
-      displayPrice: '$0.07/Run'
-    },
-    LumaImageToVideoNode: {
-      displayPrice: (node: LGraphNode): string => {
-        // Same pricing as LumaVideoNode per CSV
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'resolution'
-        ) as IComboWidget
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-
-        if (!modelWidget || !resolutionWidget || !durationWidget) {
-          return '$0.14-11.47/Run (varies with model, resolution & duration)'
-        }
-
-        const model = String(modelWidget.value)
-        const resolution = String(resolutionWidget.value).toLowerCase()
-        const duration = String(durationWidget.value)
-
-        if (model.includes('ray-flash-2')) {
-          if (duration.includes('5s')) {
-            if (resolution.includes('4k')) return '$2.19/Run'
-            if (resolution.includes('1080p')) return '$0.55/Run'
-            if (resolution.includes('720p')) return '$0.24/Run'
-            if (resolution.includes('540p')) return '$0.14/Run'
-          } else if (duration.includes('9s')) {
-            if (resolution.includes('4k')) return '$3.95/Run'
-            if (resolution.includes('1080p')) return '$0.99/Run'
-            if (resolution.includes('720p')) return '$0.43/Run'
-            if (resolution.includes('540p')) return '$0.252/Run'
-          }
-        } else if (model.includes('ray-2')) {
-          if (duration.includes('5s')) {
-            if (resolution.includes('4k')) return '$6.37/Run'
-            if (resolution.includes('1080p')) return '$1.59/Run'
-            if (resolution.includes('720p')) return '$0.71/Run'
-            if (resolution.includes('540p')) return '$0.40/Run'
-          } else if (duration.includes('9s')) {
-            if (resolution.includes('4k')) return '$11.47/Run'
-            if (resolution.includes('1080p')) return '$2.87/Run'
-            if (resolution.includes('720p')) return '$1.28/Run'
-            if (resolution.includes('540p')) return '$0.72/Run'
-          }
-        } else if (model.includes('ray-1.6')) {
-          return '$0.35/Run'
-        }
-
-        return '$0.55/Run'
-      }
-    },
-    LumaVideoNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'resolution'
-        ) as IComboWidget
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-
-        if (!modelWidget || !resolutionWidget || !durationWidget) {
-          return '$0.14-11.47/Run (varies with model, resolution & duration)'
-        }
-
-        const model = String(modelWidget.value)
-        const resolution = String(resolutionWidget.value).toLowerCase()
-        const duration = String(durationWidget.value)
-
-        if (model.includes('ray-flash-2')) {
-          if (duration.includes('5s')) {
-            if (resolution.includes('4k')) return '$2.19/Run'
-            if (resolution.includes('1080p')) return '$0.55/Run'
-            if (resolution.includes('720p')) return '$0.24/Run'
-            if (resolution.includes('540p')) return '$0.14/Run'
-          } else if (duration.includes('9s')) {
-            if (resolution.includes('4k')) return '$3.95/Run'
-            if (resolution.includes('1080p')) return '$0.99/Run'
-            if (resolution.includes('720p')) return '$0.43/Run'
-            if (resolution.includes('540p')) return '$0.252/Run'
-          }
-        } else if (model.includes('ray-2')) {
-          if (duration.includes('5s')) {
-            if (resolution.includes('4k')) return '$6.37/Run'
-            if (resolution.includes('1080p')) return '$1.59/Run'
-            if (resolution.includes('720p')) return '$0.71/Run'
-            if (resolution.includes('540p')) return '$0.40/Run'
-          } else if (duration.includes('9s')) {
-            if (resolution.includes('4k')) return '$11.47/Run'
-            if (resolution.includes('1080p')) return '$2.87/Run'
-            if (resolution.includes('720p')) return '$1.28/Run'
-            if (resolution.includes('540p')) return '$0.72/Run'
-          }
-        } else if (model.includes('ray-1-6')) {
-          return '$0.35/Run'
-        }
-
-        return '$0.55/Run'
-      }
-    },
-    MinimaxImageToVideoNode: {
-      displayPrice: '$0.43/Run'
-    },
-    MinimaxTextToVideoNode: {
-      displayPrice: '$0.43/Run'
-    },
-    MinimaxHailuoVideoNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'resolution'
-        ) as IComboWidget
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-
-        if (!resolutionWidget || !durationWidget) {
-          return '$0.28-0.56/Run (varies with resolution & duration)'
-        }
-
-        const resolution = String(resolutionWidget.value)
-        const duration = String(durationWidget.value)
-
-        if (resolution.includes('768P')) {
-          if (duration.includes('6')) return '$0.28/Run'
-          if (duration.includes('10')) return '$0.56/Run'
-        } else if (resolution.includes('1080P')) {
-          if (duration.includes('6')) return '$0.49/Run'
-        }
-
-        return '$0.43/Run' // default median
-      }
-    },
-    OpenAIDalle2: {
-      displayPrice: (node: LGraphNode): string => {
-        const sizeWidget = node.widgets?.find(
-          (w) => w.name === 'size'
-        ) as IComboWidget
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-
-        if (!sizeWidget) return '$0.016-0.02 x n/Run (varies with size & n)'
-
-        const size = String(sizeWidget.value)
-        const n = Number(nWidget?.value) || 1
-        let basePrice = 0.02 // default
-
-        if (size.includes('1024x1024')) {
-          basePrice = 0.02
-        } else if (size.includes('512x512')) {
-          basePrice = 0.018
-        } else if (size.includes('256x256')) {
-          basePrice = 0.016
-        }
-
-        const totalCost = (basePrice * n).toFixed(3)
-        return `$${totalCost}/Run`
-      }
-    },
-    OpenAIDalle3: {
-      displayPrice: (node: LGraphNode): string => {
-        // Get size and quality widgets
-        const sizeWidget = node.widgets?.find(
-          (w) => w.name === 'size'
-        ) as IComboWidget
-        const qualityWidget = node.widgets?.find(
-          (w) => w.name === 'quality'
-        ) as IComboWidget
-
-        if (!sizeWidget || !qualityWidget)
-          return '$0.04-0.12/Run (varies with size & quality)'
-
-        const size = String(sizeWidget.value)
-        const quality = String(qualityWidget.value)
-
-        // Pricing matrix based on CSV data
-        if (size.includes('1024x1024')) {
-          return quality.includes('hd') ? '$0.08/Run' : '$0.04/Run'
-        } else if (size.includes('1792x1024') || size.includes('1024x1792')) {
-          return quality.includes('hd') ? '$0.12/Run' : '$0.08/Run'
-        }
-
-        // Default value
-        return '$0.04/Run'
-      }
-    },
-    OpenAIGPTImage1: {
-      displayPrice: (node: LGraphNode): string => {
-        const qualityWidget = node.widgets?.find(
-          (w) => w.name === 'quality'
-        ) as IComboWidget
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-
-        if (!qualityWidget)
-          return '$0.011-0.30 x n/Run (varies with quality & n)'
-
-        const quality = String(qualityWidget.value)
-        const n = Number(nWidget?.value) || 1
-        let basePriceRange = '$0.046-0.07' // default medium
-
-        if (quality.includes('high')) {
-          basePriceRange = '$0.167-0.30'
-        } else if (quality.includes('medium')) {
-          basePriceRange = '$0.046-0.07'
-        } else if (quality.includes('low')) {
-          basePriceRange = '$0.011-0.02'
-        }
-
-        if (n === 1) {
-          return `${basePriceRange}/Run`
-        } else {
-          return `${basePriceRange} x ${n}/Run`
-        }
-      }
-    },
-    PikaImageToVideoNode2_2: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'resolution'
-        ) as IComboWidget
-
-        if (!durationWidget || !resolutionWidget) {
-          return '$0.2-1.0/Run (varies with duration & resolution)'
-        }
-
-        const duration = String(durationWidget.value)
-        const resolution = String(resolutionWidget.value)
-
-        if (duration.includes('5')) {
-          if (resolution.includes('1080p')) return '$0.45/Run'
-          if (resolution.includes('720p')) return '$0.2/Run'
-        } else if (duration.includes('10')) {
-          if (resolution.includes('1080p')) return '$1.0/Run'
-          if (resolution.includes('720p')) return '$0.6/Run'
-        }
-
-        return '$0.2/Run'
-      }
-    },
-    PikaScenesV2_2: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'resolution'
-        ) as IComboWidget
-
-        if (!durationWidget || !resolutionWidget) {
-          return '$0.2-1.0/Run (varies with duration & resolution)'
-        }
-
-        const duration = String(durationWidget.value)
-        const resolution = String(resolutionWidget.value)
-
-        if (duration.includes('5')) {
-          if (resolution.includes('720p')) return '$0.3/Run'
-          if (resolution.includes('1080p')) return '$0.5/Run'
-        } else if (duration.includes('10')) {
-          if (resolution.includes('720p')) return '$0.4/Run'
-          if (resolution.includes('1080p')) return '$1.5/Run'
-        }
-
-        return '$0.3/Run'
-      }
-    },
-    PikaStartEndFrameNode2_2: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'resolution'
-        ) as IComboWidget
-
-        if (!durationWidget || !resolutionWidget) {
-          return '$0.2-1.0/Run (varies with duration & resolution)'
-        }
-
-        const duration = String(durationWidget.value)
-        const resolution = String(resolutionWidget.value)
-
-        if (duration.includes('5')) {
-          if (resolution.includes('720p')) return '$0.2/Run'
-          if (resolution.includes('1080p')) return '$0.3/Run'
-        } else if (duration.includes('10')) {
-          if (resolution.includes('720p')) return '$0.25/Run'
-          if (resolution.includes('1080p')) return '$1.0/Run'
-        }
-
-        return '$0.2/Run'
-      }
-    },
-    PikaTextToVideoNode2_2: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'resolution'
-        ) as IComboWidget
-
-        if (!durationWidget || !resolutionWidget) {
-          return '$0.2-1.5/Run (varies with duration & resolution)'
-        }
-
-        const duration = String(durationWidget.value)
-        const resolution = String(resolutionWidget.value)
-
-        if (duration.includes('5')) {
-          if (resolution.includes('1080p')) return '$0.45/Run'
-          if (resolution.includes('720p')) return '$0.2/Run'
-        } else if (duration.includes('10')) {
-          if (resolution.includes('1080p')) return '$1.0/Run'
-          if (resolution.includes('720p')) return '$0.6/Run'
-        }
-
-        return '$0.45/Run'
-      }
-    },
-    Pikadditions: {
-      displayPrice: '$0.3/Run'
-    },
-    Pikaffects: {
-      displayPrice: '$0.45/Run'
-    },
-    Pikaswaps: {
-      displayPrice: '$0.3/Run'
-    },
-    PixverseImageToVideoNode: {
-      displayPrice: pixversePricingCalculator
-    },
-    PixverseTextToVideoNode: {
-      displayPrice: pixversePricingCalculator
-    },
-    PixverseTransitionVideoNode: {
-      displayPrice: pixversePricingCalculator
-    },
-    RecraftCreativeUpscaleNode: {
-      displayPrice: '$0.25/Run'
-    },
-    RecraftCrispUpscaleNode: {
-      displayPrice: '$0.004/Run'
-    },
-    RecraftGenerateColorFromImageNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
-
-        const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    RecraftGenerateImageNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
-
-        const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    RecraftGenerateVectorImageNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-        if (!nWidget) return '$0.08 x n/Run'
-
-        const n = Number(nWidget.value) || 1
-        const cost = (0.08 * n).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    RecraftImageInpaintingNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
-
-        const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    RecraftImageToImageNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
-
-        const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    RecraftRemoveBackgroundNode: {
-      displayPrice: '$0.01/Run'
-    },
-    RecraftReplaceBackgroundNode: {
-      displayPrice: '$0.04/Run'
-    },
-    RecraftTextToImageNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-        if (!nWidget) return '$0.04 x n/Run'
-
-        const n = Number(nWidget.value) || 1
-        const cost = (0.04 * n).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    RecraftTextToVectorNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-        if (!nWidget) return '$0.08 x n/Run'
-
-        const n = Number(nWidget.value) || 1
-        const cost = (0.08 * n).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    RecraftVectorizeImageNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const nWidget = node.widgets?.find(
-          (w) => w.name === 'n'
-        ) as IComboWidget
-        if (!nWidget) return '$0.01 x n/Run'
-
-        const n = Number(nWidget.value) || 1
-        const cost = (0.01 * n).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    StabilityStableImageSD_3_5Node: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-
-        if (!modelWidget) return '$0.035-0.065/Run (varies with model)'
-
-        const model = String(modelWidget.value).toLowerCase()
-        if (model.includes('large')) {
-          return '$0.065/Run'
-        } else if (model.includes('medium')) {
-          return '$0.035/Run'
-        }
-
-        return '$0.035/Run'
-      }
-    },
-    StabilityStableImageUltraNode: {
-      displayPrice: '$0.08/Run'
-    },
-    StabilityUpscaleConservativeNode: {
-      displayPrice: '$0.25/Run'
-    },
-    StabilityUpscaleCreativeNode: {
-      displayPrice: '$0.25/Run'
-    },
-    StabilityUpscaleFastNode: {
-      displayPrice: '$0.01/Run'
-    },
-    StabilityTextToAudio: {
-      displayPrice: '$0.20/Run'
-    },
-    StabilityAudioToAudio: {
-      displayPrice: '$0.20/Run'
-    },
-    StabilityAudioInpaint: {
-      displayPrice: '$0.20/Run'
-    },
-    VeoVideoGenerationNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration_seconds'
-        ) as IComboWidget
-
-        if (!durationWidget) return '$2.50-5.0/Run (varies with duration)'
-
-        const price = 0.5 * Number(durationWidget.value)
-        return `$${price.toFixed(2)}/Run`
-      }
-    },
-    Veo3VideoGenerationNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-        const generateAudioWidget = node.widgets?.find(
-          (w) => w.name === 'generate_audio'
-        ) as IComboWidget
-
-        if (!modelWidget || !generateAudioWidget) {
-          return '$0.80-3.20/Run (varies with model & audio generation)'
-        }
-
-        const model = String(modelWidget.value)
-        const generateAudio =
-          String(generateAudioWidget.value).toLowerCase() === 'true'
-
-        if (
-          model.includes('veo-3.0-fast-generate-001') ||
-          model.includes('veo-3.1-fast-generate')
-        ) {
-          return generateAudio ? '$1.20/Run' : '$0.80/Run'
-        } else if (
-          model.includes('veo-3.0-generate-001') ||
-          model.includes('veo-3.1-generate')
-        ) {
-          return generateAudio ? '$3.20/Run' : '$1.60/Run'
-        }
-
-        // Default fallback
-        return '$0.80-3.20/Run'
-      }
-    },
-    LumaImageNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-        const aspectRatioWidget = node.widgets?.find(
-          (w) => w.name === 'aspect_ratio'
-        ) as IComboWidget
-
-        if (!modelWidget || !aspectRatioWidget) {
-          return '$0.0045-0.0182/Run (varies with model & aspect ratio)'
-        }
-
-        const model = String(modelWidget.value)
-
-        if (model.includes('photon-flash-1')) {
-          return '$0.0019/Run'
-        } else if (model.includes('photon-1')) {
-          return '$0.0073/Run'
-        }
-
-        return '$0.0172/Run'
-      }
-    },
-    LumaImageModifyNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-
-        if (!modelWidget) {
-          return '$0.0019-0.0073/Run (varies with model)'
-        }
-
-        const model = String(modelWidget.value)
-
-        if (model.includes('photon-flash-1')) {
-          return '$0.0019/Run'
-        } else if (model.includes('photon-1')) {
-          return '$0.0073/Run'
-        }
-
-        return '$0.0172/Run'
-      }
-    },
-    MoonvalleyTxt2VideoNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const lengthWidget = node.widgets?.find(
-          (w) => w.name === 'length'
-        ) as IComboWidget
-
-        // If no length widget exists, default to 5s pricing
-        if (!lengthWidget) return '$1.50/Run'
-
-        const length = String(lengthWidget.value)
-        if (length === '5s') {
-          return '$1.50/Run'
-        } else if (length === '10s') {
-          return '$3.00/Run'
-        }
-
-        return '$1.50/Run'
-      }
-    },
-    MoonvalleyImg2VideoNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const lengthWidget = node.widgets?.find(
-          (w) => w.name === 'length'
-        ) as IComboWidget
-
-        // If no length widget exists, default to 5s pricing
-        if (!lengthWidget) return '$1.50/Run'
-
-        const length = String(lengthWidget.value)
-        if (length === '5s') {
-          return '$1.50/Run'
-        } else if (length === '10s') {
-          return '$3.00/Run'
-        }
-
-        return '$1.50/Run'
-      }
-    },
-    MoonvalleyVideo2VideoNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const lengthWidget = node.widgets?.find(
-          (w) => w.name === 'length'
-        ) as IComboWidget
-
-        // If no length widget exists, default to 5s pricing
-        if (!lengthWidget) return '$2.25/Run'
-
-        const length = String(lengthWidget.value)
-        if (length === '5s') {
-          return '$2.25/Run'
-        } else if (length === '10s') {
-          return '$4.00/Run'
-        }
-
-        return '$2.25/Run'
-      }
-    },
-    // Runway nodes - using actual node names from ComfyUI
-    RunwayTextToImageNode: {
-      displayPrice: '$0.08/Run'
-    },
-    RunwayImageToVideoNodeGen3a: {
-      displayPrice: calculateRunwayDurationPrice
-    },
-    RunwayImageToVideoNodeGen4: {
-      displayPrice: calculateRunwayDurationPrice
-    },
-    RunwayFirstLastFrameNode: {
-      displayPrice: calculateRunwayDurationPrice
-    },
-    // Rodin nodes - all have the same pricing structure
-    Rodin3D_Regular: {
-      displayPrice: '$0.4/Run'
-    },
-    Rodin3D_Detail: {
-      displayPrice: '$0.4/Run'
-    },
-    Rodin3D_Smooth: {
-      displayPrice: '$0.4/Run'
-    },
-    Rodin3D_Sketch: {
-      displayPrice: '$0.4/Run'
-    },
-    // Tripo nodes - using actual node names from ComfyUI
-    TripoTextToModelNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const quadWidget = node.widgets?.find(
-          (w) => w.name === 'quad'
-        ) as IComboWidget
-        const styleWidget = node.widgets?.find(
-          (w) => w.name === 'style'
-        ) as IComboWidget
-        const textureWidget = node.widgets?.find(
-          (w) => w.name === 'texture'
-        ) as IComboWidget
-        const textureQualityWidget = node.widgets?.find(
-          (w) => w.name === 'texture_quality'
-        ) as IComboWidget
-
-        if (!quadWidget || !styleWidget || !textureWidget)
-          return '$0.1-0.4/Run (varies with quad, style, texture & quality)'
-
-        const quad = String(quadWidget.value).toLowerCase() === 'true'
-        const style = String(styleWidget.value).toLowerCase()
-        const texture = String(textureWidget.value).toLowerCase() === 'true'
-        const textureQuality = String(
-          textureQualityWidget?.value || 'standard'
-        ).toLowerCase()
-
-        // Pricing logic based on CSV data
-        if (style.includes('none')) {
-          if (!quad) {
-            if (!texture) return '$0.10/Run'
-            else return '$0.15/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.30/Run'
-              else return '$0.35/Run'
-            } else {
-              if (!texture) return '$0.20/Run'
-              else return '$0.25/Run'
-            }
-          }
-        } else {
-          // any style
-          if (!quad) {
-            if (!texture) return '$0.15/Run'
-            else return '$0.20/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.35/Run'
-              else return '$0.40/Run'
-            } else {
-              if (!texture) return '$0.25/Run'
-              else return '$0.30/Run'
-            }
-          }
-        }
-      }
-    },
-    TripoImageToModelNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const quadWidget = node.widgets?.find(
-          (w) => w.name === 'quad'
-        ) as IComboWidget
-        const styleWidget = node.widgets?.find(
-          (w) => w.name === 'style'
-        ) as IComboWidget
-        const textureWidget = node.widgets?.find(
-          (w) => w.name === 'texture'
-        ) as IComboWidget
-        const textureQualityWidget = node.widgets?.find(
-          (w) => w.name === 'texture_quality'
-        ) as IComboWidget
-
-        if (!quadWidget || !styleWidget || !textureWidget)
-          return '$0.2-0.5/Run (varies with quad, style, texture & quality)'
-
-        const quad = String(quadWidget.value).toLowerCase() === 'true'
-        const style = String(styleWidget.value).toLowerCase()
-        const texture = String(textureWidget.value).toLowerCase() === 'true'
-        const textureQuality = String(
-          textureQualityWidget?.value || 'standard'
-        ).toLowerCase()
-
-        // Pricing logic based on CSV data for Image to Model
-        if (style.includes('none')) {
-          if (!quad) {
-            if (!texture) return '$0.20/Run'
-            else return '$0.25/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.40/Run'
-              else return '$0.45/Run'
-            } else {
-              if (!texture) return '$0.30/Run'
-              else return '$0.35/Run'
-            }
-          }
-        } else {
-          // any style
-          if (!quad) {
-            if (!texture) return '$0.25/Run'
-            else return '$0.30/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.45/Run'
-              else return '$0.50/Run'
-            } else {
-              if (!texture) return '$0.35/Run'
-              else return '$0.40/Run'
-            }
-          }
-        }
-      }
-    },
-    TripoRefineNode: {
-      displayPrice: '$0.3/Run'
-    },
-    TripoTextureNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const textureQualityWidget = node.widgets?.find(
-          (w) => w.name === 'texture_quality'
-        ) as IComboWidget
-
-        if (!textureQualityWidget) return '$0.1-0.2/Run (varies with quality)'
-
-        const textureQuality = String(textureQualityWidget.value)
-        return textureQuality.includes('detailed') ? '$0.2/Run' : '$0.1/Run'
-      }
-    },
-    TripoConvertModelNode: {
-      displayPrice: '$0.10/Run'
-    },
-    TripoRetargetRiggedModelNode: {
-      displayPrice: '$0.10/Run'
-    },
-    TripoMultiviewToModelNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const quadWidget = node.widgets?.find(
-          (w) => w.name === 'quad'
-        ) as IComboWidget
-        const styleWidget = node.widgets?.find(
-          (w) => w.name === 'style'
-        ) as IComboWidget
-        const textureWidget = node.widgets?.find(
-          (w) => w.name === 'texture'
-        ) as IComboWidget
-        const textureQualityWidget = node.widgets?.find(
-          (w) => w.name === 'texture_quality'
-        ) as IComboWidget
-
-        if (!quadWidget || !styleWidget || !textureWidget)
-          return '$0.2-0.5/Run (varies with quad, style, texture & quality)'
-
-        const quad = String(quadWidget.value).toLowerCase() === 'true'
-        const style = String(styleWidget.value).toLowerCase()
-        const texture = String(textureWidget.value).toLowerCase() === 'true'
-        const textureQuality = String(
-          textureQualityWidget?.value || 'standard'
-        ).toLowerCase()
-
-        // Pricing logic based on CSV data for Multiview to Model (same as Image to Model)
-        if (style.includes('none')) {
-          if (!quad) {
-            if (!texture) return '$0.20/Run'
-            else return '$0.25/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.40/Run'
-              else return '$0.45/Run'
-            } else {
-              if (!texture) return '$0.30/Run'
-              else return '$0.35/Run'
-            }
-          }
-        } else {
-          // any style
-          if (!quad) {
-            if (!texture) return '$0.25/Run'
-            else return '$0.30/Run'
-          } else {
-            if (textureQuality.includes('detailed')) {
-              if (!texture) return '$0.45/Run'
-              else return '$0.50/Run'
-            } else {
-              if (!texture) return '$0.35/Run'
-              else return '$0.40/Run'
-            }
-          }
-        }
-      }
-    },
-    // Google/Gemini nodes
-    GeminiNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-
-        if (!modelWidget) return 'Token-based'
-
-        const model = String(modelWidget.value)
-
-        // Google Veo video generation
-        if (model.includes('veo-2.0')) {
-          return '$0.5/second'
-        } else if (model.includes('gemini-2.5-flash-preview-04-17')) {
-          return '$0.0003/$0.0025 per 1K tokens'
-        } else if (model.includes('gemini-2.5-flash')) {
-          return '$0.0003/$0.0025 per 1K tokens'
-        } else if (model.includes('gemini-2.5-pro-preview-05-06')) {
-          return '$0.00125/$0.01 per 1K tokens'
-        } else if (model.includes('gemini-2.5-pro')) {
-          return '$0.00125/$0.01 per 1K tokens'
-        }
-        // For other Gemini models, show token-based pricing info
-        return 'Token-based'
-      }
-    },
-    GeminiImageNode: {
-      displayPrice: '$0.03 per 1K tokens'
-    },
-    // OpenAI nodes
-    OpenAIChatNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-
-        if (!modelWidget) return 'Token-based'
-
-        const model = String(modelWidget.value)
-
-        // Specific pricing for exposed models based on official pricing data (converted to per 1K tokens)
-        if (model.includes('o4-mini')) {
-          return '$0.0011/$0.0044 per 1K tokens'
-        } else if (model.includes('o1-pro')) {
-          return '$0.15/$0.60 per 1K tokens'
-        } else if (model.includes('o1')) {
-          return '$0.015/$0.06 per 1K tokens'
-        } else if (model.includes('o3-mini')) {
-          return '$0.0011/$0.0044 per 1K tokens'
-        } else if (model.includes('o3')) {
-          return '$0.01/$0.04 per 1K tokens'
-        } else if (model.includes('gpt-4o')) {
-          return '$0.0025/$0.01 per 1K tokens'
-        } else if (model.includes('gpt-4.1-nano')) {
-          return '$0.0001/$0.0004 per 1K tokens'
-        } else if (model.includes('gpt-4.1-mini')) {
-          return '$0.0004/$0.0016 per 1K tokens'
-        } else if (model.includes('gpt-4.1')) {
-          return '$0.002/$0.008 per 1K tokens'
-        } else if (model.includes('gpt-5-nano')) {
-          return '$0.00005/$0.0004 per 1K tokens'
-        } else if (model.includes('gpt-5-mini')) {
-          return '$0.00025/$0.002 per 1K tokens'
-        } else if (model.includes('gpt-5')) {
-          return '$0.00125/$0.01 per 1K tokens'
-        }
-        return 'Token-based'
-      }
-    },
-    ViduTextToVideoNode: {
-      displayPrice: '$0.4/Run'
-    },
-    ViduImageToVideoNode: {
-      displayPrice: '$0.4/Run'
-    },
-    ViduReferenceVideoNode: {
-      displayPrice: '$0.4/Run'
-    },
-    ViduStartEndToVideoNode: {
-      displayPrice: '$0.4/Run'
-    },
-    ByteDanceImageNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-
-        if (!modelWidget) return 'Token-based'
-
-        const model = String(modelWidget.value)
-
-        if (model.includes('seedream-3-0-t2i')) {
-          return '$0.03/Run'
-        }
-        return 'Token-based'
-      }
-    },
-    ByteDanceImageEditNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const modelWidget = node.widgets?.find(
-          (w) => w.name === 'model'
-        ) as IComboWidget
-
-        if (!modelWidget) return 'Token-based'
-
-        const model = String(modelWidget.value)
-
-        if (model.includes('seededit-3-0-i2i')) {
-          return '$0.03/Run'
-        }
-        return 'Token-based'
-      }
-    },
-    ByteDanceSeedreamNode: {
-      displayPrice: (node: LGraphNode): string => {
-        const sequentialGenerationWidget = node.widgets?.find(
-          (w) => w.name === 'sequential_image_generation'
-        ) as IComboWidget
-        const maxImagesWidget = node.widgets?.find(
-          (w) => w.name === 'max_images'
-        ) as IComboWidget
-
-        if (!sequentialGenerationWidget || !maxImagesWidget)
-          return '$0.03/Run ($0.03 for one output image)'
-
-        if (
-          String(sequentialGenerationWidget.value).toLowerCase() === 'disabled'
-        ) {
-          return '$0.03/Run'
-        }
-
-        const maxImages = Number(maxImagesWidget.value)
-        if (maxImages === 1) {
-          return '$0.03/Run'
-        }
-        const cost = (0.03 * maxImages).toFixed(2)
-        return `$${cost}/Run ($0.03 for one output image)`
-      }
-    },
-    ByteDanceTextToVideoNode: {
-      displayPrice: byteDanceVideoPricingCalculator
-    },
-    ByteDanceImageToVideoNode: {
-      displayPrice: byteDanceVideoPricingCalculator
-    },
-    ByteDanceFirstLastFrameNode: {
-      displayPrice: byteDanceVideoPricingCalculator
-    },
-    ByteDanceImageReferenceNode: {
-      displayPrice: byteDanceVideoPricingCalculator
-    },
-    WanTextToVideoApi: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'size'
-        ) as IComboWidget
-
-        if (!durationWidget || !resolutionWidget) return '$0.05-0.15/second'
-
-        const seconds = parseFloat(String(durationWidget.value))
-        const resolutionStr = String(resolutionWidget.value).toLowerCase()
-
-        const resKey = resolutionStr.includes('1080')
-          ? '1080p'
-          : resolutionStr.includes('720')
-            ? '720p'
-            : resolutionStr.includes('480')
-              ? '480p'
-              : (resolutionStr.match(/^\s*(\d{3,4}p)/)?.[1] ?? '')
-
-        const pricePerSecond: Record<string, number> = {
-          '480p': 0.05,
-          '720p': 0.1,
-          '1080p': 0.15
-        }
-
-        const pps = pricePerSecond[resKey]
-        if (isNaN(seconds) || !pps) return '$0.05-0.15/second'
-
-        const cost = (pps * seconds).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    WanImageToVideoApi: {
-      displayPrice: (node: LGraphNode): string => {
-        const durationWidget = node.widgets?.find(
-          (w) => w.name === 'duration'
-        ) as IComboWidget
-        const resolutionWidget = node.widgets?.find(
-          (w) => w.name === 'resolution'
-        ) as IComboWidget
-
-        if (!durationWidget || !resolutionWidget) return '$0.05-0.15/second'
-
-        const seconds = parseFloat(String(durationWidget.value))
-        const resolution = String(resolutionWidget.value).trim().toLowerCase()
-
-        const pricePerSecond: Record<string, number> = {
-          '480p': 0.05,
-          '720p': 0.1,
-          '1080p': 0.15
-        }
-
-        const pps = pricePerSecond[resolution]
-        if (isNaN(seconds) || !pps) return '$0.05-0.15/second'
-
-        const cost = (pps * seconds).toFixed(2)
-        return `$${cost}/Run`
-      }
-    },
-    WanTextToImageApi: {
-      displayPrice: '$0.03/Run'
-    },
-    WanImageToImageApi: {
-      displayPrice: '$0.03/Run'
-    }
-  }
+type NodeConstructorData = Partial<
+  Pick<ComfyNodeDef, 'name' | 'api_node' | 'price_badge'>
+>
 
 /**
- * Composable to get node pricing information for API nodes
+ * Extract nodeData from an LGraphNode's constructor.
+ * Centralizes the `as any` cast needed to access this runtime property.
  */
-export const useNodePricing = () => {
-  /**
-   * Get the price display for a node
-   */
-  const getNodeDisplayPrice = (node: LGraphNode): string => {
-    if (!node.constructor?.nodeData?.api_node) return ''
+const getNodeConstructorData = (
+  node: LGraphNode
+): NodeConstructorData | undefined =>
+  (node.constructor as { nodeData?: NodeConstructorData }).nodeData
 
-    const nodeName = node.constructor.nodeData.name
-    const priceConfig = apiNodeCosts[nodeName]
+type JsonataEvalContext = {
+  widgets: Record<string, NormalizedWidgetValue>
+  inputs: Record<string, { connected: boolean }>
+  /** Count of connected inputs per autogrow group */
+  inputGroups: Record<string, number>
+}
 
-    if (!priceConfig) return ''
+// -----------------------------
+// Normalization helpers
+// -----------------------------
+const asFiniteNumber = (v: unknown): number | null => {
+  if (v === null || v === undefined) return null
 
-    // If it's a function, call it with the node to get dynamic pricing
-    if (typeof priceConfig.displayPrice === 'function') {
-      return safePricingExecution(priceConfig.displayPrice, node, '')
-    }
+  if (typeof v === 'number') return Number.isFinite(v) ? v : null
 
-    // Otherwise return the static price
-    return priceConfig.displayPrice
+  if (typeof v === 'string') {
+    const t = v.trim()
+    if (t === '') return null
+    const n = Number(t)
+    return Number.isFinite(n) ? n : null
   }
 
-  const getNodePricingConfig = (node: LGraphNode) =>
-    apiNodeCosts[node.constructor.nodeData?.name ?? '']
+  // Do not coerce booleans/objects into numbers for pricing purposes.
+  return null
+}
 
-  const getRelevantWidgetNames = (nodeType: string): string[] => {
-    const widgetMap: Record<string, string[]> = {
-      KlingTextToVideoNode: ['mode', 'model_name', 'duration'],
-      KlingImage2VideoNode: ['mode', 'model_name', 'duration'],
-      KlingImageGenerationNode: ['modality', 'model_name', 'n'],
-      KlingDualCharacterVideoEffectNode: ['mode', 'model_name', 'duration'],
-      KlingSingleImageVideoEffectNode: ['effect_scene'],
-      KlingStartEndFrameNode: ['mode', 'model_name', 'duration'],
-      MinimaxHailuoVideoNode: ['resolution', 'duration'],
-      OpenAIDalle3: ['size', 'quality'],
-      OpenAIDalle2: ['size', 'n'],
-      OpenAIVideoSora2: ['model', 'size', 'duration'],
-      OpenAIGPTImage1: ['quality', 'n'],
-      IdeogramV1: ['num_images', 'turbo'],
-      IdeogramV2: ['num_images', 'turbo'],
-      IdeogramV3: ['rendering_speed', 'num_images', 'character_image'],
-      FluxProKontextProNode: [],
-      FluxProKontextMaxNode: [],
-      VeoVideoGenerationNode: ['duration_seconds'],
-      Veo3VideoGenerationNode: ['model', 'generate_audio'],
-      LumaVideoNode: ['model', 'resolution', 'duration'],
-      LumaImageToVideoNode: ['model', 'resolution', 'duration'],
-      LumaImageNode: ['model', 'aspect_ratio'],
-      LumaImageModifyNode: ['model', 'aspect_ratio'],
-      PikaTextToVideoNode2_2: ['duration', 'resolution'],
-      PikaImageToVideoNode2_2: ['duration', 'resolution'],
-      PikaScenesV2_2: ['duration', 'resolution'],
-      PikaStartEndFrameNode2_2: ['duration', 'resolution'],
-      PixverseTextToVideoNode: ['duration_seconds', 'quality', 'motion_mode'],
-      PixverseTransitionVideoNode: [
-        'duration_seconds',
-        'motion_mode',
-        'quality'
-      ],
-      PixverseImageToVideoNode: ['duration_seconds', 'quality', 'motion_mode'],
-      StabilityStableImageSD_3_5Node: ['model'],
-      RecraftTextToImageNode: ['n'],
-      RecraftImageToImageNode: ['n'],
-      RecraftImageInpaintingNode: ['n'],
-      RecraftTextToVectorNode: ['n'],
-      RecraftVectorizeImageNode: ['n'],
-      RecraftGenerateColorFromImageNode: ['n'],
-      RecraftGenerateImageNode: ['n'],
-      RecraftGenerateVectorImageNode: ['n'],
-      MoonvalleyTxt2VideoNode: ['length'],
-      MoonvalleyImg2VideoNode: ['length'],
-      MoonvalleyVideo2VideoNode: ['length'],
-      // Runway nodes
-      RunwayImageToVideoNodeGen3a: ['duration'],
-      RunwayImageToVideoNodeGen4: ['duration'],
-      RunwayFirstLastFrameNode: ['duration'],
-      // Tripo nodes
-      TripoTextToModelNode: ['quad', 'style', 'texture', 'texture_quality'],
-      TripoImageToModelNode: ['quad', 'style', 'texture', 'texture_quality'],
-      TripoTextureNode: ['texture_quality'],
-      // Google/Gemini nodes
-      GeminiNode: ['model'],
-      // OpenAI nodes
-      OpenAIChatNode: ['model'],
-      // ByteDance
-      ByteDanceImageNode: ['model'],
-      ByteDanceImageEditNode: ['model'],
-      ByteDanceSeedreamNode: [
-        'model',
-        'sequential_image_generation',
-        'max_images'
-      ],
-      ByteDanceTextToVideoNode: ['model', 'duration', 'resolution'],
-      ByteDanceImageToVideoNode: ['model', 'duration', 'resolution'],
-      ByteDanceFirstLastFrameNode: ['model', 'duration', 'resolution'],
-      ByteDanceImageReferenceNode: ['model', 'duration', 'resolution'],
-      WanTextToVideoApi: ['duration', 'size'],
-      WanImageToVideoApi: ['duration', 'resolution']
+/**
+ * Normalize widget value based on its declared type.
+ * Returns the value in its natural type for simpler JSONata expressions.
+ */
+const normalizeWidgetValue = (
+  raw: unknown,
+  declaredType: string
+): NormalizedWidgetValue => {
+  if (raw === undefined || raw === null) {
+    return null
+  }
+
+  const upperType = declaredType.toUpperCase()
+
+  // Numeric types
+  if (upperType === 'INT' || upperType === 'FLOAT') {
+    return asFiniteNumber(raw)
+  }
+
+  // Boolean type
+  if (upperType === 'BOOLEAN') {
+    if (typeof raw === 'boolean') return raw
+    if (typeof raw === 'string') {
+      const ls = raw.trim().toLowerCase()
+      if (ls === 'true') return true
+      if (ls === 'false') return false
     }
-    return widgetMap[nodeType] || []
+    return null
+  }
+
+  // COMBO type - preserve string/numeric values (for options like [5, "10"])
+  if (upperType === 'COMBO') {
+    if (typeof raw === 'number') return raw
+    if (typeof raw === 'boolean') return raw
+    return String(raw).trim().toLowerCase()
+  }
+
+  // String/other types - return as lowercase trimmed string
+  return String(raw).trim().toLowerCase()
+}
+
+const buildJsonataContext = (
+  node: LGraphNode,
+  rule: JsonataPricingRule
+): JsonataEvalContext => {
+  const widgets: Record<string, NormalizedWidgetValue> = {}
+  for (const dep of rule.depends_on.widgets) {
+    const widget = node.widgets?.find((x: IBaseWidget) => x.name === dep.name)
+    widgets[dep.name] = normalizeWidgetValue(widget?.value, dep.type)
+  }
+
+  const inputs: Record<string, { connected: boolean }> = {}
+  for (const name of rule.depends_on.inputs) {
+    const slot = node.inputs?.find((x: INodeInputSlot) => x.name === name)
+    inputs[name] = { connected: slot?.link != null }
+  }
+
+  // Count connected inputs per autogrow group
+  const inputGroups: Record<string, number> = {}
+  for (const groupName of rule.depends_on.input_groups) {
+    const prefix = groupName + '.'
+    inputGroups[groupName] =
+      node.inputs?.filter(
+        (inp: INodeInputSlot) =>
+          inp.name?.startsWith(prefix) && inp.link != null
+      ).length ?? 0
+  }
+
+  return { widgets, inputs, inputGroups }
+}
+
+const safeValueForSig = (v: unknown): string => {
+  if (v === null || v === undefined) return ''
+  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean')
+    return String(v)
+  try {
+    return JSON.stringify(v)
+  } catch {
+    return String(v)
+  }
+}
+
+// Signature determines whether we need to re-evaluate when widgets/inputs change.
+const buildSignature = (
+  ctx: JsonataEvalContext,
+  rule: JsonataPricingRule
+): string => {
+  const parts: string[] = []
+  for (const dep of rule.depends_on.widgets) {
+    parts.push(`w:${dep.name}=${safeValueForSig(ctx.widgets[dep.name])}`)
+  }
+  for (const name of rule.depends_on.inputs) {
+    parts.push(`i:${name}=${ctx.inputs[name]?.connected ? '1' : '0'}`)
+  }
+  for (const name of rule.depends_on.input_groups) {
+    parts.push(`g:${name}=${ctx.inputGroups[name] ?? 0}`)
+  }
+  return parts.join('|')
+}
+
+// -----------------------------
+// Result formatting
+// -----------------------------
+const formatPricingResult = (
+  result: unknown,
+  defaults: CreditFormatOptions = {}
+): string => {
+  if (!isPricingResult(result)) {
+    if (result !== undefined && result !== null) {
+      console.warn('[pricing/jsonata] invalid result format:', result)
+    }
+    return ''
+  }
+
+  if (result.type === 'text') {
+    return result.text ?? ''
+  }
+
+  if (result.type === 'usd') {
+    const usd = asFiniteNumber(result.usd)
+    if (usd === null) return ''
+    const fmt = { ...defaults, ...(result.format ?? {}) }
+    return formatCreditsLabel(usd, fmt)
+  }
+
+  if (result.type === 'range_usd') {
+    const minUsd = asFiniteNumber(result.min_usd)
+    const maxUsd = asFiniteNumber(result.max_usd)
+    if (minUsd === null || maxUsd === null) return ''
+    const fmt = { ...defaults, ...(result.format ?? {}) }
+    return formatCreditsRangeLabel(minUsd, maxUsd, fmt)
+  }
+
+  if (result.type === 'list_usd') {
+    const arr = Array.isArray(result.usd) ? result.usd : null
+    if (!arr) return ''
+
+    const usdValues = arr
+      .map(asFiniteNumber)
+      .filter((x): x is number => x != null)
+
+    if (usdValues.length === 0) return ''
+
+    const fmt = { ...defaults, ...(result.format ?? {}) }
+    return formatCreditsListLabel(usdValues, fmt)
+  }
+
+  return ''
+}
+
+// -----------------------------
+// Compile rules (non-fatal)
+// -----------------------------
+const compileRule = (rule: JsonataPricingRule): CompiledJsonataPricingRule => {
+  try {
+    return { ...rule, _compiled: jsonata(rule.expr) }
+  } catch (e) {
+    // Do not crash app on bad expressions; just disable rule.
+    console.error('[pricing/jsonata] failed to compile expr:', rule.expr, e)
+    return { ...rule, _compiled: null }
+  }
+}
+
+// -----------------------------
+// Rule cache (per-node-type)
+// -----------------------------
+// Cache compiled rules by node type name to avoid recompiling on every evaluation.
+const compiledRulesCache = new Map<string, CompiledJsonataPricingRule | null>()
+
+/**
+ * Convert a PriceBadge from node definition to a JsonataPricingRule.
+ */
+const priceBadgeToRule = (priceBadge: PriceBadge): JsonataPricingRule => ({
+  engine: priceBadge.engine ?? 'jsonata',
+  depends_on: {
+    widgets: priceBadge.depends_on?.widgets ?? [],
+    inputs: priceBadge.depends_on?.inputs ?? [],
+    input_groups: priceBadge.depends_on?.input_groups ?? []
+  },
+  expr: priceBadge.expr
+})
+
+/**
+ * Get or compile a pricing rule for a node type.
+ */
+const getCompiledRuleForNodeType = (
+  nodeName: string,
+  priceBadge: PriceBadge | undefined
+): CompiledJsonataPricingRule | null => {
+  if (!priceBadge) return null
+
+  // Check cache first
+  if (compiledRulesCache.has(nodeName)) {
+    return compiledRulesCache.get(nodeName) ?? null
+  }
+
+  // Compile and cache
+  const rule = priceBadgeToRule(priceBadge)
+  const compiled = compileRule(rule)
+  compiledRulesCache.set(nodeName, compiled)
+  return compiled
+}
+
+// -----------------------------
+// Async evaluation + cache (JSONata 2.x)
+// -----------------------------
+
+// Reactive tick to force UI updates when async evaluations resolve.
+// We purposely read pricingTick.value inside getNodeDisplayPrice to create a dependency.
+const pricingTick = ref(0)
+
+// Per-node revision tracking for VueNodes mode (more efficient than global tick)
+// Uses plain Map with individual refs per node for fine-grained reactivity
+// Keys are stringified node IDs to handle both string and number ID types
+const nodeRevisions = new Map<string, Ref<number>>()
+
+/**
+ * Get or create a revision ref for a specific node.
+ * Each node has its own independent ref, so updates to one won't trigger others.
+ */
+const getNodeRevisionRef = (nodeId: string | number): Ref<number> => {
+  const key = String(nodeId)
+  let rev = nodeRevisions.get(key)
+  if (!rev) {
+    rev = ref(0)
+    nodeRevisions.set(key, rev)
+  }
+  return rev
+}
+
+// WeakMaps avoid memory leaks when nodes are removed.
+type CacheEntry = { sig: string; label: string }
+type InflightEntry = { sig: string; promise: Promise<void> }
+
+const cache = new WeakMap<LGraphNode, CacheEntry>()
+const desiredSig = new WeakMap<LGraphNode, string>()
+const inflight = new WeakMap<LGraphNode, InflightEntry>()
+
+const DEBUG_JSONATA_PRICING = false
+
+const scheduleEvaluation = (
+  node: LGraphNode,
+  rule: CompiledJsonataPricingRule,
+  ctx: JsonataEvalContext,
+  sig: string
+) => {
+  desiredSig.set(node, sig)
+
+  const running = inflight.get(node)
+  if (running && running.sig === sig) return
+
+  if (!rule._compiled) return
+
+  const nodeName = getNodeConstructorData(node)?.name ?? ''
+
+  const promise = Promise.resolve(rule._compiled.evaluate(ctx))
+    .then((res) => {
+      const label = formatPricingResult(res, rule.result_defaults ?? {})
+
+      // Ignore stale results: if the node changed while we were evaluating,
+      // desiredSig will no longer match.
+      if (desiredSig.get(node) !== sig) return
+
+      cache.set(node, { sig, label })
+
+      if (DEBUG_JSONATA_PRICING) {
+        console.warn('[pricing/jsonata] resolved', nodeName, {
+          sig,
+          res,
+          label
+        })
+      }
+    })
+    .catch((err) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[pricing/jsonata] evaluation failed', nodeName, err)
+      }
+
+      // Cache empty to avoid retry-spam for same signature
+      if (desiredSig.get(node) === sig) {
+        cache.set(node, { sig, label: '' })
+      }
+    })
+    .finally(() => {
+      const cur = inflight.get(node)
+      if (cur && cur.sig === sig) inflight.delete(node)
+
+      if (LiteGraph.vueNodesMode) {
+        // VueNodes mode: bump per-node revision (only this node re-renders)
+        getNodeRevisionRef(node.id).value++
+      } else {
+        // Nodes 1.0 mode: bump global tick to trigger setDirtyCanvas
+        pricingTick.value++
+      }
+    })
+
+  inflight.set(node, { sig, promise })
+}
+
+/**
+ * Get the pricing rule for a node from its nodeData.price_badge field.
+ */
+const getRuleForNode = (
+  node: LGraphNode
+): CompiledJsonataPricingRule | undefined => {
+  const nodeData = getNodeConstructorData(node)
+  if (!nodeData?.api_node) return undefined
+
+  const nodeName = nodeData?.name ?? ''
+  const priceBadge = nodeData?.price_badge
+
+  if (!priceBadge) return undefined
+
+  const compiled = getCompiledRuleForNodeType(nodeName, priceBadge)
+  return compiled ?? undefined
+}
+
+// -----------------------------
+// Public composable API
+// -----------------------------
+export const useNodePricing = () => {
+  /**
+   * Sync getter:
+   * - returns cached label for the current node signature when available
+   * - schedules async evaluation when needed
+   * - remains non-fatal on errors (returns safe fallback '')
+   */
+  const getNodeDisplayPrice = (node: LGraphNode): string => {
+    // Make this function reactive: when async evaluation completes, we bump pricingTick,
+    // which causes this getter to recompute in Vue render/computed contexts.
+    void pricingTick.value
+
+    const nodeData = getNodeConstructorData(node)
+    if (!nodeData?.api_node) return ''
+
+    const rule = getRuleForNode(node)
+    if (!rule) return ''
+    if (rule.engine !== 'jsonata') return ''
+    if (!rule._compiled) return ''
+
+    const ctx = buildJsonataContext(node, rule)
+    const sig = buildSignature(ctx, rule)
+
+    const cached = cache.get(node)
+    if (cached && cached.sig === sig) {
+      return cached.label
+    }
+
+    // Cache miss: start async evaluation.
+    // Return last-known label (if any) to avoid flicker; otherwise return empty.
+    scheduleEvaluation(node, rule, ctx, sig)
+    return cached?.label ?? ''
+  }
+
+  /**
+   * Expose raw pricing config for tooling/debug UI.
+   * (Strips compiled expression from returned object.)
+   */
+  const getNodePricingConfig = (node: LGraphNode) => {
+    const rule = getRuleForNode(node)
+    if (!rule) return undefined
+    const { _compiled, ...config } = rule
+    return config
+  }
+
+  /**
+   * Caller compatibility helper:
+   * returns union of widget dependencies + input dependencies for a node type.
+   */
+  const getRelevantWidgetNames = (nodeType: string): string[] => {
+    const nodeDefStore = useNodeDefStore()
+    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+    if (!nodeDef) return []
+
+    const priceBadge = nodeDef.price_badge
+    if (!priceBadge) return []
+
+    const dependsOn = priceBadge.depends_on ?? {
+      widgets: [],
+      inputs: [],
+      input_groups: []
+    }
+
+    // Extract widget names
+    const widgetNames = (dependsOn.widgets ?? []).map((w) => w.name)
+
+    // Keep stable output (dedupe while preserving order)
+    const out: string[] = []
+    for (const n of [
+      ...widgetNames,
+      ...(dependsOn.inputs ?? []),
+      ...(dependsOn.input_groups ?? [])
+    ]) {
+      if (!out.includes(n)) out.push(n)
+    }
+    return out
+  }
+
+  /**
+   * Check if a node type has dynamic pricing (depends on widgets, inputs, or input_groups).
+   */
+  const hasDynamicPricing = (nodeType: string): boolean => {
+    const nodeDefStore = useNodeDefStore()
+    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+    if (!nodeDef) return false
+
+    const priceBadge = nodeDef.price_badge
+    if (!priceBadge) return false
+
+    const dependsOn = priceBadge.depends_on
+    if (!dependsOn) return false
+
+    return (
+      (dependsOn.widgets?.length ?? 0) > 0 ||
+      (dependsOn.inputs?.length ?? 0) > 0 ||
+      (dependsOn.input_groups?.length ?? 0) > 0
+    )
+  }
+
+  /**
+   * Get input_groups prefixes for a node type (for watching connection changes).
+   */
+  const getInputGroupPrefixes = (nodeType: string): string[] => {
+    const nodeDefStore = useNodeDefStore()
+    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+    if (!nodeDef) return []
+
+    const priceBadge = nodeDef.price_badge
+    if (!priceBadge) return []
+
+    return priceBadge.depends_on?.input_groups ?? []
+  }
+
+  /**
+   * Get regular input names for a node type (for watching connection changes).
+   */
+  const getInputNames = (nodeType: string): string[] => {
+    const nodeDefStore = useNodeDefStore()
+    const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+    if (!nodeDef) return []
+
+    const priceBadge = nodeDef.price_badge
+    if (!priceBadge) return []
+
+    return priceBadge.depends_on?.inputs ?? []
+  }
+
+  /**
+   * Trigger price recalculation for a node (call when inputs change).
+   * Forces re-evaluation by calling getNodeDisplayPrice which will detect
+   * the signature change and schedule a new evaluation.
+   */
+  const triggerPriceRecalculation = (node: LGraphNode): void => {
+    const nodeData = getNodeConstructorData(node)
+    if (!nodeData?.api_node) return
+
+    // Call getNodeDisplayPrice to trigger evaluation if signature changed
+    getNodeDisplayPrice(node)
   }
 
   return {
     getNodeDisplayPrice,
     getNodePricingConfig,
-    getRelevantWidgetNames
+    getRelevantWidgetNames,
+    hasDynamicPricing,
+    getInputGroupPrefixes,
+    getInputNames,
+    getNodeRevisionRef, // Each node has its own independent ref, so updates to one won't trigger others
+    triggerPriceRecalculation,
+    pricingRevision: readonly(pricingTick) // reactive invalidation signal
   }
 }

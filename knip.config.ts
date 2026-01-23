@@ -8,13 +8,14 @@ const config: KnipConfig = {
         'src/assets/css/style.css',
         'src/main.ts',
         'src/scripts/ui/menu/index.ts',
-        'src/types/index.ts'
+        'src/types/index.ts',
+        'src/storybook/mocks/**/*.ts'
       ],
       project: ['**/*.{js,ts,vue}', '*.{js,ts,mts}']
     },
     'apps/desktop-ui': {
       entry: ['src/main.ts', 'src/i18n.ts'],
-      project: ['src/**/*.{js,ts,vue}', '*.{js,ts,mts}']
+      project: ['src/**/*.{js,ts,vue}']
     },
     'packages/tailwind-utils': {
       project: ['src/**/*.{js,ts}']
@@ -27,7 +28,7 @@ const config: KnipConfig = {
       project: ['src/**/*.{js,ts}']
     }
   },
-  ignoreBinaries: ['python3'],
+  ignoreBinaries: ['python3', 'gh'],
   ignoreDependencies: [
     // Weird importmap things
     '@iconify/json',
@@ -41,10 +42,7 @@ const config: KnipConfig = {
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/registry-types/src/comfyRegistryTypes.ts',
     // Used by a custom node (that should move off of this)
-    'src/scripts/ui/components/splitButton.ts',
-    // Service workers - registered at runtime via navigator.serviceWorker.register()
-    'public/auth-sw.js',
-    'public/auth-dev-sw.js'
+    'src/scripts/ui/components/splitButton.ts'
   ],
   compilers: {
     // https://github.com/webpro-nl/knip/issues/1008#issuecomment-3207756199

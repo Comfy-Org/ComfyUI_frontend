@@ -14,7 +14,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 // Use with conditional classes (ternary)
 <button
-  :class="cn('px-4 py-2', isActive ? 'bg-blue-500' : 'bg-gray-500')"
+  :class="cn('px-4 py-2', isActive ? 'bg-blue-500' : 'bg-smoke-500')"
 />
 ```
 

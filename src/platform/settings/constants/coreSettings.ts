@@ -1,10 +1,12 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { breakpointsTailwind } from '@vueuse/core'
 
 /**
  * Core settings are essential configuration parameters required for ComfyUI's basic functionality.
@@ -18,14 +20,14 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
     type: 'hidden',
-    defaultValue: true,
+    defaultValue: isCloud ? false : true,
     versionAdded: '1.18.0'
   },
   {
     id: 'Comfy.Validation.Workflows',
     name: 'Validate workflows',
     type: 'boolean',
-    defaultValue: true
+    defaultValue: false
   },
   {
     id: 'Comfy.NodeSearchBoxImpl',
@@ -121,7 +123,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Sidebar style',
     type: 'combo',
     options: ['floating', 'connected'],
-    defaultValue: 'floating'
+    defaultValue: 'connected'
   },
   {
     id: 'Comfy.TextareaWidget.FontSize',
@@ -281,8 +283,8 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
-    type: 'boolean',
-    defaultValue: true,
+    type: isCloud ? 'hidden' : 'boolean',
+    defaultValue: isCloud ? false : true,
     experimental: true
   },
   {
@@ -324,13 +326,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Node library bookmarks customization',
     type: 'hidden',
     defaultValue: {}
-  },
-  // Hidden setting used by the queue for how to fit images
-  {
-    id: 'Comfy.Queue.ImageFit',
-    name: 'Queue image fit',
-    type: 'hidden',
-    defaultValue: 'cover'
   },
   {
     id: 'Comfy.GroupSelectedNodes.Padding',
@@ -388,7 +383,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Automatically load all model folders',
     tooltip:
       'If true, all folders will load as soon as you open the model library (this may cause delays while it loads). If false, root level model folders will only load once you click on them.',
-    type: 'boolean',
+    type: isCloud ? 'hidden' : 'boolean',
     defaultValue: false
   },
   {
@@ -414,7 +409,9 @@ export const CORE_SETTINGS: SettingParams[] = [
       { value: 'fr', text: 'Français' },
       { value: 'es', text: 'Español' },
       { value: 'ar', text: 'عربي' },
-      { value: 'tr', text: 'Türkçe' }
+      { value: 'tr', text: 'Türkçe' },
+      { value: 'pt-BR', text: 'Português (BR)' },
+      { value: 'fa', text: 'فارسی' }
     ],
     defaultValue: () => navigator.language.split('-')[0] || 'en'
   },
@@ -553,14 +550,23 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
+    id: 'Comfy.UI.TabBarLayout',
+    category: ['Appearance', 'General'],
+    name: 'Tab Bar Layout',
+    type: 'combo',
+    options: ['Default', 'Integrated'],
+    tooltip:
+      'Controls the layout of the tab bar. "Integrated" moves Help and User controls into the tab bar area.',
+    defaultValue: 'Default'
+  },
+  {
     id: 'Comfy.UseNewMenu',
     category: ['Comfy', 'Menu', 'UseNewMenu'],
     defaultValue: 'Top',
     name: 'Use new menu',
     type: 'combo',
     options: ['Disabled', 'Top'],
-    tooltip:
-      'Menu bar position. On mobile devices, the menu is always shown at the top.',
+    tooltip: 'Enable the redesigned top menu bar.',
     migrateDeprecatedValue: (value: string) => {
       // Floating is now supported by dragging the docked actionbar off.
       if (value === 'Floating') {
@@ -597,7 +603,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: 100,
+    defaultValue: isCloud ? 4 : 100,
     versionAdded: '1.3.5'
   },
   {
@@ -607,10 +613,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: [] as Keybinding[],
     versionAdded: '1.3.7',
     versionModified: '1.7.3',
-    migrateDeprecatedValue: (value: any[]) => {
+    migrateDeprecatedValue: (
+      value: (Keybinding & { targetSelector?: string })[]
+    ) => {
       return value.map((keybinding) => {
-        if (keybinding['targetSelector'] === '#graph-canvas') {
-          keybinding['targetElementId'] = 'graph-canvas-container'
+        if (keybinding.targetSelector === '#graph-canvas') {
+          keybinding.targetElementId = 'graph-canvas-container'
         }
         return keybinding
       })
@@ -710,6 +718,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.4.0'
   },
   {
+    id: 'Comfy.Graph.LiveSelection',
+    category: ['LiteGraph', 'Canvas', 'LiveSelection'],
+    name: 'Live selection',
+    tooltip:
+      'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.36.1'
+  },
+  {
     id: 'Comfy.Pointer.ClickDrift',
     category: ['LiteGraph', 'Pointer', 'ClickDrift'],
     name: 'Pointer click drift (maximum distance)',
@@ -785,7 +803,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Server config values used for frontend display only',
     type: 'hidden',
     // Mapping from server config id to value.
-    defaultValue: {} as Record<string, any>,
+    defaultValue: {} as Record<string, unknown>,
     versionAdded: '1.4.8'
   },
   {
@@ -809,6 +827,24 @@ export const CORE_SETTINGS: SettingParams[] = [
     },
     defaultValue: 64,
     versionAdded: '1.4.12'
+  },
+  {
+    id: 'Comfy.Queue.History.Expanded',
+    name: 'Queue history expanded',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.37.0'
+  },
+  {
+    id: 'Comfy.Execution.PreviewMethod',
+    category: ['Comfy', 'Execution', 'PreviewMethod'],
+    name: 'Live preview method',
+    tooltip:
+      'Live preview method during image generation. "default" uses the server CLI setting.',
+    type: 'combo',
+    options: ['default', 'none', 'auto', 'latent2rgb', 'taesd'],
+    defaultValue: 'default',
+    versionAdded: '1.36.0'
   },
   {
     id: 'LiteGraph.Canvas.MaximumFps',
@@ -917,7 +953,8 @@ export const CORE_SETTINGS: SettingParams[] = [
       step: 1
     },
     defaultValue: 8,
-    versionAdded: '1.26.7'
+    versionAdded: '1.26.7',
+    hideInVueNodes: true
   },
   {
     id: 'Comfy.Canvas.SelectionToolbox',
@@ -950,7 +987,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Minimap.Visible',
     name: 'Display minimap on canvas',
     type: 'hidden',
-    defaultValue: true,
+    defaultValue: window.innerWidth >= breakpointsTailwind.lg,
     versionAdded: '1.25.0'
   },
   {
@@ -1052,24 +1089,90 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
 
   /**
-   * Vue Node System Settings
+   * Template Library Filter Settings
+   */
+  {
+    id: 'Comfy.Templates.SelectedModels',
+    name: 'Template library - Selected model filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SelectedUseCases',
+    name: 'Template library - Selected use case filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SelectedRunsOn',
+    name: 'Template library - Selected runs on filters',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.Templates.SortBy',
+    name: 'Template library - Sort preference',
+    type: 'hidden',
+    defaultValue: 'default'
+  },
+
+  /**
+   * Nodes 2.0 Settings
    */
   {
     id: 'Comfy.VueNodes.Enabled',
-    name: 'Enable Vue node rendering (hidden)',
-    type: 'hidden',
+    category: ['Comfy', 'Nodes 2.0', 'VueNodesEnabled'],
+    name: 'Modern Node Design (Nodes 2.0)',
+    type: 'boolean',
     tooltip:
-      'Render nodes as Vue components instead of canvas. Hidden; toggle via Experimental keybinding.',
+      'Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering.',
     defaultValue: false,
+    sortOrder: 100,
     experimental: true,
     versionAdded: '1.27.1'
+  },
+  {
+    id: 'Comfy.VueNodes.AutoScaleLayout',
+    category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
+    name: 'Auto-scale layout (Nodes 2.0)',
+    tooltip:
+      'Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap',
+    type: 'boolean',
+    sortOrder: 50,
+    experimental: true,
+    defaultValue: true,
+    versionAdded: '1.30.3'
   },
   {
     id: 'Comfy.Assets.UseAssetAPI',
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
+    defaultValue: isCloud ? true : false,
+    experimental: true
+  },
+  {
+    id: 'Comfy.VersionCompatibility.DisableWarnings',
+    name: 'Disable version compatibility warnings',
+    type: 'hidden',
     defaultValue: false,
+    versionAdded: '1.34.1'
+  },
+  {
+    id: 'Comfy.RightSidePanel.IsOpen',
+    name: 'Right side panel open state',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.37.0'
+  },
+  {
+    id: 'Comfy.Queue.QPOV2',
+    category: ['Comfy', 'Queue', 'Layout'],
+    name: 'Use the unified job queue in the Assets side panel',
+    type: 'boolean',
+    tooltip:
+      'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
+    defaultValue: true,
     experimental: true
   }
 ]

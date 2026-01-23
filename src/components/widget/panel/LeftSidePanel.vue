@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full w-full flex-col bg-white dark-theme:bg-charcoal-600">
+  <div class="flex h-full w-full flex-col bg-modal-panel-background">
     <PanelHeader>
       <template #icon>
         <slot name="header-icon"></slot>
@@ -22,6 +22,7 @@
               v-for="subItem in item.items"
               :key="subItem.id"
               :icon="subItem.icon"
+              :badge="subItem.badge"
               :active="activeItem === subItem.id"
               @click="activeItem = subItem.id"
             >
@@ -32,6 +33,7 @@
         <div v-else class="flex flex-col gap-2">
           <NavItem
             :icon="item.icon"
+            :badge="item.badge"
             :active="activeItem === item.id"
             @click="activeItem = item.id"
           >

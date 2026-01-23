@@ -9,6 +9,7 @@ export interface DropdownItem {
   id: SelectedKey
   mediaSrc: string // URL for image, video, or other media
   name: string
+  label?: string
   metadata: string
 }
 export interface SortOption {

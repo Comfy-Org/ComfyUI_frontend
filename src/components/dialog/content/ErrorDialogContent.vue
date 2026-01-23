@@ -5,7 +5,7 @@
       icon="pi pi-exclamation-circle"
       :title="title"
       :message="error.exceptionMessage"
-      :text-class="'break-words max-w-[60vw]'"
+      text-class="break-words max-w-[60vw]"
     />
     <template v-if="error.extensionFile">
       <span>{{ t('errorDialog.extensionFileHint') }}:</span>
@@ -14,18 +14,16 @@
     </template>
 
     <div class="flex justify-center gap-2">
+      <Button v-show="!reportOpen" variant="textonly" @click="showReport">
+        {{ $t('g.showReport') }}
+      </Button>
       <Button
         v-show="!reportOpen"
-        text
-        :label="$t('g.showReport')"
-        @click="showReport"
-      />
-      <Button
-        v-show="!reportOpen"
-        text
-        :label="$t('issueReport.helpFix')"
+        variant="textonly"
         @click="showContactSupport"
-      />
+      >
+        {{ $t('issueReport.helpFix') }}
+      </Button>
     </div>
     <template v-if="reportOpen">
       <Divider />
@@ -40,18 +38,15 @@
         :repo-owner="repoOwner"
         :repo-name="repoName"
       />
-      <Button
-        v-if="reportOpen"
-        :label="$t('g.copyToClipboard')"
-        icon="pi pi-copy"
-        @click="copyReportToClipboard"
-      />
+      <Button v-if="reportOpen" @click="copyReportToClipboard">
+        <i class="pi pi-copy" />
+        {{ $t('g.copyToClipboard') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import { useToast } from 'primevue/usetoast'
@@ -60,7 +55,9 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
@@ -86,18 +83,33 @@ const repoOwner = 'comfyanonymous'
 const repoName = 'ComfyUI'
 const reportContent = ref('')
 const reportOpen = ref(false)
+/**
+ * Open the error report content and track telemetry.
+ */
 const showReport = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'error_dialog_show_report_clicked'
+  })
   reportOpen.value = true
 }
 const toast = useToast()
 const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
+const telemetry = useTelemetry()
 
 const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')
 )
 
+/**
+ * Open contact support flow from error dialog and track telemetry.
+ */
 const showContactSupport = async () => {
+  telemetry?.trackHelpResourceClicked({
+    resource_type: 'help_feedback',
+    is_external: true,
+    source: 'error_dialog'
+  })
   await useCommandStore().execute('Comfy.ContactSupport')
 }
 
@@ -112,7 +124,7 @@ onMounted(async () => {
     reportContent.value = generateErrorReport({
       systemStats: systemStatsStore.systemStats!,
       serverLogs: logs,
-      workflow: app.graph.serialize(),
+      workflow: app.rootGraph.serialize(),
       exceptionType: error.exceptionType,
       exceptionMessage: error.exceptionMessage,
       traceback: error.traceback,

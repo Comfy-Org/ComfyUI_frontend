@@ -1,5 +1,5 @@
 <template>
-  <BaseViewTemplate dark>
+  <BaseViewTemplate dark hide-language-selector>
     <div class="h-full p-8 2xl:p-16 flex flex-col items-center justify-center">
       <div
         class="bg-neutral-800 rounded-lg shadow-lg p-6 w-full max-w-[600px] flex flex-col gap-6"
@@ -71,8 +71,8 @@ const updateConsent = async () => {
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: t('install.errorUpdatingConsent'),
-      detail: t('install.errorUpdatingConsentDetail'),
+      summary: t('install.settings.errorUpdatingConsent'),
+      detail: t('install.settings.errorUpdatingConsentDetail'),
       life: 3000
     })
   } finally {

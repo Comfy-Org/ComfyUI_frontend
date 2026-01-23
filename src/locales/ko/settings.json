@@ -29,9 +29,24 @@
     "name": "캔버스 배경 이미지",
     "tooltip": "캔버스 배경에 사용할 이미지 URL입니다. 출력 패널에서 이미지를 마우스 오른쪽 버튼으로 클릭한 후 \"배경으로 설정\"을 선택해 사용할 수 있습니다."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "왼쪽 마우스 클릭 동작",
+    "options": {
+      "Panning": "패닝",
+      "Select": "선택"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "마우스 휠 스크롤",
+    "options": {
+      "Panning": "패닝",
+      "Zoom in/out": "확대/축소"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "캔버스 내비게이션 모드",
     "options": {
+      "Custom": "사용자 지정",
       "Drag Navigation": "드래그 내비게이션",
       "Standard (New)": "표준(신규)"
     }
@@ -64,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "워크플로에서 캔버스 위치 및 확대/축소 수준 저장 및 복원"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "라이브 미리보기 방식",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "none",
+      "taesd": "taesd"
+    },
+    "tooltip": "이미지 생성 중 라이브 미리보기 방식입니다. \"default\"는 서버 CLI 설정을 사용합니다."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "부동 소수점 위젯 반올림 소수 자리 수 [0 = 자동]",
     "tooltip": "(페이지 새로 고침 필요)"
@@ -84,6 +110,10 @@
       "Circle": "원",
       "None": "없음"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "실시간 선택",
+    "tooltip": "활성화하면, 다른 디자인 툴처럼 선택 사각형을 드래그할 때 노드가 실시간으로 선택/해제됩니다."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "캔버스 확대/축소 속도"
@@ -151,13 +181,18 @@
     "name": "최소 광원 세기",
     "tooltip": "3D 장면에서 허용되는 최소 광원 세기 값을 설정합니다. 이는 모든 3D 위젯에서 조명을 조정할 때 설정할 수 있는 밝기의 하한을 정의합니다."
   },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY 엔진",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLY 파일을 불러올 엔진을 선택하세요. \"threejs\"는 Three.js의 기본 PLYLoader를 사용합니다(메시 PLY 파일에 적합). \"fastply\"는 ASCII 포인트 클라우드 PLY 파일에 최적화된 로더를 사용합니다. \"sparkjs\"는 3D Gaussian Splatting PLY 파일에 Spark.js를 사용합니다."
+  },
   "Comfy_Load3D_ShowGrid": {
     "name": "그리드 표시",
     "tooltip": "기본적으로 그리드를 표시하도록 전환"
-  },
-  "Comfy_Load3D_ShowPreview": {
-    "name": "미리보기 표시",
-    "tooltip": "기본적으로 미리보기를 표시하도록 전환"
   },
   "Comfy_Locale": {
     "name": "언어"
@@ -169,10 +204,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "브러시 조정을 지배 축에 고정",
     "tooltip": "활성화하면 브러시 조정이 이동하는 방향에 따라 크기 또는 경도에만 영향을 미칩니다."
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "새 마스크 편집기 사용",
-    "tooltip": "새 마스크 편집기 인터페이스로 전환"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "모든 모델 폴더 자동 로드",
@@ -301,6 +332,10 @@
     "name": "실행 큐 기록 갯수",
     "tooltip": "실행 큐 기록에 표시되는 최대 작업 수입니다."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "에셋 사이드 패널에서 통합 작업 큐 사용",
+    "tooltip": "떠다니는 작업 큐 패널을 에셋 사이드 패널에 내장된 동등한 작업 큐로 대체합니다. 이 옵션을 비활성화하면 기존의 떠다니는 패널 레이아웃으로 돌아갈 수 있습니다."
+  },
   "Comfy_Sidebar_Location": {
     "name": "사이드바 위치",
     "options": {
@@ -313,6 +348,13 @@
     "options": {
       "normal": "보통",
       "small": "작음"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "사이드바 스타일",
+    "options": {
+      "connected": "연결됨",
+      "floating": "플로팅"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -331,6 +373,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "트리 탐색기 항목 패딩"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "탭 바 레이아웃",
+    "options": {
+      "Default": "기본값",
+      "Integrated": "통합"
+    },
+    "tooltip": "탭 바의 레이아웃을 제어합니다. \"통합\"을 선택하면 도움말과 사용자 컨트롤이 탭 바 영역으로 이동합니다."
+  },
   "Comfy_UseNewMenu": {
     "name": "새 메뉴 사용",
     "options": {
@@ -341,6 +391,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "자동 스케일 레이아웃 (Vue 노드)",
+    "tooltip": "Vue 렌더링으로 전환 시 노드 위치를 자동으로 조정하여 겹침 방지"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "모던 노드 디자인 (Vue 노드)",
+    "tooltip": "모던: 향상된 상호작용, 기본 브라우저 기능, 업데이트된 시각적 디자인을 갖춘 DOM 기반 렌더링. 클래식: 전통적인 캔버스 렌더링."
   },
   "Comfy_WidgetControlMode": {
     "name": "위젯 제어 모드",
@@ -378,6 +436,9 @@
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "워크플로 저장 시 노드 ID 정렬"
+  },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "기존 서브그래프 블루프린트 덮어쓰기 전 확인 요청"
   },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "열린 워크플로 위치",

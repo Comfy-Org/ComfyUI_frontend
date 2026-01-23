@@ -100,7 +100,7 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
 
     await tab.getFolder('foo').click({ button: 'right' })
-    await comfyPage.page.getByLabel('New Folder').click()
+    await comfyPage.page.getByRole('menuitem', { name: 'New Folder' }).click()
     const textInput = comfyPage.page.locator('.editable-text input')
     await textInput.waitFor({ state: 'visible' })
     await textInput.fill('bar')
@@ -203,7 +203,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page
       .locator('.color-field .p-selectbutton > *:nth-child(2)')
       .click()
-    await comfyPage.page.getByLabel('Confirm').click()
+    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     expect(
       await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
@@ -223,7 +223,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page
       .locator('.icon-field .p-selectbutton > *:nth-child(2)')
       .click()
-    await comfyPage.page.getByLabel('Confirm').click()
+    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     expect(
       await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
@@ -261,7 +261,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page
       .locator('.icon-field .p-selectbutton > *:nth-child(2)')
       .click()
-    await comfyPage.page.getByLabel('Confirm').click()
+    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
 
     // Verify the color selection is saved
@@ -290,16 +290,20 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.keyboard.insertText('bar')
     await comfyPage.page.keyboard.press('Enter')
     await comfyPage.nextFrame()
-    expect(
-      await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
-    ).toEqual(['bar/'])
-    expect(
-      await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
-    ).toEqual({
-      'bar/': {
-        icon: 'pi-folder',
-        color: '#007bff'
-      }
+    await expect(async () => {
+      expect(
+        await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
+      ).toEqual(['bar/'])
+      expect(
+        await comfyPage.getSetting('Comfy.NodeLibrary.BookmarksCustomization')
+      ).toEqual({
+        'bar/': {
+          icon: 'pi-folder',
+          color: '#007bff'
+        }
+      })
+    }).toPass({
+      timeout: 2_000
     })
   })
 

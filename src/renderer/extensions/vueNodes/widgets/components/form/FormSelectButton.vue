@@ -12,22 +12,24 @@
       :key="getOptionValue(option, index)"
       :class="
         cn(
-          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out',
+          'flex-1 h-6 px-5 py-[5px] rounded flex justify-center items-center gap-1 transition-all duration-150 ease-in-out truncate min-w-[4ch]',
           'bg-transparent border-none',
           'text-center text-xs font-normal',
           {
-            'bg-white': isSelected(option) && !disabled,
-            'hover:bg-zinc-200/50': !isSelected(option) && !disabled,
+            'bg-interface-menu-component-surface-selected':
+              isSelected(index) && !disabled,
+            'hover:bg-interface-menu-component-surface-selected/50':
+              !isSelected(index) && !disabled,
             'opacity-50 cursor-not-allowed': disabled,
             'cursor-pointer': !disabled
           },
-          isSelected(option) && !disabled
-            ? 'text-neutral-900'
-            : 'text-secondary'
+          isSelected(index) && !disabled
+            ? 'text-text-primary'
+            : 'text-text-secondary'
         )
       "
       :disabled="disabled"
-      @click="handleSelect(option)"
+      @click="handleSelect(index)"
     >
       {{ getOptionLabel(option) }}
     </button>
@@ -37,14 +39,18 @@
 <script
   setup
   lang="ts"
-  generic="T extends string | number | { label: string; value: any }"
+  generic="
+    T extends string | number | { label: string; value: string | number }
+  "
 >
 import { cn } from '@/utils/tailwindUtil'
 
 import { WidgetInputBaseClass } from '../layout'
 
+type ModelValue = T extends object ? T['value'] : T
+
 interface Props {
-  modelValue: string | null | undefined
+  modelValue: ModelValue | null | undefined
   options: T[]
   optionLabel?: string // PrimeVue compatible prop
   optionValue?: string // PrimeVue compatible prop
@@ -52,7 +58,7 @@ interface Props {
 }
 
 interface Emits {
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: ModelValue]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -64,18 +70,19 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 // handle both string/number arrays and object arrays with PrimeVue compatibility
-const getOptionValue = (option: T, index: number): string => {
-  if (typeof option === 'object' && option !== null) {
-    const valueField = props.optionValue
-    const value =
-      (option as any)[valueField] ??
-      (option as any).value ??
-      (option as any).name ??
-      (option as any).label ??
-      index
-    return String(value)
+const getOptionValue = (option: T, index: number): ModelValue => {
+  if (typeof option !== 'object') {
+    return option as ModelValue
   }
-  return String(option)
+
+  const valueField = props.optionValue
+  const value =
+    (option as any)[valueField] ??
+    option.value ??
+    (option as any).name ??
+    option.label ??
+    index
+  return value
 }
 
 // for display with PrimeVue compatibility
@@ -84,24 +91,24 @@ const getOptionLabel = (option: T): string => {
     const labelField = props.optionLabel
     return (
       (option as any)[labelField] ??
-      (option as any).label ??
+      option.label ??
       (option as any).name ??
-      (option as any).value ??
+      option.value ??
       String(option)
     )
   }
   return String(option)
 }
 
-const isSelected = (option: T): boolean => {
-  const optionValue = getOptionValue(option, props.options.indexOf(option))
-  return optionValue === String(props.modelValue ?? '')
+const isSelected = (index: number): boolean => {
+  const optionValue = getOptionValue(props.options[index], index)
+  return String(optionValue) === String(props.modelValue ?? '')
 }
 
-const handleSelect = (option: T) => {
+const handleSelect = (index: number) => {
   if (props.disabled) return
 
-  const optionValue = getOptionValue(option, props.options.indexOf(option))
+  const optionValue = getOptionValue(props.options[index], index)
   emit('update:modelValue', optionValue)
 }
 </script>

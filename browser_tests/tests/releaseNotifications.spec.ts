@@ -50,7 +50,7 @@ test.describe('Release Notifications', () => {
     await expect(helpMenu).toBeVisible()
 
     // Verify "What's New?" section shows the release
-    const whatsNewSection = comfyPage.page.locator('.whats-new-section')
+    const whatsNewSection = comfyPage.page.getByTestId('whats-new-section')
     await expect(whatsNewSection).toBeVisible()
 
     // Should show the release version
@@ -79,7 +79,7 @@ test.describe('Release Notifications', () => {
     await expect(helpMenu).toBeVisible()
 
     // Verify "What's New?" section shows no releases
-    const whatsNewSection = comfyPage.page.locator('.whats-new-section')
+    const whatsNewSection = comfyPage.page.getByTestId('whats-new-section')
     await expect(whatsNewSection).toBeVisible()
 
     // Should show "No recent releases" message
@@ -125,7 +125,7 @@ test.describe('Release Notifications', () => {
     await expect(helpMenu).toBeVisible()
 
     // Should show no releases due to error
-    const whatsNewSection = comfyPage.page.locator('.whats-new-section')
+    const whatsNewSection = comfyPage.page.getByTestId('whats-new-section')
     await expect(
       whatsNewSection.locator('text=No recent releases')
     ).toBeVisible()
@@ -175,7 +175,7 @@ test.describe('Release Notifications', () => {
     await expect(helpMenu).toBeVisible()
 
     // Verify "What's New?" section is hidden
-    const whatsNewSection = comfyPage.page.locator('.whats-new-section')
+    const whatsNewSection = comfyPage.page.getByTestId('whats-new-section')
     await expect(whatsNewSection).not.toBeVisible()
 
     // Should not show any popups or toasts
@@ -211,9 +211,6 @@ test.describe('Release Notifications', () => {
     })
 
     await comfyPage.setup({ mockReleases: false })
-
-    // Wait a bit to ensure any potential API calls would have been made
-    await comfyPage.page.waitForTimeout(1000)
 
     // Verify no API calls were made
     expect(apiCallCount).toBe(0)
@@ -263,7 +260,7 @@ test.describe('Release Notifications', () => {
     await expect(helpMenu).toBeVisible()
 
     // Verify "What's New?" section is visible
-    const whatsNewSection = comfyPage.page.locator('.whats-new-section')
+    const whatsNewSection = comfyPage.page.getByTestId('whats-new-section')
     await expect(whatsNewSection).toBeVisible()
 
     // Should show the release
@@ -311,7 +308,7 @@ test.describe('Release Notifications', () => {
     await helpCenterButton.click()
 
     // Verify "What's New?" section is visible
-    const whatsNewSection = comfyPage.page.locator('.whats-new-section')
+    const whatsNewSection = comfyPage.page.getByTestId('whats-new-section')
     await expect(whatsNewSection).toBeVisible()
 
     // Close help center
@@ -362,7 +359,7 @@ test.describe('Release Notifications', () => {
     await expect(helpMenu).toBeVisible()
 
     // Section should be hidden regardless of empty releases
-    const whatsNewSection = comfyPage.page.locator('.whats-new-section')
+    const whatsNewSection = comfyPage.page.getByTestId('whats-new-section')
     await expect(whatsNewSection).not.toBeVisible()
   })
 })

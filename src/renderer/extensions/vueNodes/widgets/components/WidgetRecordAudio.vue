@@ -2,7 +2,7 @@
   <div class="relative">
     <div class="mb-4">
       <Button
-        class="text-secondary w-[413px] border-0 bg-zinc-500/10 dark-theme:bg-charcoal-600 dark-theme:text-white"
+        class="text-base-foreground w-full border-0 bg-secondary-background hover:bg-secondary-background-hover"
         :disabled="isRecording || readonly"
         @click="handleStartRecording"
       >
@@ -12,11 +12,11 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="text-secondary flex h-14 w-[413px] items-center gap-4 rounded-lg bg-zinc-500/10 px-4 dark-theme:bg-node-component-surface dark-theme:text-white"
+      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg px-3 bg-node-component-surface text-text-secondary"
     >
       <!-- Recording Status -->
-      <div class="flex min-w-30 items-center gap-2">
-        <span class="min-w-20 text-xs">
+      <div class="flex shrink-0 items-center gap-1">
+        <span class="text-xs">
           {{
             isRecording
               ? t('g.listening', 'Listening...')
@@ -27,11 +27,11 @@
                   : ''
           }}
         </span>
-        <span class="min-w-10 text-sm">{{ formatTime(timer) }}</span>
+        <span class="text-sm">{{ formatTime(timer) }}</span>
       </div>
 
       <!-- Waveform Visualization -->
-      <div class="flex h-8 flex-1 items-center gap-2 overflow-x-clip">
+      <div class="flex h-8 min-w-0 flex-1 items-center gap-2 overflow-hidden">
         <div
           v-for="(bar, index) in waveformBars"
           :key="index"
@@ -45,32 +45,28 @@
       <button
         v-if="isRecording"
         :title="t('g.stopRecording', 'Stop Recording')"
-        class="flex size-8 animate-pulse items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
+        class="flex shrink-0 size-8 animate-pulse items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopRecording"
       >
-        <div class="size-2.5 rounded-sm bg-[#C02323]" />
+        <div class="size-2.5 rounded-sm bg-danger-100" />
       </button>
 
       <button
         v-else-if="!isRecording && recordedURL && !isPlaying"
         :title="t('g.playRecording') || 'Play Recording'"
-        class="flex size-8 items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
+        class="flex shrink-0 size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
-        <i
-          class="text-secondary icon-[lucide--play] size-4 dark-theme:text-white"
-        />
+        <i class="text-text-secondary icon-[lucide--play] size-4" />
       </button>
 
       <button
         v-else-if="isPlaying"
         :title="t('g.stopPlayback') || 'Stop Playback'"
-        class="flex size-8 items-center justify-center rounded-full border-0 bg-gray-500/33 transition-colors"
+        class="flex shrink-0 size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
-        <i
-          class="text-secondary icon-[lucide--square] size-4 dark-theme:text-white"
-        />
+        <i class="text-text-secondary icon-[lucide--square] size-4" />
       </button>
     </div>
     <audio
@@ -82,7 +78,6 @@
       @ended="playback.onPlaybackEnded"
       @loadedmetadata="playback.onMetadataLoaded"
     />
-    <LODFallback />
   </div>
 </template>
 
@@ -91,29 +86,20 @@ import { useIntervalFn } from '@vueuse/core'
 import { Button } from 'primevue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { useStringWidgetValue } from '@/composables/graph/useWidgetValue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import LODFallback from '@/renderer/extensions/vueNodes/components/LODFallback.vue'
 import { app } from '@/scripts/app'
 import { useAudioService } from '@/services/audioService'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
 import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
 import { formatTime } from '../utils/audioUtils'
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string]
-}>()
-
 const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
   readonly?: boolean
-  modelValue: string
   nodeId: string
 }>()
 
@@ -165,22 +151,19 @@ const { isPlaying, audioElementKey } = playback
 
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
-const { localValue, onChange } = useStringWidgetValue(
-  props.widget as SimplifiedWidget<string, Record<string, string>>,
-  props.modelValue,
-  emit
-)
+
+const modelValue = defineModel<string>({ default: '' })
+
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!props.nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
 async function handleRecordingComplete(blob: Blob) {
   try {
     const path = await useAudioService().convertBlobToFileAndSubmit(blob)
-    localValue.value = path
+    modelValue.value = path
     lastUploadedPath = path
-    onChange(path)
   } catch (e) {
     useToastStore().addAlert('Failed to upload recorded audio')
   }
@@ -282,7 +265,7 @@ async function serializeValue() {
       let attempts = 0
       const maxAttempts = 50 // 5 seconds max (50 * 100ms)
       const checkRecording = () => {
-        if (!isRecording.value && props.modelValue) {
+        if (!isRecording.value && modelValue.value) {
           resolve(undefined)
         } else if (++attempts >= maxAttempts) {
           reject(new Error('Recording serialization timeout after 5 seconds'))
@@ -294,7 +277,7 @@ async function serializeValue() {
     })
   }
 
-  return props.modelValue || lastUploadedPath || ''
+  return modelValue.value || lastUploadedPath || ''
 }
 
 function registerWidgetSerialization() {

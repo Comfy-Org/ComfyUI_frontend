@@ -76,6 +76,17 @@ export function formatSize(value?: number) {
 }
 
 /**
+ * Formats a commit hash by truncating long (40-char) hashes to 7 chars.
+ * Returns the original string if not a valid full commit hash.
+ */
+export function formatCommitHash(value: string): string {
+  if (/^[a-f0-9]{40}$/i.test(value)) {
+    return value.slice(0, 7)
+  }
+  return value
+}
+
+/**
  * Returns various filename components.
  * Example:
  * - fullFilename: 'file.txt'
@@ -473,4 +484,71 @@ export function formatDuration(milliseconds: number): string {
   }
 
   return parts.join(' ')
+}
+
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'] as const
+const VIDEO_EXTENSIONS = ['mp4', 'webm', 'mov', 'avi'] as const
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
+const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb'] as const
+
+const MEDIA_TYPES = ['image', 'video', 'audio', '3D'] as const
+type MediaType = (typeof MEDIA_TYPES)[number]
+
+// Type guard helper for checking array membership
+type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
+type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
+type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
+type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
+
+/**
+ * Truncates a filename while preserving the extension
+ * @param filename The filename to truncate
+ * @param maxLength Maximum length for the filename without extension
+ * @returns Truncated filename with extension preserved
+ */
+export function truncateFilename(
+  filename: string,
+  maxLength: number = 20
+): string {
+  if (!filename || filename.length <= maxLength) {
+    return filename
+  }
+
+  const lastDotIndex = filename.lastIndexOf('.')
+  const nameWithoutExt =
+    lastDotIndex > -1 ? filename.substring(0, lastDotIndex) : filename
+  const extension = lastDotIndex > -1 ? filename.substring(lastDotIndex) : ''
+
+  // If the name without extension is short enough, return as is
+  if (nameWithoutExt.length <= maxLength) {
+    return filename
+  }
+
+  // Calculate how to split the truncation
+  const halfLength = Math.floor((maxLength - 3) / 2) // -3 for '...'
+  const start = nameWithoutExt.substring(0, halfLength)
+  const end = nameWithoutExt.substring(nameWithoutExt.length - halfLength)
+
+  return `${start}...${end}${extension}`
+}
+
+/**
+ * Determines the media type from a filename's extension (singular form)
+ * @param filename The filename to analyze
+ * @returns The media type: 'image', 'video', 'audio', or '3D'
+ */
+export function getMediaTypeFromFilename(
+  filename: string | null | undefined
+): MediaType {
+  if (!filename) return 'image'
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (!ext) return 'image'
+
+  // Type-safe array includes check using type assertion
+  if (IMAGE_EXTENSIONS.includes(ext as ImageExtension)) return 'image'
+  if (VIDEO_EXTENSIONS.includes(ext as VideoExtension)) return 'video'
+  if (AUDIO_EXTENSIONS.includes(ext as AudioExtension)) return 'audio'
+  if (THREE_D_EXTENSIONS.includes(ext as ThreeDExtension)) return '3D'
+
+  return 'image'
 }

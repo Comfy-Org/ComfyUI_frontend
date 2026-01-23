@@ -1,17 +1,23 @@
 <template>
   <Button
     v-tooltip.top="{
-      value: $t('Edit Subgraph Widgets'),
+      value: $t('commands.Comfy_Graph_EditSubgraphWidgets.label'),
       showDelay: 1000
     }"
-    severity="secondary"
-    text
-    icon="icon-[lucide--settings-2]"
-    @click="showSubgraphNodeDialog"
-  />
+    variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
+    @click="handleClick"
+  >
+    <i class="icon-[lucide--settings-2]" />
+  </Button>
 </template>
 <script setup lang="ts">
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import { showSubgraphNodeDialog } from '@/core/graph/subgraph/useSubgraphNodeDialog'
+const rightSidePanelStore = useRightSidePanelStore()
+
+const handleClick = () => {
+  rightSidePanelStore.openPanel('subgraph')
+}
 </script>

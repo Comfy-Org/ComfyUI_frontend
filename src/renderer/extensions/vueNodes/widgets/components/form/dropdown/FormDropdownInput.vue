@@ -9,7 +9,6 @@ import type { DropdownItem, SelectedKey } from './types'
 interface Props {
   isOpen?: boolean
   placeholder?: string
-  files: File[]
   items: DropdownItem[]
   selected: Set<SelectedKey>
   maxSelectable: number
@@ -32,22 +31,14 @@ const selectedItems = computed(() => {
   return props.items.filter((item) => props.selected.has(item.id))
 })
 
-const chevronClass = computed(() =>
-  cn(
-    'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-button-icon',
-    {
-      'rotate-180': props.isOpen
-    }
-  )
-)
-
 const theButtonStyle = computed(() =>
-  cn('bg-transparent border-0 outline-none text-text-secondary', {
-    'hover:bg-node-component-widget-input-surface/30 cursor-pointer':
-      !props.disabled,
-    'cursor-not-allowed': props.disabled,
-    'text-text-primary': selectedItems.value.length > 0
-  })
+  cn(
+    'border-0 bg-component-node-widget-background outline-none text-text-secondary',
+    props.disabled
+      ? 'cursor-not-allowed'
+      : 'hover:bg-component-node-widget-background-hovered cursor-pointer',
+    selectedItems.value.length > 0 && 'text-text-primary'
+  )
 )
 </script>
 
@@ -62,22 +53,34 @@ const theButtonStyle = computed(() =>
     <!-- Dropdown -->
     <button
       :class="
-        cn(theButtonStyle, 'flex justify-between items-center flex-1 h-8', {
-          'rounded-l-lg': uploadable,
-          'rounded-lg': !uploadable
-        })
+        cn(
+          theButtonStyle,
+          'flex justify-between items-center flex-1 min-w-0 h-8',
+          {
+            'rounded-l-lg': uploadable,
+            'rounded-lg': !uploadable
+          }
+        )
       "
       @click="emit('select-click', $event)"
     >
-      <span class="min-w-0 px-4 py-2 text-left">
-        <span v-if="!selectedItems.length" class="min-w-0">
-          {{ props.placeholder }}
+      <span class="min-w-0 flex-1 px-1 py-2 text-left truncate">
+        <span v-if="!selectedItems.length">
+          {{ placeholder }}
         </span>
-        <span v-else class="line-clamp-1 min-w-0 break-all">
-          {{ selectedItems.map((item) => (item as any)?.name).join(', ') }}
+        <span v-else>
+          {{ selectedItems.map((item) => item.label ?? item.name).join(', ') }}
         </span>
       </span>
-      <i class="icon-[lucide--chevron-down]" :class="chevronClass" />
+      <i
+        class="icon-[lucide--chevron-down]"
+        :class="
+          cn(
+            'mr-2 size-4 transition-transform duration-200 flex-shrink-0 text-component-node-foreground-secondary',
+            isOpen && 'rotate-180'
+          )
+        "
+      />
     </button>
     <!-- Open File -->
     <label

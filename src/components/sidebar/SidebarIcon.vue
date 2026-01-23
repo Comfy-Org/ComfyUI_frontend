@@ -5,29 +5,21 @@
       showDelay: 300,
       hideDelay: 300
     }"
-    text
-    :pt="{
-      root: {
-        class: `side-bar-button p-button-secondary ${
-          selected ? 'side-bar-button-selected' : ''
-        }`,
-        'aria-label': computedTooltip
-      }
-    }"
+    :class="
+      cn(
+        'side-bar-button cursor-pointer border-none',
+        selected && 'side-bar-button-selected'
+      )
+    "
+    variant="muted-textonly"
+    :aria-label="computedTooltip"
     @click="emit('click', $event)"
   >
-    <template #icon>
-      <div class="side-bar-button-content">
-        <slot name="icon">
-          <OverlayBadge v-if="shouldShowBadge" :value="overlayValue">
-            <i
-              v-if="typeof icon === 'string'"
-              :class="icon + ' side-bar-button-icon'"
-            />
-            <component :is="icon" v-else class="side-bar-button-icon" />
-          </OverlayBadge>
+    <div class="side-bar-button-content">
+      <slot name="icon">
+        <div class="sidebar-icon-wrapper relative">
           <i
-            v-else-if="typeof icon === 'string'"
+            v-if="typeof icon === 'string'"
             :class="icon + ' side-bar-button-icon'"
           />
           <component
@@ -35,21 +27,33 @@
             v-else-if="typeof icon === 'object'"
             class="side-bar-button-icon"
           />
-        </slot>
-        <span v-if="label && !isSmall" class="side-bar-button-label">{{
-          t(label)
-        }}</span>
-      </div>
-    </template>
+          <span
+            v-if="shouldShowBadge"
+            :class="
+              cn(
+                'sidebar-icon-badge absolute min-w-[16px] rounded-full bg-primary-background py-0.25 text-[10px] font-medium leading-[14px] text-base-foreground',
+                badgeClass || '-top-1 -right-1'
+              )
+            "
+          >
+            {{ overlayValue }}
+          </span>
+        </div>
+      </slot>
+      <span v-if="label && !isSmall" class="side-bar-button-label">{{
+        t(label)
+      }}</span>
+    </div>
   </Button>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
-import OverlayBadge from 'primevue/overlaybadge'
 import { computed } from 'vue'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 const {
@@ -58,6 +62,7 @@ const {
   tooltip = '',
   tooltipSuffix = '',
   iconBadge = '',
+  badgeClass = '',
   label = '',
   isSmall = false
 } = defineProps<{
@@ -66,6 +71,7 @@ const {
   tooltip?: string
   tooltipSuffix?: string
   iconBadge?: string | (() => string | null)
+  badgeClass?: string
   label?: string
   isSmall?: boolean
 }>()
@@ -86,7 +92,11 @@ const computedTooltip = computed(() => t(tooltip) + tooltipSuffix)
 }
 
 .side-bar-button-selected {
-  background-color: var(--content-hover-bg);
+  background-color: var(--interface-panel-selected-surface);
+  color: var(--content-hover-fg);
+}
+.side-bar-button:hover {
+  background-color: var(--interface-panel-hover-surface);
   color: var(--content-hover-fg);
 }
 

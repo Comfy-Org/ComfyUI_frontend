@@ -121,26 +121,7 @@ export function useTemplateWorkflows() {
         if (!template || !template.sourceModule) return false
 
         // Use the stored source module for loading
-        const actualSourceModule = template.sourceModule
-        json = await fetchTemplateJson(id, actualSourceModule)
-
-        // Use source module for name
-        const workflowName =
-          actualSourceModule === 'default'
-            ? t(`templateWorkflows.template.${id}`, id)
-            : id
-
-        if (isCloud) {
-          useTelemetry()?.trackTemplate({
-            workflow_name: workflowName,
-            template_source: actualSourceModule
-          })
-        }
-
-        dialogStore.closeDialog()
-        await app.loadGraphData(json, true, true, workflowName)
-
-        return true
+        sourceModule = template.sourceModule
       }
 
       // Regular case for normal categories
@@ -153,13 +134,15 @@ export function useTemplateWorkflows() {
 
       if (isCloud) {
         useTelemetry()?.trackTemplate({
-          workflow_name: workflowName,
+          workflow_name: id,
           template_source: sourceModule
         })
       }
 
       dialogStore.closeDialog()
-      await app.loadGraphData(json, true, true, workflowName)
+      await app.loadGraphData(json, true, true, workflowName, {
+        openSource: 'template'
+      })
 
       return true
     } catch (error) {

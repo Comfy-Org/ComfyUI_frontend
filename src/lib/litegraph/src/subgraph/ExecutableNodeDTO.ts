@@ -287,11 +287,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     if (node.isSubgraphNode())
       return this.#resolveSubgraphOutput(slot, type, visited)
 
-    // Upstreamed: Other virtual nodes are bypassed using the same input/output index (slots must match)
     if (node.isVirtualNode) {
-      if (this.inputs.at(slot)) return this.resolveInput(slot, visited, type)
-
-      // Fallback check for nodes performing link redirection
       const virtualLink = this.node.getInputLink(slot)
       if (virtualLink) {
         const { inputNode } = virtualLink.resolve(this.graph)

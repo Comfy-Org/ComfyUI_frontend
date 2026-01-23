@@ -3,7 +3,7 @@
     <span v-if="!isEditing">
       {{ modelValue }}
     </span>
-    <!-- Avoid double triggering finishEditing event when keyup.enter is triggered -->
+    <!-- Avoid double triggering finishEditing event when keydown.enter is triggered -->
     <InputText
       v-else
       ref="inputRef"
@@ -18,9 +18,12 @@
           ...inputAttrs
         }
       }"
-      @keyup.enter="blurInputElement"
-      @keyup.escape="cancelEditing"
+      @keydown.enter.capture.stop="blurInputElement"
+      @keydown.escape.capture.stop="cancelEditing"
       @click.stop
+      @contextmenu.stop
+      @pointerdown.stop.capture
+      @pointermove.stop.capture
     />
   </div>
 </template>
@@ -36,10 +39,10 @@ const {
 } = defineProps<{
   modelValue: string
   isEditing?: boolean
-  inputAttrs?: Record<string, any>
+  inputAttrs?: Record<string, string>
 }>()
 
-const emit = defineEmits(['update:modelValue', 'edit', 'cancel'])
+const emit = defineEmits(['edit', 'cancel'])
 const inputValue = ref<string>(modelValue)
 const inputRef = ref<InstanceType<typeof InputText> | undefined>()
 const isCanceling = ref(false)

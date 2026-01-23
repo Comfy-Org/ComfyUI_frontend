@@ -1,71 +1,98 @@
 <template>
   <div
     data-component-id="AssetGrid"
-    :style="gridStyle"
+    class="h-full"
     role="grid"
-    aria-label="Asset collection"
+    :aria-label="$t('assetBrowser.assetCollection')"
     :aria-rowcount="-1"
     :aria-colcount="-1"
     :aria-setsize="assets.length"
   >
-    <AssetCard
-      v-for="asset in assets"
-      :key="asset.id"
-      :asset="asset"
-      :interactive="true"
-      role="gridcell"
-      @select="$emit('assetSelect', $event)"
-    />
-
-    <!-- Empty state -->
+    <div v-if="loading" class="flex h-full items-center justify-center py-20">
+      <i
+        class="icon-[lucide--loader] size-12 animate-spin text-muted-foreground"
+      />
+    </div>
     <div
-      v-if="assets.length === 0"
-      :class="
-        cn(
-          'col-span-full flex flex-col items-center justify-center py-16',
-          'text-stone-300 dark-theme:text-stone-200'
-        )
-      "
+      v-else-if="assets.length === 0"
+      class="flex h-full flex-col items-center justify-center py-16 text-muted-foreground"
     >
       <i class="mb-4 icon-[lucide--search] size-10" />
       <h3 class="mb-2 text-lg font-medium">
-        {{ $t('assetBrowser.noAssetsFound') }}
+        {{ emptyTitle ?? $t('assetBrowser.noAssetsFound') }}
       </h3>
-      <p class="text-sm">{{ $t('assetBrowser.tryAdjustingFilters') }}</p>
+      <p class="text-sm">
+        {{ emptyMessage ?? $t('assetBrowser.tryAdjustingFilters') }}
+      </p>
     </div>
-
-    <!-- Loading state -->
-    <div
-      v-if="loading"
-      class="col-span-full flex items-center justify-center py-20"
+    <VirtualGrid
+      v-else
+      :items="assetsWithKey"
+      :grid-style
+      :default-item-height="320"
+      :default-item-width="240"
+      :max-columns
     >
-      <i
-        class="icon-[lucide--loader]"
-        :class="
-          cn('size-12 animate-spin', 'text-stone-300 dark-theme:text-stone-200')
-        "
-      />
-    </div>
+      <template #item="{ item }">
+        <AssetCard
+          :asset="item"
+          :interactive="true"
+          :focused="item.id === focusedAssetId"
+          @focus="$emit('assetFocus', $event)"
+          @select="$emit('assetSelect', $event)"
+          @deleted="$emit('assetDeleted', $event)"
+          @show-info="$emit('assetShowInfo', $event)"
+        />
+      </template>
+    </VirtualGrid>
   </div>
 </template>
 
 <script setup lang="ts">
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
+import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
+import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import AssetCard from '@/platform/assets/components/AssetCard.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
-import { createGridStyle } from '@/utils/gridUtil'
-import { cn } from '@/utils/tailwindUtil'
 
-defineProps<{
+const { assets, focusedAssetId, emptyTitle, emptyMessage } = defineProps<{
   assets: AssetDisplayItem[]
   loading?: boolean
+  focusedAssetId?: string | null
+  emptyTitle?: string
+  emptyMessage?: string
 }>()
 
 defineEmits<{
+  assetFocus: [asset: AssetDisplayItem]
   assetSelect: [asset: AssetDisplayItem]
+  assetDeleted: [asset: AssetDisplayItem]
+  assetShowInfo: [asset: AssetDisplayItem]
 }>()
 
-// Use same grid style as BaseModalLayout
-const gridStyle = computed(() => createGridStyle())
+const assetsWithKey = computed(() =>
+  assets.map((asset) => ({ ...asset, key: asset.id }))
+)
+
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const is2Xl = breakpoints.greaterOrEqual('2xl')
+const isXl = breakpoints.greaterOrEqual('xl')
+const isLg = breakpoints.greaterOrEqual('lg')
+const isMd = breakpoints.greaterOrEqual('md')
+const maxColumns = computed(() => {
+  if (is2Xl.value) return 5
+  if (isXl.value) return 3
+  if (isLg.value) return 3
+  if (isMd.value) return 2
+  return 1
+})
+
+const gridStyle: CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(15rem, 1fr))',
+  gap: '1rem',
+  padding: '0.5rem'
+}
 </script>

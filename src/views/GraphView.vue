@@ -5,22 +5,27 @@
     <div id="comfyui-body-left" class="comfyui-body-left" />
     <div id="comfyui-body-right" class="comfyui-body-right" />
     <div
+      v-show="!linearMode"
       id="graph-canvas-container"
       ref="graphCanvasContainerRef"
       class="graph-canvas-container"
     >
       <GraphCanvas @ready="onGraphReady" />
     </div>
+    <LinearView v-if="linearMode" />
   </div>
 
   <GlobalToast />
   <RerouteMigrationToast />
+  <ModelImportProgressDialog />
+  <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import {
@@ -46,16 +51,23 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/services/keybindingService'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -69,6 +81,8 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
+import LinearView from '@/views/LinearView.vue'
+import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
@@ -80,8 +94,17 @@ const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
+const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const { linearMode } = storeToRefs(useCanvasStore())
+
+const telemetry = useTelemetry()
+const firebaseAuthStore = useFirebaseAuthStore()
+let hasTrackedLogin = false
+let visibilityListener: (() => void) | null = null
+let tabCountInterval: number | null = null
+let tabCountChannel: BroadcastChannel | null = null
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -186,13 +209,25 @@ const init = () => {
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
+const sidebarTabStore = useSidebarTabStore()
+
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
   await queueStore.update()
+  // Only update assets if the assets sidebar is currently open
+  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
+    await assetsStore.updateHistory()
+  }
 }
 
 const onExecutionSuccess = async () => {
   await queueStore.update()
+  // Only update assets if the assets sidebar is currently open
+  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
+  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+    await assetsStore.updateHistory()
+  }
 }
 
 const reconnectingMessage: ToastMessageOptions = {
@@ -218,6 +253,27 @@ const onReconnected = () => {
   }
 }
 
+// Initialize workspace store when feature flag and auth become available
+// Uses watch because remoteConfig loads asynchronously after component mount
+if (isCloud) {
+  const { flags } = useFeatureFlags()
+
+  watch(
+    () => [flags.teamWorkspacesEnabled, firebaseAuthStore.isAuthenticated],
+    async ([enabled, isAuthenticated]) => {
+      if (!enabled || !isAuthenticated) return
+
+      const { useTeamWorkspaceStore } =
+        await import('@/platform/workspace/stores/teamWorkspaceStore')
+      const workspaceStore = useTeamWorkspaceStore()
+      if (workspaceStore.initState === 'uninitialized') {
+        await workspaceStore.initialize()
+      }
+    },
+    { immediate: true }
+  )
+}
+
 onMounted(() => {
   api.addEventListener('status', onStatus)
   api.addEventListener('execution_success', onExecutionSuccess)
@@ -240,6 +296,22 @@ onBeforeUnmount(() => {
   api.removeEventListener('reconnecting', onReconnecting)
   api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
+
+  // Clean up page visibility listener
+  if (visibilityListener) {
+    document.removeEventListener('visibilitychange', visibilityListener)
+    visibilityListener = null
+  }
+
+  // Clean up tab count tracking
+  if (tabCountInterval) {
+    window.clearInterval(tabCountInterval)
+    tabCountInterval = null
+  }
+  if (tabCountChannel) {
+    tabCountChannel.close()
+    tabCountChannel = null
+  }
 })
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
@@ -258,6 +330,64 @@ void nextTick(() => {
 
 const onGraphReady = () => {
   runWhenGlobalIdle(() => {
+    // Track user login when app is ready in graph view (cloud only)
+    if (isCloud && firebaseAuthStore.isAuthenticated && !hasTrackedLogin) {
+      telemetry?.trackUserLoggedIn()
+      hasTrackedLogin = true
+    }
+
+    // Set up page visibility tracking (cloud only)
+    if (isCloud && telemetry && !visibilityListener) {
+      visibilityListener = () => {
+        telemetry.trackPageVisibilityChanged({
+          visibility_state: document.visibilityState as 'visible' | 'hidden'
+        })
+      }
+      document.addEventListener('visibilitychange', visibilityListener)
+    }
+
+    // Set up tab count tracking (cloud only)
+    if (isCloud && telemetry && !tabCountInterval) {
+      tabCountChannel = new BroadcastChannel('comfyui-tab-count')
+      const activeTabs = new Map<string, number>()
+      const currentTabId = crypto.randomUUID()
+
+      // Listen for heartbeats from other tabs
+      tabCountChannel.onmessage = (event) => {
+        if (
+          event.data.type === 'heartbeat' &&
+          event.data.tabId !== currentTabId
+        ) {
+          activeTabs.set(event.data.tabId, Date.now())
+        }
+      }
+
+      // 5-minute heartbeat interval
+      tabCountInterval = window.setInterval(() => {
+        const now = Date.now()
+
+        // Clean up stale tabs (no heartbeat for 45 seconds)
+        activeTabs.forEach((lastHeartbeat, tabId) => {
+          if (now - lastHeartbeat > 45000) {
+            activeTabs.delete(tabId)
+          }
+        })
+
+        // Broadcast our heartbeat
+        tabCountChannel?.postMessage({
+          type: 'heartbeat',
+          tabId: currentTabId
+        })
+
+        // Track tab count (include current tab)
+        const tabCount = activeTabs.size + 1
+        telemetry.trackTabCount({ tab_count: tabCount })
+      }, 60000 * 5)
+
+      // Send initial heartbeat
+      tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
+    }
+
     // Setting values now available after comfyApp.setup.
     // Load keybindings.
     wrapWithErrorHandling(useKeybindingService().registerUserKeybindings)()

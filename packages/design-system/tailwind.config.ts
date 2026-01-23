@@ -4,6 +4,13 @@ import { addDynamicIconSelectors } from '@iconify/tailwind'
 import { iconCollection } from './src/iconCollection'
 
 export default {
+  theme: {
+    extend: {
+      boxShadow: {
+        interface: 'var(--interface-panel-box-shadow)'
+      }
+    }
+  },
   plugins: [
     addDynamicIconSelectors({
       iconSets: {

@@ -25,3 +25,6 @@ e3bb29ceb8174b8bbca9e48ec7d42cd540f40efa
 
 # [refactor] Improve updates/notifications domain organization (#5590)
 27ab355f9c73415dc39f4d3f512b02308f847801
+
+# Migrate Tailwind styles to design-system package
+9f19d8fb4bd22518879343b49c05634dca777df0

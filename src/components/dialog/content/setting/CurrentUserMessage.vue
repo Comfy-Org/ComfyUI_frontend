@@ -7,18 +7,26 @@
     pt:text="w-full"
   >
     <div class="flex items-center justify-between">
-      <div>
+      <div data-testid="current-user-indicator">
         {{ $t('g.currentUser') }}: {{ userStore.currentUser?.username }}
       </div>
-      <Button icon="pi pi-sign-out" text @click="logout" />
+      <Button
+        class="text-inherit"
+        variant="textonly"
+        size="icon"
+        :aria-label="$t('menuLabels.Sign Out')"
+        @click="logout"
+      >
+        <i class="pi pi-sign-out" />
+      </Button>
     </div>
   </Message>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Message from 'primevue/message'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useUserStore } from '@/stores/userStore'
 
 const userStore = useUserStore()

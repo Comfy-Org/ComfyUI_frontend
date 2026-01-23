@@ -3,9 +3,10 @@ import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
 import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript'
 import { importX } from 'eslint-plugin-import-x'
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
-import storybook from 'eslint-plugin-storybook'
-import tailwind from 'eslint-plugin-tailwindcss'
+import oxlint from 'eslint-plugin-oxlint'
+// eslint-config-prettier disables ESLint rules that conflict with formatters (oxfmt)
+import eslintConfigPrettier from 'eslint-config-prettier'
+import { configs as storybookConfigs } from 'eslint-plugin-storybook'
 import unusedImports from 'eslint-plugin-unused-imports'
 import pluginVue from 'eslint-plugin-vue'
 import { defineConfig } from 'eslint/config'
@@ -15,6 +16,7 @@ import {
   parser as tseslintParser
 } from 'typescript-eslint'
 import vueParser from 'vue-eslint-parser'
+import path from 'node:path'
 
 const extraFileExtensions = ['.vue']
 
@@ -35,9 +37,16 @@ const settings = {
       noWarnOnMultipleProjects: true
     })
   ],
-  tailwindcss: {
-    config: `${import.meta.dirname}/packages/design-system/src/css/style.css`,
-    functions: ['cn', 'clsx', 'tw']
+  'vue-i18n': {
+    localeDir: [
+      {
+        pattern: './src/locales/**/*.json',
+        localeKey: 'path',
+        localePattern:
+          /^\.?\/?src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
+      }
+    ],
+    messageSyntaxVersion: '^9.0.0'
   }
 } as const
 
@@ -54,18 +63,20 @@ export default defineConfig([
   {
     ignores: [
       '.i18nrc.cjs',
-      'components.d.ts',
-      'lint-staged.config.js',
-      'vitest.setup.ts',
+      '.nx/*',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
+      'components.d.ts',
+      'coverage/*',
+      'dist/*',
       'packages/registry-types/src/comfyRegistryTypes.ts',
-      'public/auth-dev-sw.js',
-      'public/auth-sw.js',
+      'playwright-report/*',
       'src/extensions/core/*',
       'src/scripts/*',
       'src/types/generatedManagerTypes.ts',
-      'src/types/vue-shim.d.ts'
+      'src/types/vue-shim.d.ts',
+      'test-results/*',
+      'vitest.setup.ts'
     ]
   },
   {
@@ -97,24 +108,22 @@ export default defineConfig([
 
   tseslintConfigs.recommended,
   // Difference in typecheck on CI vs Local
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore Bad types in the plugin
-  tailwind.configs['flat/recommended'],
   pluginVue.configs['flat/recommended'],
-  eslintPluginPrettierRecommended,
-  storybook.configs['flat/recommended'],
-  // @ts-expect-error Bad types in the plugin
+  // Disables ESLint rules that conflict with formatters
+  eslintConfigPrettier,
+  // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
+  storybookConfigs['flat/recommended'],
+  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // @ts-expect-error Bad types in the plugin
+  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
       'unused-imports': unusedImports,
-      // @ts-expect-error Bad types in the plugin
+      // @ts-expect-error Type incompatibility in i18n plugin
       '@intlify/vue-i18n': pluginI18n
     },
     rules: {
-      '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',
@@ -126,64 +135,41 @@ export default defineConfig([
           allowInterfaces: 'always'
         }
       ],
-      'import-x/consistent-type-specifier-style': ['error', 'prefer-top-level'],
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
       'unused-imports/no-unused-imports': 'error',
-      'no-console': ['error', { allow: ['warn', 'error'] }],
-      'tailwindcss/no-custom-classname': 'off', // TODO: fix
       'vue/no-v-html': 'off',
-      // Enforce dark-theme: instead of dark: prefix
-      'vue/no-restricted-class': ['error', '/^dark:/'],
+      // Prohibit dark-theme: and dark: prefixes
+      'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
       'vue/multi-word-component-names': 'off', // TODO: fix
       'vue/no-template-shadow': 'off', // TODO: fix
       'vue/match-component-import-name': 'error',
-      /* Toggle on to do additional until we can clean up existing violations.
-      'vue/no-unused-emit-declarations': 'error',
       'vue/no-unused-properties': 'error',
       'vue/no-unused-refs': 'error',
-      'vue/no-use-v-else-with-v-for': 'error',
+      'vue/no-useless-mustaches': 'error',
       'vue/no-useless-v-bind': 'error',
-      // */
-      'vue/one-component-per-file': 'off', // TODO: fix
+      'vue/no-unused-emit-declarations': 'error',
+      'vue/no-use-v-else-with-v-for': 'error',
+      'vue/one-component-per-file': 'error',
       'vue/require-default-prop': 'off', // TODO: fix -- this one is very worthwhile
-      // Restrict deprecated PrimeVue components
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: [
-            {
-              name: 'primevue/calendar',
-              message:
-                'Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from "primevue/datepicker"'
-            },
-            {
-              name: 'primevue/dropdown',
-              message:
-                'Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from "primevue/select"'
-            },
-            {
-              name: 'primevue/inputswitch',
-              message:
-                'InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from "primevue/toggleswitch"'
-            },
-            {
-              name: 'primevue/overlaypanel',
-              message:
-                'OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from "primevue/popover"'
-            },
-            {
-              name: 'primevue/sidebar',
-              message:
-                'Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from "primevue/drawer"'
-            }
-          ]
-        }
-      ],
+
       // i18n rules
       '@intlify/vue-i18n/no-raw-text': [
         'error',
         {
+          attributes: {
+            '/.+/': [
+              'aria-label',
+              'aria-placeholder',
+              'aria-roledescription',
+              'aria-valuetext',
+              'label',
+              'placeholder',
+              'title',
+              'v-tooltip'
+            ],
+            img: ['alt']
+          },
           // Ignore strings that are:
           // 1. Less than 2 characters
           // 2. Only symbols/numbers/whitespace (no letters)
@@ -193,24 +179,27 @@ export default defineConfig([
           ignoreNodes: ['md-icon', 'v-icon', 'pre', 'code', 'script', 'style'],
           // Brand names and technical terms that shouldn't be translated
           ignoreText: [
-            'ComfyUI',
-            'GitHub',
-            'OpenAI',
             'API',
-            'URL',
-            'JSON',
-            'YAML',
-            'GPU',
-            'CPU',
-            'RAM',
-            'GB',
-            'MB',
-            'KB',
-            'ms',
-            'fps',
-            'px',
             'App Data:',
-            'App Path:'
+            'App Path:',
+            'ComfyUI',
+            'CPU',
+            'fps',
+            'GB',
+            'GitHub',
+            'GPU',
+            'JSON',
+            'KB',
+            'LoRA',
+            'MB',
+            'ms',
+            'OpenAI',
+            'png',
+            'px',
+            'RAM',
+            'URL',
+            'YAML',
+            '1.2 MB'
           ]
         }
       ]
@@ -252,12 +241,6 @@ export default defineConfig([
     }
   },
   {
-    files: ['**/*.{test,spec,stories}.ts', '**/*.stories.vue'],
-    rules: {
-      'no-console': 'off'
-    }
-  },
-  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {
@@ -267,6 +250,20 @@ export default defineConfig([
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off'
+    }
+  },
+
+  // Turn off ESLint rules that are already handled by oxlint
+  ...oxlint.buildFromOxlintConfigFile(
+    path.resolve(import.meta.dirname, '.oxlintrc.json')
+  ),
+  {
+    rules: {
+      'import-x/default': 'off',
+      'import-x/export': 'off',
+      'import-x/namespace': 'off',
+      'import-x/no-duplicates': 'off',
+      'import-x/consistent-type-specifier-style': 'off'
     }
   }
 ])

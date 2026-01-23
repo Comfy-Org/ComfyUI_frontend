@@ -59,16 +59,16 @@ export class LiteGraphGlobal {
   NODE_DEFAULT_SHAPE = RenderShape.ROUND
   NODE_BOX_OUTLINE_COLOR = '#FFF'
   NODE_ERROR_COLOUR = '#E00'
-  NODE_FONT = 'Arial'
+  NODE_FONT = 'Inter'
   NODE_DEFAULT_BYPASS_COLOR = '#FF00FF'
   NODE_OPACITY = 0.9
 
-  DEFAULT_FONT = 'Arial'
+  DEFAULT_FONT = 'Inter'
   DEFAULT_SHADOW_COLOR = 'rgba(0,0,0,0.5)'
 
   DEFAULT_GROUP_FONT = 24
-  DEFAULT_GROUP_FONT_SIZE?: any
-  GROUP_FONT = 'Arial'
+  DEFAULT_GROUP_FONT_SIZE = 24
+  GROUP_FONT = 'Inter'
 
   WIDGET_BGCOLOR = '#222'
   WIDGET_OUTLINE_COLOR = '#666'
@@ -716,7 +716,7 @@ export class LiteGraphGlobal {
   }
 
   // used to create nodes from wrapping functions
-  getParameterNames(func: (...args: any) => any): string[] {
+  getParameterNames(func: (...args: unknown[]) => unknown): string[] {
     return String(func)
       .replaceAll(/\/\/.*$/gm, '') // strip single-line comments
       .replaceAll(/\s+/g, '') // strip white space
@@ -971,7 +971,10 @@ export class LiteGraphGlobal {
     }
   }
 
-  extendClass(target: any, origin: any): void {
+  extendClass(
+    target: Record<string, unknown> & { prototype?: object },
+    origin: Record<string, unknown> & { prototype?: object }
+  ): void {
     for (const i in origin) {
       // copy class properties
       // eslint-disable-next-line no-prototype-builtins
@@ -979,33 +982,24 @@ export class LiteGraphGlobal {
       target[i] = origin[i]
     }
 
-    if (origin.prototype) {
+    if (origin.prototype && target.prototype) {
+      const originProto = origin.prototype as Record<string, unknown>
+      const targetProto = target.prototype as Record<string, unknown>
+
       // copy prototype properties
-      for (const i in origin.prototype) {
+      for (const i in originProto) {
         // only enumerable
         // eslint-disable-next-line no-prototype-builtins
-        if (!origin.prototype.hasOwnProperty(i)) continue
+        if (!originProto.hasOwnProperty(i)) continue
 
         // avoid overwriting existing ones
         // eslint-disable-next-line no-prototype-builtins
-        if (target.prototype.hasOwnProperty(i)) continue
+        if (targetProto.hasOwnProperty(i)) continue
 
-        // copy getters
-        if (origin.prototype.__lookupGetter__(i)) {
-          target.prototype.__defineGetter__(
-            i,
-            origin.prototype.__lookupGetter__(i)
-          )
-        } else {
-          target.prototype[i] = origin.prototype[i]
-        }
-
-        // and setters
-        if (origin.prototype.__lookupSetter__(i)) {
-          target.prototype.__defineSetter__(
-            i,
-            origin.prototype.__lookupSetter__(i)
-          )
+        // Use Object.getOwnPropertyDescriptor to copy getters/setters properly
+        const descriptor = Object.getOwnPropertyDescriptor(originProto, i)
+        if (descriptor) {
+          Object.defineProperty(targetProto, i, descriptor)
         }
       }
     }

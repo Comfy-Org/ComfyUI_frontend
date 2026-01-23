@@ -1,276 +1,103 @@
 <template>
   <TabPanel value="PlanCredits" class="subscription-container h-full">
-    <div class="flex h-full flex-col">
+    <div class="flex h-full flex-col gap-6">
       <div class="flex items-center gap-2">
-        <h2 class="text-2xl">
-          {{ $t('subscription.title') }}
-        </h2>
-        <TopbarBadges reverse-order />
-      </div>
-
-      <div class="grow overflow-auto">
-        <div class="rounded-lg border border-charcoal-400 p-4">
-          <div>
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="flex items-baseline gap-1">
-                  <span class="text-2xl font-bold">{{
-                    formattedMonthlyPrice
-                  }}</span>
-                  <span>{{ $t('subscription.perMonth') }}</span>
-                </div>
-                <div v-if="isActiveSubscription" class="text-xs text-muted">
-                  {{
-                    $t('subscription.renewsDate', {
-                      date: formattedRenewalDate
-                    })
-                  }}
-                </div>
-              </div>
-              <Button
-                v-if="isActiveSubscription"
-                :label="$t('subscription.manageSubscription')"
-                severity="secondary"
-                class="text-xs"
-                @click="manageSubscription"
-              />
-              <SubscribeButton
-                v-else
-                :label="$t('subscription.subscribeNow')"
-                size="small"
-                button-class="text-xs"
-                @subscribed="handleRefresh"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 gap-6 rounded-lg pt-10 lg:grid-cols-2">
-            <div class="flex flex-col">
-              <div class="flex flex-col gap-3">
-                <div class="flex flex-col">
-                  <div class="text-sm">
-                    {{ $t('subscription.apiNodesBalance') }}
-                  </div>
-                  <div class="flex items-center">
-                    <div class="text-xs text-muted">
-                      {{ $t('subscription.apiNodesDescription') }}
-                    </div>
-                    <Button
-                      icon="pi pi-question-circle"
-                      text
-                      rounded
-                      size="small"
-                      severity="secondary"
-                      class="h-5 w-5"
-                    />
-                  </div>
-                </div>
-
-                <div
-                  class="flex flex-col gap-3 rounded-lg border p-4 dark-theme:border-0 dark-theme:bg-charcoal-600"
-                >
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <div class="text-xs text-muted">
-                        {{ $t('subscription.totalCredits') }}
-                      </div>
-                      <div class="text-2xl font-bold">${{ totalCredits }}</div>
-                    </div>
-                    <Button
-                      icon="pi pi-sync"
-                      severity="secondary"
-                      size="small"
-                      :loading="isLoadingBalance"
-                      @click="handleRefresh"
-                    />
-                  </div>
-
-                  <div
-                    v-if="latestEvents.length > 0"
-                    class="flex flex-col gap-2 pt-3 text-xs"
-                  >
-                    <div
-                      v-for="event in latestEvents"
-                      :key="event.event_id"
-                      class="flex items-center justify-between py-1"
-                    >
-                      <div class="flex flex-col gap-0.5">
-                        <span class="font-medium">
-                          {{
-                            event.event_type
-                              ? customerEventService.formatEventType(
-                                  event.event_type
-                                )
-                              : ''
-                          }}
-                        </span>
-                        <span class="text-muted">
-                          {{
-                            event.createdAt
-                              ? customerEventService.formatDate(event.createdAt)
-                              : ''
-                          }}
-                        </span>
-                      </div>
-                      <div
-                        v-if="event.params?.amount !== undefined"
-                        class="font-bold"
-                      >
-                        ${{
-                          customerEventService.formatAmount(
-                            event.params.amount as number
-                          )
-                        }}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center justify-between pt-2">
-                    <Button
-                      :label="$t('subscription.viewUsageHistory')"
-                      text
-                      severity="secondary"
-                      class="p-0 text-xs text-muted"
-                      @click="handleViewUsageHistory"
-                    />
-                    <Button
-                      :label="$t('subscription.addApiCredits')"
-                      severity="secondary"
-                      class="text-xs"
-                      @click="handleAddApiCredits"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-3">
-              <div class="text-sm">
-                {{ $t('subscription.yourPlanIncludes') }}
-              </div>
-
-              <SubscriptionBenefits />
-            </div>
-          </div>
+        <span class="text-2xl font-inter font-semibold leading-tight">
+          {{
+            isActiveSubscription
+              ? $t('subscription.title')
+              : $t('subscription.titleUnsubscribed')
+          }}
+        </span>
+        <div class="pt-1">
+          <CloudBadge
+            reverse-order
+            background-color="var(--p-dialog-background)"
+          />
         </div>
       </div>
 
+      <!-- Workspace mode: workspace-aware subscription content -->
+      <SubscriptionPanelContentWorkspace v-if="teamWorkspacesEnabled" />
+      <!-- Legacy mode: user-level subscription content -->
+      <SubscriptionPanelContentLegacy v-else />
+
       <div
-        class="flex items-center justify-between border-t border-charcoal-400 pt-3"
+        class="flex items-center justify-between border-t border-interface-stroke pt-3"
       >
         <div class="flex gap-2">
           <Button
-            :label="$t('subscription.learnMore')"
-            text
-            severity="secondary"
-            icon="pi pi-question-circle"
-            class="text-xs"
-            @click="handleLearnMore"
-          />
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
+            @click="handleLearnMoreClick"
+          >
+            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            {{ $t('subscription.learnMore') }}
+          </Button>
           <Button
-            :label="$t('subscription.messageSupport')"
-            text
-            severity="secondary"
-            icon="pi pi-comment"
-            class="text-xs"
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
+            @click="handleOpenPartnerNodesInfo"
+          >
+            <i class="pi pi-question-circle text-text-secondary text-xs" />
+            {{ $t('subscription.partnerNodesCredits') }}
+          </Button>
+          <Button
+            variant="muted-textonly"
+            class="text-xs text-text-secondary"
+            :loading="isLoadingSupport"
             @click="handleMessageSupport"
-          />
+          >
+            <i class="pi pi-comment text-text-secondary text-xs" />
+            {{ $t('subscription.messageSupport') }}
+          </Button>
         </div>
 
         <Button
-          :label="$t('subscription.invoiceHistory')"
-          text
-          severity="secondary"
-          icon="pi pi-external-link"
-          icon-pos="right"
-          class="text-xs"
+          variant="muted-textonly"
+          class="text-xs text-text-secondary"
           @click="handleInvoiceHistory"
-        />
+        >
+          {{ $t('subscription.invoiceHistory') }}
+          <i class="pi pi-external-link text-text-secondary text-xs" />
+        </Button>
       </div>
     </div>
   </TabPanel>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import TabPanel from 'primevue/tabpanel'
-import { computed, onMounted, ref } from 'vue'
+import { defineAsyncComponent } from 'vue'
 
-import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
+import CloudBadge from '@/components/topbar/CloudBadge.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useExternalLink } from '@/composables/useExternalLink'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import SubscriptionPanelContentLegacy from '@/platform/cloud/subscription/components/SubscriptionPanelContentLegacy.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import type { AuditLog } from '@/services/customerEventsService'
-import { useCustomerEventsService } from '@/services/customerEventsService'
-import { useDialogService } from '@/services/dialogService'
-import { useCommandStore } from '@/stores/commandStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
+import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { isCloud } from '@/platform/distribution/types'
 
-const dialogService = useDialogService()
-const authActions = useFirebaseAuthActions()
-const commandStore = useCommandStore()
-const authStore = useFirebaseAuthStore()
-const customerEventService = useCustomerEventsService()
+const SubscriptionPanelContentWorkspace = defineAsyncComponent(
+  () =>
+    import('@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue')
+)
 
-const {
-  isActiveSubscription,
-  formattedRenewalDate,
-  formattedMonthlyPrice,
-  manageSubscription,
-  handleViewUsageHistory,
-  handleLearnMore,
-  handleInvoiceHistory,
-  fetchStatus
-} = useSubscription()
+const { flags } = useFeatureFlags()
+const teamWorkspacesEnabled = isCloud && flags.teamWorkspacesEnabled
 
-const latestEvents = ref<AuditLog[]>([])
+const { buildDocsUrl, docsPaths } = useExternalLink()
 
-const totalCredits = computed(() => {
-  if (!authStore.balance) return '0.00'
-  return formatMetronomeCurrency(authStore.balance.amount_micros, 'usd')
-})
+const { isActiveSubscription, handleInvoiceHistory } = useSubscription()
 
-const isLoadingBalance = computed(() => authStore.isFetchingBalance)
+const { isLoadingSupport, handleMessageSupport, handleLearnMoreClick } =
+  useSubscriptionActions()
 
-const fetchLatestEvents = async () => {
-  try {
-    const response = await customerEventService.getMyEvents({
-      page: 1,
-      limit: 2
-    })
-    if (response?.events) {
-      latestEvents.value = response.events
-    }
-  } catch (error) {
-    console.error('[SubscriptionPanel] Error fetching latest events:', error)
-  }
-}
-
-onMounted(() => {
-  void handleRefresh()
-})
-
-const handleAddApiCredits = () => {
-  dialogService.showTopUpCreditsDialog()
-}
-
-const handleMessageSupport = async () => {
-  await commandStore.execute('Comfy.ContactSupport')
-}
-
-const handleRefresh = async () => {
-  await Promise.all([
-    authActions.fetchBalance(),
-    fetchStatus(),
-    fetchLatestEvents()
-  ])
+const handleOpenPartnerNodesInfo = () => {
+  window.open(
+    buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
+    '_blank'
+  )
 }
 </script>
-
-<style scoped>
-:deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-</style>

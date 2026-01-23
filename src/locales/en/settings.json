@@ -79,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "Save and restore canvas position and zoom level in workflows"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Live preview method",
+    "tooltip": "Live preview method during image generation. \"default\" uses the server CLI setting.",
+    "options": {
+      "default": "default",
+      "none": "none",
+      "auto": "auto",
+      "latent2rgb": "latent2rgb",
+      "taesd": "taesd"
+    }
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Float widget rounding decimal places [0 = auto].",
     "tooltip": "(requires page reload)"
@@ -99,6 +110,10 @@
       "Circle": "Circle",
       "Arrow": "Arrow"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Live selection",
+    "tooltip": "When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Canvas zoom speed"
@@ -166,13 +181,18 @@
     "name": "Light Intensity Minimum",
     "tooltip": "Sets the minimum allowable light intensity value for 3D scenes. This defines the lower brightness limit that can be set when adjusting lighting in any 3D widget."
   },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY Engine",
+    "tooltip": "Select the engine for loading PLY files. \"threejs\" uses the native Three.js PLYLoader (best for mesh PLY files). \"fastply\" uses an optimized loader for ASCII point cloud PLY files. \"sparkjs\" uses Spark.js for 3D Gaussian Splatting PLY files.",
+    "options": {
+      "threejs": "threejs",
+      "fastply": "fastply",
+      "sparkjs": "sparkjs"
+    }
+  },
   "Comfy_Load3D_ShowGrid": {
     "name": "Initial Grid Visibility",
     "tooltip": "Controls whether the grid is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation."
-  },
-  "Comfy_Load3D_ShowPreview": {
-    "name": "Initial Preview Visibility",
-    "tooltip": "Controls whether the preview screen is visible by default when a new 3D widget is created. This default can still be toggled individually for each widget after creation."
   },
   "Comfy_Locale": {
     "name": "Language"
@@ -184,10 +204,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "Lock brush adjustment to dominant axis",
     "tooltip": "When enabled, brush adjustments will only affect size OR hardness based on which direction you move more"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Use new mask editor",
-    "tooltip": "Switch to the new mask editor interface"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Automatically load all model folders",
@@ -312,6 +328,10 @@
     "name": "Queue history size",
     "tooltip": "The maximum number of tasks that show in the queue history."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Use the unified job queue in the Assets side panel",
+    "tooltip": "Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout."
+  },
   "Comfy_QueueButton_BatchCountLimit": {
     "name": "Batch count limit",
     "tooltip": "The maximum number of tasks added to the queue at one button click"
@@ -353,9 +373,17 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Tree explorer item padding"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Tab Bar Layout",
+    "tooltip": "Controls the layout of the tab bar. \"Integrated\" moves Help and User controls into the tab bar area.",
+    "options": {
+      "Default": "Default",
+      "Integrated": "Integrated"
+    }
+  },
   "Comfy_UseNewMenu": {
     "name": "Use new menu",
-    "tooltip": "Menu bar position. On mobile devices, the menu is always shown at the top.",
+    "tooltip": "Enable the redesigned top menu bar.",
     "options": {
       "Disabled": "Disabled",
       "Top": "Top"
@@ -363,6 +391,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "Validate workflows"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "Auto-scale layout (Nodes 2.0)",
+    "tooltip": "Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Modern Node Design (Nodes 2.0)",
+    "tooltip": "Modern: DOM-based rendering with enhanced interactivity, native browser features, and updated visual design. Classic: Traditional canvas rendering."
   },
   "Comfy_WidgetControlMode": {
     "name": "Widget control mode",

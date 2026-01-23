@@ -3,32 +3,31 @@
     <div class="flex items-center gap-2">
       <div
         class="preview-box flex h-16 w-16 items-center justify-center rounded border p-2"
-        :class="{ 'bg-gray-100 dark-theme:bg-gray-800': !modelValue }"
+        :class="{ 'bg-base-background': !modelValue }"
       >
         <img
           v-if="modelValue"
           :src="modelValue"
           class="max-h-full max-w-full object-contain"
         />
-        <i v-else class="pi pi-image text-xl text-gray-400" />
+        <i v-else class="pi pi-image text-xl text-smoke-400" />
       </div>
 
       <div class="flex flex-col gap-2">
-        <Button
-          icon="pi pi-upload"
-          :label="$t('g.upload')"
-          size="small"
-          @click="triggerFileInput"
-        />
+        <Button size="sm" @click="triggerFileInput">
+          <i class="pi pi-upload" />
+          {{ $t('g.upload') }}
+        </Button>
         <Button
           v-if="modelValue"
           class="w-full"
-          outlined
-          icon="pi pi-trash"
-          severity="danger"
-          size="small"
+          variant="destructive"
+          size="sm"
+          :aria-label="$t('g.delete')"
           @click="clearImage"
-        />
+        >
+          <i class="pi pi-trash" />
+        </Button>
       </div>
     </div>
     <input
@@ -42,8 +41,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 defineProps<{
   modelValue: string

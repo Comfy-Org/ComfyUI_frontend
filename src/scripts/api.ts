@@ -1,6 +1,7 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
+import { trimEnd } from 'es-toolkit'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import type {
@@ -9,14 +10,19 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { type WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type { IFuseOptions } from 'fuse.js'
+import {
+  type TemplateInfo,
+  type WorkflowTemplates
+} from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
-  DisplayComponentWsMessage,
+  AssetDownloadWsMessage,
+  CustomNodesI18n,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -27,15 +33,14 @@ import type {
   ExecutionSuccessWsMessage,
   ExtensionsResponse,
   FeatureFlagsWsMessage,
-  HistoryTaskItem,
   LogsRawResponse,
   LogsWsMessage,
-  PendingTaskItem,
+  NotificationWsMessage,
+  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
   PromptResponse,
-  RunningTaskItem,
   Settings,
   StatusWsMessage,
   StatusWsMessageStatus,
@@ -43,11 +48,19 @@ import type {
   User,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
+import type {
+  JobDetail,
+  JobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { fetchHistory } from '@/platform/remote/comfyui/history'
+import {
+  fetchHistory,
+  fetchJobDetail,
+  fetchQueue
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -88,6 +101,11 @@ interface QueuePromptRequestBody {
      * ```
      */
     api_key_comfy_org?: string
+    /**
+     * Override the preview method for this prompt execution.
+     * 'default' uses the server's CLI setting.
+     */
+    preview_method?: PreviewMethod
   }
   front?: boolean
   number?: number
@@ -103,6 +121,11 @@ interface QueuePromptOptions {
    * Format: Colon-separated path of node IDs (e.g., "123:456:789")
    */
   partialExecutionTargets?: NodeExecutionId[]
+  /**
+   * Override the preview method for this prompt execution.
+   * 'default' uses the server's CLI setting and is not sent to backend.
+   */
+  previewMethod?: PreviewMethod
 }
 
 /** Dictionary of Frontend-generated API calls */
@@ -120,6 +143,7 @@ interface BackendApiCalls {
   executing: ExecutingWsMessage
   executed: ExecutedWsMessage
   status: StatusWsMessage
+  notification: NotificationWsMessage
   execution_start: ExecutionStartWsMessage
   execution_success: ExecutionSuccessWsMessage
   execution_error: ExecutionErrorWsMessage
@@ -139,8 +163,8 @@ interface BackendApiCalls {
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
-  display_component: DisplayComponentWsMessage
   feature_flags: FeatureFlagsWsMessage
+  asset_download: AssetDownloadWsMessage
 }
 
 /** Dictionary of all api calls */
@@ -326,8 +350,9 @@ export class ComfyApi extends EventTarget {
     super()
     this.user = ''
     this.api_host = location.host
-    this.api_base = location.pathname.split('/').slice(0, -1).join('/')
-    console.log('Running on', this.api_host)
+    this.api_base = isCloud
+      ? ''
+      : location.pathname.split('/').slice(0, -1).join('/')
     this.initialClientId = sessionStorage.getItem('clientId')
   }
 
@@ -650,6 +675,7 @@ export class ComfyApi extends EventTarget {
             case 'promptQueued':
             case 'logs':
             case 'b_preview':
+            case 'notification':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'feature_flags':
@@ -770,7 +796,11 @@ export class ComfyApi extends EventTarget {
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
-        extra_pnginfo: { workflow }
+        extra_pnginfo: { workflow },
+        ...(options?.previewMethod &&
+          options.previewMethod !== 'default' && {
+            preview_method: options.previewMethod
+          })
       }
     }
 
@@ -868,27 +898,13 @@ export class ComfyApi extends EventTarget {
    * @returns The currently running and queued items
    */
   async getQueue(): Promise<{
-    Running: RunningTaskItem[]
-    Pending: PendingTaskItem[]
+    Running: JobListItem[]
+    Pending: JobListItem[]
   }> {
     try {
-      const res = await this.fetchApi('/queue')
-      const data = await res.json()
-      return {
-        // Running action uses a different endpoint for cancelling
-        Running: data.queue_running.map((prompt: Record<number, any>) => ({
-          taskType: 'Running',
-          prompt,
-          // prompt[1] is the prompt id
-          remove: { name: 'Cancel', cb: () => api.interrupt(prompt[1]) }
-        })),
-        Pending: data.queue_pending.map((prompt: Record<number, any>) => ({
-          taskType: 'Pending',
-          prompt
-        }))
-      }
+      return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
-      console.error(error)
+      console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }
   }
@@ -898,14 +914,28 @@ export class ComfyApi extends EventTarget {
    * @returns Prompt history including node outputs
    */
   async getHistory(
-    max_items: number = 200
-  ): Promise<{ History: HistoryTaskItem[] }> {
+    max_items: number = 200,
+    options?: { offset?: number }
+  ): Promise<JobListItem[]> {
     try {
-      return await fetchHistory(this.fetchApi.bind(this), max_items)
+      return await fetchHistory(
+        this.fetchApi.bind(this),
+        max_items,
+        options?.offset
+      )
     } catch (error) {
       console.error(error)
-      return { History: [] }
+      return []
     }
+  }
+
+  /**
+   * Gets detailed job info including outputs and workflow
+   * @param jobId The job/prompt ID
+   * @returns Full job details or undefined if not found
+   */
+  async getJobDetail(jobId: string): Promise<JobDetail | undefined> {
+    return fetchJobDetail(this.fetchApi.bind(this), jobId)
   }
 
   /**
@@ -922,7 +952,7 @@ export class ComfyApi extends EventTarget {
    * @param {*} type The endpoint to post to
    * @param {*} body Optional POST data
    */
-  async #postItem(type: string, body: any) {
+  async #postItem(type: string, body?: Record<string, unknown>) {
     try {
       await this.fetchApi('/' + type, {
         method: 'POST',
@@ -1045,7 +1075,7 @@ export class ComfyApi extends EventTarget {
    */
   async storeUserData(
     file: string,
-    data: any,
+    data: unknown,
     options: RequestInit & {
       overwrite?: boolean
       stringify?: boolean
@@ -1062,7 +1092,7 @@ export class ComfyApi extends EventTarget {
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
-        body: options?.stringify ? JSON.stringify(data) : data,
+        body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
         ...options
       }
     )
@@ -1106,13 +1136,14 @@ export class ComfyApi extends EventTarget {
   }
 
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
+    const trimmedDir = trimEnd(dir, '/')
     const resp = await this.fetchApi(
-      `/userdata?dir=${encodeURIComponent(dir)}&recurse=true&split=false&full_info=true`
+      `/userdata?dir=${encodeURIComponent(trimmedDir)}&recurse=true&split=false&full_info=true`
     )
     if (resp.status === 404) return []
     if (resp.status !== 200) {
       throw new Error(
-        `Error getting user data list '${dir}': ${resp.status} ${resp.statusText}`
+        `Error getting user data list '${trimmedDir}': ${resp.status} ${resp.statusText}`
       )
     }
     return resp.json()
@@ -1135,15 +1166,22 @@ export class ComfyApi extends EventTarget {
   }
 
   async getLogs(): Promise<string> {
-    return (await axios.get(this.internalURL('/logs'))).data
+    const url = isCloud ? this.apiURL('/logs') : this.internalURL('/logs')
+    return (await axios.get(url)).data
   }
 
   async getRawLogs(): Promise<LogsRawResponse> {
-    return (await axios.get(this.internalURL('/logs/raw'))).data
+    const url = isCloud
+      ? this.apiURL('/logs/raw')
+      : this.internalURL('/logs/raw')
+    return (await axios.get(url)).data
   }
 
   async subscribeLogs(enabled: boolean): Promise<void> {
-    return await axios.patch(this.internalURL('/logs/subscribe'), {
+    const url = isCloud
+      ? this.apiURL('/logs/subscribe')
+      : this.internalURL('/logs/subscribe')
+    return await axios.patch(url, {
       enabled,
       clientId: this.clientId
     })
@@ -1214,7 +1252,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<Record<string, any>> {
+  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 
@@ -1243,6 +1281,24 @@ export class ComfyApi extends EventTarget {
    */
   getServerFeatures(): Record<string, unknown> {
     return { ...this.serverFeatureFlags }
+  }
+
+  async getFuseOptions(): Promise<IFuseOptions<TemplateInfo> | null> {
+    try {
+      const res = await axios.get(
+        this.fileURL('/templates/fuse_options.json'),
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+      const contentType = res.headers['content-type']
+      return contentType?.includes('application/json') ? res.data : null
+    } catch (error) {
+      console.error('Error loading fuse options:', error)
+      return null
+    }
   }
 }
 

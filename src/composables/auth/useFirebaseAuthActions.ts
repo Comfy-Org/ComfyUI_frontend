@@ -1,15 +1,17 @@
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { BillingPortalTargetTier } from '@/stores/firebaseAuthStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /**
@@ -59,8 +61,7 @@ export const useFirebaseAuthActions = () => {
 
     if (isCloud) {
       try {
-        const router = useRouter()
-        await router.push({ name: 'cloud-login' })
+        window.location.href = '/cloud/login'
       } catch (error) {
         // needed for local development until we bring in cloud login pages.
         window.location.reload()
@@ -82,6 +83,9 @@ export const useFirebaseAuthActions = () => {
   )
 
   const purchaseCredits = wrapWithErrorHandlingAsync(async (amount: number) => {
+    const { isActiveSubscription } = useSubscription()
+    if (!isActiveSubscription.value) return
+
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
       currency: 'usd'
@@ -95,12 +99,15 @@ export const useFirebaseAuthActions = () => {
       )
     }
 
-    // Go to Stripe checkout page
+    useTelemetry()?.startTopupTracking()
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
-  const accessBillingPortal = wrapWithErrorHandlingAsync(async () => {
-    const response = await authStore.accessBillingPortal()
+  const accessBillingPortal = wrapWithErrorHandlingAsync<
+    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
+    void
+  >(async (targetTier, openInNewTab = true) => {
+    const response = await authStore.accessBillingPortal(targetTier)
     if (!response.billing_portal_url) {
       throw new Error(
         t('toastMessages.failedToAccessBillingPortal', {
@@ -108,11 +115,17 @@ export const useFirebaseAuthActions = () => {
         })
       )
     }
-    window.open(response.billing_portal_url, '_blank')
+    if (openInNewTab) {
+      window.open(response.billing_portal_url, '_blank')
+    } else {
+      globalThis.location.href = response.billing_portal_url
+    }
   }, reportError)
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {
-    return await authStore.fetchBalance()
+    const result = await authStore.fetchBalance()
+    // Top-up completion tracking happens in UsageLogsTable when events are fetched
+    return result
   }, reportError)
 
   const signInWithGoogle = wrapWithErrorHandlingAsync(async () => {

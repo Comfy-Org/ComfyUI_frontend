@@ -4,8 +4,7 @@
     :class="
       cn(
         'absolute inset-0 w-full h-full pointer-events-none',
-        isInteracting ? 'transform-pane--interacting' : 'will-change-auto',
-        isLOD && 'isLOD'
+        isInteracting ? 'transform-pane--interacting' : 'will-change-auto'
       )
     "
     :style="transformStyle"
@@ -17,13 +16,11 @@
 
 <script setup lang="ts">
 import { useRafFn } from '@vueuse/core'
-import { computed, provide } from 'vue'
+import { computed } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { TransformStateKey } from '@/renderer/core/layout/injectionKeys'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { useLOD } from '@/renderer/extensions/vueNodes/lod/useLOD'
 import { cn } from '@/utils/tailwindUtil'
 
 interface TransformPaneProps {
@@ -32,32 +29,12 @@ interface TransformPaneProps {
 
 const props = defineProps<TransformPaneProps>()
 
-const {
-  camera,
-  transformStyle,
-  syncWithCanvas,
-  canvasToScreen,
-  screenToCanvas,
-  isNodeInViewport
-} = useTransformState()
-
-const { isLOD } = useLOD(camera)
+const { transformStyle, syncWithCanvas } = useTransformState()
 
 const canvasElement = computed(() => props.canvas?.canvas)
 const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
-  settleDelay: 512
+  settleDelay: 16
 })
-
-provide(TransformStateKey, {
-  camera,
-  canvasToScreen,
-  screenToCanvas,
-  isNodeInViewport
-})
-
-const emit = defineEmits<{
-  transformUpdate: []
-}>()
 
 useRafFn(
   () => {
@@ -65,7 +42,6 @@ useRafFn(
       return
     }
     syncWithCanvas(props.canvas)
-    emit('transformUpdate')
   },
   { immediate: true }
 )

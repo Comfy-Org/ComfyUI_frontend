@@ -64,7 +64,20 @@ export const useKeybindingService = () => {
 
       // Prevent default browser behavior first, then execute the command
       event.preventDefault()
-      await commandStore.execute(keybinding.commandId)
+      const runCommandIds = new Set([
+        'Comfy.QueuePrompt',
+        'Comfy.QueuePromptFront',
+        'Comfy.QueueSelectedOutputNodes'
+      ])
+      if (runCommandIds.has(keybinding.commandId)) {
+        await commandStore.execute(keybinding.commandId, {
+          metadata: {
+            trigger_source: 'keybinding'
+          }
+        })
+      } else {
+        await commandStore.execute(keybinding.commandId)
+      }
       return
     }
 

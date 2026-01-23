@@ -24,16 +24,14 @@
         :key="version"
         class="ml-4"
       >
-        <div
-          class="text-sm font-medium text-surface-600 dark-theme:text-surface-400"
-        >
+        <div class="text-sm font-medium text-surface-600">
           {{
             $t('loadWorkflowWarning.coreNodesFromVersion', {
               version: version || 'unknown'
             })
           }}
         </div>
-        <div class="ml-4 text-sm text-surface-500 dark-theme:text-surface-500">
+        <div class="ml-4 text-sm text-surface-500">
           {{ getUniqueNodeNames(nodes).join(', ') }}
         </div>
       </div>
@@ -49,14 +47,14 @@ import { computed } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
-const props = defineProps<{
+const { missingCoreNodes } = defineProps<{
   missingCoreNodes: Record<string, LGraphNode[]>
 }>()
 
 const systemStatsStore = useSystemStatsStore()
 
 const hasMissingCoreNodes = computed(() => {
-  return Object.keys(props.missingCoreNodes).length > 0
+  return Object.keys(missingCoreNodes).length > 0
 })
 
 // Use computed for reactive version tracking
@@ -66,7 +64,7 @@ const currentComfyUIVersion = computed<string | null>(() => {
 })
 
 const sortedMissingCoreNodes = computed(() => {
-  return Object.entries(props.missingCoreNodes).sort(([a], [b]) => {
+  return Object.entries(missingCoreNodes).sort(([a], [b]) => {
     // Sort by version in descending order (newest first)
     return compare(b, a) // Reversed for descending order
   })

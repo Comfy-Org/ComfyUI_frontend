@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div>
-      <label>{{ t('load3d.upDirection') }}</label>
+      <label>{{ $t('load3d.upDirection') }}</label>
       <Select
         v-model="upDirection"
         :options="upDirectionOptions"
@@ -10,8 +10,8 @@
       />
     </div>
 
-    <div>
-      <label>{{ t('load3d.materialMode') }}</label>
+    <div v-if="!hideMaterialMode">
+      <label>{{ $t('load3d.materialMode') }}</label>
       <Select
         v-model="materialMode"
         :options="materialModeOptions"
@@ -32,6 +32,11 @@ import type {
 } from '@/extensions/core/load3d/interfaces'
 import { t } from '@/i18n'
 
+const { hideMaterialMode = false, isPlyModel = false } = defineProps<{
+  hideMaterialMode?: boolean
+  isPlyModel?: boolean
+}>()
+
 const upDirection = defineModel<UpDirection>('upDirection')
 const materialMode = defineModel<MaterialMode>('materialMode')
 
@@ -46,10 +51,22 @@ const upDirectionOptions = [
 ]
 
 const materialModeOptions = computed(() => {
-  return [
-    { label: t('load3d.materialModes.original'), value: 'original' },
+  const options = [
+    { label: t('load3d.materialModes.original'), value: 'original' }
+  ]
+
+  if (isPlyModel) {
+    options.push({
+      label: t('load3d.materialModes.pointCloud'),
+      value: 'pointCloud'
+    })
+  }
+
+  options.push(
     { label: t('load3d.materialModes.normal'), value: 'normal' },
     { label: t('load3d.materialModes.wireframe'), value: 'wireframe' }
-  ]
+  )
+
+  return options
 })
 </script>

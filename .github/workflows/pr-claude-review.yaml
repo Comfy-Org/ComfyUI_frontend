@@ -1,5 +1,5 @@
+# Description: AI-powered code review triggered by adding the 'claude-review' label to a PR
 name: "PR: Claude Review"
-description: "AI-powered code review triggered by adding the 'claude-review' label to a PR"
 
 permissions:
   contents: read
@@ -17,39 +17,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  wait-for-ci:
+  claude-review:
     runs-on: ubuntu-latest
     if: github.event.label.name == 'claude-review'
-    outputs:
-      should-proceed: ${{ steps.check-status.outputs.proceed }}
-    steps:
-      - name: Wait for other CI checks
-        uses: lewagon/wait-on-check-action@e106e5c43e8ca1edea6383a39a01c5ca495fd812
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          check-regexp: '^(lint-and-format|test|playwright-tests)'
-          wait-interval: 30
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Check if we should proceed
-        id: check-status
-        run: |
-          CHECK_RUNS=$(gh api repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs --jq '.check_runs[] | select(.name | test("lint-and-format")) | {name, conclusion}')
-
-          if echo "$CHECK_RUNS" | grep -Eq '"conclusion": "(failure|cancelled|timed_out|action_required)"'; then
-            echo "Some CI checks failed - skipping Claude review"
-            echo "proceed=false" >> $GITHUB_OUTPUT
-          else
-            echo "All CI checks passed - proceeding with Claude review"
-            echo "proceed=true" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  claude-review:
-    needs: wait-for-ci
-    if: needs.wait-for-ci.outputs.should-proceed == 'true'
-    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout repository

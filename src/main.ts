@@ -11,7 +11,7 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
-import { FIREBASE_CONFIG } from '@/config/firebase'
+import { getFirebaseConfig } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 
@@ -27,9 +27,8 @@ import { i18n } from './i18n'
 import { isCloud } from '@/platform/distribution/types'
 
 if (isCloud) {
-  const { loadRemoteConfig } = await import(
-    '@/platform/remoteConfig/remoteConfig'
-  )
+  const { loadRemoteConfig } =
+    await import('@/platform/remoteConfig/remoteConfig')
   await loadRemoteConfig()
 }
 
@@ -40,7 +39,7 @@ const ComfyUIPreset = definePreset(Aura, {
   }
 })
 
-const firebaseApp = initializeApp(FIREBASE_CONFIG)
+const firebaseApp = initializeApp(getFirebaseConfig())
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -49,11 +48,18 @@ Sentry.init({
   dsn: __SENTRY_DSN__,
   enabled: __SENTRY_ENABLED__,
   release: __COMFYUI_FRONTEND_VERSION__,
-  integrations: [],
-  autoSessionTracking: false,
-  defaultIntegrations: false,
   normalizeDepth: 8,
-  tracesSampleRate: 0
+  tracesSampleRate: isCloud ? 1.0 : 0,
+  replaysSessionSampleRate: 0,
+  replaysOnErrorSampleRate: 0,
+  // Only set these for non-cloud builds
+  ...(isCloud
+    ? {}
+    : {
+        integrations: [],
+        autoSessionTracking: false,
+        defaultIntegrations: false
+      })
 })
 app.directive('tooltip', Tooltip)
 app
@@ -81,11 +87,5 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
-
-// Register auth service worker after Pinia is initialized (cloud-only)
-// Wait for registration to complete before mounting to ensure SW controls the page
-if (isCloud) {
-  await import('@/platform/auth/serviceWorker')
-}
 
 app.mount('#vue-app')

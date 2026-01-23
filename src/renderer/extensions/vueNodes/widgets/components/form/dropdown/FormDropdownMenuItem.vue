@@ -12,6 +12,7 @@ interface Props {
   selected: boolean
   mediaSrc: string
   name: string
+  label?: string
   metadata?: string
   layout?: LayoutMode
 }
@@ -56,16 +57,17 @@ function handleVideoLoad(event: Event) {
   <div
     :class="
       cn(
-        'flex gap-1 select-none group/item cursor-pointer',
+        'flex gap-1 select-none group/item cursor-pointer bg-component-node-widget-background',
         'transition-all duration-150',
         {
           'flex-col text-center': layout === 'grid',
-          'flex-row text-left max-h-16 bg-zinc-500/20 rounded-lg hover:scale-102 active:scale-98':
+          'flex-row text-left max-h-16 rounded-lg hover:scale-102 active:scale-98':
             layout === 'list',
-          'flex-row text-left hover:bg-zinc-500/20 rounded-lg':
+          'flex-row text-left hover:bg-component-node-widget-background-hovered rounded-lg':
             layout === 'list-small',
           // selection
-          'ring-2 ring-blue-500': layout === 'list' && selected
+          'ring-2 ring-component-node-widget-background-highlighted':
+            layout === 'list' && selected
         }
       )
     "
@@ -77,14 +79,15 @@ function handleVideoLoad(event: Event) {
       :class="
         cn(
           'relative',
-          'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-zinc-300/10',
+          'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-interface-stroke',
           'transition-all duration-150',
           {
             'min-w-16 max-w-16 rounded-l-lg': layout === 'list',
             'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
               layout === 'grid',
             // selection
-            'ring-2 ring-blue-500': layout === 'grid' && selected
+            'ring-2 ring-component-node-widget-background-highlighted':
+              layout === 'grid' && selected
           }
         )
       "
@@ -92,10 +95,10 @@ function handleVideoLoad(event: Event) {
       <!-- Selected Icon -->
       <div
         v-if="selected"
-        class="absolute top-1 left-1 size-4 rounded-full border-1 border-white bg-blue-500"
+        class="absolute top-1 left-1 size-4 rounded-full border-1 border-base-foreground bg-primary-background"
       >
         <i
-          class="icon-[lucide--check] size-3 translate-y-[-0.5px] text-white"
+          class="icon-[lucide--check] size-3 translate-y-[-0.5px] text-base-foreground bold"
         />
       </div>
       <video
@@ -123,26 +126,27 @@ function handleVideoLoad(event: Event) {
       :class="
         cn('flex gap-1', {
           'flex-col': layout === 'grid',
-          'flex-col px-4 py-1 w-full justify-center': layout === 'list',
+          'flex-col px-4 py-1 w-full justify-center min-w-0': layout === 'list',
           'flex-row p-2 items-center justify-between w-full':
             layout === 'list-small'
         })
       "
     >
       <span
+        v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
         :class="
           cn(
-            'block text-[15px] line-clamp-2 wrap-break-word',
+            'block text-xs line-clamp-2 break-words overflow-hidden',
             'transition-colors duration-150',
             // selection
-            !!selected && 'text-blue-500'
+            !!selected && 'text-base-foreground'
           )
         "
       >
-        {{ name }}
+        {{ label ?? name }}
       </span>
       <!-- Meta Data -->
-      <span class="block text-xs text-slate-400">{{
+      <span class="text-secondary block text-xs">{{
         metadata || actualDimensions
       }}</span>
     </div>

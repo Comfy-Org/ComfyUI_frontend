@@ -1,20 +1,18 @@
 <template>
   <SidebarIcon
-    label="shortcuts.shortcuts"
+    icon="icon-[lucide--keyboard]"
+    :label="$t('shortcuts.shortcuts')"
     :tooltip="tooltipText"
     :selected="isShortcutsPanelVisible"
     @click="toggleShortcutsPanel"
-  >
-    <template #icon>
-      <i class="icon-[lucide--keyboard]" />
-    </template>
-  </SidebarIcon>
+  />
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
@@ -34,7 +32,13 @@ const tooltipText = computed(
   () => `${t('shortcuts.keyboardShortcuts')} (${formatKeySequence(command)})`
 )
 
+/**
+ * Toggle keyboard shortcuts panel and track UI button click.
+ */
 const toggleShortcutsPanel = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'sidebar_shortcuts_panel_toggled'
+  })
   bottomPanelStore.togglePanel('shortcuts')
 }
 </script>

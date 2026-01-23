@@ -17,7 +17,13 @@ declare global {
     __COMFYUI_FRONTEND_VERSION__: string
   }
 
-  const __DEV_SERVER_COMFYUI_URL__: string
+  interface ImportMetaEnv {
+    VITE_APP_VERSION?: string
+  }
+
+  interface ImportMeta {
+    readonly env: ImportMetaEnv
+  }
 }
 
 export {}

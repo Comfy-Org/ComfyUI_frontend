@@ -2,9 +2,7 @@
   <div class="queue-button-group flex">
     <SplitButton
       v-tooltip.bottom="{
-        value: workspaceStore.shiftDown
-          ? $t('menu.runWorkflowFront')
-          : $t('menu.runWorkflow'),
+        value: queueButtonTooltip,
         showDelay: 600
       }"
       class="comfyui-queue-button"
@@ -16,16 +14,7 @@
       @click="queuePrompt"
     >
       <template #icon>
-        <i v-if="workspaceStore.shiftDown" class="icon-[lucide--list-start]" />
-        <i v-else-if="queueMode === 'disabled'" class="icon-[lucide--play]" />
-        <i
-          v-else-if="queueMode === 'instant'"
-          class="icon-[lucide--fast-forward]"
-        />
-        <i
-          v-else-if="queueMode === 'change'"
-          class="icon-[lucide--step-forward]"
-        />
+        <i :class="iconClass" />
       </template>
       <template #item="{ item }">
         <Button
@@ -33,74 +22,45 @@
             value: item.tooltip,
             showDelay: 600
           }"
-          :label="String(item.label ?? '')"
-          :icon="item.icon"
-          :severity="item.key === queueMode ? 'primary' : 'secondary'"
-          size="small"
-          text
-        />
+          :variant="item.key === queueMode ? 'primary' : 'secondary'"
+          size="sm"
+          class="w-full justify-start"
+        >
+          <i v-if="item.icon" :class="item.icon" />
+          {{ String(item.label ?? '') }}
+        </Button>
       </template>
     </SplitButton>
     <BatchCountEdit />
-    <ButtonGroup class="execution-actions flex flex-nowrap">
-      <Button
-        v-tooltip.bottom="{
-          value: $t('menu.interrupt'),
-          showDelay: 600
-        }"
-        icon="pi pi-times"
-        :severity="executingPrompt ? 'danger' : 'secondary'"
-        :disabled="!executingPrompt"
-        text
-        :aria-label="$t('menu.interrupt')"
-        @click="() => commandStore.execute('Comfy.Interrupt')"
-      />
-      <Button
-        v-tooltip.bottom="{
-          value: $t('sideToolbar.queueTab.clearPendingTasks'),
-          showDelay: 600
-        }"
-        icon="pi pi-stop"
-        :severity="hasPendingTasks ? 'danger' : 'secondary'"
-        :disabled="!hasPendingTasks"
-        text
-        :aria-label="$t('sideToolbar.queueTab.clearPendingTasks')"
-        @click="
-          () => {
-            if (queueCountStore.count.value > 1) {
-              commandStore.execute('Comfy.ClearPendingTasks')
-            }
-            queueMode = 'disabled'
-          }
-        "
-      />
-    </ButtonGroup>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
-import ButtonGroup from 'primevue/buttongroup'
 import type { MenuItem } from 'primevue/menuitem'
 import SplitButton from 'primevue/splitbutton'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
-import {
-  useQueuePendingTaskCountStore,
-  useQueueSettingsStore
-} from '@/stores/queueStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useQueueSettingsStore } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 import BatchCountEdit from '../BatchCountEdit.vue'
 
 const workspaceStore = useWorkspaceStore()
-const queueCountStore = storeToRefs(useQueuePendingTaskCountStore())
-const { mode: queueMode } = storeToRefs(useQueueSettingsStore())
+const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
+
+const nodeDefStore = useNodeDefStore()
+const hasMissingNodes = computed(() =>
+  graphHasMissingNodes(app.rootGraph, nodeDefStore.nodeDefsByName)
+)
 
 const { t } = useI18n()
 const queueModeMenuItemLookup = computed(() => {
@@ -118,6 +78,9 @@ const queueModeMenuItemLookup = computed(() => {
       label: `${t('menu.run')} (${t('menu.onChange')})`,
       tooltip: t('menu.onChangeTooltip'),
       command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'queue_mode_option_run_on_change_selected'
+        })
         queueMode.value = 'change'
       }
     }
@@ -128,6 +91,9 @@ const queueModeMenuItemLookup = computed(() => {
       label: `${t('menu.run')} (${t('menu.instant')})`,
       tooltip: t('menu.instantTooltip'),
       command: () => {
+        useTelemetry()?.trackUiButtonClicked({
+          button_id: 'queue_mode_option_run_instant_selected'
+        })
         queueMode.value = 'instant'
       }
     }
@@ -146,10 +112,34 @@ const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
 
-const executingPrompt = computed(() => !!queueCountStore.count.value)
-const hasPendingTasks = computed(
-  () => queueCountStore.count.value > 1 || queueMode.value !== 'disabled'
-)
+const iconClass = computed(() => {
+  if (hasMissingNodes.value) {
+    return 'icon-[lucide--triangle-alert]'
+  }
+  if (workspaceStore.shiftDown) {
+    return 'icon-[lucide--list-start]'
+  }
+  if (queueMode.value === 'disabled') {
+    return 'icon-[lucide--play]'
+  }
+  if (queueMode.value === 'instant') {
+    return 'icon-[lucide--fast-forward]'
+  }
+  if (queueMode.value === 'change') {
+    return 'icon-[lucide--step-forward]'
+  }
+  return 'icon-[lucide--play]'
+})
+
+const queueButtonTooltip = computed(() => {
+  if (hasMissingNodes.value) {
+    return t('menu.runWorkflowDisabled')
+  }
+  if (workspaceStore.shiftDown) {
+    return t('menu.runWorkflowFront')
+  }
+  return t('menu.runWorkflow')
+})
 
 const commandStore = useCommandStore()
 const queuePrompt = async (e: Event) => {
@@ -158,11 +148,18 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-  if (isCloud) {
-    useTelemetry()?.trackRunButton({ subscribe_to_run: false })
+  if (batchCount.value > 1) {
+    useTelemetry()?.trackUiButtonClicked({
+      button_id: 'queue_run_multiple_batches_submitted'
+    })
   }
 
-  await commandStore.execute(commandId)
+  await commandStore.execute(commandId, {
+    metadata: {
+      subscribe_to_run: false,
+      trigger_source: 'button'
+    }
+  })
 }
 </script>
 

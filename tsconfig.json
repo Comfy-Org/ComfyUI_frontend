@@ -23,19 +23,18 @@
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "verbatimModuleSyntax": true,
-    "baseUrl": ".",
     "paths": {
       "@/*": [
-        "src/*"
+        "./src/*"
       ],
       "@/utils/formatUtil": [
-        "packages/shared-frontend-utils/src/formatUtil.ts"
+        "./packages/shared-frontend-utils/src/formatUtil.ts"
       ],
       "@/utils/networkUtil": [
-        "packages/shared-frontend-utils/src/networkUtil.ts"
+        "./packages/shared-frontend-utils/src/networkUtil.ts"
       ],
       "@tests-ui/*": [
-        "tests-ui/*"
+        "./tests-ui/*"
       ]
     },
     "typeRoots": [
@@ -44,7 +43,8 @@
       "./node_modules"
     ],
     "types": [
-      "vitest/globals"
+      "vitest/globals",
+      "@webgpu/types"
     ],
     "outDir": "./dist",
     "rootDir": "./"
@@ -54,9 +54,12 @@
     "eslint.config.ts",
     "global.d.ts",
     "knip.config.ts",
+    "lint-staged.config.ts",
     "src/**/*.vue",
     "src/**/*",
     "src/types/**/*.d.ts",
+    "playwright.config.ts",
+    "playwright.i18n.config.ts",
     "tailwind.config.ts",
     "tests-ui/**/*",
     "vite.config.mts",
