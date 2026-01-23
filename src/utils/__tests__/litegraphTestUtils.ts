@@ -1,7 +1,12 @@
-import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type {
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { vi } from 'vitest'
 
 /**
  * Creates a mock LGraphNode with minimal required properties
@@ -61,4 +66,19 @@ export function createMockSubgraphNode(
       nodes: subNodes
     }
   })
+}
+
+/**
+ * Creates a mock LGraphCanvas with minimal required properties for testing
+ */
+export function createMockCanvas(
+  overrides: Partial<LGraphCanvas> = {}
+): LGraphCanvas {
+  return {
+    setDirty: vi.fn(),
+    state: {
+      selectionChanged: false
+    },
+    ...overrides
+  } as LGraphCanvas
 }

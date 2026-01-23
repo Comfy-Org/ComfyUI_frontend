@@ -9,16 +9,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExtensionService } from '@/services/extensionService'
-import { createMockPositionable } from '@/utils/__tests__/litegraphTestUtils'
-
-function createMockCanvas(): typeof useCanvasStore.prototype.canvas {
-  return {
-    setDirty: vi.fn(),
-    state: {
-      selectionChanged: false
-    }
-  } as typeof useCanvasStore.prototype.canvas
-}
+import {
+  createMockCanvas,
+  createMockPositionable
+} from '@/utils/__tests__/litegraphTestUtils'
 
 function createMockExtensionService(): ReturnType<typeof useExtensionService> {
   return {
