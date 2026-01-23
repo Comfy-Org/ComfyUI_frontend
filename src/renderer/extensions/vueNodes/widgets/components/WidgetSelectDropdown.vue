@@ -146,11 +146,42 @@ const outputItems = computed<DropdownItem[]>(() => {
   }))
 })
 
+/**
+ * Creates a fallback item for the current modelValue when it doesn't exist
+ * in the available items list. This handles cases like template-loaded nodes
+ * where the saved value may not exist in the current server environment.
+ */
+const missingValueItem = computed<DropdownItem | null>(() => {
+  const currentValue = modelValue.value
+  if (!currentValue) return null
+
+  const existsInInputs = inputItems.value.some(
+    (item) => item.name === currentValue
+  )
+  const existsInOutputs = outputItems.value.some(
+    (item) => item.name === currentValue
+  )
+
+  if (existsInInputs || existsInOutputs) return null
+
+  return {
+    id: `missing-${currentValue}`,
+    mediaSrc: getMediaUrl(currentValue, 'input'),
+    name: currentValue,
+    label: getDisplayLabel(currentValue),
+    metadata: ''
+  }
+})
+
 const allItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
     return assetData.dropdownItems.value
   }
-  return [...inputItems.value, ...outputItems.value]
+  const items = [...inputItems.value, ...outputItems.value]
+  if (missingValueItem.value) {
+    items.unshift(missingValueItem.value)
+  }
+  return items
 })
 
 const dropdownItems = computed<DropdownItem[]>(() => {
@@ -165,7 +196,7 @@ const dropdownItems = computed<DropdownItem[]>(() => {
       return outputItems.value
     case 'all':
     default:
-      return [...inputItems.value, ...outputItems.value]
+      return allItems.value
   }
 })
 
