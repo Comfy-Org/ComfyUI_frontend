@@ -1183,9 +1183,6 @@ export const CORE_SETTINGS: SettingParams[] = [
       'When enabled, advanced widgets are always visible on all nodes without needing to expand them individually.',
     type: 'boolean',
     defaultValue: false,
-    versionAdded: '1.39.0',
-    onChange: (value: boolean) => {
-      LiteGraph.alwaysShowAdvancedWidgets = value
-    }
+    versionAdded: '1.39.0'
   }
 ]
