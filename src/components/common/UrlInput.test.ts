@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createApp, nextTick } from 'vue'
 
 import UrlInput from './UrlInput.vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 describe('UrlInput', () => {
   beforeEach(() => {
@@ -14,13 +15,18 @@ describe('UrlInput', () => {
     app.use(PrimeVue)
   })
 
-  const mountComponent = (props: Record<string, unknown>, options = {}) => {
+  const mountComponent = (
+    props: ComponentProps<typeof UrlInput> & {
+      placeholder?: string
+      disabled?: boolean
+    },
+    options = {}
+  ) => {
     return mount(UrlInput, {
       global: {
         plugins: [PrimeVue],
         components: { IconField, InputIcon, InputText }
       },
-      // @ts-expect-error - Test utility accepts flexible props for testing edge cases
       props,
       ...options
     })
