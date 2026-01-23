@@ -8,12 +8,27 @@
       :style="gridStyle"
     >
       <nav
-        class="h-full overflow-hidden"
+        class="h-full overflow-hidden bg-modal-panel-background"
         :inert="!showLeftPanel"
         :aria-hidden="!showLeftPanel"
       >
+        <header
+          data-component-id="LeftPanelHeader"
+          class="flex w-full h-18 shrink-0 gap-2 pl-6 pr-3 items-center-safe"
+        >
+          <slot name="leftPanelHeaderTitle" />
+          <Button
+            v-if="!notMobile && showLeftPanel"
+            size="lg"
+            class="w-10 p-0 ml-auto"
+            :aria-label="t('g.hideLeftPanel')"
+            @click="toggleLeftPanel"
+          >
+            <i class="icon-[lucide--panel-left-close]" />
+          </Button>
+        </header>
         <div v-if="hasLeftPanel" class="h-full min-w-40 max-w-56">
-          <slot name="leftPanel" />
+          <slot name="leftPanel"> </slot>
         </div>
       </nav>
 
@@ -24,22 +39,13 @@
         >
           <div class="flex flex-1 shrink-0 gap-2">
             <Button
-              v-if="!notMobile"
-              size="icon"
-              :aria-label="
-                showLeftPanel ? t('g.hideLeftPanel') : t('g.showLeftPanel')
-              "
+              v-if="!notMobile && !showLeftPanel"
+              size="lg"
+              class="w-10 p-0"
+              :aria-label="t('g.showLeftPanel')"
               @click="toggleLeftPanel"
             >
-              <i
-                :class="
-                  cn(
-                    showLeftPanel
-                      ? 'icon-[lucide--panel-left]'
-                      : 'icon-[lucide--panel-left-close]'
-                  )
-                "
-              />
+              <i class="icon-[lucide--panel-left]" />
             </Button>
             <slot name="header" />
           </div>
@@ -137,7 +143,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 

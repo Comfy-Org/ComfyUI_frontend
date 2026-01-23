@@ -4,15 +4,12 @@
     :content-title="$t('manager.discoverCommunityContent')"
     class="manager-dialog"
   >
+    <template #leftPanelHeaderTitle>
+      <i class="icon-[lucide--puzzle]" />
+      <span class="text-neutral text-base">{{ $t('manager.title') }}</span>
+    </template>
     <template #leftPanel>
-      <LeftSidePanel v-model="selectedNavId" :nav-items="navItems">
-        <template #header-icon>
-          <i class="icon-[lucide--puzzle]" />
-        </template>
-        <template #header-title>
-          <span class="text-neutral text-base">{{ $t('manager.title') }}</span>
-        </template>
-      </LeftSidePanel>
+      <LeftSidePanel v-model="selectedNavId" :nav-items="navItems" />
     </template>
 
     <template #header>
