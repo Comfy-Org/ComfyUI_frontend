@@ -1,6 +1,10 @@
 <template>
   <WidgetLayoutField :widget>
-    <div class="ml-auto flex w-fit items-center gap-2">
+    <div
+      :class="
+        cn('flex w-fit items-center gap-2', { 'ml-auto': !hideLayoutField })
+      "
+    >
       <span
         v-if="stateLabel"
         :class="
@@ -25,7 +29,7 @@
 
 <script setup lang="ts">
 import ToggleSwitch from 'primevue/toggleswitch'
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -42,6 +46,8 @@ const { widget } = defineProps<{
 }>()
 
 const modelValue = defineModel<boolean>()
+
+const hideLayoutField = inject<boolean>('hideLayoutField', false)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)

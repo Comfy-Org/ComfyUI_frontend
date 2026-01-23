@@ -1,6 +1,7 @@
 <template>
   <FloatLabel
     variant="in"
+    :unstyled="hideLayoutField"
     :class="
       cn(
         'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
@@ -23,14 +24,14 @@
       @pointerup.capture.stop
       @contextmenu.capture.stop
     />
-    <label :for="id">{{ displayName }}</label>
+    <label v-if="!hideLayoutField" :for="id">{{ displayName }}</label>
   </FloatLabel>
 </template>
 
 <script setup lang="ts">
 import FloatLabel from 'primevue/floatlabel'
 import Textarea from 'primevue/textarea'
-import { computed, useId } from 'vue'
+import { computed, inject, useId } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -47,6 +48,8 @@ const { widget, placeholder = '' } = defineProps<{
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
+
+const hideLayoutField = inject<boolean>('hideLayoutField', false)
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
