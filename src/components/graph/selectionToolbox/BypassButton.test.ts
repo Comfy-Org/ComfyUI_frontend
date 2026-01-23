@@ -12,7 +12,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-const mockLGraphNode = createMockLGraphNode({ type: 'TestNode' })
+function getMockLGraphNode(): LGraphNode {
+  return createMockLGraphNode({ type: 'TestNode' })
+}
 
 vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => true)
@@ -57,21 +59,21 @@ describe('BypassButton', () => {
   }
 
   it('should render bypass button', () => {
-    canvasStore.selectedItems = [mockLGraphNode]
+    canvasStore.selectedItems = [getMockLGraphNode()]
     const wrapper = mountComponent()
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)
   })
 
   it('should have correct test id', () => {
-    canvasStore.selectedItems = [mockLGraphNode]
+    canvasStore.selectedItems = [getMockLGraphNode()]
     const wrapper = mountComponent()
     const button = wrapper.find('[data-testid="bypass-button"]')
     expect(button.exists()).toBe(true)
   })
 
   it('should execute bypass command when clicked', async () => {
-    canvasStore.selectedItems = [mockLGraphNode]
+    canvasStore.selectedItems = [getMockLGraphNode()]
     const executeSpy = vi.spyOn(commandStore, 'execute').mockResolvedValue()
 
     const wrapper = mountComponent()
@@ -84,7 +86,7 @@ describe('BypassButton', () => {
 
   it('should show bypassed styling when node is bypassed', async () => {
     const bypassedNode: Partial<LGraphNode> = {
-      ...mockLGraphNode,
+      ...getMockLGraphNode(),
       mode: LGraphEventMode.BYPASS
     }
     canvasStore.selectedItems = [bypassedNode as LGraphNode]
@@ -101,7 +103,7 @@ describe('BypassButton', () => {
 
   it('should handle multiple selected items', () => {
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
-    canvasStore.selectedItems = [mockLGraphNode, mockLGraphNode]
+    canvasStore.selectedItems = [getMockLGraphNode(), getMockLGraphNode()]
     const wrapper = mountComponent()
     const button = wrapper.find('button')
     expect(button.exists()).toBe(true)
