@@ -720,6 +720,7 @@
       "groupBy": "Group By",
       "sortMode": "Sort Mode",
       "resetView": "Reset View to Default",
+      "filterCategory": "Filter category",
       "groupStrategies": {
         "category": "Category",
         "categoryDesc": "Group by node category",
