@@ -10,6 +10,7 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -315,8 +316,11 @@ export const useWorkflowService = () => {
     if (
       workflowData.extra?.linearMode !== undefined ||
       !workflowData.nodes.length
-    )
+    ) {
+      if (workflowData.extra?.linearMode && !useCanvasStore().linearMode)
+        useTelemetry()?.trackEnterLinear({ source: 'workflow' })
       useCanvasStore().linearMode = !!workflowData.extra?.linearMode
+    }
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null
