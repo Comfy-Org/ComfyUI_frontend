@@ -1,7 +1,7 @@
 <template>
-  <div class="_content">
+  <div class="flex flex-col space-y-2">
     <div
-      class="filter-type-group"
+      class="flex flex-wrap gap-2"
       role="tablist"
       :aria-label="$t('sideToolbar.nodeLibraryTab.filterCategory')"
     >
@@ -15,7 +15,7 @@
             ? 'secondary'
             : 'muted-textonly'
         "
-        class="filter-type-button"
+        class="flex-1 justify-center px-3 py-2 text-sm"
         :aria-pressed="selectedFilter?.id === filterOption.id"
         @click="selectFilterOption(filterOption)"
       >
@@ -30,7 +30,7 @@
       auto-filter-focus
     />
   </div>
-  <div class="_footer">
+  <div class="flex flex-col pt-4 items-end">
     <Button type="button" @click="submit">{{ $t('g.add') }}</Button>
   </div>
 </template>
@@ -90,23 +90,3 @@ const submit = () => {
   })
 }
 </script>
-
-<style scoped>
-@reference '../../assets/css/style.css';
-
-._content {
-  @apply flex flex-col space-y-2;
-}
-
-.filter-type-group {
-  @apply flex flex-wrap gap-2;
-}
-
-.filter-type-button {
-  @apply flex-1 justify-center px-3 py-2 text-sm;
-}
-
-._footer {
-  @apply flex flex-col pt-4 items-end;
-}
-</style>
