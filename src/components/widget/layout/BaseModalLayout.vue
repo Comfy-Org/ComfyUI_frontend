@@ -8,13 +8,26 @@
       :style="gridStyle"
     >
       <nav
-        class="h-full overflow-hidden"
+        class="h-full overflow-hidden bg-modal-panel-background flex flex-col"
         :inert="!showLeftPanel"
         :aria-hidden="!showLeftPanel"
       >
-        <div v-if="hasLeftPanel" class="h-full min-w-40 max-w-56">
-          <slot name="leftPanel" />
-        </div>
+        <header
+          data-component-id="LeftPanelHeader"
+          class="flex w-full h-18 shrink-0 gap-2 pl-6 pr-3 items-center-safe"
+        >
+          <slot name="leftPanelHeaderTitle" />
+          <Button
+            v-if="!notMobile && showLeftPanel"
+            size="lg"
+            class="w-10 p-0 ml-auto"
+            :aria-label="t('g.hideLeftPanel')"
+            @click="toggleLeftPanel"
+          >
+            <i class="icon-[lucide--panel-left-close]" />
+          </Button>
+        </header>
+        <slot name="leftPanel" />
       </nav>
 
       <div class="flex flex-col bg-base-background overflow-hidden">
@@ -24,22 +37,13 @@
         >
           <div class="flex flex-1 shrink-0 gap-2">
             <Button
-              v-if="!notMobile"
-              size="icon"
-              :aria-label="
-                showLeftPanel ? t('g.hideLeftPanel') : t('g.showLeftPanel')
-              "
+              v-if="!notMobile && !showLeftPanel"
+              size="lg"
+              class="w-10 p-0"
+              :aria-label="t('g.showLeftPanel')"
               @click="toggleLeftPanel"
             >
-              <i
-                :class="
-                  cn(
-                    showLeftPanel
-                      ? 'icon-[lucide--panel-left]'
-                      : 'icon-[lucide--panel-left-close]'
-                  )
-                "
-              />
+              <i class="icon-[lucide--panel-left]" />
             </Button>
             <slot name="header" />
           </div>
@@ -69,7 +73,7 @@
           <slot name="contentFilter" />
           <h2
             v-if="!hasLeftPanel"
-            class="text-xxl m-0 px-6 pt-2 pb-6 capitalize"
+            class="text-xxl m-0 select-none px-6 pt-2 pb-6 capitalize"
           >
             {{ contentTitle }}
           </h2>
@@ -94,7 +98,10 @@
             data-component-id="RightPanelHeader"
             class="flex h-18 shrink-0 items-center gap-2 px-6"
           >
-            <h2 v-if="rightPanelTitle" class="flex-1 text-base font-semibold">
+            <h2
+              v-if="rightPanelTitle"
+              class="flex-1 select-none text-base font-semibold"
+            >
               {{ rightPanelTitle }}
             </h2>
             <div v-else class="flex-1">
@@ -134,7 +141,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { OnCloseKey } from '@/types/widgetTypes'
-import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
