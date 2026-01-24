@@ -201,7 +201,12 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import {
+  useDebounceFn,
+  useElementHover,
+  useResizeObserver,
+  useStorage
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -255,7 +260,10 @@ const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
-const viewMode = ref<'list' | 'grid'>('grid')
+const viewMode = useStorage<'list' | 'grid'>(
+  'Comfy.Assets.Sidebar.ViewMode',
+  'grid'
+)
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
 )
