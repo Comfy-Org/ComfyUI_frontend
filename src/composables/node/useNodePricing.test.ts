@@ -4,6 +4,7 @@ import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { PriceBadge } from '@/schemas/nodeDefSchema'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // -----------------------------------------------------------------------------
 // Test Types
@@ -24,13 +25,6 @@ interface MockNodeData {
   name: string
   api_node: boolean
   price_badge?: PriceBadge
-}
-
-interface MockNode {
-  id: string
-  widgets: MockNodeWidget[]
-  inputs: MockNodeInput[]
-  constructor: { nodeData: MockNodeData }
 }
 
 // -----------------------------------------------------------------------------
@@ -80,8 +74,8 @@ function createMockNodeWithPriceBadge(
     link: connected ? 1 : null
   }))
 
-  const node: MockNode = {
-    id: Math.random().toString(),
+  const baseNode = createMockLGraphNode()
+  return Object.assign(baseNode, {
     widgets: mockWidgets,
     inputs: mockInputs,
     constructor: {
@@ -91,9 +85,7 @@ function createMockNodeWithPriceBadge(
         price_badge: priceBadge
       }
     }
-  }
-
-  return node as unknown as LGraphNode
+  })
 }
 
 /** Helper to create a price badge with defaults */
@@ -107,6 +99,20 @@ const priceBadge = (
   expr,
   depends_on: { widgets, inputs, input_groups: inputGroups }
 })
+
+/** Helper to create a mock node for edge case testing */
+function createMockNode(
+  nodeData: MockNodeData,
+  widgets: MockNodeWidget[] = [],
+  inputs: MockNodeInput[] = []
+): LGraphNode {
+  const baseNode = createMockLGraphNode()
+  return Object.assign(baseNode, {
+    widgets,
+    inputs,
+    constructor: { nodeData }
+  })
+}
 
 // -----------------------------------------------------------------------------
 // Tests
@@ -456,37 +462,23 @@ describe('useNodePricing', () => {
   describe('edge cases', () => {
     it('should return empty string for non-API nodes', () => {
       const { getNodeDisplayPrice } = useNodePricing()
-      const node: MockNode = {
-        id: 'test',
-        widgets: [],
-        inputs: [],
-        constructor: {
-          nodeData: {
-            name: 'RegularNode',
-            api_node: false
-          }
-        }
-      }
+      const node = createMockNode({
+        name: 'RegularNode',
+        api_node: false
+      })
 
-      const price = getNodeDisplayPrice(node as unknown as LGraphNode)
+      const price = getNodeDisplayPrice(node)
       expect(price).toBe('')
     })
 
     it('should return empty string for nodes without price_badge', () => {
       const { getNodeDisplayPrice } = useNodePricing()
-      const node: MockNode = {
-        id: 'test',
-        widgets: [],
-        inputs: [],
-        constructor: {
-          nodeData: {
-            name: 'ApiNodeNoPricing',
-            api_node: true
-          }
-        }
-      }
+      const node = createMockNode({
+        name: 'ApiNodeNoPricing',
+        api_node: true
+      })
 
-      const price = getNodeDisplayPrice(node as unknown as LGraphNode)
+      const price = getNodeDisplayPrice(node)
       expect(price).toBe('')
     })
 
@@ -559,37 +551,23 @@ describe('useNodePricing', () => {
 
     it('should return undefined for nodes without price_badge', () => {
       const { getNodePricingConfig } = useNodePricing()
-      const node: MockNode = {
-        id: 'test',
-        widgets: [],
-        inputs: [],
-        constructor: {
-          nodeData: {
-            name: 'NoPricingNode',
-            api_node: true
-          }
-        }
-      }
+      const node = createMockNode({
+        name: 'NoPricingNode',
+        api_node: true
+      })
 
-      const config = getNodePricingConfig(node as unknown as LGraphNode)
+      const config = getNodePricingConfig(node)
       expect(config).toBeUndefined()
     })
 
     it('should return undefined for non-API nodes', () => {
       const { getNodePricingConfig } = useNodePricing()
-      const node: MockNode = {
-        id: 'test',
-        widgets: [],
-        inputs: [],
-        constructor: {
-          nodeData: {
-            name: 'RegularNode',
-            api_node: false
-          }
-        }
-      }
+      const node = createMockNode({
+        name: 'RegularNode',
+        api_node: false
+      })
 
-      const config = getNodePricingConfig(node as unknown as LGraphNode)
+      const config = getNodePricingConfig(node)
       expect(config).toBeUndefined()
     })
   })
@@ -642,21 +620,12 @@ describe('useNodePricing', () => {
 
     it('should not throw for non-API nodes', () => {
       const { triggerPriceRecalculation } = useNodePricing()
-      const node: MockNode = {
-        id: 'test',
-        widgets: [],
-        inputs: [],
-        constructor: {
-          nodeData: {
-            name: 'RegularNode',
-            api_node: false
-          }
-        }
-      }
+      const node = createMockNode({
+        name: 'RegularNode',
+        api_node: false
+      })
 
-      expect(() =>
-        triggerPriceRecalculation(node as unknown as LGraphNode)
-      ).not.toThrow()
+      expect(() => triggerPriceRecalculation(node)).not.toThrow()
     })
   })
 
@@ -751,35 +720,32 @@ describe('useNodePricing', () => {
       const { getNodeDisplayPrice } = useNodePricing()
 
       // Create a node with autogrow-style inputs (group.input1, group.input2, etc.)
-      const node: MockNode = {
-        id: Math.random().toString(),
-        widgets: [],
-        inputs: [
+      const node = createMockNode(
+        {
+          name: 'TestInputGroupNode',
+          api_node: true,
+          price_badge: {
+            engine: 'jsonata',
+            expr: '{"type":"usd","usd": inputGroups.videos * 0.05}',
+            depends_on: {
+              widgets: [],
+              inputs: [],
+              input_groups: ['videos']
+            }
+          }
+        },
+        [],
+        [
           { name: 'videos.clip1', link: 1 }, // connected
           { name: 'videos.clip2', link: 2 }, // connected
           { name: 'videos.clip3', link: null }, // disconnected
           { name: 'other_input', link: 3 } // connected but not in group
-        ],
-        constructor: {
-          nodeData: {
-            name: 'TestInputGroupNode',
-            api_node: true,
-            price_badge: {
-              engine: 'jsonata',
-              expr: '{"type":"usd","usd": inputGroups.videos * 0.05}',
-              depends_on: {
-                widgets: [],
-                inputs: [],
-                input_groups: ['videos']
-              }
-            }
-          }
-        }
-      }
+        ]
+      )
 
-      getNodeDisplayPrice(node as unknown as LGraphNode)
+      getNodeDisplayPrice(node)
       await new Promise((r) => setTimeout(r, 50))
-      const price = getNodeDisplayPrice(node as unknown as LGraphNode)
+      const price = getNodeDisplayPrice(node)
       // 2 connected inputs in 'videos' group * 0.05 = 0.10
       expect(price).toBe(creditsLabel(0.1))
     })

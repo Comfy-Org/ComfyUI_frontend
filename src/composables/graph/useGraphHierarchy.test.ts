@@ -1,23 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import * as measure from '@/lib/litegraph/src/measure'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  createMockLGraphNode,
+  createMockLGraphGroup
+} from '@/utils/__tests__/litegraphTestUtils'
 
 import { useGraphHierarchy } from './useGraphHierarchy'
 
 vi.mock('@/renderer/core/canvas/canvasStore')
 
+function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
+  return {
+    ...createMockLGraphNode(),
+    boundingRect: new Rectangle(100, 100, 50, 50),
+    ...overrides
+  } as LGraphNode
+}
+
+function createMockGroup(overrides: Partial<LGraphGroup> = {}): LGraphGroup {
+  return createMockLGraphGroup(overrides)
+}
+
 describe('useGraphHierarchy', () => {
-  let mockCanvasStore: ReturnType<typeof useCanvasStore>
+  let mockCanvasStore: Partial<ReturnType<typeof useCanvasStore>>
   let mockNode: LGraphNode
   let mockGroups: LGraphGroup[]
 
   beforeEach(() => {
-    mockNode = {
-      boundingRect: [100, 100, 50, 50]
-    } as unknown as LGraphNode
-
+    mockNode = createMockNode()
     mockGroups = []
 
     mockCanvasStore = {
@@ -25,10 +39,21 @@ describe('useGraphHierarchy', () => {
         graph: {
           groups: mockGroups
         }
-      }
-    } as any
+      },
+      $id: 'canvas',
+      $state: {},
+      $patch: vi.fn(),
+      $reset: vi.fn(),
+      $subscribe: vi.fn(),
+      $onAction: vi.fn(),
+      $dispose: vi.fn(),
+      _customProperties: new Set(),
+      _p: {}
+    } as unknown as Partial<ReturnType<typeof useCanvasStore>>
 
-    vi.mocked(useCanvasStore).mockReturnValue(mockCanvasStore)
+    vi.mocked(useCanvasStore).mockReturnValue(
+      mockCanvasStore as ReturnType<typeof useCanvasStore>
+    )
   })
 
   describe('findParentGroup', () => {
@@ -41,9 +66,9 @@ describe('useGraphHierarchy', () => {
     })
 
     it('returns null when node is not in any group', () => {
-      const group = {
-        boundingRect: [0, 0, 50, 50]
-      } as unknown as LGraphGroup
+      const group = createMockGroup({
+        boundingRect: new Rectangle(0, 0, 50, 50)
+      })
       mockGroups.push(group)
 
       vi.spyOn(measure, 'containsCentre').mockReturnValue(false)
@@ -55,9 +80,9 @@ describe('useGraphHierarchy', () => {
     })
 
     it('returns the only group when node is in exactly one group', () => {
-      const group = {
-        boundingRect: [0, 0, 200, 200]
-      } as unknown as LGraphGroup
+      const group = createMockGroup({
+        boundingRect: new Rectangle(0, 0, 200, 200)
+      })
       mockGroups.push(group)
 
       vi.spyOn(measure, 'containsCentre').mockReturnValue(true)
@@ -69,12 +94,12 @@ describe('useGraphHierarchy', () => {
     })
 
     it('returns the smallest group when node is in multiple groups', () => {
-      const largeGroup = {
-        boundingRect: [0, 0, 300, 300]
-      } as unknown as LGraphGroup
-      const smallGroup = {
-        boundingRect: [50, 50, 100, 100]
-      } as unknown as LGraphGroup
+      const largeGroup = createMockGroup({
+        boundingRect: new Rectangle(0, 0, 300, 300)
+      })
+      const smallGroup = createMockGroup({
+        boundingRect: new Rectangle(50, 50, 100, 100)
+      })
       mockGroups.push(largeGroup, smallGroup)
 
       vi.spyOn(measure, 'containsCentre').mockReturnValue(true)
@@ -87,12 +112,12 @@ describe('useGraphHierarchy', () => {
     })
 
     it('returns the inner group when one group contains another', () => {
-      const outerGroup = {
-        boundingRect: [0, 0, 300, 300]
-      } as unknown as LGraphGroup
-      const innerGroup = {
-        boundingRect: [50, 50, 100, 100]
-      } as unknown as LGraphGroup
+      const outerGroup = createMockGroup({
+        boundingRect: new Rectangle(0, 0, 300, 300)
+      })
+      const innerGroup = createMockGroup({
+        boundingRect: new Rectangle(50, 50, 100, 100)
+      })
       mockGroups.push(outerGroup, innerGroup)
 
       vi.spyOn(measure, 'containsCentre').mockReturnValue(true)
@@ -113,7 +138,7 @@ describe('useGraphHierarchy', () => {
     })
 
     it('handles null canvas gracefully', () => {
-      mockCanvasStore.canvas = null as any
+      mockCanvasStore.canvas = null
 
       const { findParentGroup } = useGraphHierarchy()
       const result = findParentGroup(mockNode)
@@ -122,7 +147,7 @@ describe('useGraphHierarchy', () => {
     })
 
     it('handles null graph gracefully', () => {
-      mockCanvasStore.canvas!.graph = null as any
+      mockCanvasStore.canvas!.graph = null
 
       const { findParentGroup } = useGraphHierarchy()
       const result = findParentGroup(mockNode)
