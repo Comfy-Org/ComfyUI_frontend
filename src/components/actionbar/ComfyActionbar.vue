@@ -60,6 +60,7 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
+  unrefElement,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
@@ -101,9 +102,10 @@ const isQueuePanelV2Enabled = computed(() =>
 )
 
 const panelRef = ref<ComponentPublicInstance | null>(null)
-const panelElement = computed(
-  () => (panelRef.value?.$el as HTMLElement | undefined) ?? null
-)
+const panelElement = computed<HTMLElement | null>(() => {
+  const element = unrefElement(panelRef)
+  return element instanceof HTMLElement ? element : null
+})
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
