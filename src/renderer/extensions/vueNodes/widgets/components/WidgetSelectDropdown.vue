@@ -85,14 +85,15 @@ const selectedSet = ref<Set<SelectedKey>>(new Set())
 
 /**
  * Transforms a value using getOptionLabel if available.
- * Falls back to the original value if getOptionLabel is not provided or throws an error.
+ * Falls back to the original value if getOptionLabel is not provided,
+ * returns undefined/null, or throws an error.
  */
 function getDisplayLabel(value: string): string {
   const getOptionLabel = props.widget.options?.getOptionLabel
   if (!getOptionLabel) return value
 
   try {
-    return getOptionLabel(value)
+    return getOptionLabel(value) || value
   } catch (e) {
     console.error('Failed to map value:', e)
     return value

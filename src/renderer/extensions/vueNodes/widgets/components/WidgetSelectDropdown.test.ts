@@ -152,6 +152,30 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       expect(consoleErrorSpy).toHaveBeenCalled()
       consoleErrorSpy.mockRestore()
     })
+
+    it('falls back to original value when label mapping returns empty string or undefined', () => {
+      // Simulate runtime scenario where getOptionLabel might return undefined
+      // despite the type definition
+      const getOptionLabel = vi.fn((value: string | null) => {
+        if (value === 'photo_abc.jpg') {
+          return ''
+        }
+        return `Labeled: ${value}`
+      })
+
+      const widget = createMockWidget('img_001.png', {
+        getOptionLabel
+      })
+      const wrapper = mountComponent(widget, 'img_001.png')
+
+      const inputItems = wrapper.vm.inputItems
+      expect(inputItems[0].name).toBe('img_001.png')
+      expect(inputItems[0].label).toBe('Labeled: img_001.png')
+      expect(inputItems[1].name).toBe('photo_abc.jpg')
+      expect(inputItems[1].label).toBe('photo_abc.jpg')
+      expect(inputItems[2].name).toBe('hash789.png')
+      expect(inputItems[2].label).toBe('Labeled: hash789.png')
+    })
   })
 
   describe('output items with custom label mapping', () => {
