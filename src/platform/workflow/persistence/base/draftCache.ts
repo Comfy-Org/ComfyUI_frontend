@@ -29,10 +29,11 @@ export const upsertDraft = (
   snapshot: WorkflowDraftSnapshot,
   limit: number = MAX_DRAFTS
 ): DraftCacheState => {
+  const effectiveLimit = Math.max(1, limit)
   const drafts = { ...state.drafts, [path]: snapshot }
   const order = touchEntry(state.order, path)
 
-  while (order.length > limit) {
+  while (order.length > effectiveLimit) {
     const oldest = order.shift()
     if (!oldest) continue
     if (oldest !== path) {

@@ -1,5 +1,7 @@
+import { useToast } from 'primevue'
 import { tryOnScopeDispose } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -21,6 +23,7 @@ import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import { useCommandStore } from '@/stores/commandStore'
 
 export function useWorkflowPersistence() {
+  const { t } = useI18n()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const route = useRoute()
@@ -28,6 +31,7 @@ export function useWorkflowPersistence() {
   const templateUrlLoader = useTemplateUrlLoader()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const workflowDraftStore = useWorkflowDraftStore()
+  const toast = useToast()
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -69,7 +73,12 @@ export function useWorkflowPersistence() {
       })
     } catch (error) {
       console.error('Failed to save draft', error)
-      // If draft store fails, don't continue saving to storage
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('toastMessages.failedToSaveDraft'),
+        life: 3000
+      })
       return
     }
 
@@ -155,7 +164,6 @@ export function useWorkflowPersistence() {
       setStorageValue('Comfy.PreviousWorkflow', activeWorkflowKey)
       // When the activeWorkflow changes, the graph has already been loaded.
       // Saving the current state of the graph to the localStorage.
-      // Use debounced version to avoid immediate save on tab switch
       persistCurrentWorkflow()
     }
   )
@@ -189,13 +197,14 @@ export function useWorkflowPersistence() {
   )
 
   // Get storage values before setting watchers
-  const storedWorkflows = JSON.parse(
+  const parsedWorkflows = JSON.parse(
     getStorageValue('Comfy.OpenWorkflowsPaths') || '[]'
-  ) as string[]
-  const storedActiveIndex = JSON.parse(
+  )
+  const storedWorkflows = Array.isArray(parsedWorkflows) ? parsedWorkflows : []
+  const parsedIndex = JSON.parse(
     getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
-  ) as number
-
+  )
+  const storedActiveIndex = typeof parsedIndex === 'number' ? parsedIndex : -1
   watch(restoreState, ({ paths, activeIndex }) => {
     if (workflowPersistenceEnabled.value) {
       setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
@@ -220,6 +229,7 @@ export function useWorkflowPersistence() {
           'Failed to parse workflow draft, creating with default',
           err
         )
+        workflowDraftStore.removeDraft(path)
         workflowStore.createTemporary(draft.name)
       }
     })

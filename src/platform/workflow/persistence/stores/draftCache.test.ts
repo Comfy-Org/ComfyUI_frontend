@@ -1,15 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  MAX_DRAFTS,
-  type WorkflowDraftSnapshot,
-  createDraftCacheState,
-  mostRecentDraftPath,
-  moveDraft,
-  removeDraft,
-  touchEntry,
-  upsertDraft
-} from '@/platform/workflow/persistence/base/draftCache'
+import { MAX_DRAFTS, createDraftCacheState, mostRecentDraftPath, moveDraft, removeDraft, touchEntry, upsertDraft } from '@/platform/workflow/persistence/base/draftCache';
+import type { WorkflowDraftSnapshot } from '@/platform/workflow/persistence/base/draftCache';
 
 const createSnapshot = (name: string): WorkflowDraftSnapshot => ({
   data: JSON.stringify({ name }),

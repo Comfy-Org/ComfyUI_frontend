@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as I18n from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
@@ -16,12 +17,38 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
+const mockToastAdd = vi.fn()
+vi.mock('primevue', () => ({
+  useToast: () => ({
+    add: mockToastAdd
+  })
+}))
+
+vi.mock('vue-i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof I18n>()
+  return {
+    ...actual,
+    useI18n: () => ({
+      t: (key: string) => key
+    })
+  }
+})
+
 const loadBlankWorkflow = vi.fn()
 vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => ({
     loadBlankWorkflow
   })
 }))
+
+vi.mock(
+  '@/platform/workflow/templates/composables/useTemplateUrlLoader',
+  () => ({
+    useTemplateUrlLoader: () => ({
+      loadTemplateFromUrlParams: vi.fn()
+    })
+  })
+)
 
 const executeCommand = vi.fn()
 vi.mock('@/stores/commandStore', () => ({
@@ -65,6 +92,9 @@ vi.mock('@/scripts/app', () => ({
     graph: {
       serialize: () => mocks.serializeMock()
     },
+    rootGraph: {
+      serialize: () => mocks.serializeMock()
+    },
     loadGraphData: (...args: unknown[]) => mocks.loadGraphDataMock(...args),
     canvas: {}
   }
@@ -82,6 +112,7 @@ describe('useWorkflowPersistence', () => {
     localStorage.clear()
     sessionStorage.clear()
     vi.clearAllMocks()
+    mockToastAdd.mockClear()
     useWorkflowDraftStore().reset()
     mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
@@ -193,5 +224,31 @@ describe('useWorkflowPersistence', () => {
     expect(
       workflowStore.openWorkflows.map((workflow) => workflow?.path)
     ).toContain('workflows/Unsaved Workflow.json')
+  })
+
+  it('shows error toast when draft save fails', async () => {
+    const workflowStore = useWorkflowStore()
+    const draftStore = useWorkflowDraftStore()
+
+    const workflow = workflowStore.createTemporary('FailingDraft.json')
+    await workflowStore.openWorkflow(workflow)
+
+    useWorkflowPersistence()
+    expect(mocks.state.graphChangedHandler).toBeTypeOf('function')
+
+    vi.spyOn(draftStore, 'saveDraft').mockImplementation(() => {
+      throw new Error('Storage quota exceeded')
+    })
+
+    mocks.state.currentGraph = { title: 'Test' }
+    mocks.state.graphChangedHandler!()
+    await vi.advanceTimersByTimeAsync(800)
+
+    expect(mockToastAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'error',
+        detail: expect.any(String)
+      })
+    )
   })
 })

@@ -87,7 +87,12 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
     if (!payload) return false
     try {
       const workflow = JSON.parse(payload)
-      await comfyApp.loadGraphData(workflow, true, true, workflowName)
+      await comfyApp.loadGraphData(
+        workflow,
+        /* clean= */ true,
+        /* restore_view= */ true,
+        workflowName
+      )
       return true
     } catch (err) {
       console.error('Failed to load persisted workflow', err)
