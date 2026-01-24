@@ -120,6 +120,7 @@ import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
@@ -141,7 +142,7 @@ const {
   toggleStack,
   assetType = 'output'
 } = defineProps<{
-  assetItems: { key: string; asset: AssetItem; isChild?: boolean }[]
+  assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
