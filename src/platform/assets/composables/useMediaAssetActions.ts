@@ -45,7 +45,7 @@ export function useMediaAssetActions() {
   ): Promise<void> => {
     if (assetType === 'output') {
       const promptId =
-        asset.id || getOutputAssetMetadata(asset.user_metadata)?.promptId
+        getOutputAssetMetadata(asset.user_metadata)?.promptId || asset.id
       if (!promptId) {
         throw new Error('Unable to extract prompt ID from asset')
       }
@@ -203,9 +203,10 @@ export function useMediaAssetActions() {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
 
-    // Try asset.id first (OSS), then fall back to metadata (Cloud)
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
-    const promptId = targetAsset.id || metadata?.promptId
+    const promptId =
+      metadata?.promptId ||
+      (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
 
     if (!promptId) {
       toast.add({
