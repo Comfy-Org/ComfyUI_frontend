@@ -27,9 +27,9 @@ import { i18n } from './i18n'
 import { isCloud } from '@/platform/distribution/types'
 
 if (isCloud) {
-  const { loadRemoteConfig } =
-    await import('@/platform/remoteConfig/remoteConfig')
-  await loadRemoteConfig()
+  const { refreshRemoteConfig } =
+    await import('@/platform/remoteConfig/refreshRemoteConfig')
+  await refreshRemoteConfig({ useAuth: false })
 }
 
 const ComfyUIPreset = definePreset(Aura, {
