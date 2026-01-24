@@ -11,7 +11,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-global.fetch = vi.fn()
+vi.stubGlobal('fetch', vi.fn())
 
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
