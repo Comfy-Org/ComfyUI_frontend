@@ -7,19 +7,18 @@
     :right-panel-title="$t('assetBrowser.modelInfo.title')"
     @close="handleClose"
   >
+    <template v-if="shouldShowLeftPanel" #leftPanelHeaderTitle>
+      <i class="icon-[comfy--ai-model] size-4" />
+      <h2 class="flex-auto select-none text-base font-semibold text-nowrap">
+        {{ displayTitle }}
+      </h2>
+    </template>
     <template v-if="shouldShowLeftPanel" #leftPanel>
       <LeftSidePanel
         v-model="selectedNavItem"
         data-component-id="AssetBrowserModal-LeftSidePanel"
         :nav-items
-      >
-        <template #header-icon>
-          <div class="icon-[comfy--ai-model] size-4" />
-        </template>
-        <template #header-title>
-          <span class="capitalize">{{ displayTitle }}</span>
-        </template>
-      </LeftSidePanel>
+      />
     </template>
 
     <template #header>

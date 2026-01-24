@@ -45,7 +45,13 @@
             v-tooltip.bottom="queueHistoryTooltipConfig"
             type="destructive"
             size="md"
-            :aria-pressed="isQueueOverlayExpanded"
+            :aria-pressed="
+              isQueuePanelV2Enabled
+                ? activeSidebarTabId === 'assets'
+                : isQueueProgressOverlayEnabled
+                  ? isQueueOverlayExpanded
+                  : undefined
+            "
             class="px-3"
             data-testid="queue-overlay-toggle"
             @click="toggleQueueOverlay"
@@ -55,7 +61,11 @@
               {{ activeJobsLabel }}
             </span>
             <span class="sr-only">
-              {{ t('sideToolbar.queueProgressOverlay.expandCollapsedQueue') }}
+              {{
+                isQueuePanelV2Enabled
+                  ? t('sideToolbar.queueProgressOverlay.viewJobHistory')
+                  : t('sideToolbar.queueProgressOverlay.expandCollapsedQueue')
+              }}
             </span>
           </Button>
           <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
@@ -77,6 +87,7 @@
         </div>
       </div>
       <QueueProgressOverlay
+        v-if="isQueueProgressOverlayEnabled"
         v-model:expanded="isQueueOverlayExpanded"
         :menu-hovered="isTopMenuHovered"
       />
@@ -108,6 +119,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
@@ -126,8 +138,10 @@ const commandStore = useCommandStore()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
 const queueUIStore = useQueueUIStore()
+const sidebarTabStore = useSidebarTabStore()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { isOverlayExpanded: isQueueOverlayExpanded } = storeToRefs(queueUIStore)
+const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
 const releaseStore = useReleaseStore()
 const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 const { shouldShowRedDot: shouldShowConflictRedDot } =
@@ -143,6 +157,12 @@ const activeJobsLabel = computed(() => {
 })
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') === 'Integrated'
+)
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
+const isQueueProgressOverlayEnabled = computed(
+  () => !isQueuePanelV2Enabled.value
 )
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
@@ -185,6 +205,10 @@ onMounted(() => {
 })
 
 const toggleQueueOverlay = () => {
+  if (isQueuePanelV2Enabled.value) {
+    sidebarTabStore.toggleSidebarTab('assets')
+    return
+  }
   commandStore.execute('Comfy.Queue.ToggleOverlay')
 }
 
