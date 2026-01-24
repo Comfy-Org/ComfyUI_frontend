@@ -1,17 +1,9 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
-import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema';
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  mapOutputsToAssetItems,
-  shouldLoadFullOutputs
-} from '@/platform/assets/utils/outputAssetUtil'
-import {
-  getJobDetail,
-  getPreviewableOutputsFromJobDetail
-} from '@/services/jobOutputCache'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 
 export type OutputStackListItem = {
   key: string
@@ -110,41 +102,20 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
     expandedStackPromptIds.value = nextExpanded
   }
 
-  async function resolveStackOutputs(metadata: OutputAssetMetadata) {
-    const outputsToDisplay = metadata.allOutputs ?? []
-    if (!shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
-      return outputsToDisplay
-    }
-
-    try {
-      const jobDetail = await getJobDetail(metadata.promptId)
-      const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
-      return previewableOutputs.length ? previewableOutputs : outputsToDisplay
-    } catch (error) {
-      console.error('Failed to fetch job detail for stack children:', error)
-      return outputsToDisplay
-    }
-  }
-
   async function resolveStackChildren(asset: AssetItem): Promise<AssetItem[]> {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
     if (!metadata) {
       return []
     }
-
-    const outputsToDisplay = await resolveStackOutputs(metadata)
-    if (!outputsToDisplay.length) {
+    try {
+      return await resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at,
+        excludeOutputKey: asset.name
+      })
+    } catch (error) {
+      console.error('Failed to resolve stack children:', error)
       return []
     }
-
-    return mapOutputsToAssetItems({
-      promptId: metadata.promptId,
-      outputs: outputsToDisplay,
-      createdAt: asset.created_at,
-      executionTimeInSeconds: metadata.executionTimeInSeconds,
-      workflow: metadata.workflow,
-      excludeFilename: asset.name
-    })
   }
 
   return {

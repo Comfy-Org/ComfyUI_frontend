@@ -1,5 +1,9 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  getJobDetail,
+  getPreviewableOutputsFromJobDetail
+} from '@/services/jobOutputCache'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 type OutputAssetMapOptions = {
@@ -9,6 +13,11 @@ type OutputAssetMapOptions = {
   executionTimeInSeconds?: number
   workflow?: OutputAssetMetadata['workflow']
   excludeFilename?: string
+}
+
+type ResolveOutputAssetItemsOptions = {
+  createdAt?: string
+  excludeOutputKey?: string
 }
 
 export function shouldLoadFullOutputs(
@@ -49,4 +58,27 @@ export function mapOutputsToAssetItems({
         workflow
       }
     }))
+}
+
+export async function resolveOutputAssetItems(
+  metadata: OutputAssetMetadata,
+  { createdAt, excludeOutputKey }: ResolveOutputAssetItemsOptions = {}
+): Promise<AssetItem[]> {
+  let outputsToDisplay = metadata.allOutputs ?? []
+  if (shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
+    const jobDetail = await getJobDetail(metadata.promptId)
+    const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
+    if (previewableOutputs.length) {
+      outputsToDisplay = previewableOutputs
+    }
+  }
+
+  return mapOutputsToAssetItems({
+    promptId: metadata.promptId,
+    outputs: outputsToDisplay,
+    createdAt,
+    executionTimeInSeconds: metadata.executionTimeInSeconds,
+    workflow: metadata.workflow,
+    excludeFilename: excludeOutputKey
+  })
 }
