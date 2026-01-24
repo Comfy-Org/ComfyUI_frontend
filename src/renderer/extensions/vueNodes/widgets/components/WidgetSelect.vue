@@ -59,8 +59,11 @@ const specDescriptor = computed<{
   allowUpload: boolean
   folder: ResultItemType | undefined
 }>(() => {
+  const isLoad3DMesh =
+    props.nodeType === 'Load3D' && props.widget.name === 'model_file'
+
   const spec = comboSpec.value
-  if (!spec) {
+  if (!spec && !isLoad3DMesh) {
     return {
       kind: 'unknown',
       allowUpload: false,
@@ -74,7 +77,7 @@ const specDescriptor = computed<{
     video_upload,
     image_folder,
     audio_upload
-  } = spec
+  } = spec || {}
 
   let kind: AssetKind = 'unknown'
   if (video_upload) {
@@ -83,18 +86,27 @@ const specDescriptor = computed<{
     kind = 'image'
   } else if (audio_upload) {
     kind = 'audio'
+  } else if (isLoad3DMesh) {
+    kind = 'mesh'
   }
+
   // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
 
   const allowUpload =
     image_upload === true ||
     animated_image_upload === true ||
     video_upload === true ||
-    audio_upload === true
+    audio_upload === true ||
+    isLoad3DMesh
+
+  const subfolder = isLoad3DMesh ? '3d' : undefined
+  const folder = isLoad3DMesh ? 'input' : image_folder
+
   return {
     kind,
     allowUpload,
-    folder: image_folder
+    folder,
+    subfolder
   }
 })
 
