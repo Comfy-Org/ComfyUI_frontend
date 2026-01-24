@@ -76,8 +76,9 @@ export async function getOutputsForTask(
   }
 }
 
-function mapTaskOutputToResultItems(outputs: TaskOutput): ResultItemImpl[] {
-  return Object.entries(outputs).flatMap(([nodeId, nodeOutputs]) =>
+function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
+  if (!outputs) return []
+  const resultItems = Object.entries(outputs).flatMap(([nodeId, nodeOutputs]) =>
     Object.entries(nodeOutputs)
       .filter(([mediaType, items]) => mediaType !== 'animated' && items)
       .flatMap(([mediaType, items]) => {
@@ -97,19 +98,14 @@ function mapTaskOutputToResultItems(outputs: TaskOutput): ResultItemImpl[] {
           )
       })
   )
-}
 
-function getPreviewableOutputsFromTaskOutput(
-  outputs?: TaskOutput
-): ResultItemImpl[] {
-  if (!outputs) return []
-  return ResultItemImpl.filterPreviewable(mapTaskOutputToResultItems(outputs))
+  return ResultItemImpl.filterPreviewable(resultItems)
 }
 
 export function getPreviewableOutputsFromJobDetail(
   jobDetail?: JobDetail
 ): ResultItemImpl[] {
-  return getPreviewableOutputsFromTaskOutput(jobDetail?.outputs)
+  return getPreviewableOutputs(jobDetail?.outputs)
 }
 
 // ===== Job Detail Caching =====
