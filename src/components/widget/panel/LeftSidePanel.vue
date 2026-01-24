@@ -2,7 +2,10 @@
   <div
     class="flex w-full flex-auto overflow-y-auto gap-1 min-h-0 flex-col bg-modal-panel-background scrollbar-hide px-3"
   >
-    <template v-for="(item, index) in navItems" :key="index">
+    <template
+      v-for="item in navItems"
+      :key="'title' in item ? item.title : item.id"
+    >
       <div v-if="'items' in item" class="flex flex-col gap-2">
         <NavTitle
           v-model="collapsedGroups[item.title]"

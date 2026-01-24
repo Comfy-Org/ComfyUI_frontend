@@ -400,11 +400,11 @@ export const useAssetsStore = defineStore('assets', () => {
             }
           }
 
-          // Phase 3: Prune stale models after all batches loaded
-          for (const id of state.assets.keys()) {
-            if (!seenIds.has(id)) {
-              state.assets.delete(id)
-            }
+          const staleIds = [...state.assets.keys()].filter(
+            (id) => !seenIds.has(id)
+          )
+          for (const id of staleIds) {
+            state.assets.delete(id)
           }
           assetsArrayCache.delete(key)
         }
