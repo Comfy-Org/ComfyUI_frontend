@@ -1,27 +1,23 @@
 <template>
   <div class="flex flex-col space-y-2">
     <div
-      ref="tablistRef"
       class="flex flex-wrap gap-2"
       role="tablist"
       :aria-label="$t('sideToolbar.nodeLibraryTab.filterCategory')"
     >
       <Button
-        v-for="(filterOption, index) in filters"
+        v-for="filterOption in filters"
         :key="filterOption.id"
         type="button"
         size="sm"
-        role="tab"
-        :tabindex="selectedFilter?.id === filterOption.id ? 0 : -1"
         :variant="
           selectedFilter?.id === filterOption.id
             ? 'secondary'
             : 'muted-textonly'
         "
         class="flex-1 justify-center px-3 py-2 text-sm"
-        :aria-selected="selectedFilter?.id === filterOption.id"
+        :aria-pressed="selectedFilter?.id === filterOption.id"
         @click="selectFilterOption(filterOption)"
-        @keydown="onFilterKeydown($event, index)"
       >
         {{ filterOption.name }}
       </Button>
@@ -41,7 +37,7 @@
 
 <script setup lang="ts">
 import Select from 'primevue/select'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -52,7 +48,6 @@ const filters = computed(() => nodeDefStore.nodeSearchService.nodeFilters)
 const selectedFilter = ref<FuseFilter<ComfyNodeDefImpl, string>>()
 const filterValues = computed(() => selectedFilter.value?.fuseSearch.data ?? [])
 const selectedFilterValue = ref<string>('')
-const tablistRef = ref<HTMLElement | null>(null)
 
 const nodeDefStore = useNodeDefStore()
 
@@ -83,51 +78,6 @@ const selectFilterOption = (
   }
   selectedFilter.value = filterOption
   updateSelectedFilterValue()
-}
-
-const focusFilterAtIndex = (index: number) => {
-  nextTick(() => {
-    const tabs = tablistRef.value?.querySelectorAll<HTMLElement>('[role="tab"]')
-    tabs?.[index]?.focus()
-  })
-}
-
-const onFilterKeydown = (event: KeyboardEvent, currentIndex: number) => {
-  const total = filters.value.length
-  if (!total) {
-    return
-  }
-
-  let targetIndex: number | null = null
-  switch (event.key) {
-    case 'ArrowRight':
-    case 'ArrowDown':
-      targetIndex = (currentIndex + 1) % total
-      break
-    case 'ArrowLeft':
-    case 'ArrowUp':
-      targetIndex = (currentIndex - 1 + total) % total
-      break
-    case 'Home':
-      targetIndex = 0
-      break
-    case 'End':
-      targetIndex = total - 1
-      break
-    default:
-      break
-  }
-
-  if (targetIndex === null) {
-    return
-  }
-
-  event.preventDefault()
-  const targetFilter = filters.value[targetIndex]
-  if (targetFilter) {
-    selectFilterOption(targetFilter)
-    focusFilterAtIndex(targetIndex)
-  }
 }
 
 const submit = () => {
