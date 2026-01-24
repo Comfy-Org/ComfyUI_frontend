@@ -15,6 +15,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isElectron } from '@/utils/envUtil'
@@ -270,6 +271,8 @@ describe('TopMenuSection', () => {
       document.body.appendChild(actionbarTarget)
       const pinia = createTestingPinia({ createSpy: vi.fn })
       configureSettings(pinia, true)
+      const executionStore = useExecutionStore(pinia)
+      executionStore.activePromptId = 'prompt-1'
 
       const ComfyActionbarStub = defineComponent({
         name: 'ComfyActionbar',
@@ -285,16 +288,15 @@ describe('TopMenuSection', () => {
         pinia,
         attachTo: document.body,
         stubs: {
-          ComfyActionbar: ComfyActionbarStub
+          ComfyActionbar: ComfyActionbarStub,
+          QueueInlineProgressSummary: false
         }
       })
 
       try {
         await nextTick()
 
-        expect(
-          actionbarTarget.querySelector('queue-inline-progress-summary-stub')
-        ).not.toBeNull()
+        expect(actionbarTarget.querySelector('[role="status"]')).not.toBeNull()
       } finally {
         wrapper.unmount()
         actionbarTarget.remove()
