@@ -86,20 +86,22 @@ function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
           return []
         }
 
-        return (items as ResultItem[])
-          .filter((item) => typeof item === 'object' && item !== null)
-          .map(
-            (item) =>
-              new ResultItemImpl({
-                ...item,
-                nodeId,
-                mediaType
-              })
-          )
+        return items.filter(isResultItem).map(
+          (item) =>
+            new ResultItemImpl({
+              ...item,
+              nodeId,
+              mediaType
+            })
+        )
       })
   )
 
   return ResultItemImpl.filterPreviewable(resultItems)
+}
+
+function isResultItem(item: unknown): item is ResultItem {
+  return typeof item === 'object' && item !== null
 }
 
 export function getPreviewableOutputsFromJobDetail(
