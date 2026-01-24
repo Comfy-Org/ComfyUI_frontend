@@ -381,15 +381,11 @@ const displayAssets = computed(() => {
 
 const listViewAssets = ref<AssetItem[]>([])
 
-const galleryAssets = computed(() =>
+const visibleAssets = computed(() =>
   isListView.value ? listViewAssets.value : displayAssets.value
 )
 
-const selectionAssets = computed(() =>
-  isListView.value ? listViewAssets.value : displayAssets.value
-)
-
-const selectedAssets = computed(() => getSelectedAssets(selectionAssets.value))
+const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 
 const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
@@ -409,7 +405,7 @@ const showEmptyState = computed(
     activeJobsCount.value === 0
 )
 
-watch(galleryAssets, (newAssets) => {
+watch(visibleAssets, (newAssets) => {
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
     const newIndex = newAssets.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
@@ -427,7 +423,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return galleryAssets.value.map((asset) => {
+  return visibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -468,7 +464,7 @@ watch(
 )
 
 const handleAssetSelect = (asset: AssetItem, assets?: AssetItem[]) => {
-  const assetList = assets ?? selectionAssets.value
+  const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
   handleAssetClick(asset, index, assetList)
 }
@@ -547,7 +543,7 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = galleryAssets.value.findIndex((a) => a.id === asset.id)
+  const index = visibleAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index
   }
