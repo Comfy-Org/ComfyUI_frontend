@@ -84,6 +84,7 @@
         size="md"
         class="gap-1 font-bold"
         :aria-label="stackIndicatorLabel || undefined"
+        :aria-expanded="stackExpanded"
         @click.stop="emit('stack-toggle')"
       >
         <i aria-hidden="true" class="icon-[lucide--layers] size-4" />
