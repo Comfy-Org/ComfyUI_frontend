@@ -7,6 +7,8 @@ import SidebarIcon from '@/components/sidebar/SidebarIcon.vue'
 import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useQueueProgress } from '@/composables/queue/useQueueProgress'
+import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -23,6 +25,13 @@ import { cn } from '@/utils/tailwindUtil'
 
 const displayWorkflows = ref(false)
 const outputs = useMediaAssets('output')
+const {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  progressPercentStyle
+} = useProgressBarBackground()
+const { totalPercent, currentNodePercent } = useQueueProgress()
 const queueStore = useQueueStore()
 const settingStore = useSettingStore()
 
@@ -46,14 +55,14 @@ defineExpose({ onWheel })
 
 const selectedIndex = ref<[number, number]>([-1, 0])
 
-watch(selectedIndex, () => {
+function doEmit() {
   const [index] = selectedIndex.value
   emit('updateSelection', [
     outputs.media.value[index],
     selectedOutput.value,
     selectedIndex.value[0] <= 0
   ])
-})
+}
 
 const outputsRef = useTemplateRef('outputsRef')
 const { reset: resetInfiniteScroll } = useInfiniteScroll(
@@ -72,7 +81,9 @@ watch(selectedIndex, () => {
   const [index, key] = selectedIndex.value
   if (!outputsRef.value) return
 
-  const outputElement = outputsRef.value?.children?.[index]?.children?.[key]
+  const outputElement = outputsRef.value?.querySelectorAll(
+    `[data-output-index="${index}"]`
+  )?.[key]
   if (!outputElement) return
 
   //container: 'nearest' is nice, but bleeding edge and chrome only
@@ -96,12 +107,12 @@ const selectedOutput = computed(() => {
   return allOutputs(outputs.media.value[0])[0]
 })
 
+watch([selectedIndex, selectedOutput], doEmit)
 watch(
   () => outputs.media.value,
   (newAssets, oldAssets) => {
     if (newAssets.length === oldAssets.length || oldAssets.length === 0) return
     if (selectedIndex.value[0] <= 0) {
-      //force update
       selectedIndex.value = [0, 0]
       return
     }
@@ -246,6 +257,18 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             queueStore.runningTasks.length + queueStore.pendingTasks.length
           "
         />
+        <div class="absolute -bottom-1 w-full h-3 rounded-sm overflow-clip">
+          <div :class="progressBarContainerClass">
+            <div
+              :class="progressBarPrimaryClass"
+              :style="progressPercentStyle(totalPercent)"
+            />
+            <div
+              :class="progressBarSecondaryClass"
+              :style="progressPercentStyle(currentNodePercent)"
+            />
+          </div>
+        </div>
       </section>
       <template v-for="(item, index) in outputs.media.value" :key="index">
         <div
@@ -262,6 +285,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                   'border-2'
               )
             "
+            :data-output-index="index"
             :src="output.url"
             @click="selectedIndex = [index, key]"
           />
@@ -275,6 +299,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                   'border-2'
               )
             "
+            :data-output-index="index"
             @click="selectedIndex = [index, key]"
           >
             <i
