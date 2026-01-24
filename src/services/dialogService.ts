@@ -41,6 +41,7 @@ export type ConfirmationDialogType =
   | 'delete'
   | 'dirtyClose'
   | 'reinstall'
+  | 'info'
 
 /**
  * Minimal interface for execution error dialogs.
@@ -627,6 +628,24 @@ export const useDialogService = () => {
     })
   }
 
+  function showBillingComingSoonDialog() {
+    return dialogStore.showDialog({
+      key: 'billing-coming-soon',
+      title: t('subscription.billingComingSoon.title'),
+      component: ConfirmationDialogContent,
+      props: {
+        message: t('subscription.billingComingSoon.message'),
+        type: 'info' as ConfirmationDialogType,
+        onConfirm: () => {}
+      },
+      dialogComponentProps: {
+        pt: {
+          root: { class: 'max-w-[360px]' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -651,6 +670,7 @@ export const useDialogService = () => {
     showEditWorkspaceDialog,
     showRemoveMemberDialog,
     showRevokeInviteDialog,
-    showInviteMemberDialog
+    showInviteMemberDialog,
+    showBillingComingSoonDialog
   }
 }

@@ -9,13 +9,42 @@
         {{ workspaceName }}
       </h1>
     </div>
-    <Tabs :value="activeTab" @update:value="setActiveTab">
+    <Tabs unstyled :value="activeTab" @update:value="setActiveTab">
       <div class="flex w-full items-center">
-        <TabList class="w-full">
-          <Tab value="plan">{{ $t('workspacePanel.tabs.planCredits') }}</Tab>
-          <Tab value="members">{{
-            $t('workspacePanel.tabs.membersCount', { count: members.length })
-          }}</Tab>
+        <TabList unstyled class="flex w-full gap-2">
+          <Tab
+            value="plan"
+            :class="
+              cn(
+                buttonVariants({
+                  variant: activeTab === 'plan' ? 'secondary' : 'textonly',
+                  size: 'md'
+                }),
+                activeTab === 'plan' && 'text-base-foreground no-underline'
+              )
+            "
+          >
+            {{ $t('workspacePanel.tabs.planCredits') }}
+          </Tab>
+          <Tab
+            value="members"
+            :class="
+              cn(
+                buttonVariants({
+                  variant: activeTab === 'members' ? 'secondary' : 'textonly',
+                  size: 'md'
+                }),
+                activeTab === 'members' && 'text-base-foreground no-underline',
+                'ml-2'
+              )
+            "
+          >
+            {{
+              $t('workspacePanel.tabs.membersCount', {
+                count: isInPersonalWorkspace ? 1 : members.length
+              })
+            }}
+          </Tab>
         </TabList>
         <Button
           v-if="permissions.canInviteMembers"
@@ -37,8 +66,9 @@
         <template v-if="permissions.canAccessWorkspaceMenu">
           <Button
             v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-            variant="muted-textonly"
-            size="icon"
+            class="ml-2"
+            variant="secondary"
+            size="lg"
             :aria-label="$t('g.moreOptions')"
             @click="menu?.toggle($event)"
           >
@@ -72,7 +102,7 @@
         </template>
       </div>
 
-      <TabPanels>
+      <TabPanels unstyled>
         <TabPanel value="plan">
           <SubscriptionPanelContentWorkspace />
         </TabPanel>
@@ -98,7 +128,9 @@ import { useI18n } from 'vue-i18n'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { buttonVariants } from '@/components/ui/button/button.variants'
 import SubscriptionPanelContentWorkspace from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
+import { cn } from '@/utils/tailwindUtil'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -115,8 +147,13 @@ const {
   showEditWorkspaceDialog
 } = useDialogService()
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
-  storeToRefs(workspaceStore)
+const {
+  workspaceName,
+  members,
+  isInviteLimitReached,
+  isWorkspaceSubscribed,
+  isInPersonalWorkspace
+} = storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 const { activeTab, setActiveTab, workspaceRole, permissions, uiConfig } =
   useWorkspaceUI()

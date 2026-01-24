@@ -2104,6 +2104,10 @@
       "creator": "30 min",
       "pro": "1 hr",
       "founder": "30 min"
+    },
+    "billingComingSoon": {
+      "title": "Coming Soon",
+      "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
     }
   },
   "userSettings": {
@@ -2232,6 +2236,7 @@
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
+    "personal": "Personal",
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create new workspace",

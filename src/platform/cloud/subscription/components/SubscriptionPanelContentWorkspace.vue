@@ -1,8 +1,10 @@
 <template>
-  <div class="grow overflow-auto">
+  <div class="grow overflow-auto pt-6">
     <div class="rounded-2xl border border-interface-stroke p-6">
       <div>
-        <div class="flex items-center justify-between gap-2">
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-2"
+        >
           <!-- OWNER Unsubscribed State -->
           <template v-if="showSubscribePrompt">
             <div class="flex flex-col gap-2">
@@ -15,6 +17,7 @@
             </div>
             <Button
               variant="primary"
+              size="lg"
               class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
               @click="handleSubscribeWorkspace"
             >
@@ -65,12 +68,14 @@
               </div>
             </div>
 
-            <template
+            <div
               v-if="isActiveSubscription && permissions.canManageSubscription"
+              class="flex flex-wrap gap-2 md:ml-auto"
             >
               <Button
+                size="lg"
                 variant="secondary"
-                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                 @click="
                   async () => {
                     await authActions.accessBillingPortal()
@@ -80,23 +85,24 @@
                 {{ $t('subscription.managePayment') }}
               </Button>
               <Button
+                size="lg"
                 variant="primary"
-                class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
+                class="rounded-lg px-4 text-sm font-normal text-text-primary"
                 @click="showSubscriptionDialog"
               >
                 {{ $t('subscription.upgradePlan') }}
               </Button>
               <Button
                 v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                variant="muted-textonly"
-                size="icon"
+                variant="secondary"
+                size="lg"
                 :aria-label="$t('g.moreOptions')"
                 @click="planMenu?.toggle($event)"
               >
                 <i class="pi pi-ellipsis-h" />
               </Button>
               <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
-            </template>
+            </div>
           </template>
         </div>
       </div>
@@ -247,6 +253,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useDialogService } from '@/services/dialogService'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
@@ -269,6 +276,7 @@ const { isWorkspaceSubscribed, isInPersonalWorkspace } =
 const { subscribeWorkspace } = workspaceStore
 const { permissions, workspaceRole } = useWorkspaceUI()
 const { t, n } = useI18n()
+const { showBillingComingSoonDialog } = useDialogService()
 
 // Show subscribe prompt to owners without active subscription
 const showSubscribePrompt = computed(() => {
@@ -285,8 +293,12 @@ const showZeroState = computed(
   () => showSubscribePrompt.value || isMemberView.value
 )
 
-// Demo: Subscribe workspace to PRO monthly plan
+// Subscribe workspace - show billing coming soon dialog for team workspaces
 function handleSubscribeWorkspace() {
+  if (!isInPersonalWorkspace.value) {
+    showBillingComingSoonDialog()
+    return
+  }
   subscribeWorkspace('PRO_MONTHLY')
 }
 

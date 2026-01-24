@@ -19,6 +19,8 @@ export interface WorkspaceMember {
   name: string
   email: string
   joinDate: Date
+  photoUrl?: string
+  role: 'owner' | 'member'
 }
 
 export interface PendingInvite {
@@ -45,7 +47,9 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     id: member.id,
     name: member.name,
     email: member.email,
-    joinDate: new Date(member.joined_at)
+    joinDate: new Date(member.joined_at),
+    photoUrl: member.photo_url,
+    role: member.role
   }
 }
 

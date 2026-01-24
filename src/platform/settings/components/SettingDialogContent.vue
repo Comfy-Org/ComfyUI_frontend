@@ -2,25 +2,27 @@
   <div
     :class="
       teamWorkspacesEnabled
-        ? 'flex h-[80vh] w-full overflow-hidden'
+        ? 'flex h-full w-full overflow-auto flex-col md:flex-row'
         : 'settings-container'
     "
   >
     <ScrollPanel
       :class="
         teamWorkspacesEnabled
-          ? 'w-48 shrink-0 p-2 2xl:w-64'
+          ? 'w-full md:w-64 md:min-w-64 md:max-w-64 shrink-0 p-2'
           : 'settings-sidebar w-48 shrink-0 p-2 2xl:w-64'
       "
     >
-      <SearchBox
-        v-model:model-value="searchQuery"
-        class="settings-search-box mb-2 w-full"
-        :placeholder="$t('g.searchSettings') + '...'"
-        :debounce-time="128"
-        autofocus
-        @search="handleSearch"
-      />
+      <div class="px-4">
+        <SearchBox
+          v-model:model-value="searchQuery"
+          class="settings-search-box mb-2 w-full"
+          :placeholder="$t('g.searchSettings') + '...'"
+          :debounce-time="128"
+          autofocus
+          @search="handleSearch"
+        />
+      </div>
       <Listbox
         v-model="activeCategory"
         :options="groupedMenuTreeNodes"
@@ -62,7 +64,7 @@
       :lazy="true"
       :class="
         teamWorkspacesEnabled
-          ? 'h-full flex-1 overflow-x-auto'
+          ? 'h-full flex-1 overflow-auto scrollbar-custom'
           : 'settings-content h-full w-full'
       "
     >

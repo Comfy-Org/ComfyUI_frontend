@@ -1,311 +1,333 @@
 <template>
-  <div
-    class="flex size-full flex-col gap-2 rounded-2xl border border-border-default p-6"
-  >
-    <!-- Section Header -->
-    <div class="flex w-full items-center gap-9">
-      <div class="flex min-w-0 flex-1 items-baseline gap-2">
-        <span
-          v-if="uiConfig.showMembersList"
-          class="text-base font-semibold text-base-foreground"
-        >
-          <template v-if="activeView === 'active'">
-            {{
-              $t('workspacePanel.members.membersCount', {
-                count: members.length
-              })
-            }}
-          </template>
-          <template v-else-if="permissions.canViewPendingInvites">
-            {{
-              $t(
-                'workspacePanel.members.pendingInvitesCount',
-                pendingInvites.length
-              )
-            }}
-          </template>
-        </span>
-      </div>
-      <div v-if="uiConfig.showSearch" class="flex items-start gap-2">
-        <SearchBox
-          v-model="searchQuery"
-          :placeholder="$t('g.search')"
-          size="lg"
-          class="w-64"
-        />
-      </div>
-    </div>
-
-    <!-- Members Content -->
-    <div class="flex min-h-0 flex-1 flex-col">
-      <!-- Table Header with Tab Buttons and Column Headers -->
-      <div
-        v-if="uiConfig.showMembersList"
-        :class="
-          cn(
-            'grid w-full items-center py-2',
-            activeView === 'pending'
-              ? uiConfig.pendingGridCols
-              : uiConfig.headerGridCols
-          )
-        "
-      >
-        <!-- Tab buttons in first column -->
-        <div class="flex items-center gap-2">
-          <Button
-            :variant="activeView === 'active' ? 'secondary' : 'muted-textonly'"
-            size="md"
-            @click="activeView = 'active'"
+  <div class="grow overflow-auto pt-6">
+    <div
+      class="flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke border-inter p-6"
+    >
+      <!-- Section Header -->
+      <div class="flex w-full items-center gap-9">
+        <div class="flex min-w-0 flex-1 items-baseline gap-2">
+          <span
+            v-if="uiConfig.showMembersList"
+            class="text-base font-semibold text-base-foreground"
           >
-            {{ $t('workspacePanel.members.tabs.active') }}
-          </Button>
-          <Button
-            v-if="uiConfig.showPendingTab"
-            :variant="activeView === 'pending' ? 'secondary' : 'muted-textonly'"
-            size="md"
-            @click="activeView = 'pending'"
-          >
-            {{
-              $t(
-                'workspacePanel.members.tabs.pendingCount',
-                pendingInvites.length
-              )
-            }}
-          </Button>
+            <template v-if="activeView === 'active'">
+              {{
+                $t('workspacePanel.members.membersCount', {
+                  count: members.length
+                })
+              }}
+            </template>
+            <template v-else-if="permissions.canViewPendingInvites">
+              {{
+                $t(
+                  'workspacePanel.members.pendingInvitesCount',
+                  pendingInvites.length
+                )
+              }}
+            </template>
+          </span>
         </div>
-        <!-- Date column headers -->
-        <template v-if="activeView === 'pending'">
-          <Button
-            variant="muted-textonly"
-            size="sm"
-            class="justify-start"
-            @click="toggleSort('inviteDate')"
-          >
-            {{ $t('workspacePanel.members.columns.inviteDate') }}
-            <i class="icon-[lucide--chevrons-up-down] size-4" />
-          </Button>
-          <Button
-            variant="muted-textonly"
-            size="sm"
-            class="justify-start"
-            @click="toggleSort('expiryDate')"
-          >
-            {{ $t('workspacePanel.members.columns.expiryDate') }}
-            <i class="icon-[lucide--chevrons-up-down] size-4" />
-          </Button>
-          <div />
-        </template>
-        <template v-else>
-          <Button
-            variant="muted-textonly"
-            size="sm"
-            class="justify-end"
-            @click="toggleSort('joinDate')"
-          >
-            {{ $t('workspacePanel.members.columns.joinDate') }}
-            <i class="icon-[lucide--chevrons-up-down] size-4" />
-          </Button>
-          <!-- Empty cell for action column header (OWNER only) -->
-          <div v-if="permissions.canRemoveMembers" />
-        </template>
+        <div v-if="uiConfig.showSearch" class="flex items-start gap-2">
+          <SearchBox
+            v-model="searchQuery"
+            :placeholder="$t('g.search')"
+            size="lg"
+            class="w-64"
+          />
+        </div>
       </div>
 
-      <!-- Members List -->
-      <div class="min-h-0 flex-1 overflow-y-auto">
-        <!-- Active Members -->
-        <template v-if="activeView === 'active'">
-          <!-- Current user (always pinned at top, no date) -->
-          <div
-            :class="
-              cn(
-                'grid w-full items-center rounded-lg p-2',
-                uiConfig.membersGridCols
-              )
-            "
-          >
-            <div class="flex items-center gap-3">
-              <UserAvatar
-                class="size-8"
-                :photo-url="userPhotoUrl"
-                :pt:icon:class="{ 'text-xl!': !userPhotoUrl }"
-              />
-              <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <div class="flex items-center gap-2">
-                  <span class="text-sm text-base-foreground">
-                    {{ userDisplayName }}
-                    <span
-                      v-if="isPersonalWorkspace"
-                      class="text-muted-foreground"
-                    >
-                      ({{ $t('g.you') }})
+      <!-- Members Content -->
+      <div class="flex min-h-0 flex-1 flex-col">
+        <!-- Table Header with Tab Buttons and Column Headers -->
+        <div
+          v-if="uiConfig.showMembersList"
+          :class="
+            cn(
+              'grid w-full items-center py-2',
+              activeView === 'pending'
+                ? uiConfig.pendingGridCols
+                : uiConfig.headerGridCols
+            )
+          "
+        >
+          <!-- Tab buttons in first column -->
+          <div class="flex items-center gap-2">
+            <Button
+              :variant="
+                activeView === 'active' ? 'secondary' : 'muted-textonly'
+              "
+              size="md"
+              @click="activeView = 'active'"
+            >
+              {{ $t('workspacePanel.members.tabs.active') }}
+            </Button>
+            <Button
+              v-if="uiConfig.showPendingTab"
+              :variant="
+                activeView === 'pending' ? 'secondary' : 'muted-textonly'
+              "
+              size="md"
+              @click="activeView = 'pending'"
+            >
+              {{
+                $t(
+                  'workspacePanel.members.tabs.pendingCount',
+                  pendingInvites.length
+                )
+              }}
+            </Button>
+          </div>
+          <!-- Date column headers -->
+          <template v-if="activeView === 'pending'">
+            <Button
+              variant="muted-textonly"
+              size="sm"
+              class="justify-start"
+              @click="toggleSort('inviteDate')"
+            >
+              {{ $t('workspacePanel.members.columns.inviteDate') }}
+              <i class="icon-[lucide--chevrons-up-down] size-4" />
+            </Button>
+            <Button
+              variant="muted-textonly"
+              size="sm"
+              class="justify-start"
+              @click="toggleSort('expiryDate')"
+            >
+              {{ $t('workspacePanel.members.columns.expiryDate') }}
+              <i class="icon-[lucide--chevrons-up-down] size-4" />
+            </Button>
+            <div />
+          </template>
+          <template v-else>
+            <Button
+              variant="muted-textonly"
+              size="sm"
+              class="justify-end"
+              @click="toggleSort('joinDate')"
+            >
+              {{ $t('workspacePanel.members.columns.joinDate') }}
+              <i class="icon-[lucide--chevrons-up-down] size-4" />
+            </Button>
+            <!-- Empty cell for action column header (OWNER only) -->
+            <div v-if="permissions.canRemoveMembers" />
+          </template>
+        </div>
+
+        <!-- Members List -->
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          <!-- Active Members -->
+          <template v-if="activeView === 'active'">
+            <!-- Personal Workspace: show only current user -->
+            <template v-if="isPersonalWorkspace">
+              <div
+                :class="
+                  cn(
+                    'grid w-full items-center rounded-lg p-2',
+                    uiConfig.membersGridCols
+                  )
+                "
+              >
+                <div class="flex items-center gap-3">
+                  <UserAvatar
+                    class="size-8"
+                    :photo-url="userPhotoUrl"
+                    :pt:icon:class="{ 'text-xl!': !userPhotoUrl }"
+                  />
+                  <div class="flex min-w-0 flex-1 flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm text-base-foreground">
+                        {{ userDisplayName }}
+                        <span class="text-muted-foreground">
+                          ({{ $t('g.you') }})
+                        </span>
+                      </span>
+                      <span
+                        v-if="uiConfig.showRoleBadge"
+                        class="text-[10px] font-bold uppercase text-base-background bg-base-foreground px-1 py-0.5 rounded-full"
+                      >
+                        {{ $t('workspaceSwitcher.roleOwner') }}
+                      </span>
+                    </div>
+                    <span class="text-sm text-muted-foreground">
+                      {{ userEmail }}
                     </span>
-                  </span>
-                  <div
-                    v-if="uiConfig.showRoleBadge"
-                    class="py-0.5 px-1.5 text-xs bg-background-muted"
-                  >
-                    {{ workspaceRole }}
                   </div>
                 </div>
-                <span class="text-sm text-muted-foreground">
-                  {{ userEmail }}
-                </span>
               </div>
-            </div>
-            <!-- Empty cell for grid alignment (no date for current user) -->
-            <span v-if="uiConfig.showDateColumn" />
-            <!-- Empty cell for action column (can't remove yourself) -->
-            <span v-if="permissions.canRemoveMembers" />
-          </div>
+            </template>
 
-          <!-- Other members (sorted) -->
-          <div
-            v-for="(member, index) in filteredMembers"
-            :key="member.id"
-            :class="
-              cn(
-                'grid w-full items-center rounded-lg p-2',
-                uiConfig.membersGridCols,
-                index % 2 === 1 && 'bg-secondary-background/50'
-              )
-            "
-          >
-            <div class="flex items-center gap-3">
+            <!-- Team Workspace: sorted list (owner first, current user second, then rest) -->
+            <template v-else>
               <div
-                class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+                v-for="(member, index) in filteredMembers"
+                :key="member.id"
+                :class="
+                  cn(
+                    'grid w-full items-center rounded-lg p-2',
+                    uiConfig.membersGridCols,
+                    index % 2 === 1 && 'bg-secondary-background/50'
+                  )
+                "
               >
-                <span class="text-sm font-bold text-base-foreground">
-                  {{ member.name.charAt(0).toUpperCase() }}
+                <div class="flex items-center gap-3">
+                  <UserAvatar
+                    class="size-8"
+                    :photo-url="
+                      isCurrentUser(member) ? userPhotoUrl : member.photoUrl
+                    "
+                    :fallback="member.name.charAt(0).toUpperCase()"
+                    :pt:icon:class="{
+                      'text-xl!': !(isCurrentUser(member)
+                        ? userPhotoUrl
+                        : member.photoUrl)
+                    }"
+                  />
+                  <div class="flex min-w-0 flex-1 flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm text-base-foreground">
+                        {{ member.name }}
+                        <span
+                          v-if="isCurrentUser(member)"
+                          class="text-muted-foreground"
+                        >
+                          ({{ $t('g.you') }})
+                        </span>
+                      </span>
+                      <span
+                        v-if="uiConfig.showRoleBadge"
+                        class="text-[10px] font-bold uppercase text-base-background bg-base-foreground px-1 py-0.5 rounded-full"
+                      >
+                        {{ getRoleBadgeLabel(member.role) }}
+                      </span>
+                    </div>
+                    <span class="text-sm text-muted-foreground">
+                      {{ member.email }}
+                    </span>
+                  </div>
+                </div>
+                <!-- Join date -->
+                <span
+                  v-if="uiConfig.showDateColumn"
+                  class="text-sm text-muted-foreground text-right"
+                >
+                  {{ formatDate(member.joinDate) }}
                 </span>
+                <!-- Remove member action (OWNER only, can't remove yourself) -->
+                <div
+                  v-if="permissions.canRemoveMembers"
+                  class="flex items-center justify-end"
+                >
+                  <Button
+                    v-if="!isCurrentUser(member)"
+                    v-tooltip="{
+                      value: $t('g.moreOptions'),
+                      showDelay: 300
+                    }"
+                    variant="muted-textonly"
+                    size="icon"
+                    :aria-label="$t('g.moreOptions')"
+                    @click="showMemberMenu($event, member)"
+                  >
+                    <i class="pi pi-ellipsis-h" />
+                  </Button>
+                </div>
               </div>
-              <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <span class="text-sm text-base-foreground">
-                  {{ member.name }}
-                </span>
-                <span class="text-sm text-muted-foreground">
-                  {{ member.email }}
-                </span>
-              </div>
-            </div>
-            <!-- Join date -->
-            <span
-              v-if="uiConfig.showDateColumn"
-              class="text-sm text-muted-foreground text-right"
-            >
-              {{ formatDate(member.joinDate) }}
-            </span>
-            <!-- Remove member action (OWNER only) -->
+
+              <!-- Member actions menu (shared for all members) -->
+              <Menu ref="memberMenu" :model="memberMenuItems" :popup="true" />
+            </template>
+          </template>
+
+          <!-- Pending Invites -->
+          <template v-else>
             <div
-              v-if="permissions.canRemoveMembers"
-              class="flex items-center justify-end"
+              v-for="(invite, index) in filteredPendingInvites"
+              :key="invite.id"
+              :class="
+                cn(
+                  'grid w-full items-center rounded-lg p-2',
+                  uiConfig.pendingGridCols,
+                  index % 2 === 1 && 'bg-secondary-background/50'
+                )
+              "
             >
-              <Button
-                v-tooltip="{
-                  value: $t('g.moreOptions'),
-                  showDelay: 300
-                }"
-                variant="muted-textonly"
-                size="icon"
-                :aria-label="$t('g.moreOptions')"
-                @click="showMemberMenu($event, member)"
-              >
-                <i class="pi pi-ellipsis-h" />
-              </Button>
-            </div>
-          </div>
-
-          <!-- Member actions menu (shared for all members) -->
-          <Menu ref="memberMenu" :model="memberMenuItems" :popup="true" />
-        </template>
-
-        <!-- Pending Invites -->
-        <template v-else>
-          <div
-            v-for="(invite, index) in filteredPendingInvites"
-            :key="invite.id"
-            :class="
-              cn(
-                'grid w-full items-center rounded-lg p-2',
-                uiConfig.pendingGridCols,
-                index % 2 === 1 && 'bg-secondary-background/50'
-              )
-            "
-          >
-            <!-- Invite info -->
-            <div class="flex items-center gap-3">
-              <div
-                class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
-              >
-                <span class="text-sm font-bold text-base-foreground">
-                  {{ getInviteInitial(invite.email) }}
-                </span>
+              <!-- Invite info -->
+              <div class="flex items-center gap-3">
+                <UserAvatar
+                  class="size-8"
+                  :fallback="getInviteInitial(invite.email)"
+                />
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                  <span class="text-sm text-base-foreground">
+                    {{ getInviteDisplayName(invite.email) }}
+                  </span>
+                  <span class="text-sm text-muted-foreground">
+                    {{ invite.email }}
+                  </span>
+                </div>
               </div>
-              <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <span class="text-sm text-base-foreground">
-                  {{ getInviteDisplayName(invite.email) }}
-                </span>
-                <span class="text-sm text-muted-foreground">
-                  {{ invite.email }}
-                </span>
+              <!-- Invite date -->
+              <span class="text-sm text-muted-foreground">
+                {{ formatDate(invite.inviteDate) }}
+              </span>
+              <!-- Expiry date -->
+              <span class="text-sm text-muted-foreground">
+                {{ formatDate(invite.expiryDate) }}
+              </span>
+              <!-- Actions -->
+              <div class="flex items-center justify-end gap-2">
+                <Button
+                  v-tooltip="{
+                    value: $t('workspacePanel.members.actions.copyLink'),
+                    showDelay: 300
+                  }"
+                  variant="secondary"
+                  size="md"
+                  :aria-label="$t('workspacePanel.members.actions.copyLink')"
+                  @click="handleCopyInviteLink(invite)"
+                >
+                  <i class="icon-[lucide--link] size-4" />
+                </Button>
+                <Button
+                  v-tooltip="{
+                    value: $t('workspacePanel.members.actions.revokeInvite'),
+                    showDelay: 300
+                  }"
+                  variant="secondary"
+                  size="md"
+                  :aria-label="
+                    $t('workspacePanel.members.actions.revokeInvite')
+                  "
+                  @click="handleRevokeInvite(invite)"
+                >
+                  <i class="icon-[lucide--mail-x] size-4" />
+                </Button>
               </div>
             </div>
-            <!-- Invite date -->
-            <span class="text-sm text-muted-foreground">
-              {{ formatDate(invite.inviteDate) }}
-            </span>
-            <!-- Expiry date -->
-            <span class="text-sm text-muted-foreground">
-              {{ formatDate(invite.expiryDate) }}
-            </span>
-            <!-- Actions -->
-            <div class="flex items-center justify-end gap-2">
-              <Button
-                v-tooltip="{
-                  value: $t('workspacePanel.members.actions.copyLink'),
-                  showDelay: 300
-                }"
-                variant="secondary"
-                size="md"
-                :aria-label="$t('workspacePanel.members.actions.copyLink')"
-                @click="handleCopyInviteLink(invite)"
-              >
-                <i class="icon-[lucide--link] size-4" />
-              </Button>
-              <Button
-                v-tooltip="{
-                  value: $t('workspacePanel.members.actions.revokeInvite'),
-                  showDelay: 300
-                }"
-                variant="secondary"
-                size="md"
-                :aria-label="$t('workspacePanel.members.actions.revokeInvite')"
-                @click="handleRevokeInvite(invite)"
-              >
-                <i class="icon-[lucide--mail-x] size-4" />
-              </Button>
+            <div
+              v-if="filteredPendingInvites.length === 0"
+              class="flex w-full items-center justify-center py-8 text-sm text-muted-foreground"
+            >
+              {{ $t('workspacePanel.members.noInvites') }}
             </div>
-          </div>
-          <div
-            v-if="filteredPendingInvites.length === 0"
-            class="flex w-full items-center justify-center py-8 text-sm text-muted-foreground"
-          >
-            {{ $t('workspacePanel.members.noInvites') }}
-          </div>
-        </template>
+          </template>
+        </div>
       </div>
     </div>
-  </div>
-  <!-- Personal Workspace Message -->
-  <div v-if="isPersonalWorkspace" class="flex items-center">
-    <p class="text-sm text-muted-foreground">
-      {{ $t('workspacePanel.members.personalWorkspaceMessage') }}
-    </p>
-    <button
-      class="underline bg-transparent border-none cursor-pointer"
-      @click="handleCreateWorkspace"
-    >
-      {{ $t('workspacePanel.members.createNewWorkspace') }}
-    </button>
+    <!-- Personal Workspace Message -->
+    <div v-if="isPersonalWorkspace" class="flex items-center">
+      <p class="text-sm text-muted-foreground">
+        {{ $t('workspacePanel.members.personalWorkspaceMessage') }}
+      </p>
+      <button
+        class="underline bg-transparent border-none cursor-pointer"
+        @click="handleCreateWorkspace"
+      >
+        {{ $t('workspacePanel.members.createNewWorkspace') }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -344,7 +366,7 @@ const {
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
 const { copyInviteLink } = workspaceStore
-const { permissions, uiConfig, workspaceRole } = useWorkspaceUI()
+const { permissions, uiConfig } = useWorkspaceUI()
 
 const searchQuery = ref('')
 const activeView = ref<'active' | 'pending'>('active')
@@ -379,11 +401,13 @@ function showMemberMenu(event: Event, member: WorkspaceMember) {
   memberMenu.value?.toggle(event)
 }
 
-// Other members (sorted, excluding current user)
+function isCurrentUser(member: WorkspaceMember): boolean {
+  return member.email.toLowerCase() === userEmail.value?.toLowerCase()
+}
+
+// All members sorted: owners first, current user second, then rest by join date
 const filteredMembers = computed(() => {
-  let result = members.value.filter(
-    (member) => member.email.toLowerCase() !== userEmail.value?.toLowerCase()
-  )
+  let result = [...members.value]
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
@@ -395,6 +419,17 @@ const filteredMembers = computed(() => {
   }
 
   result.sort((a, b) => {
+    // Owners always come first
+    if (a.role === 'owner' && b.role !== 'owner') return -1
+    if (a.role !== 'owner' && b.role === 'owner') return 1
+
+    // Current user comes second (after owner)
+    const aIsCurrentUser = isCurrentUser(a)
+    const bIsCurrentUser = isCurrentUser(b)
+    if (aIsCurrentUser && !bIsCurrentUser) return -1
+    if (!aIsCurrentUser && bIsCurrentUser) return 1
+
+    // Then sort by join date
     const aValue = a.joinDate.getTime()
     const bValue = b.joinDate.getTime()
     return sortDirection.value === 'asc' ? aValue - bValue : bValue - aValue
@@ -402,6 +437,12 @@ const filteredMembers = computed(() => {
 
   return result
 })
+
+function getRoleBadgeLabel(role: 'owner' | 'member'): string {
+  return role === 'owner'
+    ? t('workspaceSwitcher.roleOwner')
+    : t('workspaceSwitcher.roleMember')
+}
 
 const filteredPendingInvites = computed(() => {
   let result = [...pendingInvites.value]

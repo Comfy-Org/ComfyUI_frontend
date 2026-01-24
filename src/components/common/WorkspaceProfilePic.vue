@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex size-6 items-center justify-center rounded-md text-base font-semibold text-white"
+    class="flex size-8 items-center justify-center rounded-md text-base font-semibold text-white"
     :style="{
       background: gradient,
       textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)'
