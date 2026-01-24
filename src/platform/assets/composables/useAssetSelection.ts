@@ -61,6 +61,7 @@ export function useAssetSelection() {
     if (cmdOrCtrlKey.value) {
       selectionStore.toggleSelection(assetId)
       selectionStore.setLastSelectedIndex(index)
+      selectionStore.setLastSelectedAssetId(assetId)
       return
     }
 
@@ -68,6 +69,7 @@ export function useAssetSelection() {
     selectionStore.clearSelection()
     selectionStore.addToSelection(assetId)
     selectionStore.setLastSelectedIndex(index)
+    selectionStore.setLastSelectedAssetId(assetId)
   }
 
   /**
@@ -77,7 +79,9 @@ export function useAssetSelection() {
     const allIds = allAssets.map((a) => a.id)
     selectionStore.setSelection(allIds)
     if (allAssets.length > 0) {
-      selectionStore.setLastSelectedIndex(allAssets.length - 1)
+      const lastIndex = allAssets.length - 1
+      selectionStore.setLastSelectedIndex(lastIndex)
+      selectionStore.setLastSelectedAssetId(allAssets[lastIndex].id)
     }
   }
 
@@ -107,7 +111,18 @@ export function useAssetSelection() {
       }
     }
 
+    const anchorId = selectionStore.lastSelectedAssetId
+    const anchorIndex = anchorId
+      ? assets.findIndex((asset) => asset.id === anchorId)
+      : -1
+
     if (nextSelectedIds.length === selectionStore.selectedAssetIds.size) {
+      if (anchorIndex !== -1) {
+        selectionStore.setLastSelectedIndex(anchorIndex)
+      } else {
+        selectionStore.setLastSelectedIndex(-1)
+        selectionStore.setLastSelectedAssetId(null)
+      }
       return
     }
 
@@ -117,7 +132,12 @@ export function useAssetSelection() {
     }
 
     selectionStore.setSelection(nextSelectedIds)
-    selectionStore.setLastSelectedIndex(-1)
+    if (anchorIndex !== -1) {
+      selectionStore.setLastSelectedIndex(anchorIndex)
+    } else {
+      selectionStore.setLastSelectedIndex(-1)
+      selectionStore.setLastSelectedAssetId(null)
+    }
   }
 
   /**
@@ -149,7 +169,7 @@ export function useAssetSelection() {
   function deactivate() {
     isActive.value = false
     // Reset selection state to ensure clean state when deactivated
-    selectionStore.reset()
+    selectionStore.clearSelection()
   }
 
   return {
@@ -167,8 +187,6 @@ export function useAssetSelection() {
     reconcileSelection,
     getOutputCount,
     getTotalOutputCount,
-    reset: () => selectionStore.reset(),
-
     // Lifecycle management
     activate,
     deactivate,
