@@ -13,8 +13,16 @@
     <style>
       @media (prefers-color-scheme: dark) {
         body {
-          background-color: #202020;
+          /* Setting it early for background during load */
+          --bg-color: #202020;
         }
+      }
+      body {
+        background-color: var(--bg-color);
+        background-image: var(--bg-img);
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
       }
     </style>    
     <link rel="manifest" href="manifest.json">
