@@ -6,7 +6,6 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
-/** @public */
 export interface FeatureSurveyConfig {
   /** Feature identifier. Must remain static after initialization. */
   featureId: string
@@ -27,18 +26,14 @@ const GLOBAL_COOLDOWN_MS = 4 * 24 * 60 * 60 * 1000 // 4 days
 const DEFAULT_THRESHOLD = 3
 const DEFAULT_DELAY_MS = 5000
 
-function getStorageState() {
-  return useStorage<SurveyState>(STORAGE_KEY, {
+export function useSurveyEligibility(
+  config: MaybeRefOrGetter<FeatureSurveyConfig>
+) {
+  const state = useStorage<SurveyState>(STORAGE_KEY, {
     seenSurveys: {},
     lastSurveyShown: null,
     optedOut: false
   })
-}
-
-export function useSurveyEligibility(
-  config: MaybeRefOrGetter<FeatureSurveyConfig>
-) {
-  const state = getStorageState()
   const resolvedConfig = computed(() => toValue(config))
 
   const { useCount } = useFeatureUsageTracker(resolvedConfig.value.featureId)
