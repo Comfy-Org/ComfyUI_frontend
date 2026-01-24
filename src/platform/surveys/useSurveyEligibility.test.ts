@@ -134,12 +134,12 @@ describe('useSurveyEligibility', () => {
 
     it('is not eligible during global cooldown', async () => {
       setFeatureUsage('test-feature', 5)
-      const thirteenDaysAgo = Date.now() - 13 * 24 * 60 * 60 * 1000
+      const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
       localStorage.setItem(
         SURVEY_STATE_KEY,
         JSON.stringify({
-          seenSurveys: { 'other-feature': thirteenDaysAgo },
-          lastSurveyShown: thirteenDaysAgo,
+          seenSurveys: { 'other-feature': threeDaysAgo },
+          lastSurveyShown: threeDaysAgo,
           optedOut: false
         })
       )
@@ -154,12 +154,12 @@ describe('useSurveyEligibility', () => {
 
     it('is eligible after global cooldown expires', async () => {
       setFeatureUsage('test-feature', 5)
-      const fifteenDaysAgo = Date.now() - 15 * 24 * 60 * 60 * 1000
+      const fiveDaysAgo = Date.now() - 5 * 24 * 60 * 60 * 1000
       localStorage.setItem(
         SURVEY_STATE_KEY,
         JSON.stringify({
-          seenSurveys: { 'other-feature': fifteenDaysAgo },
-          lastSurveyShown: fifteenDaysAgo,
+          seenSurveys: { 'other-feature': fiveDaysAgo },
+          lastSurveyShown: fiveDaysAgo,
           optedOut: false
         })
       )

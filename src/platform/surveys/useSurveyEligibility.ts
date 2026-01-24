@@ -23,7 +23,7 @@ interface SurveyState {
 }
 
 const STORAGE_KEY = 'Comfy.SurveyState'
-const GLOBAL_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000 // 14 days
+const GLOBAL_COOLDOWN_MS = 4 * 24 * 60 * 60 * 1000 // 4 days
 const DEFAULT_THRESHOLD = 3
 const DEFAULT_DELAY_MS = 5000
 
