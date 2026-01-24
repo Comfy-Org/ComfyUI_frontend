@@ -151,11 +151,29 @@ const outputItems = computed<DropdownItem[]>(() => {
  * Creates a fallback item for the current modelValue when it doesn't exist
  * in the available items list. This handles cases like template-loaded nodes
  * where the saved value may not exist in the current server environment.
+ * Works for both local mode (inputItems/outputItems) and cloud mode (assetData).
  */
 const missingValueItem = computed<DropdownItem | null>(() => {
   const currentValue = modelValue.value
   if (!currentValue) return null
 
+  // Check in cloud mode assets
+  if (props.isAssetMode && assetData) {
+    const existsInAssets = assetData.dropdownItems.value.some(
+      (item) => item.name === currentValue
+    )
+    if (existsInAssets) return null
+
+    return {
+      id: `missing-${currentValue}`,
+      mediaSrc: '',
+      name: currentValue,
+      label: currentValue,
+      metadata: ''
+    }
+  }
+
+  // Check in local mode inputs/outputs
   const existsInInputs = inputItems.value.some(
     (item) => item.name === currentValue
   )
@@ -181,7 +199,11 @@ const missingValueItem = computed<DropdownItem | null>(() => {
 
 const allItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
-    return assetData.dropdownItems.value
+    const items = assetData.dropdownItems.value
+    if (missingValueItem.value) {
+      return [missingValueItem.value, ...items]
+    }
+    return items
   }
   return [
     ...(missingValueItem.value ? [missingValueItem.value] : []),
