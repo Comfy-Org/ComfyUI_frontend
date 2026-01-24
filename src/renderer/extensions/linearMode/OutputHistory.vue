@@ -1,12 +1,6 @@
 <script setup lang="ts">
-import {
-  useAsyncState,
-  useEventListener,
-  useInfiniteScroll,
-  useScroll
-} from '@vueuse/core'
-import { computed, ref, toRaw, toValue, useTemplateRef, watch } from 'vue'
-import type { MaybeRef } from 'vue'
+import { useEventListener, useInfiniteScroll, useScroll } from '@vueuse/core'
+import { computed, ref, toRaw, useTemplateRef, watch } from 'vue'
 
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarIcon from '@/components/sidebar/SidebarIcon.vue'
@@ -24,9 +18,8 @@ import {
   getMediaType,
   mediaTypes
 } from '@/renderer/extensions/linearMode/mediaTypes'
-import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
-import { getJobDetail } from '@/services/jobOutputCache'
-import { useQueueStore, ResultItemImpl } from '@/stores/queueStore'
+import { useQueueStore } from '@/stores/queueStore'
+import type { ResultItemImpl } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -97,59 +90,21 @@ watch(selectedIndex, () => {
   outputElement.scrollIntoView({ block: 'nearest' })
 })
 
-function outputCount(item?: AssetItem) {
+function allOutputs(item?: AssetItem) {
   const user_metadata = getOutputAssetMetadata(item?.user_metadata)
-  return user_metadata?.outputCount ?? 0
-}
+  if (!user_metadata?.allOutputs) return []
 
-const outputsCache: Record<string, MaybeRef<ResultItemImpl[]>> = {}
-
-function flattenNodeOutput([nodeId, nodeOutput]: [
-  string | number,
-  NodeExecutionOutput
-]): ResultItemImpl[] {
-  const knownOutputs: Record<string, ResultItem[]> = {}
-  if (nodeOutput.audio) knownOutputs.audio = nodeOutput.audio
-  if (nodeOutput.images) knownOutputs.images = nodeOutput.images
-  if (nodeOutput.video) knownOutputs.video = nodeOutput.video
-  if (nodeOutput.gifs) knownOutputs.gifs = nodeOutput.gifs as ResultItem[]
-  if (nodeOutput['3d']) knownOutputs['3d'] = nodeOutput['3d'] as ResultItem[]
-
-  return Object.entries(knownOutputs).flatMap(([mediaType, outputs]) =>
-    outputs.map(
-      (output) => new ResultItemImpl({ ...output, mediaType, nodeId })
-    )
-  )
-}
-
-function allOutputs(item?: AssetItem): MaybeRef<ResultItemImpl[]> {
-  if (item?.id && outputsCache[item.id]) return outputsCache[item.id]
-
-  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
-  if (!user_metadata) return []
-  if (
-    user_metadata.allOutputs &&
-    user_metadata.outputCount &&
-    user_metadata.outputCount < user_metadata.allOutputs.length
-  )
-    return user_metadata.allOutputs
-
-  const outputRef = useAsyncState(
-    getJobDetail(user_metadata.promptId).then((jobDetail) => {
-      if (!jobDetail?.outputs) return []
-      return Object.entries(jobDetail.outputs).flatMap(flattenNodeOutput)
-    }),
-    []
-  ).state
-  outputsCache[item!.id] = outputRef
-  return outputRef
+  return user_metadata.allOutputs
 }
 
 const selectedOutput = computed(() => {
   const [index, key] = selectedIndex.value
   if (index < 0) return undefined
 
-  return toValue(allOutputs(outputs.media.value[index]))[key]
+  const output = allOutputs(outputs.media.value[index])[key]
+  if (output) return output
+
+  return allOutputs(outputs.media.value[0])[0]
 })
 
 watch([selectedIndex, selectedOutput], doEmit)
@@ -176,7 +131,8 @@ function gotoNextOutput() {
     selectedIndex.value = [0, 0]
     return
   }
-  if (key + 1 < outputCount(outputs.media.value[index])) {
+  const currentItem = outputs.media.value[index]
+  if (allOutputs(currentItem)[key + 1]) {
     selectedIndex.value = [index, key + 1]
     return
   }
@@ -194,8 +150,8 @@ function gotoPreviousOutput() {
   }
 
   if (index > 0) {
-    const len = outputCount(outputs.media.value[index - 1])
-    selectedIndex.value = [index - 1, len - 1]
+    const currentItem = outputs.media.value[index - 1]
+    selectedIndex.value = [index - 1, allOutputs(currentItem).length - 1]
     return
   }
 
@@ -318,7 +274,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
         <div
           class="border-border-subtle not-md:border-l md:border-t first:border-none not-md:h-21 md:w-full m-3"
         />
-        <template v-for="(output, key) in toValue(allOutputs(item))" :key>
+        <template v-for="(output, key) in allOutputs(item)" :key>
           <img
             v-if="getMediaType(output) === 'images'"
             :class="
