@@ -2330,6 +2330,14 @@
     "renderBypassState": "Render Bypass State",
     "renderErrorState": "Render Error State"
   },
+  "nightlySurvey": {
+    "title": "Help Us Improve",
+    "description": "You've been using this feature. Would you take a moment to share your feedback?",
+    "accept": "Sure, I'll help!",
+    "notNow": "Not Now",
+    "dontAskAgain": "Don't Ask Again",
+    "loadError": "Failed to load survey. Please try again later."
+  },
   "cloudOnboarding": {
     "skipToCloudApp": "Skip to the cloud app",
     "survey": {
