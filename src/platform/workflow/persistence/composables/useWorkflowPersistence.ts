@@ -62,7 +62,6 @@ export function useWorkflowPersistence() {
     const workflowPath = activeWorkflow.path
 
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
-    lastSavedJsonByPath.value[workflowPath] = workflowJson
 
     try {
       workflowDraftStore.saveDraft(activeWorkflow.path, {
@@ -104,6 +103,8 @@ export function useWorkflowPersistence() {
       })
       throw error
     }
+
+    lastSavedJsonByPath.value[workflowPath] = workflowJson
 
     if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
       workflowDraftStore.removeDraft(activeWorkflow.path)
