@@ -31,9 +31,10 @@
 <script setup lang="ts">
 import FloatLabel from 'primevue/floatlabel'
 import Textarea from 'primevue/textarea'
-import { computed, inject, useId } from 'vue'
+import { computed, useId } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 import {
   INPUT_EXCLUDED_PROPS,
@@ -49,7 +50,7 @@ const { widget, placeholder = '' } = defineProps<{
 
 const modelValue = defineModel<string>({ default: '' })
 
-const hideLayoutField = inject<boolean>('hideLayoutField', false)
+const hideLayoutField = useHideLayoutField()
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
