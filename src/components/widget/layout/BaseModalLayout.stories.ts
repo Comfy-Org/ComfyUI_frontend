@@ -15,7 +15,6 @@ import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'
-import RightSidePanel from '../panel/RightSidePanel.vue'
 import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
@@ -69,7 +68,6 @@ const createStoryTemplate = (args: StoryArgs) => ({
   components: {
     BaseModalLayout,
     LeftSidePanel,
-    RightSidePanel,
     SearchBox,
     MultiSelect,
     SingleSelect,
@@ -175,16 +173,15 @@ const createStoryTemplate = (args: StoryArgs) => ({
   template: `
     <div>
       <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+        <!-- Left Panel Header Title -->
+        <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
+          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+          <span class="text-neutral text-base">Title</span>
+        </template>
+
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
-          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
-            <template #header-icon>
-              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-            </template>
-            <template #header-title>
-              <span class="text-neutral text-base">Title</span>
-            </template>
-          </LeftSidePanel>
+          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation" />
         </template>
 
         <!-- Header -->
@@ -299,16 +296,15 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
       <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
         <!-- Same content but WITH right panel -->
+        <!-- Left Panel Header Title -->
+        <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
+          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+          <span class="text-neutral text-base">Title</span>
+        </template>
+
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
-          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
-            <template #header-icon>
-              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-            </template>
-            <template #header-title>
-              <span class="text-neutral text-base">Title</span>
-            </template>
-          </LeftSidePanel>
+          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation" />
         </template>
 
         <!-- Header -->
@@ -415,7 +411,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Right Panel - Only when hasRightPanel is true -->
         <template #rightPanel>
-          <RightSidePanel />
+          <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
         </template>
       </BaseModalLayout>
     </div>
