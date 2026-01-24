@@ -2329,7 +2329,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "空Latent图像",
+    "display_name": "空Latent图像（Hunyuan）",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
