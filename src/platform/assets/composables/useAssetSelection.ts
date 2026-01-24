@@ -88,6 +88,38 @@ export function useAssetSelection() {
     return allAssets.filter((asset) => selectionStore.isSelected(asset.id))
   }
 
+  function reconcileSelection(assets: AssetItem[]) {
+    if (selectionStore.selectedAssetIds.size === 0) {
+      return
+    }
+
+    if (assets.length === 0) {
+      selectionStore.clearSelection()
+      return
+    }
+
+    const visibleIds = new Set(assets.map((asset) => asset.id))
+    const nextSelectedIds: string[] = []
+
+    for (const id of selectionStore.selectedAssetIds) {
+      if (visibleIds.has(id)) {
+        nextSelectedIds.push(id)
+      }
+    }
+
+    if (nextSelectedIds.length === selectionStore.selectedAssetIds.size) {
+      return
+    }
+
+    if (nextSelectedIds.length === 0) {
+      selectionStore.clearSelection()
+      return
+    }
+
+    selectionStore.setSelection(nextSelectedIds)
+    selectionStore.setLastSelectedIndex(-1)
+  }
+
   /**
    * Get the output count for a single asset
    * Same logic as in AssetsSidebarTab.vue
@@ -132,6 +164,7 @@ export function useAssetSelection() {
     selectAll,
     clearSelection: () => selectionStore.clearSelection(),
     getSelectedAssets,
+    reconcileSelection,
     getOutputCount,
     getTotalOutputCount,
     reset: () => selectionStore.reset(),
