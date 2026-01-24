@@ -228,21 +228,15 @@ import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAs
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { getJobDetail } from '@/services/jobOutputCache'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { ResultItemImpl, useQueueStore } from '@/stores/queueStore'
 import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
-
-interface JobOutputItem {
-  filename: string
-  subfolder: string
-  type: string
-}
 
 const { t, n } = useI18n()
 const commandStore = useCommandStore()
@@ -550,7 +544,7 @@ const enterFolderView = async (asset: AssetItem) => {
     return
   }
 
-  const { promptId, allOutputs, executionTimeInSeconds, outputCount } = metadata
+  const { promptId, executionTimeInSeconds } = metadata
 
   if (!promptId) {
     console.warn('Missing required folder view data')
@@ -560,62 +554,16 @@ const enterFolderView = async (asset: AssetItem) => {
   folderPromptId.value = promptId
   folderExecutionTime.value = executionTimeInSeconds
 
-  // Determine which outputs to display
-  let outputsToDisplay = allOutputs ?? []
+  const folderItems = await resolveOutputAssetItems(metadata, {
+    createdAt: asset.created_at
+  })
 
-  // If outputCount indicates more outputs than we have, fetch full outputs
-  const needsFullOutputs =
-    typeof outputCount === 'number' &&
-    outputCount > 1 &&
-    outputsToDisplay.length < outputCount
-
-  if (needsFullOutputs) {
-    try {
-      const jobDetail = await getJobDetail(promptId)
-      if (jobDetail?.outputs) {
-        // Convert job outputs to ResultItemImpl array
-        outputsToDisplay = Object.entries(jobDetail.outputs).flatMap(
-          ([nodeId, nodeOutputs]) =>
-            Object.entries(nodeOutputs).flatMap(([mediaType, items]) =>
-              (items as JobOutputItem[])
-                .map(
-                  (item) =>
-                    new ResultItemImpl({
-                      ...item,
-                      nodeId,
-                      mediaType
-                    })
-                )
-                .filter((r) => r.supportsPreview)
-            )
-        )
-      }
-    } catch (error) {
-      console.error('Failed to fetch job detail for folder view:', error)
-      outputsToDisplay = []
-    }
-  }
-
-  if (outputsToDisplay.length === 0) {
+  if (folderItems.length === 0) {
     console.warn('No outputs available for folder view')
     return
   }
 
-  folderAssets.value = outputsToDisplay.map((output) => ({
-    id: `${output.nodeId}-${output.filename}`,
-    name: output.filename,
-    size: 0,
-    created_at: asset.created_at,
-    tags: ['output'],
-    preview_url: output.url,
-    user_metadata: {
-      promptId,
-      nodeId: output.nodeId,
-      subfolder: output.subfolder,
-      executionTimeInSeconds,
-      workflow: metadata.workflow
-    }
-  }))
+  folderAssets.value = folderItems
 }
 
 const exitFolderView = () => {
