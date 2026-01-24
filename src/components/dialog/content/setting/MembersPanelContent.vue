@@ -175,13 +175,10 @@
                   <UserAvatar
                     class="size-8"
                     :photo-url="
-                      isCurrentUser(member) ? userPhotoUrl : member.photoUrl
+                      isCurrentUser(member) ? userPhotoUrl : undefined
                     "
-                    :fallback="member.name.charAt(0).toUpperCase()"
                     :pt:icon:class="{
-                      'text-xl!': !(isCurrentUser(member)
-                        ? userPhotoUrl
-                        : member.photoUrl)
+                      'text-xl!': !isCurrentUser(member) || !userPhotoUrl
                     }"
                   />
                   <div class="flex min-w-0 flex-1 flex-col gap-1">
@@ -255,10 +252,13 @@
             >
               <!-- Invite info -->
               <div class="flex items-center gap-3">
-                <UserAvatar
-                  class="size-8"
-                  :fallback="getInviteInitial(invite.email)"
-                />
+                <div
+                  class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+                >
+                  <span class="text-sm font-bold text-base-foreground">
+                    {{ getInviteInitial(invite.email) }}
+                  </span>
+                </div>
                 <div class="flex min-w-0 flex-1 flex-col gap-1">
                   <span class="text-sm text-base-foreground">
                     {{ getInviteDisplayName(invite.email) }}
@@ -454,10 +454,13 @@ const filteredPendingInvites = computed(() => {
     )
   }
 
-  const field = sortField.value as 'inviteDate' | 'expiryDate'
+  const field = sortField.value === 'joinDate' ? 'inviteDate' : sortField.value
   result.sort((a, b) => {
-    const aValue = a[field].getTime()
-    const bValue = b[field].getTime()
+    const aDate = a[field]
+    const bDate = b[field]
+    if (!aDate || !bDate) return 0
+    const aValue = aDate.getTime()
+    const bValue = bDate.getTime()
     return sortDirection.value === 'asc' ? aValue - bValue : bValue - aValue
   })
 

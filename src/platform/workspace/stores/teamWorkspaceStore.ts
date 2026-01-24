@@ -19,7 +19,6 @@ export interface WorkspaceMember {
   name: string
   email: string
   joinDate: Date
-  photoUrl?: string
   role: 'owner' | 'member'
 }
 
@@ -48,7 +47,6 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     name: member.name,
     email: member.email,
     joinDate: new Date(member.joined_at),
-    photoUrl: member.photo_url,
     role: member.role
   }
 }

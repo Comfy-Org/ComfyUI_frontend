@@ -13,7 +13,7 @@
           : 'settings-sidebar w-48 shrink-0 p-2 2xl:w-64'
       "
     >
-      <div class="px-4">
+      <div :class="teamWorkspacesEnabled ? 'px-4' : ''">
         <SearchBox
           v-model:model-value="searchQuery"
           class="settings-search-box mb-2 w-full"

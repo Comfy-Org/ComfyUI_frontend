@@ -146,6 +146,13 @@ async function onCreateLink() {
   try {
     generatedLink.value = await workspaceStore.createInviteLink(email.value)
     step.value = 'link'
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: t('workspacePanel.inviteMemberDialog.linkCopyFailed'),
+      detail: error instanceof Error ? error.message : undefined,
+      life: 3000
+    })
   } finally {
     loading.value = false
   }

@@ -81,9 +81,11 @@ export function useInviteUrlLoader() {
       toast.add({
         severity: 'success',
         summary: t('workspace.inviteAccepted'),
-        detail: t('workspace.addedToWorkspace', {
-          workspaceName: result.workspaceName
-        }),
+        detail: t(
+          'workspace.addedToWorkspace',
+          { workspaceName: result.workspaceName },
+          { escapeParameter: false }
+        ),
         life: 5000
       })
     } catch (error) {

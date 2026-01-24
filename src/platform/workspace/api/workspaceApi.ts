@@ -22,7 +22,6 @@ export interface Member {
   name: string
   email: string
   joined_at: string
-  photo_url?: string
   role: WorkspaceRole
 }
 

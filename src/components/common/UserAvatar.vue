@@ -2,9 +2,8 @@
   <Avatar
     class="bg-interface-panel-selected-surface"
     :image="photoUrl ?? undefined"
-    :label="!hasAvatar && fallback ? fallback : undefined"
-    :icon="!hasAvatar && !fallback ? 'icon-[lucide--user]' : undefined"
-    :pt:icon:class="{ 'size-4': !hasAvatar && !fallback }"
+    :icon="hasAvatar ? undefined : 'icon-[lucide--user]'"
+    :pt:icon:class="{ 'size-4': !hasAvatar }"
     shape="circle"
     :aria-label="ariaLabel ?? $t('auth.login.userAvatar')"
     @error="handleImageError"
@@ -15,10 +14,9 @@
 import Avatar from 'primevue/avatar'
 import { computed, ref } from 'vue'
 
-const { photoUrl, ariaLabel, fallback } = defineProps<{
+const { photoUrl, ariaLabel } = defineProps<{
   photoUrl?: string | null
   ariaLabel?: string
-  fallback?: string
 }>()
 
 const imageError = ref(false)
