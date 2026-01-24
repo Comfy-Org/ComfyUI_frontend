@@ -12,7 +12,7 @@ type OutputAssetMapOptions = {
   createdAt?: string
   executionTimeInSeconds?: number
   workflow?: OutputAssetMetadata['workflow']
-  excludeFilename?: string
+  excludeOutputKey?: string
 }
 
 type ResolveOutputAssetItemsOptions = {
@@ -31,20 +31,26 @@ function shouldLoadFullOutputs(
   )
 }
 
+function getOutputKey(output: ResultItemImpl): string {
+  return `${output.nodeId}-${output.subfolder}-${output.filename}`
+}
+
 function mapOutputsToAssetItems({
   promptId,
   outputs,
   createdAt,
   executionTimeInSeconds,
   workflow,
-  excludeFilename
+  excludeOutputKey
 }: OutputAssetMapOptions): AssetItem[] {
   const createdAtValue = createdAt ?? new Date().toISOString()
 
   return outputs
-    .filter((output) => output.filename && output.filename !== excludeFilename)
+    .filter(
+      (output) => output.filename && getOutputKey(output) !== excludeOutputKey
+    )
     .map((output) => ({
-      id: `${promptId}-${output.nodeId}-${output.filename}`,
+      id: `${promptId}-${getOutputKey(output)}`,
       name: output.filename,
       size: 0,
       created_at: createdAtValue,
@@ -79,6 +85,6 @@ export async function resolveOutputAssetItems(
     createdAt,
     executionTimeInSeconds: metadata.executionTimeInSeconds,
     workflow: metadata.workflow,
-    excludeFilename: excludeOutputKey
+    excludeOutputKey
   })
 }

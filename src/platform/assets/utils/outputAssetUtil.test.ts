@@ -37,7 +37,7 @@ describe('resolveOutputAssetItems', () => {
     vi.clearAllMocks()
   })
 
-  it('maps outputs and excludes a filename', async () => {
+  it('maps outputs and excludes a composite output key', async () => {
     const outputA = createOutput({
       filename: 'a.png',
       nodeId: '1',
@@ -59,14 +59,14 @@ describe('resolveOutputAssetItems', () => {
 
     const results = await resolveOutputAssetItems(metadata, {
       createdAt: '2025-01-01T00:00:00.000Z',
-      excludeOutputKey: 'b.png'
+      excludeOutputKey: '2-sub-b.png'
     })
 
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
     expect(results).toHaveLength(1)
     expect(results[0]).toEqual(
       expect.objectContaining({
-        id: 'prompt-1-1-a.png',
+        id: 'prompt-1-1-sub-a.png',
         name: 'a.png',
         created_at: '2025-01-01T00:00:00.000Z',
         tags: ['output'],
