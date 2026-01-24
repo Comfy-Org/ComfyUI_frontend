@@ -230,8 +230,10 @@ describe('jobOutputCache', () => {
 
       const image = result.find((item) => item.filename === 'image.png')
       const video = result.find((item) => item.filename === 'clip.mp4')
+      const { ResultItemImpl: ResultItemImplClass } =
+        await import('@/stores/queueStore')
 
-      expect(image).toBeInstanceOf(ResultItemImpl)
+      expect(image).toBeInstanceOf(ResultItemImplClass)
       expect(image?.nodeId).toBe('node-1')
       expect(image?.mediaType).toBe('images')
       expect(video?.nodeId).toBe('node-2')
