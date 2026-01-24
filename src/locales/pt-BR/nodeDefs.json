@@ -2095,7 +2095,9 @@
       "choice": {
         "name": "escolha"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11287,19 +11289,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Redimensione uma imagem ou mask usando vários métodos de escala.",
     "display_name": "Redimensionar Imagem/Máscara",
     "inputs": {
       "input": {
         "name": "entrada"
       },
       "resize_type": {
-        "name": "tipo_de_redimensionamento"
+        "name": "tipo_de_redimensionamento",
+        "tooltip": "Selecione como redimensionar: por dimensões exatas, fator de escala, correspondendo a outra imagem, etc."
       },
-      "resize_type_multiplier": {
-        "name": "multiplicador"
+      "resize_type_crop": {
+        "name": "cortar"
+      },
+      "resize_type_height": {
+        "name": "altura"
+      },
+      "resize_type_width": {
+        "name": "largura"
       },
       "scale_method": {
-        "name": "método_de_escala"
+        "name": "método_de_escala",
+        "tooltip": "Algoritmo de interpolação. 'area' é melhor para reduzir, 'lanczos' para aumentar, 'nearest-exact' para pixel art."
       }
     },
     "outputs": {
@@ -15744,6 +15755,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "saída do codificador de áudio 1"
+      },
+      "audio_scale": {
+        "name": "escala de áudio"
+      },
+      "clip_vision_output": {
+        "name": "saída do clip vision"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração"
+      },
+      "mode": {
+        "name": "modo"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_patch": {
+        "name": "patch do modelo"
+      },
+      "motion_frame_count": {
+        "name": "quantidade de quadros de movimento",
+        "tooltip": "Número de quadros anteriores a serem usados como contexto de movimento."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "previous_frames": {
+        "name": "quadros anteriores"
+      },
+      "start_image": {
+        "name": "imagem inicial"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latente",
+        "tooltip": null
+      },
+      "4": {
+        "name": "imagem recortada",
         "tooltip": null
       }
     }

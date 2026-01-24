@@ -43,8 +43,6 @@
     "comfy": "Comfy",
     "refresh": "Refresh",
     "refreshNode": "Refresh Node",
-    "vitePreloadErrorTitle": "New Version Available",
-    "vitePreloadErrorMessage": "A new version of the app has been released. Would you like to reload?\nIf not, some parts of the app might not work as expected.\nFeel free to decline and save your progress before reloading.",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
@@ -1290,7 +1288,6 @@
     "Execution": "Execution",
     "PLY": "PLY",
     "Workspace": "Workspace",
-    "General": "General",
     "Other": "Other"
   },
   "serverConfigItems": {

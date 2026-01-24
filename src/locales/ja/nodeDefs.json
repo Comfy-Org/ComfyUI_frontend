@@ -2093,7 +2093,9 @@
       "choice": {
         "name": "選択"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11271,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "さまざまなスケーリング方法で画像またはマスクをリサイズします。",
     "display_name": "画像/マスクのリサイズ",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "リサイズ方法を選択します：正確な寸法、スケール係数、他の画像に合わせるなど。"
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "切り抜き"
+      },
+      "resize_type_height": {
+        "name": "高さ"
+      },
+      "resize_type_width": {
+        "name": "幅"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "補間アルゴリズム。「area」は縮小に最適、「lanczos」は拡大に最適、「nearest-exact」はドット絵に最適です。"
       }
     },
     "outputs": {
@@ -15713,6 +15724,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "オーディオエンコーダ出力1"
+      },
+      "audio_scale": {
+        "name": "オーディオスケール"
+      },
+      "clip_vision_output": {
+        "name": "clipビジョン出力"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_patch": {
+        "name": "モデルパッチ"
+      },
+      "motion_frame_count": {
+        "name": "モーションフレーム数",
+        "tooltip": "動きのコンテキストとして使用する前のフレーム数。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      },
+      "previous_frames": {
+        "name": "前のフレーム"
+      },
+      "start_image": {
+        "name": "開始画像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデル",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "ネガティブ",
+        "tooltip": null
+      },
+      "3": {
+        "name": "潜在",
+        "tooltip": null
+      },
+      "4": {
+        "name": "トリム画像",
         "tooltip": null
       }
     }

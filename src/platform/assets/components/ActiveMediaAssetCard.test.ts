@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import ActiveJobCard from './ActiveJobCard.vue'
+import ActiveJobCard from './ActiveMediaAssetCard.vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 

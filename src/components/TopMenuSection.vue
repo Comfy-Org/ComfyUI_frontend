@@ -54,7 +54,7 @@
               :aria-pressed="
                 isQueuePanelV2Enabled
                   ? activeSidebarTabId === 'assets'
-                  : isQueueProgressOverlayVisible
+                  : isQueueProgressOverlayEnabled
                     ? isQueueOverlayExpanded
                     : undefined
               "
@@ -96,7 +96,7 @@
           </div>
         </div>
         <QueueProgressOverlay
-          v-if="isQueueProgressOverlayVisible"
+          v-if="isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
           :menu-hovered="isTopMenuHovered"
         />
@@ -200,13 +200,12 @@ const isIntegratedTabBar = computed(
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
 )
-const isQueueProgressOverlayVisible = computed(
+const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
-const isInlineProgressVisible = computed(() => isQueuePanelV2Enabled.value)
 type PanelElementTarget = HTMLElement | { value?: HTMLElement | null } | null
 const shouldShowInlineProgressSummary = computed(
-  () => isInlineProgressVisible.value && isActionbarEnabled.value
+  () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
 )
 const actionbarRef = ref<{ panelElement: PanelElementTarget } | null>(null)
 const resolvePanelElement = (target: PanelElementTarget) => {
