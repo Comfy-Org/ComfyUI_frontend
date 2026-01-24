@@ -1,5 +1,5 @@
-import { inject } from 'vue';
-import type { InjectionKey } from 'vue';
+import { inject } from 'vue'
+import type { InjectionKey } from 'vue'
 
 export type AssetKind = 'image' | 'video' | 'audio' | 'model' | 'unknown'
 
