@@ -21,6 +21,25 @@ export function useAssetSelection() {
   const metaKey = computed(() => isActive.value && metaKeyRaw.value)
   const cmdOrCtrlKey = computed(() => ctrlKey.value || metaKey.value)
 
+  function setAnchor(index: number, assetId: string | null) {
+    selectionStore.setLastSelectedIndex(index)
+    selectionStore.setLastSelectedAssetId(assetId)
+  }
+
+  function syncAnchorFromAssets(assets: AssetItem[]) {
+    const anchorId = selectionStore.lastSelectedAssetId
+    const anchorIndex = anchorId
+      ? assets.findIndex((asset) => asset.id === anchorId)
+      : -1
+
+    if (anchorIndex !== -1) {
+      selectionStore.setLastSelectedIndex(anchorIndex)
+      return
+    }
+
+    setAnchor(-1, null)
+  }
+
   /**
    * Handle asset click with modifier keys for selection
    * @param asset The clicked asset
@@ -60,14 +79,14 @@ export function useAssetSelection() {
     // Ctrl/Cmd + Click: Toggle individual selection
     if (cmdOrCtrlKey.value) {
       selectionStore.toggleSelection(assetId)
-      selectionStore.setLastSelectedIndex(index)
+      setAnchor(index, assetId)
       return
     }
 
     // Normal Click: Single selection
     selectionStore.clearSelection()
     selectionStore.addToSelection(assetId)
-    selectionStore.setLastSelectedIndex(index)
+    setAnchor(index, assetId)
   }
 
   /**
@@ -77,7 +96,8 @@ export function useAssetSelection() {
     const allIds = allAssets.map((a) => a.id)
     selectionStore.setSelection(allIds)
     if (allAssets.length > 0) {
-      selectionStore.setLastSelectedIndex(allAssets.length - 1)
+      const lastIndex = allAssets.length - 1
+      setAnchor(lastIndex, allAssets[lastIndex].id)
     }
   }
 
@@ -86,6 +106,39 @@ export function useAssetSelection() {
    */
   function getSelectedAssets(allAssets: AssetItem[]): AssetItem[] {
     return allAssets.filter((asset) => selectionStore.isSelected(asset.id))
+  }
+
+  function reconcileSelection(assets: AssetItem[]) {
+    if (selectionStore.selectedAssetIds.size === 0) {
+      return
+    }
+
+    if (assets.length === 0) {
+      selectionStore.clearSelection()
+      return
+    }
+
+    const visibleIds = new Set(assets.map((asset) => asset.id))
+    const nextSelectedIds: string[] = []
+
+    for (const id of selectionStore.selectedAssetIds) {
+      if (visibleIds.has(id)) {
+        nextSelectedIds.push(id)
+      }
+    }
+
+    if (nextSelectedIds.length === selectionStore.selectedAssetIds.size) {
+      syncAnchorFromAssets(assets)
+      return
+    }
+
+    if (nextSelectedIds.length === 0) {
+      selectionStore.clearSelection()
+      return
+    }
+
+    selectionStore.setSelection(nextSelectedIds)
+    syncAnchorFromAssets(assets)
   }
 
   /**
@@ -117,7 +170,7 @@ export function useAssetSelection() {
   function deactivate() {
     isActive.value = false
     // Reset selection state to ensure clean state when deactivated
-    selectionStore.reset()
+    selectionStore.clearSelection()
   }
 
   return {
@@ -132,10 +185,9 @@ export function useAssetSelection() {
     selectAll,
     clearSelection: () => selectionStore.clearSelection(),
     getSelectedAssets,
+    reconcileSelection,
     getOutputCount,
     getTotalOutputCount,
-    reset: () => selectionStore.reset(),
-
     // Lifecycle management
     activate,
     deactivate,
