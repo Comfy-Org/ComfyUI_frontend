@@ -164,6 +164,7 @@ import {
   nextTick,
   onErrorCaptured,
   onMounted,
+  onUnmounted,
   ref,
   watch
 } from 'vue'
@@ -186,6 +187,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -342,6 +344,25 @@ function initSizeStyles() {
   el.style.setProperty(`--node-width${suffix}`, `${width}px`)
   el.style.setProperty(`--node-height${suffix}`, `${height}px`)
 }
+
+// React to extension-driven resize operations (e.g., KJNodes spline editor)
+const unsubscribeResize = layoutStore.onChange((change) => {
+  if (change.source !== LayoutSource.Canvas) return
+  if (change.operation.type !== 'resizeNode') return
+  if (!change.nodeIds.includes(nodeData.id)) return
+  if (isCollapsed.value) return
+
+  const el = nodeContainerRef.value
+  if (!el) return
+
+  const newSize = size.value
+  el.style.setProperty('--node-width', `${newSize.width}px`)
+  el.style.setProperty('--node-height', `${newSize.height}px`)
+})
+
+onUnmounted(() => {
+  unsubscribeResize()
+})
 
 const baseResizeHandleClasses =
   'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'

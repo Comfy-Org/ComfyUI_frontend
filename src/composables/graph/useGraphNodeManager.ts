@@ -16,6 +16,7 @@ import type {
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -322,7 +323,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
 
 export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
-  const { createNode, deleteNode, setSource } = useLayoutMutations()
+  const { createNode, deleteNode, resizeNode, setSource } = useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
   const vueNodeData = reactive(new Map<string, VueNodeData>())
 
@@ -395,6 +396,14 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
+
+    // Chain onResize to propagate extension-driven size changes to the store
+    node.onResize = useChainCallback(node.onResize, (size) => {
+      const current = layoutStore.getNodeLayoutRef(id).value?.size
+      if (current?.width === size[0] && current?.height === size[1]) return
+      setSource(LayoutSource.Canvas)
+      resizeNode(id, { width: size[0], height: size[1] })
+    })
 
     // Extract initial data for Vue (may be incomplete during graph configure)
     vueNodeData.set(id, extractVueNodeData(node))
