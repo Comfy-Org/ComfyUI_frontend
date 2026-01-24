@@ -98,8 +98,11 @@
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <AssetsSidebarListView
           v-if="isListView"
-          :assets="displayAssets"
+          :asset-items="listViewAssetItems"
           :is-selected="isSelected"
+          :selectable-assets="listViewSelectableAssets"
+          :is-stack-expanded="isListViewStackExpanded"
+          :toggle-stack="toggleListViewStack"
           :asset-type="activeTab"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
@@ -225,6 +228,7 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
+import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -309,6 +313,7 @@ const {
   hasSelection,
   clearSelection,
   getSelectedAssets,
+  reconcileSelection,
   getOutputCount,
   getTotalOutputCount,
   activate: activateSelection,
@@ -378,7 +383,21 @@ const displayAssets = computed(() => {
   return filteredAssets.value
 })
 
-const selectedAssets = computed(() => getSelectedAssets(displayAssets.value))
+const {
+  assetItems: listViewAssetItems,
+  selectableAssets: listViewSelectableAssets,
+  isStackExpanded: isListViewStackExpanded,
+  toggleStack: toggleListViewStack
+} = useOutputStacks({
+  assets: computed(() => displayAssets.value)
+})
+
+const visibleAssets = computed(() => {
+  if (!isListView.value) return displayAssets.value
+  return listViewSelectableAssets.value
+})
+
+const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 
 const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1
@@ -398,7 +417,10 @@ const showEmptyState = computed(
     activeJobsCount.value === 0
 )
 
-watch(displayAssets, (newAssets) => {
+watch(visibleAssets, (newAssets) => {
+  // Alternative: keep hidden selections and surface them in UI; for now prune
+  // so selection stays consistent with what this view can act on.
+  reconcileSelection(newAssets)
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== -1) {
     const newIndex = newAssets.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
@@ -416,7 +438,7 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed(() => {
-  return displayAssets.value.map((asset) => {
+  return visibleAssets.value.map((asset) => {
     const mediaType = getMediaTypeFromFilename(asset.name)
     const resultItem = new ResultItemImpl({
       filename: asset.name,
@@ -456,9 +478,10 @@ watch(
   { immediate: true }
 )
 
-const handleAssetSelect = (asset: AssetItem) => {
-  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
-  handleAssetClick(asset, index, displayAssets.value)
+const handleAssetSelect = (asset: AssetItem, assets?: AssetItem[]) => {
+  const assetList = assets ?? visibleAssets.value
+  const index = assetList.findIndex((a) => a.id === asset.id)
+  handleAssetClick(asset, index, assetList)
 }
 
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
@@ -531,7 +554,7 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = displayAssets.value.findIndex((a) => a.id === asset.id)
+  const index = visibleAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index
   }

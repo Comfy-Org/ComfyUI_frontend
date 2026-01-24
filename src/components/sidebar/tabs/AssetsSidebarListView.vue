@@ -40,7 +40,7 @@
     </div>
 
     <div
-      v-if="assets.length"
+      v-if="assetItems.length"
       :class="cn('px-2', activeJobItems.length && 'mt-2')"
     >
       <div
@@ -72,7 +72,12 @@
               type: getMediaTypeFromFilename(item.asset.name)
             })
           "
-          :class="getAssetCardClass(isSelected(item.asset.id))"
+          :class="
+            cn(
+              getAssetCardClass(isSelected(item.asset.id)),
+              item.isChild && 'pl-6'
+            )
+          "
           :preview-url="item.asset.preview_url"
           :preview-alt="item.asset.name"
           :icon-name="
@@ -80,10 +85,14 @@
           "
           :primary-text="getAssetPrimaryText(item.asset)"
           :secondary-text="getAssetSecondaryText(item.asset)"
+          :stack-count="getStackCount(item.asset)"
+          :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
+          :stack-expanded="isStackExpanded(item.asset)"
           @mouseenter="onAssetEnter(item.asset.id)"
           @mouseleave="onAssetLeave(item.asset.id)"
           @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
-          @click.stop="emit('select-asset', item.asset)"
+          @click.stop="emit('select-asset', item.asset, selectableAssets)"
+          @stack-toggle="toggleStack(item.asset)"
         >
           <template v-if="hoveredAssetId === item.asset.id" #actions>
             <Button
@@ -111,6 +120,7 @@ import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
@@ -125,17 +135,23 @@ import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
-  assets,
+  assetItems,
+  selectableAssets,
   isSelected,
+  isStackExpanded,
+  toggleStack,
   assetType = 'output'
 } = defineProps<{
-  assets: AssetItem[]
+  assetItems: OutputStackListItem[]
+  selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  isStackExpanded: (asset: AssetItem) => boolean
+  toggleStack: (asset: AssetItem) => void
   assetType?: 'input' | 'output'
 }>()
 
 const emit = defineEmits<{
-  (e: 'select-asset', asset: AssetItem): void
+  (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
 }>()
@@ -144,9 +160,6 @@ const { t } = useI18n()
 const { jobItems } = useJobList()
 const hoveredJobId = ref<string | null>(null)
 const hoveredAssetId = ref<string | null>(null)
-
-type AssetListItem = { key: string; asset: AssetItem }
-
 const activeJobItems = computed(() =>
   jobItems.value.filter((item) => isActiveJobState(item.state))
 )
@@ -157,13 +170,6 @@ const hoveredJob = computed(() =>
     : null
 )
 const { cancelAction, canCancelJob, runCancelJob } = useJobActions(hoveredJob)
-
-const assetItems = computed<AssetListItem[]>(() =>
-  assets.map((asset) => ({
-    key: `asset-${asset.id}`,
-    asset
-  }))
-)
 
 const listGridStyle = {
   display: 'grid',
@@ -192,6 +198,19 @@ function getAssetSecondaryText(asset: AssetItem): string {
   }
 
   return ''
+}
+
+function getStackCount(asset: AssetItem): number | undefined {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (typeof metadata?.outputCount === 'number') {
+    return metadata.outputCount
+  }
+
+  if (Array.isArray(metadata?.allOutputs)) {
+    return metadata.allOutputs.length
+  }
+
+  return undefined
 }
 
 function getAssetCardClass(selected: boolean): string {
