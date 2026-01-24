@@ -21,6 +21,25 @@ export function useAssetSelection() {
   const metaKey = computed(() => isActive.value && metaKeyRaw.value)
   const cmdOrCtrlKey = computed(() => ctrlKey.value || metaKey.value)
 
+  function setAnchor(index: number, assetId: string | null) {
+    selectionStore.setLastSelectedIndex(index)
+    selectionStore.setLastSelectedAssetId(assetId)
+  }
+
+  function syncAnchorFromAssets(assets: AssetItem[]) {
+    const anchorId = selectionStore.lastSelectedAssetId
+    const anchorIndex = anchorId
+      ? assets.findIndex((asset) => asset.id === anchorId)
+      : -1
+
+    if (anchorIndex !== -1) {
+      selectionStore.setLastSelectedIndex(anchorIndex)
+      return
+    }
+
+    setAnchor(-1, null)
+  }
+
   /**
    * Handle asset click with modifier keys for selection
    * @param asset The clicked asset
@@ -60,16 +79,14 @@ export function useAssetSelection() {
     // Ctrl/Cmd + Click: Toggle individual selection
     if (cmdOrCtrlKey.value) {
       selectionStore.toggleSelection(assetId)
-      selectionStore.setLastSelectedIndex(index)
-      selectionStore.setLastSelectedAssetId(assetId)
+      setAnchor(index, assetId)
       return
     }
 
     // Normal Click: Single selection
     selectionStore.clearSelection()
     selectionStore.addToSelection(assetId)
-    selectionStore.setLastSelectedIndex(index)
-    selectionStore.setLastSelectedAssetId(assetId)
+    setAnchor(index, assetId)
   }
 
   /**
@@ -80,8 +97,7 @@ export function useAssetSelection() {
     selectionStore.setSelection(allIds)
     if (allAssets.length > 0) {
       const lastIndex = allAssets.length - 1
-      selectionStore.setLastSelectedIndex(lastIndex)
-      selectionStore.setLastSelectedAssetId(allAssets[lastIndex].id)
+      setAnchor(lastIndex, allAssets[lastIndex].id)
     }
   }
 
@@ -111,18 +127,8 @@ export function useAssetSelection() {
       }
     }
 
-    const anchorId = selectionStore.lastSelectedAssetId
-    const anchorIndex = anchorId
-      ? assets.findIndex((asset) => asset.id === anchorId)
-      : -1
-
     if (nextSelectedIds.length === selectionStore.selectedAssetIds.size) {
-      if (anchorIndex !== -1) {
-        selectionStore.setLastSelectedIndex(anchorIndex)
-      } else {
-        selectionStore.setLastSelectedIndex(-1)
-        selectionStore.setLastSelectedAssetId(null)
-      }
+      syncAnchorFromAssets(assets)
       return
     }
 
@@ -132,12 +138,7 @@ export function useAssetSelection() {
     }
 
     selectionStore.setSelection(nextSelectedIds)
-    if (anchorIndex !== -1) {
-      selectionStore.setLastSelectedIndex(anchorIndex)
-    } else {
-      selectionStore.setLastSelectedIndex(-1)
-      selectionStore.setLastSelectedAssetId(null)
-    }
+    syncAnchorFromAssets(assets)
   }
 
   /**
