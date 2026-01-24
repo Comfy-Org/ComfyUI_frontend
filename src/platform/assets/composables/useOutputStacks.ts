@@ -5,7 +5,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 
-export type OutputStackListItem = {
+type OutputStackListItem = {
   key: string
   asset: AssetItem
   isChild?: boolean

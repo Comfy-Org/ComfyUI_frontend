@@ -20,7 +20,7 @@ type ResolveOutputAssetItemsOptions = {
   excludeOutputKey?: string
 }
 
-export function shouldLoadFullOutputs(
+function shouldLoadFullOutputs(
   outputCount: OutputAssetMetadata['outputCount'],
   outputsLength: number
 ): boolean {
@@ -31,7 +31,7 @@ export function shouldLoadFullOutputs(
   )
 }
 
-export function mapOutputsToAssetItems({
+function mapOutputsToAssetItems({
   promptId,
   outputs,
   createdAt,
