@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick, onMounted } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -273,8 +273,10 @@ describe('TopMenuSection', () => {
 
       const ComfyActionbarStub = defineComponent({
         name: 'ComfyActionbar',
-        setup(_, { expose }) {
-          expose({ panelElement: actionbarTarget })
+        setup(_, { emit }) {
+          onMounted(() => {
+            emit('update:progressTarget', actionbarTarget)
+          })
           return () => h('div')
         }
       })

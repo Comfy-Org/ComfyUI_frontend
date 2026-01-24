@@ -85,6 +85,10 @@ const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
   queueOverlayExpanded?: boolean
 }>()
 
+const emit = defineEmits<{
+  (event: 'update:progressTarget', target: HTMLElement | null): void
+}>()
+
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
 const { t } = useI18n()
@@ -281,8 +285,13 @@ const inlineProgressTarget = computed(() => {
   if (isDocked.value) return topMenuContainer ?? null
   return panelElement.value
 })
-
-defineExpose({ panelElement })
+watch(
+  panelElement,
+  (target) => {
+    emit('update:progressTarget', target)
+  },
+  { immediate: true }
+)
 
 // Handle drag state changes
 watch(isDragging, (dragging) => {

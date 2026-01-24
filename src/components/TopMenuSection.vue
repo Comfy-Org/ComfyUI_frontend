@@ -43,9 +43,9 @@
               class="[&:not(:has(*>*:not(:empty)))]:hidden"
             ></div>
             <ComfyActionbar
-              ref="actionbarRef"
               :top-menu-container="actionbarContainerRef"
               :queue-overlay-expanded="isQueueOverlayExpanded"
+              @update:progress-target="updateProgressTarget"
             />
             <Button
               v-tooltip.bottom="queueHistoryTooltipConfig"
@@ -203,24 +203,18 @@ const isQueuePanelV2Enabled = computed(() =>
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value
 )
-type PanelElementTarget = HTMLElement | { value?: HTMLElement | null } | null
 const shouldShowInlineProgressSummary = computed(
   () => isQueuePanelV2Enabled.value && isActionbarEnabled.value
 )
-const actionbarRef = ref<{ panelElement: PanelElementTarget } | null>(null)
-const resolvePanelElement = (target: PanelElementTarget) => {
-  if (!target) return null
-  if (target instanceof HTMLElement) return target
-  if (typeof target === 'object' && 'value' in target) {
-    return target.value ?? null
-  }
-  return null
+const progressTarget = ref<HTMLElement | null>(null)
+function updateProgressTarget(target: HTMLElement | null) {
+  progressTarget.value = target
 }
 const inlineProgressSummaryTarget = computed(() => {
   if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value) {
     return null
   }
-  return resolvePanelElement(actionbarRef.value?.panelElement ?? null)
+  return progressTarget.value
 })
 const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
