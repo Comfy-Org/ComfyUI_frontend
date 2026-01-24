@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useCoreCommands } from '@/composables/useCoreCommands'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
@@ -106,30 +108,84 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
 }))
 
 describe('useCoreCommands', () => {
-  const mockSubgraph = {
-    nodes: [
-      // Mock input node
-      {
-        constructor: { comfyClass: 'SubgraphInputNode' },
-        id: 'input1'
-      },
-      // Mock output node
-      {
-        constructor: { comfyClass: 'SubgraphOutputNode' },
-        id: 'output1'
-      },
-      // Mock user node
-      {
-        constructor: { comfyClass: 'SomeUserNode' },
-        id: 'user1'
-      },
-      // Another mock user node
-      {
-        constructor: { comfyClass: 'AnotherUserNode' },
-        id: 'user2'
+  const createMockNode = (id: number, comfyClass: string): LGraphNode => {
+    const baseNode = createMockLGraphNode({ id })
+    return Object.assign(baseNode, {
+      constructor: {
+        ...baseNode.constructor,
+        comfyClass
       }
-    ],
-    remove: vi.fn()
+    })
+  }
+
+  const createMockSubgraph = () => {
+    const mockNodes = [
+      // Mock input node
+      createMockNode(1, 'SubgraphInputNode'),
+      // Mock output node
+      createMockNode(2, 'SubgraphOutputNode'),
+      // Mock user node
+      createMockNode(3, 'SomeUserNode'),
+      // Another mock user node
+      createMockNode(4, 'AnotherUserNode')
+    ]
+
+    return {
+      nodes: mockNodes,
+      remove: vi.fn(),
+      events: {
+        dispatch: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn()
+      },
+      name: 'test-subgraph',
+      inputNode: undefined,
+      outputNode: undefined,
+      add: vi.fn(),
+      clear: vi.fn(),
+      serialize: vi.fn(),
+      configure: vi.fn(),
+      start: vi.fn(),
+      stop: vi.fn(),
+      runStep: vi.fn(),
+      findNodeByTitle: vi.fn(),
+      findNodesByTitle: vi.fn(),
+      findNodesByType: vi.fn(),
+      findNodeById: vi.fn(),
+      getNodeById: vi.fn(),
+      setDirtyCanvas: vi.fn(),
+      sendActionToCanvas: vi.fn()
+    } as Partial<typeof app.canvas.subgraph> as typeof app.canvas.subgraph
+  }
+
+  const mockSubgraph = createMockSubgraph()
+
+  function createMockSettingStore(
+    getReturnValue: boolean
+  ): ReturnType<typeof useSettingStore> {
+    return {
+      get: vi.fn().mockReturnValue(getReturnValue),
+      addSetting: vi.fn(),
+      loadSettingValues: vi.fn(),
+      set: vi.fn(),
+      exists: vi.fn(),
+      getDefaultValue: vi.fn(),
+      settingValues: {},
+      settingsById: {},
+      $id: 'setting',
+      $state: {
+        settingValues: {},
+        settingsById: {}
+      },
+      $patch: vi.fn(),
+      $reset: vi.fn(),
+      $subscribe: vi.fn(),
+      $onAction: vi.fn(),
+      $dispose: vi.fn(),
+      _customProperties: new Set(),
+      _p: {}
+    } as ReturnType<typeof useSettingStore>
   }
 
   beforeEach(() => {
@@ -142,9 +198,7 @@ describe('useCoreCommands', () => {
     app.canvas.subgraph = undefined
 
     // Mock settings store
-    vi.mocked(useSettingStore).mockReturnValue({
-      get: vi.fn().mockReturnValue(false) // Skip confirmation dialog
-    } as any)
+    vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(false))
 
     // Mock global confirm
     global.confirm = vi.fn().mockReturnValue(true)
@@ -167,7 +221,7 @@ describe('useCoreCommands', () => {
 
     it('should preserve input/output nodes when clearing subgraph', async () => {
       // Set up subgraph context
-      app.canvas.subgraph = mockSubgraph as any
+      app.canvas.subgraph = mockSubgraph
 
       const commands = useCoreCommands()
       const clearCommand = commands.find(
@@ -181,24 +235,19 @@ describe('useCoreCommands', () => {
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
 
       // Should only remove user nodes, not input/output nodes
-      expect(mockSubgraph.remove).toHaveBeenCalledTimes(2)
-      expect(mockSubgraph.remove).toHaveBeenCalledWith(mockSubgraph.nodes[2]) // user1
-      expect(mockSubgraph.remove).toHaveBeenCalledWith(mockSubgraph.nodes[3]) // user2
-      expect(mockSubgraph.remove).not.toHaveBeenCalledWith(
-        mockSubgraph.nodes[0]
-      ) // input1
-      expect(mockSubgraph.remove).not.toHaveBeenCalledWith(
-        mockSubgraph.nodes[1]
-      ) // output1
+      const subgraph = app.canvas.subgraph!
+      expect(subgraph.remove).toHaveBeenCalledTimes(2)
+      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[2]) // user1
+      expect(subgraph.remove).toHaveBeenCalledWith(subgraph.nodes[3]) // user2
+      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[0]) // input1
+      expect(subgraph.remove).not.toHaveBeenCalledWith(subgraph.nodes[1]) // output1
 
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
     it('should respect confirmation setting', async () => {
       // Mock confirmation required
-      vi.mocked(useSettingStore).mockReturnValue({
-        get: vi.fn().mockReturnValue(true) // Require confirmation
-      } as any)
+      vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
 
       global.confirm = vi.fn().mockReturnValue(false) // User cancels
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -23,7 +23,11 @@ const settingStore = useSettingStore()
 const dialogService = useDialogService()
 
 // NODES settings
-const showAdvancedParameters = ref(false) // Placeholder for future implementation
+const showAdvancedParameters = computed({
+  get: () => settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets'),
+  set: (value) =>
+    settingStore.set('Comfy.Node.AlwaysShowAdvancedWidgets', value)
+})
 
 const showToolbox = computed({
   get: () => settingStore.get('Comfy.Canvas.SelectionToolbox'),

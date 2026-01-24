@@ -7,7 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import { searchWidgetsAndNodes } from '../shared'
+import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -21,21 +21,14 @@ const { t } = useI18n()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
-const widgetsSectionDataList = computed((): NodeWidgetsListList => {
-  return nodes.map((node) => {
-    const { widgets = [] } = node
-    const shownWidgets = widgets
-      .filter(
-        (w) =>
-          !(w.options?.canvasOnly || w.options?.hidden || w.options?.advanced)
-      )
-      .map((widget) => ({ node, widget }))
-
-    return { widgets: shownWidgets, node }
-  })
-})
+const { widgetsSectionDataList, includesAdvanced } = computedSectionDataList(
+  () => nodes
+)
 
 const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
+  if (includesAdvanced.value) {
+    return []
+  }
   return nodes
     .map((node) => {
       const { widgets = [] } = node

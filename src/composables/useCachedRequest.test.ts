@@ -4,7 +4,7 @@ import { useCachedRequest } from '@/composables/useCachedRequest'
 
 describe('useCachedRequest', () => {
   let mockRequestFn: (
-    params: any,
+    params: unknown,
     signal?: AbortSignal
   ) => Promise<unknown | null>
   let abortSpy: () => void
@@ -25,7 +25,7 @@ describe('useCachedRequest', () => {
     )
 
     // Create a mock request function that returns different results based on params
-    mockRequestFn = vi.fn(async (params: any) => {
+    mockRequestFn = vi.fn(async (params: unknown) => {
       // Simulate a request that takes some time
       await new Promise((resolve) => setTimeout(resolve, 8))
 
@@ -138,12 +138,18 @@ describe('useCachedRequest', () => {
 
   it('should use custom cache key function if provided', async () => {
     // Create a cache key function that sorts object keys
-    const cacheKeyFn = (params: any) => {
+    const cacheKeyFn = (params: unknown) => {
       if (typeof params !== 'object' || params === null) return String(params)
       return JSON.stringify(
-        Object.keys(params)
+        Object.keys(params as Record<string, unknown>)
           .sort()
-          .reduce((acc, key) => ({ ...acc, [key]: params[key] }), {})
+          .reduce(
+            (acc, key) => ({
+              ...acc,
+              [key]: (params as Record<string, unknown>)[key]
+            }),
+            {}
+          )
       )
     }
 

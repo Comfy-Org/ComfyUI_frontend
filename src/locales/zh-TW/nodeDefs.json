@@ -2093,7 +2093,9 @@
       "choice": {
         "name": "選項"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11271,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "使用各種縮放方法調整圖像或 mask 的大小。",
     "display_name": "調整影像／遮罩大小",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "選擇調整大小的方式：依照精確尺寸、縮放比例、匹配其他圖像等。"
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "裁切"
+      },
+      "resize_type_height": {
+        "name": "高度"
+      },
+      "resize_type_width": {
+        "name": "寬度"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "插值演算法。'area' 適合縮小，'lanczos' 適合放大，'nearest-exact' 適合像素藝術。"
       }
     },
     "outputs": {
@@ -15713,6 +15724,79 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "音訊編碼器輸出 1"
+      },
+      "audio_scale": {
+        "name": "音訊縮放"
+      },
+      "clip_vision_output": {
+        "name": "clip 視覺輸出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型修補"
+      },
+      "motion_frame_count": {
+        "name": "動作影格數",
+        "tooltip": "用作動作參考的前置影格數量。"
+      },
+      "negative": {
+        "name": "負向提示"
+      },
+      "positive": {
+        "name": "正向提示"
+      },
+      "previous_frames": {
+        "name": "前置影格"
+      },
+      "start_image": {
+        "name": "起始圖像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": null
+      },
+      "1": {
+        "name": "正向提示",
+        "tooltip": null
+      },
+      "2": {
+        "name": "負向提示",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "裁切圖像",
         "tooltip": null
       }
     }

@@ -79,8 +79,9 @@ const fileFormats = ref<SelectOption[]>([])
 const baseModels = ref<SelectOption[]>([])
 const sortBy = ref<SortOption>('recent')
 
-const { availableFileFormats, availableBaseModels } =
-  useAssetFilterOptions(assets)
+const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
+  () => assets
+)
 
 const emit = defineEmits<{
   filterChange: [filters: FilterState]

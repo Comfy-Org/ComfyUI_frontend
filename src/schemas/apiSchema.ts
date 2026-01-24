@@ -430,7 +430,8 @@ const zSettings = z.object({
   'LiteGraph.Node.DefaultPadding': z.boolean(),
   'LiteGraph.Pointer.TrackpadGestures': z.boolean(),
   'Comfy.VersionCompatibility.DisableWarnings': z.boolean(),
-  'Comfy.RightSidePanel.IsOpen': z.boolean()
+  'Comfy.RightSidePanel.IsOpen': z.boolean(),
+  'Comfy.Node.AlwaysShowAdvancedWidgets': z.boolean()
 })
 
 export type EmbeddingsResponse = z.infer<typeof zEmbeddingsResponse>
