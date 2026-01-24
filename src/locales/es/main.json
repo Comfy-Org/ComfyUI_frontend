@@ -24,6 +24,7 @@
     "assets": "Recursos",
     "baseModels": "Modelos base",
     "browseAssets": "Explorar recursos",
+    "byType": "Por tipo",
     "checkpoints": "Checkpoints",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "Ejemplo:",
@@ -45,6 +46,10 @@
       "failed": "La descarga falló",
       "inProgress": "Descargando {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "Aún no hay modelos importados. Haz clic en \"Importar modelo\" para añadir el tuyo.",
+      "restricted": "Los modelos personales solo están disponibles en el nivel Creador o superior."
+    },
     "errorFileTooLarge": "El archivo excede el tamaño máximo permitido",
     "errorFormatNotAllowed": "Solo se permite el formato SafeTensor",
     "errorModelTypeNotSupported": "Este tipo de modelo no es compatible",
@@ -61,6 +66,7 @@
     "finish": "Finalizar",
     "genericLinkPlaceholder": "Pega el enlace aquí",
     "importAnother": "Importar otro",
+    "imported": "Importado",
     "jobId": "ID de tarea",
     "loadingModels": "Cargando {type}...",
     "maxFileSize": "Tamaño máximo de archivo: {size}",
@@ -70,6 +76,30 @@
       "threeDModelPlaceholder": "Modelo 3D"
     },
     "modelAssociatedWithLink": "El modelo asociado con el enlace que proporcionaste:",
+    "modelInfo": {
+      "addBaseModel": "Agregar modelo base...",
+      "addTag": "Agregar etiqueta...",
+      "additionalTags": "Etiquetas adicionales",
+      "baseModelUnknown": "Modelo base desconocido",
+      "basicInfo": "Información básica",
+      "compatibleBaseModels": "Modelos base compatibles",
+      "description": "Descripción",
+      "descriptionNotSet": "Sin descripción",
+      "descriptionPlaceholder": "Agrega una descripción para este modelo...",
+      "displayName": "Nombre para mostrar",
+      "editDisplayName": "Editar nombre para mostrar",
+      "fileName": "Nombre de archivo",
+      "modelDescription": "Descripción del modelo",
+      "modelTagging": "Etiquetado del modelo",
+      "modelType": "Tipo de modelo",
+      "noAdditionalTags": "Sin etiquetas adicionales",
+      "selectModelPrompt": "Selecciona un modelo para ver su información",
+      "selectModelType": "Selecciona el tipo de modelo...",
+      "source": "Fuente",
+      "title": "Información del modelo",
+      "triggerPhrases": "Frases de activación",
+      "viewOnSource": "Ver en {source}"
+    },
     "modelName": "Nombre del modelo",
     "modelNamePlaceholder": "Introduce un nombre para este modelo",
     "modelTypeSelectorLabel": "¿Qué tipo de modelo es este?",
@@ -684,6 +714,7 @@
     "clearAll": "Borrar todo",
     "clearFilters": "Borrar filtros",
     "close": "Cerrar",
+    "closeDialog": "Cerrar diálogo",
     "color": "Color",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "Logo de ComfyOrg",
@@ -700,6 +731,7 @@
     "control_before_generate": "control antes de generar",
     "copied": "Copiado",
     "copy": "Copiar",
+    "copyAll": "Copiar todo",
     "copyJobId": "Copiar ID de trabajo",
     "copyToClipboard": "Copiar al portapapeles",
     "copyURL": "Copiar URL",
@@ -762,6 +794,8 @@
     "goToNode": "Ir al nodo",
     "graphNavigation": "Navegación de gráficos",
     "halfSpeed": "0.5x",
+    "hideLeftPanel": "Ocultar panel izquierdo",
+    "hideRightPanel": "Ocultar panel derecho",
     "icon": "Icono",
     "imageFailedToLoad": "Falló la carga de la imagen",
     "imagePreview": "Vista previa de imagen - Usa las teclas de flecha para navegar entre imágenes",
@@ -803,6 +837,7 @@
     "name": "Nombre",
     "newFolder": "Nueva carpeta",
     "next": "Siguiente",
+    "nightly": "NIGHTLY",
     "no": "No",
     "noAudioRecorded": "No se grabó audio",
     "noItems": "Sin elementos",
@@ -817,6 +852,7 @@
     "nodeSlotsError": "Error de Ranuras del Nodo",
     "nodeWidgetsError": "Error de Widgets del Nodo",
     "nodes": "Nodos",
+    "nodesCount": "{count} nodos | {count} nodo | {count} nodos",
     "nodesRunning": "nodos en ejecución",
     "none": "Ninguno",
     "nothingToCopy": "Nada para copiar",
@@ -891,7 +927,9 @@
     "selectedFile": "Archivo seleccionado",
     "setAsBackground": "Establecer como fondo",
     "settings": "Configuraciones",
+    "showLeftPanel": "Mostrar panel izquierdo",
     "showReport": "Mostrar informe",
+    "showRightPanel": "Mostrar panel derecho",
     "singleSelectDropdown": "Menú desplegable de selección única",
     "sort": "Ordenar",
     "source": "Fuente",
@@ -914,6 +952,7 @@
     "updating": "Actualizando",
     "upload": "Subir",
     "usageHint": "Sugerencia de uso",
+    "use": "Usar",
     "user": "Usuario",
     "versionMismatchWarning": "Advertencia de compatibilidad de versión",
     "versionMismatchWarningMessage": "{warning}: {detail} Visita https://docs.comfy.org/installation/update_comfyui#common-update-issues para obtener instrucciones de actualización.",
@@ -1617,11 +1656,18 @@
       "title": "Este flujo de trabajo tiene nodos faltantes"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "Versión preliminar",
+      "tooltip": "Estás usando una versión nightly de ComfyUI. Por favor, utiliza el botón de comentarios para compartir tus opiniones sobre estas funciones."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
     "3d_models": "modelos_3d",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
@@ -1643,6 +1689,7 @@
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_para_pruebas",
     "advanced": "avanzado",
     "animation": "animación",
@@ -2084,6 +2131,7 @@
     "NodeLibrary": "Biblioteca de Nodos",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Preferencias de notificación",
+    "Other": "Otros",
     "PLY": "PLY",
     "PlanCredits": "Plan y créditos",
     "Pointer": "Puntero",
@@ -2103,7 +2151,8 @@
     "Vue Nodes": "Nodos Vue",
     "VueNodes": "Nodos Vue",
     "Window": "Ventana",
-    "Workflow": "Flujo de Trabajo"
+    "Workflow": "Flujo de Trabajo",
+    "Workspace": "Espacio de trabajo"
   },
   "shape": {
     "CARD": "Card",
@@ -2129,12 +2178,14 @@
     "viewControls": "Controles de vista"
   },
   "sideToolbar": {
+    "activeJobStatus": "Trabajo activo: {status}",
     "assets": "Recursos",
     "backToAssets": "Volver a todos los recursos",
     "browseTemplates": "Explorar plantillas de ejemplo",
     "downloads": "Descargas",
     "generatedAssetsHeader": "Recursos generados",
     "helpCenter": "Centro de ayuda",
+    "importedAssetsHeader": "Recursos importados",
     "labels": {
       "assets": "Recursos",
       "console": "Consola",
@@ -2179,6 +2230,7 @@
     "queue": "Cola",
     "queueProgressOverlay": {
       "activeJobs": "{count} trabajo activo | {count} trabajos activos",
+      "activeJobsShort": "{count} activo(s) | {count} activo(s)",
       "activeJobsSuffix": "trabajos activos",
       "cancelJobTooltip": "Cancelar trabajo",
       "clearHistory": "Limpiar historial de la cola de trabajos",
@@ -2267,9 +2319,11 @@
     "beta": "BETA",
     "billedMonthly": "Facturado mensualmente",
     "billedYearly": "{total} facturado anualmente",
+    "cancelSubscription": "Cancelar suscripción",
     "changeTo": "Cambiar a {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo de Comfy Cloud",
+    "contactOwnerToSubscribe": "Contacta al propietario del espacio de trabajo para suscribirte",
     "contactUs": "Contáctanos",
     "creditsRemainingThisMonth": "Créditos restantes este mes",
     "creditsRemainingThisYear": "Créditos restantes este año",
@@ -2282,6 +2336,7 @@
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
     "invoiceHistory": "Historial de facturas",
     "learnMore": "Más información",
+    "managePayment": "Gestionar pago",
     "managePlan": "Gestionar plan",
     "manageSubscription": "Gestionar suscripción",
     "maxDuration": {
@@ -2317,6 +2372,7 @@
     "subscribeToComfyCloud": "Suscribirse a Comfy Cloud",
     "subscribeToRun": "Suscribirse",
     "subscribeToRunFull": "Suscribirse a Ejecutar",
+    "subscriptionRequiredMessage": "Se requiere una suscripción para que los miembros ejecuten flujos de trabajo en la nube",
     "tierNameYearly": "{name} Anual",
     "tiers": {
       "creator": {
@@ -2348,6 +2404,7 @@
     "viewMoreDetails": "Ver más detalles",
     "viewMoreDetailsPlans": "Ver más detalles sobre planes y precios",
     "viewUsageHistory": "Ver historial de uso",
+    "workspaceNotSubscribed": "Este espacio de trabajo no tiene una suscripción",
     "yearly": "Anual",
     "yearlyCreditsLabel": "Total de créditos anuales",
     "yearlyDiscount": "20% DESCUENTO",
@@ -2497,7 +2554,8 @@
     "notSet": "No establecido",
     "provider": "Método de inicio de sesión",
     "title": "Configuración de usuario",
-    "updatePassword": "Actualizar contraseña"
+    "updatePassword": "Actualizar contraseña",
+    "workspaceSettings": "Configuración del espacio de trabajo"
   },
   "validation": {
     "descriptionRequired": "Descripción es requerida",
@@ -2601,6 +2659,57 @@
       "tokenExchangeFailed": "No se pudo autenticar con el espacio de trabajo: {error}",
       "workspaceNotFound": "Espacio de trabajo no encontrado"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "Crear",
+      "message": "Los espacios de trabajo permiten a los miembros compartir un único fondo de créditos. Te convertirás en el propietario después de crearlo.",
+      "nameLabel": "Nombre del espacio de trabajo*",
+      "namePlaceholder": "Introduce el nombre del espacio de trabajo",
+      "title": "Crear un nuevo espacio de trabajo"
+    },
+    "deleteDialog": {
+      "message": "Cualquier crédito no utilizado o recurso no guardado se perderá. Esta acción no se puede deshacer.",
+      "messageWithName": "¿Eliminar \"{name}\"? Cualquier crédito no utilizado o recurso no guardado se perderá. Esta acción no se puede deshacer.",
+      "title": "¿Eliminar este espacio de trabajo?"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "Nombre del espacio de trabajo",
+      "save": "Guardar",
+      "title": "Editar detalles del espacio de trabajo"
+    },
+    "leaveDialog": {
+      "leave": "Abandonar",
+      "message": "No podrás unirte de nuevo a menos que contactes al propietario del espacio de trabajo.",
+      "title": "¿Abandonar este espacio de trabajo?"
+    },
+    "menu": {
+      "deleteWorkspace": "Eliminar espacio de trabajo",
+      "deleteWorkspaceDisabledTooltip": "Primero cancela la suscripción activa de tu espacio de trabajo",
+      "editWorkspace": "Editar detalles del espacio de trabajo",
+      "leaveWorkspace": "Abandonar espacio de trabajo"
+    },
+    "tabs": {
+      "planCredits": "Plan y créditos"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "No se pudo crear el espacio de trabajo",
+      "failedToDeleteWorkspace": "No se pudo eliminar el espacio de trabajo",
+      "failedToLeaveWorkspace": "No se pudo abandonar el espacio de trabajo",
+      "failedToUpdateWorkspace": "No se pudo actualizar el espacio de trabajo",
+      "workspaceUpdated": {
+        "message": "Los detalles del espacio de trabajo se han guardado.",
+        "title": "Espacio de trabajo actualizado"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "Crear nuevo espacio de trabajo",
+    "maxWorkspacesReached": "Solo puedes ser propietario de 10 espacios de trabajo. Elimina uno para crear uno nuevo.",
+    "roleMember": "Miembro",
+    "roleOwner": "Propietario",
+    "subscribe": "Suscribirse",
+    "switchWorkspace": "Cambiar espacio de trabajo"
   },
   "zoomControls": {
     "hideMinimap": "Ocultar minimapa",

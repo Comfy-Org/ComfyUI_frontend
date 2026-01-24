@@ -7,7 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import { searchWidgetsAndNodes } from '../shared'
+import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -21,15 +21,26 @@ const { t } = useI18n()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
-const widgetsSectionDataList = computed((): NodeWidgetsListList => {
-  return nodes.map((node) => {
-    const { widgets = [] } = node
-    const shownWidgets = widgets
-      .filter((w) => !(w.options?.canvasOnly || w.options?.hidden))
-      .map((widget) => ({ node, widget }))
+const { widgetsSectionDataList, includesAdvanced } = computedSectionDataList(
+  () => nodes
+)
 
-    return { widgets: shownWidgets, node }
-  })
+const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
+  if (includesAdvanced.value) {
+    return []
+  }
+  return nodes
+    .map((node) => {
+      const { widgets = [] } = node
+      const advancedWidgets = widgets
+        .filter(
+          (w) =>
+            !(w.options?.canvasOnly || w.options?.hidden) && w.options?.advanced
+        )
+        .map((widget) => ({ node, widget }))
+      return { widgets: advancedWidgets, node }
+    })
+    .filter(({ widgets }) => widgets.length > 0)
 })
 
 const isMultipleNodesSelected = computed(
@@ -54,6 +65,12 @@ const label = computed(() => {
     ? sections[0].widgets.length !== 0
       ? t('rightSidePanel.inputs')
       : t('rightSidePanel.inputsNone')
+    : undefined // SectionWidgets display node titles by default
+})
+
+const advancedLabel = computed(() => {
+  return !mustShowNodeTitle && !isMultipleNodesSelected.value
+    ? t('rightSidePanel.advancedInputs')
     : undefined // SectionWidgets display node titles by default
 })
 </script>
@@ -93,4 +110,16 @@ const label = computed(() => {
       class="border-b border-interface-stroke"
     />
   </TransitionGroup>
+  <template v-if="advancedWidgetsSectionDataList.length > 0 && !isSearching">
+    <SectionWidgets
+      v-for="{ widgets, node } in advancedWidgetsSectionDataList"
+      :key="`advanced-${node.id}`"
+      :collapse="true"
+      :node
+      :label="advancedLabel"
+      :widgets
+      :show-locate-button="isMultipleNodesSelected"
+      class="border-b border-interface-stroke"
+    />
+  </template>
 </template>

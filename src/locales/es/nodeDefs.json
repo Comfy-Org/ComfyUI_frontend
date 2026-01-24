@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Edita imágenes usando el modelo más reciente de Bria",
+    "display_name": "Edición de Imagen Bria",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "guidance_scale": {
+        "name": "escala_de_guía",
+        "tooltip": "Un valor más alto hace que la imagen siga la instrucción más de cerca."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Si se omite, la edición se aplica a toda la imagen."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Configuración de moderación"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "moderación_de_contenido_de_instrucción"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "moderación_visual_de_entrada"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "moderación_visual_de_salida"
+      },
+      "negative_prompt": {
+        "name": "instrucción_negativa"
+      },
+      "prompt": {
+        "name": "instrucción",
+        "tooltip": "Instrucción para editar la imagen"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "steps": {
+        "name": "pasos"
+      },
+      "structured_prompt": {
+        "name": "instrucción_estructurada",
+        "tooltip": "Una cadena que contiene la instrucción de edición estructurada en formato JSON. Usa esto en lugar de la instrucción habitual para un control preciso y programático."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "instrucción_estructurada",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Generar video usando prompt y primer y último fotograma.",
     "display_name": "ByteDance Primer-Último-Fotograma a Video",
@@ -2031,7 +2093,9 @@
       "choice": {
         "name": "elección"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11209,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Redimensiona una imagen o máscara utilizando varios métodos de escalado.",
     "display_name": "Redimensionar Imagen/Máscara",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Selecciona cómo redimensionar: por dimensiones exactas, factor de escala, igualando otra imagen, etc."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "recortar"
+      },
+      "resize_type_height": {
+        "name": "altura"
+      },
+      "resize_type_width": {
+        "name": "anchura"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Algoritmo de interpolación. 'area' es mejor para reducir tamaño, 'lanczos' para aumentar tamaño, 'nearest-exact' para pixel art."
       }
     },
     "outputs": {
@@ -13450,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "auto_redimensionar_imágenes"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "imagen1"
+      },
+      "image2": {
+        "name": "imagen2"
+      },
+      "image3": {
+        "name": "imagen3"
+      },
+      "image_encoder": {
+        "name": "codificador_de_imagen"
+      },
+      "prompt": {
+        "name": "instrucción"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Convertir texto a minúsculas",
     "inputs": {
@@ -15621,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "salida codificador de audio 1"
+      },
+      "audio_scale": {
+        "name": "escala de audio"
+      },
+      "clip_vision_output": {
+        "name": "salida de clip visión"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "length": {
+        "name": "longitud"
+      },
+      "mode": {
+        "name": "modo"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_patch": {
+        "name": "parche de modelo"
+      },
+      "motion_frame_count": {
+        "name": "número de fotogramas de movimiento",
+        "tooltip": "Número de fotogramas anteriores a usar como contexto de movimiento."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "previous_frames": {
+        "name": "fotogramas anteriores"
+      },
+      "start_image": {
+        "name": "imagen inicial"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latente",
+        "tooltip": null
+      },
+      "4": {
+        "name": "imagen recortada",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16133,6 +16313,43 @@
       },
       "3": {
         "name": "latente_recortado",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Escalador de video rápido y de alta calidad que aumenta la resolución y restaura la claridad de videos de baja resolución o borrosos.",
+    "display_name": "FlashVSR Escalado de Video",
+    "inputs": {
+      "target_resolution": {
+        "name": "resolución_objetivo"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Aumenta la resolución y calidad de la imagen, escalando fotos a 4K u 8K para obtener resultados nítidos y detallados.",
+    "display_name": "WaveSpeed Escalado de Imagen",
+    "inputs": {
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "target_resolution": {
+        "name": "resolución_objetivo"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

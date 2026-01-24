@@ -1174,5 +1174,15 @@ export const CORE_SETTINGS: SettingParams[] = [
       'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
     defaultValue: true,
     experimental: true
+  },
+  {
+    id: 'Comfy.Node.AlwaysShowAdvancedWidgets',
+    category: ['LiteGraph', 'Node Widget', 'AlwaysShowAdvancedWidgets'],
+    name: 'Always show advanced widgets on all nodes',
+    tooltip:
+      'When enabled, advanced widgets are always visible on all nodes without needing to expand them individually.',
+    type: 'boolean',
+    defaultValue: false,
+    versionAdded: '1.39.0'
   }
 ]

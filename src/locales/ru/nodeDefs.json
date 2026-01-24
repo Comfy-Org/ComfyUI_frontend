@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Редактирование изображений с помощью новейшей модели Bria",
+    "display_name": "Bria Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "Большее значение заставляет изображение точнее следовать промпту."
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "mask": {
+        "name": "маска",
+        "tooltip": "Если не указано, редактирование применяется ко всему изображению."
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "модерация",
+        "tooltip": "Настройки модерации"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "модерация_контента_промпта"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "модерация_визуального_входа"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "модерация_визуального_выхода"
+      },
+      "negative_prompt": {
+        "name": "негативный_промпт"
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Инструкция для редактирования изображения"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "steps": {
+        "name": "шаги"
+      },
+      "structured_prompt": {
+        "name": "структурированный_промпт",
+        "tooltip": "Строка, содержащая структурированный промпт для редактирования в формате JSON. Используйте вместо обычного промпта для точного, программного управления."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "структурированный_промпт",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "Создать видео с использованием промпта и первого и последнего кадров.",
     "display_name": "ByteDance - Преобразование первого-последнего кадра в видео",
@@ -2031,7 +2093,9 @@
       "choice": {
         "name": "выбор"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11209,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Изменить размер изображения или mask с помощью различных методов масштабирования.",
     "display_name": "Изменить размер изображения/маски",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Выберите способ изменения размера: по точным размерам, коэффициенту масштабирования, подгонке под другое изображение и т.д."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "обрезка"
+      },
+      "resize_type_height": {
+        "name": "высота"
+      },
+      "resize_type_width": {
+        "name": "ширина"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Алгоритм интерполяции. 'area' лучше всего подходит для уменьшения, 'lanczos' — для увеличения, 'nearest-exact' — для пиксель-арта."
       }
     },
     "outputs": {
@@ -13450,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "автоматическое_изменение_размера_изображений"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "изображение1"
+      },
+      "image2": {
+        "name": "изображение2"
+      },
+      "image3": {
+        "name": "изображение3"
+      },
+      "image_encoder": {
+        "name": "кодировщик_изображения"
+      },
+      "prompt": {
+        "name": "промпт"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Преобразовать текст в нижний регистр",
     "inputs": {
@@ -15621,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "выход аудиоэнкодера 1"
+      },
+      "audio_scale": {
+        "name": "масштаб аудио"
+      },
+      "clip_vision_output": {
+        "name": "выход clip vision"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "mode": {
+        "name": "режим"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_patch": {
+        "name": "патч модели"
+      },
+      "motion_frame_count": {
+        "name": "количество кадров движения",
+        "tooltip": "Количество предыдущих кадров, используемых как контекст движения."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "previous_frames": {
+        "name": "предыдущие кадры"
+      },
+      "start_image": {
+        "name": "стартовое изображение"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "модель",
+        "tooltip": null
+      },
+      "1": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "негативный",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "обрезанное изображение",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16133,6 +16313,43 @@
       },
       "3": {
         "name": "обрезанный_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Быстрый и качественный апскейлер видео, повышающий разрешение и восстанавливающий чёткость для низкокачественных или размытых кадров.",
+    "display_name": "FlashVSR Видео Апскейл",
+    "inputs": {
+      "target_resolution": {
+        "name": "целевое_разрешение"
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Увеличьте разрешение и качество изображения, апскейл фотографий до 4K или 8K для чётких и детализированных результатов.",
+    "display_name": "WaveSpeed Апскейл Изображения",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "целевое_разрешение"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

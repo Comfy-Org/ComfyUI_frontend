@@ -2,7 +2,7 @@
   <Button
     :size
     :loading="isLoading"
-    :disabled="isPolling"
+    :disabled="disabled || isPolling"
     variant="primary"
     :style="
       variant === 'gradient'
@@ -32,12 +32,14 @@ const {
   size = 'lg',
   fluid = true,
   variant = 'default',
-  label
+  label,
+  disabled = false
 } = defineProps<{
   label?: string
   size?: 'sm' | 'lg'
   variant?: 'default' | 'gradient'
   fluid?: boolean
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{

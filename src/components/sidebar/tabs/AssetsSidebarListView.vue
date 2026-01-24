@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <div
       v-if="activeJobItems.length"
-      class="flex max-h-[50%] flex-col gap-2 overflow-y-auto px-2"
+      class="flex max-h-[50%] scrollbar-custom flex-col gap-2 overflow-y-auto px-2"
     >
       <AssetsListItem
         v-for="job in activeJobItems"
@@ -44,9 +44,15 @@
       :class="cn('px-2', activeJobItems.length && 'mt-2')"
     >
       <div
-        class="flex items-center py-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
+        class="flex items-center p-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
       >
-        {{ t('sideToolbar.generatedAssetsHeader') }}
+        {{
+          t(
+            assetType === 'input'
+              ? 'sideToolbar.importedAssetsHeader'
+              : 'sideToolbar.generatedAssetsHeader'
+          )
+        }}
       </div>
     </div>
 
@@ -108,7 +114,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import type { JobState } from '@/types/queue'
+import { isActiveJobState } from '@/utils/queueUtil'
 import {
   formatDuration,
   formatSize,
@@ -118,9 +124,14 @@ import {
 import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
-const { assets, isSelected } = defineProps<{
+const {
+  assets,
+  isSelected,
+  assetType = 'output'
+} = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  assetType?: 'input' | 'output'
 }>()
 
 const emit = defineEmits<{
@@ -159,12 +170,6 @@ const listGridStyle = {
   gridTemplateColumns: 'minmax(0, 1fr)',
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
-
-function isActiveJobState(state: JobState): boolean {
-  return (
-    state === 'pending' || state === 'initialization' || state === 'running'
-  )
 }
 
 function getAssetPrimaryText(asset: AssetItem): string {

@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "使用 Bria 最新模型編輯圖像",
+    "display_name": "Bria 圖像編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "guidance_scale": {
+        "name": "指引強度",
+        "tooltip": "數值越高，圖像越貼合提示詞。"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "若未設定，編輯將套用至整張圖像。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "審核",
+        "tooltip": "審核設定"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "提示詞內容審核"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "輸入圖像審核"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "輸出圖像審核"
+      },
+      "negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "編輯圖像的指令"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "steps": {
+        "name": "步數"
+      },
+      "structured_prompt": {
+        "name": "結構化提示詞",
+        "tooltip": "包含結構化編輯提示的 JSON 格式字串。若需精確、程式化控制，請使用此項取代一般提示詞。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "結構化提示詞",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "使用提示詞和首尾幀生成影片。",
     "display_name": "字節跳動首尾幀轉影片",
@@ -2031,7 +2093,9 @@
       "choice": {
         "name": "選項"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11209,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "使用各種縮放方法調整圖像或 mask 的大小。",
     "display_name": "調整影像／遮罩大小",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "選擇調整大小的方式：依照精確尺寸、縮放比例、匹配其他圖像等。"
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "裁切"
+      },
+      "resize_type_height": {
+        "name": "高度"
+      },
+      "resize_type_width": {
+        "name": "寬度"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "插值演算法。'area' 適合縮小，'lanczos' 適合放大，'nearest-exact' 適合像素藝術。"
       }
     },
     "outputs": {
@@ -13450,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "自動調整圖像尺寸"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "圖像1"
+      },
+      "image2": {
+        "name": "圖像2"
+      },
+      "image3": {
+        "name": "圖像3"
+      },
+      "image_encoder": {
+        "name": "圖像編碼器"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "轉換為小寫",
     "inputs": {
@@ -15621,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "音訊編碼器輸出 1"
+      },
+      "audio_scale": {
+        "name": "音訊縮放"
+      },
+      "clip_vision_output": {
+        "name": "clip 視覺輸出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型修補"
+      },
+      "motion_frame_count": {
+        "name": "動作影格數",
+        "tooltip": "用作動作參考的前置影格數量。"
+      },
+      "negative": {
+        "name": "負向提示"
+      },
+      "positive": {
+        "name": "正向提示"
+      },
+      "previous_frames": {
+        "name": "前置影格"
+      },
+      "start_image": {
+        "name": "起始圖像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": null
+      },
+      "1": {
+        "name": "正向提示",
+        "tooltip": null
+      },
+      "2": {
+        "name": "負向提示",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "裁切圖像",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16133,6 +16313,43 @@
       },
       "3": {
         "name": "裁剪潛空間",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "快速高品質影片升頻器，提升解析度並恢復低解析度或模糊影片的清晰度。",
+    "display_name": "FlashVSR 影片升頻",
+    "inputs": {
+      "target_resolution": {
+        "name": "目標解析度"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "提升圖像解析度與品質，將照片升頻至 4K 或 8K，獲得銳利細緻的效果。",
+    "display_name": "WaveSpeed 圖像升頻",
+    "inputs": {
+      "image": {
+        "name": "圖像"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "目標解析度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

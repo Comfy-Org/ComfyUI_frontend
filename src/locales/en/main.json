@@ -43,8 +43,6 @@
     "comfy": "Comfy",
     "refresh": "Refresh",
     "refreshNode": "Refresh Node",
-    "vitePreloadErrorTitle": "New Version Available",
-    "vitePreloadErrorMessage": "A new version of the app has been released. Would you like to reload?\nIf not, some parts of the app might not work as expected.\nFeel free to decline and save your progress before reloading.",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
@@ -88,6 +86,7 @@
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
     "copyToClipboard": "Copy to Clipboard",
+    "copyAll": "Copy All",
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
     "imageFailedToLoad": "Image failed to load",
@@ -100,6 +99,11 @@
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
+    "closeDialog": "Close dialog",
+    "showLeftPanel": "Show left panel",
+    "hideLeftPanel": "Hide left panel",
+    "showRightPanel": "Show right panel",
+    "hideRightPanel": "Hide right panel",
     "or": "or",
     "pressKeysForNewBinding": "Press keys for new binding",
     "defaultBanner": "default banner",
@@ -158,6 +162,7 @@
     "choose_file_to_upload": "choose file to upload",
     "capture": "capture",
     "nodes": "Nodes",
+    "nodesCount": "{count} nodes | {count} node | {count} nodes",
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
@@ -178,6 +183,7 @@
     "source": "Source",
     "filter": "Filter",
     "apply": "Apply",
+    "use": "Use",
     "enabled": "Enabled",
     "installed": "Installed",
     "restart": "Restart",
@@ -269,6 +275,7 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items"
   },
@@ -702,6 +709,8 @@
     "noImportedFiles": "No imported files found",
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
+    "importedAssetsHeader": "Imported assets",
+    "activeJobStatus": "Active job: {status}",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -751,6 +760,7 @@
       "sortJobs": "Sort jobs",
       "sortBy": "Sort by",
       "activeJobs": "{count} active job | {count} active jobs",
+      "activeJobsShort": "{count} active | {count} active",
       "activeJobsSuffix": "active jobs",
       "jobQueue": "Job Queue",
       "expandCollapsedQueue": "Expand job queue",
@@ -1275,7 +1285,9 @@
     "VueNodes": "Nodes 2.0",
     "Nodes 2_0": "Nodes 2.0",
     "Execution": "Execution",
-    "PLY": "PLY"
+    "PLY": "PLY",
+    "Workspace": "Workspace",
+    "Other": "Other"
   },
   "serverConfigItems": {
     "listen": {
@@ -1426,6 +1438,7 @@
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
+    "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
@@ -1506,6 +1519,7 @@
     "": "",
     "camera": "camera",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
   "dataTypes": {
@@ -1997,6 +2011,8 @@
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
+    "managePayment": "Manage Payment",
+    "cancelSubscription": "Cancel Subscription",
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
     "totalCredits": "Total credits",
@@ -2051,6 +2067,9 @@
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
+    "workspaceNotSubscribed": "This workspace is not on a subscription",
+    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
+    "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
@@ -2086,11 +2105,63 @@
   "userSettings": {
     "title": "My Account Settings",
     "accountSettings": "Account settings",
+    "workspaceSettings": "Workspace settings",
     "name": "Name",
     "email": "Email",
     "provider": "Sign-in Provider",
     "notSet": "Not set",
     "updatePassword": "Update Password"
+  },
+  "workspacePanel": {
+    "tabs": {
+      "planCredits": "Plan & Credits"
+    },
+    "menu": {
+      "editWorkspace": "Edit workspace details",
+      "leaveWorkspace": "Leave Workspace",
+      "deleteWorkspace": "Delete Workspace",
+      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+    },
+    "editWorkspaceDialog": {
+      "title": "Edit workspace details",
+      "nameLabel": "Workspace name",
+      "save": "Save"
+    },
+    "leaveDialog": {
+      "title": "Leave this workspace?",
+      "message": "You won't be able to join again unless you contact the workspace owner.",
+      "leave": "Leave"
+    },
+    "deleteDialog": {
+      "title": "Delete this workspace?",
+      "message": "Any unused credits or unsaved assets will be lost. This action cannot be undone.",
+      "messageWithName": "Delete \"{name}\"? Any unused credits or unsaved assets will be lost. This action cannot be undone."
+    },
+    "createWorkspaceDialog": {
+      "title": "Create a new workspace",
+      "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+      "nameLabel": "Workspace name*",
+      "namePlaceholder": "Enter workspace name",
+      "create": "Create"
+    },
+    "toast": {
+      "workspaceUpdated": {
+        "title": "Workspace updated",
+        "message": "Workspace details have been saved."
+      },
+      "failedToUpdateWorkspace": "Failed to update workspace",
+      "failedToCreateWorkspace": "Failed to create workspace",
+      "failedToDeleteWorkspace": "Failed to delete workspace",
+      "failedToLeaveWorkspace": "Failed to leave workspace"
+    }
+  },
+  "workspaceSwitcher": {
+    "switchWorkspace": "Switch workspace",
+    "subscribe": "Subscribe",
+    "roleOwner": "Owner",
+    "roleMember": "Member",
+    "createWorkspace": "Create new workspace",
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -2306,6 +2377,12 @@
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
+    "byType": "By type",
+    "emptyImported": {
+      "canImport": "No imported models yet. Click \"Import Model\" to add your own.",
+      "restricted": "Personal models are only available at Creator tier and above."
+    },
+    "imported": "Imported",
     "assetCollection": "Asset collection",
     "assets": "Assets",
     "baseModels": "Base models",
@@ -2395,6 +2472,30 @@
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
+    },
+    "modelInfo": {
+      "title": "Model Info",
+      "selectModelPrompt": "Select a model to see its information",
+      "basicInfo": "Basic Info",
+      "displayName": "Display Name",
+      "editDisplayName": "Edit display name",
+      "fileName": "File Name",
+      "source": "Source",
+      "viewOnSource": "View on {source}",
+      "modelTagging": "Model Tagging",
+      "modelType": "Model Type",
+      "selectModelType": "Select model type...",
+      "compatibleBaseModels": "Compatible Base Models",
+      "addBaseModel": "Add base model...",
+      "baseModelUnknown": "Base model unknown",
+      "additionalTags": "Additional Tags",
+      "addTag": "Add tag...",
+      "noAdditionalTags": "No additional tags",
+      "modelDescription": "Model Description",
+      "triggerPhrases": "Trigger Phrases",
+      "description": "Description",
+      "descriptionNotSet": "No description set",
+      "descriptionPlaceholder": "Add a description for this model..."
     },
     "media": {
       "threeDModelPlaceholder": "3D Model",
@@ -2582,7 +2683,8 @@
     "noneSearchDesc": "No items match your search",
     "nodesNoneDesc": "NO NODES",
     "fallbackGroupTitle": "Group",
-    "fallbackNodeTitle": "Node"
+    "fallbackNodeTitle": "Node",
+    "hideAdvancedInputsButton": "Hide advanced inputs"
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -2617,6 +2719,12 @@
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
       "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "Preview Version",
+      "tooltip": "You are using a nightly version of ComfyUI. Please use the feedback button to share your thoughts about these features."
     }
   }
 }

@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "Bria'nın en son modeliyle görüntüleri düzenleyin",
+    "display_name": "Bria Görüntü Düzenleme",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "guidance_scale": {
+        "name": "yönlendirme_ölçeği",
+        "tooltip": "Daha yüksek değer, görüntünün isteme daha yakın olmasını sağlar."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "mask": {
+        "name": "maske",
+        "tooltip": "Atlanırsa, düzenleme tüm görüntüye uygulanır."
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "denetleme",
+        "tooltip": "Denetleme ayarları"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "istem_içeriği_denetleme"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "görsel_girdi_denetleme"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "görsel_çıktı_denetleme"
+      },
+      "negative_prompt": {
+        "name": "negatif_istem"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntüyü düzenlemek için talimat"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "steps": {
+        "name": "adımlar"
+      },
+      "structured_prompt": {
+        "name": "yapılandırılmış_istem",
+        "tooltip": "JSON formatında yapılandırılmış düzenleme istemi içeren bir dize. Hassas ve programatik kontrol için normal istem yerine bunu kullanın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "yapılandırılmış_istem",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "İlk ve son kareleri kullanarak video oluşturun.",
     "display_name": "ByteDance İlk-Son-Kare'den Videoya",
@@ -2031,7 +2093,9 @@
       "choice": {
         "name": "seçim"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
     "outputs": {
@@ -11209,19 +11273,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Bir görüntüyü veya maskeyi çeşitli ölçeklendirme yöntemleriyle yeniden boyutlandırın.",
     "display_name": "Görsel/Maske Yeniden Boyutlandır",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Yeniden boyutlandırma yöntemini seçin: tam boyutlar, ölçek faktörü, başka bir görüntüyle eşleştirme vb."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "kırp"
+      },
+      "resize_type_height": {
+        "name": "yükseklik"
+      },
+      "resize_type_width": {
+        "name": "genişlik"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Enterpolasyon algoritması. 'area' küçültme için en iyisidir, 'lanczos' büyütme için uygundur, 'nearest-exact' piksel sanatı için idealdir."
       }
     },
     "outputs": {
@@ -13450,6 +13523,40 @@
       }
     }
   },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "görüntüleri_otomatik_yeniden_boyutlandır"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "görüntü1"
+      },
+      "image2": {
+        "name": "görüntü2"
+      },
+      "image3": {
+        "name": "görüntü3"
+      },
+      "image_encoder": {
+        "name": "görüntü_kodlayıcı"
+      },
+      "prompt": {
+        "name": "istem"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextToLowercase": {
     "display_name": "Metni Küçük Harfe Çevir",
     "inputs": {
@@ -15621,6 +15728,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "audio_encoder_output_1"
+      },
+      "audio_scale": {
+        "name": "audio_scale"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "mode": {
+        "name": "mod"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "motion_frame_count": {
+        "name": "hareket_kare_sayısı",
+        "tooltip": "Hareket bağlamı olarak kullanılacak önceki karelerin sayısı."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "previous_frames": {
+        "name": "önceki_kareler"
+      },
+      "start_image": {
+        "name": "başlangıç_görseli"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": null
+      },
+      "1": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "kırpılmış_görsel",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16133,6 +16313,43 @@
       },
       "3": {
         "name": "gizliyi_kırp",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "Düşük çözünürlüklü veya bulanık videolar için hızlı, yüksek kaliteli video yükseltici; çözünürlüğü artırır ve netliği geri kazandırır.",
+    "display_name": "FlashVSR Video Yükseltme",
+    "inputs": {
+      "target_resolution": {
+        "name": "hedef_çözünürlük"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "Görüntü çözünürlüğünü ve kalitesini artırın, fotoğrafları keskin ve ayrıntılı sonuçlar için 4K veya 8K'ya yükseltin.",
+    "display_name": "WaveSpeed Görüntü Yükseltme",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "hedef_çözünürlük"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

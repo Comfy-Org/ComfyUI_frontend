@@ -24,6 +24,7 @@
     "assets": "الأصول",
     "baseModels": "النماذج الأساسية",
     "browseAssets": "تصفح الأصول",
+    "byType": "حسب النوع",
     "checkpoints": "نقاط التحقق",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "مثال:",
@@ -45,6 +46,10 @@
       "failed": "فشل التنزيل",
       "inProgress": "جاري تنزيل {assetName}..."
     },
+    "emptyImported": {
+      "canImport": "لا توجد نماذج مستوردة بعد. انقر على \"استيراد نموذج\" لإضافة نموذجك الخاص.",
+      "restricted": "النماذج الشخصية متاحة فقط لمستوى Creator وما فوق."
+    },
     "errorFileTooLarge": "الملف يتجاوز الحد الأقصى المسموح به للحجم",
     "errorFormatNotAllowed": "يسمح فقط بصيغة SafeTensor",
     "errorModelTypeNotSupported": "نوع النموذج هذا غير مدعوم",
@@ -61,6 +66,7 @@
     "finish": "إنهاء",
     "genericLinkPlaceholder": "الصق الرابط هنا",
     "importAnother": "استيراد آخر",
+    "imported": "مستوردة",
     "jobId": "معرّف المهمة",
     "loadingModels": "جارٍ تحميل {type}...",
     "maxFileSize": "الحد الأقصى لحجم الملف: {size}",
@@ -70,6 +76,30 @@
       "threeDModelPlaceholder": "نموذج ثلاثي الأبعاد"
     },
     "modelAssociatedWithLink": "النموذج المرتبط بالرابط الذي قدمته:",
+    "modelInfo": {
+      "addBaseModel": "أضف نموذجًا أساسيًا...",
+      "addTag": "أضف وسمًا...",
+      "additionalTags": "وسوم إضافية",
+      "baseModelUnknown": "النموذج الأساسي غير معروف",
+      "basicInfo": "معلومات أساسية",
+      "compatibleBaseModels": "نماذج أساسية متوافقة",
+      "description": "الوصف",
+      "descriptionNotSet": "لم يتم تعيين وصف",
+      "descriptionPlaceholder": "أضف وصفًا لهذا النموذج...",
+      "displayName": "اسم العرض",
+      "editDisplayName": "تعديل اسم العرض",
+      "fileName": "اسم الملف",
+      "modelDescription": "وصف النموذج",
+      "modelTagging": "تصنيف النموذج",
+      "modelType": "نوع النموذج",
+      "noAdditionalTags": "لا توجد وسوم إضافية",
+      "selectModelPrompt": "اختر نموذجًا لعرض معلوماته",
+      "selectModelType": "اختر نوع النموذج...",
+      "source": "المصدر",
+      "title": "معلومات النموذج",
+      "triggerPhrases": "عبارات التفعيل",
+      "viewOnSource": "عرض على {source}"
+    },
     "modelName": "اسم النموذج",
     "modelNamePlaceholder": "أدخل اسمًا لهذا النموذج",
     "modelTypeSelectorLabel": "ما نوع هذا النموذج؟",
@@ -684,6 +714,7 @@
     "clearAll": "مسح الكل",
     "clearFilters": "مسح الفلاتر",
     "close": "إغلاق",
+    "closeDialog": "إغلاق الحوار",
     "color": "اللون",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "شعار ComfyOrg",
@@ -700,6 +731,7 @@
     "control_before_generate": "التحكم قبل التوليد",
     "copied": "تم النسخ",
     "copy": "نسخ",
+    "copyAll": "نسخ الكل",
     "copyJobId": "نسخ معرف المهمة",
     "copyToClipboard": "نسخ إلى الحافظة",
     "copyURL": "نسخ الرابط",
@@ -762,6 +794,8 @@
     "goToNode": "الانتقال إلى العقدة",
     "graphNavigation": "التنقل في الرسم البياني",
     "halfSpeed": "0.5x",
+    "hideLeftPanel": "إخفاء اللوحة اليسرى",
+    "hideRightPanel": "إخفاء اللوحة اليمنى",
     "icon": "أيقونة",
     "imageFailedToLoad": "فشل تحميل الصورة",
     "imagePreview": "معاينة الصورة - استخدم مفاتيح الأسهم للتنقل بين الصور",
@@ -803,6 +837,7 @@
     "name": "الاسم",
     "newFolder": "مجلد جديد",
     "next": "التالي",
+    "nightly": "NIGHTLY",
     "no": "لا",
     "noAudioRecorded": "لم يتم تسجيل أي صوت",
     "noItems": "لا توجد عناصر",
@@ -817,6 +852,7 @@
     "nodeSlotsError": "خطأ في فتحات العقدة",
     "nodeWidgetsError": "خطأ في عناصر واجهة العقدة",
     "nodes": "العُقَد",
+    "nodesCount": "{count} عقدة | {count} عقدة | {count} عقدة",
     "nodesRunning": "العُقَد قيد التشغيل",
     "none": "لا شيء",
     "nothingToCopy": "لا يوجد ما يمكن نسخه",
@@ -891,7 +927,9 @@
     "selectedFile": "الملف المحدد",
     "setAsBackground": "تعيين كخلفية",
     "settings": "الإعدادات",
+    "showLeftPanel": "إظهار اللوحة اليسرى",
     "showReport": "عرض التقرير",
+    "showRightPanel": "إظهار اللوحة اليمنى",
     "singleSelectDropdown": "قائمة منسدلة اختيار واحد",
     "sort": "فرز",
     "source": "المصدر",
@@ -914,6 +952,7 @@
     "updating": "جارٍ التحديث",
     "upload": "رفع",
     "usageHint": "تلميح الاستخدام",
+    "use": "استخدم",
     "user": "المستخدم",
     "versionMismatchWarning": "تحذير توافق الإصدارات",
     "versionMismatchWarningMessage": "{warning}: {detail} زر https://docs.comfy.org/installation/update_comfyui#common-update-issues للحصول على تعليمات التحديث.",
@@ -1617,11 +1656,18 @@
       "title": "سير العمل هذا يحتوي على عقد مفقودة"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "إصدار معاينة",
+      "tooltip": "أنت تستخدم إصدارًا ليليًا من ComfyUI. يرجى استخدام زر الملاحظات لمشاركة آرائك حول هذه الميزات."
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "ثلاثي الأبعاد",
     "3d_models": "نماذج ثلاثية الأبعاد",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "بايت دانس",
     "Gemini": "جيميني",
     "Ideogram": "إيديوغرام",
@@ -1643,6 +1689,7 @@
     "Veo": "Veo",
     "Vidu": "فيدو",
     "Wan": "وان",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_للاختبار",
     "advanced": "متقدم",
     "animation": "الرسوم المتحركة",
@@ -2084,6 +2131,7 @@
     "NodeLibrary": "مكتبة العقد",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "تفضيلات الإشعارات",
+    "Other": "أخرى",
     "PLY": "PLY",
     "PlanCredits": "الخطة والاعتمادات",
     "Pointer": "المؤشر",
@@ -2103,7 +2151,8 @@
     "Vue Nodes": "عقد Vue",
     "VueNodes": "عقد Vue",
     "Window": "النافذة",
-    "Workflow": "سير العمل"
+    "Workflow": "سير العمل",
+    "Workspace": "مساحة العمل"
   },
   "shape": {
     "CARD": "بطاقة",
@@ -2129,12 +2178,14 @@
     "viewControls": "عناصر تحكم العرض"
   },
   "sideToolbar": {
+    "activeJobStatus": "المهمة النشطة: {status}",
     "assets": "الأصول",
     "backToAssets": "العودة إلى جميع الأصول",
     "browseTemplates": "تصفح القوالب المثال",
     "downloads": "التنزيلات",
     "generatedAssetsHeader": "الأصول المُولدة",
     "helpCenter": "مركز المساعدة",
+    "importedAssetsHeader": "الأصول المستوردة",
     "labels": {
       "assets": "الأصول",
       "console": "وحدة التحكم",
@@ -2179,6 +2230,7 @@
     "queue": "قائمة الانتظار",
     "queueProgressOverlay": {
       "activeJobs": "{count} مهمة نشطة | {count} مهام نشطة",
+      "activeJobsShort": "{count} نشط | {count} نشط",
       "activeJobsSuffix": "مهام نشطة",
       "cancelJobTooltip": "إلغاء المهمة",
       "clearHistory": "مسح سجل قائمة الانتظار",
@@ -2267,9 +2319,11 @@
     "beta": "نسخة تجريبية",
     "billedMonthly": "يتم الفوترة شهريًا",
     "billedYearly": "{total} يتم الفوترة سنويًا",
+    "cancelSubscription": "إلغاء الاشتراك",
     "changeTo": "تغيير إلى {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "شعار Comfy Cloud",
+    "contactOwnerToSubscribe": "يرجى التواصل مع مالك مساحة العمل للاشتراك",
     "contactUs": "تواصل معنا",
     "creditsRemainingThisMonth": "الرصيد المتبقي لهذا الشهر",
     "creditsRemainingThisYear": "الرصيد المتبقي لهذا العام",
@@ -2282,6 +2336,7 @@
     "haveQuestions": "هل لديك أسئلة أو ترغب في معرفة المزيد عن المؤسسات؟",
     "invoiceHistory": "سجل الفواتير",
     "learnMore": "معرفة المزيد",
+    "managePayment": "إدارة الدفع",
     "managePlan": "إدارة الخطة",
     "manageSubscription": "إدارة الاشتراك",
     "maxDuration": {
@@ -2317,6 +2372,7 @@
     "subscribeToComfyCloud": "الاشتراك في Comfy Cloud",
     "subscribeToRun": "اشتراك",
     "subscribeToRunFull": "الاشتراك للتشغيل",
+    "subscriptionRequiredMessage": "الاشتراك مطلوب للأعضاء لتشغيل سير العمل على السحابة",
     "tierNameYearly": "{name} سنوي",
     "tiers": {
       "creator": {
@@ -2348,6 +2404,7 @@
     "viewMoreDetails": "عرض المزيد من التفاصيل",
     "viewMoreDetailsPlans": "عرض المزيد من التفاصيل حول الخطط والأسعار",
     "viewUsageHistory": "عرض سجل الاستخدام",
+    "workspaceNotSubscribed": "هذه مساحة العمل ليست مشتركة",
     "yearly": "سنوي",
     "yearlyCreditsLabel": "إجمالي الرصيد السنوي",
     "yearlyDiscount": "خصم 20%",
@@ -2497,7 +2554,8 @@
     "notSet": "غير محدد",
     "provider": "مزود تسجيل الدخول",
     "title": "إعدادات المستخدم",
-    "updatePassword": "تحديث كلمة المرور"
+    "updatePassword": "تحديث كلمة المرور",
+    "workspaceSettings": "إعدادات مساحة العمل"
   },
   "validation": {
     "descriptionRequired": "الوصف مطلوب",
@@ -2601,6 +2659,57 @@
       "tokenExchangeFailed": "فشل التحقق من مساحة العمل: {error}",
       "workspaceNotFound": "لم يتم العثور على مساحة العمل"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "إنشاء",
+      "message": "تتيح مساحات العمل للأعضاء مشاركة رصيد واحد. ستصبح المالك بعد الإنشاء.",
+      "nameLabel": "اسم مساحة العمل*",
+      "namePlaceholder": "أدخل اسم مساحة العمل",
+      "title": "إنشاء مساحة عمل جديدة"
+    },
+    "deleteDialog": {
+      "message": "سيتم فقدان أي أرصدة غير مستخدمة أو أصول غير محفوظة. لا يمكن التراجع عن هذا الإجراء.",
+      "messageWithName": "حذف \"{name}\"؟ سيتم فقدان أي أرصدة غير مستخدمة أو أصول غير محفوظة. لا يمكن التراجع عن هذا الإجراء.",
+      "title": "حذف هذه المساحة؟"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "اسم مساحة العمل",
+      "save": "حفظ",
+      "title": "تعديل تفاصيل مساحة العمل"
+    },
+    "leaveDialog": {
+      "leave": "مغادرة",
+      "message": "لن تتمكن من الانضمام مرة أخرى إلا إذا تواصلت مع مالك مساحة العمل.",
+      "title": "مغادرة هذه المساحة؟"
+    },
+    "menu": {
+      "deleteWorkspace": "حذف مساحة العمل",
+      "deleteWorkspaceDisabledTooltip": "يرجى إلغاء الاشتراك النشط لمساحة العمل أولاً",
+      "editWorkspace": "تعديل تفاصيل مساحة العمل",
+      "leaveWorkspace": "مغادرة مساحة العمل"
+    },
+    "tabs": {
+      "planCredits": "الخطة والأرصدة"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "فشل في إنشاء مساحة العمل",
+      "failedToDeleteWorkspace": "فشل في حذف مساحة العمل",
+      "failedToLeaveWorkspace": "فشل في مغادرة مساحة العمل",
+      "failedToUpdateWorkspace": "فشل في تحديث مساحة العمل",
+      "workspaceUpdated": {
+        "message": "تم حفظ تفاصيل مساحة العمل.",
+        "title": "تم تحديث مساحة العمل"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "إنشاء مساحة عمل جديدة",
+    "maxWorkspacesReached": "يمكنك امتلاك ١٠ مساحات عمل فقط. احذف واحدة لإنشاء مساحة جديدة.",
+    "roleMember": "عضو",
+    "roleOwner": "المالك",
+    "subscribe": "اشترك",
+    "switchWorkspace": "تبديل مساحة العمل"
   },
   "zoomControls": {
     "hideMinimap": "إخفاء الخريطة المصغرة",

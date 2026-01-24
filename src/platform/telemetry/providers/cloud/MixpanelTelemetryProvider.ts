@@ -17,6 +17,7 @@ import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 import type {
   AuthMetadata,
   CreditTopupMetadata,
+  EnterLinearMetadata,
   ExecutionContext,
   ExecutionTriggerSource,
   ExecutionErrorMetadata,
@@ -352,6 +353,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
+  trackEnterLinear(metadata: EnterLinearMetadata): void {
+    this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

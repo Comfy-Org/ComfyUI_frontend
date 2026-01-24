@@ -28,7 +28,7 @@ import type { SettingOption } from '@/platform/settings/types'
 
 const props = defineProps<{
   modelValue: any
-  options: (SettingOption | string)[]
+  options?: (string | SettingOption | Record<string, string>)[]
   optionLabel?: string
   optionValue?: string
   id?: string

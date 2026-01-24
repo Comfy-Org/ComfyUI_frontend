@@ -48,9 +48,6 @@ const WidgetRecordAudio = defineAsyncComponent(
 const AudioPreviewPlayer = defineAsyncComponent(
   () => import('../components/audio/AudioPreviewPlayer.vue')
 )
-const WidgetAudioUI = defineAsyncComponent(
-  () => import('../components/WidgetAudioUI.vue')
-)
 const Load3D = defineAsyncComponent(
   () => import('@/components/load3d/Load3D.vue')
 )
@@ -62,7 +59,6 @@ const WidgetBoundingBox = defineAsyncComponent(
 )
 
 export const FOR_TESTING = {
-  WidgetAudioUI,
   WidgetButton,
   WidgetColorPicker,
   WidgetInputNumber,
@@ -182,10 +178,6 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ]
 ]
 
-const getComboWidgetAdditions = (): Map<string, Component> => {
-  return new Map([['audio', WidgetAudioUI]])
-}
-
 // Build lookup maps
 const widgets = new Map<string, WidgetDefinition>()
 const aliasMap = new Map<string, string>()
@@ -200,13 +192,7 @@ for (const [type, def] of coreWidgetDefinitions) {
 // Utility functions
 const getCanonicalType = (type: string): string => aliasMap.get(type) || type
 
-export const getComponent = (type: string, name: string): Component | null => {
-  if (type == 'combo') {
-    const comboAdditions = getComboWidgetAdditions()
-    if (comboAdditions.has(name)) {
-      return comboAdditions.get(name) || null
-    }
-  }
+export const getComponent = (type: string): Component | null => {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.component || null
 }

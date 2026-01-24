@@ -25,7 +25,10 @@
       :key="`widget-${index}-${widget.name}`"
     >
       <div
-        v-if="!widget.simplified.options?.hidden"
+        v-if="
+          !widget.simplified.options?.hidden &&
+          (!widget.simplified.options?.advanced || showAdvanced)
+        "
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
         <!-- Widget Input Slot Dot -->
@@ -75,6 +78,7 @@ import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -127,6 +131,12 @@ onErrorCaptured((error) => {
 })
 
 const nodeType = computed(() => nodeData?.type || '')
+const settingStore = useSettingStore()
+const showAdvanced = computed(
+  () =>
+    nodeData?.showAdvanced ||
+    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+)
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
 )
@@ -152,7 +162,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     if (!shouldRenderAsVue(widget)) continue
 
     const vueComponent =
-      getComponent(widget.type, widget.name) ||
+      getComponent(widget.type) ||
       (widget.isDOMWidget ? WidgetDOM : WidgetLegacy)
 
     const { slotMetadata, options } = widget
@@ -206,7 +216,12 @@ const gridTemplateRows = computed((): string => {
   if (!nodeData?.widgets) return ''
   const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
   return nodeData.widgets
-    .filter((w) => processedNames.has(w.name) && !w.options?.hidden)
+    .filter(
+      (w) =>
+        processedNames.has(w.name) &&
+        !w.options?.hidden &&
+        (!w.options?.advanced || showAdvanced.value)
+    )
     .map((w) =>
       shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
     )
