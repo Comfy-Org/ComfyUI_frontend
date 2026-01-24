@@ -6,7 +6,7 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 
 import { useFeatureUsageTracker } from './useFeatureUsageTracker'
 
-export interface FeatureSurveyConfig {
+interface FeatureSurveyConfig {
   /** Feature identifier. Must remain static after initialization. */
   featureId: string
   typeformId: string
