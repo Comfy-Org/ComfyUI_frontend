@@ -584,8 +584,6 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
-  background: var(--bg-color) var(--bg-img);
-  color: var(--fg-color);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
   min-width: -webkit-fill-available;
