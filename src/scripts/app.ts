@@ -1563,8 +1563,9 @@ export class ComfyApp {
       if (index > 0) {
         node.pos = [ x, y + (height * index) + (25 * (index + 1)) ]
       }
-      this.canvas.graph?.change()
     });
+
+    this.canvas.graph?.change()
   }
 
   // @deprecated

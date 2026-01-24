@@ -219,7 +219,7 @@ describe('ComfyApp', () => {
       expect(mockNode2.pos).toEqual([100, 400])
     })
 
-    it('should call graph change for each node', () => {
+    it('should call graph change once for all nodes', () => {
       const mockNode1 = createMockNode({
         getBounding: vi.fn(() => new Float64Array([100, 200, 300, 400]))
       })
@@ -230,7 +230,7 @@ describe('ComfyApp', () => {
       app.positionBatchNodes([mockNode1, mockNode2, mockNode3], mockBatchNode)
 
       // graph.change() is called for each node in the forEach
-      expect(mockCanvas.graph?.change).toHaveBeenCalledTimes(3)
+      expect(mockCanvas.graph?.change).toHaveBeenCalledTimes(1)
     })
   })
 
