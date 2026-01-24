@@ -8,8 +8,8 @@
     <div class="relative aspect-square overflow-hidden rounded-lg">
       <!-- Running state with preview image -->
       <img
-        v-if="isRunning && job.iconImageUrl"
-        :src="job.iconImageUrl"
+        v-if="isRunning && previewUrl"
+        :src="previewUrl"
         :alt="statusText"
         class="size-full object-cover"
       />
@@ -76,6 +76,7 @@ const { progressBarPrimaryClass, hasProgressPercent, progressPercentStyle } =
 
 const statusText = computed(() => job.title)
 const progressPercent = computed(() => job.progressTotalPercent)
+const previewUrl = computed(() => job.livePreviewUrl ?? job.iconImageUrl)
 
 const isQueued = computed(
   () => job.state === 'pending' || job.state === 'initialization'
