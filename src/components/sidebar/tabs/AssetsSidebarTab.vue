@@ -98,11 +98,13 @@
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
         <AssetsSidebarListView
           v-if="isListView"
-          :assets="displayAssets"
+          :asset-items="listViewAssetItems"
           :is-selected="isSelected"
+          :selectable-assets="listViewSelectableAssets"
+          :is-stack-expanded="isListViewStackExpanded"
+          :toggle-stack="toggleListViewStack"
           :asset-type="activeTab"
           @select-asset="handleAssetSelect"
-          @assets-change="handleListViewAssetsChange"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
         />
@@ -226,6 +228,7 @@ import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAsse
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
+import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
@@ -380,11 +383,19 @@ const displayAssets = computed(() => {
   return filteredAssets.value
 })
 
-const listViewAssets = ref<AssetItem[]>([])
+const {
+  assetItems: listViewAssetItems,
+  selectableAssets: listViewSelectableAssets,
+  isStackExpanded: isListViewStackExpanded,
+  toggleStack: toggleListViewStack
+} = useOutputStacks({
+  assets: computed(() => displayAssets.value)
+})
 
-const visibleAssets = computed(() =>
-  isListView.value ? listViewAssets.value : displayAssets.value
-)
+const visibleAssets = computed(() => {
+  if (!isListView.value) return displayAssets.value
+  return listViewSelectableAssets.value
+})
 
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
 
@@ -471,10 +482,6 @@ const handleAssetSelect = (asset: AssetItem, assets?: AssetItem[]) => {
   const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
   handleAssetClick(asset, index, assetList)
-}
-
-const handleListViewAssetsChange = (assets: AssetItem[]) => {
-  listViewAssets.value = assets
 }
 
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {

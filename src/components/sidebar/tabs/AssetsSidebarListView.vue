@@ -40,7 +40,7 @@
     </div>
 
     <div
-      v-if="assets.length"
+      v-if="assetItems.length"
       :class="cn('px-2', activeJobItems.length && 'mt-2')"
     >
       <div
@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
@@ -120,7 +120,6 @@ import { useJobActions } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobList } from '@/composables/queue/useJobList'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
-import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
@@ -135,12 +134,18 @@ import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
-  assets,
+  assetItems,
+  selectableAssets,
   isSelected,
+  isStackExpanded,
+  toggleStack,
   assetType = 'output'
 } = defineProps<{
-  assets: AssetItem[]
+  assetItems: { key: string; asset: AssetItem; isChild?: boolean }[]
+  selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  isStackExpanded: (asset: AssetItem) => boolean
+  toggleStack: (asset: AssetItem) => void
   assetType?: 'input' | 'output'
 }>()
 
@@ -148,18 +153,12 @@ const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'approach-end'): void
-  (e: 'assets-change', assets: AssetItem[]): void
 }>()
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
 const hoveredJobId = ref<string | null>(null)
 const hoveredAssetId = ref<string | null>(null)
-const { assetItems, selectableAssets, isStackExpanded, toggleStack } =
-  useOutputStacks({
-    assets: computed(() => assets)
-  })
-
 const activeJobItems = computed(() =>
   jobItems.value.filter((item) => isActiveJobState(item.state))
 )
@@ -170,14 +169,6 @@ const hoveredJob = computed(() =>
     : null
 )
 const { cancelAction, canCancelJob, runCancelJob } = useJobActions(hoveredJob)
-
-watch(
-  selectableAssets,
-  (nextAssets) => {
-    emit('assets-change', nextAssets)
-  },
-  { immediate: true }
-)
 
 const listGridStyle = {
   display: 'grid',
