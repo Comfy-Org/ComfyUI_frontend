@@ -1,11 +1,11 @@
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-export type NodeTitleInfo = {
+type NodeTitleInfo = {
   title?: string | number | null
   type?: string | number | null
 }
 
-export type StaticTranslate = (key: string, fallbackMessage: string) => string
+type StaticTranslate = (key: string, fallbackMessage: string) => string
 
 type ResolveNodeDisplayNameOptions = {
   emptyLabel: string
