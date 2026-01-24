@@ -103,17 +103,17 @@ function openFullSettings() {
         <FieldSwitch
           v-model="showAdvancedParameters"
           :label="t('rightSidePanel.globalSettings.showAdvanced')"
-          :tooltip="t('rightSidePanel.globalSettings.showAdvancedTooltip')"
+          :tooltip="t('settings.Comfy_Node_AlwaysShowAdvancedWidgets.tooltip')"
         />
         <FieldSwitch
           v-model="showToolbox"
           :label="t('rightSidePanel.globalSettings.showToolbox')"
-          :tooltip="t('rightSidePanel.globalSettings.showToolboxTooltip')"
+          :tooltip="t('settings.Comfy_Canvas_SelectionToolbox.tooltip')"
         />
         <FieldSwitch
           v-model="nodes2Enabled"
           :label="t('rightSidePanel.globalSettings.nodes2')"
-          :tooltip="t('rightSidePanel.globalSettings.nodes2Tooltip')"
+          :tooltip="t('settings.Comfy_VueNodes_Enabled.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
@@ -154,7 +154,7 @@ function openFullSettings() {
         <FieldSwitch
           v-model="snapToGrid"
           :label="t('rightSidePanel.globalSettings.snapNodesToGrid')"
-          :tooltip="t('rightSidePanel.globalSettings.snapNodesToGridTooltip')"
+          :tooltip="t('settings.pysssss_SnapToGrid.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
@@ -186,9 +186,7 @@ function openFullSettings() {
         <FieldSwitch
           v-model="showConnectedLinks"
           :label="t('rightSidePanel.globalSettings.showConnectedLinks')"
-          :tooltip="
-            t('rightSidePanel.globalSettings.showConnectedLinksTooltip')
-          "
+          :tooltip="t('settings.Comfy_LinkRenderMode.tooltip')"
         />
       </div>
     </PropertiesAccordionItem>
