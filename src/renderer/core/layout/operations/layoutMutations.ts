@@ -150,6 +150,7 @@ export function useLayoutMutations(): LayoutMutations {
       size: layout.size ?? { width: 200, height: 100 },
       zIndex: layout.zIndex ?? 0,
       visible: layout.visible ?? true,
+      mode: layout.mode ?? 0, // Default to ALWAYS
       bounds: {
         x: layout.position?.x ?? 0,
         y: layout.position?.y ?? 0,

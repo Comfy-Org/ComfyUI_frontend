@@ -34,6 +34,7 @@ describe('MinimapDataSource', () => {
             size: { width: 100, height: 50 },
             zIndex: 0,
             visible: true,
+            mode: 0,
             bounds: { x: 0, y: 0, width: 100, height: 50 }
           }
         ]

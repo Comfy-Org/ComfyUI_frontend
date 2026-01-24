@@ -1,5 +1,6 @@
 import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import {
@@ -119,16 +120,21 @@ export function useSelectedLiteGraphItems() {
     for (const i in selectedNodes) {
       selectedNodeArray.push(selectedNodes[i])
     }
-    const allNodesMatch = !selectedNodeArray.some(
-      (selectedNode) => selectedNode.mode !== mode
-    )
+
+    // Check if all selected nodes are already in the target mode
+    const allNodesMatch = !selectedNodeArray.some((selectedNode) => {
+      const nodeRef = layoutStore.getNodeLayoutRef(selectedNode.id.toString())
+      return nodeRef.value?.mode !== mode
+    })
     const newModeForSelectedNode = allNodesMatch ? LGraphEventMode.ALWAYS : mode
 
     // Process each selected node independently to determine its target state and apply to children
     selectedNodeArray.forEach((selectedNode) => {
       // Apply standard toggle logic to the selected node itself
-
-      selectedNode.mode = newModeForSelectedNode
+      layoutStore.setNodeMode(
+        selectedNode.id.toString(),
+        newModeForSelectedNode
+      )
 
       // If this selected node is a subgraph, apply the same mode uniformly to all its children
       // This ensures predictable behavior: all children get the same state as their parent
@@ -139,7 +145,7 @@ export function useSelectedLiteGraphItems() {
             if (node === selectedNode) return undefined
 
             // Apply the parent's new mode to all children uniformly
-            node.mode = newModeForSelectedNode
+            layoutStore.setNodeMode(node.id.toString(), newModeForSelectedNode)
             return undefined
           }
         })

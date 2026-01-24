@@ -53,6 +53,11 @@ export function useLayoutSync() {
           // Use setSize() to trigger onResize callback
           liteNode.setSize([layout.size.width, layout.size.height])
         }
+
+        // Sync mode to LiteGraph node
+        if (liteNode.mode !== layout.mode) {
+          liteNode.changeMode(layout.mode)
+        }
       }
 
       // Trigger single redraw for all changes

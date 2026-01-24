@@ -37,6 +37,7 @@ import type {
   RerouteId,
   RerouteLayout,
   ResizeNodeOperation,
+  SetNodeModeOperation,
   SetNodeZIndexOperation,
   SlotLayout
 } from '@/renderer/core/layout/types'
@@ -290,6 +291,18 @@ class LayoutStoreImpl implements LayoutStore {
                     nodeId,
                     zIndex: newLayout.zIndex,
                     previousZIndex: existingLayout.zIndex,
+                    timestamp: Date.now(),
+                    source: this.currentSource,
+                    actor: this.currentActor
+                  })
+                }
+                if (existingLayout.mode !== newLayout.mode) {
+                  this.applyOperation({
+                    type: 'setNodeMode',
+                    entity: 'node',
+                    nodeId,
+                    mode: newLayout.mode,
+                    previousMode: existingLayout.mode,
                     timestamp: Date.now(),
                     source: this.currentSource,
                     actor: this.currentActor
@@ -870,6 +883,9 @@ class LayoutStoreImpl implements LayoutStore {
       case 'setNodeZIndex':
         this.handleSetNodeZIndex(operation as SetNodeZIndexOperation, change)
         break
+      case 'setNodeMode':
+        this.handleSetNodeMode(operation as SetNodeModeOperation, change)
+        break
       case 'createNode':
         this.handleCreateNode(operation as CreateNodeOperation, change)
         break
@@ -969,7 +985,12 @@ class LayoutStoreImpl implements LayoutStore {
    * Initialize store with existing nodes
    */
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{
+      id: string
+      pos: [number, number]
+      size: [number, number]
+      mode?: number
+    }>
   ): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
@@ -993,6 +1014,7 @@ class LayoutStoreImpl implements LayoutStore {
           size: { width: node.size[0], height: node.size[1] },
           zIndex: index,
           visible: true,
+          mode: node.mode ?? 0, // Default to ALWAYS if not provided
           bounds: {
             x: node.pos[0],
             y: node.pos[1],
@@ -1075,6 +1097,17 @@ class LayoutStoreImpl implements LayoutStore {
     if (!ynode) return
 
     ynode.set('zIndex', operation.zIndex)
+    change.nodeIds.push(operation.nodeId)
+  }
+
+  private handleSetNodeMode(
+    operation: SetNodeModeOperation,
+    change: LayoutChange
+  ): void {
+    const ynode = this.ynodes.get(operation.nodeId)
+    if (!ynode) return
+
+    ynode.set('mode', operation.mode)
     change.nodeIds.push(operation.nodeId)
   }
 
@@ -1426,6 +1459,43 @@ class LayoutStoreImpl implements LayoutStore {
    */
   getStateAsUpdate(): Uint8Array {
     return Y.encodeStateAsUpdate(this.ydoc)
+  }
+
+  /**
+   * Set the execution mode for a single node.
+   * Applies the node's changeMode method if available and notifies the graph.
+   */
+  setNodeMode(nodeId: NodeId, mode: number): void {
+    const ynode = this.ynodes.get(nodeId)
+    if (!ynode) return
+
+    const currentLayout = yNodeToLayout(ynode)
+    if (currentLayout.mode === mode) return // No change needed
+
+    this.applyOperation({
+      type: 'setNodeMode',
+      entity: 'node',
+      nodeId,
+      mode,
+      previousMode: currentLayout.mode,
+      timestamp: Date.now(),
+      source: this.currentSource,
+      actor: this.currentActor
+    })
+  }
+
+  /**
+   * Set the execution mode for multiple nodes.
+   * Applies the mode to all nodes atomically.
+   */
+  setNodesMode(nodeIds: NodeId[], mode: number): void {
+    if (nodeIds.length === 0) return
+
+    // Apply mode to each node
+    // Note: We could create a batch operation type if needed for better performance
+    nodeIds.forEach((nodeId) => {
+      this.setNodeMode(nodeId, mode)
+    })
   }
 
   /**

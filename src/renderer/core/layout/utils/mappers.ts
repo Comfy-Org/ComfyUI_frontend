@@ -10,6 +10,7 @@ export const NODE_LAYOUT_DEFAULTS: NodeLayout = {
   size: { width: 100, height: 50 },
   zIndex: 0,
   visible: true,
+  mode: 0, // LGraphEventMode.ALWAYS
   bounds: { x: 0, y: 0, width: 100, height: 50 }
 }
 
@@ -20,6 +21,7 @@ export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   ynode.set('size', layout.size)
   ynode.set('zIndex', layout.zIndex)
   ynode.set('visible', layout.visible)
+  ynode.set('mode', layout.mode)
   ynode.set('bounds', layout.bounds)
   return ynode
 }
@@ -40,6 +42,7 @@ export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
     size: getOr(ynode, 'size', NODE_LAYOUT_DEFAULTS.size),
     zIndex: getOr(ynode, 'zIndex', NODE_LAYOUT_DEFAULTS.zIndex),
     visible: getOr(ynode, 'visible', NODE_LAYOUT_DEFAULTS.visible),
+    mode: getOr(ynode, 'mode', NODE_LAYOUT_DEFAULTS.mode),
     bounds: getOr(ynode, 'bounds', NODE_LAYOUT_DEFAULTS.bounds)
   }
 }
