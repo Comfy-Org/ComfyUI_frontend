@@ -81,6 +81,19 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
+  const pushDataLayerEvent = (event: Record<string, unknown>) => {
+    if (!isCloud || typeof window === 'undefined') return
+    const dataLayer = window.dataLayer ?? (window.dataLayer = [])
+    dataLayer.push(event)
+  }
+
+  const trackSignUp = (method: 'email' | 'google' | 'github') => {
+    pushDataLayerEvent({
+      event: 'sign_up',
+      method
+    })
+  }
+
   // Providers
   const googleProvider = new GoogleAuthProvider()
   googleProvider.addScope('email')
@@ -347,6 +360,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         method: 'email',
         is_new_user: true
       })
+      trackSignUp('email')
     }
 
     return result
@@ -365,6 +379,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         method: 'google',
         is_new_user: isNewUser
       })
+      if (isNewUser) {
+        trackSignUp('google')
+      }
     }
 
     return result
@@ -383,6 +400,9 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         method: 'github',
         is_new_user: isNewUser
       })
+      if (isNewUser) {
+        trackSignUp('github')
+      }
     }
 
     return result
