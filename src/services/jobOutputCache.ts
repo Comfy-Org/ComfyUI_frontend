@@ -11,6 +11,7 @@ import QuickLRU from '@alloc/quick-lru'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { resultItemType } from '@/schemas/apiSchema'
 import type { ResultItem, TaskOutput } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -86,7 +87,7 @@ function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
           return []
         }
 
-        return items.filter(isResultItem).map(
+        return items.filter(isResultItemLike).map(
           (item) =>
             new ResultItemImpl({
               ...item,
@@ -100,8 +101,43 @@ function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
   return ResultItemImpl.filterPreviewable(resultItems)
 }
 
-function isResultItem(item: unknown): item is ResultItem {
-  return typeof item === 'object' && item !== null
+function isResultItemLike(item: unknown): item is ResultItem {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    return false
+  }
+
+  const candidate = item as Record<string, unknown>
+
+  if (
+    candidate.filename !== undefined &&
+    typeof candidate.filename !== 'string'
+  ) {
+    return false
+  }
+
+  if (
+    candidate.subfolder !== undefined &&
+    typeof candidate.subfolder !== 'string'
+  ) {
+    return false
+  }
+
+  if (
+    candidate.type !== undefined &&
+    !resultItemType.safeParse(candidate.type).success
+  ) {
+    return false
+  }
+
+  if (
+    candidate.filename === undefined &&
+    candidate.subfolder === undefined &&
+    candidate.type === undefined
+  ) {
+    return false
+  }
+
+  return true
 }
 
 export function getPreviewableOutputsFromJobDetail(
