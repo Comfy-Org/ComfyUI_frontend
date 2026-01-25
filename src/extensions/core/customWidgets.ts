@@ -189,7 +189,7 @@ function onCustomFloatCreated(this: LGraphNode) {
 }
 
 app.registerExtension({
-  name: 'Comfy.CustomCombo',
+  name: 'Comfy.CustomWidgets',
   beforeRegisterNodeDef(nodeType, nodeData) {
     if (nodeData?.name === 'CustomCombo')
       nodeType.prototype.onNodeCreated = useChainCallback(
