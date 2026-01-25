@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
@@ -102,9 +102,6 @@ const { linearMode } = storeToRefs(useCanvasStore())
 const telemetry = useTelemetry()
 const firebaseAuthStore = useFirebaseAuthStore()
 let hasTrackedLogin = false
-let visibilityListener: (() => void) | null = null
-let tabCountInterval: number | null = null
-let tabCountChannel: BroadcastChannel | null = null
 
 watch(
   () => colorPaletteStore.completedActivePalette,
@@ -274,11 +271,12 @@ if (isCloud) {
   )
 }
 
+useEventListener(api, 'status', onStatus)
+useEventListener(api, 'execution_success', onExecutionSuccess)
+useEventListener(api, 'reconnecting', onReconnecting)
+useEventListener(api, 'reconnected', onReconnected)
+
 onMounted(() => {
-  api.addEventListener('status', onStatus)
-  api.addEventListener('execution_success', onExecutionSuccess)
-  api.addEventListener('reconnecting', onReconnecting)
-  api.addEventListener('reconnected', onReconnected)
   executionStore.bindExecutionEvents()
 
   try {
@@ -291,27 +289,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  api.removeEventListener('status', onStatus)
-  api.removeEventListener('execution_success', onExecutionSuccess)
-  api.removeEventListener('reconnecting', onReconnecting)
-  api.removeEventListener('reconnected', onReconnected)
   executionStore.unbindExecutionEvents()
-
-  // Clean up page visibility listener
-  if (visibilityListener) {
-    document.removeEventListener('visibilitychange', visibilityListener)
-    visibilityListener = null
-  }
-
-  // Clean up tab count tracking
-  if (tabCountInterval) {
-    window.clearInterval(tabCountInterval)
-    tabCountInterval = null
-  }
-  if (tabCountChannel) {
-    tabCountChannel.close()
-    tabCountChannel = null
-  }
 })
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
@@ -337,18 +315,17 @@ const onGraphReady = () => {
     }
 
     // Set up page visibility tracking (cloud only)
-    if (isCloud && telemetry && !visibilityListener) {
-      visibilityListener = () => {
+    if (isCloud && telemetry) {
+      useEventListener(document, 'visibilitychange', () => {
         telemetry.trackPageVisibilityChanged({
           visibility_state: document.visibilityState as 'visible' | 'hidden'
         })
-      }
-      document.addEventListener('visibilitychange', visibilityListener)
+      })
     }
 
     // Set up tab count tracking (cloud only)
-    if (isCloud && telemetry && !tabCountInterval) {
-      tabCountChannel = new BroadcastChannel('comfyui-tab-count')
+    if (isCloud && telemetry) {
+      const tabCountChannel = new BroadcastChannel('comfyui-tab-count')
       const activeTabs = new Map<string, number>()
       const currentTabId = crypto.randomUUID()
 
@@ -363,7 +340,7 @@ const onGraphReady = () => {
       }
 
       // 5-minute heartbeat interval
-      tabCountInterval = window.setInterval(() => {
+      useIntervalFn(() => {
         const now = Date.now()
 
         // Clean up stale tabs (no heartbeat for 45 seconds)
@@ -374,7 +351,7 @@ const onGraphReady = () => {
         })
 
         // Broadcast our heartbeat
-        tabCountChannel?.postMessage({
+        tabCountChannel.postMessage({
           type: 'heartbeat',
           tabId: currentTabId
         })
