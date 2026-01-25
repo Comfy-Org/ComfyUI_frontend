@@ -9,7 +9,7 @@ test.describe('Properties panel', () => {
     const { propertiesPanel } = comfyPage.menu
 
     await expect(propertiesPanel.panelTitle).toContainText(
-      'No node(s) selected'
+      'No item(s) selected'
     )
 
     await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
