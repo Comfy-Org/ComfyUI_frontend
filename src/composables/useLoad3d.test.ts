@@ -7,11 +7,13 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockCanvasPointerEvent,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
   default: vi.fn()
@@ -45,15 +47,6 @@ describe('useLoad3d', () => {
   let mockLoad3d: Partial<Load3d>
   let mockNode: LGraphNode
   let mockToastStore: ReturnType<typeof useToastStore>
-
-  const createMockPointerEvent = (): CanvasPointerEvent => {
-    return {
-      canvasX: 0,
-      canvasY: 0,
-      deltaX: 0,
-      deltaY: 0
-    } as CanvasPointerEvent
-  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -227,11 +220,11 @@ describe('useLoad3d', () => {
       expect(mockNode.onDrawBackground).toBeDefined()
 
       // Test the handlers
-      mockNode.onMouseEnter?.(createMockPointerEvent())
+      mockNode.onMouseEnter?.(createMockCanvasPointerEvent(0, 0))
       expect(mockLoad3d.refreshViewport).toHaveBeenCalled()
       expect(mockLoad3d.updateStatusMouseOnNode).toHaveBeenCalledWith(true)
 
-      mockNode.onMouseLeave?.(createMockPointerEvent())
+      mockNode.onMouseLeave?.(createMockCanvasPointerEvent(0, 0))
       expect(mockLoad3d.updateStatusMouseOnNode).toHaveBeenCalledWith(false)
 
       mockNode.onResize?.([512, 512] as Size)
