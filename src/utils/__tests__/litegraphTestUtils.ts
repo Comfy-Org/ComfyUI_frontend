@@ -180,7 +180,10 @@ export function createMockFileList(files: File[]): FileList {
   const fileList = {
     ...files,
     length: files.length,
-    item: (index: number) => files[index] ?? null
+    item: (index: number) => files[index] ?? null,
+    [Symbol.iterator]: function* () {
+      yield* files
+    }
   }
   return fileList as FileList
 }
