@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as LGraphCanvasModule from '@/lib/litegraph/src/LGraphCanvas'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph';
+import type { ContextMenu } from '@/lib/litegraph/src/litegraph';
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
@@ -458,11 +459,13 @@ describe('ComboWidget', () => {
       node.size = [200, 30]
 
       let capturedCallback: ((value: string) => void) | undefined
-      const mockContextMenu = vi
-        .fn<typeof LiteGraph.ContextMenu>()
-        .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
-        })
+      const mockContextMenu = vi.fn().mockImplementation(function (
+        this: ContextMenu,
+        _values: unknown[],
+        options: { callback?: (value: string) => void }
+      ) {
+        capturedCallback = options.callback
+      })
       LiteGraph.ContextMenu =
         mockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
@@ -501,11 +504,13 @@ describe('ComboWidget', () => {
       node.size = [200, 30]
 
       let capturedCallback: ((value: string) => void) | undefined
-      const mockContextMenu = vi
-        .fn<typeof LiteGraph.ContextMenu>()
-        .mockImplementation(function (_values, options) {
-          capturedCallback = options.callback
-        })
+      const mockContextMenu = vi.fn().mockImplementation(function (
+        this: ContextMenu,
+        _values: unknown[],
+        options: { callback?: (value: string) => void }
+      ) {
+        capturedCallback = options.callback
+      })
       LiteGraph.ContextMenu =
         mockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
@@ -763,11 +768,11 @@ describe('ComboWidget', () => {
         node.size = [200, 30]
 
         const mockAddItem = vi.fn()
-        const mockContextMenu = vi
-          .fn<typeof LiteGraph.ContextMenu>()
-          .mockImplementation(function () {
-            this.addItem = mockAddItem
-          })
+        const mockContextMenu = vi.fn().mockImplementation(function (this: {
+          addItem?: typeof mockAddItem
+        }) {
+          this.addItem = mockAddItem
+        })
         LiteGraph.ContextMenu =
           mockContextMenu as unknown as typeof LiteGraph.ContextMenu
         widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
@@ -825,12 +830,14 @@ describe('ComboWidget', () => {
 
         const mockAddItem = vi.fn()
         let capturedCallback: ((value: string) => void) | undefined
-        const mockContextMenu = vi
-          .fn<typeof LiteGraph.ContextMenu>()
-          .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
-            this.addItem = mockAddItem
-          })
+        const mockContextMenu = vi.fn().mockImplementation(function (
+          this: { addItem?: typeof mockAddItem },
+          _values: unknown[],
+          options: { callback?: (value: string) => void }
+        ) {
+          capturedCallback = options.callback
+          this.addItem = mockAddItem
+        })
         LiteGraph.ContextMenu =
           mockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
@@ -879,12 +886,14 @@ describe('ComboWidget', () => {
         const mockAddItem = vi.fn()
         let capturedCallback: ((value: string) => void) | undefined
 
-        const mockContextMenu = vi
-          .fn<typeof LiteGraph.ContextMenu>()
-          .mockImplementation(function (_values, options) {
-            capturedCallback = options.callback
-            this.addItem = mockAddItem
-          })
+        const mockContextMenu = vi.fn().mockImplementation(function (
+          this: { addItem?: typeof mockAddItem },
+          _values: unknown[],
+          options: { callback?: (value: string) => void }
+        ) {
+          capturedCallback = options.callback
+          this.addItem = mockAddItem
+        })
         LiteGraph.ContextMenu =
           mockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
@@ -959,11 +968,11 @@ describe('ComboWidget', () => {
           .mockImplementation(() => {})
 
         const mockAddItem = vi.fn()
-        const mockContextMenu = vi
-          .fn<typeof LiteGraph.ContextMenu>()
-          .mockImplementation(function () {
-            this.addItem = mockAddItem
-          })
+        const mockContextMenu = vi.fn().mockImplementation(function (this: {
+          addItem?: typeof mockAddItem
+        }) {
+          this.addItem = mockAddItem
+        })
         LiteGraph.ContextMenu =
           mockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
@@ -1011,7 +1020,7 @@ describe('ComboWidget', () => {
         node.pos = [50, 50]
         node.size = [200, 30]
 
-        const mockContextMenu = vi.fn<typeof LiteGraph.ContextMenu>()
+        const mockContextMenu = vi.fn()
         LiteGraph.ContextMenu =
           mockContextMenu as unknown as typeof LiteGraph.ContextMenu
 
