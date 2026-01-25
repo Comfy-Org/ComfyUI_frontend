@@ -13,13 +13,6 @@ import {
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
 
-interface MockEvents {
-  addEventListener: ReturnType<typeof vi.fn>
-  removeEventListener: ReturnType<typeof vi.fn>
-  dispatchEvent: ReturnType<typeof vi.fn>
-  dispatch: ReturnType<typeof vi.fn>
-}
-
 describe('ToOutputRenderLink', () => {
   describe('connectToOutput', () => {
     it('should return early if inputNode is null', () => {
@@ -47,7 +40,7 @@ describe('ToOutputRenderLink', () => {
       const mockTargetNode = createMockLGraphNode({
         connectSlots: vi.fn()
       })
-      const mockEvents: MockEvents = {
+      const mockEvents: Partial<CustomEventTarget<LinkConnectorEventMap>> = {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
         dispatchEvent: vi.fn(),
@@ -87,7 +80,7 @@ describe('ToOutputRenderLink', () => {
       const mockTargetNode = createMockLGraphNode({
         connectSlots: vi.fn().mockReturnValue(mockNewLink)
       })
-      const mockEvents: MockEvents = {
+      const mockEvents: Partial<CustomEventTarget<LinkConnectorEventMap>> = {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
         dispatchEvent: vi.fn(),
