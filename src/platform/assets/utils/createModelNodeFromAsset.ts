@@ -69,20 +69,10 @@ export function createModelNodeFromAsset(
 
   const validAsset = validatedAsset.data
 
-  const userMetadata = validAsset.user_metadata
-  if (!userMetadata) {
-    console.error(`Asset ${validAsset.id} missing required user_metadata`)
-    return {
-      success: false,
-      error: {
-        code: 'INVALID_ASSET',
-        message: 'Asset missing required user_metadata',
-        assetId: validAsset.id
-      }
-    }
-  }
+  const userMetadata = validAsset.user_metadata ?? {}
 
-  const filename = userMetadata.filename
+  const filename =
+    userMetadata.filename || validAsset.metadata?.filename || validAsset.name
   if (typeof filename !== 'string' || filename.length === 0) {
     console.error(
       `Asset ${validAsset.id} has invalid user_metadata.filename (expected non-empty string, got ${typeof filename})`
