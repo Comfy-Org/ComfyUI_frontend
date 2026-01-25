@@ -82,7 +82,8 @@ export function createModelNodeFromAsset(
     }
   }
 
-  const filename = userMetadata.filename
+  const filename =
+    userMetadata.filename || validAsset.metadata?.filename || validAsset.name
   if (typeof filename !== 'string' || filename.length === 0) {
     console.error(
       `Asset ${validAsset.id} has invalid user_metadata.filename (expected non-empty string, got ${typeof filename})`
