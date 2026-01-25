@@ -264,6 +264,7 @@ const focusAssetInSidebar = async (item: JobListItem) => {
     throw new Error('Asset not found in media assets panel')
   }
   assetSelectionStore.setSelection([assetId])
+  assetSelectionStore.setLastSelectedAssetId(assetId)
 }
 
 const inspectJobAsset = wrapWithErrorHandlingAsync(
