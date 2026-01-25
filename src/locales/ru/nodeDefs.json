@@ -2098,11 +2098,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "ИНДЕКС",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "Загрузить модель ControlNet (дифф)",
@@ -13424,6 +13426,84 @@
     "outputs": {
       "0": {
         "name": "исправленная_модель",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Изображение(я) в модель (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "face_count": {
+        "name": "количество граней"
+      },
+      "generate_type": {
+        "name": "тип генерации"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "image_back": {
+        "name": "изображение сзади"
+      },
+      "image_left": {
+        "name": "изображение слева"
+      },
+      "image_right": {
+        "name": "изображение справа"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Опция LowPoly недоступна для модели `3.1`."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "файл_модели",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Текст в модель (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "face_count": {
+        "name": "количество граней"
+      },
+      "generate_type": {
+        "name": "тип генерации"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Опция LowPoly недоступна для модели `3.1`."
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Поддерживается до 1024 символов."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "файл_модели",
         "tooltip": null
       }
     }

@@ -2098,11 +2098,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "ÍNDICE",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "Cargar Modelo ControlNet (diff)",
@@ -13424,6 +13426,84 @@
     "outputs": {
       "0": {
         "name": "modelo_modificado",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Imagen(es) a Modelo (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar_tras_generar"
+      },
+      "face_count": {
+        "name": "número_de_caras"
+      },
+      "generate_type": {
+        "name": "tipo_de_generación"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "image_back": {
+        "name": "imagen_trasera"
+      },
+      "image_left": {
+        "name": "imagen_izquierda"
+      },
+      "image_right": {
+        "name": "imagen_derecha"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "La opción LowPoly no está disponible para el modelo `3.1`."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Texto a Modelo (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar_tras_generar"
+      },
+      "face_count": {
+        "name": "número_de_caras"
+      },
+      "generate_type": {
+        "name": "tipo_de_generación"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "La opción LowPoly no está disponible para el modelo `3.1`."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Admite hasta 1024 caracteres."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
         "tooltip": null
       }
     }

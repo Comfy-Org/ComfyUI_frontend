@@ -2100,11 +2100,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "ÍNDICE",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "Carregar Modelo ControlNet (diff)",
@@ -13451,6 +13453,84 @@
     "outputs": {
       "0": {
         "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "face_count": {
+        "name": "número_de_faces"
+      },
+      "generate_type": {
+        "name": "tipo_de_geração"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "image_back": {
+        "name": "imagem_traseira"
+      },
+      "image_left": {
+        "name": "imagem_esquerda"
+      },
+      "image_right": {
+        "name": "imagem_direita"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "A opção LowPoly não está disponível para o modelo `3.1`."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Texto para Modelo (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "face_count": {
+        "name": "número_de_faces"
+      },
+      "generate_type": {
+        "name": "tipo_de_geração"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "A opção LowPoly não está disponível para o modelo `3.1`."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Suporta até 1024 caracteres."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
         "tooltip": null
       }
     }
