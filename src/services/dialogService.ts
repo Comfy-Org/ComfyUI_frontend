@@ -26,8 +26,6 @@ import type {
   ShowDialogOptions
 } from '@/stores/dialogStore'
 
-import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
-import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
 import ImportFailedNodeContent from '@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue'
 import ImportFailedNodeFooter from '@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue'
 import ImportFailedNodeHeader from '@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue'
@@ -139,32 +137,6 @@ export const useDialogService = () => {
           })
         }
       }
-    })
-  }
-
-  function showManagerDialog(
-    props: ComponentAttrs<typeof ManagerDialogContent> = {}
-  ) {
-    dialogStore.showDialog({
-      key: 'global-manager',
-      component: ManagerDialogContent,
-      headerComponent: ManagerHeader,
-      dialogComponentProps: {
-        closable: true,
-        pt: {
-          pcCloseButton: {
-            root: {
-              class: 'bg-dialog-surface w-9 h-9 p-1.5 rounded-full text-white'
-            }
-          },
-          header: { class: 'py-0! px-6 m-0! h-[68px]' },
-          content: {
-            class: 'p-0! h-full w-[90vw] max-w-full flex-1 overflow-hidden'
-          },
-          root: { class: 'manager-dialog' }
-        }
-      },
-      props
     })
   }
 
@@ -409,20 +381,10 @@ export const useDialogService = () => {
     }
   }
 
-  function toggleManagerDialog(
-    props?: ComponentAttrs<typeof ManagerDialogContent>
-  ) {
-    if (dialogStore.isDialogOpen('global-manager')) {
-      dialogStore.closeDialog({ key: 'global-manager' })
-    } else {
-      showManagerDialog(props)
-    }
-  }
-
   function showLayoutDialog(options: {
     key: string
     component: Component
-    props: { onClose: () => void }
+    props: { onClose: () => void } & Record<string, unknown>
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
@@ -622,7 +584,6 @@ export const useDialogService = () => {
     showSettingsDialog,
     showAboutDialog,
     showExecutionErrorDialog,
-    showManagerDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showSubscriptionRequiredDialog,
@@ -632,7 +593,6 @@ export const useDialogService = () => {
     prompt,
     showErrorDialog,
     confirm,
-    toggleManagerDialog,
     showLayoutDialog,
     showImportFailedNodeDialog,
     showNodeConflictDialog,
