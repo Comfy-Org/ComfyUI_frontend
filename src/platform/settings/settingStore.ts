@@ -170,7 +170,11 @@ export const useSettingStore = defineStore('setting', () => {
       throw new Error('Settings must have an ID')
     }
     if (setting.id in settingsById.value) {
-      throw new Error(`Setting ${setting.id} must have a unique ID.`)
+      // Setting already registered - skip to allow component remounting
+      // TODO: Add store reset methods to bootstrapStore and settingStore, then
+      // replace window.location.reload() with router.push() in SidebarLogoutIcon.vue
+      console.warn(`Setting already registered: ${setting.id}`)
+      return
     }
 
     settingsById.value[setting.id] = setting

@@ -82,18 +82,24 @@ describe('useSettingStore', () => {
       expect(store.settingsById['test.setting']).toEqual(setting)
     })
 
-    it('should throw error for duplicate setting ID', () => {
+    it('should warn and skip for duplicate setting ID', () => {
       const setting: SettingParams = {
         id: 'test.setting',
         name: 'test.setting',
         type: 'text',
         defaultValue: 'default'
       }
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
 
       store.addSetting(setting)
-      expect(() => store.addSetting(setting)).toThrow(
-        'Setting test.setting must have a unique ID.'
+      store.addSetting(setting)
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Setting already registered: test.setting'
       )
+      consoleWarnSpy.mockRestore()
     })
 
     it('should migrate deprecated values', () => {
