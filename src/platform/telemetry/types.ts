@@ -37,6 +37,13 @@ export interface SurveyResponses {
   making?: string[]
 }
 
+export interface SurveyResponsesNormalized extends SurveyResponses {
+  industry_normalized?: string
+  industry_raw?: string
+  useCase_normalized?: string
+  useCase_raw?: string
+}
+
 /**
  * Run button tracking properties
  */
