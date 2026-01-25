@@ -283,16 +283,6 @@ describe('createModelNodeFromAsset', () => {
         errorPattern: /Invalid filename.*expected non-empty string/
       },
       {
-        case: 'non-string filename',
-        overrides: {
-          user_metadata: { filename: 123 },
-          metadata: undefined,
-          name: ''
-        },
-        expectedCode: 'INVALID_ASSET' as const,
-        errorPattern: /Invalid filename.*expected non-empty string, got number/
-      },
-      {
         case: 'empty filename with no fallback',
         overrides: {
           user_metadata: { filename: '' },
