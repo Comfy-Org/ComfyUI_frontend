@@ -87,10 +87,22 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     dataLayer.push(event)
   }
 
-  const trackSignUp = (method: 'email' | 'google' | 'github') => {
+  const hashSha256 = async (value: string): Promise<string | undefined> => {
+    if (typeof crypto === 'undefined' || !crypto.subtle) return
+    const data = new TextEncoder().encode(value)
+    const hash = await crypto.subtle.digest('SHA-256', data)
+    return Array.from(new Uint8Array(hash))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('')
+  }
+
+  const trackSignUp = async (method: 'email' | 'google' | 'github') => {
+    const userId = currentUser.value?.uid
+    const hashedUserId = userId ? await hashSha256(userId) : undefined
     pushDataLayerEvent({
       event: 'sign_up',
-      method
+      method,
+      ...(hashedUserId ? { user_id: hashedUserId } : {})
     })
   }
 
@@ -360,7 +372,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         method: 'email',
         is_new_user: true
       })
-      trackSignUp('email')
+      await trackSignUp('email')
     }
 
     return result
@@ -380,7 +392,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         is_new_user: isNewUser
       })
       if (isNewUser) {
-        trackSignUp('google')
+        await trackSignUp('google')
       }
     }
 
@@ -401,7 +413,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         is_new_user: isNewUser
       })
       if (isNewUser) {
-        trackSignUp('github')
+        await trackSignUp('github')
       }
     }
 
