@@ -36,6 +36,7 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+import { zInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec,
@@ -465,6 +466,8 @@ export const useLitegraphService = () => {
               : output
           }
         )
+        const maybeDef = zInputSpec.safeParse(data.properties?.dynamicSpec).data
+        if (maybeDef) addNodeInput(this, maybeDef)
 
         data.widgets_values = migrateWidgetsValues(
           ComfyNode.nodeData.inputs,

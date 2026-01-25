@@ -132,7 +132,7 @@ const zCustomInputSpec = zBaseInputOptions.extend({
   isOptional: z.boolean().optional()
 })
 
-const zInputSpec = z.union([
+export const zInputSpec = z.union([
   zIntInputSpec,
   zFloatInputSpec,
   zBooleanInputSpec,
