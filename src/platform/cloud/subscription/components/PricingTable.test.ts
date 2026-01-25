@@ -14,7 +14,7 @@ const mockSubscriptionTier = ref<
 const mockIsYearlySubscription = ref(false)
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
-const mockGetAuthHeader = vi.fn(() =>
+const mockGetFirebaseAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
 
@@ -53,7 +53,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: () => ({
-    getAuthHeader: mockGetAuthHeader
+    getFirebaseAuthHeader: mockGetFirebaseAuthHeader
   }),
   FirebaseAuthStoreError: class extends Error {}
 }))

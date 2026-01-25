@@ -26,14 +26,16 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
-const mockRemoteConfig = vi.hoisted(() => ({
-  value: {
-    team_workspaces_enabled: true
-  }
-}))
+const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: true }))
 
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: mockRemoteConfig
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get teamWorkspacesEnabled() {
+        return mockTeamWorkspacesEnabled.value
+      }
+    }
+  })
 }))
 
 const mockWorkspace = {
@@ -622,11 +624,11 @@ describe('useWorkspaceAuthStore', () => {
 
   describe('feature flag disabled', () => {
     beforeEach(() => {
-      mockRemoteConfig.value.team_workspaces_enabled = false
+      mockTeamWorkspacesEnabled.value = false
     })
 
     afterEach(() => {
-      mockRemoteConfig.value.team_workspaces_enabled = true
+      mockTeamWorkspacesEnabled.value = true
     })
 
     it('initializeFromSession returns false when flag disabled', () => {

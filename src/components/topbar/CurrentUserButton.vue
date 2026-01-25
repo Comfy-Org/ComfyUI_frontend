@@ -27,7 +27,7 @@
           :class="compact && 'size-full'"
         />
 
-        <i v-if="showArrow" class="icon-[lucide--chevron-down] size-3 px-1" />
+        <i v-if="showArrow" class="icon-[lucide--chevron-down] size-4 px-1" />
       </div>
     </Button>
 

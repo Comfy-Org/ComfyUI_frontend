@@ -126,11 +126,13 @@ import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { mergeCustomNodesI18n, t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -139,6 +141,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistence'
+import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
@@ -394,6 +397,9 @@ const loadCustomNodesI18n = async () => {
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+const { flags } = useFeatureFlags()
+// Set up invite loader during setup phase so useRoute/useRouter work correctly
+const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
@@ -458,6 +464,22 @@ onMounted(async () => {
 
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
+
+  // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
+  // Uses watch because feature flags load asynchronously - flag may be false initially
+  // then become true once remoteConfig or websocket features are loaded
+  if (inviteUrlLoader) {
+    const stopWatching = watch(
+      () => flags.teamWorkspacesEnabled,
+      async (enabled) => {
+        if (enabled) {
+          stopWatching()
+          await inviteUrlLoader.loadInviteFromUrl()
+        }
+      },
+      { immediate: true }
+    )
+  }
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
