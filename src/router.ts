@@ -36,6 +36,18 @@ function getBasePath(): string {
 
 const basePath = getBasePath()
 
+function pushPageView(to: RouteLocationNormalized): void {
+  if (!isCloud) return
+
+  const dataLayer = window.dataLayer ?? (window.dataLayer = [])
+  dataLayer.push({
+    event: 'page_view',
+    page_location: window.location.href,
+    page_title: document.title,
+    page_path: to.fullPath
+  })
+}
+
 const router = createRouter({
   history: isFileProtocol
     ? createWebHashHistory()
@@ -92,6 +104,10 @@ installPreservedQueryTracker(router, [
     keys: ['invite']
   }
 ])
+
+router.afterEach((to) => {
+  pushPageView(to)
+})
 
 if (isCloud) {
   const { flags } = useFeatureFlags()
