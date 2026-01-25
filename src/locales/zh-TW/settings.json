@@ -272,6 +272,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "在圖片預覽下方顯示寬度 × 高度"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "在所有節點上總是顯示進階小工具",
+    "tooltip": "啟用後，所有節點的進階小工具將始終可見，無需單獨展開。"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "自動吸附連結到節點插槽",
     "tooltip": "拖曳連結到節點時，連結會自動吸附到節點上可用的輸入插槽"

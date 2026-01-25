@@ -960,11 +960,10 @@
     "videoPreview": "비디오 미리보기 - 화살표 키를 사용하여 비디오 간 이동",
     "viewImageOfTotal": "이미지 {index}/{total} 보기",
     "viewVideoOfTotal": "비디오 {index}/{total} 보기",
-    "vitePreloadErrorMessage": "앱의 새 버전이 출시되었습니다. 새로고침하시겠습니까?\n그렇지 않으면 앱의 일부 기능이 예상대로 작동하지 않을 수 있습니다.\n새로고침하기 전에 진행 상황을 저장하고 거부하는 것도 가능합니다.",
-    "vitePreloadErrorTitle": "새 버전 사용 가능",
     "volume": "볼륨",
     "warning": "경고",
-    "workflow": "워크플로"
+    "workflow": "워크플로",
+    "you": "당신"
   },
   "graphCanvasMenu": {
     "fitView": "보기 맞춤",
@@ -1684,6 +1683,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1899,6 +1899,7 @@
     },
     "groupSettings": "그룹 설정",
     "groups": "그룹",
+    "hideAdvancedInputsButton": "고급 입력 숨기기",
     "hideInput": "입력 숨기기",
     "info": "정보",
     "inputs": "입력",
@@ -2319,6 +2320,10 @@
     "beta": "베타",
     "billedMonthly": "매월 결제",
     "billedYearly": "{total} 연간 결제",
+    "billingComingSoon": {
+      "message": "팀 결제 기능이 곧 제공됩니다. 워크스페이스별 좌석당 요금제로 구독할 수 있습니다. 업데이트를 기대해 주세요.",
+      "title": "곧 출시 예정"
+    },
     "cancelSubscription": "구독 취소",
     "changeTo": "{plan}로 변경",
     "comfyCloud": "Comfy Cloud",
@@ -2646,6 +2651,9 @@
     "saveWorkflow": "워크플로 저장"
   },
   "workspace": {
+    "addedToWorkspace": "{workspaceName} 워크스페이스에 추가되었습니다",
+    "inviteAccepted": "초대 수락됨",
+    "inviteFailed": "초대 수락에 실패했습니다",
     "unsavedChanges": {
       "message": "저장되지 않은 변경 사항이 있습니다. 변경 사항을 취소하고 워크스페이스를 전환하시겠습니까?",
       "title": "저장되지 않은 변경 사항"
@@ -2668,6 +2676,9 @@
       "namePlaceholder": "워크스페이스 이름 입력",
       "title": "새 워크스페이스 만들기"
     },
+    "dashboard": {
+      "placeholder": "대시보드 워크스페이스 설정"
+    },
     "deleteDialog": {
       "message": "사용하지 않은 크레딧이나 저장되지 않은 자산이 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
       "messageWithName": "\"{name}\"을(를) 삭제하시겠습니까? 사용하지 않은 크레딧이나 저장되지 않은 자산이 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.",
@@ -2678,10 +2689,49 @@
       "save": "저장",
       "title": "워크스페이스 정보 수정"
     },
+    "invite": "초대",
+    "inviteLimitReached": "최대 50명의 멤버에 도달했습니다",
+    "inviteMember": "멤버 초대",
+    "inviteMemberDialog": {
+      "createLink": "링크 생성",
+      "linkCopied": "복사됨",
+      "linkCopyFailed": "링크 복사 실패",
+      "linkStep": {
+        "copyLink": "링크 복사",
+        "done": "완료",
+        "message": "상대방 계정이 이 이메일을 사용하는지 확인하세요.",
+        "title": "이 링크를 상대방에게 보내세요"
+      },
+      "message": "공유 가능한 초대 링크를 생성하여 상대방에게 보내세요",
+      "placeholder": "이메일을 입력하세요",
+      "title": "이 워크스페이스에 사람 초대"
+    },
     "leaveDialog": {
       "leave": "나가기",
       "message": "워크스페이스 소유자에게 연락하지 않으면 다시 참여할 수 없습니다.",
       "title": "이 워크스페이스를 나가시겠습니까?"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "초대 링크 복사",
+        "removeMember": "멤버 제거",
+        "revokeInvite": "초대 취소"
+      },
+      "columns": {
+        "expiryDate": "만료 날짜",
+        "inviteDate": "초대 날짜",
+        "joinDate": "가입 날짜"
+      },
+      "createNewWorkspace": "새 워크스페이스를 만드세요.",
+      "membersCount": "{count}/50 멤버",
+      "noInvites": "대기 중인 초대 없음",
+      "noMembers": "멤버 없음",
+      "pendingInvitesCount": "{count}건의 초대 대기 중 | {count}건의 초대 대기 중",
+      "personalWorkspaceMessage": "현재 개인 워크스페이스에는 다른 멤버를 초대할 수 없습니다. 멤버를 추가하려면",
+      "tabs": {
+        "active": "활성",
+        "pendingCount": "대기 중 ({count})"
+      }
     },
     "menu": {
       "deleteWorkspace": "워크스페이스 삭제",
@@ -2689,14 +2739,42 @@
       "editWorkspace": "워크스페이스 정보 수정",
       "leaveWorkspace": "워크스페이스 나가기"
     },
+    "removeMemberDialog": {
+      "error": "멤버 제거에 실패했습니다",
+      "message": "이 멤버는 워크스페이스에서 제거됩니다. 사용한 크레딧은 환불되지 않습니다.",
+      "remove": "멤버 제거",
+      "success": "멤버가 제거되었습니다",
+      "title": "이 멤버를 제거하시겠습니까?"
+    },
+    "revokeInviteDialog": {
+      "message": "이 멤버는 더 이상 워크스페이스에 참여할 수 없습니다. 초대 링크가 무효화됩니다.",
+      "revoke": "초대 취소",
+      "title": "이 사람의 초대를 취소하시겠습니까?"
+    },
     "tabs": {
+      "dashboard": "대시보드",
+      "membersCount": "멤버 ({count})",
       "planCredits": "플랜 및 크레딧"
     },
     "toast": {
       "failedToCreateWorkspace": "워크스페이스 생성에 실패했습니다",
       "failedToDeleteWorkspace": "워크스페이스 삭제에 실패했습니다",
+      "failedToFetchWorkspaces": "워크스페이스 불러오기에 실패했습니다",
       "failedToLeaveWorkspace": "워크스페이스 나가기에 실패했습니다",
       "failedToUpdateWorkspace": "워크스페이스 업데이트에 실패했습니다",
+      "workspaceCreated": {
+        "message": "요금제 구독, 팀원 초대, 협업을 시작하세요.",
+        "subscribe": "구독하기",
+        "title": "워크스페이스 생성됨"
+      },
+      "workspaceDeleted": {
+        "message": "워크스페이스가 영구적으로 삭제되었습니다.",
+        "title": "워크스페이스 삭제됨"
+      },
+      "workspaceLeft": {
+        "message": "워크스페이스에서 나갔습니다.",
+        "title": "워크스페이스에서 나감"
+      },
       "workspaceUpdated": {
         "message": "워크스페이스 정보가 저장되었습니다.",
         "title": "워크스페이스가 업데이트되었습니다"
@@ -2706,6 +2784,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "새 워크스페이스 만들기",
     "maxWorkspacesReached": "최대 10개의 워크스페이스만 소유할 수 있습니다. 새로 만들려면 하나를 삭제하세요.",
+    "personal": "개인",
     "roleMember": "멤버",
     "roleOwner": "소유자",
     "subscribe": "구독하기",

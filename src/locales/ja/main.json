@@ -960,11 +960,10 @@
     "videoPreview": "ビデオプレビュー - 矢印キーでビデオを切り替え",
     "viewImageOfTotal": "画像 {index} / {total} を表示",
     "viewVideoOfTotal": "ビデオ {index} / {total} を表示",
-    "vitePreloadErrorMessage": "アプリの新しいバージョンがリリースされました。再読み込みしますか？\n再読み込みしない場合、アプリの一部が正しく動作しない可能性があります。\n再読み込み前に進行状況を保存してから拒否することもできます。",
-    "vitePreloadErrorTitle": "新しいバージョンが利用可能",
     "volume": "音量",
     "warning": "警告",
-    "workflow": "ワークフロー"
+    "workflow": "ワークフロー",
+    "you": "あなた"
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
@@ -1684,6 +1683,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1899,6 +1899,7 @@
     },
     "groupSettings": "グループ設定",
     "groups": "グループ",
+    "hideAdvancedInputsButton": "詳細入力を非表示",
     "hideInput": "入力を非表示",
     "info": "情報",
     "inputs": "入力",
@@ -2319,6 +2320,10 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "billingComingSoon": {
+      "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
+      "title": "近日公開"
+    },
     "cancelSubscription": "サブスクリプションをキャンセル",
     "changeTo": "{plan}に変更",
     "comfyCloud": "Comfy Cloud",
@@ -2646,6 +2651,9 @@
     "saveWorkflow": "ワークフローを保存"
   },
   "workspace": {
+    "addedToWorkspace": "{workspaceName}に追加されました",
+    "inviteAccepted": "招待を承諾しました",
+    "inviteFailed": "招待の承諾に失敗しました",
     "unsavedChanges": {
       "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
       "title": "未保存の変更"
@@ -2668,6 +2676,9 @@
       "namePlaceholder": "ワークスペース名を入力",
       "title": "新しいワークスペースを作成"
     },
+    "dashboard": {
+      "placeholder": "ダッシュボードのワークスペース設定"
+    },
     "deleteDialog": {
       "message": "未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
       "messageWithName": "「{name}」を削除しますか？未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
@@ -2678,10 +2689,49 @@
       "save": "保存",
       "title": "ワークスペースの詳細を編集"
     },
+    "invite": "招待",
+    "inviteLimitReached": "メンバーの上限50人に達しました",
+    "inviteMember": "メンバーを招待",
+    "inviteMemberDialog": {
+      "createLink": "リンクを作成",
+      "linkCopied": "コピーしました",
+      "linkCopyFailed": "コピーに失敗しました",
+      "linkStep": {
+        "copyLink": "リンクをコピー",
+        "done": "完了",
+        "message": "相手のアカウントがこのメールアドレスを使用していることを確認してください。",
+        "title": "このリンクを相手に送信してください"
+      },
+      "message": "共有可能な招待リンクを作成して送信してください",
+      "placeholder": "招待する人のメールアドレスを入力",
+      "title": "このワークスペースに人を招待"
+    },
     "leaveDialog": {
       "leave": "退出",
       "message": "ワークスペースのオーナーに連絡しない限り、再参加できません。",
       "title": "このワークスペースを退出しますか？"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "招待リンクをコピー",
+        "removeMember": "メンバーを削除",
+        "revokeInvite": "招待を取り消す"
+      },
+      "columns": {
+        "expiryDate": "有効期限",
+        "inviteDate": "招待日",
+        "joinDate": "参加日"
+      },
+      "createNewWorkspace": "新しいワークスペースを作成してください。",
+      "membersCount": "{count}/50人のメンバー",
+      "noInvites": "保留中の招待はありません",
+      "noMembers": "メンバーがいません",
+      "pendingInvitesCount": "{count}件の招待保留中",
+      "personalWorkspaceMessage": "現在、個人用ワークスペースには他のメンバーを招待できません。メンバーを追加するには、",
+      "tabs": {
+        "active": "アクティブ",
+        "pendingCount": "保留中（{count}）"
+      }
     },
     "menu": {
       "deleteWorkspace": "ワークスペースを削除",
@@ -2689,14 +2739,42 @@
       "editWorkspace": "ワークスペースの詳細を編集",
       "leaveWorkspace": "ワークスペースを退出"
     },
+    "removeMemberDialog": {
+      "error": "メンバーの削除に失敗しました",
+      "message": "このメンバーはワークスペースから削除されます。使用済みのクレジットは返金されません。",
+      "remove": "メンバーを削除",
+      "success": "メンバーを削除しました",
+      "title": "このメンバーを削除しますか？"
+    },
+    "revokeInviteDialog": {
+      "message": "このメンバーは今後ワークスペースに参加できなくなります。招待リンクは無効になります。",
+      "revoke": "招待を取り消す",
+      "title": "この人の招待を取り消しますか？"
+    },
     "tabs": {
+      "dashboard": "ダッシュボード",
+      "membersCount": "メンバー（{count}）",
       "planCredits": "プランとクレジット"
     },
     "toast": {
       "failedToCreateWorkspace": "ワークスペースの作成に失敗しました",
       "failedToDeleteWorkspace": "ワークスペースの削除に失敗しました",
+      "failedToFetchWorkspaces": "ワークスペースの読み込みに失敗しました",
       "failedToLeaveWorkspace": "ワークスペースの退出に失敗しました",
       "failedToUpdateWorkspace": "ワークスペースの更新に失敗しました",
+      "workspaceCreated": {
+        "message": "プランに加入し、チームメイトを招待して、コラボレーションを始めましょう。",
+        "subscribe": "プランに加入",
+        "title": "ワークスペースを作成しました"
+      },
+      "workspaceDeleted": {
+        "message": "ワークスペースは完全に削除されました。",
+        "title": "ワークスペースを削除しました"
+      },
+      "workspaceLeft": {
+        "message": "ワークスペースから退出しました。",
+        "title": "ワークスペースから退出しました"
+      },
       "workspaceUpdated": {
         "message": "ワークスペースの詳細が保存されました。",
         "title": "ワークスペースが更新されました"
@@ -2706,6 +2784,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "新しいワークスペースを作成",
     "maxWorkspacesReached": "所有できるワークスペースは10個までです。新しく作成するには1つ削除してください。",
+    "personal": "個人用",
     "roleMember": "メンバー",
     "roleOwner": "オーナー",
     "subscribe": "サブスクライブ",

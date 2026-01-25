@@ -272,6 +272,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Görüntü önizlemesinin altında genişlik × yüksekliği göster"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Tüm düğümlerde gelişmiş araçları her zaman göster",
+    "tooltip": "Etkinleştirildiğinde, gelişmiş araçlar tüm düğümlerde ayrı ayrı genişletmeye gerek kalmadan her zaman görünür olur."
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Bağlantıyı otomatik olarak düğüm yuvasına yapıştır",
     "tooltip": "Bir bağlantıyı bir düğümün üzerine sürüklerken, bağlantı otomatik olarak düğüm üzerindeki uygun bir giriş yuvasına yapışır"

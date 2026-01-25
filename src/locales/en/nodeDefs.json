@@ -2101,6 +2101,10 @@
     "outputs": {
       "0": {
         "tooltip": null
+      },
+      "1": {
+        "name": "INDEX",
+        "tooltip": null
       }
     }
   },
@@ -13442,6 +13446,84 @@
     "outputs": {
       "0": {
         "name": "patched_model",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Image(s) to Model (Pro)",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The LowPoly option is unavailable for the `3.1` model."
+      },
+      "image": {
+        "name": "image"
+      },
+      "face_count": {
+        "name": "face_count"
+      },
+      "generate_type": {
+        "name": "generate_type"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "image_left": {
+        "name": "image_left"
+      },
+      "image_right": {
+        "name": "image_right"
+      },
+      "image_back": {
+        "name": "image_back"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Text to Model (Pro)",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The LowPoly option is unavailable for the `3.1` model."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Supports up to 1024 characters."
+      },
+      "face_count": {
+        "name": "face_count"
+      },
+      "generate_type": {
+        "name": "generate_type"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
         "tooltip": null
       }
     }

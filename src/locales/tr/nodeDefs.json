@@ -2098,11 +2098,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "ControlNet Modelini Yükle (fark)",
@@ -13424,6 +13426,84 @@
     "outputs": {
       "0": {
         "name": "yama_uygulanmış_model",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "face_count": {
+        "name": "yüz sayısı"
+      },
+      "generate_type": {
+        "name": "oluşturma türü"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "image_back": {
+        "name": "arka görsel"
+      },
+      "image_left": {
+        "name": "sol görsel"
+      },
+      "image_right": {
+        "name": "sağ görsel"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "`3.1` modeli için LowPoly seçeneği kullanılamaz."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Metinden Modele (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "face_count": {
+        "name": "yüz sayısı"
+      },
+      "generate_type": {
+        "name": "oluşturma türü"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "`3.1` modeli için LowPoly seçeneği kullanılamaz."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "En fazla 1024 karakter desteklenir."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
         "tooltip": null
       }
     }

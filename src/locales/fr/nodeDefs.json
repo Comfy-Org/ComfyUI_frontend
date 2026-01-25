@@ -2098,11 +2098,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "Charger le modèle ControlNet (diff)",
@@ -13424,6 +13426,84 @@
     "outputs": {
       "0": {
         "name": "modèle_corrigé",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D : Image(s) vers Modèle (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "face_count": {
+        "name": "nombre de faces"
+      },
+      "generate_type": {
+        "name": "type de génération"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "image"
+      },
+      "image_back": {
+        "name": "image arrière"
+      },
+      "image_left": {
+        "name": "image gauche"
+      },
+      "image_right": {
+        "name": "image droite"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "L’option LowPoly n’est pas disponible pour le modèle `3.1`."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D : Texte vers Modèle (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "face_count": {
+        "name": "nombre de faces"
+      },
+      "generate_type": {
+        "name": "type de génération"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "L’option LowPoly n’est pas disponible pour le modèle `3.1`."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Jusqu’à 1024 caractères pris en charge."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "fichier_modèle",
         "tooltip": null
       }
     }

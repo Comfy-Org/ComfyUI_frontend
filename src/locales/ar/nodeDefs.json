@@ -2098,11 +2098,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "الفهرس",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "تحميل نموذج ControlNet (فرق)",
@@ -13424,6 +13426,84 @@
     "outputs": {
       "0": {
         "name": "نموذج معدل",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: من صورة إلى نموذج (احترافي)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "face_count": {
+        "name": "عدد الأوجه"
+      },
+      "generate_type": {
+        "name": "نوع التوليد"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "image_back": {
+        "name": "الصورة الخلفية"
+      },
+      "image_left": {
+        "name": "الصورة اليسرى"
+      },
+      "image_right": {
+        "name": "الصورة اليمنى"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "خيار LowPoly غير متوفر لنموذج `3.1`."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ملف النموذج",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: من نص إلى نموذج (احترافي)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "face_count": {
+        "name": "عدد الأوجه"
+      },
+      "generate_type": {
+        "name": "نوع التوليد"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "خيار LowPoly غير متوفر لنموذج `3.1`."
+      },
+      "prompt": {
+        "name": "الموجه",
+        "tooltip": "يدعم حتى ١٠٢٤ حرفاً."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ملف النموذج",
         "tooltip": null
       }
     }
