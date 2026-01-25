@@ -3,17 +3,14 @@
     :content-title="$t('templateWorkflows.title', 'Workflow Templates')"
     class="workflow-template-selector-dialog"
   >
+    <template #leftPanelHeaderTitle>
+      <i class="icon-[comfy--template]" />
+      <h2 class="text-neutral text-base">
+        {{ $t('sideToolbar.templates', 'Templates') }}
+      </h2>
+    </template>
     <template #leftPanel>
-      <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems">
-        <template #header-icon>
-          <i class="icon-[comfy--template]" />
-        </template>
-        <template #header-title>
-          <span class="text-neutral text-base">{{
-            $t('sideToolbar.templates', 'Templates')
-          }}</span>
-        </template>
-      </LeftSidePanel>
+      <LeftSidePanel v-model="selectedNavItem" :nav-items="navItems" />
     </template>
 
     <template #header>
