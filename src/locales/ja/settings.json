@@ -2,6 +2,10 @@
   "Comfy-Desktop_AutoUpdate": {
     "name": "自動的に更新を確認する"
   },
+  "Comfy-Desktop_LaunchOptions": {
+    "name": "カスタム起動引数",
+    "tooltip": "バックエンドを起動するためのカスタムコマンドライン引数（例: --cpu）。再起動が必要です。"
+  },
   "Comfy-Desktop_SendStatistics": {
     "name": "匿名の使用統計を送信する"
   },
