@@ -6,6 +6,7 @@ import {
   MISSING_TAG,
   MODELS_TAG
 } from '@/platform/assets/services/assetService'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -69,11 +70,8 @@ export function createModelNodeFromAsset(
 
   const validAsset = validatedAsset.data
 
-  const userMetadata = validAsset.user_metadata ?? {}
-
-  const filename =
-    userMetadata.filename || validAsset.metadata?.filename || validAsset.name
-  if (typeof filename !== 'string' || filename.length === 0) {
+  const filename = getAssetFilename(validAsset)
+  if (filename.length === 0) {
     console.error(
       `Asset ${validAsset.id} has invalid user_metadata.filename (expected non-empty string, got ${typeof filename})`
     )
