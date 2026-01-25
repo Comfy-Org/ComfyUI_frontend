@@ -7,7 +7,7 @@
     :tabindex="interactive ? 0 : -1"
     :class="
       cn(
-        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
+        'select-none rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
         interactive &&
           'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4',
         focused && 'bg-secondary-background outline-solid'

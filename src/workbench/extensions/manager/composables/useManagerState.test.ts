@@ -53,6 +53,13 @@ vi.mock('@/stores/toastStore', () => ({
   }))
 }))
 
+vi.mock('@/workbench/extensions/manager/composables/useManagerDialog', () => ({
+  useManagerDialog: vi.fn(() => ({
+    show: vi.fn(),
+    hide: vi.fn()
+  }))
+}))
+
 describe('useManagerState', () => {
   beforeEach(() => {
     vi.clearAllMocks()

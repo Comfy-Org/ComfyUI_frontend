@@ -5,7 +5,7 @@
   >
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.basicInfo') }}
         </span>
       </template>
@@ -58,7 +58,7 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.modelTagging') }}
         </span>
       </template>
@@ -134,7 +134,7 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.modelDescription') }}
         </span>
       </template>
