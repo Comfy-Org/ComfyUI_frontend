@@ -163,7 +163,21 @@ export function createMockNodeOutputSlot(
 }
 
 /**
- * Creates a LGraphNode with Float64Array boundingRect for testing position methods
+ * Creates a real LGraphNode instance (not a lightweight mock) with its boundingRect
+ * property represented as a Float64Array for testing position methods.
+ *
+ * Use createMockLGraphNodeWithArrayBoundingRect when:
+ * - Tests rely on Float64Array boundingRect behavior
+ * - Tests call position-related methods like updateArea()
+ * - Tests need actual LGraphNode implementation details
+ *
+ * Use createMockLGraphNode when:
+ * - Tests only need simple/mock-only behavior
+ * - Tests don't depend on boundingRect being a Float64Array
+ * - A lightweight mock with minimal properties is sufficient
+ *
+ * @param name - The node name/type to pass to the LGraphNode constructor
+ * @returns A fully constructed LGraphNode instance with Float64Array boundingRect
  */
 export function createMockLGraphNodeWithArrayBoundingRect(
   name: string
