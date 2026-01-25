@@ -1,6 +1,7 @@
 {
   "g": {
     "user": "User",
+    "you": "You",
     "currentUser": "Current user",
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
@@ -43,8 +44,6 @@
     "comfy": "Comfy",
     "refresh": "Refresh",
     "refreshNode": "Refresh Node",
-    "vitePreloadErrorTitle": "New Version Available",
-    "vitePreloadErrorMessage": "A new version of the app has been released. Would you like to reload?\nIf not, some parts of the app might not work as expected.\nFeel free to decline and save your progress before reloading.",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
@@ -164,6 +163,7 @@
     "choose_file_to_upload": "choose file to upload",
     "capture": "capture",
     "nodes": "Nodes",
+    "nodesCount": "{count} nodes | {count} node | {count} nodes",
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
@@ -276,6 +276,7 @@
     "1x": "1x",
     "2x": "2x",
     "beta": "BETA",
+    "nightly": "NIGHTLY",
     "profile": "Profile",
     "noItems": "No items"
   },
@@ -444,6 +445,8 @@
     "Save Image": "Save Image",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
+    "FavoriteWidget": "Favorite Widget",
+    "UnfavoriteWidget": "Unfavorite Widget",
     "Copy": "Copy",
     "Duplicate": "Duplicate",
     "Paste": "Paste",
@@ -707,6 +710,8 @@
     "noImportedFiles": "No imported files found",
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
+    "importedAssetsHeader": "Imported assets",
+    "activeJobStatus": "Active job: {status}",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -756,6 +761,7 @@
       "sortJobs": "Sort jobs",
       "sortBy": "Sort by",
       "activeJobs": "{count} active job | {count} active jobs",
+      "activeJobsShort": "{count} active | {count} active",
       "activeJobsSuffix": "active jobs",
       "jobQueue": "Job Queue",
       "expandCollapsedQueue": "Expand job queue",
@@ -1186,13 +1192,14 @@
     "Queue Selected Output Nodes": "Queue Selected Output Nodes",
     "Redo": "Redo",
     "Refresh Node Definitions": "Refresh Node Definitions",
+    "Rename": "Rename",
     "Save": "Save",
     "Save As": "Save As",
     "Show Settings Dialog": "Show Settings Dialog",
     "Experimental: Enable AssetAPI": "Experimental: Enable AssetAPI",
     "Canvas Performance": "Canvas Performance",
     "Help Center": "Help Center",
-    "toggle linear mode": "Toggle Simple Mode",
+    "Toggle Simple Mode": "Toggle Simple Mode",
     "Toggle Queue Panel V2": "Toggle Queue Panel V2",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
@@ -1281,7 +1288,6 @@
     "Execution": "Execution",
     "PLY": "PLY",
     "Workspace": "Workspace",
-    "General": "General",
     "Other": "Other"
   },
   "serverConfigItems": {
@@ -1433,6 +1439,7 @@
     "latent": "latent",
     "mask": "mask",
     "api node": "api node",
+    "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
     "preprocessors": "preprocessors",
@@ -1483,6 +1490,7 @@
     "lotus": "lotus",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1512,6 +1520,7 @@
     "": "",
     "camera": "camera",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "zimage": "zimage"
   },
   "dataTypes": {
@@ -1552,6 +1561,8 @@
     "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
@@ -1721,6 +1732,17 @@
     "dropToLoad": "Drop 3D model to load",
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
     "uploadingModel": "Uploading 3D model..."
+  },
+  "imageCrop": {
+    "loading": "Loading...",
+    "noInputImage": "No input image connected",
+    "cropPreviewAlt": "Crop preview"
+  },
+  "boundingBox": {
+    "x": "X",
+    "y": "Y",
+    "width": "Width",
+    "height": "Height"
   },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
@@ -2079,6 +2101,10 @@
       "creator": "30 min",
       "pro": "1 hr",
       "founder": "30 min"
+    },
+    "billingComingSoon": {
+      "title": "Coming Soon",
+      "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
     }
   },
   "userSettings": {
@@ -2092,8 +2118,38 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "invite": "Invite",
+    "inviteMember": "Invite member",
+    "inviteLimitReached": "You've reached the maximum of 50 members",
     "tabs": {
-      "planCredits": "Plan & Credits"
+      "dashboard": "Dashboard",
+      "planCredits": "Plan & Credits",
+      "membersCount": "Members ({count})"
+    },
+    "dashboard": {
+      "placeholder": "Dashboard workspace settings"
+    },
+    "members": {
+      "membersCount": "{count}/50 Members",
+      "pendingInvitesCount": "{count} pending invite | {count} pending invites",
+      "tabs": {
+        "active": "Active",
+        "pendingCount": "Pending ({count})"
+      },
+      "columns": {
+        "inviteDate": "Invite date",
+        "expiryDate": "Expiry date",
+        "joinDate": "Join date"
+      },
+      "actions": {
+        "copyLink": "Copy invite link",
+        "revokeInvite": "Revoke invite",
+        "removeMember": "Remove member"
+      },
+      "noInvites": "No pending invites",
+      "noMembers": "No members",
+      "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
+      "createNewWorkspace": "create a new one."
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
@@ -2116,6 +2172,32 @@
       "message": "Any unused credits or unsaved assets will be lost. This action cannot be undone.",
       "messageWithName": "Delete \"{name}\"? Any unused credits or unsaved assets will be lost. This action cannot be undone."
     },
+    "removeMemberDialog": {
+      "title": "Remove this member?",
+      "message": "This member will be removed from your workspace. Credits they've used will not be refunded.",
+      "remove": "Remove member",
+      "success": "Member removed",
+      "error": "Failed to remove member"
+    },
+    "revokeInviteDialog": {
+      "title": "Uninvite this person?",
+      "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
+      "revoke": "Uninvite"
+    },
+    "inviteMemberDialog": {
+      "title": "Invite a person to this workspace",
+      "message": "Create a shareable invite link to send to someone",
+      "placeholder": "Enter the person's email",
+      "createLink": "Create link",
+      "linkStep": {
+        "title": "Send this link to the person",
+        "message": "Make sure their account uses this email.",
+        "copyLink": "Copy Link",
+        "done": "Done"
+      },
+      "linkCopied": "Copied",
+      "linkCopyFailed": "Failed to copy link"
+    },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
       "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
@@ -2124,19 +2206,34 @@
       "create": "Create"
     },
     "toast": {
+      "workspaceCreated": {
+        "title": "Workspace created",
+        "message": "Subscribe to a plan, invite teammates, and start collaborating.",
+        "subscribe": "Subscribe"
+      },
       "workspaceUpdated": {
         "title": "Workspace updated",
         "message": "Workspace details have been saved."
       },
+      "workspaceDeleted": {
+        "title": "Workspace deleted",
+        "message": "The workspace has been permanently deleted."
+      },
+      "workspaceLeft": {
+        "title": "Left workspace",
+        "message": "You have left the workspace."
+      },
       "failedToUpdateWorkspace": "Failed to update workspace",
       "failedToCreateWorkspace": "Failed to create workspace",
       "failedToDeleteWorkspace": "Failed to delete workspace",
-      "failedToLeaveWorkspace": "Failed to leave workspace"
+      "failedToLeaveWorkspace": "Failed to leave workspace",
+      "failedToFetchWorkspaces": "Failed to load workspaces"
     }
   },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
+    "personal": "Personal",
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create new workspace",
@@ -2152,6 +2249,7 @@
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
   "widgets": {
+    "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "uploadSelect": {
       "placeholder": "Select...",
@@ -2230,6 +2328,7 @@
     "renderErrorState": "Render Error State"
   },
   "cloudOnboarding": {
+    "skipToCloudApp": "Skip to the cloud app",
     "survey": {
       "title": "Cloud Survey",
       "placeholder": "Survey questions placeholder",
@@ -2508,7 +2607,7 @@
       "zoom": "Zoom in",
       "moreOptions": "More options",
       "seeMoreOutputs": "See more outputs",
-      "addToWorkflow": "Add to current workflow",
+      "insertAsNodeInWorkflow": "Insert as node in workflow",
       "download": "Download",
       "openWorkflow": "Open as workflow in new tab",
       "exportWorkflow": "Export workflow",
@@ -2529,11 +2628,23 @@
       "downloadSelectedAll": "Download all",
       "deleteSelected": "Delete",
       "deleteSelectedAll": "Delete all",
+      "insertAllAssetsAsNodes": "Insert all assets as nodes",
+      "openWorkflowAll": "Open all workflows",
+      "exportWorkflowAll": "Export all workflows",
       "downloadStarted": "Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file(s)",
       "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets",
-      "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed"
+      "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
+      "nodesAddedToWorkflow": "{count} node(s) added to workflow",
+      "failedToAddNodes": "Failed to add nodes to workflow",
+      "partialAddNodesSuccess": "{succeeded} added successfully, {failed} failed",
+      "workflowsOpened": "{count} workflow(s) opened in new tabs",
+      "noWorkflowsFound": "No workflow data found in selected assets",
+      "partialWorkflowsOpened": "{succeeded} workflow(s) opened, {failed} failed",
+      "workflowsExported": "{count} workflow(s) exported successfully",
+      "noWorkflowsToExport": "No workflow data found to export",
+      "partialWorkflowsExported": "{succeeded} exported successfully, {failed} failed"
     },
     "noJobIdFound": "No job ID found for this asset",
     "unsupportedFileType": "Unsupported file type for loader node",
@@ -2599,8 +2710,10 @@
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
     "noSelection": "Select a node to see its properties and info.",
-    "title": "No node(s) selected | 1 node selected | {count} nodes selected",
+    "workflowOverview": "Workflow Overview",
+    "title": "No item(s) selected | 1 item selected | {count} items selected",
     "parameters": "Parameters",
+    "nodes": "Nodes",
     "info": "Info",
     "color": "Node color",
     "pinned": "Pinned",
@@ -2610,9 +2723,44 @@
     "inputs": "INPUTS",
     "inputsNone": "NO INPUTS",
     "inputsNoneTooltip": "Node has no inputs",
+    "advancedInputs": "ADVANCED INPUTS",
+    "showAdvancedInputsButton": "Show advanced inputs",
     "properties": "Properties",
     "nodeState": "Node state",
-    "settings": "Settings"
+    "settings": "Settings",
+    "addFavorite": "Favorite",
+    "removeFavorite": "Unfavorite",
+    "hideInput": "Hide input",
+    "showInput": "Show input",
+    "locateNode": "Locate node on canvas",
+    "favorites": "FAVORITED INPUTS",
+    "favoritesNone": "NO FAVORITED INPUTS",
+    "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
+    "globalSettings": {
+      "title": "Global Settings",
+      "searchPlaceholder": "Search quick settings...",
+      "nodes": "NODES",
+      "canvas": "CANVAS",
+      "connectionLinks": "CONNECTION LINKS",
+      "showAdvanced": "Show advanced parameters",
+      "showAdvancedTooltip": "This is an important setting that when set to TRUE, reveals all advanced parameters for nodes",
+      "showInfoBadges": "Show info badges",
+      "showToolbox": "Show toolbox on selection",
+      "nodes2": "Nodes 2.0",
+      "gridSpacing": "Grid spacing",
+      "snapNodesToGrid": "Snap nodes to grid",
+      "linkShape": "Link shape",
+      "showConnectedLinks": "Show connected links",
+      "viewAllSettings": "View all settings"
+    },
+    "groupSettings": "Group Settings",
+    "groups": "Groups",
+    "favoritesNoneDesc": "Inputs you favorite will show up here",
+    "noneSearchDesc": "No items match your search",
+    "nodesNoneDesc": "NO NODES",
+    "fallbackGroupTitle": "Group",
+    "fallbackNodeTitle": "Node",
+    "hideAdvancedInputsButton": "Hide advanced inputs"
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -2638,7 +2786,10 @@
     "unsavedChanges": {
       "title": "Unsaved Changes",
       "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    }
+    },
+    "inviteAccepted": "Invite Accepted",
+    "addedToWorkspace": "You have been added to {workspaceName}",
+    "inviteFailed": "Failed to Accept Invite"
   },
   "workspaceAuth": {
     "errors": {
@@ -2647,6 +2798,13 @@
       "accessDenied": "You do not have access to this workspace",
       "workspaceNotFound": "Workspace not found",
       "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+    }
+  },
+
+  "nightly": {
+    "badge": {
+      "label": "Preview Version",
+      "tooltip": "You are using a nightly version of ComfyUI. Please use the feedback button to share your thoughts about these features."
     }
   }
 }

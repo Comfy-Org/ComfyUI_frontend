@@ -1,10 +1,12 @@
 <template>
-  <div class="grow overflow-auto">
+  <div class="grow overflow-auto pt-6">
     <div class="rounded-2xl border border-interface-stroke p-6">
       <div>
-        <div class="flex items-center justify-between gap-2">
+        <div
+          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-2"
+        >
           <!-- OWNER Unsubscribed State -->
-          <template v-if="isOwnerUnsubscribed">
+          <template v-if="showSubscribePrompt">
             <div class="flex flex-col gap-2">
               <div class="text-sm font-bold text-text-primary">
                 {{ $t('subscription.workspaceNotSubscribed') }}
@@ -15,6 +17,7 @@
             </div>
             <Button
               variant="primary"
+              size="lg"
               class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
               @click="handleSubscribeWorkspace"
             >
@@ -65,12 +68,14 @@
               </div>
             </div>
 
-            <template
+            <div
               v-if="isActiveSubscription && permissions.canManageSubscription"
+              class="flex flex-wrap gap-2 md:ml-auto"
             >
               <Button
+                size="lg"
                 variant="secondary"
-                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
                 @click="
                   async () => {
                     await authActions.accessBillingPortal()
@@ -80,23 +85,24 @@
                 {{ $t('subscription.managePayment') }}
               </Button>
               <Button
+                size="lg"
                 variant="primary"
-                class="rounded-lg px-4 py-2 text-sm font-normal text-text-primary"
+                class="rounded-lg px-4 text-sm font-normal text-text-primary"
                 @click="showSubscriptionDialog"
               >
                 {{ $t('subscription.upgradePlan') }}
               </Button>
               <Button
                 v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                variant="muted-textonly"
-                size="icon"
+                variant="secondary"
+                size="lg"
                 :aria-label="$t('g.moreOptions')"
                 @click="planMenu?.toggle($event)"
               >
                 <i class="pi pi-ellipsis-h" />
               </Button>
               <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
-            </template>
+            </div>
           </template>
         </div>
       </div>
@@ -260,30 +266,39 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogService } from '@/services/dialogService'
 import { cn } from '@/utils/tailwindUtil'
 
 const authActions = useFirebaseAuthActions()
 const workspaceStore = useTeamWorkspaceStore()
-const { isWorkspaceSubscribed } = storeToRefs(workspaceStore)
+const { isWorkspaceSubscribed, isInPersonalWorkspace } =
+  storeToRefs(workspaceStore)
 const { subscribeWorkspace } = workspaceStore
 const { permissions, workspaceRole } = useWorkspaceUI()
 const { t, n } = useI18n()
+const { showBillingComingSoonDialog } = useDialogService()
 
-// OWNER with unsubscribed workspace - can see subscribe button
-const isOwnerUnsubscribed = computed(
-  () => workspaceRole.value === 'owner' && !isWorkspaceSubscribed.value
-)
+// Show subscribe prompt to owners without active subscription
+const showSubscribePrompt = computed(() => {
+  if (workspaceRole.value !== 'owner') return false
+  if (isInPersonalWorkspace.value) return !isActiveSubscription.value
+  return !isWorkspaceSubscribed.value
+})
 
 // MEMBER view - members can't manage subscription, show read-only zero state
 const isMemberView = computed(() => !permissions.value.canManageSubscription)
 
 // Show zero state for credits (no real billing data yet)
 const showZeroState = computed(
-  () => isOwnerUnsubscribed.value || isMemberView.value
+  () => showSubscribePrompt.value || isMemberView.value
 )
 
-// Demo: Subscribe workspace to PRO monthly plan
+// Subscribe workspace - show billing coming soon dialog for team workspaces
 function handleSubscribeWorkspace() {
+  if (!isInPersonalWorkspace.value) {
+    showBillingComingSoonDialog()
+    return
+  }
   subscribeWorkspace('PRO_MONTHLY')
 }
 

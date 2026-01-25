@@ -332,7 +332,7 @@ const tiers: PricingTierConfig[] = [
 ]
 
 const { n } = useI18n()
-const { getAuthHeader } = useFirebaseAuthStore()
+const { getFirebaseAuthHeader } = useFirebaseAuthStore()
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
@@ -406,7 +406,7 @@ const getCreditsDisplay = (tier: PricingTierConfig): number =>
   tier.pricing.credits * (currentBillingCycle.value === 'yearly' ? 12 : 1)
 
 const initiateCheckout = async (tierKey: CheckoutTierKey) => {
-  const authHeader = await getAuthHeader()
+  const authHeader = await getFirebaseAuthHeader()
   if (!authHeader) {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
   }
