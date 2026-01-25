@@ -1,11 +1,17 @@
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
+  CanvasPointerEvent,
+  LGraph,
   LGraphCanvas,
   LGraphGroup,
-  LGraphNode
+  LinkNetwork
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
 
 /**
@@ -83,4 +89,98 @@ export function createMockCanvas(
     },
     ...overrides
   } as LGraphCanvas
+}
+
+/**
+ * Creates a mock LGraph with trigger function
+ */
+export function createMockLGraph(overrides: Partial<LGraph> = {}): LGraph {
+  return {
+    trigger: vi.fn(),
+    ...overrides
+  } as LGraph
+}
+
+/**
+ * Creates a mock CanvasPointerEvent
+ */
+export function createMockCanvasPointerEvent(
+  canvasX: number,
+  canvasY: number,
+  overrides: Partial<CanvasPointerEvent> = {}
+): CanvasPointerEvent {
+  return {
+    canvasX,
+    canvasY,
+    ...overrides
+  } as CanvasPointerEvent
+}
+
+/**
+ * Creates a mock CanvasRenderingContext2D
+ */
+export function createMockCanvasRenderingContext2D(
+  overrides: Partial<CanvasRenderingContext2D> = {}
+): CanvasRenderingContext2D {
+  const partial: Partial<CanvasRenderingContext2D> = {
+    measureText: vi.fn(() => ({ width: 10 }) as TextMetrics),
+    ...overrides
+  }
+  return partial as CanvasRenderingContext2D
+}
+
+/**
+ * Creates a mock LinkNetwork
+ */
+export function createMockLinkNetwork(
+  overrides: Partial<LinkNetwork> = {}
+): LinkNetwork {
+  return {
+    ...overrides
+  } as LinkNetwork
+}
+
+/**
+ * Creates a mock INodeInputSlot
+ */
+export function createMockNodeInputSlot(
+  overrides: Partial<INodeInputSlot> = {}
+): INodeInputSlot {
+  return {
+    ...overrides
+  } as INodeInputSlot
+}
+
+/**
+ * Creates a mock INodeOutputSlot
+ */
+export function createMockNodeOutputSlot(
+  overrides: Partial<INodeOutputSlot> = {}
+): INodeOutputSlot {
+  return {
+    ...overrides
+  } as INodeOutputSlot
+}
+
+/**
+ * Creates a LGraphNode with Float64Array boundingRect for testing position methods
+ */
+export function createMockLGraphNodeWithArrayBoundingRect(
+  name: string
+): LGraphNode {
+  const node = new LGraphNode(name)
+  // The actual node has a Float64Array boundingRect, we just need to type it correctly
+  return node
+}
+
+/**
+ * Creates a mock FileList from an array of files
+ */
+export function createMockFileList(files: File[]): FileList {
+  const fileList = {
+    ...files,
+    length: files.length,
+    item: (index: number) => files[index] ?? null
+  }
+  return fileList as FileList
 }

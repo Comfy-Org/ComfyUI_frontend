@@ -4,23 +4,37 @@ import {
   LinkDirection,
   ToOutputRenderLink
 } from '@/lib/litegraph/src/litegraph'
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import {
+  createMockLGraphNode,
+  createMockLinkNetwork,
+  createMockNodeInputSlot,
+  createMockNodeOutputSlot
+} from '@/utils/__tests__/litegraphTestUtils'
+
+interface MockEvents {
+  addEventListener: ReturnType<typeof vi.fn>
+  removeEventListener: ReturnType<typeof vi.fn>
+  dispatchEvent: ReturnType<typeof vi.fn>
+  dispatch: ReturnType<typeof vi.fn>
+}
 
 describe('ToOutputRenderLink', () => {
   describe('connectToOutput', () => {
     it('should return early if inputNode is null', () => {
       // Setup
-      const mockNetwork = {}
-      const mockFromSlot = {}
-      const mockNode = {
-        id: 'test-id',
+      const mockNetwork = createMockLinkNetwork()
+      const mockFromSlot = createMockNodeInputSlot()
+      const mockNode = createMockLGraphNode({
         inputs: [mockFromSlot],
         getInputPos: vi.fn().mockReturnValue([0, 0])
-      }
+      })
 
       const renderLink = new ToOutputRenderLink(
-        mockNetwork as any,
-        mockNode as any,
-        mockFromSlot as any,
+        mockNetwork,
+        mockNode,
+        mockFromSlot,
         undefined,
         LinkDirection.CENTER
       )
@@ -30,18 +44,21 @@ describe('ToOutputRenderLink', () => {
         value: null
       })
 
-      const mockTargetNode = {
+      const mockTargetNode = createMockLGraphNode({
         connectSlots: vi.fn()
-      }
-      const mockEvents = {
+      })
+      const mockEvents: MockEvents = {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
         dispatch: vi.fn()
       }
 
       // Act
       renderLink.connectToOutput(
-        mockTargetNode as any,
-        {} as any,
-        mockEvents as any
+        mockTargetNode,
+        createMockNodeOutputSlot(),
+        mockEvents as CustomEventTarget<LinkConnectorEventMap>
       )
 
       // Assert
@@ -51,35 +68,37 @@ describe('ToOutputRenderLink', () => {
 
     it('should create connection and dispatch event when inputNode exists', () => {
       // Setup
-      const mockNetwork = {}
-      const mockFromSlot = {}
-      const mockNode = {
-        id: 'test-id',
+      const mockNetwork = createMockLinkNetwork()
+      const mockFromSlot = createMockNodeInputSlot()
+      const mockNode = createMockLGraphNode({
         inputs: [mockFromSlot],
         getInputPos: vi.fn().mockReturnValue([0, 0])
-      }
+      })
 
       const renderLink = new ToOutputRenderLink(
-        mockNetwork as any,
-        mockNode as any,
-        mockFromSlot as any,
+        mockNetwork,
+        mockNode,
+        mockFromSlot,
         undefined,
         LinkDirection.CENTER
       )
 
       const mockNewLink = { id: 'new-link' }
-      const mockTargetNode = {
+      const mockTargetNode = createMockLGraphNode({
         connectSlots: vi.fn().mockReturnValue(mockNewLink)
-      }
-      const mockEvents = {
+      })
+      const mockEvents: MockEvents = {
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
         dispatch: vi.fn()
       }
 
       // Act
       renderLink.connectToOutput(
-        mockTargetNode as any,
-        {} as any,
-        mockEvents as any
+        mockTargetNode,
+        createMockNodeOutputSlot(),
+        mockEvents as CustomEventTarget<LinkConnectorEventMap>
       )
 
       // Assert
