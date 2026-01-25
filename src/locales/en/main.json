@@ -2800,7 +2800,6 @@
       "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
     }
   },
-
   "nightly": {
     "badge": {
       "label": "Preview Version",

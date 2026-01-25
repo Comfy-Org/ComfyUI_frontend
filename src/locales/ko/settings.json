@@ -272,6 +272,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "이미지 미리보기 아래에 너비 × 높이 표시"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "모든 노드에서 고급 위젯 항상 표시",
+    "tooltip": "이 옵션을 활성화하면, 모든 노드에서 고급 위젯이 개별적으로 확장하지 않아도 항상 표시됩니다."
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "링크를 노드 슬롯에 자동 스냅",
     "tooltip": "링크를 노드 위로 드래그할 때 링크가 노드의 유효한 입력 슬롯에 자동으로 스냅됩니다."

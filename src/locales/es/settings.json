@@ -272,6 +272,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Mostrar ancho × altura debajo de la vista previa de la imagen"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Mostrar siempre los widgets avanzados en todos los nodos",
+    "tooltip": "Cuando está activado, los widgets avanzados siempre son visibles en todos los nodos sin necesidad de expandirlos individualmente."
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Enlace de ajuste automático a la ranura del nodo",
     "tooltip": "Al arrastrar un enlace sobre un nodo, el enlace se ajustará automáticamente a una ranura de entrada viable en el nodo"

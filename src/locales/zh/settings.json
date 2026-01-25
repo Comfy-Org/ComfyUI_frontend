@@ -272,6 +272,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "在图像预览下方显示宽度×高度"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "始终在所有节点上显示高级控件",
+    "tooltip": "启用后，所有节点的高级控件将始终可见，无需单独展开。"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "连线自动吸附到节点接口",
     "tooltip": "在节点上拖动连线时，连线会自动吸附到节点的可用输入接口。"
