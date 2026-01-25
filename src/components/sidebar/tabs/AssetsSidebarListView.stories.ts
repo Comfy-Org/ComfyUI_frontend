@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import { computed } from 'vue'
+import { toRef } from 'vue'
 
 import type { JobAction } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
@@ -142,7 +142,7 @@ function renderAssetsSidebarListView(args: StoryArgs) {
       setMockJobActions(args.actionsByJobId ?? {})
       const { assetItems, selectableAssets, isStackExpanded, toggleStack } =
         useOutputStacks({
-          assets: computed(() => args.assets)
+          assets: toRef(args, 'assets')
         })
       const selectedIds = new Set(args.selectedAssetIds ?? [])
       function isSelected(assetId: string) {
