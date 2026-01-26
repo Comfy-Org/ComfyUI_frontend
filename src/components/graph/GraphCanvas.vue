@@ -225,13 +225,11 @@ const handleVueNodeLifecycleReset = async () => {
   }
 }
 
-watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
-
 watch(
-  () => canvasStore.isInSubgraph,
-  async (newValue, oldValue) => {
-    if (oldValue && !newValue) {
-      useWorkflowStore().updateActiveGraph()
+  () => [canvasStore.currentGraph, canvasStore.isInSubgraph] as const,
+  async ([_graph, isInSubgraph], [_prevGraph, wasInSubgraph]) => {
+    if (wasInSubgraph && !isInSubgraph) {
+      workflowStore.updateActiveGraph()
     }
     await handleVueNodeLifecycleReset()
   }
@@ -334,7 +332,6 @@ watch(
     [executionStore.nodeLocationProgressStates, canvasStore.canvas] as const,
   ([nodeLocationProgressStates, canvas]) => {
     if (!canvas?.graph) return
-    const workflowStore = useWorkflowStore()
     for (const node of canvas.graph.nodes) {
       const nodeLocatorId = workflowStore.nodeIdToNodeLocatorId(node.id)
       const progressState = nodeLocationProgressStates[nodeLocatorId]
@@ -401,6 +398,7 @@ useEventListener(
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+const commandStore = useCommandStore()
 const { flags } = useFeatureFlags()
 // Set up invite loader during setup phase so useRoute/useRouter work correctly
 const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
@@ -433,7 +431,7 @@ watch(
         'Somehow the Locale setting was changed while the settings or i18n had a setup error'
       )
     }
-    await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    await commandStore.execute('Comfy.RefreshNodeDefinitions')
     if (runId !== localeWatcherRunId) return
     await useWorkflowService().reloadCurrentWorkflow()
   }
