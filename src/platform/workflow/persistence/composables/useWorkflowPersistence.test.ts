@@ -163,7 +163,7 @@ describe('useWorkflowPersistence', () => {
 
     const drafts = JSON.parse(
       localStorage.getItem('Comfy.Workflow.Drafts') ?? '{}'
-    ) as Record<string, any>
+    ) as Record<string, { data: string; isTemporary: boolean }>
 
     expect(Object.keys(drafts)).toEqual(
       expect.arrayContaining(['workflows/DraftA.json', 'workflows/DraftB.json'])

@@ -1,14 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { MAX_DRAFTS, createDraftCacheState, mostRecentDraftPath, moveDraft, removeDraft, touchEntry, upsertDraft } from '@/platform/workflow/persistence/base/draftCache';
-import type { WorkflowDraftSnapshot } from '@/platform/workflow/persistence/base/draftCache';
+import {
+  MAX_DRAFTS,
+  createDraftCacheState,
+  mostRecentDraftPath,
+  moveDraft,
+  removeDraft,
+  touchEntry,
+  upsertDraft
+} from './draftCache'
+import type { WorkflowDraftSnapshot } from './draftCache'
 
-const createSnapshot = (name: string): WorkflowDraftSnapshot => ({
-  data: JSON.stringify({ name }),
-  updatedAt: Date.now(),
-  name,
-  isTemporary: true
-})
+function createSnapshot(name: string): WorkflowDraftSnapshot {
+  return {
+    data: JSON.stringify({ name }),
+    updatedAt: Date.now(),
+    name,
+    isTemporary: true
+  }
+}
 
 describe('draftCache helpers', () => {
   it('touchEntry moves path to end', () => {

@@ -201,11 +201,18 @@ export function useWorkflowPersistence() {
   const parsedWorkflows = JSON.parse(
     getStorageValue('Comfy.OpenWorkflowsPaths') || '[]'
   )
-  const storedWorkflows = Array.isArray(parsedWorkflows) ? parsedWorkflows : []
+  const storedWorkflows = Array.isArray(parsedWorkflows)
+    ? parsedWorkflows.filter(
+        (entry): entry is string => typeof entry === 'string'
+      )
+    : []
   const parsedIndex = JSON.parse(
     getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
   )
-  const storedActiveIndex = typeof parsedIndex === 'number' ? parsedIndex : -1
+  const storedActiveIndex =
+    typeof parsedIndex === 'number' && Number.isFinite(parsedIndex)
+      ? parsedIndex
+      : -1
   watch(restoreState, ({ paths, activeIndex }) => {
     if (workflowPersistenceEnabled.value) {
       setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))

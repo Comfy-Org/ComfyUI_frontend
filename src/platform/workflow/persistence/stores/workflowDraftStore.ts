@@ -57,6 +57,8 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
           const oldestPath = state.order[0]
           updateState(removeDraftEntry(state, oldestPath))
           updateState(upsertDraft(currentState(), path, snapshot, MAX_DRAFTS))
+        } else {
+          throw error
         }
       } else {
         throw error
