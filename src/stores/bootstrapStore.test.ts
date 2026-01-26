@@ -1,5 +1,9 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { useBootstrapStore } from './bootstrapStore'
 
@@ -16,9 +20,16 @@ vi.mock('@/i18n', () => ({
   mergeCustomNodesI18n: vi.fn()
 }))
 
+const mockIsSettingsReady = ref(false)
+
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    loadSettingValues: vi.fn().mockResolvedValue(undefined)
+    load: vi.fn(() => {
+      mockIsSettingsReady.value = true
+    }),
+    isReady: mockIsSettingsReady,
+    isLoading: ref(false),
+    error: ref(undefined)
   }))
 }))
 
@@ -34,14 +45,16 @@ describe('bootstrapStore', () => {
   let store: ReturnType<typeof useBootstrapStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    mockIsSettingsReady.value = false
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useBootstrapStore()
     vi.clearAllMocks()
   })
 
   it('initializes with all flags false', () => {
+    const settingStore = useSettingStore()
     expect(store.isNodeDefsReady).toBe(false)
-    expect(store.isSettingsReady).toBe(false)
+    expect(settingStore.isReady).toBe(false)
     expect(store.isI18nReady).toBe(false)
   })
 
@@ -58,10 +71,11 @@ describe('bootstrapStore', () => {
   })
 
   it('starts store bootstrap (settings, i18n)', async () => {
+    const settingStore = useSettingStore()
     void store.startStoreBootstrap()
 
     await vi.waitFor(() => {
-      expect(store.isSettingsReady).toBe(true)
+      expect(settingStore.isReady).toBe(true)
       expect(store.isI18nReady).toBe(true)
     })
   })

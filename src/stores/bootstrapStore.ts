@@ -1,11 +1,14 @@
 import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { useUserStore } from '@/stores/userStore'
 
 export const useBootstrapStore = defineStore('bootstrap', () => {
+  const settingStore = useSettingStore()
+
   const {
     state: nodeDefs,
     isReady: isNodeDefsReady,
@@ -19,30 +22,6 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     {},
     { immediate: false }
   )
-
-  const {
-    isReady: isSettingsReady,
-    isLoading: isSettingsLoading,
-    error: settingsError,
-    execute: executeLoadSettings
-  } = useAsyncState(
-    async () => {
-      const { useSettingStore } =
-        await import('@/platform/settings/settingStore')
-      await useSettingStore().loadSettingValues()
-    },
-    undefined,
-    { immediate: false }
-  )
-
-  function loadSettings() {
-    // TODO: This check makes the store "sticky" across logouts. Add a reset
-    // method to clear isSettingsReady, then replace window.location.reload()
-    // with router.push() in SidebarLogoutIcon.vue
-    if (!isSettingsReady.value && !isSettingsLoading.value) {
-      void executeLoadSettings()
-    }
-  }
 
   const {
     isReady: isI18nReady,
@@ -91,7 +70,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     void loadI18n()
 
     if (!userStore.needsLogin) {
-      loadSettings()
+      await settingStore.load()
       syncWorkflows()
     }
   }
@@ -100,13 +79,9 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     nodeDefs,
     isNodeDefsReady,
     nodeDefsError,
-    isSettingsReady,
-    settingsError,
     isI18nReady,
     i18nError,
     startEarlyBootstrap,
-    startStoreBootstrap,
-    loadSettings,
-    syncWorkflows
+    startStoreBootstrap
   }
 })

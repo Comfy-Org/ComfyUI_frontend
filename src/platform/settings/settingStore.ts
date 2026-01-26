@@ -1,4 +1,5 @@
 import _ from 'es-toolkit/compat'
+import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
@@ -46,6 +47,31 @@ function onChange(
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
+
+  const {
+    isReady,
+    isLoading,
+    error,
+    execute: loadSettingValues
+  } = useAsyncState(
+    async () => {
+      if (Object.keys(settingsById.value).length) {
+        throw new Error(
+          'Setting values must be loaded before any setting is registered.'
+        )
+      }
+      settingValues.value = await api.getSettings()
+      await migrateZoomThresholdToFontSize()
+    },
+    undefined,
+    { immediate: false }
+  )
+
+  async function load() {
+    if (!isReady.value && !isLoading.value) {
+      return loadSettingValues()
+    }
+  }
 
   /**
    * Check if a setting's value exists, i.e. if the user has set it manually.
@@ -188,22 +214,6 @@ export const useSettingStore = defineStore('setting', () => {
     onChange(setting, get(setting.id), undefined)
   }
 
-  /*
-   * Load setting values from server.
-   * This needs to be called before any setting is registered.
-   */
-  async function loadSettingValues() {
-    if (Object.keys(settingsById.value).length) {
-      throw new Error(
-        'Setting values must be loaded before any setting is registered.'
-      )
-    }
-    settingValues.value = await api.getSettings()
-
-    // Migrate old zoom threshold setting to new font size setting
-    await migrateZoomThresholdToFontSize()
-  }
-
   /**
    * Migrate the old zoom threshold setting to the new font size setting.
    * Preserves the exact zoom threshold behavior by converting it to equivalent font size.
@@ -246,8 +256,11 @@ export const useSettingStore = defineStore('setting', () => {
   return {
     settingValues,
     settingsById,
+    isReady,
+    isLoading,
+    error,
+    load,
     addSetting,
-    loadSettingValues,
     set,
     get,
     exists,

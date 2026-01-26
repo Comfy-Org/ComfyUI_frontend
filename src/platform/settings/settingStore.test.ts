@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -32,7 +33,7 @@ describe('useSettingStore', () => {
   let store: ReturnType<typeof useSettingStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSettingStore()
     vi.clearAllMocks()
   })
@@ -42,18 +43,18 @@ describe('useSettingStore', () => {
     expect(store.settingsById).toEqual({})
   })
 
-  describe('loadSettingValues', () => {
+  describe('load', () => {
     it('should load settings from API', async () => {
       const mockSettings = { 'test.setting': 'value' }
       vi.mocked(api.getSettings).mockResolvedValue(mockSettings as any)
 
-      await store.loadSettingValues()
+      await store.load()
 
       expect(store.settingValues).toEqual(mockSettings)
       expect(api.getSettings).toHaveBeenCalled()
     })
 
-    it('should throw error if settings are loaded after registration', async () => {
+    it('should set error if settings are loaded after registration', async () => {
       const setting: SettingParams = {
         id: 'test.setting',
         name: 'test.setting',
@@ -62,9 +63,14 @@ describe('useSettingStore', () => {
       }
       store.addSetting(setting)
 
-      await expect(store.loadSettingValues()).rejects.toThrow(
-        'Setting values must be loaded before any setting is registered.'
-      )
+      await store.load()
+
+      expect(store.error).toBeInstanceOf(Error)
+      if (store.error instanceof Error) {
+        expect(store.error.message).toBe(
+          'Setting values must be loaded before any setting is registered.'
+        )
+      }
     })
   })
 

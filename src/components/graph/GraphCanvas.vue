@@ -185,8 +185,9 @@ const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
 const bootstrapStore = useBootstrapStore()
-const { isI18nReady, i18nError, isSettingsReady, settingsError } =
-  storeToRefs(bootstrapStore)
+const { isI18nReady, i18nError } = storeToRefs(bootstrapStore)
+const { isReady: isSettingsReady, error: settingsError } =
+  storeToRefs(settingStore)
 
 const betaMenuEnabled = computed(
   () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
