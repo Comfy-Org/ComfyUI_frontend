@@ -296,13 +296,22 @@ export const useWorkflowService = () => {
       if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
         const activeState = activeWorkflow.activeState
         if (activeState) {
-          const workflowJson = JSON.stringify(activeState)
-          workflowDraftStore.saveDraft(activeWorkflow.path, {
-            data: workflowJson,
-            updatedAt: Date.now(),
-            name: activeWorkflow.key,
-            isTemporary: activeWorkflow.isTemporary
-          })
+          try {
+            const workflowJson = JSON.stringify(activeState)
+            workflowDraftStore.saveDraft(activeWorkflow.path, {
+              data: workflowJson,
+              updatedAt: Date.now(),
+              name: activeWorkflow.key,
+              isTemporary: activeWorkflow.isTemporary
+            })
+          } catch {
+            toastStore.add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('toastMessages.failedToSaveDraft'),
+              life: 3000
+            })
+          }
         }
       }
       // Capture thumbnail before loading new graph
