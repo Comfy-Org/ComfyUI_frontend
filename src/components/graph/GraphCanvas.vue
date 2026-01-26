@@ -322,7 +322,10 @@ watch(
 watch(
   () => colorPaletteStore.activePaletteId,
   async (newValue) => {
-    await settingStore.set('Comfy.ColorPalette', newValue)
+    // Guard against ping-pong: only set if value actually differs
+    if (newValue && settingStore.get('Comfy.ColorPalette') !== newValue) {
+      await settingStore.set('Comfy.ColorPalette', newValue)
+    }
   }
 )
 
