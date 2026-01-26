@@ -1,11 +1,19 @@
 <template>
-  <div class="widget-expands relative">
+  <FloatLabel
+    variant="in"
+    :class="
+      cn(
+        'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
+        widget.borderStyle
+      )
+    "
+  >
     <Textarea
-      v-model="modelValue"
       v-bind="filteredProps"
+      :id
+      v-model="modelValue"
       :class="cn(WidgetInputBaseClass, 'size-full text-xs resize-none')"
-      :placeholder="placeholder || widget.name || ''"
-      :aria-label="widget.name"
+      :placeholder
       :readonly="widget.options?.read_only"
       :disabled="widget.options?.read_only"
       fluid
@@ -15,12 +23,14 @@
       @pointerup.capture.stop
       @contextmenu.capture.stop
     />
-  </div>
+    <label :for="id">{{ displayName }}</label>
+  </FloatLabel>
 </template>
 
 <script setup lang="ts">
+import FloatLabel from 'primevue/floatlabel'
 import Textarea from 'primevue/textarea'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -41,4 +51,7 @@ const modelValue = defineModel<string>({ default: '' })
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
 )
+
+const displayName = computed(() => widget.label || widget.name)
+const id = useId()
 </script>

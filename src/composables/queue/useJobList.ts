@@ -1,8 +1,10 @@
+import { orderBy } from 'es-toolkit/array'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { st } from '@/i18n'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
@@ -37,7 +39,7 @@ export type JobListItem = {
   iconName?: string
   iconImageUrl?: string
   showClear?: boolean
-  taskRef?: any
+  taskRef?: TaskItemImpl
   progressTotalPercent?: number
   progressCurrentPercent?: number
   runningNodeName?: string
@@ -196,13 +198,15 @@ export function useJobList() {
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
   const selectedSortMode = ref<JobSortMode>('mostRecent')
 
+  const mostRecentTimestamp = (task: TaskItemImpl) => task.createTime ?? 0
+
   const allTasksSorted = computed<TaskItemImpl[]>(() => {
     const all = [
       ...queueStore.pendingTasks,
       ...queueStore.runningTasks,
       ...queueStore.historyTasks
     ]
-    return all.sort((a, b) => b.queueIndex - a.queueIndex)
+    return orderBy(all, [mostRecentTimestamp], ['desc'])
   })
 
   const tasksWithJobState = computed<TaskWithState[]>(() =>
@@ -237,7 +241,7 @@ export function useJobList() {
       const activeId = workflowStore.activeWorkflow?.activeState?.id
       if (!activeId) return []
       entries = entries.filter(({ task }) => {
-        const wid = task.workflow?.id
+        const wid = task.workflowId
         return !!wid && wid === activeId
       })
     }
@@ -263,7 +267,8 @@ export function useJobList() {
         totalPercent: isActive ? totalPercent.value : undefined,
         currentNodePercent: isActive ? currentNodePercent.value : undefined,
         currentNodeName: isActive ? currentNodeName.value : undefined,
-        showAddedHint
+        showAddedHint,
+        isCloud
       })
 
       return {

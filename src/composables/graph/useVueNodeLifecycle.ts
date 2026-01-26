@@ -4,15 +4,14 @@ import { shallowRef, watch } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { useVueNodesMigrationDismissed } from '@/composables/useVueNodesMigrationDismissed'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { app as comfyApp } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -20,10 +19,6 @@ function useVueNodeLifecycleIndividual() {
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const nodeManager = shallowRef<GraphNodeManager | null>(null)
   const { startSync } = useLayoutSync()
-
-  const isVueNodeToastDismissed = useVueNodesMigrationDismissed()
-
-  let hasShownMigrationToast = false
 
   const initializeNodeManager = () => {
     // Use canvas graph if available (handles subgraph contexts), fallback to app graph
@@ -38,7 +33,10 @@ function useVueNodeLifecycleIndividual() {
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
       id: node.id.toString(),
       pos: [node.pos[0], node.pos[1]] as [number, number],
-      size: [node.size[0], node.size[1]] as [number, number]
+      size: [node.size[0], removeNodeTitleHeight(node.size[1])] as [
+        number,
+        number
+      ]
     }))
     layoutStore.initializeFromLiteGraph(nodes)
 
@@ -79,24 +77,12 @@ function useVueNodeLifecycleIndividual() {
   // Watch for Vue nodes enabled state changes
   watch(
     () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
-    (enabled, wasEnabled) => {
+    (enabled) => {
       if (enabled) {
         initializeNodeManager()
         ensureCorrectLayoutScale(
           comfyApp.canvas?.graph?.extra.workflowRendererVersion
         )
-        if (
-          wasEnabled === false &&
-          !isVueNodeToastDismissed.value &&
-          !hasShownMigrationToast
-        ) {
-          hasShownMigrationToast = true
-          useToastStore().add({
-            group: 'vue-nodes-migration',
-            severity: 'info',
-            life: 0
-          })
-        }
       }
     },
     { immediate: true }

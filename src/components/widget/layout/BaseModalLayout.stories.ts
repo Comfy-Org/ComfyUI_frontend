@@ -1,22 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { computed, provide, ref } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
+import Button from '@/components/ui/button/Button.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
-import SearchBox from '@/components/input/SearchBox.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
 import LeftSidePanel from '../panel/LeftSidePanel.vue'
-import RightSidePanel from '../panel/RightSidePanel.vue'
 import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
@@ -70,12 +68,10 @@ const createStoryTemplate = (args: StoryArgs) => ({
   components: {
     BaseModalLayout,
     LeftSidePanel,
-    RightSidePanel,
     SearchBox,
     MultiSelect,
     SingleSelect,
-    IconButton,
-    IconTextButton,
+    Button,
     MoreButton,
     CardContainer,
     CardTop,
@@ -177,16 +173,15 @@ const createStoryTemplate = (args: StoryArgs) => ({
   template: `
     <div>
       <BaseModalLayout v-if="!args.hasRightPanel" :content-title="args.contentTitle || 'Content Title'">
+        <!-- Left Panel Header Title -->
+        <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
+          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+          <span class="text-neutral text-base">Title</span>
+        </template>
+
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
-          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
-            <template #header-icon>
-              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-            </template>
-            <template #header-title>
-              <span class="text-neutral text-base">Title</span>
-            </template>
-          </LeftSidePanel>
+          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation" />
         </template>
 
         <!-- Header -->
@@ -202,33 +197,32 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <!-- Header Right Area -->
         <template v-if="args.hasHeaderRightArea" #header-right-area>
           <div class="flex gap-2">
-            <IconTextButton type="primary" label="Upload Model" @click="() => {}">
-              <template #icon>
+            <Button variant="primary" @click="() => {}">
                 <i class="icon-[lucide--upload] size-3" />
-              </template>
-            </IconTextButton>
+              <span> Upload Model </span>
+            </Button>
 
             <MoreButton>
               <template #default="{ close }">
-                <IconTextButton
-                  type="secondary"
+                <Button
+                  variant="secondary"
                   label="Settings"
                   @click="() => { close() }"
                 >
                   <template #icon>
                     <i class="icon-[lucide--download] size-3" />
                   </template>
-                </IconTextButton>
+                </Button>
 
-                <IconTextButton
-                  type="primary"
+                <Button
+                  variant="primary"
                   label="Profile"
                   @click="() => { close() }"
                 >
                   <template #icon>
                     <i class="icon-[lucide--scroll] size-3" />
                   </template>
-                </IconTextButton>
+                </Button>
               </template>
             </MoreButton>
           </div>
@@ -277,9 +271,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <div class="w-full h-full bg-blue-500"></div>
                   </template>
                   <template #top-right>
-                    <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
+                    <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
                       <i class="icon-[lucide--info] size-4" />
-                    </IconButton>
+                    </Button>
                   </template>
                   <template #bottom-right>
                     <SquareChip label="png" />
@@ -302,16 +296,15 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
       <BaseModalLayout v-else :content-title="args.contentTitle || 'Content Title'">
         <!-- Same content but WITH right panel -->
+        <!-- Left Panel Header Title -->
+        <template v-if="args.hasLeftPanel" #leftPanelHeaderTitle>
+          <i class="icon-[lucide--puzzle] size-4 text-neutral" />
+          <span class="text-neutral text-base">Title</span>
+        </template>
+
         <!-- Left Panel -->
         <template v-if="args.hasLeftPanel" #leftPanel>
-          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
-            <template #header-icon>
-              <i class="icon-[lucide--puzzle] size-4 text-neutral" />
-            </template>
-            <template #header-title>
-              <span class="text-neutral text-base">Title</span>
-            </template>
-          </LeftSidePanel>
+          <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation" />
         </template>
 
         <!-- Header -->
@@ -327,33 +320,28 @@ const createStoryTemplate = (args: StoryArgs) => ({
         <!-- Header Right Area -->
         <template v-if="args.hasHeaderRightArea" #header-right-area>
           <div class="flex gap-2">
-            <IconTextButton type="primary" label="Upload Model" @click="() => {}">
-              <template #icon>
+            <Button variant="primary" @click="() => {}">
                 <i class="icon-[lucide--upload] size-3" />
-              </template>
-            </IconTextButton>
+                <span>Upload Model</span>
+            </Button>
 
             <MoreButton>
               <template #default="{ close }">
-                <IconTextButton
-                  type="secondary"
-                  label="Settings"
+                <Button
+                  variant="secondary"
                   @click="() => { close() }"
                 >
-                  <template #icon>
                     <i class="icon-[lucide--download] size-3" />
-                  </template>
-                </IconTextButton>
+                    <span>Settings</span>
+                </Button>
 
-                <IconTextButton
-                  type="primary"
-                  label="Profile"
+                <Button
+                  variant="primary"
                   @click="() => { close() }"
                 >
-                  <template #icon>
                     <i class="icon-[lucide--scroll] size-3" />
-                  </template>
-                </IconTextButton>
+                    <span>Profile</span>
+                </Button>
               </template>
             </MoreButton>
           </div>
@@ -399,9 +387,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
                     <div class="w-full h-full bg-blue-500"></div>
                   </template>
                   <template #top-right>
-                    <IconButton class="!bg-white !text-neutral-900" @click="() => {}">
+                    <Button size="icon" class="!bg-white !text-neutral-900" @click="() => {}">
                       <i class="icon-[lucide--info] size-4" />
-                    </IconButton>
+                    </Button>
                   </template>
                   <template #bottom-right>
                     <SquareChip label="png" />
@@ -423,7 +411,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Right Panel - Only when hasRightPanel is true -->
         <template #rightPanel>
-          <RightSidePanel />
+          <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
         </template>
       </BaseModalLayout>
     </div>

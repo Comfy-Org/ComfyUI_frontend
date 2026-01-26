@@ -92,11 +92,14 @@ import {
 
 const { nodeManager } = useVueNodeLifecycle()
 
+/* eslint-disable vue/no-unused-properties */
+// widget prop is part of the standard widget component interface
 const props = defineProps<{
   widget: SimplifiedWidget<string | number | undefined>
   readonly?: boolean
   nodeId: string
 }>()
+/* eslint-enable vue/no-unused-properties */
 
 // Refs for video elements
 const videoRef = ref<HTMLVideoElement>()
@@ -238,7 +241,6 @@ function removeWidgetsByName(names: string[]) {
     updateNodeWidgets(node, (widgets) =>
       widgets.filter((widget) => !names.includes(widget.name))
     )
-    nodeManager.value?.refreshVueWidgets(String(node.id))
   })
 }
 
@@ -254,12 +256,6 @@ function updateCaptureButtonVisibility(isOnRunMode: boolean) {
         hidden: isOnRunMode
       }
     }
-
-    nodeManager.value?.updateVueWidgetOptions(
-      String(node.id),
-      CAPTURE_WIDGET_NAME,
-      { hidden: isOnRunMode }
-    )
 
     app.graph.setDirtyCanvas(true, true)
   })
@@ -301,7 +297,6 @@ async function handleModeChange(isOnRunMode: boolean) {
           })
           return [...widgets, captureWidget]
         })
-        nodeManager.value?.refreshVueWidgets(String(node.id))
       }
     })
   }
@@ -354,8 +349,6 @@ function hideWidgets() {
         }),
       { dirtyCanvas: false }
     )
-
-    nodeManager.value?.refreshVueWidgets(String(node.id))
   })
 }
 
@@ -430,7 +423,6 @@ function showWidgets() {
       return [...sanitizedWidgets, captureWidget]
     })
 
-    nodeManager.value?.refreshVueWidgets(String(node.id))
     setupCaptureOnQueueWatcher()
   })
 }
@@ -457,8 +449,6 @@ async function handleCaptureImage(node: LGraphNode) {
 
     return [...preserved, retakeWidget]
   })
-
-  nodeManager.value?.refreshVueWidgets(String(node.id))
 }
 
 async function handleRetake() {

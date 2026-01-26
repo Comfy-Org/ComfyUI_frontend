@@ -5,14 +5,26 @@
     <title>ComfyUI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <link rel="stylesheet" type="text/css" href="materialdesignicons.min.css" />
-    <link rel="stylesheet" type="text/css" href="user.css" />
-    <link rel="stylesheet" type="text/css" href="api/userdata/user.css" />
     
     <!-- Fullscreen mode on mobile browsers -->
     <meta name="mobile-web-app-capable" content="yes">
     <!-- Status bar style (eg. black or transparent) -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
-    
+    <style>
+      @media (prefers-color-scheme: dark) {
+        body {
+          /* Setting it early for background during load */
+          --bg-color: #202020;
+        }
+      }
+      body {
+        background-color: var(--bg-color);
+        background-image: var(--bg-img);
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
+      }
+    </style>    
     <link rel="manifest" href="manifest.json">
   </head>
   

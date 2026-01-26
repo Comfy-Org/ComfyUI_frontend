@@ -17,7 +17,8 @@
 
   <GlobalToast />
   <RerouteMigrationToast />
-  <VueNodesMigrationToast />
+  <ModelImportProgressDialog />
+  <ManagerProgressToast />
   <UnloadWindowConfirmDialog v-if="!isElectron()" />
   <MenuHamburger />
 </template>
@@ -44,13 +45,14 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
-import VueNodesMigrationToast from '@/components/toast/VueNodesMigrationToast.vue'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
+import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -80,6 +82,7 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import LinearView from '@/views/LinearView.vue'
+import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
 
 setupAutoQueueHandler()
 useProgressFavicon()
@@ -206,19 +209,25 @@ const init = () => {
 }
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
+const sidebarTabStore = useSidebarTabStore()
+
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
-  await Promise.all([
-    queueStore.update(),
-    assetsStore.updateHistory() // Update history assets when status changes
-  ])
+  await queueStore.update()
+  // Only update assets if the assets sidebar is currently open
+  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
+    await assetsStore.updateHistory()
+  }
 }
 
 const onExecutionSuccess = async () => {
-  await Promise.all([
-    queueStore.update(),
-    assetsStore.updateHistory() // Update history assets on execution success
-  ])
+  await queueStore.update()
+  // Only update assets if the assets sidebar is currently open
+  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
+  if (sidebarTabStore.activeSidebarTabId === 'assets') {
+    await assetsStore.updateHistory()
+  }
 }
 
 const reconnectingMessage: ToastMessageOptions = {
@@ -242,6 +251,27 @@ const onReconnected = () => {
       life: 2000
     })
   }
+}
+
+// Initialize workspace store when feature flag and auth become available
+// Uses watch because remoteConfig loads asynchronously after component mount
+if (isCloud) {
+  const { flags } = useFeatureFlags()
+
+  watch(
+    () => [flags.teamWorkspacesEnabled, firebaseAuthStore.isAuthenticated],
+    async ([enabled, isAuthenticated]) => {
+      if (!enabled || !isAuthenticated) return
+
+      const { useTeamWorkspaceStore } =
+        await import('@/platform/workspace/stores/teamWorkspaceStore')
+      const workspaceStore = useTeamWorkspaceStore()
+      if (workspaceStore.initState === 'uninitialized') {
+        await workspaceStore.initialize()
+      }
+    },
+    { immediate: true }
+  )
 }
 
 onMounted(() => {
@@ -344,7 +374,10 @@ const onGraphReady = () => {
         })
 
         // Broadcast our heartbeat
-        tabCountChannel?.postMessage({ type: 'heartbeat', tabId: currentTabId })
+        tabCountChannel?.postMessage({
+          type: 'heartbeat',
+          tabId: currentTabId
+        })
 
         // Track tab count (include current tab)
         const tabCount = activeTabs.size + 1

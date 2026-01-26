@@ -1,5 +1,5 @@
 <template>
-  <CardContainer
+  <div
     ref="cardContainerRef"
     role="button"
     :aria-label="
@@ -11,139 +11,132 @@
         : $t('assetBrowser.ariaLabel.loadingAsset')
     "
     :tabindex="loading ? -1 : 0"
-    size="mini"
-    variant="ghost"
-    rounded="lg"
-    :class="containerClasses"
+    :class="
+      cn(
+        'flex flex-col overflow-hidden cursor-pointer p-2 transition-colors duration-200 rounded-lg',
+        'gap-2 select-none group',
+        selected
+          ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
+          : 'hover:bg-modal-card-background-hovered/20'
+      )
+    "
     :data-selected="selected"
-    @click.stop
+    @click.stop="$emit('click')"
+    @contextmenu.prevent.stop="
+      asset ? emit('context-menu', $event, asset) : undefined
+    "
   >
-    <template #top>
-      <CardTop
-        ratio="square"
-        :bottom-left-class="durationChipClasses"
-        :bottom-right-class="durationChipClasses"
+    <!-- Top Area: Media Preview -->
+    <div class="relative aspect-square overflow-hidden p-0">
+      <!-- Loading State -->
+      <div
+        v-if="loading"
+        class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
+      />
+
+      <!-- Content based on asset type -->
+      <component
+        :is="getTopComponent(fileKind)"
+        v-else-if="asset && adaptedAsset"
+        :asset="adaptedAsset"
+        :context="{ type: assetType }"
+        class="absolute inset-0"
+        @view="handleZoomClick"
+        @download="actions.downloadAsset()"
+        @video-playing-state-changed="isVideoPlaying = $event"
+        @video-controls-changed="showVideoControls = $event"
+        @image-loaded="handleImageLoaded"
+      />
+
+      <!-- Action buttons overlay (top-left) -->
+      <div
+        v-if="showActionsOverlay"
+        class="absolute top-2 left-2 flex flex-wrap justify-start gap-2"
       >
-        <!-- Loading State -->
-        <template v-if="loading">
+        <IconGroup background-class="bg-white">
+          <Button
+            variant="overlay-white"
+            size="icon"
+            :aria-label="$t('mediaAsset.actions.zoom')"
+            @click.stop="handleZoomClick"
+          >
+            <i class="icon-[lucide--zoom-in] size-4" />
+          </Button>
+          <Button
+            variant="overlay-white"
+            size="icon"
+            :aria-label="$t('mediaAsset.actions.moreOptions')"
+            @click.stop="
+              asset ? emit('context-menu', $event, asset) : undefined
+            "
+          >
+            <i class="icon-[lucide--ellipsis] size-4" />
+          </Button>
+        </IconGroup>
+      </div>
+    </div>
+
+    <!-- Bottom Area: Media Info -->
+    <div class="flex-1">
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-between items-start">
+        <div class="flex flex-col gap-1">
           <div
-            class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
+            class="h-4 w-24 animate-pulse rounded bg-modal-card-background"
           />
-        </template>
-
-        <!-- Content based on asset type -->
-        <template v-else-if="asset && adaptedAsset">
-          <component
-            :is="getTopComponent(fileKind)"
-            :asset="adaptedAsset"
-            :context="{ type: assetType }"
-            @view="handleZoomClick"
-            @download="actions.downloadAsset()"
-            @video-playing-state-changed="isVideoPlaying = $event"
-            @video-controls-changed="showVideoControls = $event"
-            @image-loaded="handleImageLoaded"
+          <div
+            class="h-3 w-20 animate-pulse rounded bg-modal-card-background"
           />
-        </template>
+        </div>
+        <div class="h-6 w-12 animate-pulse rounded bg-modal-card-background" />
+      </div>
 
-        <!-- Top-left slot: Duration/Format chips OR Media actions -->
-        <template #top-left>
-          <!-- Duration/Format chips - show when not hovered and not playing -->
-          <div v-if="showStaticChips" class="flex flex-wrap items-center gap-1">
-            <SquareChip
-              v-if="formattedDuration"
-              variant="gray"
-              :label="formattedDuration"
-            />
-            <SquareChip v-if="fileFormat" variant="gray" :label="fileFormat" />
+      <!-- Content -->
+      <div
+        v-else-if="asset && adaptedAsset"
+        class="flex justify-between items-end gap-1.5"
+      >
+        <!-- Left side: Media name and metadata -->
+        <div class="flex flex-col gap-1">
+          <!-- Title -->
+          <MediaTitle :file-name="fileName" />
+          <!-- Metadata -->
+          <div class="flex gap-1.5 text-xs text-muted-foreground">
+            <span v-if="formattedDuration">{{ formattedDuration }}</span>
+            <span v-if="metaInfo">{{ metaInfo }}</span>
           </div>
+        </div>
 
-          <!-- Media actions - show on hover or when playing -->
-          <IconGroup v-else-if="showActionsOverlay">
-            <IconButton
-              v-tooltip.top="$t('mediaAsset.actions.inspect')"
-              size="sm"
-              @click.stop="handleZoomClick"
-            >
-              <i class="icon-[lucide--zoom-in] size-4" />
-            </IconButton>
-            <MoreButton
-              ref="moreButtonRef"
-              v-tooltip.top="$t('mediaAsset.actions.more')"
-              size="sm"
-              @menu-opened="handleMenuOpened"
-              @menu-closed="handleMenuClosed"
-            >
-              <template #default="{ close }">
-                <MediaAssetMoreMenu
-                  :close="close"
-                  :show-delete-button="showDeleteButton"
-                  @inspect="handleZoomClick"
-                  @asset-deleted="handleAssetDelete"
-                />
-              </template>
-            </MoreButton>
-          </IconGroup>
-        </template>
-
-        <!-- Output count (top-right) -->
-        <template v-if="showOutputCount" #top-right>
-          <IconTextButton
+        <!-- Right side: Output count -->
+        <div v-if="showOutputCount" class="flex-shrink-0">
+          <Button
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
             "
-            type="secondary"
-            size="sm"
-            :label="String(outputCount)"
+            variant="secondary"
             @click.stop="handleOutputCountClick"
           >
-            <template #icon>
-              <i class="icon-[lucide--layers] size-4" />
-            </template>
-          </IconTextButton>
-        </template>
-      </CardTop>
-    </template>
-
-    <template #bottom>
-      <CardBottom>
-        <!-- Loading State -->
-        <template v-if="loading">
-          <div class="flex flex-col items-center justify-between gap-1">
-            <div
-              class="h-4 w-2/3 animate-pulse rounded bg-modal-card-background"
-            />
-            <div
-              class="h-3 w-1/2 animate-pulse rounded bg-modal-card-background"
-            />
-          </div>
-        </template>
-
-        <!-- Content based on asset type -->
-        <template v-else-if="asset && adaptedAsset">
-          <component
-            :is="getBottomComponent(fileKind)"
-            :asset="adaptedAsset"
-            :context="{ type: assetType }"
-          />
-        </template>
-      </CardBottom>
-    </template>
-  </CardContainer>
+            <i class="icon-[lucide--layers] size-4" />
+            <span>{{ outputCount }}</span>
+          </Button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { useElementHover, whenever } from '@vueuse/core'
+import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
 import IconGroup from '@/components/button/IconGroup.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
-import MoreButton from '@/components/button/MoreButton.vue'
-import CardBottom from '@/components/card/CardBottom.vue'
-import CardContainer from '@/components/card/CardContainer.vue'
-import CardTop from '@/components/card/CardTop.vue'
-import SquareChip from '@/components/chip/SquareChip.vue'
-import { formatDuration, getMediaTypeFromFilename } from '@/utils/formatUtil'
+import Button from '@/components/ui/button/Button.vue'
+import {
+  formatDuration,
+  formatSize,
+  getFilenameDetails,
+  getMediaTypeFromFilename
+} from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
@@ -151,7 +144,7 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import MediaAssetMoreMenu from './MediaAssetMoreMenu.vue'
+import MediaTitle from './MediaTitle.vue'
 
 const mediaComponents = {
   top: {
@@ -159,12 +152,6 @@ const mediaComponents = {
     audio: defineAsyncComponent(() => import('./MediaAudioTop.vue')),
     image: defineAsyncComponent(() => import('./MediaImageTop.vue')),
     '3D': defineAsyncComponent(() => import('./Media3DTop.vue'))
-  },
-  bottom: {
-    video: defineAsyncComponent(() => import('./MediaVideoBottom.vue')),
-    audio: defineAsyncComponent(() => import('./MediaAudioBottom.vue')),
-    image: defineAsyncComponent(() => import('./MediaImageBottom.vue')),
-    '3D': defineAsyncComponent(() => import('./Media3DBottom.vue'))
   }
 }
 
@@ -172,41 +159,24 @@ function getTopComponent(kind: MediaKind) {
   return mediaComponents.top[kind] || mediaComponents.top.image
 }
 
-function getBottomComponent(kind: MediaKind) {
-  return mediaComponents.bottom[kind] || mediaComponents.bottom.image
-}
-
-const {
-  asset,
-  loading,
-  selected,
-  showOutputCount,
-  outputCount,
-  showDeleteButton,
-  openPopoverId
-} = defineProps<{
+const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
   asset?: AssetItem
   loading?: boolean
   selected?: boolean
   showOutputCount?: boolean
   outputCount?: number
-  showDeleteButton?: boolean
-  openPopoverId?: string | null
 }>()
 
 const emit = defineEmits<{
+  click: []
   zoom: [asset: AssetItem]
   'output-count-click': []
-  'asset-deleted': []
-  'popover-opened': []
-  'popover-closed': []
+  'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
 const cardContainerRef = ref<HTMLElement>()
-const moreButtonRef = ref<InstanceType<typeof MoreButton>>()
 
 const isVideoPlaying = ref(false)
-const isMenuOpen = ref(false)
 const showVideoControls = ref(false)
 
 // Store actual image dimensions
@@ -224,6 +194,11 @@ const assetType = computed(() => {
 // Determine file type from extension
 const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '') as MediaKind
+})
+
+// Get filename without extension
+const fileName = computed(() => {
+  return getFilenameDetails(asset?.name || '').filename
 })
 
 // Adapt AssetItem to legacy AssetMeta format for existing components
@@ -251,15 +226,6 @@ provide(MediaAssetKey, {
   showVideoControls
 })
 
-const containerClasses = computed(() =>
-  cn(
-    'gap-1 select-none group',
-    selected
-      ? 'ring-3 ring-inset ring-modal-card-border-highlighted'
-      : 'hover:bg-modal-card-background-hovered'
-  )
-)
-
 const formattedDuration = computed(() => {
   // Check for execution time first (from history API)
   const executionTime = asset?.user_metadata?.executionTimeInSeconds
@@ -273,43 +239,22 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-const fileFormat = computed(() => {
-  if (!asset?.name) return ''
-  const parts = asset.name.split('.')
-  return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : ''
-})
-
-const durationChipClasses = computed(() => {
-  if (fileKind.value === 'audio') {
-    return '-translate-y-11'
+// Get metadata info based on file kind
+const metaInfo = computed(() => {
+  if (!asset) return ''
+  if (fileKind.value === 'image' && imageDimensions.value) {
+    return `${imageDimensions.value.width}x${imageDimensions.value.height}`
   }
-  if (fileKind.value === 'video' && showVideoControls.value) {
-    return '-translate-y-16'
+  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
+    return formatSize(asset.size)
   }
   return ''
 })
 
-const isCardOrOverlayHovered = computed(
-  () => isHovered.value || isMenuOpen.value
-)
-
-// Show static chips when NOT hovered and NOT playing (normal state)
-const showStaticChips = computed(
-  () =>
-    !loading &&
-    !!asset &&
-    !isCardOrOverlayHovered.value &&
-    !isVideoPlaying.value &&
-    (formattedDuration.value || fileFormat.value)
-)
-
-// Show action overlay when hovered OR playing
-const showActionsOverlay = computed(
-  () =>
-    !loading &&
-    !!asset &&
-    (isCardOrOverlayHovered.value || isVideoPlaying.value)
-)
+const showActionsOverlay = computed(() => {
+  if (loading || !asset) return false
+  return isHovered.value || selected || isVideoPlaying.value
+})
 
 const handleZoomClick = () => {
   if (asset) {
@@ -324,26 +269,4 @@ const handleImageLoaded = (width: number, height: number) => {
 const handleOutputCountClick = () => {
   emit('output-count-click')
 }
-
-const handleAssetDelete = () => {
-  emit('asset-deleted')
-}
-
-const handleMenuOpened = () => {
-  isMenuOpen.value = true
-  emit('popover-opened')
-}
-
-const handleMenuClosed = () => {
-  isMenuOpen.value = false
-  emit('popover-closed')
-}
-
-// Close this popover when another opens
-whenever(
-  () => openPopoverId && openPopoverId !== asset?.id && isMenuOpen.value,
-  () => {
-    moreButtonRef.value?.hide()
-  }
-)
 </script>

@@ -1,8 +1,9 @@
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
+import { formatDuration } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 
-type BuildJobDisplayCtx = {
+export type BuildJobDisplayCtx = {
   t: (k: string, v?: Record<string, any>) => string
   locale: string
   formatClockTimeFn: (ts: number, locale: string) => string
@@ -11,6 +12,8 @@ type BuildJobDisplayCtx = {
   currentNodePercent?: number
   currentNodeName?: string
   showAddedHint?: boolean
+  /** Whether the app is running in cloud distribution */
+  isCloud?: boolean
 }
 
 type JobDisplay = {
@@ -122,13 +125,20 @@ export const buildJobDisplay = (
     const time = task.executionTimeInSeconds
     const preview = task.previewOutput
     const iconImageUrl = preview && preview.isImage ? preview.url : undefined
+
+    // Cloud shows "Completed in Xh Ym Zs", non-cloud shows filename
+    const primary = ctx.isCloud
+      ? ctx.t('queue.completedIn', {
+          duration: formatDuration(task.executionTime ?? 0)
+        })
+      : preview?.filename && preview.filename.length
+        ? preview.filename
+        : buildTitle(task, ctx.t)
+
     return {
       iconName: iconForJobState(state),
       iconImageUrl,
-      primary:
-        preview?.filename && preview.filename.length
-          ? preview.filename
-          : buildTitle(task, ctx.t),
+      primary,
       secondary: time !== undefined ? `${time.toFixed(2)}s` : '',
       showClear: false
     }

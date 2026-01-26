@@ -14,7 +14,6 @@ import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comf
 
 /**
  * Composable to find missing NodePacks from workflow
- * Uses the same filtering approach as ManagerDialogContent.vue
  * Automatically fetches workflow pack data when initialized
  * This is a shared singleton composable - all components use the same instance
  */
@@ -25,7 +24,6 @@ export const useMissingNodes = createSharedComposable(() => {
   const { workflowPacks, isLoading, error, startFetchWorkflowPacks } =
     useWorkflowPacks()
 
-  // Same filtering logic as ManagerDialogContent.vue
   const filterMissingPacks = (packs: components['schemas']['Node'][]) =>
     packs.filter((pack) => !comfyManagerStore.isPackInstalled(pack.id))
 
@@ -61,7 +59,7 @@ export const useMissingNodes = createSharedComposable(() => {
   }
 
   const missingCoreNodes = computed<Record<string, LGraphNode[]>>(() => {
-    const missingNodes = collectAllNodes(app.graph, isMissingCoreNode)
+    const missingNodes = collectAllNodes(app.rootGraph, isMissingCoreNode)
     return groupBy(missingNodes, (node) => String(node.properties?.ver || ''))
   })
 

@@ -34,27 +34,21 @@ export function useAssetWidgetData(
 
     const assets = computed<AssetItem[]>(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelAssetsByNodeType.get(resolvedType) ?? [])
-        : []
+      return resolvedType ? (assetsStore.getAssets(resolvedType) ?? []) : []
     })
 
     const isLoading = computed(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelLoadingByNodeType.get(resolvedType) ?? false)
-        : false
+      return resolvedType ? assetsStore.isModelLoading(resolvedType) : false
     })
 
     const error = computed<Error | null>(() => {
       const resolvedType = toValue(nodeType)
-      return resolvedType
-        ? (assetsStore.modelErrorByNodeType.get(resolvedType) ?? null)
-        : null
+      return resolvedType ? (assetsStore.getError(resolvedType) ?? null) : null
     })
 
     const dropdownItems = computed<DropdownItem[]>(() => {
-      return assets.value.map((asset) => ({
+      return (assets.value ?? []).map((asset) => ({
         id: asset.id,
         name:
           (asset.user_metadata?.filename as string | undefined) ?? asset.name,
@@ -71,9 +65,10 @@ export function useAssetWidgetData(
           return
         }
 
-        const hasData = assetsStore.modelAssetsByNodeType.has(currentNodeType)
+        const isLoading = assetsStore.isModelLoading(currentNodeType)
+        const hasBeenInitialized = assetsStore.hasAssetKey(currentNodeType)
 
-        if (!hasData) {
+        if (!isLoading && !hasBeenInitialized) {
           await assetsStore.updateModelsForNodeType(currentNodeType)
         }
       },

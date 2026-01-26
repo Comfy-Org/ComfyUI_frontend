@@ -41,8 +41,8 @@ export const useCurrentUser = () => {
     whenever(() => authStore.tokenRefreshTrigger, callback)
 
   const onUserLogout = (callback: () => void) => {
-    watch(resolvedUserInfo, (user) => {
-      if (!user) callback()
+    watch(resolvedUserInfo, (user, prevUser) => {
+      if (prevUser && !user) callback()
     })
   }
 

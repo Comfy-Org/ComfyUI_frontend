@@ -9,6 +9,8 @@
 
 @config '../../tailwind.config.ts';
 
+@custom-variant touch (@media (hover: none));
+
 @theme {
   --text-xxs: 0.625rem;
   --text-xxs--line-height: calc(1 / 0.625);
@@ -89,6 +91,8 @@
   --color-danger-100: #c02323;
   --color-danger-200: #d62952;
 
+  
+
   --color-coral-red-600: #973a40;
   --color-coral-red-500: #c53f49;
   --color-coral-red-400: #dd424e;
@@ -96,7 +100,6 @@
   --color-bypass: #6a246a;
   --color-error: #962a2a;
 
-  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
 
   --color-interface-panel-job-progress-primary: var(--color-azure-300);
   --color-interface-panel-job-progress-secondary: var(--color-alpha-azure-600-30);
@@ -183,8 +186,12 @@
   --interface-menu-component-surface-hovered: var(--color-smoke-200);
   --interface-menu-component-surface-selected: var(--color-smoke-400);
   --interface-menu-keybind-surface-default: var(--color-smoke-500);
+  --interface-menu-surface: var(--color-white);
+  --interface-menu-stroke: var(--color-smoke-600);
   --interface-panel-surface: var(--color-white);
   --interface-stroke: var(--color-smoke-300);
+
+  
 
   --nav-background: var(--color-white);
 
@@ -194,7 +201,7 @@
   --node-component-executing: var(--color-blue-500);
   --node-component-header: var(--fg-color);
   --node-component-header-icon: var(--color-ash-800);
-  --node-component-header-surface: var(--color-white);
+  --node-component-header-surface: var(--color-smoke-400);
   --node-component-outline: var(--color-black);
   --node-component-ring: rgb(from var(--color-smoke-500) r g b / 50%);
   --node-component-slot-dot-outline-opacity-mult: 1;
@@ -230,7 +237,7 @@
   --brand-yellow: var(--color-electric-400);
   --brand-blue: var(--color-sapphire-700);
   --secondary-background: var(--color-smoke-200);
-  --secondary-background-hover: var(--color-smoke-200);
+  --secondary-background-hover: var(--color-smoke-400);
   --secondary-background-selected: var(--color-smoke-600);
   --base-background: var(--color-white);
   --primary-background: var(--color-azure-400);
@@ -240,6 +247,7 @@
   --inverted-background-hover: var(--color-charcoal-600);
   --warning-background: var(--color-gold-400);
   --warning-background-hover: var(--color-gold-500);
+  --success-background: var(--color-jade-600);
   --border-default: var(--color-smoke-600);
   --border-subtle: var(--color-smoke-400);
   --muted-background: var(--color-smoke-700);
@@ -255,6 +263,8 @@
   --component-node-widget-background-selected: var(--secondary-background-selected);
   --component-node-widget-background-disabled: var(--color-alpha-ash-500-20);
   --component-node-widget-background-highlighted: var(--color-ash-500);
+  --component-node-widget-promoted: var(--color-purple-700);
+  --component-node-widget-advanced: var(--color-azure-400);
 
   /* Default UI element color palette variables */
    --palette-contrast-mix-color: #fff;
@@ -272,7 +282,7 @@
    --modal-card-border-highlighted: var(--secondary-background-selected);
    --modal-card-button-surface: var(--color-smoke-300);
    --modal-card-placeholder-background: var(--color-smoke-600);
-   --modal-card-tag-background: var(--color-smoke-400);
+   --modal-card-tag-background: var(--color-smoke-200);
    --modal-card-tag-foreground: var(--base-foreground);
    --modal-panel-background: var(--color-white);
 }
@@ -301,6 +311,8 @@
   --interface-menu-component-surface-hovered: var(--color-charcoal-400);
   --interface-menu-component-surface-selected: var(--color-charcoal-300);
   --interface-menu-keybind-surface-default: var(--color-charcoal-200);
+  --interface-menu-surface: var(--color-charcoal-800);
+  --interface-menu-stroke: var(--color-ash-800);
   --interface-panel-surface: var(--color-charcoal-800);
   --interface-stroke: var(--color-charcoal-400);
 
@@ -361,6 +373,7 @@
   --inverted-background-hover: var(--color-smoke-200);
   --warning-background: var(--color-gold-600);
   --warning-background-hover: var(--color-gold-500);
+  --success-background: var(--color-jade-600);
   --border-default: var(--color-charcoal-200);
   --border-subtle: var(--color-charcoal-300);
   --muted-background: var(--color-charcoal-100);
@@ -376,6 +389,8 @@
   --component-node-widget-background-selected: var(--color-charcoal-100);
   --component-node-widget-background-disabled: var(--color-alpha-charcoal-600-30);
   --component-node-widget-background-highlighted: var(--color-graphite-400);
+  --component-node-widget-promoted: var(--color-purple-700);
+  --component-node-widget-advanced: var(--color-azure-600);
 
   --modal-card-background: var(--secondary-background);
   --modal-card-background-hovered: var(--secondary-background-hover);
@@ -416,6 +431,8 @@
   --color-interface-menu-keybind-surface-default: var(
     --interface-menu-keybind-surface-default
   );
+  --color-interface-menu-surface: var(--interface-menu-surface);
+  --color-interface-menu-stroke: var(--interface-menu-stroke);
   --color-interface-panel-surface: var(--interface-panel-surface);
   --color-interface-panel-hover-surface: var(--interface-panel-hover-surface);
   --color-interface-panel-selected-surface: var(
@@ -424,7 +441,11 @@
   --color-interface-button-hover-surface: var(
     --interface-button-hover-surface
   );
+  --color-comfy-input: var(--comfy-input-bg);
+  --color-comfy-input-foreground: var(--input-text);
   --color-comfy-menu-bg: var(--comfy-menu-bg);
+  --color-comfy-menu-secondary: var(--comfy-menu-secondary-bg);
+
   --color-interface-stroke: var(--interface-stroke);
   --color-nav-background: var(--nav-background);
   --color-node-border: var(--node-border);
@@ -480,6 +501,8 @@
   --color-component-node-widget-background-selected: var(--component-node-widget-background-selected);
   --color-component-node-widget-background-disabled: var(--component-node-widget-background-disabled);
   --color-component-node-widget-background-highlighted: var(--component-node-widget-background-highlighted);
+  --color-component-node-widget-promoted: var(--component-node-widget-promoted);
+  --color-component-node-widget-advanced: var(--component-node-widget-advanced);
 
   /* Semantic tokens */
   --color-base-foreground: var(--base-foreground);
@@ -495,6 +518,7 @@
   --color-inverted-background-hover: var(--inverted-background-hover);
   --color-warning-background: var(--warning-background);
   --color-warning-background-hover: var(--warning-background-hover);
+  --color-success-background: var(--success-background);
   --color-border-default: var(--border-default);
   --color-border-subtle: var(--border-subtle);
   --color-muted-background: var(--muted-background);
@@ -560,13 +584,11 @@ body {
   height: 100vh;
   margin: 0;
   overflow: hidden;
-  background: var(--bg-color) var(--bg-img);
-  color: var(--fg-color);
   min-height: -webkit-fill-available;
   max-height: -webkit-fill-available;
   min-width: -webkit-fill-available;
   max-width: -webkit-fill-available;
-  font-family: Arial, sans-serif;
+  font-family: Inter, Arial, sans-serif;
 }
 
 .comfy-multiline-input {
@@ -880,7 +902,6 @@ body {
   align-items: center;
   color: var(--descrip-text);
   background-color: var(--comfy-menu-bg);
-  font-family: sans-serif;
   padding: 10px;
   border-radius: 0 8px 8px;
   box-shadow: 3px 3px 8px rgb(0 0 0 / 0.4);
@@ -978,7 +999,6 @@ span.drag-handle {
   margin-top: -0.4em;
   margin-left: -0.2em;
   font-size: 12px;
-  font-family: sans-serif;
   letter-spacing: 2px;
   color: var(--drag-text);
   text-shadow: 1px 0 1px black;
@@ -1038,7 +1058,6 @@ button.comfy-queue-btn {
 .comfy-modal.comfy-settings,
 .comfy-modal.comfy-manage-templates {
   text-align: center;
-  font-family: sans-serif;
   color: var(--descrip-text);
   z-index: 99;
 }
@@ -1102,7 +1121,6 @@ button.comfy-queue-btn {
 
 .graphdialog .name {
   font-size: 14px;
-  font-family: sans-serif;
   color: var(--descrip-text);
 }
 
@@ -1142,7 +1160,6 @@ dialog::backdrop {
 }
 
 .comfy-dialog.comfy-modal {
-  font-family: Arial, sans-serif;
   border-color: var(--bg-color);
   box-shadow: none;
   border: 2px solid var(--border-color);
@@ -1172,7 +1189,6 @@ dialog::backdrop {
 
 .litegraph .dialog {
   z-index: 1;
-  font-family: Arial, sans-serif;
 }
 
 .litegraph .litemenu-entry.has_submenu {
@@ -1190,24 +1206,19 @@ dialog::backdrop {
 .litegraph.litecontextmenu,
 .litegraph.litecontextmenu.dark {
   z-index: 9999 !important;
-  background-color: var(--comfy-menu-bg) !important;
+  background-color: var(--comfy-menu-bg);
 }
 
-.litegraph.litecontextmenu
-  .litemenu-entry:hover:not(.disabled):not(.separator) {
-  background-color: var(--comfy-menu-hover-bg, var(--border-color)) !important;
-  color: var(--fg-color);
-}
 
 .litegraph.litecontextmenu .litemenu-entry.submenu,
 .litegraph.litecontextmenu.dark .litemenu-entry.submenu {
-  background-color: var(--comfy-menu-bg) !important;
-  color: var(--input-text);
+  background-color: var(--comfy-menu-bg);
+  color: var(--fg-color);
 }
 
 .litegraph.litecontextmenu input {
-  background-color: var(--comfy-input-bg) !important;
-  color: var(--input-text) !important;
+  background-color: var(--comfy-input-bg);
+  color: var(--input-text);
 }
 
 .comfy-context-menu-filter {
@@ -1248,14 +1259,14 @@ dialog::backdrop {
 
 .litegraph.litesearchbox {
   z-index: 9999 !important;
-  background-color: var(--comfy-menu-bg) !important;
+  background-color: var(--comfy-menu-bg);
   overflow: hidden;
   display: block;
 }
 
 .litegraph.litesearchbox input,
 .litegraph.litesearchbox select {
-  background-color: var(--comfy-input-bg) !important;
+  background-color: var(--comfy-input-bg);
   color: var(--input-text);
 }
 
@@ -1351,7 +1362,6 @@ audio.comfy-audio.empty-audio-widget {
   .maskEditor_sidePanelTitle {
     text-align: center;
     font-size: 15px;
-    font-family: sans-serif;
     color: var(--descrip-text);
     margin-top: 10px;
   }
@@ -1459,7 +1469,6 @@ audio.comfy-audio.empty-audio-widget {
     background: rgb(0 0 0 / 0.2);
     border: 1px solid var(--border-color);
     color: var(--input-text);
-    font-family: sans-serif;
     font-size: 15px;
     pointer-events: auto;
     transition: background-color 0.1s;
@@ -1574,7 +1583,6 @@ audio.comfy-audio.empty-audio-widget {
     border: 1px solid var(--p-form-field-border-color);
     border-radius: 10px;
     color: var(--input-text);
-    font-family: sans-serif;
     pointer-events: auto;
     transition: 0.1s;
     width: 60px;
@@ -1590,7 +1598,6 @@ audio.comfy-audio.empty-audio-widget {
     border: 1px solid var(--p-form-field-border-color);
     border-radius: 10px;
     color: var(--input-text);
-    font-family: sans-serif;
     pointer-events: auto;
     transition: 0.1s;
     width: 60px;
@@ -1778,7 +1785,6 @@ audio.comfy-audio.empty-audio-widget {
   .maskEditor_sidePanelSubTitle {
     text-align: left;
     font-size: 12px;
-    font-family: sans-serif;
     color: var(--descrip-text);
   }
 

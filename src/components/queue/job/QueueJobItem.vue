@@ -50,24 +50,26 @@
       <div
         v-if="
           props.state === 'running' &&
-          (props.progressTotalPercent !== undefined ||
-            props.progressCurrentPercent !== undefined)
+          hasAnyProgressPercent(
+            props.progressTotalPercent,
+            props.progressCurrentPercent
+          )
         "
-        class="absolute inset-0"
+        :class="progressBarContainerClass"
       >
         <div
-          v-if="props.progressTotalPercent !== undefined"
-          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-primary transition-[width]"
-          :style="{ width: `${props.progressTotalPercent}%` }"
+          v-if="hasProgressPercent(props.progressTotalPercent)"
+          :class="progressBarPrimaryClass"
+          :style="progressPercentStyle(props.progressTotalPercent)"
         />
         <div
-          v-if="props.progressCurrentPercent !== undefined"
-          class="pointer-events-none absolute inset-y-0 left-0 h-full bg-interface-panel-job-progress-secondary transition-[width]"
-          :style="{ width: `${props.progressCurrentPercent}%` }"
+          v-if="hasProgressPercent(props.progressCurrentPercent)"
+          :class="progressBarSecondaryClass"
+          :style="progressPercentStyle(props.progressCurrentPercent)"
         />
       </div>
 
-      <div class="relative z-[1] flex items-center gap-1">
+      <div class="relative z-1 flex items-center gap-1">
         <div class="relative inline-flex items-center justify-center">
           <div
             class="absolute left-1/2 top-1/2 size-10 -translate-x-1/2 -translate-y-1/2"
@@ -90,7 +92,7 @@
         </div>
       </div>
 
-      <div class="relative z-[1] min-w-0 flex-1">
+      <div class="relative z-1 min-w-0 flex-1">
         <div class="truncate opacity-90" :title="props.title">
           <slot name="primary">{{ props.title }}</slot>
         </div>
@@ -113,7 +115,7 @@
         This would eliminate the current duplication where the cancel button exists
         both outside (for running) and inside (for pending) the Transition.
       -->
-      <div class="relative z-[1] flex items-center gap-2 text-text-secondary">
+      <div class="relative z-1 flex items-center gap-2 text-text-secondary">
         <Transition
           mode="out-in"
           enter-active-class="transition-opacity transition-transform duration-150 ease-out"
@@ -128,51 +130,47 @@
             key="actions"
             class="inline-flex items-center gap-2 pr-1"
           >
-            <IconButton
+            <Button
               v-if="props.state === 'failed' && computedShowClear"
               v-tooltip.top="deleteTooltipConfig"
-              type="transparent"
-              size="sm"
-              class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
+              variant="destructive"
+              size="icon"
               :aria-label="t('g.delete')"
-              @click.stop="emit('delete')"
+              @click.stop="onDeleteClick"
             >
               <i class="icon-[lucide--trash-2] size-4" />
-            </IconButton>
-            <IconButton
+            </Button>
+            <Button
               v-else-if="
                 props.state !== 'completed' &&
                 props.state !== 'running' &&
                 computedShowClear
               "
               v-tooltip.top="cancelTooltipConfig"
-              type="transparent"
-              size="sm"
-              class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
+              variant="destructive"
+              size="icon"
               :aria-label="t('g.cancel')"
-              @click.stop="emit('cancel')"
+              @click.stop="onCancelClick"
             >
               <i class="icon-[lucide--x] size-4" />
-            </IconButton>
-            <TextButton
+            </Button>
+            <Button
               v-else-if="props.state === 'completed'"
-              class="h-6 transform gap-1 rounded bg-modal-card-button-surface px-2 py-0 text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
-              type="transparent"
-              :label="t('menuLabels.View')"
-              :aria-label="t('menuLabels.View')"
+              variant="textonly"
+              size="sm"
               @click.stop="emit('view')"
-            />
-            <IconButton
+              >{{ t('menuLabels.View') }}</Button
+            >
+            <Button
               v-if="props.showMenu !== undefined ? props.showMenu : true"
               v-tooltip.top="moreTooltipConfig"
-              type="transparent"
-              size="sm"
-              class="size-6 transform gap-1 rounded bg-modal-card-button-surface text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:opacity-95"
+              variant="textonly"
+              size="icon-sm"
               :aria-label="t('g.more')"
               @click.stop="emit('menu', $event)"
             >
               <i class="icon-[lucide--more-horizontal] size-4" />
-            </IconButton>
+            </Button>
           </div>
           <div
             v-else-if="props.state !== 'running'"
@@ -183,17 +181,16 @@
           </div>
         </Transition>
         <!-- Running job cancel button - always visible -->
-        <IconButton
+        <Button
           v-if="props.state === 'running' && computedShowClear"
           v-tooltip.top="cancelTooltipConfig"
-          type="transparent"
-          size="sm"
-          class="size-6 transform gap-1 rounded bg-destructive-background text-text-primary transition duration-150 ease-in-out hover:-translate-y-px hover:bg-destructive-background-hover hover:opacity-95"
+          variant="destructive"
+          size="icon"
           :aria-label="t('g.cancel')"
-          @click.stop="emit('cancel')"
+          @click.stop="onCancelClick"
         >
           <i class="icon-[lucide--x] size-4" />
-        </IconButton>
+        </Button>
       </div>
     </div>
   </div>
@@ -203,10 +200,10 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import IconButton from '@/components/button/IconButton.vue'
-import TextButton from '@/components/button/TextButton.vue'
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import QueueAssetPreview from '@/components/queue/job/QueueAssetPreview.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type { JobState } from '@/types/queue'
 import { iconForJobState } from '@/utils/queueDisplay'
@@ -225,7 +222,6 @@ const props = withDefaults(
     showMenu?: boolean
     progressTotalPercent?: number
     progressCurrentPercent?: number
-    runningNodeName?: string
     activeDetailsId?: string | null
   }>(),
   {
@@ -252,6 +248,14 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  hasProgressPercent,
+  hasAnyProgressPercent,
+  progressPercentStyle
+} = useProgressBarBackground()
 
 const cancelTooltipConfig = computed(() => buildTooltipConfig(t('g.cancel')))
 const deleteTooltipConfig = computed(() => buildTooltipConfig(t('g.delete')))
@@ -354,6 +358,18 @@ const computedShowClear = computed(() => {
   if (props.showClear !== undefined) return props.showClear
   return props.state !== 'completed'
 })
+
+const emitDetailsLeave = () => emit('details-leave', props.jobId)
+
+const onCancelClick = () => {
+  emitDetailsLeave()
+  emit('cancel')
+}
+
+const onDeleteClick = () => {
+  emitDetailsLeave()
+  emit('delete')
+}
 
 const onContextMenu = (event: MouseEvent) => {
   const shouldShowMenu = props.showMenu !== undefined ? props.showMenu : true

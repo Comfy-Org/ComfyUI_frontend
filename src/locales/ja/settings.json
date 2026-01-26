@@ -29,12 +29,26 @@
     "name": "キャンバス背景画像",
     "tooltip": "キャンバスの背景画像のURLです。出力パネルで画像を右クリックし、「背景として設定」を選択すると使用できます。"
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左クリックの動作",
+    "options": {
+      "Panning": "パン（移動）",
+      "Select": "選択"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "マウスホイールスクロール",
+    "options": {
+      "Panning": "パン（移動）",
+      "Zoom in/out": "ズームイン/アウト"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "キャンバスナビゲーションモード",
     "options": {
+      "Custom": "カスタム",
       "Drag Navigation": "ドラッグナビゲーション",
-      "Standard (New)": "標準（新）",
-      "Custom": "カスタム"
+      "Standard (New)": "標準（新）"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
@@ -65,6 +79,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "ワークフロー内のキャンバスの位置とズームレベルを保存および復元する"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "ライブプレビューメソッド",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "none",
+      "taesd": "taesd"
+    },
+    "tooltip": "画像生成中のライブプレビューメソッド。「default」はサーバーのCLI設定を使用します。"
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "浮動小数点ウィジェットの丸め小数点数 [0 = 自動]。",
     "tooltip": "(ページの再読み込みが必要)"
@@ -85,6 +110,10 @@
       "Circle": "円",
       "None": "なし"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "ライブ選択",
+    "tooltip": "有効にすると、他のデザインツールのように選択範囲をドラッグする際、ノードがリアルタイムで選択／解除されます。"
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "キャンバスズーム速度"
@@ -152,6 +181,15 @@
     "name": "光の強度の最小値",
     "tooltip": "3Dシーンで許可される光の強度の最小値を設定します。これは、3Dウィジェットで照明を調整する際に設定できる明るさの下限を定義します。"
   },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLYエンジン",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLYファイルを読み込むエンジンを選択します。「threejs」はネイティブのThree.js PLYLoaderを使用します（メッシュPLYファイルに最適）。「fastply」はASCIIポイントクラウドPLYファイル用の最適化されたローダーです。「sparkjs」は3D Gaussian Splatting PLYファイル用のSpark.jsを使用します。"
+  },
   "Comfy_Load3D_ShowGrid": {
     "name": "グリッドを表示",
     "tooltip": "デフォルトでグリッドを表示するには切り替えます"
@@ -166,10 +204,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "ブラシ調整を優先軸に固定する",
     "tooltip": "有効にすると、ブラシの調整は、どの方向に多く動かすかに基づいて、サイズまたは硬さのいずれかにのみ影響します。"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "新しいマスクエディタを使用する",
-    "tooltip": "新しいマスクエディタインターフェースに切り替えます。"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "すべてのモデルフォルダーを自動的に読み込む",
@@ -238,6 +272,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "画像プレビューの下に幅×高さを表示する"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "すべてのノードで常に高度なウィジェットを表示",
+    "tooltip": "有効にすると、すべてのノードで高度なウィジェットが個別に展開しなくても常に表示されます。"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "ノードスロットにリンクを自動スナップ",
     "tooltip": "ノードの上にリンクをドラッグすると、リンクがノードの有効な入力スロットに自動的にスナップします"
@@ -298,6 +336,10 @@
     "name": "キュー履歴サイズ",
     "tooltip": "キュー履歴に表示されるタスクの最大数。"
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "アセットサイドパネルで統一ジョブキューを使用",
+    "tooltip": "フローティングジョブキューパネルを、アセットサイドパネルに埋め込まれた同等のジョブキューに置き換えます。無効にすると、フローティングパネルのレイアウトに戻ります。"
+  },
   "Comfy_Sidebar_Location": {
     "name": "サイドバーの位置",
     "options": {
@@ -310,6 +352,13 @@
     "options": {
       "normal": "通常",
       "small": "小"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "サイドバーのスタイル",
+    "options": {
+      "connected": "接続",
+      "floating": "フローティング"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -328,6 +377,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "ツリーエクスプローラーアイテムのパディング"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "タブバーのレイアウト",
+    "options": {
+      "Default": "デフォルト",
+      "Integrated": "統合"
+    },
+    "tooltip": "タブバーのレイアウトを制御します。「統合」を選択すると、ヘルプとユーザーコントロールがタブバーエリアに移動します。"
+  },
   "Comfy_UseNewMenu": {
     "name": "新しいメニューを使用",
     "options": {
@@ -338,6 +395,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "ワークフローを検証"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "自動スケールレイアウト（Vueノード）",
+    "tooltip": "Vueレンダリングに切り替えた際にノードの重なりを防ぐため、自動的にノード位置をスケーリングします"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "モダンノードデザイン（Vueノード）",
+    "tooltip": "モダン：DOMベースのレンダリングで、操作性の向上、ネイティブブラウザ機能、最新のビジュアルデザインを実現。クラシック：従来のキャンバスレンダリング。"
   },
   "Comfy_WidgetControlMode": {
     "name": "ウィジェット制御モード",
@@ -376,6 +441,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "ワークフローを保存する際にノードIDをソート"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "既存のサブグラフブループリントを上書きする際に確認を要求"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "開いているワークフローの位置",
     "options": {
@@ -407,37 +475,5 @@
   },
   "pysssss_SnapToGrid": {
     "name": "常にグリッドにスナップ"
-  },
-  "Comfy_Canvas_LeftMouseClickBehavior": {
-    "name": "左クリックの動作",
-    "options": {
-      "Panning": "パン（移動）",
-      "Select": "選択"
-    }
-  },
-  "Comfy_Canvas_MouseWheelScroll": {
-    "name": "マウスホイールスクロール",
-    "options": {
-      "Panning": "パン（移動）",
-      "Zoom in/out": "ズームイン/アウト"
-    }
-  },
-  "Comfy_Sidebar_Style": {
-    "name": "サイドバーのスタイル",
-    "options": {
-      "floating": "フローティング",
-      "connected": "接続"
-    }
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "自動スケールレイアウト（Vueノード）",
-    "tooltip": "Vueレンダリングに切り替えた際にノードの重なりを防ぐため、自動的にノード位置をスケーリングします"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "モダンノードデザイン（Vueノード）",
-    "tooltip": "モダン：DOMベースのレンダリングで、操作性の向上、ネイティブブラウザ機能、最新のビジュアルデザインを実現。クラシック：従来のキャンバスレンダリング。"
-  },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "既存のサブグラフブループリントを上書きする際に確認を要求"
   }
 }

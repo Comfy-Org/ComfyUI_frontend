@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
@@ -33,9 +34,9 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
-export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
-  implements IBaseWidget
-{
+export abstract class BaseWidget<
+  TWidget extends IBaseWidget = IBaseWidget
+> implements IBaseWidget {
   /** From node edge to widget edge */
   static margin = 15
   /** From widget edge to tip of arrow button */
@@ -78,7 +79,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   tooltip?: string
   element?: HTMLElement
   callback?(
-    value: any,
+    value: TWidget['value'],
     canvas?: LGraphCanvas,
     node?: LGraphNode,
     pos?: Point,
@@ -141,6 +142,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
       promoted,
+      linkedWidgets,
       ...safeValues
     } = widget
 
@@ -225,6 +227,41 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     }
     ctx.fill()
     if (showText && !this.computedDisabled) ctx.stroke()
+  }
+
+  /**
+   * Draws a placeholder for widgets that only have a Vue implementation.
+   * @param ctx The canvas context
+   * @param options The options for drawing the widget
+   * @param label The label to display (e.g., "ImageCrop", "BoundingBox")
+   */
+  protected drawVueOnlyWarning(
+    ctx: CanvasRenderingContext2D,
+    { width }: DrawWidgetOptions,
+    label: string
+  ): void {
+    const { y, height } = this
+
+    ctx.save()
+
+    ctx.fillStyle = this.background_color
+    ctx.fillRect(15, y, width - 30, height)
+
+    ctx.strokeStyle = this.outline_color
+    ctx.strokeRect(15, y, width - 30, height)
+
+    ctx.fillStyle = this.text_color
+    ctx.font = '11px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+
+    ctx.fillText(
+      `${label}: ${t('widgets.node2only')}`,
+      width / 2,
+      y + height / 2
+    )
+
+    ctx.restore()
   }
 
   /**

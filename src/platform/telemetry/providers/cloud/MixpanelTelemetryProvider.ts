@@ -17,6 +17,7 @@ import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 import type {
   AuthMetadata,
   CreditTopupMetadata,
+  EnterLinearMetadata,
   ExecutionContext,
   ExecutionTriggerSource,
   ExecutionErrorMetadata,
@@ -354,6 +355,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
+  trackEnterLinear(metadata: EnterLinearMetadata): void {
+    this.trackEvent(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
   }
@@ -433,7 +438,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
 
     const nodeCounts = reduceAllNodes<NodeMetrics>(
-      app.graph,
+      app.rootGraph,
       (metrics, node) => {
         const nodeDef = nodeDefStore.nodeDefsByName[node.type]
         const isCustomNode =

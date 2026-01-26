@@ -13,7 +13,7 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -87,6 +87,28 @@ export class ComfyWorkflow extends UserFile {
   override async load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
+    const draftStore = useWorkflowDraftStore()
+    let draft = !force ? draftStore.getDraft(this.path) : undefined
+    let draftState: ComfyWorkflowJSON | null = null
+    let draftContent: string | null = null
+
+    if (draft) {
+      if (draft.updatedAt < this.lastModified) {
+        draftStore.removeDraft(this.path)
+        draft = undefined
+      }
+    }
+
+    if (draft) {
+      try {
+        draftState = JSON.parse(draft.data)
+        draftContent = draft.data
+      } catch (err) {
+        console.warn('Failed to parse workflow draft, clearing it', err)
+        draftStore.removeDraft(this.path)
+      }
+    }
+
     await super.load({ force })
     if (!force && this.isLoaded) return this as this & LoadedComfyWorkflow
 
@@ -94,13 +116,14 @@ export class ComfyWorkflow extends UserFile {
       throw new Error('[ASSERT] Workflow content should be loaded')
     }
 
-    // Note: originalContent is populated by super.load()
-    this.changeTracker = markRaw(
-      new ChangeTracker(
-        this,
-        /* initialState= */ JSON.parse(this.originalContent)
-      )
-    )
+    const initialState = JSON.parse(this.originalContent)
+    this.changeTracker = markRaw(new ChangeTracker(this, initialState))
+    if (draftState && draftContent) {
+      this.changeTracker.activeState = draftState
+      this.content = draftContent
+      this._isModified = true
+      draftStore.markDraftUsed(this.path)
+    }
     return this as this & LoadedComfyWorkflow
   }
 
@@ -110,12 +133,14 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
+    const draftStore = useWorkflowDraftStore()
     this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
     this.changeTracker?.reset()
     this.isModified = false
+    draftStore.removeDraft(this.path)
     return ret
   }
 
@@ -125,8 +150,11 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   override async saveAs(path: string) {
+    const draftStore = useWorkflowDraftStore()
     this.content = JSON.stringify(this.activeState)
-    return await super.saveAs(path)
+    const result = await super.saveAs(path)
+    draftStore.removeDraft(path)
+    return result
   }
 
   async promptSave(): Promise<string | null> {
@@ -169,6 +197,10 @@ interface WorkflowStore {
   isBusy: boolean
   closeWorkflow: (workflow: ComfyWorkflow) => Promise<void>
   createTemporary: (
+    path?: string,
+    workflowData?: ComfyWorkflowJSON
+  ) => ComfyWorkflow
+  createNewTemporary: (
     path?: string,
     workflowData?: ComfyWorkflowJSON
   ) => ComfyWorkflow
@@ -330,7 +362,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
       tabActivationHistory.value.shift()
     }
 
-    useCanvasStore().linearMode = !!loadedWorkflow.activeState.extra?.linearMode
     return loadedWorkflow
   }
 
@@ -365,25 +396,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
-  const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
-    const fullPath = getUnconflictedPath(
-      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
-    )
-    const existingWorkflow = workflows.value.find((w) => w.fullFilename == path)
-    if (
-      path &&
-      workflowData &&
-      existingWorkflow?.changeTracker &&
-      !existingWorkflow.directory.startsWith(
-        ComfyWorkflow.basePath.slice(0, -1)
-      )
-    ) {
-      existingWorkflow.changeTracker.reset(workflowData)
-      return existingWorkflow
-    }
-
+  /**
+   * Helper to create a new temporary workflow
+   */
+  const createNewWorkflow = (
+    path: string,
+    workflowData?: ComfyWorkflowJSON
+  ): ComfyWorkflow => {
     const workflow = new ComfyWorkflow({
-      path: fullPath,
+      path,
       modified: Date.now(),
       size: -1
     })
@@ -396,6 +417,47 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return workflow
   }
 
+  /**
+   * Create a temporary workflow, attempting to reuse an existing workflow if conditions match
+   */
+  const createTemporary = (path?: string, workflowData?: ComfyWorkflowJSON) => {
+    const fullPath = getUnconflictedPath(
+      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
+    )
+
+    // Try to reuse an existing loaded workflow with the same filename
+    // that is not stored in the workflows directory
+    if (path && workflowData) {
+      const existingWorkflow = workflows.value.find(
+        (w) => w.fullFilename === path
+      )
+      if (
+        existingWorkflow?.changeTracker &&
+        !existingWorkflow.directory.startsWith(
+          ComfyWorkflow.basePath.slice(0, -1)
+        )
+      ) {
+        existingWorkflow.changeTracker.reset(workflowData)
+        return existingWorkflow
+      }
+    }
+
+    return createNewWorkflow(fullPath, workflowData)
+  }
+
+  /**
+   * Create a new temporary workflow without attempting to reuse existing workflows
+   */
+  const createNewTemporary = (
+    path?: string,
+    workflowData?: ComfyWorkflowJSON
+  ): ComfyWorkflow => {
+    const fullPath = getUnconflictedPath(
+      ComfyWorkflow.basePath + (path ?? 'Unsaved Workflow.json')
+    )
+    return createNewWorkflow(fullPath, workflowData)
+  }
+
   const closeWorkflow = async (workflow: ComfyWorkflow) => {
     openWorkflowPaths.value = openWorkflowPaths.value.filter(
       (path) => path !== workflow.path
@@ -403,6 +465,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (workflow.isTemporary) {
       // Clear thumbnail when temporary workflow is closed
       clearThumbnail(workflow.key)
+      // Clear draft when unsaved workflow tab is closed
+      useWorkflowDraftStore().removeDraft(workflow.path)
       delete workflowLookup.value[workflow.path]
     } else {
       workflow.unload()
@@ -478,8 +542,33 @@ export const useWorkflowStore = defineStore('workflow', () => {
           size: file.size
         }),
       (existingWorkflow, file) => {
-        existingWorkflow.lastModified = file.modified
-        existingWorkflow.size = file.size
+        const isActiveWorkflow =
+          activeWorkflow.value?.path === existingWorkflow.path
+
+        const nextLastModified = Math.max(
+          existingWorkflow.lastModified,
+          file.modified
+        )
+
+        const isMetadataUnchanged =
+          nextLastModified === existingWorkflow.lastModified &&
+          file.size === existingWorkflow.size
+
+        if (!isMetadataUnchanged) {
+          existingWorkflow.lastModified = nextLastModified
+          existingWorkflow.size = file.size
+        }
+
+        // Never unload the active workflow - it may contain unsaved in-memory edits.
+        if (isActiveWorkflow) {
+          return
+        }
+
+        // If nothing changed, keep any loaded content cached.
+        if (isMetadataUnchanged) {
+          return
+        }
+
         existingWorkflow.unload()
       },
       /* exclude */ (workflow) => workflow.isTemporary
@@ -507,6 +596,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const oldPath = workflow.path
       const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
+      const draftStore = useWorkflowDraftStore()
 
       const openIndex = detachWorkflow(workflow)
       // Perform the actual rename operation first
@@ -515,6 +605,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       } finally {
         attachWorkflow(workflow, openIndex)
       }
+
+      draftStore.moveDraft(oldPath, newPath, workflow.key)
 
       // Move thumbnail from old key to new key (using workflow keys, not full paths)
       const newKey = workflow.key
@@ -533,6 +625,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isBusy.value = true
     try {
       await workflow.delete()
+      useWorkflowDraftStore().removeDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }
@@ -598,6 +691,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
   }
 
+  //FIXME: use existing util function
   const executionIdToCurrentId = (id: string) => {
     const subgraph = activeSubgraph.value
 
@@ -612,7 +706,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const subgraphNodeIds = id.split(':')
 
     // Start from the root graph
-    const { graph } = comfyApp
+    const graph = comfyApp.rootGraph
 
     // If the last subgraph is the active subgraph, return the node ID
     const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
@@ -679,7 +773,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     try {
       const subgraphs = getSubgraphsFromInstanceIds(
-        comfyApp.graph,
+        comfyApp.rootGraph,
         subgraphNodeIds.map((id) => String(id))
       )
       const immediateSubgraph = subgraphs[subgraphs.length - 1]
@@ -744,7 +838,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return null
     }
 
-    const path = findSubgraphPath(comfyApp.graph, subgraphUuid)
+    const path = findSubgraphPath(comfyApp.rootGraph, subgraphUuid)
     if (!path) return null
 
     // If we have a target subgraph, check if the path goes through it
@@ -752,7 +846,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       targetSubgraph &&
       !path.some((_, idx) => {
         const subgraphs = getSubgraphsFromInstanceIds(
-          comfyApp.graph,
+          comfyApp.rootGraph,
           path.slice(0, idx + 1).map((id) => String(id))
         )
         return subgraphs[subgraphs.length - 1] === targetSubgraph
@@ -777,6 +871,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isBusy,
     closeWorkflow,
     createTemporary,
+    createNewTemporary,
     renameWorkflow,
     deleteWorkflow,
     saveAs,

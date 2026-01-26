@@ -1,4 +1,40 @@
 {
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "檢查更新"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "開啟自訂節點資料夾"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "開啟輸入資料夾"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "開啟日誌資料夾"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "開啟 extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "開啟模型資料夾"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "開啟輸出資料夾"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "開啟開發者工具"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "桌面版使用指南"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "結束"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "重新安裝"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "重新啟動"
+  },
   "Comfy_3DViewer_Open3DViewer": {
     "label": "為選取的節點開啟 3D 檢視器（Beta）"
   },
@@ -155,17 +191,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "檢查自訂節點更新"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "切換自訂節點管理器進度條"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "減少 MaskEditor 畫筆大小"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "增加 MaskEditor 畫筆大小"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "在 MaskEditor 中開啟顏色選擇器"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "在 MaskEditor 中水平鏡像"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "在 MaskEditor 中垂直鏡像"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "為選取的節點開啟 Mask 編輯器"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "在 MaskEditor 中向左旋轉"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "在 MaskEditor 中向右旋轉"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "卸載模型"
@@ -197,11 +245,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "佇列所選的輸出節點"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "切換任務歷史"
+  },
   "Comfy_Redo": {
     "label": "重做"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "重新整理節點定義"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "重新命名工作流程"
   },
   "Comfy_SaveWorkflow": {
     "label": "儲存工作流程"
@@ -220,6 +274,12 @@
   },
   "Comfy_ToggleHelpCenter": {
     "label": "說明中心"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "切換線性模式"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "切換佇列面板 V2"
   },
   "Comfy_ToggleTheme": {
     "label": "切換主題（深色／淺色）"

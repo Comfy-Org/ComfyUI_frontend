@@ -44,7 +44,6 @@ TODO: Extract checkbox pattern into reusable Checkbox component
 <script setup lang="ts">
 const { mediaTypeFilters } = defineProps<{
   mediaTypeFilters: string[]
-  close: () => void
 }>()
 
 const emit = defineEmits<{

@@ -1,16 +1,20 @@
 <template>
-  <div ref="container" class="scroll-container">
-    <div :style="{ height: `${(state.start / cols) * itemHeight}px` }" />
-    <div :style="gridStyle">
-      <div v-for="item in renderedItems" :key="item.key" data-virtual-grid-item>
+  <div
+    ref="container"
+    class="h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-(--dialog-surface)"
+  >
+    <div :style="topSpacerStyle" />
+    <div :style="mergedGridStyle">
+      <div
+        v-for="item in renderedItems"
+        :key="item.key"
+        class="transition-[width] duration-150 ease-out"
+        data-virtual-grid-item
+      >
         <slot name="item" :item="item" />
       </div>
     </div>
-    <div
-      :style="{
-        height: `${((items.length - state.end) / cols) * itemHeight}px`
-      }"
-    />
+    <div :style="bottomSpacerStyle" />
   </div>
 </template>
 
@@ -28,19 +32,22 @@ type GridState = {
 
 const {
   items,
+  gridStyle,
   bufferRows = 1,
   scrollThrottle = 64,
   resizeDebounce = 64,
   defaultItemHeight = 200,
-  defaultItemWidth = 200
+  defaultItemWidth = 200,
+  maxColumns = Infinity
 } = defineProps<{
   items: (T & { key: string })[]
-  gridStyle: Partial<CSSProperties>
+  gridStyle: CSSProperties
   bufferRows?: number
   scrollThrottle?: number
   resizeDebounce?: number
   defaultItemHeight?: number
   defaultItemWidth?: number
+  maxColumns?: number
 }>()
 
 const emit = defineEmits<{
@@ -59,7 +66,18 @@ const { y: scrollY } = useScroll(container, {
   eventListenerOptions: { passive: true }
 })
 
-const cols = computed(() => Math.floor(width.value / itemWidth.value) || 1)
+const cols = computed(() =>
+  Math.min(Math.floor(width.value / itemWidth.value) || 1, maxColumns)
+)
+
+const mergedGridStyle = computed<CSSProperties>(() => {
+  if (maxColumns === Infinity) return gridStyle
+  return {
+    ...gridStyle,
+    gridTemplateColumns: `repeat(${maxColumns}, minmax(0, 1fr))`
+  }
+})
+
 const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
 const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
 const isValidGrid = computed(() => height.value && width.value && items?.length)
@@ -82,6 +100,16 @@ const state = computed<GridState>(() => {
 const renderedItems = computed(() =>
   isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
 )
+
+function rowsToHeight(rows: number): string {
+  return `${(rows / cols.value) * itemHeight.value}px`
+}
+const topSpacerStyle = computed<CSSProperties>(() => ({
+  height: rowsToHeight(state.value.start)
+}))
+const bottomSpacerStyle = computed<CSSProperties>(() => ({
+  height: rowsToHeight(items.length - state.value.end)
+}))
 
 whenever(
   () => state.value.isNearEnd,
@@ -109,24 +137,6 @@ const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
 whenever(() => items, updateItemSize, { flush: 'post' })
 onBeforeUnmount(() => {
-  onResize.cancel() // Clear pending debounced calls
+  onResize.cancel()
 })
 </script>
-
-<style scoped>
-.scroll-container {
-  height: 100%;
-  overflow-y: auto;
-
-  /* Firefox */
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    width: 1px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: transparent;
-  }
-}
-</style>

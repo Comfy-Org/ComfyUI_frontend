@@ -2,37 +2,52 @@
   <div
     v-if="imageUrls.length > 0"
     class="video-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
-    tabindex="0"
-    role="region"
-    :aria-label="$t('g.videoPreview')"
-    @mouseenter="handleMouseEnter"
-    @mouseleave="handleMouseLeave"
     @keydown="handleKeyDown"
   >
     <!-- Video Wrapper -->
     <div
+      ref="videoWrapperEl"
       class="relative h-full w-full grow overflow-hidden rounded-[5px] bg-node-component-surface"
+      tabindex="0"
+      role="region"
+      :aria-label="$t('g.videoPreview')"
+      :aria-busy="showLoader"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+      @focusin="handleFocusIn"
+      @focusout="handleFocusOut"
     >
       <!-- Error State -->
       <div
         v-if="videoError"
-        class="flex size-full flex-col items-center justify-center bg-smoke-800/50 text-center text-white py-8"
+        role="alert"
+        class="flex size-full flex-col items-center justify-center bg-muted-background text-center text-base-foreground py-8"
       >
-        <i class="mb-2 icon-[lucide--video-off] h-12 w-12 text-smoke-400" />
-        <p class="text-sm text-smoke-300">{{ $t('g.videoFailedToLoad') }}</p>
-        <p class="mt-1 text-xs text-smoke-400">
+        <i
+          class="mb-2 icon-[lucide--video-off] h-12 w-12 text-base-foreground"
+        />
+        <p class="text-sm text-base-foreground">
+          {{ $t('g.videoFailedToLoad') }}
+        </p>
+        <p class="mt-1 text-xs text-base-foreground">
           {{ getVideoFilename(currentVideoUrl) }}
         </p>
       </div>
 
       <!-- Loading State -->
-      <Skeleton v-else-if="isLoading" class="size-full" border-radius="5px" />
+      <Skeleton
+        v-if="showLoader && !videoError"
+        class="absolute inset-0 size-full"
+        border-radius="5px"
+        width="100%"
+        height="100%"
+      />
 
       <!-- Main Video -->
       <video
-        v-else
+        v-if="!videoError"
         :src="currentVideoUrl"
-        class="block size-full object-contain"
+        :class="cn('block size-full object-contain', showLoader && 'invisible')"
         controls
         loop
         playsinline
@@ -41,10 +56,13 @@
       />
 
       <!-- Floating Action Buttons (appear on hover) -->
-      <div v-if="isHovered" class="actions absolute top-2 right-2 flex gap-1">
+      <div
+        v-if="isHovered || isFocused"
+        class="actions absolute top-2 right-2 flex gap-2.5"
+      >
         <!-- Download Button -->
         <button
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-smoke-100"
+          :class="actionButtonClass"
           :title="$t('g.downloadVideo')"
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
@@ -54,7 +72,7 @@
 
         <!-- Close Button -->
         <button
-          class="action-btn cursor-pointer rounded-lg border-0 bg-white p-2 text-black shadow-sm transition-all duration-200 hover:bg-smoke-100"
+          :class="actionButtonClass"
           :title="$t('g.removeVideo')"
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
@@ -84,11 +102,11 @@
     </div>
 
     <!-- Video Dimensions -->
-    <div class="mt-2 text-center text-xs text-white">
+    <div class="mt-2 text-center text-xs text-muted-foreground">
       <span v-if="videoError" class="text-red-400">
         {{ $t('g.errorLoadingVideo') }}
       </span>
-      <span v-else-if="isLoading" class="text-smoke-400">
+      <span v-else-if="showLoader" class="text-smoke-400">
         {{ $t('g.loading') }}...
       </span>
       <span v-else>
@@ -106,6 +124,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { cn } from '@/utils/tailwindUtil'
 
 interface VideoPreviewProps {
   /** Array of video URLs to display */
@@ -119,12 +138,18 @@ const props = defineProps<VideoPreviewProps>()
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 
+const actionButtonClass =
+  'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
+
 // Component state
 const currentIndex = ref(0)
 const isHovered = ref(false)
+const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
-const isLoading = ref(false)
+const showLoader = ref(false)
+
+const videoWrapperEl = ref<HTMLDivElement>()
 
 // Computed values
 const currentVideoUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -142,16 +167,16 @@ watch(
     // Reset loading and error states when URLs change
     actualDimensions.value = null
     videoError.value = false
-    isLoading.value = false
+    showLoader.value = newUrls.length > 0
   },
-  { deep: true }
+  { deep: true, immediate: true }
 )
 
 // Event handlers
 const handleVideoLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLVideoElement)) return
   const video = event.target
-  isLoading.value = false
+  showLoader.value = false
   videoError.value = false
   if (video.videoWidth && video.videoHeight) {
     actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
@@ -159,7 +184,7 @@ const handleVideoLoad = (event: Event) => {
 }
 
 const handleVideoError = () => {
-  isLoading.value = false
+  showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
 }
@@ -187,7 +212,7 @@ const setCurrentIndex = (index: number) => {
   if (index >= 0 && index < props.imageUrls.length) {
     currentIndex.value = index
     actualDimensions.value = null
-    isLoading.value = true
+    showLoader.value = true
     videoError.value = false
   }
 }
@@ -198,6 +223,16 @@ const handleMouseEnter = () => {
 
 const handleMouseLeave = () => {
   isHovered.value = false
+}
+
+const handleFocusIn = () => {
+  isFocused.value = true
+}
+
+const handleFocusOut = (event: FocusEvent) => {
+  if (!videoWrapperEl.value?.contains(event.relatedTarget as Node)) {
+    isFocused.value = false
+  }
 }
 
 const getNavigationDotClass = (index: number) => {

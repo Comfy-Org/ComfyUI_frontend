@@ -1,10 +1,10 @@
 import { useToast } from 'primevue/usetoast'
 import { inject } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -25,6 +25,7 @@ import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
 
 export function useMediaAssetActions() {
+  const { t } = useI18n()
   const toast = useToast()
   const dialogStore = useDialogStore()
   const mediaContext = inject(MediaAssetKey, null)
@@ -58,20 +59,20 @@ export function useMediaAssetActions() {
     }
   }
 
-  const downloadAsset = () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const downloadAsset = (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     try {
-      const filename = asset.name
+      const filename = targetAsset.name
       let downloadUrl: string
 
       // In cloud, use preview_url directly (from cloud storage)
       // In OSS/localhost, use the /view endpoint
-      if (isCloud && asset.preview_url) {
-        downloadUrl = asset.preview_url
+      if (isCloud && targetAsset.preview_url) {
+        downloadUrl = targetAsset.preview_url
       } else {
-        downloadUrl = getAssetUrl(asset)
+        downloadUrl = getAssetUrl(targetAsset)
       }
 
       downloadFile(downloadUrl, filename)
@@ -79,7 +80,7 @@ export function useMediaAssetActions() {
       toast.add({
         severity: 'success',
         summary: t('g.success'),
-        detail: t('g.downloadStarted'),
+        detail: t('mediaAsset.selection.downloadsStarted', { count: 1 }),
         life: 2000
       })
     } catch (error) {
@@ -198,13 +199,13 @@ export function useMediaAssetActions() {
     }
   }
 
-  const copyJobId = async () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const copyJobId = async (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     // Try asset.id first (OSS), then fall back to metadata (Cloud)
-    const metadata = getOutputAssetMetadata(asset.user_metadata)
-    const promptId = asset.id || metadata?.promptId
+    const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
+    const promptId = targetAsset.id || metadata?.promptId
 
     if (!promptId) {
       toast.add({
@@ -223,12 +224,14 @@ export function useMediaAssetActions() {
    * Add a loader node to the current workflow for this asset
    * Uses shared utility to detect appropriate node type based on file extension
    */
-  const addWorkflow = async () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const addWorkflow = async (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     // Detect node type using shared utility
-    const { nodeType, widgetName } = detectNodeTypeFromFilename(asset.name)
+    const { nodeType, widgetName } = detectNodeTypeFromFilename(
+      targetAsset.name
+    )
 
     if (!nodeType || !widgetName) {
       toast.add({
@@ -266,13 +269,20 @@ export function useMediaAssetActions() {
     }
 
     // Get metadata to construct the annotated path
-    const metadata = getOutputAssetMetadata(asset.user_metadata)
-    const assetType = getAssetType(asset, 'input')
+    const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
+    const assetType = getAssetType(targetAsset, 'input')
+
+    // In Cloud mode, use asset_hash (the actual stored filename)
+    // In OSS mode, use the original name
+    const filename =
+      isCloud && targetAsset.asset_hash
+        ? targetAsset.asset_hash
+        : targetAsset.name
 
     // Create annotated path for the asset
     const annotated = createAnnotatedPath(
       {
-        filename: asset.name,
+        filename,
         subfolder: metadata?.subfolder || '',
         type: isResultItemType(assetType) ? assetType : undefined
       },
@@ -300,12 +310,12 @@ export function useMediaAssetActions() {
    * Open the workflow from this asset in a new tab
    * Uses shared workflow extraction and action service
    */
-  const openWorkflow = async () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const openWorkflow = async (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     // Extract workflow using shared utility
-    const { workflow, filename } = await extractWorkflowFromAsset(asset)
+    const { workflow, filename } = await extractWorkflowFromAsset(targetAsset)
 
     // Use shared action service
     const result = await workflowActions.openWorkflowAction(workflow, filename)
@@ -331,12 +341,12 @@ export function useMediaAssetActions() {
    * Export the workflow from this asset as a JSON file
    * Uses shared workflow extraction and action service
    */
-  const exportWorkflow = async () => {
-    const asset = mediaContext?.asset.value
-    if (!asset) return
+  const exportWorkflow = async (asset?: AssetItem) => {
+    const targetAsset = asset ?? mediaContext?.asset.value
+    if (!targetAsset) return
 
     // Extract workflow using shared utility
-    const { workflow, filename } = await extractWorkflowFromAsset(asset)
+    const { workflow, filename } = await extractWorkflowFromAsset(targetAsset)
 
     // Use shared action service
     const result = await workflowActions.exportWorkflowAction(
@@ -358,6 +368,213 @@ export function useMediaAssetActions() {
         summary: t('g.success'),
         detail: t('mediaAsset.workflowExportedSuccessfully'),
         life: 2000
+      })
+    }
+  }
+
+  /**
+   * Add multiple assets to the current workflow
+   * Creates loader nodes for each asset
+   */
+  const addMultipleToWorkflow = async (assets: AssetItem[]) => {
+    if (!assets || assets.length === 0) return
+
+    const NODE_OFFSET = 50
+    let nodeIndex = 0
+    let succeeded = 0
+    let failed = 0
+
+    for (const asset of assets) {
+      const { nodeType, widgetName } = detectNodeTypeFromFilename(asset.name)
+
+      if (!nodeType || !widgetName) {
+        failed++
+        continue
+      }
+
+      const nodeDef = nodeDefStore.nodeDefsByName[nodeType]
+      if (!nodeDef) {
+        failed++
+        continue
+      }
+
+      const center = litegraphService.getCanvasCenter()
+      const node = litegraphService.addNodeOnGraph(nodeDef, {
+        pos: [
+          center[0] + nodeIndex * NODE_OFFSET,
+          center[1] + nodeIndex * NODE_OFFSET
+        ]
+      })
+
+      if (!node) {
+        failed++
+        continue
+      }
+
+      const metadata = getOutputAssetMetadata(asset.user_metadata)
+      const assetType = getAssetType(asset, 'input')
+
+      // In Cloud mode, use asset_hash (the actual stored filename)
+      // In OSS mode, use the original name
+      const filename =
+        isCloud && asset.asset_hash ? asset.asset_hash : asset.name
+
+      const annotated = createAnnotatedPath(
+        {
+          filename,
+          subfolder: metadata?.subfolder || '',
+          type: isResultItemType(assetType) ? assetType : undefined
+        },
+        {
+          rootFolder: isResultItemType(assetType) ? assetType : undefined
+        }
+      )
+
+      const widget = node.widgets?.find((w) => w.name === widgetName)
+      if (widget) {
+        widget.value = annotated
+        widget.callback?.(annotated)
+      }
+      node.graph?.setDirtyCanvas(true, true)
+      succeeded++
+      nodeIndex++
+    }
+
+    if (failed === 0) {
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.selection.nodesAddedToWorkflow', {
+          count: succeeded
+        }),
+        life: 2000
+      })
+    } else if (succeeded === 0) {
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('mediaAsset.selection.failedToAddNodes'),
+        life: 3000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.partialAddNodesSuccess', {
+          succeeded,
+          failed
+        }),
+        life: 3000
+      })
+    }
+  }
+
+  /**
+   * Open workflows from multiple assets in new tabs
+   */
+  const openMultipleWorkflows = async (assets: AssetItem[]) => {
+    if (!assets || assets.length === 0) return
+
+    let succeeded = 0
+    let failed = 0
+
+    for (const asset of assets) {
+      try {
+        const { workflow, filename } = await extractWorkflowFromAsset(asset)
+        const result = await workflowActions.openWorkflowAction(
+          workflow,
+          filename
+        )
+
+        if (result.success) {
+          succeeded++
+        } else {
+          failed++
+        }
+      } catch {
+        failed++
+      }
+    }
+
+    if (failed === 0) {
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.selection.workflowsOpened', { count: succeeded }),
+        life: 2000
+      })
+    } else if (succeeded === 0) {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.noWorkflowsFound'),
+        life: 3000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.partialWorkflowsOpened', {
+          succeeded,
+          failed
+        }),
+        life: 3000
+      })
+    }
+  }
+
+  /**
+   * Export workflows from multiple assets as JSON files
+   */
+  const exportMultipleWorkflows = async (assets: AssetItem[]) => {
+    if (!assets || assets.length === 0) return
+
+    let succeeded = 0
+    let failed = 0
+
+    for (const asset of assets) {
+      try {
+        const { workflow, filename } = await extractWorkflowFromAsset(asset)
+        const result = await workflowActions.exportWorkflowAction(
+          workflow,
+          filename
+        )
+
+        if (result.success) {
+          succeeded++
+        } else {
+          failed++
+        }
+      } catch {
+        failed++
+      }
+    }
+
+    if (failed === 0) {
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.selection.workflowsExported', {
+          count: succeeded
+        }),
+        life: 2000
+      })
+    } else if (succeeded === 0) {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.noWorkflowsToExport'),
+        life: 3000
+      })
+    } else {
+      toast.add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('mediaAsset.selection.partialWorkflowsExported', {
+          succeeded,
+          failed
+        }),
+        life: 3000
       })
     }
   }
@@ -479,7 +696,10 @@ export function useMediaAssetActions() {
     deleteMultipleAssets,
     copyJobId,
     addWorkflow,
+    addMultipleToWorkflow,
     openWorkflow,
-    exportWorkflow
+    openMultipleWorkflows,
+    exportWorkflow,
+    exportMultipleWorkflows
   }
 }

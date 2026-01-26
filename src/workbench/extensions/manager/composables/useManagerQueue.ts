@@ -4,7 +4,6 @@ import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 
 import { app } from '@/scripts/app'
-import { useDialogService } from '@/services/dialogService'
 import { normalizePackKeys } from '@/utils/packUtils'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 
@@ -27,8 +26,6 @@ export const useManagerQueue = (
   taskQueue: Ref<ManagerTaskQueue>,
   installedPacks: Ref<Record<string, any>>
 ) => {
-  const { showManagerProgressDialog } = useDialogService()
-
   // Task queue state (read-only from server)
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
@@ -113,15 +110,6 @@ export const useManagerQueue = (
     (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
       if (event?.type === MANAGER_WS_TASK_DONE_NAME && event.detail?.state) {
         updateTaskState(event.detail.state)
-
-        // If no more tasks are running/pending, hide the progress dialog
-        if (allTasksDone.value) {
-          setTimeout(() => {
-            if (allTasksDone.value) {
-              showManagerProgressDialog()
-            }
-          }, 1000) // Small delay to let users see completion
-        }
       }
     }
   )
@@ -133,9 +121,6 @@ export const useManagerQueue = (
     (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
       if (event?.type === MANAGER_WS_TASK_STARTED_NAME && event.detail?.state) {
         updateTaskState(event.detail.state)
-
-        // Show progress dialog when a task starts
-        showManagerProgressDialog()
       }
     }
   )

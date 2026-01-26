@@ -8,6 +8,7 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
+import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useChartWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useChartWidget'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
@@ -139,6 +140,9 @@ export function addValueControlWidgets(
     'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
   valueControl[IS_CONTROL_WIDGET] = true
   updateControlWidgetLabel(valueControl)
+  Object.defineProperty(valueControl, 'disabled', {
+    get: () => targetWidget.computedDisabled
+  })
   const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
 
   const isCombo = isComboWidget(targetWidget)
@@ -160,6 +164,9 @@ export function addValueControlWidgets(
     updateControlWidgetLabel(comboFilter)
     comboFilter.tooltip =
       "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'."
+    Object.defineProperty(comboFilter, 'disabled', {
+      get: () => targetWidget.computedDisabled
+    })
 
     widgets.push(comboFilter)
   }
@@ -285,7 +292,7 @@ export function addValueControlWidgets(
   return widgets
 }
 
-export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
+export const ComfyWidgets = {
   INT: transformWidgetConstructorV2ToV1(useIntWidget()),
   FLOAT: transformWidgetConstructorV2ToV1(useFloatWidget()),
   BOOLEAN: transformWidgetConstructorV2ToV1(useBooleanWidget()),
@@ -295,8 +302,15 @@ export const ComfyWidgets: Record<string, ComfyWidgetConstructor> = {
   IMAGEUPLOAD: useImageUploadWidget(),
   COLOR: transformWidgetConstructorV2ToV1(useColorWidget()),
   IMAGECOMPARE: transformWidgetConstructorV2ToV1(useImageCompareWidget()),
+  BOUNDINGBOX: transformWidgetConstructorV2ToV1(useBoundingBoxWidget()),
   CHART: transformWidgetConstructorV2ToV1(useChartWidget()),
   GALLERIA: transformWidgetConstructorV2ToV1(useGalleriaWidget()),
   TEXTAREA: transformWidgetConstructorV2ToV1(useTextareaWidget()),
   ...dynamicWidgets
+} as const
+
+export function isValidWidgetType(
+  key: unknown
+): key is keyof typeof ComfyWidgets {
+  return ComfyWidgets[key as keyof typeof ComfyWidgets] !== undefined
 }

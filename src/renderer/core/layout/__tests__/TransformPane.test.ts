@@ -115,22 +115,6 @@ describe('TransformPane', () => {
       const transformState = useTransformState()
       expect(transformState.syncWithCanvas).toHaveBeenCalledWith(mockCanvas)
     })
-
-    it('should emit transform update timing', async () => {
-      const mockCanvas = createMockCanvas()
-      const wrapper = mount(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-
-      await nextTick()
-
-      // Allow RAF to execute
-      vi.advanceTimersToNextFrame()
-
-      expect(wrapper.emitted('transformUpdate')).toBeTruthy()
-    })
   })
 
   describe('canvas event listeners', () => {

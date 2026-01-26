@@ -4,6 +4,14 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  */
 
 /**
+ * Check if there is selected text in the document.
+ */
+function hasTextSelection(): boolean {
+  const selection = window.getSelection()
+  return selection !== null && selection.toString().trim().length > 0
+}
+
+/**
  * Used by clipboard handlers to determine if copy/paste events should be
  * intercepted for graph operations vs. allowing default browser behavior
  * for text inputs and other UI elements.
@@ -12,7 +20,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
  * @returns true if copy paste events will be handled by target
  */
 export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
-  return (
+  const isTextInput =
     target instanceof HTMLTextAreaElement ||
     (target instanceof HTMLInputElement &&
       ![
@@ -26,7 +34,6 @@ export function shouldIgnoreCopyPaste(target: EventTarget | null): boolean {
         'reset',
         'search',
         'submit'
-      ].includes(target.type)) ||
-    useCanvasStore().linearMode
-  )
+      ].includes(target.type))
+  return isTextInput || useCanvasStore().linearMode || hasTextSelection()
 }

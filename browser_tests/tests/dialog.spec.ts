@@ -43,7 +43,6 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
 
   // Wait for any async operations to complete after dialog closes
   await comfyPage.nextFrame()
-  await comfyPage.page.waitForTimeout(100)
 
   // Make a change to the graph
   await comfyPage.doubleClickCanvas()
@@ -86,11 +85,11 @@ test.describe('Missing models warning', () => {
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    const downloadButton = missingModelsWarning.getByLabel('Download')
+    const downloadButton = missingModelsWarning.getByText('Download')
     await expect(downloadButton).toBeVisible()
 
     // Check that the copy URL button is also visible for Desktop environment
-    const copyUrlButton = missingModelsWarning.getByLabel('Copy URL')
+    const copyUrlButton = missingModelsWarning.getByText('Copy URL')
     await expect(copyUrlButton).toBeVisible()
   })
 
@@ -103,11 +102,11 @@ test.describe('Missing models warning', () => {
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    const downloadButton = missingModelsWarning.getByLabel('Download')
+    const downloadButton = missingModelsWarning.getByText('Download')
     await expect(downloadButton).toBeVisible()
 
     // Check that the copy URL button is also visible for Desktop environment
-    const copyUrlButton = missingModelsWarning.getByLabel('Copy URL')
+    const copyUrlButton = missingModelsWarning.getByText('Copy URL')
     await expect(copyUrlButton).toBeVisible()
   })
 
@@ -177,7 +176,7 @@ test.describe('Missing models warning', () => {
     const missingModelsWarning = comfyPage.page.locator('.comfy-missing-models')
     await expect(missingModelsWarning).toBeVisible()
 
-    const downloadButton = comfyPage.page.getByLabel('Download')
+    const downloadButton = comfyPage.page.getByText('Download')
     await expect(downloadButton).toBeVisible()
     const downloadPromise = comfyPage.page.waitForEvent('download')
     await downloadButton.click()
@@ -291,7 +290,7 @@ test.describe('Settings', () => {
     // Save keybinding
     const saveButton = comfyPage.page
       .getByLabel('New Blank Workflow')
-      .getByLabel('Save')
+      .getByText('Save')
     await saveButton.click()
 
     const request = await requestPromise

@@ -12,11 +12,11 @@
     </div>
     <div
       v-if="isRecording || isPlaying || recordedURL"
-      class="flex h-14 w-full items-center gap-4 rounded-lg px-4 bg-node-component-surface text-text-secondary"
+      class="flex h-14 w-full min-w-0 items-center gap-2 rounded-lg px-3 bg-node-component-surface text-text-secondary"
     >
       <!-- Recording Status -->
-      <div class="flex min-w-30 items-center gap-2">
-        <span class="min-w-20 text-xs">
+      <div class="flex shrink-0 items-center gap-1">
+        <span class="text-xs">
           {{
             isRecording
               ? t('g.listening', 'Listening...')
@@ -27,11 +27,11 @@
                   : ''
           }}
         </span>
-        <span class="min-w-10 text-sm">{{ formatTime(timer) }}</span>
+        <span class="text-sm">{{ formatTime(timer) }}</span>
       </div>
 
       <!-- Waveform Visualization -->
-      <div class="flex h-8 flex-1 items-center gap-2 overflow-x-clip">
+      <div class="flex h-8 min-w-0 flex-1 items-center gap-2 overflow-hidden">
         <div
           v-for="(bar, index) in waveformBars"
           :key="index"
@@ -45,7 +45,7 @@
       <button
         v-if="isRecording"
         :title="t('g.stopRecording', 'Stop Recording')"
-        class="flex size-8 animate-pulse items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
+        class="flex shrink-0 size-8 animate-pulse items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopRecording"
       >
         <div class="size-2.5 rounded-sm bg-danger-100" />
@@ -54,7 +54,7 @@
       <button
         v-else-if="!isRecording && recordedURL && !isPlaying"
         :title="t('g.playRecording') || 'Play Recording'"
-        class="flex size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
+        class="flex shrink-0 size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handlePlayRecording"
       >
         <i class="text-text-secondary icon-[lucide--play] size-4" />
@@ -63,7 +63,7 @@
       <button
         v-else-if="isPlaying"
         :title="t('g.stopPlayback') || 'Stop Playback'"
-        class="flex size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
+        class="flex shrink-0 size-8 items-center justify-center rounded-full border-0 bg-smoke-500/33 transition-colors"
         @click="handleStopPlayback"
       >
         <i class="text-text-secondary icon-[lucide--square] size-4" />
@@ -92,7 +92,6 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { useAudioService } from '@/services/audioService'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import { useAudioPlayback } from '../composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
@@ -100,7 +99,6 @@ import { useAudioWaveform } from '../composables/audio/useAudioWaveform'
 import { formatTime } from '../utils/audioUtils'
 
 const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
   readonly?: boolean
   nodeId: string
 }>()
@@ -157,8 +155,8 @@ const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 const modelValue = defineModel<string>({ default: '' })
 
 const litegraphNode = computed(() => {
-  if (!props.nodeId || !app.rootGraph) return null
-  return app.rootGraph.getNodeById(props.nodeId) as LGraphNode | null
+  if (!props.nodeId || !app.canvas.graph) return null
+  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
 })
 
 async function handleRecordingComplete(blob: Blob) {

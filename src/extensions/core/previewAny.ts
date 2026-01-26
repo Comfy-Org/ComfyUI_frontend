@@ -24,12 +24,43 @@ useExtensionService().registerExtension({
           app
         ).widget as DOMWidget<HTMLTextAreaElement, string>
 
-        showValueWidget.options.read_only = true
+        const showValueWidgetPlain = ComfyWidgets['STRING'](
+          this,
+          'preview',
+          ['STRING', { multiline: true }],
+          app
+        ).widget as DOMWidget<HTMLTextAreaElement, string>
 
+        const showAsPlaintextWidget = ComfyWidgets['BOOLEAN'](
+          this,
+          'previewMode',
+          [
+            'BOOLEAN',
+            { label_on: 'Markdown', label_off: 'Plaintext', default: false }
+          ],
+          app
+        )
+
+        showAsPlaintextWidget.widget.callback = (value: boolean) => {
+          showValueWidget.hidden = !value
+          showValueWidget.options.hidden = !value
+          showValueWidgetPlain.hidden = value
+          showValueWidgetPlain.options.hidden = value
+        }
+
+        showValueWidget.hidden = true
+        showValueWidget.options.hidden = true
+        showValueWidget.options.read_only = true
         showValueWidget.element.readOnly = true
         showValueWidget.element.disabled = true
-
         showValueWidget.serialize = false
+
+        showValueWidgetPlain.hidden = false
+        showValueWidgetPlain.options.hidden = false
+        showValueWidgetPlain.options.read_only = true
+        showValueWidgetPlain.element.readOnly = true
+        showValueWidgetPlain.element.disabled = true
+        showValueWidgetPlain.serialize = false
       }
 
       const onExecuted = nodeType.prototype.onExecuted
@@ -39,10 +70,14 @@ useExtensionService().registerExtension({
           ? void 0
           : onExecuted.apply(this, [message])
 
-        const previewWidget = this.widgets?.find((w) => w.name === 'preview')
+        const previewWidgets =
+          this.widgets?.filter((w) => w.name === 'preview') ?? []
 
-        if (previewWidget) {
-          previewWidget.value = message.text[0]
+        for (const previewWidget of previewWidgets) {
+          const text = message.text ?? ''
+          previewWidget.value = Array.isArray(text)
+            ? (text?.join('\n\n') ?? '')
+            : text
         }
       }
     }

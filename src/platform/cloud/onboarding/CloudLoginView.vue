@@ -33,7 +33,7 @@
         <Button
           type="button"
           class="h-10 bg-[#2d2e32]"
-          severity="secondary"
+          variant="secondary"
           @click="signInWithGoogle"
         >
           <i class="pi pi-google mr-2"></i>
@@ -43,7 +43,7 @@
         <Button
           type="button"
           class="h-10 bg-[#2d2e32]"
-          severity="secondary"
+          variant="secondary"
           @click="signInWithGithub"
         >
           <i class="pi pi-github mr-2"></i>
@@ -75,15 +75,16 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
+import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { SignInData } from '@/schemas/signInSchema'
 
@@ -91,12 +92,12 @@ const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authActions = useFirebaseAuthActions()
-const isSecureContext = window.isSecureContext
+const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const toastStore = useToastStore()
 
-const navigateToSignup = () => {
-  void router.push({ name: 'cloud-signup', query: route.query })
+const navigateToSignup = async () => {
+  await router.push({ name: 'cloud-signup', query: route.query })
 }
 
 const onSuccess = async () => {
@@ -105,6 +106,13 @@ const onSuccess = async () => {
     summary: 'Login Completed',
     life: 2000
   })
+
+  const previousFullPath = getSafePreviousFullPath(route.query)
+  if (previousFullPath) {
+    await router.replace(previousFullPath)
+    return
+  }
+
   await router.push({ name: 'cloud-user-check' })
 }
 

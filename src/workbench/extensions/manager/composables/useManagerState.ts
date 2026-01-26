@@ -7,6 +7,7 @@ import { api } from '@/scripts/api'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 export enum ManagerUIState {
@@ -19,6 +20,7 @@ export function useManagerState() {
   const systemStatsStore = useSystemStatsStore()
   const { systemStats, isInitialized: systemInitialized } =
     storeToRefs(systemStatsStore)
+  const managerDialog = useManagerDialog()
 
   /**
    * The current manager UI state.
@@ -186,11 +188,9 @@ export function useManagerState() {
             detail: t('manager.legacyMenuNotAvailable'),
             life: 3000
           })
-          dialogService.showManagerDialog({ initialTab: ManagerTab.All })
+          await managerDialog.show(ManagerTab.All)
         } else {
-          dialogService.showManagerDialog(
-            options?.initialTab ? { initialTab: options.initialTab } : undefined
-          )
+          await managerDialog.show(options?.initialTab)
         }
         break
     }

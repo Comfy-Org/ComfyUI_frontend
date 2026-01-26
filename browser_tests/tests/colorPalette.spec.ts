@@ -203,7 +203,6 @@ test.describe('Node Color Adjustments', () => {
     comfyPage
   }) => {
     await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
-    await comfyPage.page.waitForTimeout(128)
 
     // Drag mouse to force canvas to redraw
     await comfyPage.page.mouse.move(0, 0)
@@ -211,7 +210,6 @@ test.describe('Node Color Adjustments', () => {
     await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-0.5.png')
 
     await comfyPage.setSetting('Comfy.Node.Opacity', 1.0)
-    await comfyPage.page.waitForTimeout(128)
 
     await comfyPage.page.mouse.move(8, 8)
     await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
@@ -234,12 +232,25 @@ test.describe('Node Color Adjustments', () => {
   }) => {
     await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
     await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-    const saveWorkflowInterval = 1000
-    await comfyPage.page.waitForTimeout(saveWorkflowInterval)
-    const workflow = await comfyPage.page.evaluate(() => {
-      return localStorage.getItem('workflow')
-    })
-    for (const node of JSON.parse(workflow ?? '{}').nodes) {
+    await comfyPage.nextFrame()
+    const parsed = await (
+      await comfyPage.page.waitForFunction(
+        () => {
+          const workflow = localStorage.getItem('workflow')
+          if (!workflow) return null
+          try {
+            const data = JSON.parse(workflow)
+            return Array.isArray(data?.nodes) ? data : null
+          } catch {
+            return null
+          }
+        },
+        { timeout: 3000 }
+      )
+    ).jsonValue()
+    expect(parsed.nodes).toBeDefined()
+    expect(Array.isArray(parsed.nodes)).toBe(true)
+    for (const node of parsed.nodes) {
       if (node.bgcolor) expect(node.bgcolor).not.toMatch(/hsla/)
       if (node.color) expect(node.color).not.toMatch(/hsla/)
     }

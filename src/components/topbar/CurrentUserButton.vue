@@ -1,45 +1,99 @@
-<!-- A button that shows current authenticated user's avatar -->
+<!-- A button that shows workspace icon (Cloud) or user avatar -->
 <template>
   <div>
     <Button
       v-if="isLoggedIn"
-      class="user-profile-button p-1 hover:bg-transparent"
-      severity="secondary"
-      text
+      class="p-1 hover:bg-transparent"
+      variant="muted-textonly"
       :aria-label="$t('g.currentUser')"
       @click="popover?.toggle($event)"
     >
       <div
-        class="flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface"
+        :class="
+          cn(
+            'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
+            compact && 'size-full aspect-square'
+          )
+        "
       >
-        <UserAvatar :photo-url="photoURL" />
+        <WorkspaceProfilePic
+          v-if="showWorkspaceIcon"
+          :workspace-name="workspaceName"
+          :class="compact && 'size-full'"
+        />
+        <UserAvatar
+          v-else
+          :photo-url="photoURL"
+          :class="compact && 'size-full'"
+        />
 
-        <i class="pi pi-chevron-down px-1" :style="{ fontSize: '0.6rem' }" />
+        <i v-if="showArrow" class="icon-[lucide--chevron-down] size-4 px-1" />
       </div>
     </Button>
 
-    <Popover ref="popover" :show-arrow="false">
-      <CurrentUserPopover @close="closePopover" />
+    <Popover
+      ref="popover"
+      :show-arrow="false"
+      :pt="{
+        root: {
+          class: 'rounded-lg w-80'
+        }
+      }"
+    >
+      <!-- Workspace mode: workspace-aware popover -->
+      <CurrentUserPopoverWorkspace
+        v-if="teamWorkspacesEnabled"
+        @close="closePopover"
+      />
+      <!-- Legacy mode: original popover -->
+      <CurrentUserPopover v-else @close="closePopover" />
     </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
-import { computed, ref } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import CurrentUserPopover from './CurrentUserPopover.vue'
 
+const CurrentUserPopoverWorkspace = defineAsyncComponent(
+  () => import('./CurrentUserPopoverWorkspace.vue')
+)
+
+const { showArrow = true, compact = false } = defineProps<{
+  showArrow?: boolean
+  compact?: boolean
+}>()
+
+const { flags } = useFeatureFlags()
+const teamWorkspacesEnabled = computed(() => flags.teamWorkspacesEnabled)
+
 const { isLoggedIn, userPhotoUrl } = useCurrentUser()
 
-const popover = ref<InstanceType<typeof Popover> | null>(null)
 const photoURL = computed<string | undefined>(
   () => userPhotoUrl.value ?? undefined
 )
+
+const showWorkspaceIcon = computed(() => isCloud && teamWorkspacesEnabled.value)
+
+const workspaceName = computed(() => {
+  if (!showWorkspaceIcon.value) return ''
+  const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
+  return workspaceName.value
+})
+
+const popover = ref<InstanceType<typeof Popover> | null>(null)
 
 const closePopover = () => {
   popover.value?.hide()

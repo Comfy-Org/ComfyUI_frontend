@@ -107,7 +107,7 @@ const resizeObserver = new ResizeObserver((entries) => {
       x: topLeftCanvas.x,
       y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
       width: Math.max(0, width),
-      height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
+      height: Math.max(0, height)
     }
 
     let updates = updatesByType.get(elementType)
@@ -123,8 +123,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
   }
 
-  // Set source to Vue before processing DOM-driven updates
-  layoutStore.setSource(LayoutSource.Vue)
+  layoutStore.setSource(LayoutSource.DOM)
 
   // Flush per-type
   for (const [type, updates] of updatesByType) {

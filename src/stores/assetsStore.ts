@@ -1,17 +1,21 @@
-import { useAsyncState } from '@vueuse/core'
+import { useAsyncState, whenever } from '@vueuse/core'
+import { difference } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, shallowReactive, ref } from 'vue'
+import { computed, reactive, ref, shallowReactive } from 'vue'
 import {
   mapInputFileToAssetItem,
   mapTaskOutputToAssetItem
 } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import type { TaskItem } from '@/schemas/apiSchema'
+import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
 import { TaskItemImpl } from './queueStore'
+import { useAssetDownloadStore } from './assetDownloadStore'
+import { useModelToNodeStore } from './modelToNodeStore'
 
 const INPUT_LIMIT = 100
 
@@ -45,27 +49,18 @@ async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
 }
 
 /**
- * Convert history task items to asset items
+ * Convert history job items to asset items
  */
-function mapHistoryToAssets(historyItems: TaskItem[]): AssetItem[] {
+function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
   const assetItems: AssetItem[] = []
 
-  for (const item of historyItems) {
-    // Type guard for HistoryTaskItem which has status and outputs
-    if (item.taskType !== 'History') {
+  for (const job of historyItems) {
+    // Only process completed jobs with preview output
+    if (job.status !== 'completed' || !job.preview_output) {
       continue
     }
 
-    if (!item.outputs || !item.status || item.status?.status_str === 'error') {
-      continue
-    }
-
-    const task = new TaskItemImpl(
-      'History',
-      item.prompt,
-      item.status,
-      item.outputs
-    )
+    const task = new TaskItemImpl(job)
 
     if (!task.previewOutput) {
       continue
@@ -73,11 +68,10 @@ function mapHistoryToAssets(historyItems: TaskItem[]): AssetItem[] {
 
     const assetItem = mapTaskOutputToAssetItem(task, task.previewOutput)
 
-    const supportedOutputs = task.flatOutputs.filter((o) => o.supportsPreview)
     assetItem.user_metadata = {
       ...assetItem.user_metadata,
-      outputCount: supportedOutputs.length,
-      allOutputs: supportedOutputs
+      outputCount: job.outputs_count,
+      allOutputs: task.previewableOutputs
     }
 
     assetItems.push(assetItem)
@@ -85,7 +79,8 @@ function mapHistoryToAssets(historyItems: TaskItem[]): AssetItem[] {
 
   return assetItems.sort(
     (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      new Date(b.created_at ?? 0).getTime() -
+      new Date(a.created_at ?? 0).getTime()
   )
 }
 
@@ -93,6 +88,9 @@ const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
 
 export const useAssetsStore = defineStore('assets', () => {
+  const assetDownloadStore = useAssetDownloadStore()
+  const modelToNodeStore = useModelToNodeStore()
+
   // Pagination state
   const historyOffset = ref(0)
   const hasMoreHistory = ref(true)
@@ -137,8 +135,8 @@ export const useAssetsStore = defineStore('assets', () => {
       offset: historyOffset.value
     })
 
-    // Convert TaskItems to AssetItems
-    const newAssets = mapHistoryToAssets(history.History)
+    // Convert JobListItems to AssetItems
+    const newAssets = mapHistoryToAssets(history)
 
     if (loadMore) {
       // Filter out duplicates and insert in sorted order
@@ -149,9 +147,9 @@ export const useAssetsStore = defineStore('assets', () => {
         loadedIds.add(asset.id)
 
         // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at).getTime()
+        const assetTime = new Date(asset.created_at ?? 0).getTime()
         const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at).getTime() < assetTime
+          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
         )
 
         if (insertIndex === -1) {
@@ -170,7 +168,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
     // Update pagination state
     historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.History.length === BATCH_SIZE
+    hasMoreHistory.value = history.length === BATCH_SIZE
 
     if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
       const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
@@ -255,6 +253,16 @@ export const useAssetsStore = defineStore('assets', () => {
     return inputAssetsByFilename.value.get(filename)?.name ?? filename
   }
 
+  const MODEL_BATCH_SIZE = 500
+
+  interface ModelPaginationState {
+    assets: Map<string, AssetItem>
+    offset: number
+    hasMore: boolean
+    isLoading: boolean
+    error?: Error
+  }
+
   /**
    * Model assets cached by node type (e.g., 'CheckpointLoaderSimple', 'LoraLoader')
    * Used by multiple loader nodes to avoid duplicate fetches
@@ -262,88 +270,342 @@ export const useAssetsStore = defineStore('assets', () => {
    */
   const getModelState = () => {
     if (isCloud) {
-      const modelAssetsByNodeType = shallowReactive(
-        new Map<string, AssetItem[]>()
-      )
-      const modelLoadingByNodeType = shallowReactive(new Map<string, boolean>())
-      const modelErrorByNodeType = shallowReactive(
-        new Map<string, Error | null>()
-      )
+      const modelStateByKey = ref(new Map<string, ModelPaginationState>())
 
-      const stateByNodeType = shallowReactive(
-        new Map<string, ReturnType<typeof useAsyncState<AssetItem[]>>>()
-      )
+      const assetsArrayCache = new Map<
+        string,
+        { source: Map<string, AssetItem>; array: AssetItem[] }
+      >()
+
+      const pendingRequestByKey = new Map<string, ModelPaginationState>()
+
+      function createState(
+        existingAssets?: Map<string, AssetItem>
+      ): ModelPaginationState {
+        const assets = new Map(existingAssets)
+        return reactive({
+          assets,
+          offset: 0,
+          hasMore: true,
+          isLoading: true
+        })
+      }
+
+      function isStale(key: string, state: ModelPaginationState): boolean {
+        const committed = modelStateByKey.value.get(key)
+        const pending = pendingRequestByKey.get(key)
+        return committed !== state && pending !== state
+      }
+
+      const EMPTY_ASSETS: AssetItem[] = []
+
+      function getAssets(key: string): AssetItem[] {
+        const state = modelStateByKey.value.get(key)
+        const assetsMap = state?.assets
+        if (!assetsMap) return EMPTY_ASSETS
+
+        const cached = assetsArrayCache.get(key)
+        if (cached && cached.source === assetsMap) {
+          return cached.array
+        }
+
+        const array = Array.from(assetsMap.values())
+        assetsArrayCache.set(key, { source: assetsMap, array })
+        return array
+      }
+
+      function isLoading(key: string): boolean {
+        return modelStateByKey.value.get(key)?.isLoading ?? false
+      }
+
+      function getError(key: string): Error | undefined {
+        return modelStateByKey.value.get(key)?.error
+      }
+
+      function hasMore(key: string): boolean {
+        return modelStateByKey.value.get(key)?.hasMore ?? false
+      }
+
+      function hasAssetKey(key: string): boolean {
+        return modelStateByKey.value.has(key)
+      }
+
+      /**
+       * Internal helper to fetch and cache assets with a given key and fetcher.
+       * Loads first batch immediately, then progressively loads remaining batches.
+       * Keeps existing data visible until new data is successfully fetched.
+       */
+      async function updateModelsForKey(
+        key: string,
+        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
+      ): Promise<void> {
+        const existingState = modelStateByKey.value.get(key)
+        const state = createState(existingState?.assets)
+
+        const seenIds = new Set<string>()
+
+        const hasExistingData = modelStateByKey.value.has(key)
+        if (hasExistingData) {
+          pendingRequestByKey.set(key, state)
+        } else {
+          modelStateByKey.value.set(key, state)
+        }
+
+        async function loadBatches(): Promise<void> {
+          while (state.hasMore) {
+            try {
+              const newAssets = await fetcher({
+                limit: MODEL_BATCH_SIZE,
+                offset: state.offset
+              })
+
+              if (isStale(key, state)) return
+
+              const isFirstBatch = state.offset === 0
+              if (isFirstBatch) {
+                assetsArrayCache.delete(key)
+                if (hasExistingData) {
+                  pendingRequestByKey.delete(key)
+                  modelStateByKey.value.set(key, state)
+                }
+              }
+
+              // Merge new assets into existing map and track seen IDs
+              for (const asset of newAssets) {
+                seenIds.add(asset.id)
+                state.assets.set(asset.id, asset)
+              }
+              state.assets = new Map(state.assets)
+
+              state.offset += newAssets.length
+              state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+
+              if (isFirstBatch) {
+                state.isLoading = false
+              }
+
+              if (state.hasMore) {
+                await new Promise((resolve) => setTimeout(resolve, 50))
+              }
+            } catch (err) {
+              if (isStale(key, state)) return
+              console.error(`Error loading batch for ${key}:`, err)
+
+              state.error = err instanceof Error ? err : new Error(String(err))
+              state.hasMore = false
+              state.isLoading = false
+              pendingRequestByKey.delete(key)
+
+              return
+            }
+          }
+
+          const staleIds = [...state.assets.keys()].filter(
+            (id) => !seenIds.has(id)
+          )
+          for (const id of staleIds) {
+            state.assets.delete(id)
+          }
+          assetsArrayCache.delete(key)
+        }
+
+        await loadBatches()
+      }
 
       /**
        * Fetch and cache model assets for a specific node type
-       * Uses VueUse's useAsyncState for automatic loading/error tracking
        * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
-       * @returns Promise resolving to the fetched assets
        */
-      async function updateModelsForNodeType(
-        nodeType: string
-      ): Promise<AssetItem[]> {
-        if (!stateByNodeType.has(nodeType)) {
-          stateByNodeType.set(
-            nodeType,
-            useAsyncState(
-              () => assetService.getAssetsForNodeType(nodeType),
-              [],
-              {
-                immediate: false,
-                resetOnExecute: false,
-                onError: (err) => {
-                  console.error(
-                    `Error fetching model assets for ${nodeType}:`,
-                    err
-                  )
-                }
-              }
-            )
-          )
+      async function updateModelsForNodeType(nodeType: string): Promise<void> {
+        await updateModelsForKey(nodeType, (opts) =>
+          assetService.getAssetsForNodeType(nodeType, opts)
+        )
+      }
+
+      /**
+       * Fetch and cache model assets for a specific tag
+       * @param tag The tag to fetch assets for (e.g., 'models')
+       */
+      async function updateModelsForTag(tag: string): Promise<void> {
+        const key = `tag:${tag}`
+        await updateModelsForKey(key, (opts) =>
+          assetService.getAssetsByTag(tag, true, opts)
+        )
+      }
+
+      /**
+       * Optimistically update an asset in the cache
+       * @param assetId The asset ID to update
+       * @param updates Partial asset data to merge
+       * @param cacheKey Optional cache key to target (nodeType or 'tag:xxx')
+       */
+      function updateAssetInCache(
+        assetId: string,
+        updates: Partial<AssetItem>,
+        cacheKey?: string
+      ) {
+        const keysToCheck = cacheKey
+          ? [cacheKey]
+          : Array.from(modelStateByKey.value.keys())
+
+        for (const key of keysToCheck) {
+          const state = modelStateByKey.value.get(key)
+          if (!state?.assets) continue
+
+          const existingAsset = state.assets.get(assetId)
+          if (existingAsset) {
+            const updatedAsset = { ...existingAsset, ...updates }
+            state.assets.set(assetId, updatedAsset)
+            assetsArrayCache.delete(key)
+            if (cacheKey) return
+          }
         }
+      }
 
-        const state = stateByNodeType.get(nodeType)!
-
-        modelLoadingByNodeType.set(nodeType, true)
-        modelErrorByNodeType.set(nodeType, null)
+      /**
+       * Update asset metadata with optimistic cache update
+       * @param asset The asset to update
+       * @param userMetadata The user_metadata to save
+       * @param cacheKey Optional cache key to target for optimistic update
+       */
+      async function updateAssetMetadata(
+        asset: AssetItem,
+        userMetadata: Record<string, unknown>,
+        cacheKey?: string
+      ) {
+        const originalMetadata = asset.user_metadata
+        updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
 
         try {
-          await state.execute()
-          const assets = state.state.value
-          modelAssetsByNodeType.set(nodeType, assets)
-          modelErrorByNodeType.set(
-            nodeType,
-            state.error.value instanceof Error ? state.error.value : null
+          const updatedAsset = await assetService.updateAsset(asset.id, {
+            user_metadata: userMetadata
+          })
+          updateAssetInCache(asset.id, updatedAsset, cacheKey)
+        } catch (error) {
+          console.error('Failed to update asset metadata:', error)
+          updateAssetInCache(
+            asset.id,
+            { user_metadata: originalMetadata },
+            cacheKey
           )
-          return assets
-        } finally {
-          modelLoadingByNodeType.set(nodeType, state.isLoading.value)
+        }
+      }
+
+      /**
+       * Update asset tags using add/remove endpoints
+       * @param asset The asset to update (used to read current tags)
+       * @param newTags The desired tags array
+       * @param cacheKey Optional cache key to target for optimistic update
+       */
+      async function updateAssetTags(
+        asset: AssetItem,
+        newTags: string[],
+        cacheKey?: string
+      ) {
+        const originalTags = asset.tags
+        const tagsToAdd = difference(newTags, originalTags)
+        const tagsToRemove = difference(originalTags, newTags)
+
+        if (tagsToAdd.length === 0 && tagsToRemove.length === 0) return
+
+        updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
+
+        try {
+          const removeResult =
+            tagsToRemove.length > 0
+              ? await assetService.removeAssetTags(asset.id, tagsToRemove)
+              : undefined
+
+          const addResult =
+            tagsToAdd.length > 0
+              ? await assetService.addAssetTags(asset.id, tagsToAdd)
+              : undefined
+
+          const finalTags = (addResult ?? removeResult)?.total_tags
+          if (finalTags) {
+            updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
+          }
+        } catch (error) {
+          console.error('Failed to update asset tags:', error)
+          updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
         }
       }
 
       return {
-        modelAssetsByNodeType,
-        modelLoadingByNodeType,
-        modelErrorByNodeType,
-        updateModelsForNodeType
+        getAssets,
+        isLoading,
+        getError,
+        hasMore,
+        hasAssetKey,
+        updateModelsForNodeType,
+        updateModelsForTag,
+        updateAssetMetadata,
+        updateAssetTags
       }
     }
 
+    const emptyAssets: AssetItem[] = []
     return {
-      modelAssetsByNodeType: shallowReactive(new Map<string, AssetItem[]>()),
-      modelLoadingByNodeType: shallowReactive(new Map<string, boolean>()),
-      modelErrorByNodeType: shallowReactive(new Map<string, Error | null>()),
-      updateModelsForNodeType: async () => []
+      getAssets: () => emptyAssets,
+      isLoading: () => false,
+      getError: () => undefined,
+      hasMore: () => false,
+      hasAssetKey: () => false,
+      updateModelsForNodeType: async () => {},
+      updateModelsForTag: async () => {},
+      updateAssetMetadata: async () => {},
+      updateAssetTags: async () => {}
     }
   }
 
   const {
-    modelAssetsByNodeType,
-    modelLoadingByNodeType,
-    modelErrorByNodeType,
-    updateModelsForNodeType
+    getAssets,
+    isLoading: isModelLoading,
+    getError,
+    hasMore,
+    hasAssetKey,
+    updateModelsForNodeType,
+    updateModelsForTag,
+    updateAssetMetadata,
+    updateAssetTags
   } = getModelState()
+
+  // Watch for completed downloads and refresh model caches
+  whenever(
+    () => assetDownloadStore.lastCompletedDownload,
+    async (latestDownload) => {
+      const { modelType } = latestDownload
+
+      const providers = modelToNodeStore
+        .getAllNodeProviders(modelType)
+        .filter((provider) => provider.nodeDef?.name)
+
+      const nodeTypeUpdates = providers.map((provider) =>
+        updateModelsForNodeType(provider.nodeDef.name).then(
+          () => provider.nodeDef.name
+        )
+      )
+
+      // Also update by tag in case modal was opened with assetType
+      const tagUpdates = [
+        updateModelsForTag(modelType),
+        updateModelsForTag('models')
+      ]
+
+      const results = await Promise.allSettled([
+        ...nodeTypeUpdates,
+        ...tagUpdates
+      ])
+
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          console.error(
+            `Failed to refresh model cache for provider: ${result.reason}`
+          )
+        }
+      }
+    }
+  )
 
   return {
     // States
@@ -365,10 +627,17 @@ export const useAssetsStore = defineStore('assets', () => {
     inputAssetsByFilename,
     getInputName,
 
-    // Model assets
-    modelAssetsByNodeType,
-    modelLoadingByNodeType,
-    modelErrorByNodeType,
-    updateModelsForNodeType
+    // Model assets - accessors
+    getAssets,
+    isModelLoading,
+    getError,
+    hasMore,
+    hasAssetKey,
+
+    // Model assets - actions
+    updateModelsForNodeType,
+    updateModelsForTag,
+    updateAssetMetadata,
+    updateAssetTags
   }
 })

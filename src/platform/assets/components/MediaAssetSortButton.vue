@@ -1,12 +1,12 @@
 <template>
   <div class="relative inline-flex items-center">
-    <IconButton :size="size" :type="type" @click="toggle">
-      <i class="icon-[lucide--arrow-up-down] text-sm" />
-    </IconButton>
+    <Button variant="secondary" size="icon" @click="toggle">
+      <i class="icon-[lucide--arrow-up-down]" />
+    </Button>
 
     <Popover
       ref="popover"
-      :append-to="'body'"
+      append-to="body"
       :auto-z-index="true"
       :base-z-index="1000"
       :dismissable="true"
@@ -27,15 +27,10 @@
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
-import type { BaseButtonProps } from '@/types/buttonTypes'
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
-interface AssetSortButtonProps extends BaseButtonProps {}
-
 const popover = ref<InstanceType<typeof Popover>>()
-
-const { size = 'md', type = 'secondary' } = defineProps<AssetSortButtonProps>()
 
 defineEmits<{
   menuOpened: []

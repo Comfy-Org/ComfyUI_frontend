@@ -14,6 +14,7 @@ import { ViewHelperManager } from './ViewHelperManager'
 import {
   type CameraState,
   type CaptureResult,
+  type EventCallback,
   type Load3DOptions,
   type MaterialMode,
   type UpDirection
@@ -43,8 +44,8 @@ class Load3d {
   STATUS_MOUSE_ON_VIEWER: boolean
   INITIAL_RENDER_DONE: boolean = false
 
-  targetWidth: number = 512
-  targetHeight: number = 512
+  targetWidth: number = 0
+  targetHeight: number = 0
   targetAspectRatio: number = 1
   isViewerMode: boolean = false
 
@@ -72,7 +73,13 @@ class Load3d {
     this.renderer.setClearColor(0x282828)
     this.renderer.autoClear = false
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
-    this.renderer.domElement.classList.add('flex', '!h-full', '!w-full')
+    this.renderer.domElement.classList.add(
+      'absolute',
+      'inset-0',
+      'h-full',
+      'w-full',
+      'outline-none'
+    )
     container.appendChild(this.renderer.domElement)
 
     this.eventManager = new EventManager()
@@ -386,7 +393,8 @@ class Load3d {
       this.STATUS_MOUSE_ON_SCENE ||
       this.STATUS_MOUSE_ON_VIEWER ||
       this.isRecording() ||
-      !this.INITIAL_RENDER_DONE
+      !this.INITIAL_RENDER_DONE ||
+      this.animationManager.isAnimationPlaying
     )
   }
 
@@ -571,6 +579,14 @@ class Load3d {
     this.loadingPromise = null
   }
 
+  isSplatModel(): boolean {
+    return this.modelManager.containsSplatMesh()
+  }
+
+  isPlyModel(): boolean {
+    return this.modelManager.originalModel instanceof THREE.BufferGeometry
+  }
+
   clearModel(): void {
     this.animationManager.dispose()
     this.modelManager.clearModel()
@@ -595,11 +611,11 @@ class Load3d {
     this.forceRender()
   }
 
-  addEventListener(event: string, callback: (data?: any) => void): void {
+  addEventListener<T>(event: string, callback: EventCallback<T>): void {
     this.eventManager.addEventListener(event, callback)
   }
 
-  removeEventListener(event: string, callback: (data?: any) => void): void {
+  removeEventListener<T>(event: string, callback: EventCallback<T>): void {
     this.eventManager.removeEventListener(event, callback)
   }
 
@@ -609,7 +625,7 @@ class Load3d {
   }
 
   handleResize(): void {
-    const parentElement = this.renderer?.domElement
+    const parentElement = this.renderer?.domElement?.parentElement
 
     if (!parentElement) {
       console.warn('Parent element not found')
@@ -710,6 +726,86 @@ class Load3d {
 
   public hasAnimations(): boolean {
     return this.animationManager.animationClips.length > 0
+  }
+
+  public hasSkeleton(): boolean {
+    return this.modelManager.hasSkeleton()
+  }
+
+  public setShowSkeleton(show: boolean): void {
+    this.modelManager.setShowSkeleton(show)
+    this.forceRender()
+  }
+
+  public getShowSkeleton(): boolean {
+    return this.modelManager.showSkeleton
+  }
+
+  public getAnimationTime(): number {
+    return this.animationManager.getAnimationTime()
+  }
+
+  public getAnimationDuration(): number {
+    return this.animationManager.getAnimationDuration()
+  }
+
+  public setAnimationTime(time: number): void {
+    this.animationManager.setAnimationTime(time)
+    this.forceRender()
+  }
+
+  public async captureThumbnail(
+    width: number = 256,
+    height: number = 256
+  ): Promise<string> {
+    if (!this.modelManager.currentModel) {
+      throw new Error('No model loaded for thumbnail capture')
+    }
+
+    const savedState = this.cameraManager.getCameraState()
+    const savedCameraType = this.cameraManager.getCurrentCameraType()
+    const savedGridVisible = this.sceneManager.gridHelper.visible
+
+    try {
+      this.sceneManager.gridHelper.visible = false
+
+      if (savedCameraType !== 'perspective') {
+        this.cameraManager.toggleCamera('perspective')
+      }
+
+      const box = new THREE.Box3().setFromObject(this.modelManager.currentModel)
+      const size = box.getSize(new THREE.Vector3())
+      const center = box.getCenter(new THREE.Vector3())
+
+      const maxDim = Math.max(size.x, size.y, size.z)
+      const distance = maxDim * 1.5
+
+      const cameraPosition = new THREE.Vector3(
+        center.x - distance * 0.8,
+        center.y + distance * 0.4,
+        center.z + distance * 0.3
+      )
+
+      this.cameraManager.perspectiveCamera.position.copy(cameraPosition)
+      this.cameraManager.perspectiveCamera.lookAt(center)
+      this.cameraManager.perspectiveCamera.updateProjectionMatrix()
+
+      if (this.controlsManager.controls) {
+        this.controlsManager.controls.target.copy(center)
+        this.controlsManager.controls.update()
+      }
+
+      const result = await this.sceneManager.captureScene(width, height)
+      return result.scene
+    } finally {
+      this.sceneManager.gridHelper.visible = savedGridVisible
+
+      if (savedCameraType !== 'perspective') {
+        this.cameraManager.toggleCamera(savedCameraType)
+      }
+      this.cameraManager.setCameraState(savedState)
+      this.controlsManager.controls?.update()
+    }
   }
 
   public remove(): void {
