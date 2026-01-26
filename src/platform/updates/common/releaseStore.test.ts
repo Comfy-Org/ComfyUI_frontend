@@ -365,14 +365,13 @@ describe('useReleaseStore', () => {
     })
 
     it('should fetch system stats if not available', async () => {
-      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = null
       mockSystemStatsStore.isInitialized = false
       mockReleaseService.getReleases.mockResolvedValue([mockRelease])
 
       await store.initialize()
 
-      expect(until).toHaveBeenCalled()
+      expect(vi.mocked(until)).toHaveBeenCalled()
       expect(mockReleaseService.getReleases).toHaveBeenCalled()
     })
 
