@@ -79,7 +79,6 @@ import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI, isElectron } from '@/utils/envUtil'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/workbench/extensions/manager/components/ManagerProgressToast.vue'
@@ -195,15 +194,12 @@ watchEffect(() => {
   queueStore.maxHistoryItems = settingStore.get('Comfy.Queue.MaxHistoryItems')
 })
 
-const init = () => {
-  const coreCommands = useCoreCommands()
-  useCommandStore().registerCommands(coreCommands)
-  useMenuItemStore().registerCoreMenuCommands()
-  useKeybindingService().registerCoreKeybindings()
-  useSidebarTabStore().registerCoreSidebarTabs()
-  useBottomPanelStore().registerCoreBottomPanelTabs()
-  app.extensionManager = useWorkspaceStore()
-}
+const coreCommands = useCoreCommands()
+useCommandStore().registerCommands(coreCommands)
+useMenuItemStore().registerCoreMenuCommands()
+useKeybindingService().registerCoreKeybindings()
+useSidebarTabStore().registerCoreSidebarTabs()
+useBottomPanelStore().registerCoreBottomPanelTabs()
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()
@@ -280,7 +276,6 @@ onMounted(() => {
   executionStore.bindExecutionEvents()
 
   try {
-    init()
     // Relocate the legacy menu container to the graph canvas container so it is below other elements
     graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
   } catch (e) {
