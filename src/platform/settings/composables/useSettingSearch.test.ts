@@ -9,7 +9,16 @@ import {
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
+
+// Test-specific type for mock settings
+interface MockSettingParams {
+  id: string
+  name: string
+  type: string
+  defaultValue: unknown
+  category?: string[]
+  deprecated?: boolean
+}
 
 // Mock dependencies
 vi.mock('@/i18n', () => ({
@@ -23,7 +32,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 describe('useSettingSearch', () => {
   let mockSettingStore: ReturnType<typeof useSettingStore>
-  let mockSettings: any
+  let mockSettings: Record<string, MockSettingParams>
 
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -76,7 +85,7 @@ describe('useSettingSearch', () => {
     vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
 
     // Mock getSettingInfo function
-    vi.mocked(getSettingInfo).mockImplementation((setting: SettingParams) => {
+    vi.mocked(getSettingInfo).mockImplementation((setting) => {
       const parts = setting.category || setting.id.split('.')
       return {
         category: parts[0] ?? 'Other',
