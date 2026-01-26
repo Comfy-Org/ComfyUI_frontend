@@ -19,22 +19,17 @@ vi.mock('@/config/version', () => ({
 //@ts-expect-error Define global for the test
 global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
 
-import type { newUserService as NewUserServiceType } from '@/services/newUserService'
+import { useNewUserService } from '@/services/useNewUserService'
 
-describe('newUserService', () => {
-  let service: ReturnType<typeof NewUserServiceType>
+describe('useNewUserService', () => {
+  let service: ReturnType<typeof useNewUserService>
+   
   let mockSettingStore: any
-  let newUserService: typeof NewUserServiceType
 
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks()
-
-    vi.resetModules()
-
-    const module = await import('@/services/newUserService')
-    newUserService = module.newUserService
-
-    service = newUserService()
+    service = useNewUserService()
+    service.reset()
 
     mockSettingStore = {
       settingValues: {},
@@ -331,15 +326,12 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      // Before initialization, isNewUser should return null
       expect(service.isNewUser()).toBeNull()
 
       await service.initializeIfNewUser(mockSettingStore)
 
-      // After initialization, isNewUser should return true for a new user
       expect(service.isNewUser()).toBe(true)
 
-      // Should set the installed version for new users
       expect(mockSettingStore.set).toHaveBeenCalledWith(
         'Comfy.InstalledVersion',
         expect.any(String)
@@ -399,9 +391,9 @@ describe('newUserService', () => {
   })
 
   describe('state sharing between instances', () => {
-    it('should share state between multiple service instances', async () => {
-      const service1 = newUserService()
-      const service2 = newUserService()
+    it('should share state between multiple service calls', async () => {
+      const service1 = useNewUserService()
+      const service2 = useNewUserService()
 
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
@@ -416,9 +408,9 @@ describe('newUserService', () => {
       expect(service1.isNewUser()).toBe(service2.isNewUser())
     })
 
-    it('should execute callbacks registered on different instances', async () => {
-      const service1 = newUserService()
-      const service2 = newUserService()
+    it('should execute callbacks registered on different service calls', async () => {
+      const service1 = useNewUserService()
+      const service2 = useNewUserService()
 
       const mockCallback1 = vi.fn().mockResolvedValue(undefined)
       const mockCallback2 = vi.fn().mockResolvedValue(undefined)

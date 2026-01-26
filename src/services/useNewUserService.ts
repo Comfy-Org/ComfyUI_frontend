@@ -1,10 +1,18 @@
+import { ref, shallowRef } from 'vue'
+import { createSharedComposable } from '@vueuse/core'
 import type { useSettingStore } from '@/platform/settings/settingStore'
 
-let pendingCallbacks: Array<() => Promise<void>> = []
-let isNewUserDetermined = false
-let isNewUserCached: boolean | null = null
+function _useNewUserService() {
+  const pendingCallbacks = shallowRef<Array<() => Promise<void>>>([])
+  const isNewUserDetermined = ref(false)
+  const isNewUserCached = ref<boolean | null>(null)
 
-export const newUserService = () => {
+  function reset() {
+    pendingCallbacks.value = []
+    isNewUserDetermined.value = false
+    isNewUserCached.value = null
+  }
+
   function checkIsNewUser(
     settingStore: ReturnType<typeof useSettingStore>
   ): boolean {
@@ -20,8 +28,8 @@ export const newUserService = () => {
   }
 
   async function registerInitCallback(callback: () => Promise<void>) {
-    if (isNewUserDetermined) {
-      if (isNewUserCached) {
+    if (isNewUserDetermined.value) {
+      if (isNewUserCached.value) {
         try {
           await callback()
         } catch (error) {
@@ -29,20 +37,20 @@ export const newUserService = () => {
         }
       }
     } else {
-      pendingCallbacks.push(callback)
+      pendingCallbacks.value = [...pendingCallbacks.value, callback]
     }
   }
 
   async function initializeIfNewUser(
     settingStore: ReturnType<typeof useSettingStore>
   ) {
-    if (isNewUserDetermined) return
+    if (isNewUserDetermined.value) return
 
-    isNewUserCached = checkIsNewUser(settingStore)
-    isNewUserDetermined = true
+    isNewUserCached.value = checkIsNewUser(settingStore)
+    isNewUserDetermined.value = true
 
-    if (!isNewUserCached) {
-      pendingCallbacks = []
+    if (!isNewUserCached.value) {
+      pendingCallbacks.value = []
       return
     }
 
@@ -51,7 +59,7 @@ export const newUserService = () => {
       __COMFYUI_FRONTEND_VERSION__
     )
 
-    for (const callback of pendingCallbacks) {
+    for (const callback of pendingCallbacks.value) {
       try {
         await callback()
       } catch (error) {
@@ -59,16 +67,19 @@ export const newUserService = () => {
       }
     }
 
-    pendingCallbacks = []
+    pendingCallbacks.value = []
   }
 
   function isNewUser(): boolean | null {
-    return isNewUserDetermined ? isNewUserCached : null
+    return isNewUserDetermined.value ? isNewUserCached.value : null
   }
 
   return {
     registerInitCallback,
     initializeIfNewUser,
-    isNewUser
+    isNewUser,
+    reset
   }
 }
+
+export const useNewUserService = createSharedComposable(_useNewUserService)
