@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { createPinia, setActivePinia } from 'pinia'
 import { compare, valid } from 'semver'
 import type { Mock } from 'vitest'
@@ -5,7 +6,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { useReleaseService } from '@/platform/updates/common/releaseService'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { isElectron } from '@/utils/envUtil'
 
 // Mock the dependencies
 vi.mock('semver')
@@ -51,7 +56,7 @@ describe('useReleaseStore', () => {
     attention: 'high' as const
   }
 
-  beforeEach(async () => {
+  beforeEach(() => {
     setActivePinia(createPinia())
 
     // Reset all mocks
@@ -81,27 +86,9 @@ describe('useReleaseStore', () => {
     }
 
     // Setup mock implementations
-    const { useReleaseService } =
-      await import('@/platform/updates/common/releaseService')
-    const { useSettingStore } = await import('@/platform/settings/settingStore')
-    const { useSystemStatsStore } = await import('@/stores/systemStatsStore')
-    const { isElectron } = await import('@/utils/envUtil')
-
-    vi.mocked(useReleaseService).mockReturnValue(
-      mockReleaseService as Partial<
-        ReturnType<typeof useReleaseService>
-      > as ReturnType<typeof useReleaseService>
-    )
-    vi.mocked(useSettingStore).mockReturnValue(
-      mockSettingStore as Partial<
-        ReturnType<typeof useSettingStore>
-      > as ReturnType<typeof useSettingStore>
-    )
-    vi.mocked(useSystemStatsStore).mockReturnValue(
-      mockSystemStatsStore as Partial<
-        ReturnType<typeof useSystemStatsStore>
-      > as ReturnType<typeof useSystemStatsStore>
-    )
+    vi.mocked(useReleaseService).mockReturnValue(mockReleaseService)
+    vi.mocked(useSettingStore).mockReturnValue(mockSettingStore)
+    vi.mocked(useSystemStatsStore).mockReturnValue(mockSystemStatsStore)
     vi.mocked(isElectron).mockReturnValue(true)
     vi.mocked(valid).mockReturnValue('1.0.0')
 
@@ -163,12 +150,12 @@ describe('useReleaseStore', () => {
   })
 
   describe('showVersionUpdates setting', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       store.releases = [mockRelease]
     })
 
     describe('when notifications are enabled', () => {
-      beforeEach(async () => {
+      beforeEach(() => {
         mockSettingStore.get.mockImplementation((key: string) => {
           if (key === 'Comfy.Notification.ShowVersionUpdates') return true
           return null
@@ -224,7 +211,7 @@ describe('useReleaseStore', () => {
     })
 
     describe('when notifications are disabled', () => {
-      beforeEach(async () => {
+      beforeEach(() => {
         mockSettingStore.get.mockImplementation((key: string) => {
           if (key === 'Comfy.Notification.ShowVersionUpdates') return false
           return null
@@ -448,7 +435,6 @@ describe('useReleaseStore', () => {
     })
 
     it('should proceed with fetchReleases when system stats are not available', async () => {
-      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = null
       mockSystemStatsStore.isInitialized = false
       mockReleaseService.getReleases.mockResolvedValue([mockRelease])
@@ -461,7 +447,7 @@ describe('useReleaseStore', () => {
   })
 
   describe('action handlers', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       store.releases = [mockRelease]
     })
 
@@ -594,7 +580,7 @@ describe('useReleaseStore', () => {
   })
 
   describe('isElectron environment checks', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
       // Set up a new version available
       store.releases = [mockRelease]
       mockSettingStore.get.mockImplementation((key: string) => {
@@ -604,8 +590,7 @@ describe('useReleaseStore', () => {
     })
 
     describe('when running in Electron (desktop)', () => {
-      beforeEach(async () => {
-        const { isElectron } = await import('@/utils/envUtil')
+      beforeEach(() => {
         vi.mocked(isElectron).mockReturnValue(true)
       })
 
@@ -632,8 +617,7 @@ describe('useReleaseStore', () => {
     })
 
     describe('when NOT running in Electron (web)', () => {
-      beforeEach(async () => {
-        const { isElectron } = await import('@/utils/envUtil')
+      beforeEach(() => {
         vi.mocked(isElectron).mockReturnValue(false)
       })
 

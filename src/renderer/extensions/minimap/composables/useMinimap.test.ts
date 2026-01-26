@@ -200,9 +200,8 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }))
 }))
 
-const { useMinimap } =
-  await import('@/renderer/extensions/minimap/composables/useMinimap')
-const { api } = await import('@/scripts/api')
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+import { api } from '@/scripts/api'
 
 describe('useMinimap', () => {
   let moduleMockCanvasElement: HTMLCanvasElement
