@@ -2602,7 +2602,16 @@ export class Subgraph
     canvas.subgraph = this
   }
 
-  addInput(name: string, type: string): SubgraphInput {
+  addInput(name?: string | null, type?: string | null): SubgraphInput {
+    if (
+      name === null ||
+      name === undefined ||
+      type === null ||
+      type === undefined
+    ) {
+      throw new Error('Name and type are required for subgraph input')
+    }
+
     this.events.dispatch('adding-input', { name, type })
 
     const input = new SubgraphInput(
@@ -2620,7 +2629,16 @@ export class Subgraph
     return input
   }
 
-  addOutput(name: string, type: string): SubgraphOutput {
+  addOutput(name?: string | null, type?: string | null): SubgraphOutput {
+    if (
+      name === null ||
+      name === undefined ||
+      type === null ||
+      type === undefined
+    ) {
+      throw new Error('Name and type are required for subgraph output')
+    }
+
     this.events.dispatch('adding-output', { name, type })
 
     const output = new SubgraphOutput(

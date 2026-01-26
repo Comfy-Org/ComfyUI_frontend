@@ -83,7 +83,9 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
       name: 'fake',
       type: 'number',
       disconnect: () => {}
-    } as any
+    } as Partial<Parameters<typeof subgraph.removeInput>[0]> as Parameters<
+      typeof subgraph.removeInput
+    >[0]
 
     // Should throw appropriate error for non-existent input
     expect(() => {
@@ -97,41 +99,36 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
       name: 'fake',
       type: 'number',
       disconnect: () => {}
-    } as any
+    } as Partial<Parameters<typeof subgraph.removeOutput>[0]> as Parameters<
+      typeof subgraph.removeOutput
+    >[0]
 
     expect(() => {
       subgraph.removeOutput(fakeOutput)
     }).toThrow(/Output not found/) // Expected error
   })
 
-  it('should handle null/undefined input names', () => {
+  it('should throw error for null/undefined input names', () => {
     const subgraph = createTestSubgraph()
 
-    // ISSUE: Current implementation allows null/undefined names which may cause runtime errors
-    // TODO: Consider adding validation to prevent null/undefined names
-    // This test documents the current permissive behavior
     expect(() => {
-      subgraph.addInput(null as any, 'number')
-    }).not.toThrow() // Current behavior: allows null
+      subgraph.addInput(null, 'number')
+    }).toThrow() // Current behavior: allows null
 
     expect(() => {
-      subgraph.addInput(undefined as any, 'number')
-    }).not.toThrow() // Current behavior: allows undefined
+      subgraph.addInput(undefined, 'number')
+    }).toThrow() // Current behavior: allows undefined
   })
 
   it('should handle null/undefined output names', () => {
     const subgraph = createTestSubgraph()
-
-    // ISSUE: Current implementation allows null/undefined names which may cause runtime errors
-    // TODO: Consider adding validation to prevent null/undefined names
-    // This test documents the current permissive behavior
     expect(() => {
-      subgraph.addOutput(null as any, 'number')
-    }).not.toThrow() // Current behavior: allows null
+      subgraph.addOutput(null, 'number')
+    }).toThrow()
 
     expect(() => {
-      subgraph.addOutput(undefined as any, 'number')
-    }).not.toThrow() // Current behavior: allows undefined
+      subgraph.addOutput(undefined, 'number')
+    }).toThrow()
   })
 
   it('should handle empty string names', () => {
@@ -153,11 +150,11 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
 
     // Undefined type should not crash but may have default behavior
     expect(() => {
-      subgraph.addInput('test', undefined as any)
+      subgraph.addInput('test', undefined)
     }).not.toThrow()
 
     expect(() => {
-      subgraph.addOutput('test', undefined as any)
+      subgraph.addOutput('test', undefined)
     }).not.toThrow()
   })
 
