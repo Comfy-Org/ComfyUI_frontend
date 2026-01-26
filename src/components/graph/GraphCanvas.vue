@@ -93,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { until, useEventListener, whenever } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -404,14 +404,34 @@ useNodeBadge()
 useGlobalLitegraph()
 useContextMenuTranslation()
 useVueFeatureFlags()
+useCopy()
+usePaste()
+useWorkflowAutoSave()
+
+// Start watching for locale change after the initial value is loaded.
+watch(
+  () => settingStore.get('Comfy.Locale'),
+  async (_newLocale, oldLocale) => {
+    if (!oldLocale) return
+    await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
+    await Promise.all([
+      until(() => isI18nReady.value || !!i18nError.value).toBe(true),
+      newUserService().initializeIfNewUser(settingStore)
+    ])
+    await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    await useWorkflowService().reloadCurrentWorkflow()
+  }
+)
+useEventListener(
+  () => useCanvasStore().canvas?.canvas,
+  'litegraph:set-graph',
+  () => {
+    useWorkflowStore().updateActiveGraph()
+  }
+)
 
 onMounted(async () => {
-  useCopy()
-  usePaste()
-  useWorkflowAutoSave()
-
   comfyApp.vueAppReady = true
-
   workspaceStore.spinner = true
   // ChangeTracker needs to be initialized before setup, as it will overwrite
   // some listeners of litegraph canvas.
@@ -497,25 +517,6 @@ onMounted(async () => {
     await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
   void releaseStore.initialize()
-
-  // Start watching for locale change after the initial value is loaded.
-  watch(
-    () => settingStore.get('Comfy.Locale'),
-    async () => {
-      await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-      await useWorkflowService().reloadCurrentWorkflow()
-    }
-  )
-
-  whenever(
-    () => useCanvasStore().canvas,
-    (canvas) => {
-      useEventListener(canvas.canvas, 'litegraph:set-graph', () => {
-        useWorkflowStore().updateActiveGraph()
-      })
-    },
-    { immediate: true }
-  )
 
   emit('ready')
 })
