@@ -37,14 +37,6 @@ const VITE_OG_DESC =
   'Bring your creative ideas to life with Comfy Cloud. Build and run your workflows to generate stunning images and videos instantly using powerful GPUs — all from your browser, no installation required.'
 const VITE_OG_IMAGE = `${VITE_OG_URL}/assets/images/og-image.png`
 const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
-const GTM_CONTAINER_ID = 'GTM-NP9JM6K7'
-const GTM_SCRIPT = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${GTM_CONTAINER_ID}');`
-const GTM_NO_SCRIPT = `<iframe src="https://www.googletagmanager.com/ns.html?id=${GTM_CONTAINER_ID}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`
-
 // Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
 const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
@@ -57,6 +49,16 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
     : IS_CLOUD_URL
       ? 'cloud'
       : 'localhost'
+
+const ENABLE_GTM =
+  process.env.ENABLE_GTM === 'true' || (!IS_DEV && DISTRIBUTION === 'cloud')
+const GTM_CONTAINER_ID = 'GTM-NP9JM6K7'
+const GTM_SCRIPT = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${GTM_CONTAINER_ID}');`
+const GTM_NO_SCRIPT = `<iframe src="https://www.googletagmanager.com/ns.html?id=${GTM_CONTAINER_ID}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`
 
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
@@ -430,7 +432,7 @@ export default defineConfig({
       transformIndexHtml: {
         order: 'post',
         handler(html) {
-          if (DISTRIBUTION !== 'cloud') return html
+          if (!ENABLE_GTM) return html
 
           return {
             html,
