@@ -294,15 +294,18 @@ watch(
   }
 )
 
+let paletteWatcherRunId = 0
 watch(
   [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],
   async ([canvas, currentPaletteId]) => {
     if (!canvas) return
-
+    const runId = ++paletteWatcherRunId
     await colorPaletteService.loadColorPalette(currentPaletteId)
+    if (runId !== paletteWatcherRunId) return
   }
 )
 
+let backgroundWatcherRunId = 0
 watch(
   () => settingStore.get('Comfy.Canvas.BackgroundImage'),
   async () => {
@@ -310,8 +313,10 @@ watch(
     const currentPaletteId = colorPaletteStore.activePaletteId
     if (!currentPaletteId) return
 
+    const runId = ++backgroundWatcherRunId
     // Reload color palette to apply background image
     await colorPaletteService.loadColorPalette(currentPaletteId)
+    if (runId !== backgroundWatcherRunId) return
     // Mark background canvas as dirty
     canvasStore.canvas.setDirty(false, true)
   }
@@ -329,8 +334,9 @@ watch(
     [executionStore.nodeLocationProgressStates, canvasStore.canvas] as const,
   ([nodeLocationProgressStates, canvas]) => {
     if (!canvas?.graph) return
+    const workflowStore = useWorkflowStore()
     for (const node of canvas.graph.nodes) {
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
+      const nodeLocatorId = workflowStore.nodeIdToNodeLocatorId(node.id)
       const progressState = nodeLocationProgressStates[nodeLocatorId]
       if (progressState && progressState.state === 'running') {
         node.progress = progressState.value / progressState.max
@@ -341,8 +347,7 @@ watch(
 
     // Force canvas redraw to ensure progress updates are visible
     canvas.setDirty(true, false)
-  },
-  { deep: true }
+  }
 )
 
 // Update node slot errors for LiteGraph nodes
@@ -410,20 +415,26 @@ usePaste()
 useWorkflowAutoSave()
 
 // Start watching for locale change after the initial value is loaded.
+let localeWatcherRunId = 0
 watch(
   () => settingStore.get('Comfy.Locale'),
   async (_newLocale, oldLocale) => {
     if (!oldLocale) return
+    const runId = ++localeWatcherRunId
+    await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
+    if (runId !== localeWatcherRunId) return
     await Promise.all([
       until(() => isSettingsReady.value || !!settingsError.value).toBe(true),
       until(() => isI18nReady.value || !!i18nError.value).toBe(true)
     ])
+    if (runId !== localeWatcherRunId) return
     if (settingsError.value || i18nError.value) {
       console.warn(
         'Somehow the Locale setting was changed while the settings or i18n had a setup error'
       )
     }
     await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    if (runId !== localeWatcherRunId) return
     await useWorkflowService().reloadCurrentWorkflow()
   }
 )
