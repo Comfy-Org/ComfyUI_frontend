@@ -590,13 +590,13 @@ export function normalizeSurveyResponses(
   const normalized: SurveyResponsesNormalized = { ...responses }
 
   // Normalize industry
-  if ('industry' in responses && typeof responses.industry === 'string') {
+  if (typeof responses.industry === 'string') {
     normalized.industry_normalized = normalizeIndustry(responses.industry)
     normalized.industry_raw = responses.industry
   }
 
   // Normalize use case
-  if ('useCase' in responses && typeof responses.useCase === 'string') {
+  if (typeof responses.useCase === 'string') {
     normalized.useCase_normalized = normalizeUseCase(responses.useCase)
     normalized.useCase_raw = responses.useCase
   }
