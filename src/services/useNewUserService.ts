@@ -1,8 +1,9 @@
 import { ref, shallowRef } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
-import type { useSettingStore } from '@/platform/settings/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 function _useNewUserService() {
+  const settingStore = useSettingStore()
   const pendingCallbacks = shallowRef<Array<() => Promise<void>>>([])
   const isNewUserDetermined = ref(false)
   const isNewUserCached = ref<boolean | null>(null)
@@ -13,9 +14,7 @@ function _useNewUserService() {
     isNewUserCached.value = null
   }
 
-  function checkIsNewUser(
-    settingStore: ReturnType<typeof useSettingStore>
-  ): boolean {
+  function checkIsNewUser(): boolean {
     const isNewUserSettings =
       Object.keys(settingStore.settingValues).length === 0 ||
       !settingStore.get('Comfy.TutorialCompleted')
@@ -41,12 +40,10 @@ function _useNewUserService() {
     }
   }
 
-  async function initializeIfNewUser(
-    settingStore: ReturnType<typeof useSettingStore>
-  ) {
+  async function initializeIfNewUser() {
     if (isNewUserDetermined.value) return
 
-    isNewUserCached.value = checkIsNewUser(settingStore)
+    isNewUserCached.value = checkIsNewUser()
     isNewUserDetermined.value = true
 
     if (!isNewUserCached.value) {
