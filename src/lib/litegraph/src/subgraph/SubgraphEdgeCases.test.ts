@@ -111,23 +111,30 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
   it('should throw error for null/undefined input names', () => {
     const subgraph = createTestSubgraph()
 
-    expect(() => {
-      subgraph.addInput(null, 'number')
-    }).toThrow() // Current behavior: allows null
+    const nullString: string = null!
+    const undefinedString: string = undefined!
 
     expect(() => {
-      subgraph.addInput(undefined, 'number')
-    }).toThrow() // Current behavior: allows undefined
+      subgraph.addInput(nullString, 'number')
+    }).toThrow()
+
+    expect(() => {
+      subgraph.addInput(undefinedString, 'number')
+    }).toThrow()
   })
 
   it('should handle null/undefined output names', () => {
     const subgraph = createTestSubgraph()
+
+    const nullString: string = null!
+    const undefinedString: string = undefined!
+
     expect(() => {
-      subgraph.addOutput(null, 'number')
+      subgraph.addOutput(nullString, 'number')
     }).toThrow()
 
     expect(() => {
-      subgraph.addOutput(undefined, 'number')
+      subgraph.addOutput(undefinedString, 'number')
     }).toThrow()
   })
 
@@ -148,14 +155,16 @@ describe.skip('SubgraphEdgeCases - Invalid States', () => {
   it('should handle undefined types gracefully', () => {
     const subgraph = createTestSubgraph()
 
-    // Undefined type should not crash but may have default behavior
+    const undefinedString: string = undefined!
+
+    // Undefined type should throw error
     expect(() => {
-      subgraph.addInput('test', undefined)
-    }).not.toThrow()
+      subgraph.addInput('test', undefinedString)
+    }).toThrow()
 
     expect(() => {
-      subgraph.addOutput('test', undefined)
-    }).not.toThrow()
+      subgraph.addOutput('test', undefinedString)
+    }).toThrow()
   })
 
   it('should handle duplicate slot names', () => {
