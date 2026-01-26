@@ -220,6 +220,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Show width × height below the image preview"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Always show advanced widgets on all nodes",
+    "tooltip": "When enabled, advanced widgets are always visible on all nodes without needing to expand them individually."
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Auto snap link to node slot",
     "tooltip": "When dragging a link over a node, the link automatically snap to a viable input slot on the node"

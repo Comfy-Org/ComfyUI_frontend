@@ -14,11 +14,13 @@ import { useGraphHierarchy } from './useGraphHierarchy'
 vi.mock('@/renderer/core/canvas/canvasStore')
 
 function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
-  return {
-    ...createMockLGraphNode(),
-    boundingRect: new Rectangle(100, 100, 50, 50),
-    ...overrides
-  } as LGraphNode
+  return Object.assign(
+    createMockLGraphNode(),
+    {
+      boundingRect: new Rectangle(100, 100, 50, 50)
+    },
+    overrides
+  )
 }
 
 function createMockGroup(overrides: Partial<LGraphGroup> = {}): LGraphGroup {

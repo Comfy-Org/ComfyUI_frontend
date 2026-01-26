@@ -30,8 +30,7 @@ describe('useFeatureFlags', () => {
     it('should access supportsPreviewMetadata', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
-            return true as any
+          if (path === ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA) return true
           return defaultValue
         }
       )
@@ -46,8 +45,7 @@ describe('useFeatureFlags', () => {
     it('should access maxUploadSize', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE)
-            return 209715200 as any // 200MB
+          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 209715200 // 200MB
           return defaultValue
         }
       )
@@ -62,7 +60,7 @@ describe('useFeatureFlags', () => {
     it('should access supportsManagerV4', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.MANAGER_SUPPORTS_V4) return true as any
+          if (path === ServerFeatureFlag.MANAGER_SUPPORTS_V4) return true
           return defaultValue
         }
       )
@@ -76,7 +74,7 @@ describe('useFeatureFlags', () => {
 
     it('should return undefined when features are not available and no default provided', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
-        (_path, defaultValue) => defaultValue as any
+        (_path, defaultValue) => defaultValue
       )
 
       const { flags } = useFeatureFlags()
@@ -90,7 +88,7 @@ describe('useFeatureFlags', () => {
     it('should create reactive computed for custom feature flags', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === 'custom.feature') return 'custom-value' as any
+          if (path === 'custom.feature') return 'custom-value'
           return defaultValue
         }
       )
@@ -108,7 +106,7 @@ describe('useFeatureFlags', () => {
     it('should handle nested paths', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === 'extension.custom.nested.feature') return true as any
+          if (path === 'extension.custom.nested.feature') return true
           return defaultValue
         }
       )
@@ -122,8 +120,7 @@ describe('useFeatureFlags', () => {
     it('should work with ServerFeatureFlag enum', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE)
-            return 104857600 as any
+          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 104857600
           return defaultValue
         }
       )

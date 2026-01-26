@@ -272,6 +272,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "画像プレビューの下に幅×高さを表示する"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "すべてのノードで常に高度なウィジェットを表示",
+    "tooltip": "有効にすると、すべてのノードで高度なウィジェットが個別に展開しなくても常に表示されます。"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "ノードスロットにリンクを自動スナップ",
     "tooltip": "ノードの上にリンクをドラッグすると、リンクがノードの有効な入力スロットに自動的にスナップします"

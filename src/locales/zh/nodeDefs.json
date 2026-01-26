@@ -2100,11 +2100,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "索引",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "加载ControlNet模型（diff）",
@@ -13451,6 +13453,84 @@
     "outputs": {
       "0": {
         "name": "模型",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D：图像转模型（专业版）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "face_count": {
+        "name": "面数"
+      },
+      "generate_type": {
+        "name": "生成类型"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "image_back": {
+        "name": "背面图像"
+      },
+      "image_left": {
+        "name": "左侧图像"
+      },
+      "image_right": {
+        "name": "右侧图像"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "LowPoly 选项在 `3.1` 模型中不可用。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D：文本转模型（专业版）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "face_count": {
+        "name": "面数"
+      },
+      "generate_type": {
+        "name": "生成类型"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "LowPoly 选项在 `3.1` 模型中不可用。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "支持最多 1024 个字符。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型文件",
         "tooltip": null
       }
     }

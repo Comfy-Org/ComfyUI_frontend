@@ -2098,11 +2098,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "載入 ControlNet 模型（diff）",
@@ -13424,6 +13426,84 @@
     "outputs": {
       "0": {
         "name": "修補後模型",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D：圖片轉模型（專業版）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "face_count": {
+        "name": "面數"
+      },
+      "generate_type": {
+        "name": "生成類型"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "圖片"
+      },
+      "image_back": {
+        "name": "背面圖片"
+      },
+      "image_left": {
+        "name": "左側圖片"
+      },
+      "image_right": {
+        "name": "右側圖片"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "「LowPoly」選項在 `3.1` 模型中不可用。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否重新執行；無論種子如何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D：文字轉模型（專業版）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "face_count": {
+        "name": "面數"
+      },
+      "generate_type": {
+        "name": "生成類型"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "「LowPoly」選項在 `3.1` 模型中不可用。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "最多支援 1024 個字元。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否重新執行；無論種子如何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
         "tooltip": null
       }
     }

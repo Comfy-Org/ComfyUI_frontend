@@ -2098,11 +2098,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "컨트롤넷 모델 로드 (차이)",
@@ -13424,6 +13426,84 @@
     "outputs": {
       "0": {
         "name": "패치된 모델",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: 이미지 → 모델 (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "face_count": {
+        "name": "면 개수"
+      },
+      "generate_type": {
+        "name": "생성 유형"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "image_back": {
+        "name": "뒷면 이미지"
+      },
+      "image_left": {
+        "name": "왼쪽 이미지"
+      },
+      "image_right": {
+        "name": "오른쪽 이미지"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "`3.1` 모델에서는 LowPoly 옵션을 사용할 수 없습니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: 텍스트 → 모델 (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "face_count": {
+        "name": "면 개수"
+      },
+      "generate_type": {
+        "name": "생성 유형"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "`3.1` 모델에서는 LowPoly 옵션을 사용할 수 없습니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "최대 1024자까지 지원합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 파일",
         "tooltip": null
       }
     }

@@ -2098,11 +2098,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "インデックス",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "ControlNetモデルを読み込む（diff）",
@@ -13424,6 +13426,84 @@
     "outputs": {
       "0": {
         "name": "パッチ適用済みモデル",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: 画像からモデルへ (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "face_count": {
+        "name": "面数"
+      },
+      "generate_type": {
+        "name": "生成タイプ"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "image_back": {
+        "name": "背面画像"
+      },
+      "image_left": {
+        "name": "左画像"
+      },
+      "image_right": {
+        "name": "右画像"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "`3.1`モデルではLowPolyオプションは利用できません。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: テキストからモデルへ (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "face_count": {
+        "name": "面数"
+      },
+      "generate_type": {
+        "name": "生成タイプ"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "`3.1`モデルではLowPolyオプションは利用できません。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "最大1024文字まで対応しています。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
         "tooltip": null
       }
     }

@@ -2100,11 +2100,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "بارگذاری مدل ControlNet (diff)",
@@ -13451,6 +13453,84 @@
     "outputs": {
       "0": {
         "name": "مدل اصلاح‌شده",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "generate_type": {
+        "name": "نوع تولید"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "image_back": {
+        "name": "تصویر پشت"
+      },
+      "image_left": {
+        "name": "تصویر چپ"
+      },
+      "image_right": {
+        "name": "تصویر راست"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "گزینه LowPoly برای مدل `۳.۱` در دسترس نیست."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: تبدیل متن به مدل (پیشرفته)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "generate_type": {
+        "name": "نوع تولید"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "گزینه LowPoly برای مدل `۳.۱` در دسترس نیست."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "حداکثر تا ۱۰۲۴ کاراکتر پشتیبانی می‌شود."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
         "tooltip": null
       }
     }
