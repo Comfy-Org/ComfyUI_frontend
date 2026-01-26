@@ -4,15 +4,15 @@
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI" #workflow-tabs>
+      <!-- Native drag area for Electron (when tabs are NOT in topbar) -->
+      <div
+        v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
+        class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
+      />
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
       >
-        <!-- Native drag area for Electron -->
-        <div
-          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
-        />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
@@ -435,6 +435,10 @@ useEventListener(
   }
 )
 
+let disposed = false
+let prevOnSelectionChange: typeof comfyApp.canvas.onSelectionChange | null =
+  null
+
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
@@ -443,6 +447,7 @@ onMounted(async () => {
   ChangeTracker.init()
 
   await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
+  if (disposed) return
 
   if (settingsError.value) {
     if (settingsError.value instanceof UnauthorizedError) {
@@ -463,6 +468,8 @@ onMounted(async () => {
     until(() => isI18nReady.value || !!i18nError.value).toBe(true),
     newUserService().initializeIfNewUser(settingStore)
   ])
+  if (disposed) return
+
   if (i18nError.value) {
     console.warn(
       '[GraphCanvas] Failed to load custom nodes i18n:',
@@ -472,6 +479,8 @@ onMounted(async () => {
 
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
+  if (disposed) return
+
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
@@ -484,6 +493,7 @@ onMounted(async () => {
 
   vueNodeLifecycle.setupEmptyGraphListener()
 
+  prevOnSelectionChange = comfyApp.canvas.onSelectionChange
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
@@ -496,10 +506,13 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
+  if (disposed) return
+
   workflowPersistence.restoreWorkflowTabsState()
 
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
+  if (disposed) return
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // Uses watch because feature flags load asynchronously - flag may be false initially
@@ -527,6 +540,10 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
   vueNodeLifecycle.cleanup()
+  if (prevOnSelectionChange && comfyApp.canvas) {
+    comfyApp.canvas.onSelectionChange = prevOnSelectionChange
+  }
 })
 </script>
