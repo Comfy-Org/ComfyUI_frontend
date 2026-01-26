@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import {
-  extractWorkflow
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { api } from '@/scripts/api'
 import type {
   JobDetail,
   JobListItem
@@ -197,7 +196,6 @@ describe('jobOutputCache', () => {
 
   describe('getJobDetail', () => {
     it('fetches and caches job detail', async () => {
-      const { api } = await import('@/scripts/api')
       const jobId = uniqueId('job')
 
       const mockDetail: JobDetail = {
@@ -216,7 +214,6 @@ describe('jobOutputCache', () => {
     })
 
     it('returns cached job detail on subsequent calls', async () => {
-      const { api } = await import('@/scripts/api')
       const jobId = uniqueId('job')
 
       const mockDetail: JobDetail = {
@@ -239,7 +236,6 @@ describe('jobOutputCache', () => {
     })
 
     it('returns undefined on fetch error', async () => {
-      const { api } = await import('@/scripts/api')
       const jobId = uniqueId('job-error')
 
       vi.mocked(api.getJobDetail).mockRejectedValue(new Error('Network error'))
@@ -252,7 +248,6 @@ describe('jobOutputCache', () => {
 
   describe('getJobWorkflow', () => {
     it('fetches job detail and extracts workflow', async () => {
-      const { api } = await import('@/scripts/api')
       const jobId = uniqueId('job-wf')
 
       const mockDetail: JobDetail = {
@@ -274,7 +269,6 @@ describe('jobOutputCache', () => {
     })
 
     it('returns undefined when job detail not found', async () => {
-      const { api } = await import('@/scripts/api')
       const jobId = uniqueId('missing')
 
       vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
