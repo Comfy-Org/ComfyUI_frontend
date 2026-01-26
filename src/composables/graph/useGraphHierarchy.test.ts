@@ -20,7 +20,7 @@ function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
       boundingRect: new Rectangle(100, 100, 50, 50)
     },
     overrides
-  ) as LGraphNode
+  )
 }
 
 function createMockGroup(overrides: Partial<LGraphGroup> = {}): LGraphGroup {
