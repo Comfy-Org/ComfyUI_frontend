@@ -403,7 +403,6 @@ useNodeBadge()
 
 useGlobalLitegraph()
 useContextMenuTranslation()
-useVueFeatureFlags()
 useCopy()
 usePaste()
 useWorkflowAutoSave()
@@ -413,11 +412,15 @@ watch(
   () => settingStore.get('Comfy.Locale'),
   async (_newLocale, oldLocale) => {
     if (!oldLocale) return
-    await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
     await Promise.all([
-      until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-      newUserService().initializeIfNewUser(settingStore)
+      until(() => isSettingsReady.value || !!settingsError.value).toBe(true),
+      until(() => isI18nReady.value || !!i18nError.value).toBe(true)
     ])
+    if (settingsError.value || i18nError.value) {
+      console.warn(
+        'Somehow the Locale setting was changed while the settings or i18n had a setup error'
+      )
+    }
     await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
     await useWorkflowService().reloadCurrentWorkflow()
   }
