@@ -178,6 +178,7 @@ const settingStore = useSettingStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const canvasStore = useCanvasStore()
+const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
 const colorPaletteStore = useColorPaletteStore()
@@ -426,10 +427,10 @@ watch(
   }
 )
 useEventListener(
-  () => useCanvasStore().canvas?.canvas,
+  () => canvasStore.canvas?.canvas,
   'litegraph:set-graph',
   () => {
-    useWorkflowStore().updateActiveGraph()
+    workflowStore.updateActiveGraph()
   }
 )
 
