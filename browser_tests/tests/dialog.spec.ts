@@ -308,21 +308,64 @@ test.describe('Settings', () => {
 })
 
 test.describe('Support', () => {
-  test('Should open external zendesk link with OSS tag', async ({
-    comfyPage
-  }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    const pagePromise = comfyPage.page.context().waitForEvent('page')
-    await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
-    const newPage = await pagePromise
+  test.describe('with nightly build', () => {
+    test.beforeEach(async ({ page }) => {
+      // Mock __IS_NIGHTLY__ to true before page loads
+      await page.addInitScript(() => {
+        Object.defineProperty(window, '__IS_NIGHTLY__', {
+          value: true,
+          writable: false,
+          configurable: true
+        })
+      })
+    })
 
-    await newPage.waitForLoadState('networkidle')
-    await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
+    test('Should open external zendesk link with oss-nightly tag', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      const pagePromise = comfyPage.page.context().waitForEvent('page')
+      await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
+      const newPage = await pagePromise
 
-    const url = new URL(newPage.url())
-    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+      await newPage.waitForLoadState('networkidle')
+      await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
 
-    await newPage.close()
+      const url = new URL(newPage.url())
+      expect(url.searchParams.get('tf_42243568391700')).toBe('oss-nightly')
+
+      await newPage.close()
+    })
+  })
+
+  test.describe('with stable build', () => {
+    test.beforeEach(async ({ page }) => {
+      // Mock __IS_NIGHTLY__ to false before page loads
+      await page.addInitScript(() => {
+        Object.defineProperty(window, '__IS_NIGHTLY__', {
+          value: false,
+          writable: false,
+          configurable: true
+        })
+      })
+    })
+
+    test('Should open external zendesk link with oss tag', async ({
+      comfyPage
+    }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      const pagePromise = comfyPage.page.context().waitForEvent('page')
+      await comfyPage.menu.topbar.triggerTopbarCommand(['Help', 'Support'])
+      const newPage = await pagePromise
+
+      await newPage.waitForLoadState('networkidle')
+      await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
+
+      const url = new URL(newPage.url())
+      expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+
+      await newPage.close()
+    })
   })
 })
 
