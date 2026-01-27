@@ -25,7 +25,7 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { authEventHook } from '@/platform/telemetry/userIdentityBus'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -323,9 +323,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
-      useTelemetry()?.trackAuth({
+      void authEventHook.trigger({
+        event: 'login',
         method: 'email',
-        is_new_user: false
+        isNewUser: false
       })
     }
 
@@ -343,9 +344,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
-      useTelemetry()?.trackAuth({
+      void authEventHook.trigger({
+        event: 'register',
         method: 'email',
-        is_new_user: true
+        isNewUser: true
       })
     }
 
@@ -361,9 +363,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      useTelemetry()?.trackAuth({
+      void authEventHook.trigger({
+        event: isNewUser ? 'register' : 'login',
         method: 'google',
-        is_new_user: isNewUser
+        isNewUser
       })
     }
 
@@ -379,9 +382,10 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      useTelemetry()?.trackAuth({
+      void authEventHook.trigger({
+        event: isNewUser ? 'register' : 'login',
         method: 'github',
-        is_new_user: isNewUser
+        isNewUser
       })
     }
 
