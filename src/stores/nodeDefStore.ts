@@ -1,9 +1,12 @@
+import { useAsyncState } from '@vueuse/core'
 import axios from 'axios'
+import { retry } from 'es-toolkit'
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
@@ -17,7 +20,10 @@ import type {
   ComfyOutputTypesSpec as ComfyOutputSpecV1,
   PriceBadge
 } from '@/schemas/nodeDefSchema'
+import { api } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
 import { NodeSearchService } from '@/services/nodeSearchService'
+import { useExtensionService } from '@/services/extensionService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
@@ -305,6 +311,28 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const showExperimental = ref(false)
   const nodeDefFilters = ref<NodeDefFilter[]>([])
 
+  const {
+    state: rawNodeDefs,
+    isReady,
+    isLoading,
+    error,
+    execute: fetchNodeDefs
+  } = useAsyncState<Record<string, ComfyNodeDefV1>>(
+    () =>
+      retry(() => api.getNodeDefs(), {
+        retries: 3,
+        delay: (attempt: number) => Math.min(1000 * Math.pow(2, attempt), 10000)
+      }),
+    {},
+    { immediate: false }
+  )
+
+  async function load() {
+    if (!isReady.value && !isLoading.value) {
+      return fetchNodeDefs()
+    }
+  }
+
   const nodeDefs = computed(() => {
     const subgraphStore = useSubgraphStore()
     // Blueprints first for discoverability in the node library sidebar
@@ -335,18 +363,46 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   )
   const nodeTree = computed(() => buildNodeDefTree(visibleNodeDefs.value))
 
-  function updateNodeDefs(nodeDefs: ComfyNodeDefV1[]) {
+  function translateNodeDef(def: ComfyNodeDefV1): ComfyNodeDefV1 {
+    return {
+      ...def,
+      display_name: st(
+        `nodeDefs.${def.name}.display_name`,
+        def.display_name ?? def.name
+      ),
+      description: def.description
+        ? st(`nodeDefs.${def.name}.description`, def.description)
+        : '',
+      category: def.category
+        .split('/')
+        .map((category: string) => st(`nodeCategories.${category}`, category))
+        .join('/')
+    }
+  }
+
+  function updateNodeDefs(defs: ComfyNodeDefV1[], app?: ComfyApp) {
+    const allDefs = [...Object.values(SYSTEM_NODE_DEFS), ...defs]
+
+    if (app) {
+      useExtensionService().invokeExtensions(
+        'beforeRegisterVueAppNodeDefs',
+        allDefs,
+        app
+      )
+    }
+
     const newNodeDefsByName: Record<string, ComfyNodeDefImpl> = {}
     const newNodeDefsByDisplayName: Record<string, ComfyNodeDefImpl> = {}
 
-    for (const nodeDef of nodeDefs) {
+    for (const def of allDefs) {
+      const translatedDef = translateNodeDef(def)
       const nodeDefImpl =
-        nodeDef instanceof ComfyNodeDefImpl
-          ? nodeDef
-          : new ComfyNodeDefImpl(nodeDef)
+        translatedDef instanceof ComfyNodeDefImpl
+          ? translatedDef
+          : new ComfyNodeDefImpl(translatedDef)
 
-      newNodeDefsByName[nodeDef.name] = nodeDefImpl
-      newNodeDefsByDisplayName[nodeDef.display_name] = nodeDefImpl
+      newNodeDefsByName[translatedDef.name] = nodeDefImpl
+      newNodeDefsByDisplayName[translatedDef.display_name] = nodeDefImpl
     }
 
     nodeDefsByName.value = newNodeDefsByName
@@ -447,6 +503,12 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     showDeprecated,
     showExperimental,
     nodeDefFilters,
+
+    rawNodeDefs,
+    isReady,
+    isLoading,
+    error,
+    load,
 
     nodeDefs,
     nodeDataTypes,

@@ -6,7 +6,7 @@ import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
-import { st, t } from '@/i18n'
+import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
@@ -61,7 +61,7 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
-import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -881,21 +881,18 @@ export class ComfyApp {
     this.canvas?.draw(true, true)
   }
 
-  private updateVueAppNodeDefs(defs: Record<string, ComfyNodeDefV1>) {
-    // Frontend only nodes registered by custom nodes.
-    // Example: https://github.com/rgthree/rgthree-comfy/blob/dd534e5384be8cf0c0fa35865afe2126ba75ac55/src_web/comfyui/fast_groups_bypasser.ts#L10
-
-    // Only create frontend_only definitions for nodes that don't have backend definitions
-    const frontendOnlyDefs: Record<string, ComfyNodeDefV1> = {}
+  private buildFrontendOnlyDefs(
+    backendDefs: Record<string, ComfyNodeDefV1>
+  ): ComfyNodeDefV1[] {
+    const frontendOnlyDefs: ComfyNodeDefV1[] = []
     for (const [name, node] of Object.entries(
       LiteGraph.registered_node_types
     )) {
-      // Skip if we already have a backend definition or system definition
-      if (name in defs || name in SYSTEM_NODE_DEFS || node.skip_list) {
+      if (name in backendDefs || node.skip_list) {
         continue
       }
 
-      frontendOnlyDefs[name] = {
+      frontendOnlyDefs.push({
         name,
         display_name: name,
         category: node.category || '__frontend_only__',
@@ -906,54 +903,33 @@ export class ComfyApp {
         output_node: false,
         python_module: 'custom_nodes.frontend_only',
         description: node.description ?? `Frontend only node for ${name}`
-      } as ComfyNodeDefV1
+      })
     }
-
-    const allNodeDefs = {
-      ...frontendOnlyDefs,
-      ...defs,
-      ...SYSTEM_NODE_DEFS
-    }
-
-    const nodeDefStore = useNodeDefStore()
-    const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
-    useExtensionService().invokeExtensions(
-      'beforeRegisterVueAppNodeDefs',
-      nodeDefArray,
-      this
-    )
-    nodeDefStore.updateNodeDefs(nodeDefArray)
-  }
-
-  async getNodeDefs(): Promise<Record<string, ComfyNodeDefV1>> {
-    const translateNodeDef = (def: ComfyNodeDefV1): ComfyNodeDefV1 => ({
-      ...def,
-      display_name: st(
-        `nodeDefs.${def.name}.display_name`,
-        def.display_name ?? def.name
-      ),
-      description: def.description
-        ? st(`nodeDefs.${def.name}.description`, def.description)
-        : '',
-      category: def.category
-        .split('/')
-        .map((category: string) => st(`nodeCategories.${category}`, category))
-        .join('/')
-    })
-
-    return _.mapValues(await api.getNodeDefs(), (def) => translateNodeDef(def))
+    return frontendOnlyDefs
   }
 
   /**
    * Registers nodes with the graph
    */
   async registerNodes() {
-    // Load node definitions from the backend
-    const defs = await this.getNodeDefs()
+    const nodeDefStore = useNodeDefStore()
+
+    while (!nodeDefStore.isReady) {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+
+    if (nodeDefStore.error) {
+      throw nodeDefStore.error
+    }
+
+    const defs = nodeDefStore.rawNodeDefs
     await this.registerNodesFromDefs(defs)
     await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+
     if (this.vueAppReady) {
-      this.updateVueAppNodeDefs(defs)
+      const frontendOnlyDefs = this.buildFrontendOnlyDefs(defs)
+      const allDefs = [...frontendOnlyDefs, ...Object.values(defs)]
+      useNodeDefStore().updateNodeDefs(allDefs, this)
     }
   }
 
@@ -1653,7 +1629,7 @@ export class ComfyApp {
       useToastStore().add(requestToastMessage)
     }
 
-    const defs = await this.getNodeDefs()
+    const defs = await api.getNodeDefs()
     for (const nodeId in defs) {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
@@ -1698,7 +1674,9 @@ export class ComfyApp {
     )
 
     if (this.vueAppReady) {
-      this.updateVueAppNodeDefs(defs)
+      const frontendOnlyDefs = this.buildFrontendOnlyDefs(defs)
+      const allDefs = [...frontendOnlyDefs, ...Object.values(defs)]
+      useNodeDefStore().updateNodeDefs(allDefs, this)
       useToastStore().remove(requestToastMessage)
       useToastStore().add({
         severity: 'success',

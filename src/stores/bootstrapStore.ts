@@ -4,10 +4,12 @@ import { defineStore } from 'pinia'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useUserStore } from '@/stores/userStore'
 
 export const useBootstrapStore = defineStore('bootstrap', () => {
   const settingStore = useSettingStore()
+  const nodeDefStore = useNodeDefStore()
   const workflowStore = useWorkflowStore()
 
   const {
@@ -24,13 +26,14 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     { immediate: false }
   )
 
+  function startEarlyBootstrap() {
+    void nodeDefStore.load()
+  }
+
   async function startStoreBootstrap() {
-    // Defer settings and workflows if multi-user login is required
-    // (settings API requires authentication in multi-user mode)
     const userStore = useUserStore()
     await userStore.initialize()
 
-    // i18n can load without authentication
     void loadI18n()
 
     if (!userStore.needsLogin) {
@@ -42,6 +45,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
   return {
     isI18nReady,
     i18nError,
+    startEarlyBootstrap,
     startStoreBootstrap
   }
 })

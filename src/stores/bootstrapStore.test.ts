@@ -3,8 +3,6 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
-
 import { useBootstrapStore } from './bootstrapStore'
 
 vi.mock('@/scripts/api', () => ({
@@ -21,17 +19,30 @@ vi.mock('@/i18n', () => ({
 }))
 
 const mockIsSettingsReady = ref(false)
+const mockIsNodeDefsReady = ref(false)
+const mockNodeDefStoreLoad = vi.fn(() => {
+  mockIsNodeDefsReady.value = true
+})
+const mockSettingStoreLoad = vi.fn(() => {
+  mockIsSettingsReady.value = true
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
-    load: vi.fn(() => {
-      mockIsSettingsReady.value = true
-    }),
-    get isReady() {
-      return mockIsSettingsReady.value
-    },
-    isLoading: ref(false),
-    error: ref(undefined)
+    load: mockSettingStoreLoad,
+    isReady: mockIsSettingsReady,
+    isLoading: { value: false },
+    error: { value: undefined }
+  }))
+}))
+
+vi.mock('@/stores/nodeDefStore', () => ({
+  useNodeDefStore: vi.fn(() => ({
+    load: mockNodeDefStoreLoad,
+    isReady: mockIsNodeDefsReady,
+    isLoading: { value: false },
+    error: { value: undefined },
+    rawNodeDefs: { value: {} }
   }))
 }))
 
@@ -54,23 +65,33 @@ describe('bootstrapStore', () => {
 
   beforeEach(() => {
     mockIsSettingsReady.value = false
+    mockIsNodeDefsReady.value = false
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useBootstrapStore()
     vi.clearAllMocks()
   })
 
   it('initializes with all flags false', () => {
-    const settingStore = useSettingStore()
-    expect(settingStore.isReady).toBe(false)
+    expect(mockIsNodeDefsReady.value).toBe(false)
+    expect(mockIsSettingsReady.value).toBe(false)
     expect(store.isI18nReady).toBe(false)
   })
 
+  it('starts early bootstrap (node defs)', async () => {
+    store.startEarlyBootstrap()
+
+    await vi.waitFor(() => {
+      expect(mockIsNodeDefsReady.value).toBe(true)
+    })
+
+    expect(mockNodeDefStoreLoad).toHaveBeenCalled()
+  })
+
   it('starts store bootstrap (settings, i18n)', async () => {
-    const settingStore = useSettingStore()
     void store.startStoreBootstrap()
 
     await vi.waitFor(() => {
-      expect(settingStore.isReady).toBe(true)
+      expect(mockIsSettingsReady.value).toBe(true)
       expect(store.isI18nReady).toBe(true)
     })
   })

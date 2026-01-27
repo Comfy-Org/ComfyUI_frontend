@@ -1,16 +1,28 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
-describe('useNodeDefStore', () => {
-  let store: ReturnType<typeof useNodeDefStore>
+vi.mock('@/scripts/api', () => ({
+  api: {
+    getNodeDefs: vi.fn().mockResolvedValue({ TestNode: { name: 'TestNode' } }),
+    apiURL: vi.fn((path: string) => `/api${path}`),
+    addEventListener: vi.fn(),
+    getUserData: vi.fn(),
+    storeUserData: vi.fn(),
+    listUserDataFullInfo: vi.fn()
+  }
+}))
 
+const SYSTEM_NODE_COUNT = Object.keys(SYSTEM_NODE_DEFS).length
+
+describe('useNodeDefStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
-    store = useNodeDefStore()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
   })
 
   const createMockNodeDef = (
@@ -31,8 +43,42 @@ describe('useNodeDefStore', () => {
     ...overrides
   })
 
+  describe('load', () => {
+    it('initializes with isReady false', () => {
+      const store = useNodeDefStore()
+      expect(store.isReady).toBe(false)
+    })
+
+    it('loads node definitions from API', async () => {
+      const store = useNodeDefStore()
+      const { api } = await import('@/scripts/api')
+
+      await store.load()
+
+      await vi.waitFor(() => {
+        expect(store.isReady).toBe(true)
+      })
+
+      expect(api.getNodeDefs).toHaveBeenCalled()
+    })
+
+    it('does not reload if already ready', async () => {
+      const store = useNodeDefStore()
+      const { api } = await import('@/scripts/api')
+
+      await store.load()
+      await vi.waitFor(() => expect(store.isReady).toBe(true))
+
+      vi.clearAllMocks()
+      await store.load()
+
+      expect(api.getNodeDefs).not.toHaveBeenCalled()
+    })
+  })
+
   describe('filter registry', () => {
     it('should register a new filter', () => {
+      const store = useNodeDefStore()
       const filter: NodeDefFilter = {
         id: 'test.filter',
         name: 'Test Filter',
@@ -44,6 +90,7 @@ describe('useNodeDefStore', () => {
     })
 
     it('should unregister a filter by id', () => {
+      const store = useNodeDefStore()
       const filter: NodeDefFilter = {
         id: 'test.filter',
         name: 'Test Filter',
@@ -56,6 +103,7 @@ describe('useNodeDefStore', () => {
     })
 
     it('should register core filters on initialization', () => {
+      const store = useNodeDefStore()
       const deprecatedFilter = store.nodeDefFilters.find(
         (f) => f.id === 'core.deprecated'
       )
@@ -69,12 +117,23 @@ describe('useNodeDefStore', () => {
   })
 
   describe('filter application', () => {
-    beforeEach(() => {
+    const systemNodeFilter: NodeDefFilter = {
+      id: 'test.no-system',
+      name: 'Hide System Nodes',
+      predicate: (node) => !(node.name in SYSTEM_NODE_DEFS)
+    }
+
+    function createFilterTestStore() {
+      const store = useNodeDefStore()
       // Clear existing filters for isolated tests
       store.nodeDefFilters.splice(0)
-    })
+      // Exclude system nodes from filter tests for cleaner assertions
+      store.registerNodeDefFilter(systemNodeFilter)
+      return store
+    }
 
     it('should apply single filter to visible nodes', () => {
+      const store = createFilterTestStore()
       const normalNode = createMockNodeDef({
         name: 'normal',
         deprecated: false
@@ -98,6 +157,7 @@ describe('useNodeDefStore', () => {
     })
 
     it('should apply multiple filters with AND logic', () => {
+      const store = createFilterTestStore()
       const node1 = createMockNodeDef({
         name: 'node1',
         deprecated: false,
@@ -140,6 +200,10 @@ describe('useNodeDefStore', () => {
     })
 
     it('should show all nodes when no filters are registered', () => {
+      const store = createFilterTestStore()
+      // Remove system node filter for this test
+      store.unregisterNodeDefFilter('test.no-system')
+
       const nodes = [
         createMockNodeDef({ name: 'node1' }),
         createMockNodeDef({ name: 'node2' }),
@@ -147,10 +211,12 @@ describe('useNodeDefStore', () => {
       ]
 
       store.updateNodeDefs(nodes)
-      expect(store.visibleNodeDefs).toHaveLength(3)
+      // Includes 3 test nodes + 4 system nodes
+      expect(store.visibleNodeDefs).toHaveLength(3 + SYSTEM_NODE_COUNT)
     })
 
     it('should update visibility when filter is removed', () => {
+      const store = createFilterTestStore()
       const deprecatedNode = createMockNodeDef({
         name: 'deprecated',
         deprecated: true
@@ -163,7 +229,7 @@ describe('useNodeDefStore', () => {
         predicate: (node) => !node.deprecated
       }
 
-      // Add filter - node should be hidden
+      // Add filter - node should be hidden (only system nodes remain, but they're filtered too)
       store.registerNodeDefFilter(filter)
       expect(store.visibleNodeDefs).toHaveLength(0)
 
@@ -175,6 +241,7 @@ describe('useNodeDefStore', () => {
 
   describe('core filters behavior', () => {
     it('should hide deprecated nodes by default', () => {
+      const store = useNodeDefStore()
       const normalNode = createMockNodeDef({
         name: 'normal',
         deprecated: false
@@ -186,11 +253,18 @@ describe('useNodeDefStore', () => {
 
       store.updateNodeDefs([normalNode, deprecatedNode])
 
-      expect(store.visibleNodeDefs).toHaveLength(1)
-      expect(store.visibleNodeDefs[0].name).toBe('normal')
+      // 1 normal test node + 4 system nodes
+      expect(store.visibleNodeDefs).toHaveLength(1 + SYSTEM_NODE_COUNT)
+      expect(
+        store.visibleNodeDefs.find((n) => n.name === 'normal')
+      ).toBeDefined()
+      expect(
+        store.visibleNodeDefs.find((n) => n.name === 'deprecated')
+      ).toBeUndefined()
     })
 
     it('should show deprecated nodes when showDeprecated is true', () => {
+      const store = useNodeDefStore()
       const normalNode = createMockNodeDef({
         name: 'normal',
         deprecated: false
@@ -203,10 +277,12 @@ describe('useNodeDefStore', () => {
       store.updateNodeDefs([normalNode, deprecatedNode])
       store.showDeprecated = true
 
-      expect(store.visibleNodeDefs).toHaveLength(2)
+      // 2 test nodes + 4 system nodes
+      expect(store.visibleNodeDefs).toHaveLength(2 + SYSTEM_NODE_COUNT)
     })
 
     it('should hide experimental nodes by default', () => {
+      const store = useNodeDefStore()
       const normalNode = createMockNodeDef({
         name: 'normal',
         experimental: false
@@ -218,11 +294,18 @@ describe('useNodeDefStore', () => {
 
       store.updateNodeDefs([normalNode, experimentalNode])
 
-      expect(store.visibleNodeDefs).toHaveLength(1)
-      expect(store.visibleNodeDefs[0].name).toBe('normal')
+      // 1 normal test node + 4 system nodes
+      expect(store.visibleNodeDefs).toHaveLength(1 + SYSTEM_NODE_COUNT)
+      expect(
+        store.visibleNodeDefs.find((n) => n.name === 'normal')
+      ).toBeDefined()
+      expect(
+        store.visibleNodeDefs.find((n) => n.name === 'experimental')
+      ).toBeUndefined()
     })
 
     it('should show experimental nodes when showExperimental is true', () => {
+      const store = useNodeDefStore()
       const normalNode = createMockNodeDef({
         name: 'normal',
         experimental: false
@@ -235,10 +318,12 @@ describe('useNodeDefStore', () => {
       store.updateNodeDefs([normalNode, experimentalNode])
       store.showExperimental = true
 
-      expect(store.visibleNodeDefs).toHaveLength(2)
+      // 2 test nodes + 4 system nodes
+      expect(store.visibleNodeDefs).toHaveLength(2 + SYSTEM_NODE_COUNT)
     })
 
     it('should hide subgraph nodes by default', () => {
+      const store = useNodeDefStore()
       const normalNode = createMockNodeDef({
         name: 'normal',
         category: 'conditioning',
@@ -252,11 +337,18 @@ describe('useNodeDefStore', () => {
 
       store.updateNodeDefs([normalNode, subgraphNode])
 
-      expect(store.visibleNodeDefs).toHaveLength(1)
-      expect(store.visibleNodeDefs[0].name).toBe('normal')
+      // 1 normal test node + 4 system nodes
+      expect(store.visibleNodeDefs).toHaveLength(1 + SYSTEM_NODE_COUNT)
+      expect(
+        store.visibleNodeDefs.find((n) => n.name === 'normal')
+      ).toBeDefined()
+      expect(
+        store.visibleNodeDefs.find((n) => n.name === 'MySubgraph')
+      ).toBeUndefined()
     })
 
     it('should show non-subgraph nodes with subgraph category', () => {
+      const store = useNodeDefStore()
       const normalNode = createMockNodeDef({
         name: 'normal',
         category: 'conditioning',
@@ -270,20 +362,23 @@ describe('useNodeDefStore', () => {
 
       store.updateNodeDefs([normalNode, fakeSubgraphNode])
 
-      expect(store.visibleNodeDefs).toHaveLength(2)
-      expect(store.visibleNodeDefs.map((n) => n.name)).toEqual([
-        'normal',
-        'FakeSubgraph'
-      ])
+      // 2 test nodes + 4 system nodes
+      expect(store.visibleNodeDefs).toHaveLength(2 + SYSTEM_NODE_COUNT)
+      const testNodes = store.visibleNodeDefs
+        .filter((n) => !(n.name in SYSTEM_NODE_DEFS))
+        .map((n) => n.name)
+      expect(testNodes).toEqual(['normal', 'FakeSubgraph'])
     })
   })
 
   describe('performance', () => {
     it('should perform single traversal for multiple filters', () => {
+      const store = useNodeDefStore()
       let filterCallCount = 0
+      const testFilterCount = 5
 
       // Register multiple filters that count their calls
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < testFilterCount; i++) {
         store.registerNodeDefFilter({
           id: `test.counter-${i}`,
           name: `Counter ${i}`,
@@ -294,7 +389,8 @@ describe('useNodeDefStore', () => {
         })
       }
 
-      const nodes = Array.from({ length: 10 }, (_, i) =>
+      const testNodeCount = 10
+      const nodes = Array.from({ length: testNodeCount }, (_, i) =>
         createMockNodeDef({ name: `node${i}` })
       )
       store.updateNodeDefs(nodes)
@@ -302,8 +398,9 @@ describe('useNodeDefStore', () => {
       // Force recomputation by accessing visibleNodeDefs
       expect(store.visibleNodeDefs).toBeDefined()
 
-      // Each node (10) should be checked by each filter (5 test + 2 core = 7 total)
-      expect(filterCallCount).toBe(10 * 5)
+      // Each node (test nodes + system nodes) checked by each test filter
+      const totalNodes = testNodeCount + SYSTEM_NODE_COUNT
+      expect(filterCallCount).toBe(totalNodes * testFilterCount)
     })
   })
 })

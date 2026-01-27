@@ -45,6 +45,9 @@ const firebaseApp = initializeApp(getFirebaseConfig())
 const app = createApp(App)
 const pinia = createPinia()
 
+const bootstrapStore = useBootstrapStore(pinia)
+bootstrapStore.startEarlyBootstrap()
+
 Sentry.init({
   app,
   dsn: __SENTRY_DSN__,
@@ -90,7 +93,6 @@ app
     modules: [VueFireAuth()]
   })
 
-const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')
