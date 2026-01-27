@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "Mostrar caixa de ferramentas de seleção"
+    "name": "Mostrar caixa de ferramentas de seleção",
+    "tooltip": "Exibe uma barra de ferramentas flutuante quando os nós estão selecionados, proporcionando acesso rápido a ações comuns."
   },
   "Comfy_ConfirmClear": {
     "name": "Exigir confirmação ao limpar o fluxo de trabalho"
@@ -147,7 +148,8 @@
       "Linear": "Linear",
       "Spline": "Spline",
       "Straight": "Reto"
-    }
+    },
+    "tooltip": "Controla a aparência e a visibilidade dos links de conexão entre os nós no canvas."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "Ativar visualizador 3D (Beta)",
@@ -474,6 +476,7 @@
     "tooltip": "O deslocamento do ponto de controle bezier a partir do ponto central de redirecionamento"
   },
   "pysssss_SnapToGrid": {
-    "name": "Sempre alinhar à grade"
+    "name": "Sempre alinhar à grade",
+    "tooltip": "Quando ativado, os nós se alinharão automaticamente à grade ao serem movidos ou redimensionados."
   }
 }
