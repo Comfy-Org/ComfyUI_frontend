@@ -74,9 +74,7 @@ const controlMode = defineModel<ControlOptions>()
         class="flex w-full h-[unset] text-left items-center justify-between py-2 gap-7"
         :for="option.mode"
       >
-        <div
-          class="flex items-center gap-2 flex-1 min-w-0 text-wrap"
-        >
+        <div class="flex items-center gap-2 flex-1 min-w-0 text-wrap">
           <div
             class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
           >
