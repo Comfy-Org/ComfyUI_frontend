@@ -13,7 +13,7 @@ import type {
   UserData,
   UserDataFullInfo
 } from '@/schemas/apiSchema'
-import type { ComfyApp } from '@/scripts/app'
+import type { IComfyApp } from './appInterface'
 
 import type {
   BottomPanelExtension,
@@ -27,6 +27,7 @@ import type {
 export type { ComfyExtension } from './comfy'
 export type { ComfyApi } from '@/scripts/api'
 export type { ComfyApp } from '@/scripts/app'
+export type { IComfyApp } from './appInterface'
 export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 export type { InputSpec } from '@/schemas/nodeDefSchema'
 export type {
@@ -78,7 +79,7 @@ interface AppReadiness {
 declare global {
   interface Window {
     /** For use by extensions and in the browser console. Where possible, import `app` from '@/scripts/app' instead. */
-    app?: ComfyApp
+    app?: IComfyApp
 
     /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
     graph?: unknown

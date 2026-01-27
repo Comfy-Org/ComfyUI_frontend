@@ -7,7 +7,7 @@ import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
+import type { IComfyApp } from './appInterface'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { AuthUserInfo } from '@/types/authTypes'
@@ -136,12 +136,12 @@ export interface ComfyExtension {
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    * @param app The ComfyUI app instance
    */
-  init?(app: ComfyApp): Promise<void> | void
+  init?(app: IComfyApp): Promise<void> | void
   /**
    * Allows any additional setup, called after the application is fully set up and running
    * @param app The ComfyUI app instance
    */
-  setup?(app: ComfyApp): Promise<void> | void
+  setup?(app: IComfyApp): Promise<void> | void
   /**
    * Called before nodes are registered with the graph
    * @param defs The collection of node definitions, add custom ones or edit existing ones
@@ -149,7 +149,7 @@ export interface ComfyExtension {
    */
   addCustomNodeDefs?(
     defs: Record<string, ComfyNodeDef>,
-    app: ComfyApp
+    app: IComfyApp
   ): Promise<void> | void
   // TODO(huchenlei): We should deprecate the async return value of
   // getCustomWidgets.
@@ -158,7 +158,7 @@ export interface ComfyExtension {
    * @param app The ComfyUI app instance
    * @returns An array of {[widget name]: widget data}
    */
-  getCustomWidgets?(app: ComfyApp): Promise<Widgets> | Widgets
+  getCustomWidgets?(app: IComfyApp): Promise<Widgets> | Widgets
 
   /**
    * Allows the extension to add additional commands to the selection toolbox
@@ -190,7 +190,7 @@ export interface ComfyExtension {
   beforeRegisterNodeDef?(
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef,
-    app: ComfyApp
+    app: IComfyApp
   ): Promise<void> | void
 
   /**
@@ -200,7 +200,7 @@ export interface ComfyExtension {
    * @param defs The node definitions
    * @param app The ComfyUI app instance
    */
-  beforeRegisterVueAppNodeDefs?(defs: ComfyNodeDef[], app: ComfyApp): void
+  beforeRegisterVueAppNodeDefs?(defs: ComfyNodeDef[], app: IComfyApp): void
 
   /**
    * Allows the extension to register additional nodes with LGraph after standard nodes are added.
@@ -208,7 +208,7 @@ export interface ComfyExtension {
    *
    * @param app The ComfyUI app instance
    */
-  registerCustomNodes?(app: ComfyApp): Promise<void> | void
+  registerCustomNodes?(app: IComfyApp): Promise<void> | void
   /**
    * Allows the extension to modify a node that has been reloaded onto the graph.
    * If you break something in the backend and want to patch workflows in the frontend
@@ -216,13 +216,13 @@ export interface ComfyExtension {
    * @param node The node that has been loaded
    * @param app The ComfyUI app instance
    */
-  loadedGraphNode?(node: LGraphNode, app: ComfyApp): void
+  loadedGraphNode?(node: LGraphNode, app: IComfyApp): void
   /**
    * Allows the extension to run code after the constructor of the node
    * @param node The node that has been created
    * @param app The ComfyUI app instance
    */
-  nodeCreated?(node: LGraphNode, app: ComfyApp): void
+  nodeCreated?(node: LGraphNode, app: IComfyApp): void
 
   /**
    * Allows the extension to modify the graph data before it is configured.
@@ -247,7 +247,7 @@ export interface ComfyExtension {
    * Extensions can register at any time and will receive the latest value immediately.
    * This is an experimental API and may be changed or removed in the future.
    */
-  onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
+  onAuthUserResolved?(user: AuthUserInfo, app: IComfyApp): Promise<void> | void
 
   /**
    * Fired whenever the auth token is refreshed.

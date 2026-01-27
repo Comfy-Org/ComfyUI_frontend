@@ -15,7 +15,7 @@ import type {
   TaskOutput
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
+import type { IComfyApp } from '@/types/appInterface'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
@@ -408,7 +408,7 @@ export class TaskItemImpl {
     return new TaskItemImpl(this.job, jobDetail.outputs)
   }
 
-  public async loadWorkflow(app: ComfyApp) {
+  public async loadWorkflow(app: IComfyApp) {
     if (!this.isHistory) {
       return
     }
