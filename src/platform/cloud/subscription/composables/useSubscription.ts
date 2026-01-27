@@ -1,11 +1,11 @@
 import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import {
@@ -36,7 +36,6 @@ function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
-  const { t } = useI18n()
 
   const isSubscribedOrIsNotCloud = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
