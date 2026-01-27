@@ -1,12 +1,12 @@
 import { until, useAsyncState } from '@vueuse/core'
 import { defineStore, storeToRefs } from 'pinia'
 
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { useUserStore } from '@/stores/userStore'
-import { isCloud } from '@/platform/distribution/types'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import { useUserStore } from '@/stores/userStore'
 
 export const useBootstrapStore = defineStore('bootstrap', () => {
   const settingStore = useSettingStore()
@@ -26,9 +26,16 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     { immediate: false }
   )
 
+  let storesLoaded = false
+
+  function loadAuthenticatedStores() {
+    if (storesLoaded) return
+    storesLoaded = true
+    void settingStore.load()
+    void workflowStore.loadWorkflows()
+  }
+
   async function startStoreBootstrap() {
-    // Defer settings and workflows if multi-user login is required
-    // (settings API requires authentication in multi-user mode)
     const userStore = useUserStore()
     await userStore.initialize()
 
@@ -37,13 +44,11 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
       await until(isInitialized).toBe(true)
     }
 
-    // i18n can load without authentication
-    void loadI18n()
+    const { needsLogin } = storeToRefs(userStore)
+    await until(needsLogin).toBe(false)
 
-    if (!userStore.needsLogin) {
-      void settingStore.load()
-      void workflowStore.loadWorkflows()
-    }
+    void loadI18n()
+    loadAuthenticatedStores()
   }
 
   return {
