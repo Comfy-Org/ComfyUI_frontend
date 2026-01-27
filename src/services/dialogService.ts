@@ -1,36 +1,17 @@
 import { merge } from 'es-toolkit/compat'
 import type { Component } from 'vue'
 
-import ApiNodesSignInContent from '@/components/dialog/content/ApiNodesSignInContent.vue'
-import MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
-import MissingNodesFooter from '@/components/dialog/content/MissingNodesFooter.vue'
-import MissingNodesHeader from '@/components/dialog/content/MissingNodesHeader.vue'
-import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
-import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
-import MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
-import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
-import SignInContent from '@/components/dialog/content/SignInContent.vue'
-import TopUpCreditsDialogContent from '@/components/dialog/content/TopUpCreditsDialogContent.vue'
-import UpdatePasswordContent from '@/components/dialog/content/UpdatePasswordContent.vue'
-import ComfyOrgHeader from '@/components/dialog/header/ComfyOrgHeader.vue'
-import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.vue'
+import type MissingModelsWarning from '@/components/dialog/content/MissingModelsWarning.vue'
+import type MissingNodesContent from '@/components/dialog/content/MissingNodesContent.vue'
 import { t } from '@/i18n'
-import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
   ShowDialogOptions
 } from '@/stores/dialogStore'
-
-import ImportFailedNodeContent from '@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue'
-import ImportFailedNodeFooter from '@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue'
-import ImportFailedNodeHeader from '@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue'
-import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
-import NodeConflictFooter from '@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'
-import NodeConflictHeader from '@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
@@ -58,9 +39,19 @@ export interface ExecutionErrorDialogInput {
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
-  function showLoadWorkflowWarning(
+  async function showLoadWorkflowWarning(
     props: ComponentAttrs<typeof MissingNodesContent>
   ) {
+    const [
+      { default: MissingNodesHeader },
+      { default: MissingNodesFooter },
+      { default: MissingNodesContent }
+    ] = await Promise.all([
+      import('@/components/dialog/content/MissingNodesHeader.vue'),
+      import('@/components/dialog/content/MissingNodesFooter.vue'),
+      import('@/components/dialog/content/MissingNodesContent.vue')
+    ])
+
     dialogStore.showDialog({
       key: 'global-missing-nodes',
       headerComponent: MissingNodesHeader,
@@ -84,9 +75,11 @@ export const useDialogService = () => {
     })
   }
 
-  function showMissingModelsWarning(
+  async function showMissingModelsWarning(
     props: ComponentAttrs<typeof MissingModelsWarning>
   ) {
+    const { default: MissingModelsWarning } =
+      await import('@/components/dialog/content/MissingModelsWarning.vue')
     dialogStore.showDialog({
       key: 'global-missing-models-warning',
       component: MissingModelsWarning,
@@ -94,7 +87,7 @@ export const useDialogService = () => {
     })
   }
 
-  function showSettingsDialog(
+  async function showSettingsDialog(
     panel?:
       | 'about'
       | 'keybinding'
@@ -105,6 +98,13 @@ export const useDialogService = () => {
       | 'subscription'
       | 'workspace'
   ) {
+    const [
+      { default: SettingDialogHeader },
+      { default: SettingDialogContent }
+    ] = await Promise.all([
+      import('@/components/dialog/header/SettingDialogHeader.vue'),
+      import('@/platform/settings/components/SettingDialogContent.vue')
+    ])
     const props = panel ? { props: { defaultPanel: panel } } : undefined
 
     dialogStore.showDialog({
@@ -115,7 +115,14 @@ export const useDialogService = () => {
     })
   }
 
-  function showAboutDialog() {
+  async function showAboutDialog() {
+    const [
+      { default: SettingDialogHeader },
+      { default: SettingDialogContent }
+    ] = await Promise.all([
+      import('@/components/dialog/header/SettingDialogHeader.vue'),
+      import('@/platform/settings/components/SettingDialogContent.vue')
+    ])
     dialogStore.showDialog({
       key: 'global-settings',
       headerComponent: SettingDialogHeader,
@@ -126,7 +133,11 @@ export const useDialogService = () => {
     })
   }
 
-  function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
+  async function showExecutionErrorDialog(
+    executionError: ExecutionErrorDialogInput
+  ) {
+    const { default: ErrorDialogContent } =
+      await import('@/components/dialog/content/ErrorDialogContent.vue')
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: executionError.exception_type,
@@ -174,13 +185,15 @@ export const useDialogService = () => {
    * @param error The error to show
    * @param options The options for the dialog
    */
-  function showErrorDialog(
+  async function showErrorDialog(
     error: unknown,
     options: {
       title?: string
       reportType?: string
     } = {}
   ) {
+    const { default: ErrorDialogContent } =
+      await import('@/components/dialog/content/ErrorDialogContent.vue')
     const errorProps: {
       errorMessage: string
       stackTrace?: string
@@ -222,6 +235,11 @@ export const useDialogService = () => {
   async function showApiNodesSignInDialog(
     apiNodeNames: string[]
   ): Promise<boolean> {
+    const [{ default: ApiNodesSignInContent }, { default: ComfyOrgHeader }] =
+      await Promise.all([
+        import('@/components/dialog/content/ApiNodesSignInContent.vue'),
+        import('@/components/dialog/header/ComfyOrgHeader.vue')
+      ])
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
         key: 'api-nodes-signin',
@@ -244,6 +262,11 @@ export const useDialogService = () => {
   }
 
   async function showSignInDialog(): Promise<boolean> {
+    const [{ default: SignInContent }, { default: ComfyOrgHeader }] =
+      await Promise.all([
+        import('@/components/dialog/content/SignInContent.vue'),
+        import('@/components/dialog/header/ComfyOrgHeader.vue')
+      ])
     return new Promise<boolean>((resolve) => {
       dialogStore.showDialog({
         key: 'global-signin',
@@ -274,6 +297,8 @@ export const useDialogService = () => {
     defaultValue?: string
     placeholder?: string
   }): Promise<string | null> {
+    const { default: PromptDialogContent } =
+      await import('@/components/dialog/content/PromptDialogContent.vue')
     return new Promise((resolve) => {
       dialogStore.showDialog({
         key: 'global-prompt',
@@ -318,6 +343,8 @@ export const useDialogService = () => {
     itemList?: string[]
     hint?: string
   }): Promise<boolean | null> {
+    const { default: ConfirmationDialogContent } =
+      await import('@/components/dialog/content/ConfirmationDialogContent.vue')
     return new Promise((resolve) => {
       const options: ShowDialogOptions = {
         key: 'global-prompt',
@@ -339,12 +366,14 @@ export const useDialogService = () => {
     })
   }
 
-  function showTopUpCreditsDialog(options?: {
+  async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
     const { isActiveSubscription } = useSubscription()
     if (!isActiveSubscription.value) return
 
+    const { default: TopUpCreditsDialogContent } =
+      await import('@/components/dialog/content/TopUpCreditsDialogContent.vue')
     return dialogStore.showDialog({
       key: 'top-up-credits',
       component: TopUpCreditsDialogContent,
@@ -363,7 +392,12 @@ export const useDialogService = () => {
   /**
    * Shows a dialog for updating the current user's password.
    */
-  function showUpdatePasswordDialog() {
+  async function showUpdatePasswordDialog() {
+    const [{ default: UpdatePasswordContent }, { default: ComfyOrgHeader }] =
+      await Promise.all([
+        import('@/components/dialog/content/UpdatePasswordContent.vue'),
+        import('@/components/dialog/header/ComfyOrgHeader.vue')
+      ])
     return dialogStore.showDialog({
       key: 'global-update-password',
       component: UpdatePasswordContent,
@@ -425,13 +459,23 @@ export const useDialogService = () => {
     })
   }
 
-  function showImportFailedNodeDialog(
+  async function showImportFailedNodeDialog(
     options: {
       conflictedPackages?: ConflictDetectionResult[]
       dialogComponentProps?: DialogComponentProps
     } = {}
   ) {
     const { dialogComponentProps, conflictedPackages } = options
+
+    const [
+      { default: ImportFailedNodeHeader },
+      { default: ImportFailedNodeFooter },
+      { default: ImportFailedNodeContent }
+    ] = await Promise.all([
+      import('@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue'),
+      import('@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue'),
+      import('@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue')
+    ])
 
     return dialogStore.showDialog({
       key: 'global-import-failed',
@@ -462,7 +506,7 @@ export const useDialogService = () => {
     })
   }
 
-  function showNodeConflictDialog(
+  async function showNodeConflictDialog(
     options: {
       showAfterWhatsNew?: boolean
       conflictedPackages?: ConflictDetectionResult[]
@@ -478,6 +522,16 @@ export const useDialogService = () => {
       showAfterWhatsNew,
       conflictedPackages
     } = options
+
+    const [
+      { default: NodeConflictHeader },
+      { default: NodeConflictFooter },
+      { default: NodeConflictDialogContent }
+    ] = await Promise.all([
+      import('@/workbench/extensions/manager/components/manager/NodeConflictHeader.vue'),
+      import('@/workbench/extensions/manager/components/manager/NodeConflictFooter.vue'),
+      import('@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue')
+    ])
 
     return dialogStore.showDialog({
       key: 'global-node-conflict',
@@ -628,7 +682,9 @@ export const useDialogService = () => {
     })
   }
 
-  function showBillingComingSoonDialog() {
+  async function showBillingComingSoonDialog() {
+    const { default: ConfirmationDialogContent } =
+      await import('@/components/dialog/content/ConfirmationDialogContent.vue')
     return dialogStore.showDialog({
       key: 'billing-coming-soon',
       title: t('subscription.billingComingSoon.title'),

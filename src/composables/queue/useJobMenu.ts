@@ -101,14 +101,14 @@ export function useJobMenu(
     const executionError = target.taskRef?.executionError
 
     if (executionError) {
-      useDialogService().showExecutionErrorDialog(executionError)
+      void useDialogService().showExecutionErrorDialog(executionError)
       return
     }
 
     // Fall back to simple error dialog
     const message = target.taskRef?.errorMessage
     if (message) {
-      useDialogService().showErrorDialog(new Error(message), {
+      void useDialogService().showErrorDialog(new Error(message), {
         reportType: 'queueJobError'
       })
     }
