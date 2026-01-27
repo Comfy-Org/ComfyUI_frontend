@@ -13,6 +13,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 
 /**
  * Creates a mock LGraphNode with minimal required properties
@@ -200,4 +201,88 @@ export function createMockFileList(files: File[]): FileList {
     }
   }
   return fileList as FileList
+}
+
+/**
+ * Creates a mock ChangeTracker for workflow testing
+ * The ChangeTracker requires a proper ComfyWorkflowJSON structure
+ */
+export function createMockChangeTracker(
+  overrides: Record<string, unknown> = {}
+): ChangeTracker {
+  const partial = {
+    activeState: {
+      last_node_id: 0,
+      last_link_id: 0,
+      nodes: [],
+      links: [],
+      groups: [],
+      config: {},
+      version: 0.4
+    },
+    undoQueue: [],
+    redoQueue: [],
+    changeCount: 0,
+    ...overrides
+  }
+  return partial as Partial<ChangeTracker> as ChangeTracker
+}
+
+/**
+ * Creates a mock Subgraph for workflow testing
+ */
+export function createMockSubgraph(
+  overrides: Partial<import('@/lib/litegraph/src/litegraph').Subgraph> = {}
+): import('@/lib/litegraph/src/litegraph').Subgraph {
+  const partial: Partial<import('@/lib/litegraph/src/litegraph').Subgraph> = {
+    rootGraph: undefined,
+    ...overrides
+  }
+  return partial as import('@/lib/litegraph/src/litegraph').Subgraph
+}
+
+/**
+ * Creates a mock MinimapCanvas for minimap testing
+ */
+export function createMockMinimapCanvas(
+  overrides: Partial<HTMLCanvasElement> = {}
+): HTMLCanvasElement {
+  const mockGetContext = vi.fn()
+  mockGetContext.mockImplementation((contextId: string) =>
+    contextId === '2d' ? createMockCanvas2DContext() : null
+  )
+
+  const partial: Partial<HTMLCanvasElement> = {
+    width: 200,
+    height: 200,
+    clientWidth: 200,
+    clientHeight: 200,
+    getContext: mockGetContext as HTMLCanvasElement['getContext'],
+    ...overrides
+  }
+  return partial as HTMLCanvasElement
+}
+
+/**
+ * Creates a mock CanvasRenderingContext2D for canvas testing
+ */
+export function createMockCanvas2DContext(
+  overrides: Partial<CanvasRenderingContext2D> = {}
+): CanvasRenderingContext2D {
+  const partial: Partial<CanvasRenderingContext2D> = {
+    clearRect: vi.fn(),
+    fillRect: vi.fn(),
+    strokeRect: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    ...overrides
+  }
+  return partial as CanvasRenderingContext2D
 }
