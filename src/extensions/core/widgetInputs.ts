@@ -19,7 +19,7 @@ import {
   addValueControlWidgets,
   isValidWidgetType
 } from '@/scripts/widgets'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { CONFIG, GET_CONFIG } from '@/lib/litegraph/constants'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
