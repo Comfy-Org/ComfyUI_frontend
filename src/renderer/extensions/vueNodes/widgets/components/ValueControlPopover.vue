@@ -69,7 +69,10 @@ const controlMode = defineModel<ControlOptions>()
         :key="option.mode"
         class="flex items-center justify-between py-2 gap-7"
       >
-        <div class="flex items-center gap-2 flex-1 min-w-0">
+        <label
+          class="flex items-center gap-2 flex-1 min-w-0"
+          :for="option.mode"
+        >
           <div
             class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
           >
@@ -98,7 +101,7 @@ const controlMode = defineModel<ControlOptions>()
               {{ $t(`widgets.valueControl.${option.description}`) }}
             </div>
           </div>
-        </div>
+        </label>
 
         <RadioButton
           v-model="controlMode"
