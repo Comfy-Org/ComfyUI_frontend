@@ -101,10 +101,8 @@ function useSubscriptionInternal() {
   })
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
-  const isGtmEnabled = __GTM_ENABLED__
-
   const pushDataLayerEvent = (event: Record<string, unknown>) => {
-    if (!isGtmEnabled || typeof window === 'undefined') return
+    if (!__GTM_ENABLED__ || typeof window === 'undefined') return
     const dataLayer = window.dataLayer ?? (window.dataLayer = [])
     dataLayer.push(event)
   }
