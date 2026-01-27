@@ -200,6 +200,7 @@ import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeS
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isTransparent } from '@/utils/colorUtil'
 import {
@@ -496,6 +497,8 @@ const lgraphNode = computed(() => {
   return getNodeByLocatorId(app.rootGraph, locatorId)
 })
 
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
+
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
@@ -507,12 +510,11 @@ const showAdvancedInputsButton = computed(() => {
     return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
   }
 
-  // For regular nodes: show button if there are advanced widgets and they're currently hidden
-  const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
+  // For regular nodes: show button if there are effectively advanced widgets
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )
-  return hasAdvancedWidgets && !alwaysShowAdvanced
+  return advancedOverridesStore.hasAnyAdvanced(node) && !alwaysShowAdvanced
 })
 
 const showAdvancedState = customRef((track, trigger) => {
@@ -543,6 +545,9 @@ const showAdvancedState = customRef((track, trigger) => {
       } else {
         node.showAdvanced = value
         internalState = value
+        nextTick(() => {
+          node.expandToFitContent()
+        })
       }
       trigger()
     }

@@ -27,7 +27,7 @@
       <div
         v-if="
           !widget.simplified.options?.hidden &&
-          (!widget.simplified.options?.advanced || showAdvanced)
+          (!widget.simplified.advanced || showAdvanced)
         "
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
@@ -94,6 +94,7 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
+import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import {
   getLocatorIdFromNodeData,
@@ -122,8 +123,9 @@ const lgraphNode = computed((): LGraphNode | null => {
   return getNodeByLocatorId(graph, locatorId) ?? null
 })
 
-// Provide node to child components for accessing advanced overrides
-provide<LGraphNode | null>('node', lgraphNode.value)
+provide('node', lgraphNode)
+
+const advancedOverridesStore = useAdvancedWidgetOverridesStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -192,6 +194,10 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       ? { ...options, disabled: true }
       : options
 
+    const resolvedAdvanced = lgraphNode.value
+      ? advancedOverridesStore.getAdvancedState(lgraphNode.value, widget)
+      : !!widget.options?.advanced
+
     const simplified: SimplifiedWidget = {
       name: widget.name,
       type: widget.type,
@@ -203,7 +209,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       nodeType: widget.nodeType,
       options: widgetOptions,
       spec: widget.spec,
-      advanced: widget.options?.advanced,
+      advanced: resolvedAdvanced,
       hidden: widget.options?.hidden
     }
 
@@ -229,22 +235,37 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     })
   }
 
+  // When per-node showAdvanced is on, move advanced widgets to the end.
+  // When global AlwaysShowAdvancedWidgets is on, keep original order.
+  if (
+    nodeData?.showAdvanced &&
+    !settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+  ) {
+    const normal = result.filter((w) => !w.simplified.advanced)
+    const advanced = result.filter((w) => w.simplified.advanced)
+    return [...normal, ...advanced]
+  }
+
   return result
 })
 
 const gridTemplateRows = computed((): string => {
   if (!nodeData?.widgets) return ''
-  const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
-  return nodeData.widgets
-    .filter(
-      (w) =>
-        processedNames.has(w.name) &&
-        !w.options?.hidden &&
-        (!w.options?.advanced || showAdvanced.value)
-    )
-    .map((w) =>
-      shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
-    )
+  const processed = toValue(processedWidgets)
+  const advancedByName = new Map(
+    processed.map((w) => [w.name, w.simplified.advanced])
+  )
+  // Use processedWidgets order (which may have advanced sorted to end)
+  const visible = processed.filter(
+    (w) =>
+      !w.simplified.hidden &&
+      (!advancedByName.get(w.name) || showAdvanced.value)
+  )
+  return visible
+    .map((w) => {
+      const raw = nodeData.widgets?.find((rw) => rw.name === w.name)
+      return shouldExpand(w.type) || raw?.hasLayoutSize ? 'auto' : 'min-content'
+    })
     .join(' ')
 })
 </script>

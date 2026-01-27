@@ -1,41 +1,33 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 
-/**
- * Unique identifier for a widget's advanced override.
- */
-interface AdvancedWidgetOverrideId {
+interface AdvancedWidgetOverrideEntry {
   nodeLocatorId: NodeLocatorId
   widgetName: string
+  /** true = force advanced, false = force non-advanced */
+  advanced: boolean
 }
 
-/**
- * Storage format for persisted advanced widget overrides.
- * Stored in workflow.extra.advancedWidgetOverrides.
- */
 interface AdvancedWidgetOverridesStorage {
-  overrides: AdvancedWidgetOverrideId[]
+  overrides: AdvancedWidgetOverrideEntry[]
 }
 
 /**
- * Store for managing advanced widget status overrides.
+ * Manages per-workflow user overrides for widget advanced status.
  *
- * Users can manually mark/unmark widgets as advanced, and this preference
- * is stored per-workflow. This allows customization of which widgets
- * appear in the advanced section.
+ * Three-state model per widget:
+ * - No override: uses backend value (widget.options.advanced)
+ * - Override to true: widget is forced into the advanced section
+ * - Override to false: widget is forced out of the advanced section
  *
- * Design decisions:
- * - Scope: Per-workflow (not global user preference)
- * - Identifier: node locator ID + widget.name
- * - Persistence: Stored in workflow.extra.advancedWidgetOverrides
- * - Override logic: User override takes precedence over backend value
+ * Persisted in workflow.extra.advancedWidgetOverrides.
  */
 export const useAdvancedWidgetOverridesStore = defineStore(
   'advancedWidgetOverrides',
@@ -43,19 +35,19 @@ export const useAdvancedWidgetOverridesStore = defineStore(
     const workflowStore = useWorkflowStore()
     const canvasStore = useCanvasStore()
 
-    const overriddenIds = ref<string[]>([])
+    /** Map of override key → advanced boolean */
+    const overrides = ref<Map<string, boolean>>(new Map())
 
-    /**
-     * Generate a unique string key for an override ID.
-     */
-    function getOverrideKey(id: AdvancedWidgetOverrideId): string {
-      return JSON.stringify([id.nodeLocatorId, id.widgetName])
+    function getOverrideKey(
+      nodeLocatorId: NodeLocatorId,
+      widgetName: string
+    ): string {
+      return JSON.stringify([nodeLocatorId, widgetName])
     }
 
-    /**
-     * Parse an override key back into an AdvancedWidgetOverrideId.
-     */
-    function parseOverrideKey(key: string): AdvancedWidgetOverrideId | null {
+    function parseOverrideKey(
+      key: string
+    ): { nodeLocatorId: NodeLocatorId; widgetName: string } | null {
       try {
         const [nodeLocatorId, widgetName] = JSON.parse(key) as [string, string]
         if (!nodeLocatorId || !widgetName) return null
@@ -65,23 +57,14 @@ export const useAdvancedWidgetOverridesStore = defineStore(
       }
     }
 
-    function createOverrideId(
-      node: LGraphNode,
-      widgetName: string
-    ): AdvancedWidgetOverrideId {
-      return {
-        nodeLocatorId: workflowStore.nodeToNodeLocatorId(node),
-        widgetName
-      }
+    function getNodeLocatorId(node: LGraphNode): NodeLocatorId {
+      return workflowStore.nodeToNodeLocatorId(node)
     }
 
-    /**
-     * Load overrides from the current workflow's extra data.
-     */
     function loadFromWorkflow() {
       const graph = app.rootGraph
       if (!graph) {
-        overriddenIds.value = []
+        overrides.value = new Map()
         return
       }
 
@@ -90,38 +73,37 @@ export const useAdvancedWidgetOverridesStore = defineStore(
           | AdvancedWidgetOverridesStorage
           | undefined
 
+        const newMap = new Map<string, boolean>()
         if (storedData?.overrides) {
-          const keys = storedData.overrides
-            .filter((override) => override.nodeLocatorId && override.widgetName)
-            .map((override) => getOverrideKey(override))
-          overriddenIds.value = keys
-        } else {
-          overriddenIds.value = []
+          for (const entry of storedData.overrides) {
+            if (!entry.nodeLocatorId || !entry.widgetName) continue
+            const key = getOverrideKey(entry.nodeLocatorId, entry.widgetName)
+            newMap.set(key, entry.advanced)
+          }
         }
+        overrides.value = newMap
       } catch (error) {
         console.error(
           'Failed to load advanced widget overrides from workflow:',
           error
         )
-        overriddenIds.value = []
+        overrides.value = new Map()
       }
     }
 
-    /**
-     * Save overrides to the current workflow's extra data.
-     * Marks the workflow as modified.
-     */
     function saveToWorkflow() {
       const graph = app.rootGraph
       if (!graph) return
 
       try {
-        const overrides: AdvancedWidgetOverrideId[] = overriddenIds.value
-          .map(parseOverrideKey)
-          .filter((id): id is AdvancedWidgetOverrideId => id !== null)
+        const entries: AdvancedWidgetOverrideEntry[] = []
+        for (const [key, advanced] of overrides.value) {
+          const parsed = parseOverrideKey(key)
+          if (!parsed) continue
+          entries.push({ ...parsed, advanced })
+        }
 
-        const data: AdvancedWidgetOverridesStorage = { overrides }
-
+        const data: AdvancedWidgetOverridesStorage = { overrides: entries }
         graph.extra ??= {}
         graph.extra.advancedWidgetOverrides = data
 
@@ -135,77 +117,94 @@ export const useAdvancedWidgetOverridesStore = defineStore(
     }
 
     /**
-     * Get the resolved advanced state for a widget.
-     * Returns: user override if exists, otherwise backend value.
+     * Resolved advanced state for a widget, considering user override.
      */
-    function getAdvancedState(node: LGraphNode, widget: IBaseWidget): boolean {
-      const key = getOverrideKey(createOverrideId(node, widget.name))
-      const isOverridden = overriddenIds.value.includes(key)
-
-      if (isOverridden) {
-        return true
-      }
+    function getAdvancedState(
+      node: LGraphNode,
+      widget: { name: string; options?: IWidgetOptions<unknown> }
+    ): boolean {
+      const key = getOverrideKey(getNodeLocatorId(node), widget.name)
+      const override = overrides.value.get(key)
+      if (override !== undefined) return override
       return !!widget.options?.advanced
     }
 
     /**
-     * Toggle the advanced override for a widget.
-     * If the widget is already marked as advanced (by backend or override),
-     * toggling removes the override (falls back to backend).
-     * If not marked as advanced, toggling adds it to the override list.
+     * Set the advanced override for a widget.
+     * Pass the desired advanced state (true/false).
      */
-    function toggleAdvanced(node: LGraphNode, widgetName: string) {
-      const id = createOverrideId(node, widgetName)
-      const key = getOverrideKey(id)
-
-      if (overriddenIds.value.includes(key)) {
-        overriddenIds.value = overriddenIds.value.filter((k) => k !== key)
-      } else {
-        overriddenIds.value.push(key)
-      }
-
+    function setAdvanced(
+      node: LGraphNode,
+      widgetName: string,
+      advanced: boolean
+    ) {
+      const key = getOverrideKey(getNodeLocatorId(node), widgetName)
+      overrides.value.set(key, advanced)
+      overrides.value = new Map(overrides.value)
       saveToWorkflow()
     }
 
     /**
-     * Check if a widget has an active override (user marked as advanced).
+     * Remove the override for a widget, reverting to backend default.
+     */
+    function clearOverride(node: LGraphNode, widgetName: string) {
+      const key = getOverrideKey(getNodeLocatorId(node), widgetName)
+      overrides.value.delete(key)
+      overrides.value = new Map(overrides.value)
+      saveToWorkflow()
+    }
+
+    /**
+     * Whether a widget has a user override.
      */
     function isOverridden(node: LGraphNode, widgetName: string): boolean {
-      const key = getOverrideKey(createOverrideId(node, widgetName))
-      return overriddenIds.value.includes(key)
+      const key = getOverrideKey(getNodeLocatorId(node), widgetName)
+      return overrides.value.has(key)
     }
 
     /**
-     * Clear all overrides for the current workflow.
+     * Whether a node has any widget that is effectively advanced
+     * (after applying overrides).
      */
-    function clearOverrides() {
-      overriddenIds.value = []
+    function hasAnyAdvanced(node: LGraphNode): boolean {
+      const widgets = node.widgets
+      if (!widgets?.length) return false
+      return widgets.some((w) => getAdvancedState(node, w))
+    }
+
+    function clearAllOverrides() {
+      overrides.value = new Map()
       saveToWorkflow()
     }
 
     /**
-     * Remove invalid overrides (where node or widget no longer exists).
+     * Remove overrides for nodes/widgets that no longer exist.
      */
     function pruneInvalidOverrides() {
       const graph = app.rootGraph
       if (!graph) return
 
-      const validKeys: Set<string> = new Set()
-
+      const validKeys = new Set<string>()
       graph.nodes?.forEach((node) => {
         node.widgets?.forEach((widget) => {
-          const id = createOverrideId(node as LGraphNode, widget.name)
-          const key = getOverrideKey(id)
+          const key = getOverrideKey(
+            getNodeLocatorId(node as LGraphNode),
+            widget.name
+          )
           validKeys.add(key)
         })
       })
 
-      const filteredIds = overriddenIds.value.filter((key) =>
-        validKeys.has(key)
-      )
+      let changed = false
+      for (const key of overrides.value.keys()) {
+        if (!validKeys.has(key)) {
+          overrides.value.delete(key)
+          changed = true
+        }
+      }
 
-      if (filteredIds.length !== overriddenIds.value.length) {
-        overriddenIds.value = filteredIds
+      if (changed) {
+        overrides.value = new Map(overrides.value)
         saveToWorkflow()
       }
     }
@@ -219,14 +218,14 @@ export const useAdvancedWidgetOverridesStore = defineStore(
     )
 
     return {
-      // State
-      overriddenIds: computed(() => overriddenIds.value),
+      overrides: computed(() => overrides.value),
 
-      // Actions
       getAdvancedState,
-      toggleAdvanced,
+      setAdvanced,
+      clearOverride,
       isOverridden,
-      clearOverrides,
+      hasAnyAdvanced,
+      clearAllOverrides,
       pruneInvalidOverrides,
       loadFromWorkflow,
       saveToWorkflow
