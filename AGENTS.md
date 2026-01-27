@@ -300,6 +300,12 @@ When referencing Comfy-Org repos:
 
 Rules for agent-based coding tasks.
 
+### Chrome DevTools MCP
+
+When using `take_snapshot` to inspect dropdowns, listboxes, or other components with dynamic options:
+- Use `verbose: true` to see the full accessibility tree including list items
+- Non-verbose snapshots often omit nested options in comboboxes/listboxes
+
 ### Temporary Files
 
 - Put planning documents under `/temp/plans/`

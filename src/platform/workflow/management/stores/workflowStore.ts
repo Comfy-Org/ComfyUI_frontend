@@ -1,4 +1,5 @@
 import _ from 'es-toolkit/compat'
+import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
@@ -531,48 +532,72 @@ export const useWorkflowStore = defineStore('workflow', () => {
         workflow.isPersisted && !workflow.path.startsWith('subgraphs/')
     )
   )
-  const syncWorkflows = async (dir: string = '') => {
-    await syncEntities(
-      dir ? 'workflows/' + dir : 'workflows',
-      workflowLookup.value,
-      (file) =>
-        new ComfyWorkflow({
-          path: file.path,
-          modified: file.modified,
-          size: file.size
-        }),
-      (existingWorkflow, file) => {
-        const isActiveWorkflow =
-          activeWorkflow.value?.path === existingWorkflow.path
 
-        const nextLastModified = Math.max(
-          existingWorkflow.lastModified,
-          file.modified
-        )
+  const {
+    isReady: isSyncReady,
+    isLoading: isSyncLoading,
+    execute: executeSyncWorkflows
+  } = useAsyncState(
+    async (dir: string = '') => {
+      await syncEntities(
+        dir ? 'workflows/' + dir : 'workflows',
+        workflowLookup.value,
+        (file) =>
+          new ComfyWorkflow({
+            path: file.path,
+            modified: file.modified,
+            size: file.size
+          }),
+        (existingWorkflow, file) => {
+          const isActiveWorkflow =
+            activeWorkflow.value?.path === existingWorkflow.path
 
-        const isMetadataUnchanged =
-          nextLastModified === existingWorkflow.lastModified &&
-          file.size === existingWorkflow.size
+          const nextLastModified = Math.max(
+            existingWorkflow.lastModified,
+            file.modified
+          )
 
-        if (!isMetadataUnchanged) {
-          existingWorkflow.lastModified = nextLastModified
-          existingWorkflow.size = file.size
-        }
+          const isMetadataUnchanged =
+            nextLastModified === existingWorkflow.lastModified &&
+            file.size === existingWorkflow.size
 
-        // Never unload the active workflow - it may contain unsaved in-memory edits.
-        if (isActiveWorkflow) {
-          return
-        }
+          if (!isMetadataUnchanged) {
+            existingWorkflow.lastModified = nextLastModified
+            existingWorkflow.size = file.size
+          }
 
-        // If nothing changed, keep any loaded content cached.
-        if (isMetadataUnchanged) {
-          return
-        }
+          // Never unload the active workflow - it may contain unsaved in-memory edits.
+          if (isActiveWorkflow) {
+            return
+          }
 
-        existingWorkflow.unload()
-      },
-      /* exclude */ (workflow) => workflow.isTemporary
-    )
+          // If nothing changed, keep any loaded content cached.
+          if (isMetadataUnchanged) {
+            return
+          }
+
+          existingWorkflow.unload()
+        },
+        /* exclude */ (workflow) => workflow.isTemporary
+      )
+    },
+    undefined,
+    { immediate: false }
+  )
+
+  async function syncWorkflows(dir: string = '') {
+    return executeSyncWorkflows(0, dir)
+  }
+
+  async function loadWorkflows(): Promise<void> {
+    if (isSyncReady.value) return
+
+    if (isSyncLoading.value) {
+      await until(isSyncLoading).toBe(false)
+      return
+    }
+
+    await syncWorkflows()
   }
 
   const bookmarkStore = useWorkflowBookmarkStore()
@@ -884,6 +909,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     modifiedWorkflows,
     getWorkflowByPath,
     syncWorkflows,
+    loadWorkflows,
 
     isSubgraphActive,
     activeSubgraph,

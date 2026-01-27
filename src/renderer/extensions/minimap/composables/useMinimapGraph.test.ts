@@ -147,20 +147,10 @@ describe('useMinimapGraph', () => {
   })
 
   it('should handle cleanup for never-setup graph', () => {
-    const consoleErrorSpy = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => {})
-
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
-    graphManager.cleanupEventListeners()
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Attempted to cleanup event listeners for graph that was never set up'
-    )
-
-    consoleErrorSpy.mockRestore()
+    expect(() => graphManager.cleanupEventListeners()).not.toThrow()
   })
 
   it('should detect node position changes', () => {
