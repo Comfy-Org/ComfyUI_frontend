@@ -251,21 +251,25 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
 const gridTemplateRows = computed((): string => {
   if (!nodeData?.widgets) return ''
-  const processed = toValue(processedWidgets)
-  const advancedByName = new Map(
-    processed.map((w) => [w.name, w.simplified.advanced])
-  )
-  // Use processedWidgets order (which may have advanced sorted to end)
-  const visible = processed.filter(
-    (w) =>
-      !w.simplified.hidden &&
-      (!advancedByName.get(w.name) || showAdvanced.value)
-  )
-  return visible
-    .map((w) => {
-      const raw = nodeData.widgets?.find((rw) => rw.name === w.name)
-      return shouldExpand(w.type) || raw?.hasLayoutSize ? 'auto' : 'min-content'
+  const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
+
+  // Always use original nodeData.widgets order for grid template,
+  // even when processedWidgets may be reordered for rendering
+  return nodeData.widgets
+    .filter((w) => {
+      if (!processedNames.has(w.name)) return false
+      if (w.options?.hidden) return false
+
+      // Check resolved advanced state (considering overrides)
+      const resolved = lgraphNode.value
+        ? advancedOverridesStore.getAdvancedState(lgraphNode.value, w)
+        : !!w.options?.advanced
+
+      return !resolved || showAdvanced.value
     })
+    .map((w) =>
+      shouldExpand(w.type) || w.hasLayoutSize ? 'auto' : 'min-content'
+    )
     .join(' ')
 })
 </script>
