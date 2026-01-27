@@ -82,7 +82,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   const pushDataLayerEvent = (event: Record<string, unknown>) => {
-    if (!isCloud || typeof window === 'undefined') return
+    if (!__GTM_ENABLED__ || typeof window === 'undefined') return
     const dataLayer = window.dataLayer ?? (window.dataLayer = [])
     dataLayer.push(event)
   }

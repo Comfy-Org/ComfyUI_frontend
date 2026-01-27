@@ -45,6 +45,7 @@ globalThis.__SENTRY_DSN__ = ''
 globalThis.__ALGOLIA_APP_ID__ = ''
 globalThis.__ALGOLIA_API_KEY__ = ''
 globalThis.__USE_PROD_CONFIG__ = false
+globalThis.__GTM_ENABLED__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
 globalThis.__IS_NIGHTLY__ = false
 

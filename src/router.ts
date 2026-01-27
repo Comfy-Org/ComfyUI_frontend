@@ -37,7 +37,7 @@ function getBasePath(): string {
 const basePath = getBasePath()
 
 function pushPageView(): void {
-  if (!isCloud) return
+  if (!__GTM_ENABLED__ || typeof window === 'undefined') return
 
   const dataLayer = window.dataLayer ?? (window.dataLayer = [])
   dataLayer.push({
