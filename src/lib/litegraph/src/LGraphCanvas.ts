@@ -4283,6 +4283,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     item.selected = true
     this.selectedItems.add(item)
     this.state.selectionChanged = true
+
+    if (item instanceof LGraphGroup) {
+      item.recomputeInsideNodes()
+      return
+    }
+
     if (!(item instanceof LGraphNode)) return
 
     // Node-specific handling
