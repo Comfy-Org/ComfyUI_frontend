@@ -4,6 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
+import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -18,9 +19,9 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import type { ResultItemType } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -50,7 +51,8 @@ const modelValue = defineModel<string | undefined>({
 })
 
 const toastStore = useToastStore()
-const queueStore = useQueueStore()
+
+const outputMediaAssets = useMediaAssets('output')
 
 const transformCompatProps = useTransformCompatOverlayProps()
 
@@ -115,36 +117,41 @@ const inputItems = computed<DropdownItem[]>(() => {
   }))
 })
 const outputItems = computed<DropdownItem[]>(() => {
-  if (!['image', 'video'].includes(props.assetKind ?? '')) return []
+  if (!['image', 'video', 'audio'].includes(props.assetKind ?? '')) return []
 
-  const outputs = new Set<string>()
-
-  // Extract output images/videos from queue history
-  queueStore.historyTasks.forEach((task) => {
-    task.flatOutputs.forEach((output) => {
-      const isTargetType =
-        (props.assetKind === 'image' && output.mediaType === 'images') ||
-        (props.assetKind === 'video' && output.mediaType === 'video')
-
-      if (output.type === 'output' && isTargetType) {
-        const path = output.subfolder
-          ? `${output.subfolder}/${output.filename}`
-          : output.filename
-        // Add [output] annotation so the preview component knows the type
-        const annotatedPath = `${path} [output]`
-        outputs.add(annotatedPath)
-      }
-    })
+  // Filter assets by media type using getMediaTypeFromFilename
+  const outputFiles = outputMediaAssets.media.value.filter((asset) => {
+    const mediaType = getMediaTypeFromFilename(asset.name)
+    return toAssertType(mediaType) === props.assetKind
   })
 
-  return Array.from(outputs).map((output) => ({
-    id: `output-${output}`,
-    mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
-    name: output,
-    label: getDisplayLabel(output),
-    metadata: ''
-  }))
+  return outputFiles.map((asset, index) => {
+    // Add [output] annotation so the preview component knows the type
+    const annotatedPath = `${asset.name} [output]`
+    return {
+      id: `output-${index}`,
+      mediaSrc: asset.preview_url || getMediaUrl(asset.name, 'output'),
+      name: annotatedPath,
+      label: getDisplayLabel(annotatedPath),
+      metadata: ''
+    }
+  })
 })
+
+function toAssertType(
+  mediaType: ReturnType<typeof getMediaTypeFromFilename>
+): AssetKind {
+  switch (mediaType) {
+    case 'image':
+    case 'video':
+    case 'audio':
+      return mediaType
+    case '3D':
+      return 'model'
+    default:
+      return 'unknown'
+  }
+}
 
 const allItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
@@ -333,6 +340,12 @@ function getMediaUrl(
   if (!['image', 'video'].includes(props.assetKind ?? '')) return ''
   return `/api/view?filename=${encodeURIComponent(filename)}&type=${type}`
 }
+
+function handleIsOpenUpdate(isOpen: boolean) {
+  if (isOpen && !outputMediaAssets.loading) {
+    outputMediaAssets.refresh()
+  }
+}
 </script>
 
 <template>
@@ -351,6 +364,7 @@ function getMediaUrl(
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="handleFilesUpdate"
+      @update:is-open="handleIsOpenUpdate"
     />
   </WidgetLayoutField>
 </template>
