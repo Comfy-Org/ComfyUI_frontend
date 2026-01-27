@@ -99,7 +99,7 @@ import type {
   ISerialisedNode,
   SubgraphIO
 } from './types/serialisation'
-import type { NeverNever, PickNevers } from './types/utility'
+import type { NeverNever, PickNevers } from '../types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'

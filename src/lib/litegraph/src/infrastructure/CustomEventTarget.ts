@@ -1,4 +1,4 @@
-import type { NeverNever, PickNevers } from '@/lib/litegraph/src/types/utility'
+import type { NeverNever, PickNevers } from '@/lib/litegraph/types/utility'
 
 type EventListeners<T> = {
   readonly [K in keyof T]:
