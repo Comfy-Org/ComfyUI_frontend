@@ -323,12 +323,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
-      authEventHook.trigger({
+      void authEventHook.trigger({
         type: 'login',
         method: 'email',
         is_new_user: false
       })
-      userResolvedHook.trigger({
+      void userResolvedHook.trigger({
         userId: result.user.uid,
         email: result.user.email,
         displayName: result.user.displayName
@@ -349,12 +349,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
-      authEventHook.trigger({
+      void authEventHook.trigger({
         type: 'register',
         method: 'email',
         is_new_user: true
       })
-      userResolvedHook.trigger({
+      void userResolvedHook.trigger({
         userId: result.user.uid,
         email: result.user.email,
         displayName: result.user.displayName
@@ -373,12 +373,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      authEventHook.trigger({
+      void authEventHook.trigger({
         type: isNewUser ? 'register' : 'login',
         method: 'google',
         is_new_user: isNewUser
       })
-      userResolvedHook.trigger({
+      void userResolvedHook.trigger({
         userId: result.user.uid,
         email: result.user.email,
         displayName: result.user.displayName
@@ -397,12 +397,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      authEventHook.trigger({
+      void authEventHook.trigger({
         type: isNewUser ? 'register' : 'login',
         method: 'github',
         is_new_user: isNewUser
       })
-      userResolvedHook.trigger({
+      void userResolvedHook.trigger({
         userId: result.user.uid,
         email: result.user.email,
         displayName: result.user.displayName

@@ -46,9 +46,11 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   }))
 }))
 
-vi.mock('@vueuse/core', async () => {
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const actual = await importOriginal()
   const { ref } = await import('vue')
   return {
+    ...(actual as object),
     whenever: vi.fn(),
     useStorage: vi.fn((_key, defaultValue) => {
       return ref(defaultValue)
