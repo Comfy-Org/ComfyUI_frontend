@@ -1,9 +1,12 @@
-import { markRaw } from 'vue'
+import { defineAsyncComponent } from 'vue'
 
-import ModelLibrarySidebarTab from '@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 import { isElectron } from '@/utils/envUtil'
+
+const ModelLibrarySidebarTab = defineAsyncComponent(
+  () => import('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue')
+)
 
 export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
   return {
@@ -12,7 +15,7 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
     title: 'sideToolbar.modelLibrary',
     tooltip: 'sideToolbar.modelLibrary',
     label: 'sideToolbar.labels.models',
-    component: markRaw(ModelLibrarySidebarTab),
+    component: ModelLibrarySidebarTab,
     type: 'vue',
     iconBadge: () => {
       if (isElectron()) {
