@@ -2056,10 +2056,8 @@
       "choice": {
         "name": "選項"
       },
-      "index": {
-      },
-      "option1": {
-      }
+      "index": {},
+      "option1": {}
     },
     "outputs": [
       null,
@@ -6208,8 +6206,7 @@
   "Load3D": {
     "display_name": "載入 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "高度"
       },
@@ -6219,10 +6216,8 @@
       "model_file": {
         "name": "模型檔案"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "寬度"
       }
@@ -6311,13 +6306,11 @@
     "description": "從輸出資料夾載入圖片。當點擊重新整理按鈕時，節點會更新圖片清單並自動選取第一張圖片，方便進行反覆操作。",
     "display_name": "載入圖片（來自輸出）",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "影像"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "選擇要上傳的檔案"
       }
@@ -10576,10 +10569,8 @@
   "PreviewAny": {
     "display_name": "預覽任意",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "來源"
       }
@@ -16587,8 +16578,7 @@
       "image": {
         "name": "影像"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "寬度"
       }

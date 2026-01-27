@@ -16,10 +16,11 @@ Without this flag, parallel tests will conflict and fail randomly.
 
 ### ComfyUI devtools
 
-ComfyUI_devtools is included in this repository under `tools/devtools/`. During CI/CD, these files are automatically copied to the `custom_nodes` directory.  
-_ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing._
+ComfyUI*devtools is included in this repository under `tools/devtools/`. During CI/CD, these files are automatically copied to the `custom_nodes` directory.  
+\_ComfyUI_devtools adds additional API endpoints and nodes to ComfyUI for browser testing.*
 
 For local development, copy the devtools files to your ComfyUI installation:
+
 ```bash
 cp -r tools/devtools/* /path/to/your/ComfyUI/custom_nodes/ComfyUI_devtools/
 ```
@@ -119,13 +120,11 @@ export default defineConfig({
 Browser tests in this project follow a specific organization pattern:
 
 - **Fixtures**: Located in `fixtures/` - These provide test setup and utilities
-
   - `ComfyPage.ts` - The main fixture for interacting with ComfyUI
   - `ComfyMouse.ts` - Utility for mouse interactions with the canvas
   - Components fixtures in `fixtures/components/` - Page object models for UI components
 
 - **Tests**: Located in `tests/` - The actual test specifications
-
   - Organized by functionality (e.g., `widget.spec.ts`, `interaction.spec.ts`)
   - Snapshot directories (e.g., `widget.spec.ts-snapshots/`) contain reference screenshots
 
@@ -263,7 +262,6 @@ Most common testing needs are already addressed by these helpers, which will mak
    ```
 
    Available debug methods:
-
    - `debugAddMarker(position)` - Red circle at position
    - `debugAttachScreenshot(testInfo, name)` - Attach to test report
    - `debugShowCanvasOverlay()` - Show canvas as overlay

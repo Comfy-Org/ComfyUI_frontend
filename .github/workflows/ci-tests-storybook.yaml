@@ -1,8 +1,8 @@
 # Description: Builds Storybook and runs visual regression testing via Chromatic, deploys previews to Cloudflare Pages
-name: "CI: Tests Storybook"
+name: 'CI: Tests Storybook'
 
 on:
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch: # Allow manual triggering
   pull_request:
 
 jobs:
@@ -88,7 +88,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0  # Required for Chromatic baseline
+          fetch-depth: 0 # Required for Chromatic baseline
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -110,9 +110,9 @@ jobs:
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build-storybook
-          autoAcceptChanges: 'main'  # Auto-accept changes on main branch
-          exitOnceUploaded: true  # Don't wait for UI tests to complete
-          onlyChanged: true  # Only capture changed stories
+          autoAcceptChanges: 'main' # Auto-accept changes on main branch
+          exitOnceUploaded: true # Don't wait for UI tests to complete
+          onlyChanged: true # Only capture changed stories
 
       - name: Set job status
         id: job-status

@@ -1,5 +1,5 @@
 # Automated bi-weekly workflow to bump ComfyUI frontend RC releases
-name: "Release: Bi-weekly ComfyUI"
+name: 'Release: Bi-weekly ComfyUI'
 
 on:
   # Schedule for Monday at 12:00 PM PST (20:00 UTC)
