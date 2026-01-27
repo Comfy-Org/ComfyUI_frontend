@@ -187,8 +187,9 @@ export class ClipspaceDialog extends ComfyDialog {
 
 app.registerExtension({
   name: 'Comfy.Clipspace',
-  init(app) {
-    app.openClipspace = function () {
+  init(appArg) {
+    const comfyApp = appArg as ComfyApp
+    comfyApp.openClipspace = function () {
       if (!ClipspaceDialog.instance) {
         ClipspaceDialog.instance = new ClipspaceDialog()
         ComfyApp.clipspace_invalidate_handler = ClipspaceDialog.invalidate
@@ -196,7 +197,7 @@ app.registerExtension({
 
       if (ComfyApp.clipspace) {
         ClipspaceDialog.instance.show()
-      } else app.ui.dialog.show('Clipspace is Empty!')
+      } else comfyApp.ui.dialog.show('Clipspace is Empty!')
     }
   }
 })

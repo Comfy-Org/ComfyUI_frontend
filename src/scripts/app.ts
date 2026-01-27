@@ -65,6 +65,7 @@ import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { IComfyApp } from '@/types/appInterface'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -127,7 +128,7 @@ type Clipspace = {
   combinedIndex: number
 }
 
-export class ComfyApp {
+export class ComfyApp implements IComfyApp {
   /**
    * List of entries to queue
    */

@@ -3,14 +3,14 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { Settings } from '@/schemas/apiSchema'
-import type { ComfyApp } from '@/scripts/app'
+import type { IComfyApp } from '@/types/appInterface'
 
 import { ComfyDialog } from './dialog'
 
 export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
-  app: ComfyApp
+  app: IComfyApp
 
-  constructor(app: ComfyApp) {
+  constructor(app: IComfyApp) {
     super()
     this.app = app
   }

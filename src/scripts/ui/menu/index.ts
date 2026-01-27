@@ -1,4 +1,4 @@
-import type { ComfyApp } from '@/scripts/app'
+import type { IComfyApp } from '@/types/appInterface'
 
 import { $el } from '../../ui'
 import { ComfyButtonGroup } from '../components/buttonGroup'
@@ -13,13 +13,13 @@ export { DraggableList } from '@/scripts/ui/draggableList'
 export { applyTextReplacements, addStylesheet } from '@/scripts/utils'
 
 export class ComfyAppMenu {
-  app: ComfyApp
+  app: IComfyApp
   actionsGroup: ComfyButtonGroup
   settingsGroup: ComfyButtonGroup
   viewGroup: ComfyButtonGroup
   element: HTMLElement
 
-  constructor(app: ComfyApp) {
+  constructor(app: IComfyApp) {
     this.app = app
 
     // Keep the group as there are custom scripts attaching extra

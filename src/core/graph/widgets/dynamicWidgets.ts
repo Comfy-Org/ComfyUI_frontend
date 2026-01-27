@@ -20,7 +20,7 @@ import {
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
-import type { ComfyApp } from '@/scripts/app'
+import type { IComfyApp } from '@/types/appInterface'
 
 const INLINE_INPUTS = false
 
@@ -69,7 +69,7 @@ function dynamicComboWidget(
   node: LGraphNode,
   inputName: string,
   untypedInputData: InputSpec,
-  appArg: ComfyApp,
+  appArg: IComfyApp,
   widgetName?: string
 ) {
   const { addNodeInput } = useLitegraphService()
