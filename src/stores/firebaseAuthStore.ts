@@ -154,7 +154,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         return
       }
 
-      useDialogService().showErrorDialog(error, {
+      void useDialogService().showErrorDialog(error, {
         title: t('errorDialog.defaultTitle'),
         reportType: 'authenticationError'
       })
