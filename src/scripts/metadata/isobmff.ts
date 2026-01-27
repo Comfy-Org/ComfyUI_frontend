@@ -137,10 +137,10 @@ const extractMetadataValueFromDataBox = (
     lowerKeyName === ComfyMetadataTags.PROMPT.toLowerCase() ||
     lowerKeyName === ComfyMetadataTags.WORKFLOW.toLowerCase()
   ) {
-    return (
-      (extractJson(data, valueStart, dataBoxEnd) as
-        | ComfyWorkflowJSON
-        | ComfyApiWorkflow) || null
+    return extractJson<ComfyWorkflowJSON | ComfyApiWorkflow>(
+      data,
+      valueStart,
+      dataBoxEnd
     )
   }
   return null
