@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "Show selection toolbox"
+    "name": "Show selection toolbox",
+    "tooltip": "Display a floating toolbar when nodes are selected, providing quick access to common actions."
   },
   "Comfy_ConfirmClear": {
     "name": "Require confirmation when clearing workflow"
@@ -142,6 +143,7 @@
   },
   "Comfy_LinkRenderMode": {
     "name": "Link Render Mode",
+    "tooltip": "Controls the appearance and visibility of connection links between nodes on the canvas.",
     "options": {
       "Straight": "Straight",
       "Linear": "Linear",
@@ -252,6 +254,10 @@
   "Comfy_Node_SnapHighlightsNode": {
     "name": "Snap highlights node",
     "tooltip": "When dragging a link over a node with viable input slot, highlight the node"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Always show advanced widgets on all nodes",
+    "tooltip": "When enabled, advanced widgets are always visible on all nodes without needing to expand them individually."
   },
   "Comfy_NodeBadge_NodeIdBadgeMode": {
     "name": "Node ID badge mode",
@@ -474,6 +480,7 @@
     "tooltip": "The bezier control point offset from the reroute centre point"
   },
   "pysssss_SnapToGrid": {
-    "name": "Always snap to grid"
+    "name": "Always snap to grid",
+    "tooltip": "When enabled, nodes will automatically align to the grid when moved or resized."
   }
 }
