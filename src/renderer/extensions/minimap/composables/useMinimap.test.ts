@@ -508,7 +508,10 @@ describe('useMinimap', () => {
           'clearRect calls:',
           vi.mocked(mockContext2D.clearRect).mock.calls.length
         )
-        console.log('fillRect calls:', vi.mocked(mockContext2D.fillRect).mock.calls.length)
+        console.log(
+          'fillRect calls:',
+          vi.mocked(mockContext2D.fillRect).mock.calls.length
+        )
         console.log(
           'getContext calls:',
           vi.mocked(mockCanvasElement.getContext).mock.calls.length

@@ -9,7 +9,8 @@ import type {
   LGraph,
   LGraphCanvas,
   LGraphGroup,
-  LinkNetwork
+  LinkNetwork,
+  LLink
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
@@ -229,19 +230,6 @@ export function createMockChangeTracker(
 }
 
 /**
- * Creates a mock Subgraph for workflow testing
- */
-export function createMockSubgraph(
-  overrides: Partial<import('@/lib/litegraph/src/litegraph').Subgraph> = {}
-): import('@/lib/litegraph/src/litegraph').Subgraph {
-  const partial: Partial<import('@/lib/litegraph/src/litegraph').Subgraph> = {
-    rootGraph: undefined,
-    ...overrides
-  }
-  return partial as import('@/lib/litegraph/src/litegraph').Subgraph
-}
-
-/**
  * Creates a mock MinimapCanvas for minimap testing
  */
 export function createMockMinimapCanvas(
@@ -285,4 +273,21 @@ export function createMockCanvas2DContext(
     ...overrides
   }
   return partial as CanvasRenderingContext2D
+}
+
+export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
+  const partial: Partial<LLink> = {
+    ...overrides
+  }
+  return partial as LLink
+}
+
+export function createMockLinks(links: LLink[]): LGraph['links'] {
+  const map = new Map<number, LLink>()
+  const record: Record<number, LLink> = {}
+  for (const link of links) {
+    map.set(link.id, link)
+    record[link.id] = link
+  }
+  return Object.assign(map, record) as LGraph['links']
 }

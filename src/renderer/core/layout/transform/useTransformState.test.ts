@@ -114,7 +114,7 @@ describe('useTransformState', () => {
       const mockCanvas = createMockCanvasContext()
       mockCanvas.ds.offset = [100, 50]
       mockCanvas.ds.scale = 2
-       transformState.syncWithCanvas(mockCanvas as LGraphCanvas)
+      transformState.syncWithCanvas(mockCanvas as LGraphCanvas)
     })
 
     describe('canvasToScreen', () => {
@@ -201,7 +201,7 @@ describe('useTransformState', () => {
       const mockCanvas = createMockCanvasContext()
       mockCanvas.ds.offset = [0, 0]
       mockCanvas.ds.scale = 1
-       transformState.syncWithCanvas(mockCanvas as LGraphCanvas)
+      transformState.syncWithCanvas(mockCanvas as LGraphCanvas)
     })
 
     const viewport = { width: 1000, height: 600 }
@@ -257,7 +257,7 @@ describe('useTransformState', () => {
 
       // Test with very low zoom
       mockCanvas.ds.scale = 0.05
-       syncWithCanvas(mockCanvas as LGraphCanvas)
+      syncWithCanvas(mockCanvas as LGraphCanvas)
 
       // Node at edge should still be visible due to increased margin
       expect(isNodeInViewport([1100, 100], [200, 100], viewport)).toBe(true)

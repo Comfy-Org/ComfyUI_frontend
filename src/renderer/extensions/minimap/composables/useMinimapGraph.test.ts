@@ -6,7 +6,12 @@ import type { Ref } from 'vue'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { api } from '@/scripts/api'
-import { createMockLGraph } from '@/utils/__tests__/litegraphTestUtils'
+import {
+  createMockLGraph,
+  createMockLGraphNode,
+  createMockLLink,
+  createMockLinks
+} from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@vueuse/core', () => ({
   useThrottleFn: vi.fn((fn) => fn)
@@ -29,10 +34,10 @@ describe('useMinimapGraph', () => {
     mockGraph = createMockLGraph({
       id: 'test-graph-123',
       _nodes: [
-        { id: '1', pos: [100, 100], size: [150, 80] },
-        { id: '2', pos: [300, 200], size: [120, 60] }
-      ] satisfies LGraph['_nodes'],
-      links: { 1: { id: 1 } } as LGraph['links'],
+        createMockLGraphNode({ id: '1', pos: [100, 100], size: [150, 80] }),
+        createMockLGraphNode({ id: '2', pos: [300, 200], size: [120, 60] })
+      ],
+      links: createMockLinks([createMockLLink({ id: 1 })]),
       onNodeAdded: vi.fn(),
       onNodeRemoved: vi.fn(),
       onConnectionChange: vi.fn()
@@ -206,10 +211,10 @@ describe('useMinimapGraph', () => {
     graphManager.checkForChanges()
 
     // Change connections
-    mockGraph.links = new Map([
-      [1, { id: 1 }],
-      [2, { id: 2 }]
-    ]) as Partial<LGraph['links']> as LGraph['links']
+    mockGraph.links = createMockLinks([
+      createMockLLink({ id: 1 }),
+      createMockLLink({ id: 2 })
+    ])
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)

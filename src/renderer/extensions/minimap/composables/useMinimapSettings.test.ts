@@ -6,7 +6,7 @@ import { useMinimapSettings } from '@/renderer/extensions/minimap/composables/us
 
 type MockSettingStore = ReturnType<typeof useSettingStore>
 
-const mockUseColorPaletteStore = vi.fn()
+const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({

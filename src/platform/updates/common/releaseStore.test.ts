@@ -88,13 +88,19 @@ describe('useReleaseStore', () => {
     const { isElectron } = await import('@/utils/envUtil')
 
     vi.mocked(useReleaseService).mockReturnValue(
-      mockReleaseService as Partial<ReturnType<typeof useReleaseService>> as ReturnType<typeof useReleaseService>
+      mockReleaseService as Partial<
+        ReturnType<typeof useReleaseService>
+      > as ReturnType<typeof useReleaseService>
     )
     vi.mocked(useSettingStore).mockReturnValue(
-      mockSettingStore as Partial<ReturnType<typeof useSettingStore>> as ReturnType<typeof useSettingStore>
+      mockSettingStore as Partial<
+        ReturnType<typeof useSettingStore>
+      > as ReturnType<typeof useSettingStore>
     )
     vi.mocked(useSystemStatsStore).mockReturnValue(
-      mockSystemStatsStore as Partial<ReturnType<typeof useSystemStatsStore>> as ReturnType<typeof useSystemStatsStore>
+      mockSystemStatsStore as Partial<
+        ReturnType<typeof useSystemStatsStore>
+      > as ReturnType<typeof useSystemStatsStore>
     )
     vi.mocked(isElectron).mockReturnValue(true)
     vi.mocked(valid).mockReturnValue('1.0.0')
