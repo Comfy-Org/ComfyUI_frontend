@@ -153,22 +153,22 @@ const outputItems = computed<DropdownItem[]>(() => {
  * where the saved value may not exist in the current server environment.
  * Works for both local mode (inputItems/outputItems) and cloud mode (assetData).
  */
-const missingValueItem = computed<DropdownItem | null>(() => {
+const missingValueItem = computed<DropdownItem | undefined>(() => {
   const currentValue = modelValue.value
-  if (!currentValue) return null
+  if (!currentValue) return undefined
 
   // Check in cloud mode assets
   if (props.isAssetMode && assetData) {
     const existsInAssets = assetData.dropdownItems.value.some(
       (item) => item.name === currentValue
     )
-    if (existsInAssets) return null
+    if (existsInAssets) return undefined
 
     return {
       id: `missing-${currentValue}`,
       mediaSrc: '',
       name: currentValue,
-      label: currentValue,
+      label: getDisplayLabel(currentValue),
       metadata: ''
     }
   }
@@ -181,7 +181,7 @@ const missingValueItem = computed<DropdownItem | null>(() => {
     (item) => item.name === currentValue
   )
 
-  if (existsInInputs || existsInOutputs) return null
+  if (existsInInputs || existsInOutputs) return undefined
 
   const isOutput = currentValue.endsWith(' [output]')
   const strippedValue = isOutput
