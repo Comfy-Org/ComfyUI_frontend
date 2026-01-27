@@ -7,8 +7,8 @@ import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
-import type { LGraphNode, NodeId } from './LGraphNode'
-import type { Reroute, RerouteId } from './Reroute'
+import type { LGraphNode } from './LGraphNode'
+import type { Reroute } from './Reroute'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -19,11 +19,12 @@ import type {
   Point,
   ReadonlyLinkNetwork
 } from './interfaces'
+import type { LinkId, NodeId, RerouteId } from './types/ids'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
 
-const layoutMutations = useLayoutMutations()
+export type { LinkId } from './types/ids'
 
-export type LinkId = number
+const layoutMutations = useLayoutMutations()
 
 export type SerialisedLLinkArray = [
   id: LinkId,

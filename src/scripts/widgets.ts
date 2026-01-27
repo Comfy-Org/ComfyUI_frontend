@@ -24,7 +24,7 @@ import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
-import type { ComfyApp } from './app'
+import type { IComfyApp } from '@/types/appInterface'
 import './domWidget'
 import './errorNodeWidgets'
 
@@ -37,7 +37,7 @@ export type ComfyWidgetConstructor = (
   node: LGraphNode,
   inputName: string,
   inputData: InputSpec,
-  app: ComfyApp,
+  app: IComfyApp,
   widgetName?: string
 ) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
 

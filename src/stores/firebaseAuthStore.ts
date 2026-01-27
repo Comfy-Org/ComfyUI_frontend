@@ -25,8 +25,8 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
-import { authEventHook } from '@/platform/telemetry/userIdentityBus'
 import { useDialogService } from '@/services/dialogService'
+import { authEventHook, userResolvedHook } from '@/stores/authEventBus'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -154,7 +154,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         return
       }
 
-      void useDialogService().showErrorDialog(error, {
+      useDialogService().showErrorDialog(error, {
         title: t('errorDialog.defaultTitle'),
         reportType: 'authenticationError'
       })
@@ -324,9 +324,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (isCloud) {
       void authEventHook.trigger({
-        event: 'login',
+        type: 'login',
         method: 'email',
-        isNewUser: false
+        is_new_user: false
+      })
+      void userResolvedHook.trigger({
+        userId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       })
     }
 
@@ -345,9 +350,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
     if (isCloud) {
       void authEventHook.trigger({
-        event: 'register',
+        type: 'register',
         method: 'email',
-        isNewUser: true
+        is_new_user: true
+      })
+      void userResolvedHook.trigger({
+        userId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       })
     }
 
@@ -364,9 +374,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
       void authEventHook.trigger({
-        event: isNewUser ? 'register' : 'login',
+        type: isNewUser ? 'register' : 'login',
         method: 'google',
-        isNewUser
+        is_new_user: isNewUser
+      })
+      void userResolvedHook.trigger({
+        userId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       })
     }
 
@@ -383,9 +398,14 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
       void authEventHook.trigger({
-        event: isNewUser ? 'register' : 'login',
+        type: isNewUser ? 'register' : 'login',
         method: 'github',
-        isNewUser
+        is_new_user: isNewUser
+      })
+      void userResolvedHook.trigger({
+        userId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       })
     }
 

@@ -1,9 +1,12 @@
-import { markRaw } from 'vue'
+import { defineAsyncComponent } from 'vue'
 
-import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
+
+const WorkflowsSidebarTab = defineAsyncComponent(
+  () => import('@/components/sidebar/tabs/WorkflowsSidebarTab.vue')
+)
 
 export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
   const settingStore = useSettingStore()
@@ -23,7 +26,7 @@ export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
     title: 'sideToolbar.workflows',
     tooltip: 'sideToolbar.workflows',
     label: 'sideToolbar.labels.workflows',
-    component: markRaw(WorkflowsSidebarTab),
+    component: WorkflowsSidebarTab,
     type: 'vue'
   }
 }

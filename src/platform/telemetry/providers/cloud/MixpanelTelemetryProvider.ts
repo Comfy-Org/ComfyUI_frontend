@@ -45,7 +45,6 @@ import type {
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { TelemetryEvents } from '../../types'
-import { userIdentityHook } from '../../userIdentityBus'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -119,12 +118,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               persistence: 'cookie',
               loaded: () => {
                 this.isInitialized = true
-                this.flushEventQueue()
-                userIdentityHook.on(({ userId }) => {
-                  if (this.mixpanel && userId) {
-                    this.mixpanel.identify(userId)
-                  }
-                })
+                this.flushEventQueue() // flush events that were queued while initializing
               }
             })
           })
@@ -203,6 +197,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         return isValid
       })
     )
+  }
+
+  identify(userId: string): void {
+    if (this.mixpanel) {
+      this.mixpanel.identify(userId)
+    }
   }
 
   trackSignupOpened(): void {

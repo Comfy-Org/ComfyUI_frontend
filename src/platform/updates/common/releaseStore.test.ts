@@ -11,11 +11,15 @@ vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
 vi.mock('@/platform/updates/common/releaseService')
 vi.mock('@/platform/settings/settingStore')
 vi.mock('@/stores/systemStatsStore')
-vi.mock('@vueuse/core', () => ({
-  until: vi.fn(() => Promise.resolve()),
-  useStorage: vi.fn(() => ({ value: {} })),
-  createSharedComposable: vi.fn((fn) => fn)
-}))
+vi.mock('@vueuse/core', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as object),
+    until: vi.fn(() => Promise.resolve()),
+    useStorage: vi.fn(() => ({ value: {} })),
+    createSharedComposable: vi.fn((fn) => fn)
+  }
+})
 
 describe('useReleaseStore', () => {
   let store: ReturnType<typeof useReleaseStore>

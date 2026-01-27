@@ -9,66 +9,78 @@ import type { Reroute } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import type { LinkDirection } from './types/globalEnums'
+import type { LinkDirection, RenderShape } from './types/globalEnums'
+import type {
+  CanvasColour,
+  LinkId,
+  NodeId,
+  Point,
+  ReadOnlyRect,
+  RerouteId,
+  Size
+} from './types/index'
 import type { IBaseWidget } from './types/widgets'
 
-// Re-export pure types from the types directory for backwards compatibility
 export type {
   CanvasColour,
-  CompassCorners,
-  Direction,
+  LinkId,
+  NodeId,
   Point,
   ReadOnlyRect,
   ReadOnlyTypedArray,
   Rect,
+  RerouteId,
   Size
-} from '../types/geometry'
+} from './types/index'
 
-export type { LinkId, NodeId, RerouteId } from '../types/ids'
+export type Dictionary<T> = { [key: string]: T }
 
-export type {
-  HasBoundingRect,
-  INodeFlags,
-  INodeSlotBase,
-  ISlotType,
-  IWidgetLocator
-} from '../types/slots'
-
-export type {
-  Dictionary,
-  MethodNames,
-  NullableProperties,
-  OptionalProps,
-  RequiredProps,
-  SharedIntersection,
-  WhenNullish
-} from '../types/utility'
-
-// Import types we need locally
-import type { CanvasColour, Point, Size } from '../types/geometry'
-import type { LinkId, NodeId, RerouteId } from '../types/ids'
-import type {
-  HasBoundingRect,
-  INodeInputSlotBase,
-  INodeOutputSlotBase,
-  INodeSlotBase,
-  ISlotType,
-  IWidgetLocator
-} from '../types/slots'
-
-export interface NewNodePosition {
-  node: LGraphNode
-  newPos: {
-    x: number
-    y: number
-  }
+/** Allows all properties to be null.  The same as `Partial<T>`, but adds null instead of undefined. */
+export type NullableProperties<T> = {
+  [P in keyof T]: T[P] | null
 }
 
-export interface IBoundaryNodes {
-  top: LGraphNode
-  right: LGraphNode
-  bottom: LGraphNode
-  left: LGraphNode
+/**
+ * If {@link T} is `null` or `undefined`, evaluates to {@link Result}. Otherwise, evaluates to {@link T}.
+ * Useful for functions that return e.g. `undefined` when a param is nullish.
+ */
+export type WhenNullish<T, Result> =
+  | (T & {})
+  | (T extends null ? Result : T extends undefined ? Result : T & {})
+
+/** A type with each of the {@link Properties} made optional. */
+export type OptionalProps<T, Properties extends keyof T> = Omit<
+  T,
+  Properties
+> & { [K in Properties]?: T[K] }
+
+/** A type with each of the {@link Properties} marked as required. */
+export type RequiredProps<T, Properties extends keyof T> = Omit<
+  T,
+  Properties
+> & { [K in Properties]-?: T[K] }
+
+/** Bitwise AND intersection of two types; returns a new, non-union type that includes only properties that exist on both types. */
+export type SharedIntersection<T1, T2> = {
+  [P in keyof T1 as P extends keyof T2 ? P : never]: T1[P]
+} & {
+  [P in keyof T2 as P extends keyof T1 ? P : never]: T2[P]
+}
+
+/**
+ * Any object that has a {@link boundingRect}.
+ */
+export interface HasBoundingRect {
+  /**
+   * A rectangle that represents the outer edges of the item.
+   *
+   * Used for various calculations, such as overlap, selective rendering, and click checks.
+   * For most items, this is cached position & size as `x, y, width, height`.
+   * Some items (such as nodes and slots) may extend above and/or to the left of their {@link pos}.
+   * @readonly
+   * @see {@link move}
+   */
+  readonly boundingRect: ReadOnlyRect
 }
 
 /** An object containing a set of child objects */
@@ -233,22 +245,109 @@ export interface IFoundSlot extends IInputOrOutput {
   link_pos: Point
 }
 
+/** Union of property names that are of type Match */
+type KeysOfType<T, Match> = Exclude<
+  { [P in keyof T]: T[P] extends Match ? P : never }[keyof T],
+  undefined
+>
+
+/** The names of all (optional) methods and functions in T */
+export type MethodNames<T> = KeysOfType<
+  T,
+  ((...args: unknown[]) => unknown) | undefined
+>
+export interface NewNodePosition {
+  node: LGraphNode
+  newPos: {
+    x: number
+    y: number
+  }
+}
+export interface IBoundaryNodes {
+  top: LGraphNode
+  right: LGraphNode
+  bottom: LGraphNode
+  left: LGraphNode
+}
+
+export type Direction = 'top' | 'bottom' | 'left' | 'right'
+
+/** Resize handle positions (compass points) */
+export type CompassCorners = 'NE' | 'SE' | 'SW' | 'NW'
+
 /**
- * Full slot interface with runtime-dependent properties.
- * Extends the base slot from types/slots.ts with LLink reference.
+ * A string that represents a specific data / slot type, e.g. `STRING`.
+ *
+ * Can be comma-delimited to specify multiple allowed types, e.g. `STRING,INT`.
  */
-export interface INodeSlot extends INodeSlotBase {
+export type ISlotType = number | string
+
+export interface INodeSlot extends HasBoundingRect {
+  /**
+   * The name of the slot in English.
+   * Will be included in the serialized data.
+   */
+  name: string
+  /**
+   * The localized name of the slot to display in the UI.
+   * Takes higher priority than {@link name} if set.
+   * Will be included in the serialized data.
+   */
+  localized_name?: string
+  /**
+   * The name of the slot to display in the UI, modified by the user.
+   * Takes higher priority than {@link display_name} if set.
+   * Will be included in the serialized data.
+   */
+  label?: string
+
+  type: ISlotType
+  dir?: LinkDirection
+  removable?: boolean
+  shape?: RenderShape
+  color_off?: CanvasColour
+  color_on?: CanvasColour
+  locked?: boolean
+  nameLocked?: boolean
+  pos?: Point
+  /** @remarks Automatically calculated; not included in serialisation. */
+  boundingRect: ReadOnlyRect
   /**
    * A list of floating link IDs that are connected to this slot.
    * This is calculated at runtime; it is **not** serialized.
    */
   _floatingLinks?: Set<LLink>
+  /**
+   * Whether the slot has errors. It is **not** serialized.
+   */
+  hasErrors?: boolean
+}
+
+export interface INodeFlags {
+  skip_repeated_outputs?: boolean
+  allow_interaction?: boolean
+  pinned?: boolean
+  collapsed?: boolean
+  /** Configuration setting for {@link LGraphNode.connectInputToOutput} */
+  keepAllLinksOnBypass?: boolean
 }
 
 /**
- * Full input slot interface with runtime-dependent properties.
+ * A widget that is linked to a slot.
+ *
+ * This is set by the ComfyUI_frontend logic. See
+ * https://github.com/Comfy-Org/ComfyUI_frontend/blob/b80e0e1a3c74040f328c4e344326c969c97f67e0/src/extensions/core/widgetInputs.ts#L659
  */
-export interface INodeInputSlot extends INodeInputSlotBase, INodeSlot {
+export interface IWidgetLocator {
+  name: string
+  type?: string
+}
+
+export interface INodeInputSlot extends INodeSlot {
+  link: LinkId | null
+  widget?: IWidgetLocator
+  alwaysVisible?: boolean
+
   /**
    * Internal use only; API is not finalised and may change at any time.
    */
@@ -259,10 +358,11 @@ export interface IWidgetInputSlot extends INodeInputSlot {
   widget: IWidgetLocator
 }
 
-/**
- * Full output slot interface with runtime-dependent properties.
- */
-export interface INodeOutputSlot extends INodeOutputSlotBase, INodeSlot {}
+export interface INodeOutputSlot extends INodeSlot {
+  links: LinkId[] | null
+  _data?: unknown
+  slot_index?: number
+}
 
 /** Links */
 export interface ConnectingLink extends IInputOrOutput {

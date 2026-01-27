@@ -1,8 +1,11 @@
-import { markRaw } from 'vue'
+import { defineAsyncComponent } from 'vue'
 
-import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import { useQueueStore } from '@/stores/queueStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
+
+const AssetsSidebarTab = defineAsyncComponent(
+  () => import('@/components/sidebar/tabs/AssetsSidebarTab.vue')
+)
 
 export const useAssetsSidebarTab = (): SidebarTabExtension => {
   return {
@@ -11,7 +14,7 @@ export const useAssetsSidebarTab = (): SidebarTabExtension => {
     title: 'sideToolbar.assets',
     tooltip: 'sideToolbar.assets',
     label: 'sideToolbar.labels.assets',
-    component: markRaw(AssetsSidebarTab),
+    component: AssetsSidebarTab,
     type: 'vue',
     iconBadge: () => {
       const queueStore = useQueueStore()
