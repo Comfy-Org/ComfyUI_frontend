@@ -1,3 +1,4 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
@@ -8,6 +9,8 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => {
     const translations: Record<string, string> = {
       'assetBrowser.allModels': 'All Models',
+      'assetBrowser.imported': 'Imported',
+      'assetBrowser.byType': 'By type',
       'assetBrowser.assets': 'Assets',
       'assetBrowser.unknown': 'unknown'
     }
@@ -18,6 +21,7 @@ vi.mock('@/i18n', () => ({
 
 describe('useAssetBrowser', () => {
   beforeEach(() => {
+    setActivePinia(createPinia())
     vi.restoreAllMocks()
   })
 
@@ -48,7 +52,7 @@ describe('useAssetBrowser', () => {
         tags: ['models', 'loras']
       })
 
-      const { selectedCategory, categoryFilteredAssets } = useAssetBrowser(
+      const { selectedNavItem, categoryFilteredAssets } = useAssetBrowser(
         ref([checkpointAsset, loraAsset])
       )
 
@@ -56,11 +60,11 @@ describe('useAssetBrowser', () => {
       expect(categoryFilteredAssets.value).toHaveLength(2)
 
       // When category selected, should only show that category
-      selectedCategory.value = 'checkpoints'
+      selectedNavItem.value = 'checkpoints'
       expect(categoryFilteredAssets.value).toHaveLength(1)
       expect(categoryFilteredAssets.value[0].id).toBe('checkpoint-1')
 
-      selectedCategory.value = 'loras'
+      selectedNavItem.value = 'loras'
       expect(categoryFilteredAssets.value).toHaveLength(1)
       expect(categoryFilteredAssets.value[0].id).toBe('lora-1')
     })
@@ -150,9 +154,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ id: '3', tags: ['models', 'checkpoints'] })
       ]
 
-      const { selectedCategory, filteredAssets } = useAssetBrowser(ref(assets))
+      const { selectedNavItem, filteredAssets } = useAssetBrowser(ref(assets))
 
-      selectedCategory.value = 'checkpoints'
+      selectedNavItem.value = 'checkpoints'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(2)
@@ -169,9 +173,9 @@ describe('useAssetBrowser', () => {
         createApiAsset({ id: '2', tags: ['models', 'loras'] })
       ]
 
-      const { selectedCategory, filteredAssets } = useAssetBrowser(ref(assets))
+      const { selectedNavItem, filteredAssets } = useAssetBrowser(ref(assets))
 
-      selectedCategory.value = 'all'
+      selectedNavItem.value = 'all'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(2)
@@ -291,8 +295,7 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: ['safetensors'],
-        baseModels: [],
-        ownership: 'all'
+        baseModels: []
       })
       await nextTick()
 
@@ -327,8 +330,7 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: ['SDXL'],
-        ownership: 'all'
+        baseModels: ['SDXL']
       })
       await nextTick()
 
@@ -354,12 +356,12 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { searchQuery, selectedCategory, filteredAssets } = useAssetBrowser(
+      const { searchQuery, selectedNavItem, filteredAssets } = useAssetBrowser(
         ref(assets)
       )
 
       searchQuery.value = 'realistic'
-      selectedCategory.value = 'checkpoints'
+      selectedNavItem.value = 'checkpoints'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(1)
@@ -380,10 +382,9 @@ describe('useAssetBrowser', () => {
       const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
 
       updateFilters({
-        sortBy: 'name',
+        sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: [],
-        ownership: 'all'
+        baseModels: []
       })
       await nextTick()
 
@@ -407,8 +408,7 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'recent',
         fileFormats: [],
-        baseModels: [],
-        ownership: 'all'
+        baseModels: []
       })
       await nextTick()
 
@@ -440,15 +440,14 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: [],
-        ownership: 'all'
+        baseModels: []
       })
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(3)
     })
 
-    it('filters by ownership - my models only', async () => {
+    it('filters by ownership - imported models only via nav selection', async () => {
       const assets = [
         createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
         createApiAsset({
@@ -461,14 +460,10 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+      const { selectedNavItem, filteredAssets } = useAssetBrowser(ref(assets))
 
-      updateFilters({
-        sortBy: 'name-asc',
-        fileFormats: [],
-        baseModels: [],
-        ownership: 'my-models'
-      })
+      // Selecting 'imported' nav item filters to my-models (non-immutable)
+      selectedNavItem.value = 'imported'
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(2)
@@ -477,7 +472,7 @@ describe('useAssetBrowser', () => {
       )
     })
 
-    it('filters by ownership - public models only', async () => {
+    it('shows all models when nav is "all"', async () => {
       const assets = [
         createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
         createApiAsset({
@@ -490,41 +485,47 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+      const { selectedNavItem, filteredAssets } = useAssetBrowser(ref(assets))
 
-      updateFilters({
-        sortBy: 'name-asc',
-        fileFormats: [],
-        baseModels: [],
-        ownership: 'public-models'
-      })
+      // Selecting 'all' nav item shows all models
+      selectedNavItem.value = 'all'
       await nextTick()
 
-      expect(filteredAssets.value).toHaveLength(2)
-      expect(filteredAssets.value.every((asset) => asset.is_immutable)).toBe(
-        true
-      )
+      expect(filteredAssets.value).toHaveLength(3)
     })
   })
 
   describe('Dynamic Category Extraction', () => {
-    it('extracts categories from asset tags', () => {
+    it('extracts categories from asset tags into navItems', () => {
       const assets = [
         createApiAsset({ tags: ['models', 'checkpoints'] }),
         createApiAsset({ tags: ['models', 'loras'] }),
         createApiAsset({ tags: ['models', 'checkpoints'] }) // duplicate
       ]
 
-      const { availableCategories } = useAssetBrowser(ref(assets))
+      const { navItems } = useAssetBrowser(ref(assets))
 
-      expect(availableCategories.value).toEqual([
-        { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
+      // navItems includes quick filters plus a "By type" group
+      expect(navItems.value).toEqual([
+        { id: 'all', label: 'All Models', icon: 'icon-[lucide--list]' },
         {
-          id: 'checkpoints',
-          label: 'Checkpoints',
-          icon: 'icon-[lucide--package]'
+          id: 'imported',
+          label: 'Imported',
+          icon: 'icon-[lucide--folder-input]',
+          badge: undefined
         },
-        { id: 'loras', label: 'Loras', icon: 'icon-[lucide--package]' }
+        {
+          title: 'By type',
+          collapsible: false,
+          items: [
+            {
+              id: 'checkpoints',
+              label: 'Checkpoints',
+              icon: 'icon-[lucide--folder]'
+            },
+            { id: 'loras', label: 'Loras', icon: 'icon-[lucide--folder]' }
+          ]
+        }
       ])
     })
 
@@ -534,11 +535,21 @@ describe('useAssetBrowser', () => {
         createApiAsset({ tags: ['models', 'vae'] })
       ]
 
-      const { availableCategories } = useAssetBrowser(ref(assets))
+      const { navItems } = useAssetBrowser(ref(assets))
 
-      expect(availableCategories.value).toEqual([
-        { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
-        { id: 'vae', label: 'Vae', icon: 'icon-[lucide--package]' }
+      expect(navItems.value).toEqual([
+        { id: 'all', label: 'All Models', icon: 'icon-[lucide--list]' },
+        {
+          id: 'imported',
+          label: 'Imported',
+          icon: 'icon-[lucide--folder-input]',
+          badge: undefined
+        },
+        {
+          title: 'By type',
+          collapsible: false,
+          items: [{ id: 'vae', label: 'Vae', icon: 'icon-[lucide--folder]' }]
+        }
       ])
     })
 
@@ -548,31 +559,47 @@ describe('useAssetBrowser', () => {
         createApiAsset({ tags: ['models', 'checkpoints'] })
       ]
 
-      const { availableCategories } = useAssetBrowser(ref(assets))
+      const { navItems } = useAssetBrowser(ref(assets))
 
-      expect(availableCategories.value).toEqual([
-        { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
+      expect(navItems.value).toEqual([
+        { id: 'all', label: 'All Models', icon: 'icon-[lucide--list]' },
         {
-          id: 'checkpoints',
-          label: 'Checkpoints',
-          icon: 'icon-[lucide--package]'
+          id: 'imported',
+          label: 'Imported',
+          icon: 'icon-[lucide--folder-input]',
+          badge: undefined
+        },
+        {
+          title: 'By type',
+          collapsible: false,
+          items: [
+            {
+              id: 'checkpoints',
+              label: 'Checkpoints',
+              icon: 'icon-[lucide--folder]'
+            }
+          ]
         }
       ])
     })
 
-    it('computes content title from selected category', () => {
+    it('computes content title from selected nav item', () => {
       const assets = [createApiAsset({ tags: ['models', 'checkpoints'] })]
-      const { selectedCategory, contentTitle } = useAssetBrowser(ref(assets))
+      const { selectedNavItem, contentTitle } = useAssetBrowser(ref(assets))
 
       // Default
       expect(contentTitle.value).toBe('All Models')
 
       // Set specific category
-      selectedCategory.value = 'checkpoints'
+      selectedNavItem.value = 'checkpoints'
       expect(contentTitle.value).toBe('Checkpoints')
 
+      // Set imported
+      selectedNavItem.value = 'imported'
+      expect(contentTitle.value).toBe('Imported')
+
       // Unknown category
-      selectedCategory.value = 'unknown'
+      selectedNavItem.value = 'unknown'
       expect(contentTitle.value).toBe('Assets')
     })
 
@@ -596,26 +623,18 @@ describe('useAssetBrowser', () => {
         })
       ]
 
-      const { availableCategories, selectedCategory, categoryFilteredAssets } =
+      const { navItems, selectedNavItem, categoryFilteredAssets } =
         useAssetBrowser(ref(assets))
 
-      // Should group all Chatterbox subfolders under single category
-      expect(availableCategories.value).toEqual([
-        { id: 'all', label: 'All Models', icon: 'icon-[lucide--folder]' },
-        {
-          id: 'Chatterbox',
-          label: 'Chatterbox',
-          icon: 'icon-[lucide--package]'
-        },
-        {
-          id: 'OtherFolder',
-          label: 'OtherFolder',
-          icon: 'icon-[lucide--package]'
-        }
+      // Should group all Chatterbox subfolders under single category in the type group
+      const typeGroup = navItems.value[2] as { items: { id: string }[] }
+      expect(typeGroup.items.map((i) => i.id)).toEqual([
+        'Chatterbox',
+        'OtherFolder'
       ])
 
       // When selecting Chatterbox category, should include all models from its subfolders
-      selectedCategory.value = 'Chatterbox'
+      selectedNavItem.value = 'Chatterbox'
       expect(categoryFilteredAssets.value).toHaveLength(3)
       expect(categoryFilteredAssets.value.map((a) => a.id)).toEqual([
         'asset-1',
@@ -624,7 +643,7 @@ describe('useAssetBrowser', () => {
       ])
 
       // When selecting OtherFolder category, should include only its models
-      selectedCategory.value = 'OtherFolder'
+      selectedNavItem.value = 'OtherFolder'
       expect(categoryFilteredAssets.value).toHaveLength(1)
       expect(categoryFilteredAssets.value[0].id).toBe('asset-4')
     })

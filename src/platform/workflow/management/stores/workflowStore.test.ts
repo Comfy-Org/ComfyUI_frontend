@@ -11,6 +11,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
@@ -66,6 +67,9 @@ describe('useWorkflowStore', () => {
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
     vi.clearAllMocks()
+    localStorage.clear()
+    sessionStorage.clear()
+    useWorkflowDraftStore().reset()
 
     // Add default mock implementations
     vi.mocked(api.getUserData).mockResolvedValue({
@@ -233,6 +237,60 @@ describe('useWorkflowStore', () => {
       expect(workflow.activeState).toEqual(defaultGraph)
       expect(workflow.initialState).toEqual(defaultGraph)
       expect(workflow.isModified).toBe(false)
+    })
+
+    it('prefers local draft snapshots when available', async () => {
+      localStorage.clear()
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+
+      const draftGraph = {
+        ...defaultGraph,
+        nodes: [...defaultGraph.nodes]
+      }
+
+      useWorkflowDraftStore().saveDraft(workflow.path, {
+        data: JSON.stringify(draftGraph),
+        updatedAt: Date.now(),
+        name: workflow.key,
+        isTemporary: workflow.isTemporary
+      })
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.isModified).toBe(true)
+      expect(workflow.changeTracker?.activeState).toEqual(draftGraph)
+    })
+
+    it('ignores stale drafts when server version is newer', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      const draftStore = useWorkflowDraftStore()
+
+      const draftSnapshot = {
+        data: JSON.stringify(defaultGraph),
+        updatedAt: Date.now(),
+        name: workflow.key,
+        isTemporary: workflow.isTemporary
+      }
+
+      draftStore.saveDraft(workflow.path, draftSnapshot)
+      workflow.lastModified = draftSnapshot.updatedAt + 1000
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.isModified).toBe(false)
+      expect(draftStore.getDraft(workflow.path)).toBeUndefined()
     })
 
     it('should load and open a remote workflow', async () => {
@@ -412,6 +470,20 @@ describe('useWorkflowStore', () => {
       await store.closeWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
+    })
+
+    it('should remove draft when closing temporary workflow', async () => {
+      const workflow = store.createTemporary('test.json')
+      const draftStore = useWorkflowDraftStore()
+      draftStore.saveDraft(workflow.path, {
+        data: defaultGraphJSON,
+        updatedAt: Date.now(),
+        name: workflow.key,
+        isTemporary: true
+      })
+      expect(draftStore.getDraft(workflow.path)).toBeDefined()
+      await store.closeWorkflow(workflow)
+      expect(draftStore.getDraft(workflow.path)).toBeUndefined()
     })
   })
 

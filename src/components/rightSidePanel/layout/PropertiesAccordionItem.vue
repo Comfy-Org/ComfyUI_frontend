@@ -5,25 +5,32 @@ import { cn } from '@/utils/tailwindUtil'
 
 import TransitionCollapse from './TransitionCollapse.vue'
 
-const props = defineProps<{
+const {
+  disabled,
+  label,
+  enableEmptyState,
+  tooltip,
+  class: className
+} = defineProps<{
   disabled?: boolean
   label?: string
   enableEmptyState?: boolean
   tooltip?: string
+  class?: string
 }>()
 
 const isCollapse = defineModel<boolean>('collapse', { default: false })
 
-const isExpanded = computed(() => !isCollapse.value && !props.disabled)
+const isExpanded = computed(() => !isCollapse.value && !disabled)
 
 const tooltipConfig = computed(() => {
-  if (!props.tooltip) return undefined
-  return { value: props.tooltip, showDelay: 1000 }
+  if (!tooltip) return undefined
+  return { value: tooltip, showDelay: 1000 }
 })
 </script>
 
 <template>
-  <div class="flex flex-col bg-comfy-menu-bg">
+  <div :class="cn('flex flex-col bg-comfy-menu-bg', className)">
     <div
       class="sticky top-0 z-10 flex items-center justify-between backdrop-blur-xl bg-inherit"
     >

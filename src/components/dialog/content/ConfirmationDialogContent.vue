@@ -31,7 +31,12 @@
         }}</label>
       </div>
 
-      <Button variant="secondary" autofocus @click="onCancel">
+      <Button
+        v-if="type !== 'info'"
+        variant="secondary"
+        autofocus
+        @click="onCancel"
+      >
         <i class="pi pi-undo" />
         {{ $t('g.cancel') }}
       </Button>
@@ -72,6 +77,10 @@
       >
         <i class="pi pi-eraser" />
         {{ $t('desktopMenu.reinstall') }}
+      </Button>
+      <!-- Info - just show an OK button -->
+      <Button v-else-if="type === 'info'" variant="primary" @click="onCancel">
+        {{ $t('g.ok') }}
       </Button>
       <!-- Invalid - just show a close button. -->
       <Button v-else variant="primary" @click="onCancel">

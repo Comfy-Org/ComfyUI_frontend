@@ -1350,12 +1350,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     })
 
     function inner_clicked(
-      this: ContextMenu<string>,
+      this: ContextMenuDivElement,
       v?: string | IContextMenuValue<string>
     ) {
       if (!node || typeof v === 'string' || !v?.value) return
 
-      const rect = this.root.getBoundingClientRect()
+      const rect = this.getBoundingClientRect()
       canvas.showEditPropertyValue(node, v.value, {
         position: [rect.left, rect.top]
       })
@@ -4283,6 +4283,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     item.selected = true
     this.selectedItems.add(item)
     this.state.selectionChanged = true
+
+    if (item instanceof LGraphGroup) {
+      item.recomputeInsideNodes()
+      return
+    }
+
     if (!(item instanceof LGraphNode)) return
 
     // Node-specific handling

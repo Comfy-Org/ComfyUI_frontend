@@ -21,7 +21,12 @@ export function getDefaultSortOptions(): SortOption[] {
       id: 'a-z',
       sorter: ({ items }) =>
         items.slice().sort((a, b) => {
-          return a.name.localeCompare(b.name)
+          const aLabel = a.label ?? a.name
+          const bLabel = b.label ?? b.name
+          return aLabel.localeCompare(bLabel, undefined, {
+            numeric: true,
+            sensitivity: 'base'
+          })
         })
     }
   ]

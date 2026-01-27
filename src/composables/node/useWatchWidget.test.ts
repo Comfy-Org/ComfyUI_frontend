@@ -3,11 +3,12 @@ import { nextTick } from 'vue'
 
 import { useComputedWithWidgetWatch } from '@/composables/node/useWatchWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // Mock useChainCallback
 vi.mock('@/composables/functional/useChainCallback', () => ({
   useChainCallback: vi.fn((original, newCallback) => {
-    return function (this: any, ...args: any[]) {
+    return function (this: unknown, ...args: unknown[]) {
       original?.call(this, ...args)
       newCallback.call(this, ...args)
     }
@@ -18,11 +19,12 @@ describe('useComputedWithWidgetWatch', () => {
   const createMockNode = (
     widgets: Array<{
       name: string
-      value: any
-      callback?: (...args: any[]) => void
+      value: unknown
+      callback?: (...args: unknown[]) => void
     }> = []
-  ) => {
-    const mockNode = {
+  ): LGraphNode => {
+    const baseNode = createMockLGraphNode()
+    return Object.assign(baseNode, {
       widgets: widgets.map((widget) => ({
         name: widget.name,
         value: widget.value,
@@ -31,9 +33,7 @@ describe('useComputedWithWidgetWatch', () => {
       graph: {
         setDirtyCanvas: vi.fn()
       }
-    } as unknown as LGraphNode
-
-    return mockNode
+    })
   }
 
   it('should create a reactive computed that responds to widget changes', async () => {
@@ -59,9 +59,9 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value and trigger callback
     const widthWidget = mockNode.widgets?.find((w) => w.name === 'width')
-    if (widthWidget) {
+    if (widthWidget && widthWidget.callback) {
       widthWidget.value = 150
-      ;(widthWidget.callback as any)?.()
+      widthWidget.callback(widthWidget.value)
     }
 
     await nextTick()
@@ -89,9 +89,9 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change observed widget
     const widthWidget = mockNode.widgets?.find((w) => w.name === 'width')
-    if (widthWidget) {
+    if (widthWidget && widthWidget.callback) {
       widthWidget.value = 150
-      ;(widthWidget.callback as any)?.()
+      widthWidget.callback(widthWidget.value)
     }
 
     await nextTick()
@@ -117,9 +117,9 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value
     const widget = mockNode.widgets?.[0]
-    if (widget) {
+    if (widget && widget.callback) {
       widget.value = 20
-      ;(widget.callback as any)?.()
+      widget.callback(widget.value)
     }
 
     await nextTick()
@@ -139,9 +139,9 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Change widget value
     const widget = mockNode.widgets?.[0]
-    if (widget) {
+    if (widget && widget.callback) {
       widget.value = 20
-      ;(widget.callback as any)?.()
+      widget.callback(widget.value)
     }
 
     await nextTick()
@@ -171,8 +171,8 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Trigger widget callback
     const widget = mockNode.widgets?.[0]
-    if (widget) {
-      ;(widget.callback as any)?.()
+    if (widget && widget.callback) {
+      widget.callback(widget.value)
     }
 
     await nextTick()

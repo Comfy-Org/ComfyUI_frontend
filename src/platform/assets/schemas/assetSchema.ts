@@ -10,10 +10,11 @@ const zAsset = z.object({
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
   preview_url: z.string().optional(),
-  created_at: z.string(),
+  created_at: z.string().optional(),
   updated_at: z.string().optional(),
   is_immutable: z.boolean().optional(),
   last_access_time: z.string().optional(),
+  metadata: z.record(z.unknown()).optional(), // API allows arbitrary key-value pairs
   user_metadata: z.record(z.unknown()).optional() // API allows arbitrary key-value pairs
 })
 
@@ -89,6 +90,31 @@ export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>
 export type ModelFolder = z.infer<typeof zModelFolder>
 export type ModelFile = z.infer<typeof zModelFile>
+
+/** Payload for updating an asset via PUT /assets/:id */
+export type AssetUpdatePayload = Partial<
+  Pick<AssetItem, 'name' | 'tags' | 'user_metadata'>
+>
+
+/** User-editable metadata fields for model assets */
+const zAssetUserMetadata = z.object({
+  name: z.string().optional(),
+  base_model: z.array(z.string()).optional(),
+  additional_tags: z.array(z.string()).optional(),
+  user_description: z.string().optional()
+})
+
+export type AssetUserMetadata = z.infer<typeof zAssetUserMetadata>
+
+export const tagsOperationResultSchema = z.object({
+  total_tags: z.array(z.string()),
+  added: z.array(z.string()).optional(),
+  removed: z.array(z.string()).optional(),
+  already_present: z.array(z.string()).optional(),
+  not_present: z.array(z.string()).optional()
+})
+
+export type TagsOperationResult = z.infer<typeof tagsOperationResultSchema>
 
 // Legacy interface for backward compatibility (now aligned with Zod schema)
 export interface ModelFolderInfo {

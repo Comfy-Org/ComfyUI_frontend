@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "description": "使用 Bria 最新模型編輯圖像",
+    "display_name": "Bria 圖像編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "guidance_scale": {
+        "name": "指引強度",
+        "tooltip": "數值越高，圖像越貼合提示詞。"
+      },
+      "image": {
+        "name": "圖像"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "若未設定，編輯將套用至整張圖像。"
+      },
+      "model": {
+        "name": "model"
+      },
+      "moderation": {
+        "name": "審核",
+        "tooltip": "審核設定"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "提示詞內容審核"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "輸入圖像審核"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "輸出圖像審核"
+      },
+      "negative_prompt": {
+        "name": "負面提示詞"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "編輯圖像的指令"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "steps": {
+        "name": "步數"
+      },
+      "structured_prompt": {
+        "name": "結構化提示詞",
+        "tooltip": "包含結構化編輯提示的 JSON 格式字串。若需精確、程式化控制，請使用此項取代一般提示詞。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "結構化提示詞",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "description": "使用提示詞和首尾幀生成影片。",
     "display_name": "字節跳動首尾幀轉影片",
@@ -377,43 +439,6 @@
       "watermark": {
         "name": "浮水印",
         "tooltip": "是否在影片中添加「AI 生成」浮水印。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageEditNode": {
-    "description": "透過 API 使用字節跳動模型根據提示詞編輯圖片",
-    "display_name": "字節跳動圖片編輯",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "數值越高，圖像越遵循提示詞"
-      },
-      "image": {
-        "name": "圖片",
-        "tooltip": "要編輯的基礎圖片"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "編輯圖片的指令"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "用於生成的種子值"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "是否在圖像上添加「AI 生成」浮水印"
       }
     },
     "outputs": {
@@ -2031,14 +2056,18 @@
       "choice": {
         "name": "選項"
       },
-      "option0": {
+      "index": {
+      },
+      "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "載入 ControlNet 模型（diff）",
@@ -6390,6 +6419,60 @@
       }
     }
   },
+  "LoraLoaderBypass": {
+    "description": "以繞過模式套用 LoRA。與一般 LoRA 不同，此方式不會修改模型權重，而是在前向傳遞時注入 LoRA 計算。適用於訓練場景。",
+    "display_name": "載入 LoRA（繞過模式）（除錯用）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "將套用 LoRA 的 CLIP 模型。"
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "LoRA 的名稱。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "將套用 LoRA 的擴散模型。"
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "調整 CLIP 模型的強度。此值可為負數。"
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "調整擴散模型的強度。此值可為負數。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已修改的擴散模型。"
+      },
+      "1": {
+        "tooltip": "已修改的 CLIP 模型。"
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "以繞過模式套用 LoRA。與一般 LoRA 不同，此方式不會修改模型權重，而是在前向傳遞時注入 LoRA 計算。適用於訓練場景。",
+    "display_name": "載入 LoRA（繞過模式，僅模型）（除錯用）",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "model"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已修改的擴散模型。"
+      }
+    }
+  },
   "LoraLoaderModelOnly": {
     "description": "LoRA 用於修改 diffusion 和 CLIP 模型，改變 latent 去噪的方式，例如套用風格。多個 LoRA 節點可以串接在一起使用。",
     "display_name": "LoraLoaderModelOnly",
@@ -6749,6 +6832,126 @@
       "seed": {
         "name": "種子",
         "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "description": "透過光線調整與可選的參考光線轉移，重新打光圖像。",
+    "display_name": "Magnific 圖像重光",
+    "inputs": {
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "進階光線控制的微調選項。"
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "根據提示或參考圖修改背景。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要重新打光的圖像。"
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "限制生成自由度，使結果更貼近原圖。"
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "光線轉移應用的強度。"
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "保留原圖的紋理與細節。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "光線描述指引。支援強調標註（1-1.4）。"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "可選的參考圖像，用於轉移光線。"
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "風格化輸出偏好。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "人像美膚增強，支援多種處理模式。",
+    "display_name": "Magnific 圖像美膚增強",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要增強的人像圖像。"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "處理模式：creative 為藝術增強，faithful 保留原貌，flexible 針對性優化。"
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "銳化強度等級。"
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "智慧顆粒強度等級。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "將參考圖像的風格轉移到您的輸入圖像上。",
+    "display_name": "Magnific 圖像風格轉換",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "處理引擎選擇。"
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "停用時，每次生成都會引入一定的隨機性，產生更多元的結果。"
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "風格轉換風格。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要進行風格轉換的圖像。"
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "啟用人像模式以增強臉部細節。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "用於提取風格的參考圖像。"
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "維持原始圖像的結構。"
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "風格強度的百分比。"
       }
     },
     "outputs": {
@@ -11209,19 +11412,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "使用各種縮放方法調整圖像或 mask 的大小。",
     "display_name": "調整影像／遮罩大小",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "選擇調整大小的方式：依照精確尺寸、縮放比例、匹配其他圖像等。"
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "裁切"
+      },
+      "resize_type_height": {
+        "name": "高度"
+      },
+      "resize_type_width": {
+        "name": "寬度"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "插值演算法。'area' 適合縮小，'lanczos' 適合放大，'nearest-exact' 適合像素藝術。"
       }
     },
     "outputs": {
@@ -13355,6 +13567,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D：圖片轉模型（專業版）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "face_count": {
+        "name": "面數"
+      },
+      "generate_type": {
+        "name": "生成類型"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "圖片"
+      },
+      "image_back": {
+        "name": "背面圖片"
+      },
+      "image_left": {
+        "name": "左側圖片"
+      },
+      "image_right": {
+        "name": "右側圖片"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "「LowPoly」選項在 `3.1` 模型中不可用。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否重新執行；無論種子如何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D：文字轉模型（專業版）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "face_count": {
+        "name": "面數"
+      },
+      "generate_type": {
+        "name": "生成類型"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "「LowPoly」選項在 `3.1` 模型中不可用。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "最多支援 1024 個字元。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否重新執行；無論種子如何，結果皆為非確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型檔案",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13436,6 +13726,40 @@
       },
       "image3": {
         "name": "圖像3"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "auto_resize_images": {
+        "name": "自動調整圖像尺寸"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "image1": {
+        "name": "圖像1"
+      },
+      "image2": {
+        "name": "圖像2"
+      },
+      "image3": {
+        "name": "圖像3"
+      },
+      "image_encoder": {
+        "name": "圖像編碼器"
       },
       "prompt": {
         "name": "提示詞"
@@ -13654,6 +13978,10 @@
       "bucket_mode": {
         "name": "解析度分桶模式",
         "tooltip": "啟用解析度分桶模式。啟用後，需從 ResolutionBucket 節點輸入預先分桶的 latent。"
+      },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "啟用訓練旁路模式。啟用後，adapter 會透過 forward hook 應用，而不是直接修改權重。適用於無法直接修改權重的量化模型。"
       },
       "control_after_generate": {
         "name": "生成後控制"
@@ -15621,6 +15949,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "音訊編碼器輸出 1"
+      },
+      "audio_scale": {
+        "name": "音訊縮放"
+      },
+      "clip_vision_output": {
+        "name": "clip 視覺輸出"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "mode": {
+        "name": "模式"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_patch": {
+        "name": "模型修補"
+      },
+      "motion_frame_count": {
+        "name": "動作影格數",
+        "tooltip": "用作動作參考的前置影格數量。"
+      },
+      "negative": {
+        "name": "負向提示"
+      },
+      "positive": {
+        "name": "正向提示"
+      },
+      "previous_frames": {
+        "name": "前置影格"
+      },
+      "start_image": {
+        "name": "起始圖像"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "模型",
+        "tooltip": null
+      },
+      "1": {
+        "name": "正向提示",
+        "tooltip": null
+      },
+      "2": {
+        "name": "負向提示",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "裁切圖像",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16133,6 +16534,43 @@
       },
       "3": {
         "name": "裁剪潛空間",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "description": "快速高品質影片升頻器，提升解析度並恢復低解析度或模糊影片的清晰度。",
+    "display_name": "FlashVSR 影片升頻",
+    "inputs": {
+      "target_resolution": {
+        "name": "目標解析度"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "description": "提升圖像解析度與品質，將照片升頻至 4K 或 8K，獲得銳利細緻的效果。",
+    "display_name": "WaveSpeed 圖像升頻",
+    "inputs": {
+      "image": {
+        "name": "圖像"
+      },
+      "model": {
+        "name": "model"
+      },
+      "target_resolution": {
+        "name": "目標解析度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
