@@ -49,8 +49,10 @@ vi.mock('@/stores/dialogStore', () => ({
 // Mock fetch
 global.fetch = vi.fn()
 
+type MockWorkflowTemplatesStore = ReturnType<typeof useWorkflowTemplatesStore>
+
 describe('useTemplateWorkflows', () => {
-  let mockWorkflowTemplatesStore: any
+  let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
     mockWorkflowTemplatesStore = {
@@ -70,7 +72,8 @@ describe('useTemplateWorkflows', () => {
                   mediaType: 'image',
                   mediaSubtype: 'jpg',
                   sourceModule: 'default',
-                  localizedTitle: 'Template 1'
+                  localizedTitle: 'Template 1',
+                  description: 'Template 1 description'
                 },
                 {
                   name: 'template2',
@@ -91,14 +94,15 @@ describe('useTemplateWorkflows', () => {
                   mediaType: 'image',
                   mediaSubtype: 'jpg',
                   localizedTitle: 'Template 1',
-                  localizedDescription: 'A default template'
+                  localizedDescription: 'A default template',
+                  description: 'Template 1 description'
                 }
               ]
             }
           ]
         }
       ]
-    }
+    } as Partial<MockWorkflowTemplatesStore> as MockWorkflowTemplatesStore
 
     vi.mocked(useWorkflowTemplatesStore).mockReturnValue(
       mockWorkflowTemplatesStore
@@ -107,7 +111,7 @@ describe('useTemplateWorkflows', () => {
     // Mock fetch response
     vi.mocked(fetch).mockResolvedValue({
       json: vi.fn().mockResolvedValue({ workflow: 'data' })
-    } as unknown as Response)
+    } as Partial<Response> as Response)
   })
 
   it('should load templates from store', async () => {

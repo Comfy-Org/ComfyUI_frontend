@@ -82,9 +82,7 @@ test.describe('Templates', () => {
     await expect(comfyPage.templates.content).toBeVisible()
 
     await comfyPage.page
-      .locator(
-        'nav > div:nth-child(3) > div > span:has-text("Getting Started")'
-      )
+      .getByRole('button', { name: 'Getting Started' })
       .click()
     await comfyPage.templates.loadTemplate('default')
     await expect(comfyPage.templates.content).toBeHidden()
@@ -189,9 +187,7 @@ test.describe('Templates', () => {
     const templateGrid = comfyPage.page.locator(
       '[data-testid="template-workflows-content"]'
     )
-    const nav = comfyPage.page
-      .locator('header')
-      .filter({ hasText: 'Templates' })
+    const nav = comfyPage.page.locator('header', { hasText: 'Templates' })
 
     await comfyPage.templates.waitForMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
@@ -201,7 +197,8 @@ test.describe('Templates', () => {
     await comfyPage.page.setViewportSize(mobileSize)
     await comfyPage.templates.waitForMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
-    await expect(nav).not.toBeVisible() // Nav should collapse at mobile size
+    // Nav header is clipped by overflow-hidden parent at mobile size
+    await expect(nav).not.toBeInViewport()
 
     const tabletSize = { width: 1024, height: 800 }
     await comfyPage.page.setViewportSize(tabletSize)

@@ -45,7 +45,7 @@ const timeOptions = {
   second: 'numeric'
 } as const
 
-function formatTime(time: string) {
+function formatTime(time?: string) {
   if (!time) return ''
   const date = new Date(time)
   return `${d(date, dateOptions)} | ${d(date, timeOptions)}`
@@ -159,7 +159,7 @@ async function rerun(e: Event) {
   <VideoPreview
     v-else-if="getMediaType(selectedOutput) === 'video'"
     :src="selectedOutput!.url"
-    class="object-contain flex-1 md:contain-size"
+    class="object-contain flex-1 md:contain-size md:p-3"
   />
   <audio
     v-else-if="getMediaType(selectedOutput) === 'audio'"

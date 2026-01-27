@@ -241,6 +241,20 @@ export default defineConfig([
     }
   },
   {
+    files: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'vi',
+          property: 'doMock',
+          message:
+            'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
+        }
+      ]
+    }
+  },
+  {
     files: ['scripts/**/*.js'],
     languageOptions: {
       globals: {

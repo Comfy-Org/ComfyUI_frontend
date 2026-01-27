@@ -12,6 +12,10 @@ import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import {
+  createMockCanvasPointerEvent,
+  createMockCanvasRenderingContext2D
+} from '@/utils/__tests__/litegraphTestUtils'
 
 interface TestContext {
   graph: LGraph
@@ -35,9 +39,9 @@ const test = baseTest.extend<TestContext>({
   },
 
   graph: async ({ reroutesComplexGraph }, use) => {
-    const ctx = vi.fn(() => ({ measureText: vi.fn(() => ({ width: 10 })) }))
+    const mockCtx = createMockCanvasRenderingContext2D()
     for (const node of reroutesComplexGraph.nodes) {
-      node.updateArea(ctx() as unknown as CanvasRenderingContext2D)
+      node.updateArea(mockCtx)
     }
     await use(reroutesComplexGraph)
   },
@@ -186,10 +190,10 @@ const test = baseTest.extend<TestContext>({
 })
 
 function mockedNodeTitleDropEvent(node: LGraphNode): CanvasPointerEvent {
-  return {
-    canvasX: node.pos[0] + node.size[0] / 2,
-    canvasY: node.pos[1] + 16
-  } as any
+  return createMockCanvasPointerEvent(
+    node.pos[0] + node.size[0] / 2,
+    node.pos[1] + 16
+  )
 }
 
 function mockedInputDropEvent(
@@ -197,10 +201,7 @@ function mockedInputDropEvent(
   slot: number
 ): CanvasPointerEvent {
   const pos = node.getInputPos(slot)
-  return {
-    canvasX: pos[0],
-    canvasY: pos[1]
-  } as any
+  return createMockCanvasPointerEvent(pos[0], pos[1])
 }
 
 function mockedOutputDropEvent(
@@ -208,10 +209,7 @@ function mockedOutputDropEvent(
   slot: number
 ): CanvasPointerEvent {
   const pos = node.getOutputPos(slot)
-  return {
-    canvasX: pos[0],
-    canvasY: pos[1]
-  } as any
+  return createMockCanvasPointerEvent(pos[0], pos[1])
 }
 
 describe('LinkConnector Integration', () => {
@@ -239,7 +237,7 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = disconnectedNode.pos[0] + disconnectedNode.size[0] / 2
       const canvasY = disconnectedNode.pos[1] + 16
-      const dropEvent = { canvasX, canvasY } as any
+      const dropEvent = createMockCanvasPointerEvent(canvasX, canvasY)
 
       // Drop links, ensure reset has not been run
       connector.dropLinks(graph, dropEvent)
@@ -281,7 +279,7 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = disconnectedNode.pos[0] + disconnectedNode.size[0] / 2
       const canvasY = disconnectedNode.pos[1] + 16
-      const dropEvent = { canvasX, canvasY } as any
+      const dropEvent = createMockCanvasPointerEvent(canvasX, canvasY)
 
       connector.dropLinks(graph, dropEvent)
       connector.reset()
@@ -422,7 +420,7 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = disconnectedNode.pos[0] + disconnectedNode.size[0] / 2
       const canvasY = disconnectedNode.pos[1] + 16
-      const dropEvent = { canvasX, canvasY } as any
+      const dropEvent = createMockCanvasPointerEvent(canvasX, canvasY)
 
       connector.dropLinks(graph, dropEvent)
       connector.reset()
@@ -473,9 +471,10 @@ describe('LinkConnector Integration', () => {
       expect(floatingLink).toBeInstanceOf(LLink)
       const floatingReroute = LLink.getReroutes(graph, floatingLink)[0]
 
-      const canvasX = floatingReroute.pos[0]
-      const canvasY = floatingReroute.pos[1]
-      const dropEvent = { canvasX, canvasY } as any
+      const dropEvent = createMockCanvasPointerEvent(
+        floatingReroute.pos[0],
+        floatingReroute.pos[1]
+      )
 
       connector.dropLinks(graph, dropEvent)
       connector.reset()
@@ -554,7 +553,10 @@ describe('LinkConnector Integration', () => {
       const manyOutputsNode = graph.getNodeById(4)!
       const canvasX = floatingReroute.pos[0]
       const canvasY = floatingReroute.pos[1]
-      const floatingRerouteEvent = { canvasX, canvasY } as any
+      const floatingRerouteEvent = createMockCanvasPointerEvent(
+        canvasX,
+        canvasY
+      )
 
       connector.moveOutputLink(graph, manyOutputsNode.outputs[0])
       connector.dropLinks(graph, floatingRerouteEvent)
@@ -579,7 +581,7 @@ describe('LinkConnector Integration', () => {
 
       const canvasX = reroute7.pos[0]
       const canvasY = reroute7.pos[1]
-      const reroute7Event = { canvasX, canvasY } as any
+      const reroute7Event = createMockCanvasPointerEvent(canvasX, canvasY)
 
       const toSortedRerouteChain = (linkIds: number[]) =>
         linkIds
@@ -698,7 +700,7 @@ describe('LinkConnector Integration', () => {
       const canvasY = disconnectedNode.pos[1]
 
       connector.dragFromReroute(graph, floatingReroute)
-      connector.dropLinks(graph, { canvasX, canvasY } as any)
+      connector.dropLinks(graph, createMockCanvasPointerEvent(canvasX, canvasY))
       connector.reset()
 
       expect(graph.floatingLinks.size).toBe(0)
@@ -716,7 +718,7 @@ describe('LinkConnector Integration', () => {
       const canvasY = reroute8.pos[1]
 
       connector.dragFromReroute(graph, floatingReroute)
-      connector.dropLinks(graph, { canvasX, canvasY } as any)
+      connector.dropLinks(graph, createMockCanvasPointerEvent(canvasX, canvasY))
       connector.reset()
 
       expect(graph.floatingLinks.size).toBe(0)
@@ -801,10 +803,10 @@ describe('LinkConnector Integration', () => {
     connector.moveOutputLink(graph, floatingOutNode.outputs[0])
 
     const manyOutputsNode = graph.getNodeById(4)!
-    const dropEvent = {
-      canvasX: manyOutputsNode.pos[0],
-      canvasY: manyOutputsNode.pos[1]
-    } as any
+    const dropEvent = createMockCanvasPointerEvent(
+      manyOutputsNode.pos[0],
+      manyOutputsNode.pos[1]
+    )
     connector.dropLinks(graph, dropEvent)
     connector.reset()
 
@@ -818,9 +820,11 @@ describe('LinkConnector Integration', () => {
     connector.moveOutputLink(graph, manyOutputsNode.outputs[0])
 
     const disconnectedNode = graph.getNodeById(9)!
-    dropEvent.canvasX = disconnectedNode.pos[0]
-    dropEvent.canvasY = disconnectedNode.pos[1]
-    connector.dropLinks(graph, dropEvent)
+    const dropEvent2 = createMockCanvasPointerEvent(
+      disconnectedNode.pos[0],
+      disconnectedNode.pos[1]
+    )
+    connector.dropLinks(graph, dropEvent2)
     connector.reset()
 
     const newOutput = disconnectedNode.outputs[0]
@@ -951,10 +955,10 @@ describe('LinkConnector Integration', () => {
 
       const targetReroute = graph.reroutes.get(targetRerouteId)!
       const nextLinkIds = getNextLinkIds(targetReroute.linkIds)
-      const dropEvent = {
-        canvasX: targetReroute.pos[0],
-        canvasY: targetReroute.pos[1]
-      } as any
+      const dropEvent = createMockCanvasPointerEvent(
+        targetReroute.pos[0],
+        targetReroute.pos[1]
+      )
 
       connector.dragNewFromOutput(
         graph,
@@ -1094,10 +1098,10 @@ describe('LinkConnector Integration', () => {
 
       connector.dragFromReroute(graph, fromReroute)
 
-      const dropEvent = {
-        canvasX: toReroute.pos[0],
-        canvasY: toReroute.pos[1]
-      } as any
+      const dropEvent = createMockCanvasPointerEvent(
+        toReroute.pos[0],
+        toReroute.pos[1]
+      )
       connector.dropLinks(graph, dropEvent)
       connector.reset()
 
@@ -1167,10 +1171,10 @@ describe('LinkConnector Integration', () => {
       const fromReroute = graph.reroutes.get(from)!
       const toReroute = graph.reroutes.get(to)!
 
-      const dropEvent = {
-        canvasX: toReroute.pos[0],
-        canvasY: toReroute.pos[1]
-      } as any
+      const dropEvent = createMockCanvasPointerEvent(
+        toReroute.pos[0],
+        toReroute.pos[1]
+      )
 
       connector.dragFromReroute(graph, fromReroute)
       connector.dropLinks(graph, dropEvent)
@@ -1204,10 +1208,10 @@ describe('LinkConnector Integration', () => {
       const node = graph.getNodeById(nodeId)!
       const input = node.inputs[0]
       const reroute = graph.getReroute(rerouteId)!
-      const dropEvent = {
-        canvasX: reroute.pos[0],
-        canvasY: reroute.pos[1]
-      } as any
+      const dropEvent = createMockCanvasPointerEvent(
+        reroute.pos[0],
+        reroute.pos[1]
+      )
 
       connector.dragNewFromInput(graph, node, input)
       connector.dropLinks(graph, dropEvent)
@@ -1234,7 +1238,7 @@ describe('LinkConnector Integration', () => {
 
       const node = graph.getNodeById(nodeId)!
       const reroute = graph.getReroute(rerouteId)!
-      const dropEvent = { canvasX: node.pos[0], canvasY: node.pos[1] } as any
+      const dropEvent = createMockCanvasPointerEvent(node.pos[0], node.pos[1])
 
       connector.dragFromReroute(graph, reroute)
       connector.dropLinks(graph, dropEvent)
@@ -1262,10 +1266,10 @@ describe('LinkConnector Integration', () => {
       const node = graph.getNodeById(nodeId)!
       const reroute = graph.getReroute(rerouteId)!
       const inputPos = node.getInputPos(0)
-      const dropOnInputEvent = {
-        canvasX: inputPos[0],
-        canvasY: inputPos[1]
-      } as any
+      const dropOnInputEvent = createMockCanvasPointerEvent(
+        inputPos[0],
+        inputPos[1]
+      )
 
       connector.dragFromReroute(graph, reroute)
       connector.dropLinks(graph, dropOnInputEvent)

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { MaybeRefOrGetter } from 'vue'
+
 import Popover from 'primevue/popover'
 import { ref, useTemplateRef } from 'vue'
 
@@ -13,6 +15,7 @@ defineProps<{
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<void>
   sortOptions: SortOption[]
+  updateKey?: MaybeRefOrGetter<unknown>
 }>()
 
 const layoutMode = defineModel<LayoutMode>('layoutMode')
@@ -53,6 +56,7 @@ function handleSortSelected(item: SortOption) {
     <FormSearchInput
       v-model="searchQuery"
       :searcher
+      :update-key="updateKey"
       :class="
         cn(
           actionButtonStyle,

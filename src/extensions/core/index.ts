@@ -1,8 +1,8 @@
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isNightly } from '@/platform/distribution/types'
 
 import './clipspace'
 import './contextMenuFilter'
-import './customCombo'
+import './customWidgets'
 import './dynamicPrompts'
 import './editAttention'
 import './electronAdapter'
@@ -32,9 +32,18 @@ if (isCloud) {
   await import('./cloudRemoteConfig')
   await import('./cloudBadges')
   await import('./cloudSessionCookie')
-  await import('./cloudFeedbackTopbarButton')
 
   if (window.__CONFIG__?.subscription_required) {
     await import('./cloudSubscription')
   }
+}
+
+// Feedback button for cloud and nightly builds
+if (isCloud || isNightly) {
+  await import('./cloudFeedbackTopbarButton')
+}
+
+// Nightly-only extensions
+if (isNightly && !isCloud) {
+  await import('./nightlyBadges')
 }

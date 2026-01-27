@@ -13,6 +13,7 @@ import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -115,7 +116,7 @@ const createAssetBrowserWidget = (
           return
         }
 
-        const filename = validatedAsset.data.user_metadata?.filename
+        const filename = getAssetFilename(validatedAsset.data)
         const validatedFilename = assetFilenameSchema.safeParse(filename)
 
         if (!validatedFilename.success) {

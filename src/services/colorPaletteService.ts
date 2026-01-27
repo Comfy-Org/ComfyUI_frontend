@@ -222,10 +222,7 @@ export const useColorPaletteService = () => {
 
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
     if (backgroundImage) {
-      rootStyle.setProperty(
-        '--bg-img',
-        `url('${backgroundImage}') no-repeat center /cover`
-      )
+      rootStyle.setProperty('--bg-img', `url('${backgroundImage}')`)
     } else {
       rootStyle.removeProperty('--bg-img')
     }

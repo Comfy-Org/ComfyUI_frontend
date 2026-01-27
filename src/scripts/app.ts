@@ -162,7 +162,7 @@ export class ComfyApp {
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
-  get graph(): unknown {
+  get graph() {
     return this.rootGraphInternal!
   }
 

@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <div
       v-if="activeJobItems.length"
-      class="flex max-h-[50%] flex-col gap-2 overflow-y-auto px-2"
+      class="flex max-h-[50%] scrollbar-custom flex-col gap-2 overflow-y-auto px-2"
     >
       <AssetsListItem
         v-for="job in activeJobItems"
@@ -124,7 +124,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
-import type { JobState } from '@/types/queue'
+import { isActiveJobState } from '@/utils/queueUtil'
 import {
   formatDuration,
   formatSize,
@@ -182,12 +182,6 @@ const listGridStyle = {
   gridTemplateColumns: 'minmax(0, 1fr)',
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
-
-function isActiveJobState(state: JobState): boolean {
-  return (
-    state === 'pending' || state === 'initialization' || state === 'running'
-  )
 }
 
 function getAssetPrimaryText(asset: AssetItem): string {

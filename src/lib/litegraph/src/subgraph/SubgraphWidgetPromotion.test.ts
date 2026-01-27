@@ -18,7 +18,7 @@ import {
 function createNodeWithWidget(
   title: string,
   widgetType: TWidgetType = 'number',
-  widgetValue: any = 42,
+  widgetValue: unknown = 42,
   slotType: ISlotType = 'number',
   tooltip?: string
 ) {

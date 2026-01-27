@@ -1,7 +1,7 @@
 {
   "name": "@comfyorg/comfyui-frontend",
   "private": true,
-  "version": "1.38.8",
+  "version": "1.38.12",
   "type": "module",
   "repository": "https://github.com/Comfy-Org/ComfyUI_frontend",
   "homepage": "https://comfy.org",
@@ -169,6 +169,7 @@
     "firebase": "catalog:",
     "fuse.js": "^7.0.0",
     "glob": "^11.0.3",
+    "jsonata": "catalog:",
     "jsondiffpatch": "^0.6.0",
     "loglevel": "^1.9.2",
     "marked": "^15.0.11",
