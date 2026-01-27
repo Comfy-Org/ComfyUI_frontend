@@ -51,6 +51,8 @@ const isEffectivelyAdvanced = computed(() =>
   advancedOverridesStore.getAdvancedState(node, widget)
 )
 
+const backendDefaultAdvanced = computed(() => !!widget.options?.advanced)
+
 const showAdvancedToggle = computed(
   () =>
     !hasParents.value &&
@@ -112,11 +114,13 @@ function handleToggleFavorite() {
 }
 
 function handleToggleAdvanced() {
-  advancedOverridesStore.setAdvanced(
-    node,
-    widget.name,
-    !isEffectivelyAdvanced.value
-  )
+  const newEffective = !isEffectivelyAdvanced.value
+  if (newEffective === backendDefaultAdvanced.value) {
+    advancedOverridesStore.clearOverride(node, widget.name)
+  } else {
+    advancedOverridesStore.setAdvanced(node, widget.name, newEffective)
+  }
+
   node.expandToFitContent()
 }
 

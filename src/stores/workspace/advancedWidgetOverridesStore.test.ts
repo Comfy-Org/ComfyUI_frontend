@@ -1,11 +1,14 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 
 const mockGraph = {
   extra: {} as Record<string, unknown>,
-  nodes: [] as Array<{ id: number; widgets: Array<{ name: string }> }>
+  nodes: [] as LGraphNode[]
 }
 
 vi.mock('@/scripts/app', () => ({
@@ -31,9 +34,9 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 function makeNode(
   id: number,
-  widgets: Array<{ name: string; options?: Record<string, unknown> }>
+  widgets: Array<{ name: string; options?: IWidgetOptions<unknown> }>
 ) {
-  return { id, widgets } as any
+  return { id, widgets } as Partial<LGraphNode> as LGraphNode
 }
 
 describe('useAdvancedWidgetOverridesStore', () => {
@@ -47,10 +50,10 @@ describe('useAdvancedWidgetOverridesStore', () => {
     const store = useAdvancedWidgetOverridesStore()
     const node = makeNode(1, [{ name: 'steps', options: { advanced: true } }])
 
-    expect(store.getAdvancedState(node, node.widgets[0])).toBe(true)
+    expect(store.getAdvancedState(node, node.widgets![0])).toBe(true)
 
     const node2 = makeNode(2, [{ name: 'cfg' }])
-    expect(store.getAdvancedState(node2, node2.widgets[0])).toBe(false)
+    expect(store.getAdvancedState(node2, node2.widgets![0])).toBe(false)
   })
 
   it('override to advanced takes precedence over backend', () => {
@@ -59,7 +62,7 @@ describe('useAdvancedWidgetOverridesStore', () => {
 
     store.setAdvanced(node, 'cfg', true)
 
-    expect(store.getAdvancedState(node, node.widgets[0])).toBe(true)
+    expect(store.getAdvancedState(node, node.widgets![0])).toBe(true)
     expect(store.isOverridden(node, 'cfg')).toBe(true)
   })
 
@@ -69,7 +72,7 @@ describe('useAdvancedWidgetOverridesStore', () => {
 
     store.setAdvanced(node, 'steps', false)
 
-    expect(store.getAdvancedState(node, node.widgets[0])).toBe(false)
+    expect(store.getAdvancedState(node, node.widgets![0])).toBe(false)
     expect(store.isOverridden(node, 'steps')).toBe(true)
   })
 
@@ -78,10 +81,10 @@ describe('useAdvancedWidgetOverridesStore', () => {
     const node = makeNode(1, [{ name: 'steps', options: { advanced: true } }])
 
     store.setAdvanced(node, 'steps', false)
-    expect(store.getAdvancedState(node, node.widgets[0])).toBe(false)
+    expect(store.getAdvancedState(node, node.widgets![0])).toBe(false)
 
     store.clearOverride(node, 'steps')
-    expect(store.getAdvancedState(node, node.widgets[0])).toBe(true)
+    expect(store.getAdvancedState(node, node.widgets![0])).toBe(true)
     expect(store.isOverridden(node, 'steps')).toBe(false)
   })
 
@@ -101,7 +104,13 @@ describe('useAdvancedWidgetOverridesStore', () => {
 
     store.setAdvanced(node, 'cfg', true)
 
-    const stored = mockGraph.extra.advancedWidgetOverrides as any
+    const stored = mockGraph.extra.advancedWidgetOverrides as {
+      overrides: Array<{
+        nodeLocatorId: string
+        widgetName: string
+        advanced: boolean
+      }>
+    }
     expect(stored.overrides).toHaveLength(1)
     expect(stored.overrides[0]).toEqual({
       nodeLocatorId: 'node-1',
@@ -110,7 +119,7 @@ describe('useAdvancedWidgetOverridesStore', () => {
     })
   })
 
-  it('loads overrides from workflow.extra', () => {
+  it('loads overrides from workflow.extra', async () => {
     mockGraph.extra = {
       advancedWidgetOverrides: {
         overrides: [
@@ -121,13 +130,13 @@ describe('useAdvancedWidgetOverridesStore', () => {
     }
 
     const store = useAdvancedWidgetOverridesStore()
-    store.loadFromWorkflow()
+    await nextTick()
 
     const node1 = makeNode(1, [{ name: 'cfg' }])
-    expect(store.getAdvancedState(node1, node1.widgets[0])).toBe(true)
+    expect(store.getAdvancedState(node1, node1.widgets![0])).toBe(true)
 
     const node2 = makeNode(2, [{ name: 'steps', options: { advanced: true } }])
-    expect(store.getAdvancedState(node2, node2.widgets[0])).toBe(false)
+    expect(store.getAdvancedState(node2, node2.widgets![0])).toBe(false)
   })
 
   it('clearAllOverrides removes everything', () => {
@@ -135,10 +144,15 @@ describe('useAdvancedWidgetOverridesStore', () => {
     const node = makeNode(1, [{ name: 'cfg' }])
 
     store.setAdvanced(node, 'cfg', true)
-    expect(store.overrides.size).toBe(1)
+    expect(store.isOverridden(node, 'cfg')).toBe(true)
 
     store.clearAllOverrides()
-    expect(store.overrides.size).toBe(0)
+    expect(store.isOverridden(node, 'cfg')).toBe(false)
+
+    const stored = mockGraph.extra.advancedWidgetOverrides as {
+      overrides: unknown[]
+    }
+    expect(stored.overrides).toHaveLength(0)
   })
 
   it('pruneInvalidOverrides removes stale entries', () => {
@@ -147,14 +161,28 @@ describe('useAdvancedWidgetOverridesStore', () => {
 
     store.setAdvanced(node, 'cfg', true)
     store.setAdvanced(node, 'steps', true)
-    expect(store.overrides.size).toBe(2)
+    expect(store.isOverridden(node, 'cfg')).toBe(true)
+    expect(store.isOverridden(node, 'steps')).toBe(true)
 
     // Simulate node having only 'cfg' widget now
-    mockGraph.nodes = [{ id: 1, widgets: [{ name: 'cfg' }] }] as any
+    mockGraph.nodes = [makeNode(1, [{ name: 'cfg' }])]
 
     store.pruneInvalidOverrides()
-    expect(store.overrides.size).toBe(1)
     expect(store.isOverridden(node, 'cfg')).toBe(true)
     expect(store.isOverridden(node, 'steps')).toBe(false)
+
+    const stored = mockGraph.extra.advancedWidgetOverrides as {
+      overrides: Array<{
+        nodeLocatorId: string
+        widgetName: string
+        advanced: boolean
+      }>
+    }
+    expect(stored.overrides).toHaveLength(1)
+    expect(stored.overrides[0]).toEqual({
+      nodeLocatorId: 'node-1',
+      widgetName: 'cfg',
+      advanced: true
+    })
   })
 })

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
@@ -210,7 +210,7 @@ export const useAdvancedWidgetOverridesStore = defineStore(
     }
 
     watch(
-      () => workflowStore.activeWorkflow?.path,
+      () => workflowStore.activeWorkflow,
       () => {
         loadFromWorkflow()
       },
@@ -218,17 +218,13 @@ export const useAdvancedWidgetOverridesStore = defineStore(
     )
 
     return {
-      overrides: computed(() => overrides.value),
-
       getAdvancedState,
       setAdvanced,
       clearOverride,
       isOverridden,
       hasAnyAdvanced,
       clearAllOverrides,
-      pruneInvalidOverrides,
-      loadFromWorkflow,
-      saveToWorkflow
+      pruneInvalidOverrides
     }
   }
 )
