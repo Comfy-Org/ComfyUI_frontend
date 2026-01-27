@@ -1,5 +1,5 @@
 import _ from 'es-toolkit/compat'
-import { useAsyncState } from '@vueuse/core'
+import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
@@ -558,10 +558,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return executeSyncWorkflows(0, dir)
   }
 
-  async function loadWorkflows() {
-    if (!isSyncReady.value && !isSyncLoading.value) {
-      return syncWorkflows()
+  async function loadWorkflows(): Promise<void> {
+    if (isSyncReady.value) return
+
+    if (isSyncLoading.value) {
+      await until(isSyncLoading).toBe(false)
+      return
     }
+
+    await syncWorkflows()
   }
 
   const bookmarkStore = useWorkflowBookmarkStore()

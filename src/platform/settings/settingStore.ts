@@ -1,6 +1,6 @@
 import { retry } from 'es-toolkit'
 import _ from 'es-toolkit/compat'
-import { useAsyncState } from '@vueuse/core'
+import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
@@ -71,10 +71,15 @@ export const useSettingStore = defineStore('setting', () => {
     { immediate: false }
   )
 
-  async function load() {
-    if (!isReady.value && !isLoading.value) {
-      return loadSettingValues()
+  async function load(): Promise<void> {
+    if (isReady.value) return
+
+    if (isLoading.value) {
+      await until(isLoading).toBe(false)
+      return
     }
+
+    await loadSettingValues()
   }
 
   /**
