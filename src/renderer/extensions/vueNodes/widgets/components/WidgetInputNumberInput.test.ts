@@ -197,8 +197,6 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
 describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
   it('handles null/undefined model values gracefully', () => {
     const widget = createMockWidget(0, 'int')
-    // Mount with undefined as modelValue - testing edge case where modelValue might be undefined
-    // The component should handle this gracefully by using its default value
     const wrapper = mount(WidgetInputNumberInput, {
       global: { plugins: [i18n] },
       props: {
