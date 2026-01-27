@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import RadioButton from 'primevue/radiobutton'
+import Button from '@/components/ui/button/Button.vue'
 import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -64,14 +65,17 @@ const controlMode = defineModel<ControlOptions>()
     </div>
 
     <div class="space-y-2">
-      <div
+      <Button
         v-for="option in controlOptions"
         :key="option.mode"
-        class="flex items-center justify-between py-2 gap-7"
+        as="label"
+        variant="textonly"
+        size="lg"
+        class="flex w-full h-[unset] text-left items-center justify-between py-2 gap-7"
+        :for="option.mode"
       >
-        <label
-          class="flex items-center gap-2 flex-1 min-w-0"
-          :for="option.mode"
+        <div
+          class="flex items-center gap-2 flex-1 min-w-0 text-wrap"
         >
           <div
             class="flex items-center justify-center w-8 h-8 rounded-lg flex-shrink-0 bg-secondary-background border border-border-subtle"
@@ -101,15 +105,15 @@ const controlMode = defineModel<ControlOptions>()
               {{ $t(`widgets.valueControl.${option.description}`) }}
             </div>
           </div>
-        </label>
+        </div>
 
         <RadioButton
           v-model="controlMode"
-          class="flex-shrink-0"
+          class="shrink"
           :input-id="option.mode"
           :value="option.mode"
         />
-      </div>
+      </Button>
     </div>
   </div>
 </template>
