@@ -252,7 +252,7 @@ describe('jobOutputCache', () => {
         priority: 0,
         outputs: {}
       }
-      const mockWorkflow = { version: 1 }
+      const mockWorkflow = { version: 1 } as Partial<ComfyWorkflowJSON>
 
       vi.mocked(fetchJobDetail).mockResolvedValue(mockDetail)
       vi.mocked(extractWorkflow).mockResolvedValue(
