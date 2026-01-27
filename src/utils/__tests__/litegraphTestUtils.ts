@@ -193,14 +193,16 @@ export function createMockLGraphNodeWithArrayBoundingRect(
  * Creates a mock FileList from an array of files
  */
 export function createMockFileList(files: File[]): FileList {
-  const fileList = {
-    ...files,
-    length: files.length,
-    item: (index: number) => files[index] ?? null,
-    [Symbol.iterator]: function* () {
-      yield* files
-    }
-  }
+  const fileList = Object.assign(
+    {
+      length: files.length,
+      item: (index: number) => files[index] ?? null,
+      [Symbol.iterator]: function* () {
+        yield* files
+      }
+    },
+    files
+  )
   return fileList as FileList
 }
 
