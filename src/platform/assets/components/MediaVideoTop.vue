@@ -7,7 +7,6 @@
     <video
       :controls="shouldShowControls"
       preload="metadata"
-      autoplay
       muted
       loop
       playsinline

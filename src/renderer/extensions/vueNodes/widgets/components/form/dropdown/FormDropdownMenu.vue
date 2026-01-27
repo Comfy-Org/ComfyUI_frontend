@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { MaybeRefOrGetter } from 'vue'
+
 import { cn } from '@/utils/tailwindUtil'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
@@ -21,6 +23,7 @@ interface Props {
     query: string,
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<void>
+  updateKey?: MaybeRefOrGetter<unknown>
 }
 
 defineProps<Props>()
@@ -54,6 +57,7 @@ const searchQuery = defineModel<string>('searchQuery')
       v-model:search-query="searchQuery"
       :sort-options="sortOptions"
       :searcher
+      :update-key="updateKey"
     />
     <!-- List -->
     <div class="relative flex h-full mt-2 overflow-y-scroll">

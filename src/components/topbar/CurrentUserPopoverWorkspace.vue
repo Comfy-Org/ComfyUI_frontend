@@ -217,6 +217,7 @@ import { useDialogService } from '@/services/dialogService'
 
 const workspaceStore = useTeamWorkspaceStore()
 const {
+  initState,
   workspaceName,
   isInPersonalWorkspace: isPersonalWorkspace,
   isWorkspaceSubscribed
@@ -234,15 +235,20 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription } = useSubscription()
+const { isActiveSubscription, subscriptionStatus } = useSubscription()
 const { totalCredits, isLoadingBalance } = useSubscriptionCredits()
 const subscriptionDialog = useSubscriptionDialog()
 
 const displayedCredits = computed(() => {
-  const isSubscribed = isPersonalWorkspace.value
-    ? isActiveSubscription.value
-    : isWorkspaceSubscribed.value
-  return isSubscribed ? totalCredits.value : '0'
+  if (initState.value !== 'ready') return ''
+  // Only personal workspaces have subscription status from useSubscription()
+  // Team workspaces don't have backend subscription data yet
+  if (isPersonalWorkspace.value) {
+    // Wait for subscription status to load
+    if (subscriptionStatus.value === null) return ''
+    return isActiveSubscription.value ? totalCredits.value : '0'
+  }
+  return '0'
 })
 
 const canUpgrade = computed(() => {
