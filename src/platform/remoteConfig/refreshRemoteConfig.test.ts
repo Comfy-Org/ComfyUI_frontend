@@ -107,5 +107,20 @@ describe('refreshRemoteConfig', () => {
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
     })
+
+    it('preserves config on 500 response', async () => {
+      const existingConfig = { subscription_required: true }
+      remoteConfig.value = existingConfig
+      window.__CONFIG__ = existingConfig
+
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockErrorResponse(500, 'Internal Server Error')
+      )
+
+      await refreshRemoteConfig()
+
+      expect(remoteConfig.value).toEqual(existingConfig)
+      expect(window.__CONFIG__).toEqual(existingConfig)
+    })
   })
 })
