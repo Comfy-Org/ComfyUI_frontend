@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "선택 도구 상자 표시"
+    "name": "선택 도구 상자 표시",
+    "tooltip": "노드가 선택되었을 때 공통 작업에 빠르게 접근할 수 있는 플로팅 툴바를 표시합니다."
   },
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
@@ -147,7 +148,8 @@
       "Linear": "선형",
       "Spline": "스플라인",
       "Straight": "직선"
-    }
+    },
+    "tooltip": "캔버스에서 노드 간 연결 링크의 모양과 표시 여부를 제어합니다."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "3D 뷰어 활성화 (베타)",
@@ -474,6 +476,7 @@
     "tooltip": "경유점 중심에서 베지어 제어점까지의 오프셋"
   },
   "pysssss_SnapToGrid": {
-    "name": "항상 그리드에 스냅"
+    "name": "항상 그리드에 스냅",
+    "tooltip": "활성화하면 노드를 이동하거나 크기를 조정할 때 자동으로 그리드에 정렬됩니다."
   }
 }
