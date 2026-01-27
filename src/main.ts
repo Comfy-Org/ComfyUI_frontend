@@ -45,9 +45,6 @@ const firebaseApp = initializeApp(getFirebaseConfig())
 const app = createApp(App)
 const pinia = createPinia()
 
-// Start early bootstrap (api.init, fetchNodeDefs) before Pinia is registered
-const bootstrapStore = useBootstrapStore(pinia)
-bootstrapStore.startEarlyBootstrap()
 Sentry.init({
   app,
   dsn: __SENTRY_DSN__,
@@ -93,7 +90,7 @@ app
     modules: [VueFireAuth()]
   })
 
-// Start store bootstrap (settings, i18n, workflows) after Pinia is registered
+const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')

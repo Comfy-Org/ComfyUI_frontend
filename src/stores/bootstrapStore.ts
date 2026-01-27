@@ -24,8 +24,6 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     { immediate: false }
   )
 
-  function startEarlyBootstrap() {}
-
   async function startStoreBootstrap() {
     // Defer settings and workflows if multi-user login is required
     // (settings API requires authentication in multi-user mode)
@@ -44,7 +42,6 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
   return {
     isI18nReady,
     i18nError,
-    startEarlyBootstrap,
     startStoreBootstrap
   }
 })

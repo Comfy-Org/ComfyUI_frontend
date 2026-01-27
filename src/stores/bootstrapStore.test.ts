@@ -27,7 +27,9 @@ vi.mock('@/platform/settings/settingStore', () => ({
     load: vi.fn(() => {
       mockIsSettingsReady.value = true
     }),
-    isReady: mockIsSettingsReady,
+    get isReady() {
+      return mockIsSettingsReady.value
+    },
     isLoading: ref(false),
     error: ref(undefined)
   }))
@@ -37,6 +39,13 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: vi.fn(() => ({
     loadWorkflows: vi.fn(),
     syncWorkflows: vi.fn().mockResolvedValue(undefined)
+  }))
+}))
+
+vi.mock('@/stores/userStore', () => ({
+  useUserStore: vi.fn(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    needsLogin: false
   }))
 }))
 
