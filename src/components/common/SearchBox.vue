@@ -118,7 +118,7 @@ const wrapperStyle = computed(() => {
   if (showBorder) {
     return cn(
       'rounded p-2 border border-solid border-border-default box-border',
-      isLarge ? 'h-10' : 'h-8'
+      isLarge.value ? 'h-10' : 'h-8'
     )
   }
 
