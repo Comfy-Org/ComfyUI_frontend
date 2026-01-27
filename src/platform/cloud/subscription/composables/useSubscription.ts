@@ -8,6 +8,7 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { pushDataLayerEvent } from '@/platform/telemetry/gtm'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
@@ -101,11 +102,6 @@ function useSubscriptionInternal() {
   })
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
-  const pushDataLayerEvent = (event: Record<string, unknown>) => {
-    if (!__GTM_ENABLED__ || typeof window === 'undefined') return
-    const dataLayer = window.dataLayer ?? (window.dataLayer = [])
-    dataLayer.push(event)
-  }
 
   const trackSubscriptionPurchase = (
     status: CloudSubscriptionStatusResponse | null

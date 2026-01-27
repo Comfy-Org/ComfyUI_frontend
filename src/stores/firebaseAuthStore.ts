@@ -26,6 +26,7 @@ import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { pushDataLayerEvent } from '@/platform/telemetry/gtm'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -81,12 +82,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
-  const pushDataLayerEvent = (event: Record<string, unknown>) => {
-    if (!__GTM_ENABLED__ || typeof window === 'undefined') return
-    const dataLayer = window.dataLayer ?? (window.dataLayer = [])
-    dataLayer.push(event)
-  }
-
   const hashSha256 = async (value: string): Promise<string | undefined> => {
     if (typeof crypto === 'undefined' || !crypto.subtle) return
     const data = new TextEncoder().encode(value)
@@ -97,6 +92,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   }
 
   const trackSignUp = async (method: 'email' | 'google' | 'github') => {
+    if (!isCloud) return
     const userId = currentUser.value?.uid
     const hashedUserId = userId ? await hashSha256(userId) : undefined
     pushDataLayerEvent({

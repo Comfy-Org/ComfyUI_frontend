@@ -79,9 +79,7 @@ export async function performSubscriptionCheckout(
   const data = await response.json()
 
   if (data.checkout_url) {
-    if (__GTM_ENABLED__) {
-      startSubscriptionPurchaseTracking(tierKey, currentBillingCycle)
-    }
+    startSubscriptionPurchaseTracking(tierKey, currentBillingCycle)
     if (openInNewTab) {
       window.open(data.checkout_url, '_blank')
     } else {

@@ -51,16 +51,6 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
       ? 'cloud'
       : 'localhost'
 
-const ENABLE_GTM =
-  process.env.ENABLE_GTM === 'true' || (!IS_DEV && DISTRIBUTION === 'cloud')
-const GTM_CONTAINER_ID = 'GTM-NP9JM6K7'
-const GTM_SCRIPT = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${GTM_CONTAINER_ID}');`
-const GTM_NO_SCRIPT = `<iframe src="https://www.googletagmanager.com/ns.html?id=${GTM_CONTAINER_ID}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`
-
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
 const IS_NIGHTLY =
@@ -426,33 +416,7 @@ export default defineConfig({
             }
           })
         ]
-      : []),
-    // Google Tag Manager (cloud distribution only)
-    {
-      name: 'inject-gtm',
-      transformIndexHtml: {
-        order: 'post',
-        handler(html) {
-          if (!ENABLE_GTM) return html
-
-          return {
-            html,
-            tags: [
-              {
-                tag: 'script',
-                children: GTM_SCRIPT,
-                injectTo: 'head-prepend'
-              },
-              {
-                tag: 'noscript',
-                children: GTM_NO_SCRIPT,
-                injectTo: 'body-prepend'
-              }
-            ]
-          }
-        }
-      }
-    }
+      : [])
   ],
 
   build: {
@@ -546,7 +510,6 @@ export default defineConfig({
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
-    __GTM_ENABLED__: JSON.stringify(ENABLE_GTM),
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
     __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
   },

@@ -9,6 +9,7 @@ import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { pushDataLayerEvent } from '@/platform/telemetry/gtm'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
@@ -37,10 +38,9 @@ function getBasePath(): string {
 const basePath = getBasePath()
 
 function pushPageView(): void {
-  if (!__GTM_ENABLED__ || typeof window === 'undefined') return
+  if (!isCloud || typeof window === 'undefined') return
 
-  const dataLayer = window.dataLayer ?? (window.dataLayer = [])
-  dataLayer.push({
+  pushDataLayerEvent({
     event: 'page_view',
     page_location: window.location.href,
     page_title: document.title
