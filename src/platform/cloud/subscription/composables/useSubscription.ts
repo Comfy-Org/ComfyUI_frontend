@@ -252,6 +252,10 @@ function useSubscriptionInternal() {
       if (loggedIn) {
         try {
           await fetchSubscriptionStatus()
+        } catch (error) {
+          // Network errors are expected during navigation/component unmount
+          // and when offline - log for debugging but don't surface to user
+          console.error('Failed to fetch subscription status:', error)
         } finally {
           isInitialized.value = true
         }
