@@ -1,11 +1,11 @@
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import {
@@ -13,7 +13,14 @@ import {
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import { useDialogService } from '@/services/dialogService'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  getTierPrice,
+  TIER_TO_KEY
+} from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  clearPendingSubscriptionPurchase,
+  getPendingSubscriptionPurchase
+} from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
@@ -29,6 +36,7 @@ function useSubscriptionInternal() {
   const subscriptionStatus = ref<CloudSubscriptionStatusResponse | null>(null)
   const telemetry = useTelemetry()
   const isInitialized = ref(false)
+  const { t } = useI18n()
 
   const isSubscribedOrIsNotCloud = computed(() => {
     if (!isCloud || !window.__CONFIG__?.subscription_required) return true
@@ -94,6 +102,46 @@ function useSubscriptionInternal() {
   })
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
+  const isGtmEnabled = __GTM_ENABLED__
+
+  const pushDataLayerEvent = (event: Record<string, unknown>) => {
+    if (!isGtmEnabled || typeof window === 'undefined') return
+    const dataLayer = window.dataLayer ?? (window.dataLayer = [])
+    dataLayer.push(event)
+  }
+
+  const trackSubscriptionPurchase = (
+    status: CloudSubscriptionStatusResponse | null
+  ) => {
+    if (!status?.is_active || !status.subscription_id) return
+
+    const pendingPurchase = getPendingSubscriptionPurchase()
+    if (!pendingPurchase) return
+
+    const { tierKey, billingCycle } = pendingPurchase
+    const isYearly = billingCycle === 'yearly'
+    const baseName = t(`subscription.tiers.${tierKey}.name`)
+    const planName = isYearly
+      ? t('subscription.tierNameYearly', { name: baseName })
+      : baseName
+    const unitPrice = getTierPrice(tierKey, isYearly)
+    const value = isYearly && tierKey !== 'founder' ? unitPrice * 12 : unitPrice
+
+    pushDataLayerEvent({
+      event: 'purchase',
+      transaction_id: status.subscription_id,
+      value,
+      currency: 'USD',
+      item_id: `${billingCycle}_${tierKey}`,
+      item_name: planName,
+      item_category: 'subscription',
+      item_variant: billingCycle,
+      price: value,
+      quantity: 1
+    })
+
+    clearPendingSubscriptionPurchase()
+  }
 
   const fetchStatus = wrapWithErrorHandlingAsync(
     fetchSubscriptionStatus,
@@ -194,6 +242,7 @@ function useSubscriptionInternal() {
 
     const statusData = await response.json()
     subscriptionStatus.value = statusData
+    trackSubscriptionPurchase(statusData)
     return statusData
   }
 
