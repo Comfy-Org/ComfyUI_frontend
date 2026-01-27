@@ -76,8 +76,9 @@ describe('keybindingService - Event Forwarding', () => {
 
     // Reset dialog store mock to empty
     vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: []
-    } as any)
+      dialogStack: [],
+      ...({} as Omit<ReturnType<typeof useDialogStore>, 'dialogStack'>)
+    })
 
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
@@ -125,9 +126,9 @@ describe('keybindingService - Event Forwarding', () => {
   })
 
   it('should not forward Delete key when canvas processKey is not available', async () => {
-    // Temporarily replace processKey with undefined
+    // Temporarily replace processKey with undefined - testing edge case
     const originalProcessKey = vi.mocked(app.canvas).processKey
-    vi.mocked(app.canvas).processKey = undefined as any
+    vi.mocked(app.canvas).processKey = undefined!
 
     const event = createTestKeyboardEvent('Delete')
 
@@ -142,7 +143,7 @@ describe('keybindingService - Event Forwarding', () => {
   it('should not forward Delete key when canvas is not available', async () => {
     // Temporarily set canvas to null
     const originalCanvas = vi.mocked(app).canvas
-    vi.mocked(app).canvas = null as any
+    vi.mocked(app).canvas = null!
 
     const event = createTestKeyboardEvent('Delete')
 
