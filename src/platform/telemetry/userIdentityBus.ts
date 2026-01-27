@@ -1,10 +1,10 @@
 import { createEventHook } from '@vueuse/core'
 
-export interface UserIdentity {
+interface UserIdentity {
   userId: string
 }
 
-export interface AuthEvent {
+interface AuthEvent {
   event: 'login' | 'register' | 'logout'
   method: 'email' | 'google' | 'github'
   isNewUser: boolean

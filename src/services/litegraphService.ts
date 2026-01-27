@@ -1,7 +1,7 @@
 import _ from 'es-toolkit/compat'
 
-import { CONFIG, GET_CONFIG } from '@/lib/litegraph/constants'
-export { CONFIG, GET_CONFIG }
+import { GET_CONFIG } from '@/lib/litegraph/constants'
+
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'

@@ -20,11 +20,6 @@ import type {
   ExecutionErrorDialogInput
 } from './dialogTypes'
 
-export type {
-  ConfirmationDialogType,
-  ExecutionErrorDialogInput
-} from './dialogTypes'
-
 export const useDialogService = () => {
   const dialogStore = useDialogStore()
 
