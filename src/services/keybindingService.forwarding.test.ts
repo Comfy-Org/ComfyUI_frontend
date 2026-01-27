@@ -76,9 +76,10 @@ describe('keybindingService - Event Forwarding', () => {
 
     // Reset dialog store mock to empty
     vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: [],
-      ...({} as Omit<ReturnType<typeof useDialogStore>, 'dialogStack'>)
-    })
+      dialogStack: []
+    } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
+      typeof useDialogStore
+    >)
 
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
