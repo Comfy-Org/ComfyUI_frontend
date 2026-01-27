@@ -33,11 +33,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
-vi.mock('@/stores/workspaceStore', () => ({
-  useWorkspaceStore: vi.fn(() => ({
-    workflow: {
-      syncWorkflows: vi.fn().mockResolvedValue(undefined)
-    }
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: vi.fn(() => ({
+    loadWorkflows: vi.fn(),
+    syncWorkflows: vi.fn().mockResolvedValue(undefined)
   }))
 }))
 
@@ -53,21 +52,8 @@ describe('bootstrapStore', () => {
 
   it('initializes with all flags false', () => {
     const settingStore = useSettingStore()
-    expect(store.isNodeDefsReady).toBe(false)
     expect(settingStore.isReady).toBe(false)
     expect(store.isI18nReady).toBe(false)
-  })
-
-  it('starts early bootstrap (node defs)', async () => {
-    const { api } = await import('@/scripts/api')
-
-    store.startEarlyBootstrap()
-
-    await vi.waitFor(() => {
-      expect(store.isNodeDefsReady).toBe(true)
-    })
-
-    expect(api.getNodeDefs).toHaveBeenCalled()
   })
 
   it('starts store bootstrap (settings, i18n)', async () => {

@@ -2,26 +2,13 @@ import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useUserStore } from '@/stores/userStore'
 
 export const useBootstrapStore = defineStore('bootstrap', () => {
   const settingStore = useSettingStore()
-
-  const {
-    state: nodeDefs,
-    isReady: isNodeDefsReady,
-    error: nodeDefsError,
-    execute: fetchNodeDefs
-  } = useAsyncState<Record<string, ComfyNodeDef>>(
-    async () => {
-      const defs = await api.getNodeDefs()
-      return defs
-    },
-    {},
-    { immediate: false }
-  )
+  const workflowStore = useWorkflowStore()
 
   const {
     isReady: isI18nReady,
@@ -37,28 +24,7 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     { immediate: false }
   )
 
-  const {
-    isReady: isWorkflowsReady,
-    isLoading: isWorkflowsLoading,
-    execute: executeSyncWorkflows
-  } = useAsyncState(
-    async () => {
-      const { useWorkspaceStore } = await import('@/stores/workspaceStore')
-      await useWorkspaceStore().workflow.syncWorkflows()
-    },
-    undefined,
-    { immediate: false }
-  )
-
-  function syncWorkflows() {
-    if (!isWorkflowsReady.value && !isWorkflowsLoading.value) {
-      void executeSyncWorkflows()
-    }
-  }
-
-  function startEarlyBootstrap() {
-    void fetchNodeDefs()
-  }
+  function startEarlyBootstrap() {}
 
   async function startStoreBootstrap() {
     // Defer settings and workflows if multi-user login is required
@@ -71,14 +37,11 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
 
     if (!userStore.needsLogin) {
       await settingStore.load()
-      syncWorkflows()
+      await workflowStore.loadWorkflows()
     }
   }
 
   return {
-    nodeDefs,
-    isNodeDefsReady,
-    nodeDefsError,
     isI18nReady,
     i18nError,
     startEarlyBootstrap,
