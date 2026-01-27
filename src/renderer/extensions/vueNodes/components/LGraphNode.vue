@@ -110,7 +110,11 @@
       >
         <NodeSlots :node-data="nodeData" />
 
-        <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+        <NodeWidgets
+          v-if="nodeData.widgets?.length"
+          :node-data="nodeData"
+          :node="lgraphNode"
+        />
 
         <div v-if="hasCustomContent" class="min-h-0 flex-1 flex">
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
@@ -499,18 +503,23 @@ const lgraphNode = computed(() => {
 
 const advancedOverridesStore = useAdvancedWidgetOverridesStore()
 
+/**
+ * Whether to show the "Show Advanced Inputs" toggle button.
+ *
+ * - Subgraph nodes: button is shown when there are unpromoted interior widgets.
+ * - Regular nodes: button is shown when the node has any effectively-advanced
+ *   widgets and advanced widgets are not forced visible by the global setting.
+ */
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
 
-  // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
     const interiorNodes = node.subgraph.nodes
     const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
     return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
   }
 
-  // For regular nodes: show button if there are effectively advanced widgets
   const alwaysShowAdvanced = settingStore.get(
     'Comfy.Node.AlwaysShowAdvancedWidgets'
   )

@@ -35,7 +35,7 @@ export const useAdvancedWidgetOverridesStore = defineStore(
     const workflowStore = useWorkflowStore()
     const canvasStore = useCanvasStore()
 
-    /** Map of override key → advanced boolean */
+    /** Map of override key -> advanced boolean */
     const overrides = ref<Map<string, boolean>>(new Map())
 
     function getOverrideKey(
@@ -59,6 +59,21 @@ export const useAdvancedWidgetOverridesStore = defineStore(
 
     function getNodeLocatorId(node: LGraphNode): NodeLocatorId {
       return workflowStore.nodeToNodeLocatorId(node)
+    }
+
+    function setOverrideKey(key: string, advanced: boolean) {
+      const next = new Map(overrides.value)
+      next.set(key, advanced)
+      overrides.value = next
+      saveToWorkflow()
+    }
+
+    function deleteOverrideKey(key: string) {
+      if (!overrides.value.has(key)) return
+      const next = new Map(overrides.value)
+      next.delete(key)
+      overrides.value = next
+      saveToWorkflow()
     }
 
     function loadFromWorkflow() {
@@ -139,9 +154,7 @@ export const useAdvancedWidgetOverridesStore = defineStore(
       advanced: boolean
     ) {
       const key = getOverrideKey(getNodeLocatorId(node), widgetName)
-      overrides.value.set(key, advanced)
-      overrides.value = new Map(overrides.value)
-      saveToWorkflow()
+      setOverrideKey(key, advanced)
     }
 
     /**
@@ -149,9 +162,7 @@ export const useAdvancedWidgetOverridesStore = defineStore(
      */
     function clearOverride(node: LGraphNode, widgetName: string) {
       const key = getOverrideKey(getNodeLocatorId(node), widgetName)
-      overrides.value.delete(key)
-      overrides.value = new Map(overrides.value)
-      saveToWorkflow()
+      deleteOverrideKey(key)
     }
 
     /**
@@ -173,6 +184,7 @@ export const useAdvancedWidgetOverridesStore = defineStore(
     }
 
     function clearAllOverrides() {
+      if (overrides.value.size === 0) return
       overrides.value = new Map()
       saveToWorkflow()
     }
@@ -185,36 +197,34 @@ export const useAdvancedWidgetOverridesStore = defineStore(
       if (!graph) return
 
       const validKeys = new Set<string>()
-      graph.nodes?.forEach((node) => {
-        node.widgets?.forEach((widget) => {
+      for (const node of graph.nodes ?? []) {
+        for (const widget of node.widgets ?? []) {
           const key = getOverrideKey(
             getNodeLocatorId(node as LGraphNode),
             widget.name
           )
           validKeys.add(key)
-        })
-      })
-
-      let changed = false
-      for (const key of overrides.value.keys()) {
-        if (!validKeys.has(key)) {
-          overrides.value.delete(key)
-          changed = true
         }
       }
 
-      if (changed) {
-        overrides.value = new Map(overrides.value)
-        saveToWorkflow()
+      const next = new Map<string, boolean>()
+      for (const [key, advanced] of overrides.value) {
+        if (!validKeys.has(key)) continue
+        next.set(key, advanced)
       }
+
+      if (next.size === overrides.value.size) return
+      overrides.value = next
+      saveToWorkflow()
     }
 
+    /** Keep overrides in sync with the currently active workflow. */
     watch(
       () => workflowStore.activeWorkflow,
-      () => {
-        loadFromWorkflow()
-      },
-      { immediate: true }
+      () => loadFromWorkflow(),
+      {
+        immediate: true
+      }
     )
 
     return {

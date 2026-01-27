@@ -26,7 +26,7 @@
     >
       <div
         v-if="
-          !widget.simplified.options?.hidden &&
+          !widget.simplified.hidden &&
           (!widget.simplified.advanced || showAdvanced)
         "
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
@@ -71,17 +71,17 @@
 
 <script setup lang="ts">
 import type { TooltipOptions } from 'primevue'
-import { computed, onErrorCaptured, provide, ref, toValue } from 'vue'
+import { computed, onErrorCaptured, ref, toValue } from 'vue'
 import type { Component } from 'vue'
 
 import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
@@ -93,37 +93,22 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { app } from '@/scripts/app'
 import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
-import {
-  getLocatorIdFromNodeData,
-  getNodeByLocatorId
-} from '@/utils/graphTraversalUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import InputSlot from './InputSlot.vue'
 
 interface NodeWidgetsProps {
   nodeData?: VueNodeData
+  node?: LGraphNode | null
 }
 
-const { nodeData } = defineProps<NodeWidgetsProps>()
+const { nodeData, node: lgraphNode = null } = defineProps<NodeWidgetsProps>()
 
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
-
-// Get the actual LGraphNode for providing to child components
-const lgraphNode = computed((): LGraphNode | null => {
-  if (!nodeData) return null
-  const locatorId = getLocatorIdFromNodeData(nodeData)
-  const graph = app.rootGraph
-  if (!graph) return null
-  return getNodeByLocatorId(graph, locatorId) ?? null
-})
-
-provide('node', lgraphNode)
 
 const advancedOverridesStore = useAdvancedWidgetOverridesStore()
 
@@ -152,10 +137,11 @@ onErrorCaptured((error) => {
 
 const nodeType = computed(() => nodeData?.type || '')
 const settingStore = useSettingStore()
+const alwaysShowAdvancedWidgets = computed(() =>
+  settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+)
 const showAdvanced = computed(
-  () =>
-    nodeData?.showAdvanced ||
-    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+  () => nodeData?.showAdvanced || alwaysShowAdvancedWidgets.value
 )
 const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
   nodeType.value
@@ -172,6 +158,12 @@ interface ProcessedWidget {
   slotMetadata?: WidgetSlotMetadata
 }
 
+/**
+ * Preprocess Vue widgets for rendering and value updates.
+ *
+ * Widgets with linked input slots are forced disabled to avoid conflicting
+ * input sources (linked slot vs. local widget value).
+ */
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
 
@@ -187,15 +179,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     const { slotMetadata, options } = widget
 
-    // Core feature: Disable Vue widgets when their input slots are connected
-    // This prevents conflicting input sources - when a slot is linked to another
-    // node's output, the widget should be read-only to avoid data conflicts
     const widgetOptions = slotMetadata?.linked
       ? { ...options, disabled: true }
       : options
 
-    const resolvedAdvanced = lgraphNode.value
-      ? advancedOverridesStore.getAdvancedState(lgraphNode.value, widget)
+    const resolvedAdvanced = lgraphNode
+      ? advancedOverridesStore.getAdvancedState(lgraphNode, widget)
       : !!widget.options?.advanced
 
     const simplified: SimplifiedWidget = {
@@ -214,9 +203,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     }
 
     function updateHandler(value: WidgetValue) {
-      // Update the widget value directly
       widget.value = value
-
       widget.callback?.(value)
     }
 
@@ -235,12 +222,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     })
   }
 
-  // When per-node showAdvanced is on, move advanced widgets to the end.
-  // When global AlwaysShowAdvancedWidgets is on, keep original order.
-  if (
-    nodeData?.showAdvanced &&
-    !settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
-  ) {
+  if (nodeData?.showAdvanced && !alwaysShowAdvancedWidgets.value) {
     const normal = result.filter((w) => !w.simplified.advanced)
     const advanced = result.filter((w) => w.simplified.advanced)
     return [...normal, ...advanced]
@@ -249,20 +231,20 @@ const processedWidgets = computed((): ProcessedWidget[] => {
   return result
 })
 
+/**
+ * Grid rows must follow the original `nodeData.widgets` order; the rendered list
+ * may reorder widgets (e.g. grouping advanced widgets at the end).
+ */
 const gridTemplateRows = computed((): string => {
   if (!nodeData?.widgets) return ''
   const processedNames = new Set(toValue(processedWidgets).map((w) => w.name))
-
-  // Always use original nodeData.widgets order for grid template,
-  // even when processedWidgets may be reordered for rendering
   return nodeData.widgets
     .filter((w) => {
       if (!processedNames.has(w.name)) return false
       if (w.options?.hidden) return false
 
-      // Check resolved advanced state (considering overrides)
-      const resolved = lgraphNode.value
-        ? advancedOverridesStore.getAdvancedState(lgraphNode.value, w)
+      const resolved = lgraphNode
+        ? advancedOverridesStore.getAdvancedState(lgraphNode, w)
         : !!w.options?.advanced
 
       return !resolved || showAdvanced.value

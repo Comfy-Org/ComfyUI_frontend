@@ -76,6 +76,14 @@ const advancedLabel = computed(() => {
     ? t('rightSidePanel.advancedInputs')
     : undefined // SectionWidgets display node titles by default
 })
+
+const showAdvancedSection = computed(
+  () =>
+    advancedWidgetsSectionDataList.value.length > 0 &&
+    !isSearching.value &&
+    !isMultipleNodesSelected.value &&
+    !mustShowNodeTitle
+)
 </script>
 
 <template>
@@ -113,14 +121,7 @@ const advancedLabel = computed(() => {
       class="border-b border-interface-stroke"
     />
   </TransitionGroup>
-  <template
-    v-if="
-      advancedWidgetsSectionDataList.length > 0 &&
-      !isSearching &&
-      !isMultipleNodesSelected &&
-      !mustShowNodeTitle
-    "
-  >
+  <template v-if="showAdvancedSection">
     <SectionWidgets
       v-for="{ widgets, node } in advancedWidgetsSectionDataList"
       :key="`advanced-${node.id}`"
