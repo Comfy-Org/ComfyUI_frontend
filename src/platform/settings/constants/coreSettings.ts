@@ -642,6 +642,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
+    tooltip:
+      'Controls the appearance and visibility of connection links between nodes on the canvas.',
     defaultValue: 2,
     type: 'combo',
     options: [
@@ -793,6 +795,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'pysssss.SnapToGrid',
     category: ['LiteGraph', 'Canvas', 'AlwaysSnapToGrid'],
     name: 'Always snap to grid',
+    tooltip:
+      'When enabled, nodes will automatically align to the grid when moved or resized.',
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.3.13'
@@ -960,6 +964,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Canvas.SelectionToolbox',
     category: ['LiteGraph', 'Canvas', 'SelectionToolbox'],
     name: 'Show selection toolbox',
+    tooltip:
+      'Display a floating toolbar when nodes are selected, providing quick access to common actions.',
     type: 'boolean',
     defaultValue: true,
     versionAdded: '1.10.5'
