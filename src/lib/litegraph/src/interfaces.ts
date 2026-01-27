@@ -3,14 +3,35 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import type { ContextMenu } from './ContextMenu'
-import type { LGraphNode, NodeId } from './LGraphNode'
-import type { LLink, LinkId } from './LLink'
-import type { Reroute, RerouteId } from './Reroute'
+import type { LGraphNode } from './LGraphNode'
+import type { LLink } from './LLink'
+import type { Reroute } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import type { LinkDirection, RenderShape } from './types/globalEnums'
+import type {
+  CanvasColour,
+  LinkId,
+  NodeId,
+  Point,
+  ReadOnlyRect,
+  RerouteId,
+  Size
+} from './types/index'
 import type { IBaseWidget } from './types/widgets'
+
+export type {
+  CanvasColour,
+  LinkId,
+  NodeId,
+  Point,
+  ReadOnlyRect,
+  ReadOnlyTypedArray,
+  Rect,
+  RerouteId,
+  Size
+} from './types/index'
 
 export type Dictionary<T> = { [key: string]: T }
 
@@ -45,8 +66,6 @@ export type SharedIntersection<T1, T2> = {
 } & {
   [P in keyof T2 as P extends keyof T1 ? P : never]: T2[P]
 }
-
-export type CanvasColour = string | CanvasGradient | CanvasPattern
 
 /**
  * Any object that has a {@link boundingRect}.
@@ -225,27 +244,6 @@ export interface IFoundSlot extends IInputOrOutput {
   // Centre point of the rendered slot connection
   link_pos: Point
 }
-
-/** A point represented as `[x, y]` co-ordinates */
-export type Point = [x: number, y: number]
-
-/** A size represented as `[width, height]` */
-export type Size = [width: number, height: number]
-
-/** A rectangle starting at top-left coordinates `[x, y, width, height]` */
-export type Rect =
-  | [x: number, y: number, width: number, height: number]
-  | Float64Array
-
-/** A rectangle starting at top-left coordinates `[x, y, width, height]` that will not be modified */
-export type ReadOnlyRect =
-  | readonly [x: number, y: number, width: number, height: number]
-  | ReadOnlyTypedArray<Float64Array>
-
-export type ReadOnlyTypedArray<T extends Float64Array> = Omit<
-  Readonly<T>,
-  'fill' | 'copyWithin' | 'reverse' | 'set' | 'sort' | 'subarray'
->
 
 /** Union of property names that are of type Match */
 type KeysOfType<T, Match> = Exclude<

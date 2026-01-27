@@ -18,7 +18,7 @@ import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LLink } from './LLink'
-import type { Reroute, RerouteId } from './Reroute'
+import type { Reroute } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
 import { NullGraphError } from './infrastructure/NullGraphError'
@@ -73,6 +73,7 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
+import type { NodeId, RerouteId } from './types/ids'
 import type { ISerialisedNode, SubgraphIO } from './types/serialisation'
 import type {
   IBaseWidget,
@@ -88,9 +89,9 @@ import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
-// #region Types
+export type { NodeId } from './types/ids'
 
-export type NodeId = number | string
+// #region Types
 
 export type NodeProperty = string | number | boolean | object
 

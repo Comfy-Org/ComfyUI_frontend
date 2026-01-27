@@ -2,9 +2,8 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
-import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LGraphNode } from './LGraphNode'
 import { LLink } from './LLink'
-import type { LinkId } from './LLink'
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -17,11 +16,12 @@ import type {
   ReadonlyLinkNetwork
 } from './interfaces'
 import { distance, isPointInRect } from './measure'
+import type { LinkId, NodeId, RerouteId } from './types/ids'
 import type { Serialisable, SerialisableReroute } from './types/serialisation'
 
-const layoutMutations = useLayoutMutations()
+export type { RerouteId } from './types/ids'
 
-export type RerouteId = number
+const layoutMutations = useLayoutMutations()
 
 /** The input or output slot that an incomplete reroute link is connected to. */
 export interface FloatingRerouteSlot {
