@@ -85,11 +85,10 @@ describe('BypassButton', () => {
   })
 
   it('should show bypassed styling when node is bypassed', async () => {
-    const bypassedNode: Partial<LGraphNode> = {
-      ...getMockLGraphNode(),
+    const bypassedNode = Object.assign(getMockLGraphNode(), {
       mode: LGraphEventMode.BYPASS
-    }
-    canvasStore.selectedItems = [bypassedNode as LGraphNode]
+    })
+    canvasStore.selectedItems = [bypassedNode]
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
     const wrapper = mountComponent()
 

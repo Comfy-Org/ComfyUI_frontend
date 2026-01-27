@@ -14,6 +14,7 @@ import type {
   ComfyWorkflowJSON,
   NodeId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -87,6 +88,28 @@ export class ComfyWorkflow extends UserFile {
   override async load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
+    const draftStore = useWorkflowDraftStore()
+    let draft = !force ? draftStore.getDraft(this.path) : undefined
+    let draftState: ComfyWorkflowJSON | null = null
+    let draftContent: string | null = null
+
+    if (draft) {
+      if (draft.updatedAt < this.lastModified) {
+        draftStore.removeDraft(this.path)
+        draft = undefined
+      }
+    }
+
+    if (draft) {
+      try {
+        draftState = JSON.parse(draft.data)
+        draftContent = draft.data
+      } catch (err) {
+        console.warn('Failed to parse workflow draft, clearing it', err)
+        draftStore.removeDraft(this.path)
+      }
+    }
+
     await super.load({ force })
     if (!force && this.isLoaded) return this as this & LoadedComfyWorkflow
 
@@ -94,13 +117,14 @@ export class ComfyWorkflow extends UserFile {
       throw new Error('[ASSERT] Workflow content should be loaded')
     }
 
-    // Note: originalContent is populated by super.load()
-    this.changeTracker = markRaw(
-      new ChangeTracker(
-        this,
-        /* initialState= */ JSON.parse(this.originalContent)
-      )
-    )
+    const initialState = JSON.parse(this.originalContent)
+    this.changeTracker = markRaw(new ChangeTracker(this, initialState))
+    if (draftState && draftContent) {
+      this.changeTracker.activeState = draftState
+      this.content = draftContent
+      this._isModified = true
+      draftStore.markDraftUsed(this.path)
+    }
     return this as this & LoadedComfyWorkflow
   }
 
@@ -110,12 +134,14 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
+    const draftStore = useWorkflowDraftStore()
     this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
     this.changeTracker?.reset()
     this.isModified = false
+    draftStore.removeDraft(this.path)
     return ret
   }
 
@@ -125,8 +151,11 @@ export class ComfyWorkflow extends UserFile {
    * @returns this
    */
   override async saveAs(path: string) {
+    const draftStore = useWorkflowDraftStore()
     this.content = JSON.stringify(this.activeState)
-    return await super.saveAs(path)
+    const result = await super.saveAs(path)
+    draftStore.removeDraft(path)
+    return result
   }
 
   async promptSave(): Promise<string | null> {
@@ -437,6 +466,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (workflow.isTemporary) {
       // Clear thumbnail when temporary workflow is closed
       clearThumbnail(workflow.key)
+      // Clear draft when unsaved workflow tab is closed
+      useWorkflowDraftStore().removeDraft(workflow.path)
       delete workflowLookup.value[workflow.path]
     } else {
       workflow.unload()
@@ -590,6 +621,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       const oldPath = workflow.path
       const oldKey = workflow.key
       const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
+      const draftStore = useWorkflowDraftStore()
 
       const openIndex = detachWorkflow(workflow)
       // Perform the actual rename operation first
@@ -598,6 +630,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       } finally {
         attachWorkflow(workflow, openIndex)
       }
+
+      draftStore.moveDraft(oldPath, newPath, workflow.key)
 
       // Move thumbnail from old key to new key (using workflow keys, not full paths)
       const newKey = workflow.key
@@ -616,6 +650,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     isBusy.value = true
     try {
       await workflow.delete()
+      useWorkflowDraftStore().removeDraft(workflow.path)
       if (bookmarkStore.isBookmarked(workflow.path)) {
         await bookmarkStore.setBookmarked(workflow.path, false)
       }

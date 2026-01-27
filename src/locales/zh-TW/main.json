@@ -960,11 +960,10 @@
     "videoPreview": "影片預覽 - 使用方向鍵在影片間導航",
     "viewImageOfTotal": "檢視第 {index} 張圖片（共 {total} 張）",
     "viewVideoOfTotal": "檢視第 {index} 個影片（共 {total} 個）",
-    "vitePreloadErrorMessage": "應用程式的新版本已發佈。您要重新載入嗎？\n如果不重新載入，應用程式的某些部分可能無法正常運作。\n您可以拒絕並先儲存進度，稍後再重新載入。",
-    "vitePreloadErrorTitle": "新版本可用",
     "volume": "音量",
     "warning": "警告",
-    "workflow": "工作流程"
+    "workflow": "工作流程",
+    "you": "你"
   },
   "graphCanvasMenu": {
     "fitView": "適合視窗",
@@ -1674,6 +1673,7 @@
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "月谷馬雷",
@@ -1684,6 +1684,7 @@
     "Runway": "跑道",
     "Sora": "蒼穹",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "三重奏",
     "Veo": "Veo",
@@ -1899,6 +1900,7 @@
     },
     "groupSettings": "群組設定",
     "groups": "群組",
+    "hideAdvancedInputsButton": "隱藏進階輸入",
     "hideInput": "隱藏輸入",
     "info": "資訊",
     "inputs": "輸入",
@@ -2319,6 +2321,10 @@
     "beta": "測試版",
     "billedMonthly": "每月收費",
     "billedYearly": "每年收費 {total}",
+    "billingComingSoon": {
+      "message": "團隊計費功能即將推出。屆時你可以為你的工作區訂閱方案，並依照每位成員計價。請持續關注最新消息。",
+      "title": "即將推出"
+    },
     "cancelSubscription": "取消訂閱",
     "changeTo": "切換至 {plan}",
     "comfyCloud": "Comfy Cloud",
@@ -2506,6 +2512,7 @@
     "failedToLoadModel": "無法載入 3D 模型",
     "failedToPurchaseCredits": "購買點數失敗：{error}",
     "failedToQueue": "加入佇列失敗",
+    "failedToSaveDraft": "無法儲存工作流程草稿",
     "failedToToggleCamera": "切換相機失敗",
     "failedToToggleGrid": "切換格線失敗",
     "failedToUpdateBackgroundColor": "更新背景顏色失敗",
@@ -2646,6 +2653,9 @@
     "saveWorkflow": "儲存工作流程"
   },
   "workspace": {
+    "addedToWorkspace": "你已被加入 {workspaceName}",
+    "inviteAccepted": "已接受邀請",
+    "inviteFailed": "接受邀請失敗",
     "unsavedChanges": {
       "message": "您有未儲存的變更。是否要捨棄這些變更並切換工作區？",
       "title": "未儲存的變更"
@@ -2668,6 +2678,9 @@
       "namePlaceholder": "輸入工作區名稱",
       "title": "建立新工作區"
     },
+    "dashboard": {
+      "placeholder": "儀表板工作區設定"
+    },
     "deleteDialog": {
       "message": "任何未使用的點數或未儲存的資產都將遺失。此操作無法復原。",
       "messageWithName": "刪除「{name}」？任何未使用的點數或未儲存的資產都將遺失。此操作無法復原。",
@@ -2678,10 +2691,49 @@
       "save": "儲存",
       "title": "編輯工作區詳細資料"
     },
+    "invite": "邀請",
+    "inviteLimitReached": "你已達到最多 50 位成員的上限",
+    "inviteMember": "邀請成員",
+    "inviteMemberDialog": {
+      "createLink": "建立連結",
+      "linkCopied": "已複製",
+      "linkCopyFailed": "複製連結失敗",
+      "linkStep": {
+        "copyLink": "複製連結",
+        "done": "完成",
+        "message": "請確認他們的帳號使用此電子郵件。",
+        "title": "將此連結發送給對方"
+      },
+      "message": "建立可分享的邀請連結並發送給對方",
+      "placeholder": "輸入對方的電子郵件",
+      "title": "邀請他人加入此工作區"
+    },
     "leaveDialog": {
       "leave": "離開",
       "message": "除非聯絡工作區擁有者，否則您將無法再次加入。",
       "title": "確定要離開此工作區？"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "複製邀請連結",
+        "removeMember": "移除成員",
+        "revokeInvite": "撤銷邀請"
+      },
+      "columns": {
+        "expiryDate": "到期日",
+        "inviteDate": "邀請日期",
+        "joinDate": "加入日期"
+      },
+      "createNewWorkspace": "建立新工作區。",
+      "membersCount": "{count}/50 位成員",
+      "noInvites": "沒有待處理邀請",
+      "noMembers": "沒有成員",
+      "pendingInvitesCount": "{count} 個待處理邀請",
+      "personalWorkspaceMessage": "你目前無法邀請其他成員加入你的個人工作區。若要新增成員，請",
+      "tabs": {
+        "active": "已啟用",
+        "pendingCount": "待處理 ({count})"
+      }
     },
     "menu": {
       "deleteWorkspace": "刪除工作區",
@@ -2689,14 +2741,42 @@
       "editWorkspace": "編輯工作區詳細資料",
       "leaveWorkspace": "離開工作區"
     },
+    "removeMemberDialog": {
+      "error": "移除成員失敗",
+      "message": "此成員將會從你的工作區中移除。他們已使用的點數不會退還。",
+      "remove": "移除成員",
+      "success": "已移除成員",
+      "title": "要移除此成員嗎？"
+    },
+    "revokeInviteDialog": {
+      "message": "此人將無法再加入你的工作區，他們的邀請連結也會失效。",
+      "revoke": "取消邀請",
+      "title": "要取消邀請此人嗎？"
+    },
     "tabs": {
+      "dashboard": "儀表板",
+      "membersCount": "成員 ({count})",
       "planCredits": "方案與點數"
     },
     "toast": {
       "failedToCreateWorkspace": "建立工作區失敗",
       "failedToDeleteWorkspace": "刪除工作區失敗",
+      "failedToFetchWorkspaces": "載入工作區失敗",
       "failedToLeaveWorkspace": "離開工作區失敗",
       "failedToUpdateWorkspace": "更新工作區失敗",
+      "workspaceCreated": {
+        "message": "訂閱方案、邀請團隊成員並開始協作。",
+        "subscribe": "訂閱",
+        "title": "已建立工作區"
+      },
+      "workspaceDeleted": {
+        "message": "該工作區已被永久刪除。",
+        "title": "已刪除工作區"
+      },
+      "workspaceLeft": {
+        "message": "你已離開該工作區。",
+        "title": "已離開工作區"
+      },
       "workspaceUpdated": {
         "message": "工作區詳細資料已儲存。",
         "title": "工作區已更新"
@@ -2706,6 +2786,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "建立新工作區",
     "maxWorkspacesReached": "您最多只能擁有 10 個工作區。請刪除一個以建立新工作區。",
+    "personal": "個人",
     "roleMember": "成員",
     "roleOwner": "擁有者",
     "subscribe": "訂閱",

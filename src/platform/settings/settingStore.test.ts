@@ -7,6 +7,7 @@ import {
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
+import type { Settings } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
@@ -46,7 +47,9 @@ describe('useSettingStore', () => {
   describe('load', () => {
     it('should load settings from API', async () => {
       const mockSettings = { 'test.setting': 'value' }
-      vi.mocked(api.getSettings).mockResolvedValue(mockSettings as any)
+      vi.mocked(api.getSettings).mockResolvedValue(
+        mockSettings as Partial<Settings> as Settings
+      )
 
       await store.load()
 

@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "プロンプトに基づいてAPI経由でByteDanceモデルを使用して画像を編集",
-    "display_name": "ByteDance画像編集",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "guidance_scale": {
-        "name": "ガイダンススケール",
-        "tooltip": "値が高いほどプロンプトに忠実な画像になります"
-      },
-      "image": {
-        "name": "画像",
-        "tooltip": "編集するベース画像"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "画像編集の指示"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "生成に使用するシード値"
-      },
-      "watermark": {
-        "name": "透かし",
-        "tooltip": "画像に「AI生成」の透かしを追加するかどうか"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "プロンプトに基づいてAPI経由でByteDanceモデルを使用して画像を生成",
     "display_name": "ByteDance画像",
@@ -2098,11 +2061,13 @@
       "option1": {
       }
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "インデックス",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "ControlNetモデルを読み込む（diff）",
@@ -6454,6 +6419,60 @@
       }
     }
   },
+  "LoraLoaderBypass": {
+    "description": "LoRAをバイパスモードで適用します。通常のLoRAとは異なり、モデルの重みを変更せず、フォワードパス中にLoRAの計算を注入します。トレーニングシナリオで便利です。",
+    "display_name": "LoRAの読み込み（バイパス）（デバッグ用）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRAを適用するCLIPモデル。"
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "LoRAの名前。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "LoRAを適用する拡散モデル。"
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "CLIPモデルをどの程度変更するか。この値は負にもできます。"
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "拡散モデルをどの程度変更するか。この値は負にもできます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更された拡散モデル。"
+      },
+      "1": {
+        "tooltip": "変更されたCLIPモデル。"
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "LoRAをバイパスモードで適用します。通常のLoRAとは異なり、モデルの重みを変更せず、フォワードパス中にLoRAの計算を注入します。トレーニングシナリオで便利です。",
+    "display_name": "LoRAの読み込み（バイパス、モデルのみ）（デバッグ用）",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "model"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更された拡散モデル。"
+      }
+    }
+  },
   "LoraLoaderModelOnly": {
     "description": "LoRAは拡散およびCLIPモデルを修正するために使用され、潜在のノイズ除去方法を変更します。複数のLoRAノードを連結できます。",
     "display_name": "LoRAローダーモデルのみ",
@@ -6813,6 +6832,126 @@
       "seed": {
         "name": "シード",
         "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "description": "画像のライティングを調整し、オプションで参照画像からの光の転送も可能です。",
+    "display_name": "Magnific 画像リライティング",
+    "inputs": {
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "高度なライティング制御のための詳細設定。"
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "プロンプトや参照画像に基づいて背景を変更します。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "リライティングする画像。"
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "生成の自由度を制限し、元画像により近づけます。"
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "光転送の適用強度。"
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "元画像の質感や細部を維持します。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "ライティングのための説明的なガイダンス。強調表記（1-1.4）に対応。"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "光を転送するためのオプションの参照画像。"
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "出力のスタイル設定。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "複数の処理モードによるポートレートの肌補正。",
+    "display_name": "Magnific 画像スキンエンハンサー",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "補正するポートレート画像。"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "処理モード：creative（芸術的補正）、faithful（元の外観を維持）、flexible（ターゲット最適化）。"
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "シャープネスの強度レベル。"
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "スマートグレインの強度レベル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "参照画像からスタイルを抽出し、入力画像に転送します。",
+    "display_name": "Magnific画像スタイル転送",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "処理エンジンの選択。"
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "無効にすると、各生成でランダム性が加わり、より多様な結果が得られます。"
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "スタイル転送のフレーバー。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "スタイル転送を適用する画像。"
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "顔の強調のためにポートレートモードを有効にします。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "スタイルを抽出する参照画像。"
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "元画像の構造を維持します。"
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "スタイル強度のパーセンテージ。"
       }
     },
     "outputs": {
@@ -13428,6 +13567,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: 画像からモデルへ (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "face_count": {
+        "name": "面数"
+      },
+      "generate_type": {
+        "name": "生成タイプ"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "image_back": {
+        "name": "背面画像"
+      },
+      "image_left": {
+        "name": "左画像"
+      },
+      "image_right": {
+        "name": "右画像"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "`3.1`モデルではLowPolyオプションは利用できません。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: テキストからモデルへ (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "face_count": {
+        "name": "面数"
+      },
+      "generate_type": {
+        "name": "生成タイプ"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "`3.1`モデルではLowPolyオプションは利用できません。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "最大1024文字まで対応しています。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "モデルファイル",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13761,6 +13978,10 @@
       "bucket_mode": {
         "name": "バケットモード",
         "tooltip": "解像度バケットモードを有効にします。有効時は、ResolutionBucketノードから事前にバケット化されたlatentを期待します。"
+      },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "トレーニング用のバイパスモードを有効にします。有効にすると、アダプターは重みの変更ではなくフォワードフックで適用されます。重みを直接変更できない量子化モデルで便利です。"
       },
       "control_after_generate": {
         "name": "control after generate"
