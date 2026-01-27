@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables/useFloatWidget'
 
 vi.mock('@/scripts/widgets', () => ({
@@ -14,21 +15,9 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 const { onFloatValueChange } = _for_testing
 
-type MockWidget = {
-  type: 'number'
-  name: string
-  y: number
-  options: {
-    round?: number
-    min?: number
-    max?: number
-  }
-  value: number
-}
-
 describe('useFloatWidget', () => {
   describe('onFloatValueChange', () => {
-    let widget: MockWidget
+    let widget: INumericWidget
 
     beforeEach(() => {
       // Reset the widget before each test
@@ -38,7 +27,7 @@ describe('useFloatWidget', () => {
         y: 0,
         options: {},
         value: 0
-      }
+      } as Partial<INumericWidget> as INumericWidget
     })
 
     it('should not round values when round option is not set', () => {
