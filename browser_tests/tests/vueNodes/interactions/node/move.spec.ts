@@ -1,8 +1,5 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '../../../../fixtures/ComfyPage'
-import type { ComfyPage } from '../../../../fixtures/ComfyPage'
+import { comfyExpect as expect, comfyPageFixture as test } from '../../../../fixtures/ComfyPage';
+import type { ComfyPage } from '../../../../fixtures/ComfyPage';
 import type { Position } from '../../../../fixtures/types'
 
 test.describe('Vue Node Moving', () => {
@@ -60,20 +57,8 @@ test.describe('Vue Node Moving', () => {
     const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
     await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
 
-    // Get viewport size and clip top 15%
-    const viewportSize = comfyPage.page.viewportSize()
-    const clipRegion = viewportSize
-      ? {
-          x: 0,
-          y: Math.floor(viewportSize.height * 0.15),
-          width: viewportSize.width,
-          height: Math.ceil(viewportSize.height * 0.85)
-        }
-      : undefined
-
     await expect(comfyPage.canvas).toHaveScreenshot(
-      'vue-node-moved-node-touch.png',
-      { clip: clipRegion }
+      'vue-node-moved-node-touch.png'
     )
   })
 })

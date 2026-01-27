@@ -9,40 +9,13 @@ test.describe('Mobile Baseline Snapshots', () => {
       expect(await comfyPage.getGraphNodesCount()).toBe(0)
     }).toPass({ timeout: 256 })
     await comfyPage.nextFrame()
-
-    // Get viewport size and clip top 15%
-    const viewportSize = comfyPage.page.viewportSize()
-    const clipRegion = viewportSize
-      ? {
-          x: 0,
-          y: Math.floor(viewportSize.height * 0.15),
-          width: viewportSize.width,
-          height: Math.ceil(viewportSize.height * 0.85)
-        }
-      : undefined
-
-    await expect(comfyPage.canvas).toHaveScreenshot('mobile-empty-canvas.png', {
-      clip: clipRegion
-    })
+    await expect(comfyPage.canvas).toHaveScreenshot('mobile-empty-canvas.png')
   })
 
   test('@mobile default workflow', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('default')
-
-    // Get viewport size and clip top 15%
-    const viewportSize = comfyPage.page.viewportSize()
-    const clipRegion = viewportSize
-      ? {
-          x: 0,
-          y: Math.floor(viewportSize.height * 0.15),
-          width: viewportSize.width,
-          height: Math.ceil(viewportSize.height * 0.85)
-        }
-      : undefined
-
     await expect(comfyPage.canvas).toHaveScreenshot(
-      'mobile-default-workflow.png',
-      { clip: clipRegion }
+      'mobile-default-workflow.png'
     )
   })
 

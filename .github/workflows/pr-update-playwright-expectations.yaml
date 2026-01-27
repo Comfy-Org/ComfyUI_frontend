@@ -110,6 +110,8 @@ jobs:
       - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright-tests
         run: pnpm exec playwright test --update-snapshots --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          IS_NIGHTLY: 'true'
         continue-on-error: true
 
       - name: Stage changed snapshot files
