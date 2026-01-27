@@ -72,6 +72,9 @@ export function getAssetDisplayName(asset: AssetItem): string {
  * @returns The source URL or null if not present/parseable
  */
 export function getAssetSourceUrl(asset: AssetItem): string | null {
+  if (typeof asset.metadata?.repo_url === 'string') {
+    return asset.metadata.repo_url
+  }
   // Note: Reversed priority for backwards compatibility
   const sourceArn =
     asset.metadata?.source_arn ?? asset.user_metadata?.source_arn

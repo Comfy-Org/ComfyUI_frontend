@@ -50,6 +50,12 @@
             alt=""
             class="size-4 shrink-0"
           />
+          <img
+            v-else-if="sourceName === 'Hugging Face'"
+            src="/assets/images/hf-logo.svg"
+            alt=""
+            class="size-4 shrink-0"
+          />
           {{ t('assetBrowser.modelInfo.viewOnSource', { source: sourceName }) }}
           <i class="icon-[lucide--external-link] size-4 shrink-0" />
         </a>
