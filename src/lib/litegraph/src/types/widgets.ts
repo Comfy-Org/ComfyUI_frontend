@@ -361,6 +361,16 @@ export interface IBaseWidget<
 
   tooltip?: string
 
+  /**
+   * If true, this widget is a dynamic combo root that can have child widgets.
+   */
+  dynamicWidgetRoot?: boolean
+
+  /**
+   * The name of the parent dynamic combo widget that owns this child widget.
+   */
+  dynamicWidgetParent?: string
+
   // TODO: Confirm this format
   callback?(
     value: unknown,
