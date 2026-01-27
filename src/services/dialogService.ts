@@ -34,26 +34,15 @@ import NodeConflictHeader from '@/workbench/extensions/manager/components/manage
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
-export type ConfirmationDialogType =
-  | 'default'
-  | 'overwrite'
-  | 'overwriteBlueprint'
-  | 'delete'
-  | 'dirtyClose'
-  | 'reinstall'
-  | 'info'
+import type {
+  ConfirmationDialogType,
+  ExecutionErrorDialogInput
+} from './dialogTypes'
 
-/**
- * Minimal interface for execution error dialogs.
- * Satisfied by both ExecutionErrorWsMessage (WebSocket) and ExecutionError (Jobs API).
- */
-export interface ExecutionErrorDialogInput {
-  exception_type: string
-  exception_message: string
-  node_id: string | number
-  node_type: string
-  traceback: string[]
-}
+export type {
+  ConfirmationDialogType,
+  ExecutionErrorDialogInput
+} from './dialogTypes'
 
 export const useDialogService = () => {
   const dialogStore = useDialogStore()

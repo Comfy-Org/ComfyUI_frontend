@@ -99,7 +99,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { ConfirmationDialogType } from '@/services/dialogService'
+import type { ConfirmationDialogType } from '@/services/dialogTypes'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const props = defineProps<{

@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import type { ExecutionErrorDialogInput } from '@/services/dialogService'
+import type { ExecutionErrorDialogInput } from '@/services/dialogTypes'
 import type { TaskItemImpl } from '@/stores/queueStore'
 
 type CopyHandler = (value: string) => void | Promise<void>
