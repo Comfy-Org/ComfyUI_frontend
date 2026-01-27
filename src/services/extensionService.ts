@@ -1,6 +1,7 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -12,6 +13,77 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
+
+type ExtensionModule = { default?: ComfyExtension; extension?: ComfyExtension }
+
+const coreExtensionModules = import.meta.glob<ExtensionModule>(
+  '../extensions/core/*.ts',
+  { eager: false }
+)
+
+async function loadCoreExtensions(
+  registerExtension: (ext: ComfyExtension) => void
+) {
+  const loadPromises = Object.entries(coreExtensionModules)
+    .filter(([path]) => !path.endsWith('/index.ts'))
+    .map(async ([path, loader]) => {
+      try {
+        const mod = await loader()
+        const extension = mod.default ?? mod.extension
+        if (extension && typeof extension === 'object' && 'name' in extension) {
+          registerExtension(extension)
+        }
+      } catch (e) {
+        console.error(`Failed to load extension from ${path}:`, e)
+      }
+    })
+
+  await Promise.all(loadPromises)
+
+  if (isCloud) {
+    try {
+      await import('../extensions/core/cloudRemoteConfig')
+    } catch (e) {
+      console.error('Failed to load cloudRemoteConfig:', e)
+    }
+
+    try {
+      await import('../extensions/core/cloudBadges')
+    } catch (e) {
+      console.error('Failed to load cloudBadges:', e)
+    }
+
+    try {
+      await import('../extensions/core/cloudSessionCookie')
+    } catch (e) {
+      console.error('Failed to load cloudSessionCookie:', e)
+    }
+
+    if (window.__CONFIG__?.subscription_required) {
+      try {
+        await import('../extensions/core/cloudSubscription')
+      } catch (e) {
+        console.error('Failed to load cloudSubscription:', e)
+      }
+    }
+  }
+
+  if (isCloud || isNightly) {
+    try {
+      await import('../extensions/core/cloudFeedbackTopbarButton')
+    } catch (e) {
+      console.error('Failed to load cloudFeedbackTopbarButton:', e)
+    }
+  }
+
+  if (isNightly && !isCloud) {
+    try {
+      await import('../extensions/core/nightlyBadges')
+    } catch (e) {
+      console.error('Failed to load nightlyBadges:', e)
+    }
+  }
+}
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
@@ -33,9 +105,7 @@ export const useExtensionService = () => {
 
     const extensions = await api.getExtensions()
 
-    // Need to load core extensions first as some custom extensions
-    // may depend on them.
-    await import('../extensions/core/index')
+    await loadCoreExtensions(registerExtension)
     extensionStore.captureCoreExtensions()
     await Promise.all(
       extensions
