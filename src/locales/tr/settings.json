@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "Seçim araç kutusunu göster"
+    "name": "Seçim araç kutusunu göster",
+    "tooltip": "Düğümler seçildiğinde, yaygın işlemlere hızlı erişim sağlayan bir araç çubuğu gösterir."
   },
   "Comfy_ConfirmClear": {
     "name": "İş akışını temizlerken onay iste"
@@ -147,7 +148,8 @@
       "Linear": "Doğrusal",
       "Spline": "Eğri",
       "Straight": "Düz"
-    }
+    },
+    "tooltip": "Tuvaldeki düğümler arasındaki bağlantı çizgilerinin görünümünü ve görünürlüğünü kontrol eder."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "3D Görüntüleyiciyi Etkinleştir (Beta)",
@@ -474,6 +476,7 @@
     "tooltip": "Yeniden yönlendirme merkez noktasından bezier kontrol noktası ofseti"
   },
   "pysssss_SnapToGrid": {
-    "name": "Her zaman ızgaraya yapıştır"
+    "name": "Her zaman ızgaraya yapıştır",
+    "tooltip": "Etkinleştirildiğinde, düğümler taşındığında veya yeniden boyutlandırıldığında otomatik olarak ızgaraya hizalanır."
   }
 }
