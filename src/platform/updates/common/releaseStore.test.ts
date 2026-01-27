@@ -438,7 +438,7 @@ describe('useReleaseStore', () => {
       expect(mockReleaseService.getReleases).toHaveBeenCalled()
     })
 
-    it('should proceed with fetchReleases when argv is null', async () => {
+    it('should proceed with fetchReleases when argv is undefined', async () => {
       mockSystemStatsStore.systemStats!.system.argv = undefined
       mockReleaseService.getReleases.mockResolvedValue([mockRelease])
 
