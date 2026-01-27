@@ -49,29 +49,67 @@ vi.mock('@/stores/userStore', () => ({
   }))
 }))
 
-describe('bootstrapStore', () => {
-  let store: ReturnType<typeof useBootstrapStore>
+const mockIsFirebaseInitialized = ref(false)
+vi.mock('@/stores/firebaseAuthStore', () => ({
+  useFirebaseAuthStore: vi.fn(() => ({
+    isInitialized: mockIsFirebaseInitialized
+  }))
+}))
 
+const mockDistributionTypes = vi.hoisted(() => ({
+  isCloud: false
+}))
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+describe('bootstrapStore', () => {
   beforeEach(() => {
     mockIsSettingsReady.value = false
+    mockIsFirebaseInitialized.value = false
+    mockDistributionTypes.isCloud = false
     setActivePinia(createTestingPinia({ stubActions: false }))
-    store = useBootstrapStore()
     vi.clearAllMocks()
   })
 
   it('initializes with all flags false', () => {
+    const store = useBootstrapStore()
     const settingStore = useSettingStore()
     expect(settingStore.isReady).toBe(false)
     expect(store.isI18nReady).toBe(false)
   })
 
   it('starts store bootstrap (settings, i18n)', async () => {
+    const store = useBootstrapStore()
     const settingStore = useSettingStore()
     void store.startStoreBootstrap()
 
     await vi.waitFor(() => {
       expect(settingStore.isReady).toBe(true)
       expect(store.isI18nReady).toBe(true)
+    })
+  })
+
+  describe('cloud mode', () => {
+    beforeEach(() => {
+      mockDistributionTypes.isCloud = true
+    })
+
+    it('waits for Firebase auth before loading i18n and settings', async () => {
+      const store = useBootstrapStore()
+      const settingStore = useSettingStore()
+      const bootstrapPromise = store.startStoreBootstrap()
+
+      // Bootstrap is blocked waiting for firebase
+      expect(store.isI18nReady).toBe(false)
+      expect(settingStore.isReady).toBe(false)
+
+      // Unblock by initializing firebase
+      mockIsFirebaseInitialized.value = true
+      await bootstrapPromise
+
+      await vi.waitFor(() => {
+        expect(store.isI18nReady).toBe(true)
+        expect(settingStore.isReady).toBe(true)
+      })
     })
   })
 })
