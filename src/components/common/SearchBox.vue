@@ -17,7 +17,7 @@
       :class="
         cn(
           'absolute inset-0 size-full border-none outline-none bg-transparent text-sm',
-          size === 'lg' ? 'pl-11' : 'pl-8'
+          isLarge ? 'pl-11' : 'pl-8'
         )
       "
       :aria-label="placeholder"
@@ -34,7 +34,7 @@
     <InputIcon v-if="!modelValue" :class="icon" />
     <Button
       v-if="modelValue"
-      :class="cn('clear-button absolute', size === 'lg' ? 'left-2' : 'left-0')"
+      :class="cn('clear-button absolute', isLarge ? 'left-2' : 'left-0')"
       variant="textonly"
       size="icon"
       @click="modelValue = ''"
@@ -88,6 +88,8 @@ const {
   class?: string
 }>()
 
+const isLarge = size === 'lg'
+
 const emit = defineEmits<{
   (e: 'search', value: string, filters: TFilter[]): void
   (e: 'showFilter', event: Event): void
@@ -113,12 +115,10 @@ watchDebounced(
 )
 
 const wrapperStyle = computed(() => {
-  const heightClass = size === 'lg' ? 'h-10' : 'h-8'
-
   if (showBorder) {
     return cn(
-      'rounded p-2 border border-solid border-border-default',
-      heightClass
+      'rounded p-2 border border-solid border-border-default box-border',
+      isLarge ? 'h-10' : 'h-8'
     )
   }
 
