@@ -14,7 +14,12 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
+      <SearchBox
+        v-model="searchQuery"
+        size="lg"
+        class="max-w-[384px]"
+        autofocus
+      />
     </template>
 
     <template #header-right-area>
