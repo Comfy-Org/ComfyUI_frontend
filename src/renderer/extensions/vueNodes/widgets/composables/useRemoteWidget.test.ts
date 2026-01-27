@@ -13,7 +13,7 @@ const createMockWidget = (overrides: Partial<IWidget> = {}): IWidget =>
     value: '',
     options: {},
     ...overrides
-  }) as IWidget
+  }) as Partial<IWidget> as IWidget
 
 const mockCloudAuth = vi.hoisted(() => ({
   isCloud: false,
