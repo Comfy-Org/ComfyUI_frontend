@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { useAdvancedWidgetOverridesStore } from '@/stores/workspace/advancedWidgetOverridesStore'
 
@@ -22,7 +22,8 @@ vi.mock('@/scripts/app', () => ({
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => ({
     activeWorkflow: { path: 'test-workflow' },
-    nodeToNodeLocatorId: (node: { id: number }) => `node-${node.id}`
+    nodeToNodeLocatorId: (node: { id: number; locatorId?: string }) =>
+      node.locatorId ?? `node-${node.id}`
   })
 }))
 
@@ -34,9 +35,10 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 
 function makeNode(
   id: number,
-  widgets: Array<{ name: string; options?: IWidgetOptions<unknown> }>
+  widgets: Array<{ name: string; options?: IWidgetOptions<unknown> }>,
+  locatorId?: string
 ) {
-  return { id, widgets } as Partial<LGraphNode> as LGraphNode
+  return { id, widgets, locatorId } as unknown as LGraphNode
 }
 
 describe('useAdvancedWidgetOverridesStore', () => {
@@ -181,6 +183,39 @@ describe('useAdvancedWidgetOverridesStore', () => {
     expect(stored.overrides).toHaveLength(1)
     expect(stored.overrides[0]).toEqual({
       nodeLocatorId: 'node-1',
+      widgetName: 'cfg',
+      advanced: true
+    })
+  })
+
+  it('pruneInvalidOverrides preserves overrides for nodes inside subgraphs', () => {
+    const store = useAdvancedWidgetOverridesStore()
+
+    const innerNode = makeNode(1, [{ name: 'cfg' }], 'node-subgraph-10:node-1')
+    store.setAdvanced(innerNode, 'cfg', true)
+
+    const subgraph = { nodes: [innerNode] } as unknown as Subgraph
+    const subgraphNode = {
+      id: 10,
+      widgets: [],
+      subgraph,
+      isSubgraphNode: () => true
+    } as unknown as LGraphNode
+
+    mockGraph.nodes = [subgraphNode]
+    store.pruneInvalidOverrides()
+
+    expect(store.isOverridden(innerNode, 'cfg')).toBe(true)
+
+    const stored = mockGraph.extra.advancedWidgetOverrides as {
+      overrides: Array<{
+        nodeLocatorId: string
+        widgetName: string
+        advanced: boolean
+      }>
+    }
+    expect(stored.overrides).toContainEqual({
+      nodeLocatorId: 'node-subgraph-10:node-1',
       widgetName: 'cfg',
       advanced: true
     })

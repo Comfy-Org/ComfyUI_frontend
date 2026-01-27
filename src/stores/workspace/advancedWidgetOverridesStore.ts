@@ -7,6 +7,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { forEachNode } from '@/utils/graphTraversalUtil'
 
 interface AdvancedWidgetOverrideEntry {
   nodeLocatorId: NodeLocatorId
@@ -197,15 +198,12 @@ export const useAdvancedWidgetOverridesStore = defineStore(
       if (!graph) return
 
       const validKeys = new Set<string>()
-      for (const node of graph.nodes ?? []) {
+      forEachNode(graph, (node) => {
         for (const widget of node.widgets ?? []) {
-          const key = getOverrideKey(
-            getNodeLocatorId(node as LGraphNode),
-            widget.name
-          )
+          const key = getOverrideKey(getNodeLocatorId(node), widget.name)
           validKeys.add(key)
         }
-      }
+      })
 
       const next = new Map<string, boolean>()
       for (const [key, advanced] of overrides.value) {
