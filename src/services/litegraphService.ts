@@ -1,5 +1,7 @@
 import _ from 'es-toolkit/compat'
 
+import { CONFIG, GET_CONFIG } from '@/lib/litegraph/constants'
+export { CONFIG, GET_CONFIG }
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
@@ -67,9 +69,6 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 export interface HasInitialMinSize {
   _initialMinSize: { width: number; height: number }
 }
-
-export const CONFIG = Symbol()
-export const GET_CONFIG = Symbol()
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
