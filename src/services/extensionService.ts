@@ -138,11 +138,14 @@ export const useExtensionService = () => {
   /**
    * Invoke an extension callback
    * @param {keyof ComfyExtension} method The extension callback to execute
-   * @param  {any[]} args Any arguments to pass to the callback
+   * @param  {unknown[]} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensions = (method: keyof ComfyExtension, ...args: any[]) => {
-    const results: any[] = []
+  const invokeExtensions = (
+    method: keyof ComfyExtension,
+    ...args: unknown[]
+  ) => {
+    const results: unknown[] = []
     for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
         try {
@@ -164,12 +167,12 @@ export const useExtensionService = () => {
    * Invoke an async extension callback
    * Each callback will be invoked concurrently
    * @param {string} method The extension callback to execute
-   * @param  {...any} args Any arguments to pass to the callback
+   * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
    */
   const invokeExtensionsAsync = async (
     method: keyof ComfyExtension,
-    ...args: any[]
+    ...args: unknown[]
   ) => {
     return await Promise.all(
       extensionStore.enabledExtensions.map(async (ext) => {

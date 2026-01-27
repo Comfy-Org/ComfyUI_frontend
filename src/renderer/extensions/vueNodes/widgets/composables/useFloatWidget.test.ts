@@ -14,13 +14,28 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 const { onFloatValueChange } = _for_testing
 
+type MockWidget = {
+  type: 'number'
+  name: string
+  y: number
+  options: {
+    round?: number
+    min?: number
+    max?: number
+  }
+  value: number
+}
+
 describe('useFloatWidget', () => {
   describe('onFloatValueChange', () => {
-    let widget: any
+    let widget: MockWidget
 
     beforeEach(() => {
       // Reset the widget before each test
       widget = {
+        type: 'number',
+        name: 'test_widget',
+        y: 0,
         options: {},
         value: 0
       }

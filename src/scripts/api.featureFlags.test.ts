@@ -1,10 +1,19 @@
+import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
+interface MockWebSocket {
+  readyState: number
+  send: Mock
+  close: Mock
+  addEventListener: Mock
+  removeEventListener: Mock
+}
+
 describe('API Feature Flags', () => {
-  let mockWebSocket: any
-  const wsEventHandlers: { [key: string]: (event: any) => void } = {}
+  let mockWebSocket: MockWebSocket
+  const wsEventHandlers: { [key: string]: (event: unknown) => void } = {}
 
   beforeEach(() => {
     // Use fake timers
@@ -16,7 +25,7 @@ describe('API Feature Flags', () => {
       send: vi.fn(),
       close: vi.fn(),
       addEventListener: vi.fn(
-        (event: string, handler: (event: any) => void) => {
+        (event: string, handler: (event: unknown) => void) => {
           wsEventHandlers[event] = handler
         }
       ),

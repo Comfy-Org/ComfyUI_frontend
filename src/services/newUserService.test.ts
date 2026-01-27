@@ -1,3 +1,4 @@
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockLocalStorage = vi.hoisted(() => ({
@@ -20,10 +21,18 @@ vi.mock('@/config/version', () => ({
 global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
 
 import type { newUserService as NewUserServiceType } from '@/services/newUserService'
+import type { useSettingStore } from '@/platform/settings/settingStore'
+
+interface MockSettingStore {
+  settingValues: Record<string, unknown>
+  get: Mock
+  set: Mock
+}
 
 describe('newUserService', () => {
   let service: ReturnType<typeof NewUserServiceType>
-  let mockSettingStore: any
+  let mockSettingStore: MockSettingStore
+  let mockSettingStoreTyped: ReturnType<typeof useSettingStore>
   let newUserService: typeof NewUserServiceType
 
   beforeEach(async () => {
@@ -42,6 +51,14 @@ describe('newUserService', () => {
       set: vi.fn()
     }
 
+    mockSettingStoreTyped = {
+      ...mockSettingStore,
+      ...({} as Omit<
+        ReturnType<typeof useSettingStore>,
+        keyof typeof mockSettingStore
+      >)
+    } as ReturnType<typeof useSettingStore>
+
     mockLocalStorage.getItem.mockReturnValue(null)
   })
 
@@ -54,7 +71,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(true)
     })
@@ -69,7 +86,7 @@ describe('newUserService', () => {
 
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(true)
     })
@@ -82,7 +99,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(false)
     })
@@ -98,7 +115,7 @@ describe('newUserService', () => {
         return null
       })
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(false)
     })
@@ -114,7 +131,7 @@ describe('newUserService', () => {
         return null
       })
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(false)
     })
@@ -127,7 +144,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(true)
     })
@@ -143,7 +160,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(false)
     })
@@ -160,7 +177,7 @@ describe('newUserService', () => {
         return null
       })
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(false)
     })
@@ -177,7 +194,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
       expect(service.isNewUser()).toBe(true)
 
       await service.registerInitCallback(mockCallback)
@@ -207,7 +224,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       await service.registerInitCallback(mockCallback)
 
@@ -228,7 +245,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(mockSettingStore.set).toHaveBeenCalledWith(
         'Comfy.InstalledVersion',
@@ -244,7 +261,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(mockSettingStore.set).not.toHaveBeenCalled()
     })
@@ -263,7 +280,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(mockCallback1).toHaveBeenCalledTimes(1)
       expect(mockCallback2).toHaveBeenCalledTimes(1)
@@ -281,7 +298,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(mockCallback).not.toHaveBeenCalled()
     })
@@ -299,7 +316,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(consoleSpy).toHaveBeenCalledWith(
         'New user initialization callback failed:',
@@ -316,10 +333,10 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
       expect(mockSettingStore.set).toHaveBeenCalledTimes(1)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
       expect(mockSettingStore.set).toHaveBeenCalledTimes(1)
     })
 
@@ -334,7 +351,7 @@ describe('newUserService', () => {
       // Before initialization, isNewUser should return null
       expect(service.isNewUser()).toBeNull()
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       // After initialization, isNewUser should return true for a new user
       expect(service.isNewUser()).toBe(true)
@@ -357,7 +374,7 @@ describe('newUserService', () => {
       mockSettingStore.get.mockReturnValue(undefined)
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(true)
     })
@@ -372,7 +389,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service.isNewUser()).toBe(true)
     })
@@ -388,7 +405,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service.initializeIfNewUser(mockSettingStore)
+      await service.initializeIfNewUser(mockSettingStoreTyped)
 
       await service.registerInitCallback(mockCallback1)
       await service.registerInitCallback(mockCallback2)
@@ -410,7 +427,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service1.initializeIfNewUser(mockSettingStore)
+      await service1.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(service2.isNewUser()).toBe(true)
       expect(service1.isNewUser()).toBe(service2.isNewUser())
@@ -433,7 +450,7 @@ describe('newUserService', () => {
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
-      await service1.initializeIfNewUser(mockSettingStore)
+      await service1.initializeIfNewUser(mockSettingStoreTyped)
 
       expect(mockCallback1).toHaveBeenCalledTimes(1)
       expect(mockCallback2).toHaveBeenCalledTimes(1)
