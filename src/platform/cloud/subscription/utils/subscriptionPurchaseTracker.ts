@@ -12,6 +12,14 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000 // 24 hours
 const VALID_TIERS: TierKey[] = ['standard', 'creator', 'pro', 'founder']
 const VALID_CYCLES: BillingCycle[] = ['monthly', 'yearly']
 
+const safeRemove = (): void => {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch {
+    // Ignore storage errors (e.g. private browsing mode)
+  }
+}
+
 export function startSubscriptionPurchaseTracking(
   tierKey: TierKey,
   billingCycle: BillingCycle
@@ -31,13 +39,14 @@ export function startSubscriptionPurchaseTracking(
 
 export function getPendingSubscriptionPurchase(): PendingSubscriptionPurchase | null {
   if (typeof window === 'undefined') return null
-  const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) return null
 
   try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+
     const parsed = JSON.parse(raw) as PendingSubscriptionPurchase
     if (!parsed || typeof parsed !== 'object') {
-      localStorage.removeItem(STORAGE_KEY)
+      safeRemove()
       return null
     }
 
@@ -47,23 +56,23 @@ export function getPendingSubscriptionPurchase(): PendingSubscriptionPurchase | 
       !VALID_CYCLES.includes(billingCycle) ||
       typeof timestamp !== 'number'
     ) {
-      localStorage.removeItem(STORAGE_KEY)
+      safeRemove()
       return null
     }
 
     if (Date.now() - timestamp > MAX_AGE_MS) {
-      localStorage.removeItem(STORAGE_KEY)
+      safeRemove()
       return null
     }
 
     return parsed
   } catch {
-    localStorage.removeItem(STORAGE_KEY)
+    safeRemove()
     return null
   }
 }
 
 export function clearPendingSubscriptionPurchase(): void {
   if (typeof window === 'undefined') return
-  localStorage.removeItem(STORAGE_KEY)
+  safeRemove()
 }
