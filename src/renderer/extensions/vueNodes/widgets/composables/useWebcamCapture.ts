@@ -10,14 +10,13 @@ import { app } from '@/scripts/app'
 export const DEFAULT_VIDEO_WIDTH = 640
 export const DEFAULT_VIDEO_HEIGHT = 480
 
-// knip-ignore-exports UseWebcamCaptureOptions, UseWebcamCaptureReturn
-export interface UseWebcamCaptureOptions {
+interface UseWebcamCaptureOptions {
   videoRef: Ref<HTMLVideoElement | undefined>
   readonly?: boolean
   onCameraStart?: () => void
 }
 
-export interface UseWebcamCaptureReturn {
+interface UseWebcamCaptureReturn {
   // State
   isCameraOn: Ref<boolean>
   isShowingPreview: Ref<boolean>
