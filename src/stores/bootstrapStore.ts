@@ -1,10 +1,12 @@
-import { useAsyncState } from '@vueuse/core'
-import { defineStore } from 'pinia'
+import { until, useAsyncState } from '@vueuse/core'
+import { defineStore, storeToRefs } from 'pinia'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useUserStore } from '@/stores/userStore'
+import { isCloud } from '@/platform/distribution/types'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 export const useBootstrapStore = defineStore('bootstrap', () => {
   const settingStore = useSettingStore()
@@ -30,12 +32,17 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
     const userStore = useUserStore()
     await userStore.initialize()
 
+    if (isCloud) {
+      const { isInitialized } = storeToRefs(useFirebaseAuthStore())
+      await until(isInitialized).toBe(true)
+    }
+
     // i18n can load without authentication
     void loadI18n()
 
     if (!userStore.needsLogin) {
-      await settingStore.load()
-      await workflowStore.loadWorkflows()
+      void settingStore.load()
+      void workflowStore.loadWorkflows()
     }
   }
 
