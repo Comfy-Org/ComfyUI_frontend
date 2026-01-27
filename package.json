@@ -78,6 +78,7 @@
     "@vue/test-utils": "catalog:",
     "@webgpu/types": "catalog:",
     "cross-env": "catalog:",
+    "dependency-cruiser": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
     "eslint-import-resolver-typescript": "catalog:",

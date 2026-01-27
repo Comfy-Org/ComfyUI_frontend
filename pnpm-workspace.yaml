@@ -48,6 +48,7 @@ catalog:
   axios: ^1.8.2
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
+  dependency-cruiser: ^17.3.7
   dotenv: ^16.4.5
   eslint: ^9.39.1
   eslint-config-prettier: ^10.1.8
@@ -62,8 +63,8 @@ catalog:
   happy-dom: ^20.0.11
   husky: ^9.1.7
   jiti: 2.6.1
-  jsonata: ^2.1.0
   jsdom: ^27.4.0
+  jsonata: ^2.1.0
   knip: ^5.75.1
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4
