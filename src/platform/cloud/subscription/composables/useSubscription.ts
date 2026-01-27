@@ -237,7 +237,12 @@ function useSubscriptionInternal() {
 
     const statusData = await response.json()
     subscriptionStatus.value = statusData
-    trackSubscriptionPurchase(statusData)
+
+    try {
+      await trackSubscriptionPurchase(statusData)
+    } catch (error) {
+      console.error('Failed to track subscription purchase', error)
+    }
     return statusData
   }
 
