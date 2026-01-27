@@ -272,6 +272,9 @@ export interface WorkflowCreatedMetadata {
  * Core telemetry provider interface
  */
 export interface TelemetryProvider {
+  // User identification (called by auth event hooks)
+  identify?(userId: string): void
+
   // Authentication flow events
   trackSignupOpened(): void
   trackAuth(metadata: AuthMetadata): void
