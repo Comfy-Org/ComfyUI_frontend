@@ -2,7 +2,7 @@
   <WidgetLayoutField :widget>
     <div
       :class="
-        cn('flex w-fit items-center gap-2', { 'ml-auto': !hideLayoutField })
+        cn('flex w-fit items-center gap-2', !hideLayoutField && 'ml-auto')
       "
     >
       <span
