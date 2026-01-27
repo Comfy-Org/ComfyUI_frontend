@@ -6,14 +6,15 @@ import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composab
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
-const createMockWidget = (overrides: Partial<IWidget> = {}): IWidget =>
-  ({
+function createMockWidget(overrides: Partial<IWidget> = {}): IWidget {
+  return {
     name: 'test_widget',
     type: 'text',
     value: '',
     options: {},
     ...overrides
-  }) as Partial<IWidget> as IWidget
+  } as Partial<IWidget> as IWidget
+}
 
 const mockCloudAuth = vi.hoisted(() => ({
   isCloud: false,
