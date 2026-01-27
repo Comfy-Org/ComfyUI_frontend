@@ -88,7 +88,7 @@ const {
   class?: string
 }>()
 
-const isLarge = size === 'lg'
+const isLarge = computed(() => size === 'lg')
 
 const emit = defineEmits<{
   (e: 'search', value: string, filters: TFilter[]): void
