@@ -1,7 +1,6 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 import { watch } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   checkForCompletedTopup as checkTopupUtil,
   clearTopupTracking as clearTopupUtil,
@@ -120,11 +119,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               loaded: () => {
                 this.isInitialized = true
                 this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
-                })
               }
             })
           })
@@ -203,6 +197,12 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         return isValid
       })
     )
+  }
+
+  identify(userId: string): void {
+    if (this.mixpanel) {
+      this.mixpanel.identify(userId)
+    }
   }
 
   trackSignupOpened(): void {

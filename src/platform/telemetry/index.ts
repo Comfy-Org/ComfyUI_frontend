@@ -16,11 +16,13 @@
  */
 import { isCloud } from '@/platform/distribution/types'
 
+import { initAuthTracking } from './authTracking'
 import { MixpanelTelemetryProvider } from './providers/cloud/MixpanelTelemetryProvider'
 import type { TelemetryProvider } from './types'
 
 // Singleton instance
 let _telemetryProvider: TelemetryProvider | null = null
+let _authTrackingInitialized = false
 
 /**
  * Telemetry factory - conditionally creates provider based on distribution
@@ -34,6 +36,11 @@ export function useTelemetry(): TelemetryProvider | null {
     // Use distribution check for tree-shaking
     if (isCloud) {
       _telemetryProvider = new MixpanelTelemetryProvider()
+
+      if (!_authTrackingInitialized) {
+        initAuthTracking(() => _telemetryProvider)
+        _authTrackingInitialized = true
+      }
     }
     // For OSS builds, _telemetryProvider stays null
   }

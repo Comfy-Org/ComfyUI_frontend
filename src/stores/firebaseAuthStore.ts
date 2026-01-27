@@ -25,8 +25,8 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
+import { authEventHook, userResolvedHook } from '@/stores/authEventBus'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -323,9 +323,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
-      useTelemetry()?.trackAuth({
+      authEventHook.trigger({
+        type: 'login',
         method: 'email',
         is_new_user: false
+      })
+      userResolvedHook.trigger({
+        userId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       })
     }
 
@@ -343,9 +349,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
-      useTelemetry()?.trackAuth({
+      authEventHook.trigger({
+        type: 'register',
         method: 'email',
         is_new_user: true
+      })
+      userResolvedHook.trigger({
+        userId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       })
     }
 
@@ -361,9 +373,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      useTelemetry()?.trackAuth({
+      authEventHook.trigger({
+        type: isNewUser ? 'register' : 'login',
         method: 'google',
         is_new_user: isNewUser
+      })
+      userResolvedHook.trigger({
+        userId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       })
     }
 
@@ -379,9 +397,15 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      useTelemetry()?.trackAuth({
+      authEventHook.trigger({
+        type: isNewUser ? 'register' : 'login',
         method: 'github',
         is_new_user: isNewUser
+      })
+      userResolvedHook.trigger({
+        userId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       })
     }
 
