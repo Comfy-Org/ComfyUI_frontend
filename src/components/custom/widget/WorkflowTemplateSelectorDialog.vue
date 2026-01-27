@@ -547,13 +547,15 @@ const navigationFilteredTemplates = computed(() => {
   return workflowTemplatesStore.filterTemplatesByCategory(selectedNavItem.value)
 })
 
-// Template filtering
+// Template filtering with scope awareness
 const {
   searchQuery,
   selectedModels,
   selectedUseCases,
   selectedRunsOn,
   sortBy,
+  activeModels,
+  activeUseCases,
   filteredTemplates,
   availableModels,
   availableUseCases,
@@ -562,7 +564,7 @@ const {
   totalCount,
   resetFilters,
   loadFuseOptions
-} = useTemplateFiltering(navigationFilteredTemplates)
+} = useTemplateFiltering(navigationFilteredTemplates, selectedNavItem)
 
 /**
  * Coordinates state between the selected navigation item and the sort order to
@@ -595,9 +597,11 @@ watch(selectedNavItem, () => coordinateNavAndSort('nav'))
 watch(sortBy, () => coordinateNavAndSort('sort'))
 
 // Convert between string array and object array for MultiSelect component
+// Only show selected items that exist in the current scope
 const selectedModelObjects = computed({
   get() {
-    return selectedModels.value.map((model) => ({ name: model, value: model }))
+    // Only include selected models that exist in availableModels
+    return activeModels.value.map((model) => ({ name: model, value: model }))
   },
   set(value: { name: string; value: string }[]) {
     selectedModels.value = value.map((item) => item.value)
@@ -606,7 +610,7 @@ const selectedModelObjects = computed({
 
 const selectedUseCaseObjects = computed({
   get() {
-    return selectedUseCases.value.map((useCase) => ({
+    return activeUseCases.value.map((useCase) => ({
       name: useCase,
       value: useCase
     }))

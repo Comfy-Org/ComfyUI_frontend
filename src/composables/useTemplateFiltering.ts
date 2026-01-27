@@ -26,7 +26,8 @@ const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
 }
 
 export function useTemplateFiltering(
-  templates: Ref<TemplateInfo[]> | TemplateInfo[]
+  templates: Ref<TemplateInfo[]> | TemplateInfo[],
+  currentScope?: Ref<string | null>
 ) {
   const settingStore = useSettingStore()
   const rankingStore = useTemplateRankingStore()
@@ -84,6 +85,40 @@ export function useTemplateFiltering(
     return ['ComfyUI', 'External or Remote API']
   })
 
+  // Compute which selected filters are actually applicable to the current scope
+  const activeModels = computed(() => {
+    if (!currentScope) {
+      return selectedModels.value
+    }
+    return selectedModels.value.filter((model) =>
+      availableModels.value.includes(model)
+    )
+  })
+
+  const activeUseCases = computed(() => {
+    if (!currentScope) {
+      return selectedUseCases.value
+    }
+    return selectedUseCases.value.filter((useCase) =>
+      availableUseCases.value.includes(useCase)
+    )
+  })
+
+  // Track which filters are inactive (selected but not applicable)
+  const inactiveModels = computed(() => {
+    if (!currentScope) return []
+    return selectedModels.value.filter(
+      (model) => !availableModels.value.includes(model)
+    )
+  })
+
+  const inactiveUseCases = computed(() => {
+    if (!currentScope) return []
+    return selectedUseCases.value.filter(
+      (useCase) => !availableUseCases.value.includes(useCase)
+    )
+  })
+
   const debouncedSearchQuery = refThrottled(searchQuery, 50)
 
   const filteredBySearch = computed(() => {
@@ -96,7 +131,8 @@ export function useTemplateFiltering(
   })
 
   const filteredByModels = computed(() => {
-    if (selectedModels.value.length === 0) {
+    // Use active models instead of selected models for filtering
+    if (activeModels.value.length === 0) {
       return filteredBySearch.value
     }
 
@@ -104,14 +140,15 @@ export function useTemplateFiltering(
       if (!template.models || !Array.isArray(template.models)) {
         return false
       }
-      return selectedModels.value.some((selectedModel) =>
-        template.models?.includes(selectedModel)
+      return activeModels.value.some((activeModel) =>
+        template.models?.includes(activeModel)
       )
     })
   })
 
   const filteredByUseCases = computed(() => {
-    if (selectedUseCases.value.length === 0) {
+    // Use active use cases instead of selected use cases for filtering
+    if (activeUseCases.value.length === 0) {
       return filteredByModels.value
     }
 
@@ -119,13 +156,14 @@ export function useTemplateFiltering(
       if (!template.tags || !Array.isArray(template.tags)) {
         return false
       }
-      return selectedUseCases.value.some((selectedTag) =>
-        template.tags?.includes(selectedTag)
+      return activeUseCases.value.some((activeUseCase) =>
+        template.tags?.includes(activeUseCase)
       )
     })
   })
 
   const filteredByRunsOn = computed(() => {
+    // RunsOn filters are scope-independent
     if (selectedRunsOn.value.length === 0) {
       return filteredByUseCases.value
     }
@@ -137,10 +175,10 @@ export function useTemplateFiltering(
       const isExternalAPI = template.openSource === false
       const isComfyUI = template.openSource !== false
 
-      return selectedRunsOn.value.some((selectedRunsOn) => {
-        if (selectedRunsOn === 'External or Remote API') {
+      return selectedRunsOn.value.some((runsOn) => {
+        if (runsOn === 'External or Remote API') {
           return isExternalAPI
-        } else if (selectedRunsOn === 'ComfyUI') {
+        } else if (runsOn === 'ComfyUI') {
           return isComfyUI
         }
         return false
@@ -342,6 +380,14 @@ export function useTemplateFiltering(
     selectedUseCases,
     selectedRunsOn,
     sortBy,
+
+    // Computed - Active filters (actually applied)
+    activeModels,
+    activeUseCases,
+
+    // Computed - Inactive filters (selected but not applicable)
+    inactiveModels,
+    inactiveUseCases,
 
     // Computed
     filteredTemplates,
