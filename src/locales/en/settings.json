@@ -255,10 +255,6 @@
     "name": "Snap highlights node",
     "tooltip": "When dragging a link over a node with viable input slot, highlight the node"
   },
-  "Comfy_Node_AlwaysShowAdvancedWidgets": {
-    "name": "Always show advanced widgets on all nodes",
-    "tooltip": "When enabled, advanced widgets are always visible on all nodes without needing to expand them individually."
-  },
   "Comfy_NodeBadge_NodeIdBadgeMode": {
     "name": "Node ID badge mode",
     "options": {

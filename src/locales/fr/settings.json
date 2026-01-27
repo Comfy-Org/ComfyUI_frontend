@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "Afficher la boîte à outils de sélection"
+    "name": "Afficher la boîte à outils de sélection",
+    "tooltip": "Affiche une barre d’outils flottante lorsque des nœuds sont sélectionnés, offrant un accès rapide aux actions courantes."
   },
   "Comfy_ConfirmClear": {
     "name": "Demander une confirmation lors de l'effacement du flux de travail"
@@ -147,7 +148,8 @@
       "Linear": "Linéaire",
       "Spline": "Spline",
       "Straight": "Droit"
-    }
+    },
+    "tooltip": "Contrôle l’apparence et la visibilité des liens de connexion entre les nœuds sur le canevas."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "Activer le visualiseur 3D (Bêta)",
@@ -474,6 +476,7 @@
     "tooltip": "Le point de contrôle de Bézier est décalé par rapport au point central de réacheminement"
   },
   "pysssss_SnapToGrid": {
-    "name": "Toujours aligner sur la grille"
+    "name": "Toujours aligner sur la grille",
+    "tooltip": "Lorsque cette option est activée, les nœuds s’alignent automatiquement sur la grille lors de leur déplacement ou redimensionnement."
   }
 }
