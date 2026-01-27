@@ -33,7 +33,7 @@ describe('useTransformState', () => {
   beforeEach(() => {
     transformState.syncWithCanvas({
       ds: { offset: [0, 0] }
-    } as unknown as LGraphCanvas)
+    } as LGraphCanvas)
   })
 
   describe('initial state', () => {
@@ -62,7 +62,7 @@ describe('useTransformState', () => {
       mockCanvas.ds.offset = [100, 50]
       mockCanvas.ds.scale = 2
 
-      syncWithCanvas(mockCanvas as any)
+      syncWithCanvas(mockCanvas as LGraphCanvas)
 
       expect(camera.x).toBe(100)
       expect(camera.y).toBe(50)
@@ -72,7 +72,7 @@ describe('useTransformState', () => {
     it('should handle null canvas gracefully', () => {
       const { syncWithCanvas, camera } = transformState
 
-      syncWithCanvas(null as any)
+      syncWithCanvas(null! as LGraphCanvas)
 
       // Should remain at initial values
       expect(camera.x).toBe(0)
@@ -84,7 +84,7 @@ describe('useTransformState', () => {
       const { syncWithCanvas, camera } = transformState
       const canvasWithoutDs = { canvas: {} }
 
-      syncWithCanvas(canvasWithoutDs as any)
+      syncWithCanvas(canvasWithoutDs as LGraphCanvas)
 
       // Should remain at initial values
       expect(camera.x).toBe(0)
@@ -99,7 +99,7 @@ describe('useTransformState', () => {
       mockCanvas.ds.offset = [150, 75]
       mockCanvas.ds.scale = 0.5
 
-      syncWithCanvas(mockCanvas as any)
+      syncWithCanvas(mockCanvas as LGraphCanvas)
 
       expect(transformStyle.value).toEqual({
         transform: 'scale(0.5) translate(150px, 75px)',
@@ -114,7 +114,7 @@ describe('useTransformState', () => {
       const mockCanvas = createMockCanvasContext()
       mockCanvas.ds.offset = [100, 50]
       mockCanvas.ds.scale = 2
-      transformState.syncWithCanvas(mockCanvas as any)
+      transformState.syncWithCanvas(mockCanvas as LGraphCanvas)
     })
 
     describe('canvasToScreen', () => {
@@ -176,7 +176,7 @@ describe('useTransformState', () => {
       const mockCanvas = createMockCanvasContext()
       mockCanvas.ds.offset = [100, 50]
       mockCanvas.ds.scale = 2
-      transformState.syncWithCanvas(mockCanvas as any)
+      transformState.syncWithCanvas(mockCanvas as LGraphCanvas)
     })
 
     it('should calculate correct screen bounds for a node', () => {
@@ -201,7 +201,7 @@ describe('useTransformState', () => {
       const mockCanvas = createMockCanvasContext()
       mockCanvas.ds.offset = [0, 0]
       mockCanvas.ds.scale = 1
-      transformState.syncWithCanvas(mockCanvas as any)
+      transformState.syncWithCanvas(mockCanvas as LGraphCanvas)
     })
 
     const viewport = { width: 1000, height: 600 }
@@ -257,14 +257,14 @@ describe('useTransformState', () => {
 
       // Test with very low zoom
       mockCanvas.ds.scale = 0.05
-      syncWithCanvas(mockCanvas as any)
+      syncWithCanvas(mockCanvas as LGraphCanvas)
 
       // Node at edge should still be visible due to increased margin
       expect(isNodeInViewport([1100, 100], [200, 100], viewport)).toBe(true)
 
       // Test with high zoom
       mockCanvas.ds.scale = 4
-      syncWithCanvas(mockCanvas as any)
+      syncWithCanvas(mockCanvas as LGraphCanvas)
 
       // Margin should be tighter
       expect(isNodeInViewport([1100, 100], [200, 100], viewport)).toBe(false)
@@ -276,7 +276,7 @@ describe('useTransformState', () => {
       const mockCanvas = createMockCanvasContext()
       mockCanvas.ds.offset = [100, 50]
       mockCanvas.ds.scale = 2
-      transformState.syncWithCanvas(mockCanvas as any)
+      transformState.syncWithCanvas(mockCanvas as LGraphCanvas)
     })
 
     it('should calculate viewport bounds in canvas coordinates', () => {
@@ -322,7 +322,7 @@ describe('useTransformState', () => {
 
       // Very small zoom
       mockCanvas.ds.scale = 0.001
-      syncWithCanvas(mockCanvas as any)
+      syncWithCanvas(mockCanvas as LGraphCanvas)
 
       const point1 = canvasToScreen({ x: 1000, y: 1000 })
       expect(point1.x).toBeCloseTo(1)
@@ -330,7 +330,7 @@ describe('useTransformState', () => {
 
       // Very large zoom
       mockCanvas.ds.scale = 100
-      syncWithCanvas(mockCanvas as any)
+      syncWithCanvas(mockCanvas as LGraphCanvas)
 
       const point2 = canvasToScreen({ x: 1, y: 1 })
       expect(point2.x).toBe(100)
@@ -343,7 +343,7 @@ describe('useTransformState', () => {
 
       // Scale of 0 gets converted to 1 by || operator
       mockCanvas.ds.scale = 0
-      syncWithCanvas(mockCanvas as any)
+      syncWithCanvas(mockCanvas as LGraphCanvas)
 
       // Should use scale of 1 due to camera.z || 1 in implementation
       const result = screenToCanvas({ x: 100, y: 100 })
