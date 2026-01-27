@@ -1,10 +1,17 @@
 import { useThrottleFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMinimapGraph } from '@/renderer/extensions/minimap/composables/useMinimapGraph'
 import { api } from '@/scripts/api'
+import {
+  createMockLGraph,
+  createMockLGraphNode,
+  createMockLLink,
+  createMockLinks
+} from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@vueuse/core', () => ({
   useThrottleFn: vi.fn((fn) => fn)
@@ -24,23 +31,23 @@ describe('useMinimapGraph', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockGraph = {
+    mockGraph = createMockLGraph({
       id: 'test-graph-123',
       _nodes: [
-        { id: '1', pos: [100, 100], size: [150, 80] },
-        { id: '2', pos: [300, 200], size: [120, 60] }
+        createMockLGraphNode({ id: '1', pos: [100, 100], size: [150, 80] }),
+        createMockLGraphNode({ id: '2', pos: [300, 200], size: [120, 60] })
       ],
-      links: { link1: { id: 'link1' } },
+      links: createMockLinks([createMockLLink({ id: 1 })]),
       onNodeAdded: vi.fn(),
       onNodeRemoved: vi.fn(),
       onConnectionChange: vi.fn()
-    } as any
+    })
 
     onGraphChangedMock = vi.fn()
   })
 
   it('should initialize with empty state', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     expect(graphManager.updateFlags.value).toEqual({
@@ -52,7 +59,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should setup event listeners on init', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.init()
@@ -72,7 +79,7 @@ describe('useMinimapGraph', () => {
     mockGraph.onNodeRemoved = originalOnNodeRemoved
     mockGraph.onConnectionChange = originalOnConnectionChange
 
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
@@ -91,7 +98,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should prevent duplicate event listener setup', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     // Store original callbacks for comparison
@@ -127,7 +134,7 @@ describe('useMinimapGraph', () => {
     mockGraph.onNodeRemoved = originalOnNodeRemoved
     mockGraph.onConnectionChange = originalOnConnectionChange
 
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
@@ -144,7 +151,7 @@ describe('useMinimapGraph', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => {})
 
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.cleanupEventListeners()
@@ -157,7 +164,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect node position changes', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     // First check - cache initial state
@@ -177,14 +184,18 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect node count changes', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     // Cache initial state
     graphManager.checkForChanges()
 
     // Add a node
-    mockGraph._nodes.push({ id: '3', pos: [400, 300], size: [100, 50] } as any)
+    mockGraph._nodes.push({
+      id: '3',
+      pos: [400, 300],
+      size: [100, 50]
+    } as Partial<LGraphNode> as LGraphNode)
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)
@@ -193,17 +204,17 @@ describe('useMinimapGraph', () => {
   })
 
   it('should detect connection changes', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     // Cache initial state
     graphManager.checkForChanges()
 
     // Change connections
-    mockGraph.links = new Map([
-      [1, { id: 1 }],
-      [2, { id: 2 }]
-    ]) as any
+    mockGraph.links = createMockLinks([
+      createMockLLink({ id: 1 }),
+      createMockLLink({ id: 2 })
+    ])
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)
@@ -214,7 +225,7 @@ describe('useMinimapGraph', () => {
     const originalOnNodeRemoved = vi.fn()
     mockGraph.onNodeRemoved = originalOnNodeRemoved
 
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
@@ -227,7 +238,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should destroy properly', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.init()
@@ -241,7 +252,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should clear cache', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     // Populate cache
@@ -256,7 +267,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should handle null graph gracefully', () => {
-    const graphRef = ref(null as any)
+    const graphRef = ref(null) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     expect(() => graphManager.setupEventListeners()).not.toThrow()
@@ -265,7 +276,7 @@ describe('useMinimapGraph', () => {
   })
 
   it('should clean up removed nodes from cache', () => {
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     // Cache initial state
@@ -283,7 +294,7 @@ describe('useMinimapGraph', () => {
     const throttledFn = vi.fn()
     vi.mocked(useThrottleFn).mockReturnValue(throttledFn)
 
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const graphManager = useMinimapGraph(graphRef, onGraphChangedMock)
 
     graphManager.setupEventListeners()
