@@ -101,11 +101,13 @@ function useSubscriptionInternal() {
       : baseName
   })
 
-  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
+  function buildApiUrl(path: string): string {
+    return `${getComfyApiBaseUrl()}${path}`
+  }
 
-  const trackSubscriptionPurchase = (
+  function trackSubscriptionPurchase(
     status: CloudSubscriptionStatusResponse | null
-  ) => {
+  ): void {
     if (!status?.is_active || !status.subscription_id) return
 
     const pendingPurchase = getPendingSubscriptionPurchase()
