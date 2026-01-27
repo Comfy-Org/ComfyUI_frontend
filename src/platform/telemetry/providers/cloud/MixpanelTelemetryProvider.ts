@@ -1,7 +1,6 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 import { watch } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   checkForCompletedTopup as checkTopupUtil,
   clearTopupTracking as clearTopupUtil,
@@ -46,6 +45,7 @@ import type {
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { TelemetryEvents } from '../../types'
+import { userIdentityHook } from '../../userIdentityBus'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -119,10 +119,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               persistence: 'cookie',
               loaded: () => {
                 this.isInitialized = true
-                this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
+                this.flushEventQueue()
+                userIdentityHook.on(({ userId }) => {
+                  if (this.mixpanel && userId) {
+                    this.mixpanel.identify(userId)
                   }
                 })
               }

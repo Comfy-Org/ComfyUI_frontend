@@ -18,6 +18,7 @@ import { isCloud } from '@/platform/distribution/types'
 
 import { MixpanelTelemetryProvider } from './providers/cloud/MixpanelTelemetryProvider'
 import type { TelemetryProvider } from './types'
+import { authEventHook } from './userIdentityBus'
 
 // Singleton instance
 let _telemetryProvider: TelemetryProvider | null = null
@@ -34,6 +35,13 @@ export function useTelemetry(): TelemetryProvider | null {
     // Use distribution check for tree-shaking
     if (isCloud) {
       _telemetryProvider = new MixpanelTelemetryProvider()
+
+      authEventHook.on(({ method, isNewUser }) => {
+        _telemetryProvider?.trackAuth({
+          method,
+          is_new_user: isNewUser
+        })
+      })
     }
     // For OSS builds, _telemetryProvider stays null
   }

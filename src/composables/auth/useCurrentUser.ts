@@ -3,6 +3,7 @@ import { computed, watch } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { t } from '@/i18n'
+import { userIdentityHook } from '@/platform/telemetry/userIdentityBus'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -35,7 +36,14 @@ export const useCurrentUser = () => {
   })
 
   const onUserResolved = (callback: (user: AuthUserInfo) => void) =>
-    whenever(resolvedUserInfo, callback, { immediate: true })
+    whenever(
+      resolvedUserInfo,
+      (user) => {
+        void userIdentityHook.trigger({ userId: user.id })
+        callback(user)
+      },
+      { immediate: true }
+    )
 
   const onTokenRefreshed = (callback: () => void) =>
     whenever(() => authStore.tokenRefreshTrigger, callback)
