@@ -243,7 +243,7 @@ const navItems = computed<NavGroupData[]>(() => {
         {
           id: 'all',
           label: t('modelBrowser.allModels'),
-          icon: 'icon-[comfy--ai-model]'
+          icon: 'icon-[lucide--list]'
         }
       ]
     },
