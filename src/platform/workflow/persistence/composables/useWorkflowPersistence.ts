@@ -81,27 +81,12 @@ export function useWorkflowPersistence() {
       return
     }
 
+    // Store pointer in sessionStorage for duplicate-tab support (small, won't hit quota)
+    // The actual workflow data is stored in the draft store which has eviction
     try {
-      localStorage.setItem('workflow', workflowJson)
-      if (api.clientId) {
-        sessionStorage.setItem(`workflow:${api.clientId}`, workflowJson)
-      }
-    } catch (error) {
-      // Only log our own keys and aggregate stats
-      const ourKeys = Object.keys(sessionStorage).filter(
-        (key) => key.startsWith('workflow:') || key === 'workflow'
-      )
-      console.error('QuotaExceededError details:', {
-        workflowSizeKB: Math.round(workflowJson.length / 1024),
-        totalStorageItems: Object.keys(sessionStorage).length,
-        ourWorkflowKeys: ourKeys.length,
-        ourWorkflowSizes: ourKeys.map((key) => ({
-          key,
-          sizeKB: Math.round(sessionStorage[key].length / 1024)
-        })),
-        error: error instanceof Error ? error.message : String(error)
-      })
-      throw error
+      sessionStorage.setItem('Comfy.Workflow.ActivePath', workflowPath)
+    } catch {
+      // Ignore - pointer is best-effort
     }
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson

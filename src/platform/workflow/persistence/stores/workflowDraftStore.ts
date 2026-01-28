@@ -124,17 +124,26 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
       fallbackToLatestDraft = false
     } = options
 
+    // 1. Try sessionStorage pointer (for duplicate-tab support)
+    const sessionPath = sessionStorage.getItem('Comfy.Workflow.ActivePath')
+    if (sessionPath && (await loadDraft(sessionPath))) {
+      return true
+    }
+
+    // 2. Try preferred path from caller
     if (preferredPath && (await loadDraft(preferredPath))) {
       return true
     }
 
-    if (!preferredPath && fallbackToLatestDraft) {
+    // 3. Fall back to most recent draft
+    if (fallbackToLatestDraft) {
       const fallbackPath = mostRecentDraft.value
       if (fallbackPath && (await loadDraft(fallbackPath))) {
         return true
       }
     }
 
+    // 4. Legacy fallback: sessionStorage payload (remove after 2026-07-15)
     const clientId = api.initialClientId ?? api.clientId
     if (clientId) {
       const sessionPayload = sessionStorage.getItem(`workflow:${clientId}`)
@@ -143,6 +152,7 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
       }
     }
 
+    // 5. Legacy fallback: localStorage payload (remove after 2026-07-15)
     const localPayload = localStorage.getItem('workflow')
     return await tryLoadGraph(localPayload, workflowName)
   }
