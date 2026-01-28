@@ -2604,6 +2604,10 @@ export class Subgraph
   }
 
   addInput(name: string, type: string): SubgraphInput {
+    if (name === null || type === null) {
+      throw new Error('Name and type are required for subgraph input')
+    }
+
     this.events.dispatch('adding-input', { name, type })
 
     const input = new SubgraphInput(
@@ -2622,6 +2626,10 @@ export class Subgraph
   }
 
   addOutput(name: string, type: string): SubgraphOutput {
+    if (name === null || type === null) {
+      throw new Error('Name and type are required for subgraph output')
+    }
+
     this.events.dispatch('adding-output', { name, type })
 
     const output = new SubgraphOutput(

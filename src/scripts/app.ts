@@ -163,7 +163,7 @@ export class ComfyApp {
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
-  get graph(): LGraph | undefined {
+  get graph() {
     return this.rootGraphInternal!
   }
 
@@ -1356,8 +1356,9 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
-    let comfyOrgAuthToken = await useFirebaseAuthStore().getIdToken()
-    let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
+    const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
+    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
       while (this.queueItems.length) {

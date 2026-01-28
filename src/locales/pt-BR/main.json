@@ -107,6 +107,7 @@
     "modelUploaded": "Modelo importado com sucesso.",
     "noAssetsFound": "Nenhum ativo encontrado",
     "noModelsInFolder": "Nenhum {type} disponível nesta pasta",
+    "noResultsCanImport": "Tente ajustar sua busca ou filtros.\nVocê também pode adicionar modelos usando o botão \"Importar\" acima.",
     "noValidSourceDetected": "Nenhuma fonte de importação válida detectada",
     "notSureLeaveAsIs": "Não tem certeza? Deixe como está",
     "onlyCivitaiUrlsSupported": "Apenas URLs do Civitai são suportadas",
@@ -960,11 +961,10 @@
     "videoPreview": "Pré-visualização do vídeo - Use as setas para navegar entre os vídeos",
     "viewImageOfTotal": "Visualizar imagem {index} de {total}",
     "viewVideoOfTotal": "Visualizar vídeo {index} de {total}",
-    "vitePreloadErrorMessage": "Uma nova versão do aplicativo foi lançada. Deseja recarregar?\nSe não, algumas partes do aplicativo podem não funcionar como esperado.\nSinta-se à vontade para recusar e salvar seu progresso antes de recarregar.",
-    "vitePreloadErrorTitle": "Nova versão disponível",
     "volume": "Volume",
     "warning": "Aviso",
-    "workflow": "Fluxo de trabalho"
+    "workflow": "Fluxo de trabalho",
+    "you": "Você"
   },
   "graphCanvasMenu": {
     "fitView": "Ajustar à Tela",
@@ -1261,8 +1261,10 @@
     }
   },
   "manager": {
+    "actions": "Ações",
     "allMissingNodesInstalled": "Todos os nodes ausentes foram instalados com sucesso",
     "applyChanges": "Aplicar Alterações",
+    "basicInfo": "Informações Básicas",
     "changingVersion": "Alterando versão de {from} para pt-BR",
     "clickToFinishSetup": "Clique",
     "conflicts": {
@@ -1325,12 +1327,24 @@
     "license": "Licença",
     "loadingVersions": "Carregando versões...",
     "mixedSelectionMessage": "Não é possível realizar ação em massa em seleção mista",
+    "nav": {
+      "allExtensions": "Todas as Extensões",
+      "allInWorkflow": "Todos em: {workflowName}",
+      "allInstalled": "Todos Instalados",
+      "conflicting": "Conflitante",
+      "inWorkflowSection": "NO FLUXO DE TRABALHO",
+      "installedSection": "INSTALADO",
+      "missingNodes": "Nós Ausentes",
+      "notInstalled": "Não Instalado",
+      "updatesAvailable": "Atualizações Disponíveis"
+    },
     "nightlyVersion": "Noturna",
     "noDescription": "Nenhuma descrição disponível",
     "noNodesFound": "Nenhum node encontrado",
     "noNodesFoundDescription": "Os nodes do pacote não puderam ser analisados ou o pacote é apenas uma extensão de frontend e não possui nodes.",
     "noResultsFound": "Nenhum resultado encontrado para sua busca.",
     "nodePack": "Node Pack",
+    "nodePackInfo": "Informações do Pacote de Nós",
     "notAvailable": "Não Disponível",
     "packsSelected": "pacotes selecionados",
     "repository": "Repositório",
@@ -1338,6 +1352,7 @@
     "restartingBackend": "Reiniciando backend para aplicar as alterações...",
     "searchPlaceholder": "Buscar",
     "selectVersion": "Selecionar Versão",
+    "selected": "Selecionado",
     "sort": {
       "created": "Mais Novos",
       "downloads": "Mais Populares",
@@ -1674,6 +1689,7 @@
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1684,6 +1700,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1899,6 +1916,7 @@
     },
     "groupSettings": "Configurações de Grupo",
     "groups": "Grupos",
+    "hideAdvancedInputsButton": "Ocultar entradas avançadas",
     "hideInput": "Ocultar entrada",
     "info": "Informações",
     "inputs": "ENTRADAS",
@@ -2330,6 +2348,10 @@
     "beta": "BETA",
     "billedMonthly": "Cobrado mensalmente",
     "billedYearly": "{total} Cobrado anualmente",
+    "billingComingSoon": {
+      "message": "A cobrança para equipes estará disponível em breve. Você poderá assinar um plano para seu workspace com preço por usuário. Fique atento para novidades.",
+      "title": "Em breve"
+    },
     "cancelSubscription": "Cancelar assinatura",
     "changeTo": "Mudar para {plan}",
     "comfyCloud": "Comfy Cloud",
@@ -2517,6 +2539,7 @@
     "failedToLoadModel": "Falha ao carregar modelo 3D",
     "failedToPurchaseCredits": "Falha ao comprar créditos: {error}",
     "failedToQueue": "Falha ao enfileirar",
+    "failedToSaveDraft": "Falha ao salvar o rascunho do fluxo de trabalho",
     "failedToToggleCamera": "Falha ao alternar câmera",
     "failedToToggleGrid": "Falha ao alternar grade",
     "failedToUpdateBackgroundColor": "Falha ao atualizar cor de fundo",
@@ -2657,6 +2680,9 @@
     "saveWorkflow": "Salvar fluxo de trabalho"
   },
   "workspace": {
+    "addedToWorkspace": "Você foi adicionado ao {workspaceName}",
+    "inviteAccepted": "Convite aceito",
+    "inviteFailed": "Falha ao aceitar convite",
     "unsavedChanges": {
       "message": "Você tem alterações não salvas. Deseja descartá-las e trocar de espaço de trabalho?",
       "title": "Alterações não salvas"
@@ -2679,6 +2705,9 @@
       "namePlaceholder": "Digite o nome do espaço de trabalho",
       "title": "Criar um novo espaço de trabalho"
     },
+    "dashboard": {
+      "placeholder": "Configurações do workspace do painel"
+    },
     "deleteDialog": {
       "message": "Quaisquer créditos não utilizados ou ativos não salvos serão perdidos. Esta ação não pode ser desfeita.",
       "messageWithName": "Excluir \"{name}\"? Quaisquer créditos não utilizados ou ativos não salvos serão perdidos. Esta ação não pode ser desfeita.",
@@ -2689,10 +2718,49 @@
       "save": "Salvar",
       "title": "Editar detalhes do espaço de trabalho"
     },
+    "invite": "Convidar",
+    "inviteLimitReached": "Você atingiu o limite máximo de 50 membros",
+    "inviteMember": "Convidar membro",
+    "inviteMemberDialog": {
+      "createLink": "Criar link",
+      "linkCopied": "Copiado",
+      "linkCopyFailed": "Falha ao copiar link",
+      "linkStep": {
+        "copyLink": "Copiar link",
+        "done": "Concluído",
+        "message": "Certifique-se de que a conta dela usa este e-mail.",
+        "title": "Envie este link para a pessoa"
+      },
+      "message": "Crie um link de convite compartilhável para enviar a alguém",
+      "placeholder": "Digite o e-mail da pessoa",
+      "title": "Convidar uma pessoa para este workspace"
+    },
     "leaveDialog": {
       "leave": "Sair",
       "message": "Você não poderá entrar novamente a menos que entre em contato com o proprietário do espaço de trabalho.",
       "title": "Sair deste espaço de trabalho?"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "Copiar link do convite",
+        "removeMember": "Remover membro",
+        "revokeInvite": "Revogar convite"
+      },
+      "columns": {
+        "expiryDate": "Data de expiração",
+        "inviteDate": "Data do convite",
+        "joinDate": "Data de entrada"
+      },
+      "createNewWorkspace": "crie um novo.",
+      "membersCount": "{count}/50 Membros",
+      "noInvites": "Nenhum convite pendente",
+      "noMembers": "Nenhum membro",
+      "pendingInvitesCount": "{count} convite pendente | {count} convites pendentes",
+      "personalWorkspaceMessage": "No momento, você não pode convidar outros membros para seu workspace pessoal. Para adicionar membros a um workspace,",
+      "tabs": {
+        "active": "Ativo",
+        "pendingCount": "Pendente ({count})"
+      }
     },
     "menu": {
       "deleteWorkspace": "Excluir espaço de trabalho",
@@ -2700,14 +2768,42 @@
       "editWorkspace": "Editar detalhes do espaço de trabalho",
       "leaveWorkspace": "Sair do espaço de trabalho"
     },
+    "removeMemberDialog": {
+      "error": "Falha ao remover membro",
+      "message": "Este membro será removido do seu workspace. Os créditos utilizados por ele não serão reembolsados.",
+      "remove": "Remover membro",
+      "success": "Membro removido",
+      "title": "Remover este membro?"
+    },
+    "revokeInviteDialog": {
+      "message": "Este membro não poderá mais entrar no seu workspace. O link de convite será invalidado.",
+      "revoke": "Desfazer convite",
+      "title": "Desfazer convite para esta pessoa?"
+    },
     "tabs": {
+      "dashboard": "Painel",
+      "membersCount": "Membros ({count})",
       "planCredits": "Plano e Créditos"
     },
     "toast": {
       "failedToCreateWorkspace": "Falha ao criar o espaço de trabalho",
       "failedToDeleteWorkspace": "Falha ao excluir o espaço de trabalho",
+      "failedToFetchWorkspaces": "Falha ao carregar workspaces",
       "failedToLeaveWorkspace": "Falha ao sair do espaço de trabalho",
       "failedToUpdateWorkspace": "Falha ao atualizar o espaço de trabalho",
+      "workspaceCreated": {
+        "message": "Assine um plano, convide colegas e comece a colaborar.",
+        "subscribe": "Assinar",
+        "title": "Workspace criado"
+      },
+      "workspaceDeleted": {
+        "message": "O workspace foi excluído permanentemente.",
+        "title": "Workspace excluído"
+      },
+      "workspaceLeft": {
+        "message": "Você saiu do workspace.",
+        "title": "Saiu do workspace"
+      },
       "workspaceUpdated": {
         "message": "Os detalhes do espaço de trabalho foram salvos.",
         "title": "Espaço de trabalho atualizado"
@@ -2717,6 +2813,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "Criar novo espaço de trabalho",
     "maxWorkspacesReached": "Você só pode possuir 10 espaços de trabalho. Exclua um para criar um novo.",
+    "personal": "Pessoal",
     "roleMember": "Membro",
     "roleOwner": "Proprietário",
     "subscribe": "Assinar",

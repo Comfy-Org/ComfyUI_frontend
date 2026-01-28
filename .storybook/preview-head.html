@@ -1,7 +1,9 @@
 <style>
   body {
     overflow-y: auto !important;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
   /* Light theme default - with explicit color to override media queries */
@@ -57,7 +59,7 @@
 
   /* Override Storybook's problematic & selector styles */
   /* Reset only the specific properties that Storybook injects */
-  li+li {
+  li + li {
     margin: 0;
     padding: revert-layer;
   }

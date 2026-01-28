@@ -15,13 +15,13 @@
     </div>
     <div
       v-else-if="assets.length === 0"
-      class="flex h-full flex-col items-center justify-center py-16 text-muted-foreground"
+      class="flex h-full select-none flex-col items-center justify-center py-16 text-muted-foreground"
     >
       <i class="mb-4 icon-[lucide--search] size-10" />
       <h3 class="mb-2 text-lg font-medium">
         {{ emptyTitle ?? $t('assetBrowser.noAssetsFound') }}
       </h3>
-      <p class="text-sm">
+      <p class="text-sm whitespace-pre-wrap text-center">
         {{ emptyMessage ?? $t('assetBrowser.tryAdjustingFilters') }}
       </p>
     </div>

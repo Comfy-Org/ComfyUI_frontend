@@ -57,12 +57,9 @@ describe('LGraph', () => {
     expect(graph.extra).toBe('TestGraph')
   })
 
-  test('is exactly the same type', async ({ expect }) => {
-    const directImport = await import('@/lib/litegraph/src/LGraph')
-    const entryPointImport = await import('@/lib/litegraph/src/litegraph')
-
-    expect(LiteGraph.LGraph).toBe(directImport.LGraph)
-    expect(LiteGraph.LGraph).toBe(entryPointImport.LGraph)
+  test('is exactly the same type', ({ expect }) => {
+    // LGraph from barrel export and LiteGraph.LGraph should be the same
+    expect(LiteGraph.LGraph).toBe(LGraph)
   })
 
   test('populates optional values', ({ expect, minimalSerialisableGraph }) => {

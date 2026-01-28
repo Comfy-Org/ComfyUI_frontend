@@ -5,7 +5,7 @@
   >
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.basicInfo') }}
         </span>
       </template>
@@ -50,6 +50,12 @@
             alt=""
             class="size-4 shrink-0"
           />
+          <img
+            v-else-if="sourceName === 'Hugging Face'"
+            src="/assets/images/hf-logo.svg"
+            alt=""
+            class="size-4 shrink-0"
+          />
           {{ t('assetBrowser.modelInfo.viewOnSource', { source: sourceName }) }}
           <i class="icon-[lucide--external-link] size-4 shrink-0" />
         </a>
@@ -58,7 +64,7 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.modelTagging') }}
         </span>
       </template>
@@ -134,7 +140,7 @@
 
     <PropertiesAccordionItem :class="accordionClass">
       <template #label>
-        <span class="text-xs uppercase font-inter">
+        <span class="text-xs uppercase font-inter select-none">
           {{ t('assetBrowser.modelInfo.modelDescription') }}
         </span>
       </template>

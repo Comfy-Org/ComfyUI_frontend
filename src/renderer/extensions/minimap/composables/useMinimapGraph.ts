@@ -102,9 +102,7 @@ export function useMinimapGraph(
 
     const originalCallbacks = originalCallbacksMap.get(g.id)
     if (!originalCallbacks) {
-      console.error(
-        'Attempted to cleanup event listeners for graph that was never set up'
-      )
+      // Graph was never set up (e.g., minimap destroyed before init) - nothing to clean up
       return
     }
 

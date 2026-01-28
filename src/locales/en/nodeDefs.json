@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "display_name": "ByteDance Image Edit",
-    "description": "Edit images using ByteDance models via api based on prompt",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "The base image to edit"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Instruction to edit image"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed to use for generation"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Higher value makes the image follow the prompt more closely"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Whether to add an \"AI generated\" watermark to the image"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "display_name": "ByteDance Image",
     "description": "Generate images using ByteDance models via api based on prompt",
@@ -2100,6 +2063,10 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "INDEX",
         "tooltip": null
       }
     }
@@ -6064,7 +6031,7 @@
     }
   },
   "LoraLoader": {
-    "display_name": "Load LoRA",
+    "display_name": "Load LoRA (Model and CLIP)",
     "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
@@ -6097,8 +6064,62 @@
       }
     }
   },
+  "LoraLoaderBypass": {
+    "display_name": "Load LoRA (Bypass) (For debugging)",
+    "description": "Apply LoRA in bypass mode. Unlike regular LoRA, this doesn't modify model weights - instead it injects the LoRA computation during forward pass. Useful for training scenarios.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The diffusion model the LoRA will be applied to."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "The CLIP model the LoRA will be applied to."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "The name of the LoRA."
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "How strongly to modify the diffusion model. This value can be negative."
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "How strongly to modify the CLIP model. This value can be negative."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The modified diffusion model."
+      },
+      "1": {
+        "tooltip": "The modified CLIP model."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "display_name": "Load LoRA (Bypass, Model Only) (for debugging)",
+    "description": "Apply LoRA in bypass mode. Unlike regular LoRA, this doesn't modify model weights - instead it injects the LoRA computation during forward pass. Useful for training scenarios.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The modified diffusion model."
+      }
+    }
+  },
   "LoraLoaderModelOnly": {
-    "display_name": "LoraLoaderModelOnly",
+    "display_name": "Load LoRA",
     "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
@@ -6822,6 +6843,126 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "display_name": "Magnific Image Relight",
+    "description": "Relight an image with lighting adjustments and optional reference-based light transfer.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to relight."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descriptive guidance for lighting. Supports emphasis notation (1-1.4)."
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "Intensity of light transfer application."
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "Stylistic output preference."
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "Restricts generation freedom to match original more closely."
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "Modifies background based on prompt/reference."
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "Maintains texture and fine details from original."
+      },
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "Fine-tuning options for advanced lighting control."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Optional reference image to transfer lighting from."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "display_name": "Magnific Image Skin Enhancer",
+    "description": "Skin enhancement for portraits with multiple processing modes.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The portrait image to enhance."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "Sharpening intensity level."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "Smart grain intensity level."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Processing mode: creative for artistic enhancement, faithful for preserving original appearance, flexible for targeted optimization."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "display_name": "Magnific Image Style Transfer",
+    "description": "Transfer the style from a reference image to your input image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to apply style transfer to."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "The reference image to extract style from."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "Percentage of style strength."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "Maintains the structure of the original image."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "Style transfer flavor."
+      },
+      "engine": {
+        "name": "engine",
+        "tooltip": "Processing engine selection."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "Enable portrait mode for facial enhancements."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "When disabled, expect each generation to introduce a degree of randomness, leading to more diverse outcomes."
       }
     },
     "outputs": {
@@ -13446,6 +13587,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Image(s) to Model (Pro)",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The LowPoly option is unavailable for the `3.1` model."
+      },
+      "image": {
+        "name": "image"
+      },
+      "face_count": {
+        "name": "face_count"
+      },
+      "generate_type": {
+        "name": "generate_type"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "image_left": {
+        "name": "image_left"
+      },
+      "image_right": {
+        "name": "image_right"
+      },
+      "image_back": {
+        "name": "image_back"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Text to Model (Pro)",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The LowPoly option is unavailable for the `3.1` model."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Supports up to 1024 characters."
+      },
+      "face_count": {
+        "name": "face_count"
+      },
+      "generate_type": {
+        "name": "generate_type"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13836,24 +14055,24 @@
         "name": "bucket_mode",
         "tooltip": "Enable resolution bucket mode. When enabled, expects pre-bucketed latents from ResolutionBucket node."
       },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "Enable bypass mode for training. When enabled, adapters are applied via forward hooks instead of weight modification. Useful for quantized models where weights cannot be directly modified."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
     },
     "outputs": {
       "0": {
-        "name": "model",
-        "tooltip": "Model with LoRA applied"
-      },
-      "1": {
         "name": "lora",
         "tooltip": "LoRA weights"
       },
-      "2": {
+      "1": {
         "name": "loss_map",
         "tooltip": "Loss history"
       },
-      "3": {
+      "2": {
         "name": "steps",
         "tooltip": "Total training steps"
       }

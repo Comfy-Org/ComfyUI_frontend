@@ -3,9 +3,9 @@
     v-tooltip.right="{
       value: tooltipText,
       disabled: !isOverflowing,
-      pt: { text: { class: 'whitespace-nowrap' } }
+      pt: { text: { class: 'w-max whitespace-nowrap' } }
     }"
-    class="flex cursor-pointer items-center-safe gap-2 rounded-md px-4 py-3 text-sm transition-colors text-base-foreground"
+    class="flex cursor-pointer select-none items-center-safe gap-2 rounded-md px-4 py-3 text-sm transition-colors text-base-foreground"
     :class="
       active
         ? 'bg-interface-menu-component-surface-selected'

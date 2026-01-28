@@ -1,6 +1,7 @@
 {
   "g": {
     "user": "User",
+    "you": "You",
     "currentUser": "Current user",
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
@@ -281,6 +282,10 @@
   },
   "manager": {
     "title": "Nodes Manager",
+    "nodePackInfo": "Node Pack Info",
+    "basicInfo": "Basic Info",
+    "actions": "Actions",
+    "selected": "Selected",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
@@ -294,6 +299,17 @@
     "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
+    "nav": {
+      "allExtensions": "All Extensions",
+      "notInstalled": "Not Installed",
+      "installedSection": "INSTALLED",
+      "allInstalled": "All installed",
+      "updatesAvailable": "Updates Available",
+      "conflicting": "Conflicting",
+      "inWorkflowSection": "IN WORKFLOW",
+      "allInWorkflow": "All in: {workflowName}",
+      "missingNodes": "Missing Nodes"
+    },
     "infoPanelEmpty": "Click an item to see the info",
     "applyChanges": "Apply Changes",
     "restartToApplyChanges": "To apply changes, please restart ComfyUI",
@@ -740,6 +756,7 @@
       "title": "Queue Progress",
       "total": "Total: {percent}",
       "colonPercent": ": {percent}",
+      "inlineTotalLabel": "Total",
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
       "viewList": "List view",
@@ -1489,6 +1506,7 @@
     "lotus": "lotus",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
@@ -1512,6 +1530,7 @@
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1747,6 +1766,7 @@
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
+    "failedToSaveDraft": "Failed to save workflow draft",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
@@ -2100,6 +2120,10 @@
       "creator": "30 min",
       "pro": "1 hr",
       "founder": "30 min"
+    },
+    "billingComingSoon": {
+      "title": "Coming Soon",
+      "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
     }
   },
   "userSettings": {
@@ -2113,8 +2137,38 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "invite": "Invite",
+    "inviteMember": "Invite member",
+    "inviteLimitReached": "You've reached the maximum of 50 members",
     "tabs": {
-      "planCredits": "Plan & Credits"
+      "dashboard": "Dashboard",
+      "planCredits": "Plan & Credits",
+      "membersCount": "Members ({count})"
+    },
+    "dashboard": {
+      "placeholder": "Dashboard workspace settings"
+    },
+    "members": {
+      "membersCount": "{count}/50 Members",
+      "pendingInvitesCount": "{count} pending invite | {count} pending invites",
+      "tabs": {
+        "active": "Active",
+        "pendingCount": "Pending ({count})"
+      },
+      "columns": {
+        "inviteDate": "Invite date",
+        "expiryDate": "Expiry date",
+        "joinDate": "Join date"
+      },
+      "actions": {
+        "copyLink": "Copy invite link",
+        "revokeInvite": "Revoke invite",
+        "removeMember": "Remove member"
+      },
+      "noInvites": "No pending invites",
+      "noMembers": "No members",
+      "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
+      "createNewWorkspace": "create a new one."
     },
     "menu": {
       "editWorkspace": "Edit workspace details",
@@ -2137,6 +2191,32 @@
       "message": "Any unused credits or unsaved assets will be lost. This action cannot be undone.",
       "messageWithName": "Delete \"{name}\"? Any unused credits or unsaved assets will be lost. This action cannot be undone."
     },
+    "removeMemberDialog": {
+      "title": "Remove this member?",
+      "message": "This member will be removed from your workspace. Credits they've used will not be refunded.",
+      "remove": "Remove member",
+      "success": "Member removed",
+      "error": "Failed to remove member"
+    },
+    "revokeInviteDialog": {
+      "title": "Uninvite this person?",
+      "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
+      "revoke": "Uninvite"
+    },
+    "inviteMemberDialog": {
+      "title": "Invite a person to this workspace",
+      "message": "Create a shareable invite link to send to someone",
+      "placeholder": "Enter the person's email",
+      "createLink": "Create link",
+      "linkStep": {
+        "title": "Send this link to the person",
+        "message": "Make sure their account uses this email.",
+        "copyLink": "Copy Link",
+        "done": "Done"
+      },
+      "linkCopied": "Copied",
+      "linkCopyFailed": "Failed to copy link"
+    },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
       "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
@@ -2145,19 +2225,34 @@
       "create": "Create"
     },
     "toast": {
+      "workspaceCreated": {
+        "title": "Workspace created",
+        "message": "Subscribe to a plan, invite teammates, and start collaborating.",
+        "subscribe": "Subscribe"
+      },
       "workspaceUpdated": {
         "title": "Workspace updated",
         "message": "Workspace details have been saved."
       },
+      "workspaceDeleted": {
+        "title": "Workspace deleted",
+        "message": "The workspace has been permanently deleted."
+      },
+      "workspaceLeft": {
+        "title": "Left workspace",
+        "message": "You have left the workspace."
+      },
       "failedToUpdateWorkspace": "Failed to update workspace",
       "failedToCreateWorkspace": "Failed to create workspace",
       "failedToDeleteWorkspace": "Failed to delete workspace",
-      "failedToLeaveWorkspace": "Failed to leave workspace"
+      "failedToLeaveWorkspace": "Failed to leave workspace",
+      "failedToFetchWorkspaces": "Failed to load workspaces"
     }
   },
   "workspaceSwitcher": {
     "switchWorkspace": "Switch workspace",
     "subscribe": "Subscribe",
+    "personal": "Personal",
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create new workspace",
@@ -2379,9 +2474,10 @@
     "allModels": "All Models",
     "byType": "By type",
     "emptyImported": {
-      "canImport": "No imported models yet. Click \"Import Model\" to add your own.",
+      "canImport": "No imported models yet. Click \"Import\" to add your own.",
       "restricted": "Personal models are only available at Creator tier and above."
     },
+    "noResultsCanImport": "Try adjusting your search or filters.\nYou can also add models using the \"Import\" button above.",
     "imported": "Imported",
     "assetCollection": "Asset collection",
     "assets": "Assets",
@@ -2449,7 +2545,7 @@
     "tagsPlaceholder": "e.g., models, checkpoint",
     "tryAdjustingFilters": "Try adjusting your search or filters",
     "unknown": "Unknown",
-    "unsupportedUrlSource": "Only URLs from {sources} are supported",
+    "unsupportedUrlSource": "This URL is not supported. Use a direct model link from {sources}. See the how-to videos below for help.",
     "upgradeFeatureDescription": "This feature is only available with Creator or Pro plans.",
     "upgradeToUnlockFeature": "Upgrade to unlock this feature",
     "upload": "Import",
@@ -2683,7 +2779,8 @@
     "noneSearchDesc": "No items match your search",
     "nodesNoneDesc": "NO NODES",
     "fallbackGroupTitle": "Group",
-    "fallbackNodeTitle": "Node"
+    "fallbackNodeTitle": "Node",
+    "hideAdvancedInputsButton": "Hide advanced inputs"
   },
   "help": {
     "recentReleases": "Recent releases",
@@ -2709,7 +2806,10 @@
     "unsavedChanges": {
       "title": "Unsaved Changes",
       "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
-    }
+    },
+    "inviteAccepted": "Invite Accepted",
+    "addedToWorkspace": "You have been added to {workspaceName}",
+    "inviteFailed": "Failed to Accept Invite"
   },
   "workspaceAuth": {
     "errors": {

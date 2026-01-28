@@ -8,7 +8,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import { searchWidgetsAndNodes } from '../shared'
+import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -24,18 +24,7 @@ const nodes = computed((): LGraphNode[] => {
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
 
-const widgetsSectionDataList = computed((): NodeWidgetsListList => {
-  return nodes.value.map((node) => {
-    const { widgets = [] } = node
-    const shownWidgets = widgets
-      .filter((w) => !(w.options?.canvasOnly || w.options?.hidden))
-      .map((widget) => ({ node, widget }))
-    return {
-      widgets: shownWidgets,
-      node
-    }
-  })
-})
+const { widgetsSectionDataList } = computedSectionDataList(nodes)
 
 const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
   widgetsSectionDataList.value

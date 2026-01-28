@@ -201,7 +201,12 @@
 </template>
 
 <script setup lang="ts">
-import { useDebounceFn, useElementHover, useResizeObserver } from '@vueuse/core'
+import {
+  useDebounceFn,
+  useElementHover,
+  useResizeObserver,
+  useStorage
+} from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -255,7 +260,10 @@ const activeTab = ref<'input' | 'output'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
-const viewMode = ref<'list' | 'grid'>('grid')
+const viewMode = useStorage<'list' | 'grid'>(
+  'Comfy.Assets.Sidebar.ViewMode',
+  'grid'
+)
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
 )
@@ -323,7 +331,7 @@ const {
 
 const {
   downloadMultipleAssets,
-  deleteMultipleAssets,
+  deleteAssets,
   addMultipleToWorkflow,
   openMultipleWorkflows,
   exportMultipleWorkflows
@@ -487,8 +495,9 @@ const handleBulkDownload = (assets: AssetItem[]) => {
 }
 
 const handleBulkDelete = async (assets: AssetItem[]) => {
-  await deleteMultipleAssets(assets)
-  clearSelection()
+  if (await deleteAssets(assets)) {
+    clearSelection()
+  }
 }
 
 const handleClearQueue = async () => {
@@ -514,6 +523,17 @@ const handleBulkOpenWorkflow = async (assets: AssetItem[]) => {
 const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
   await exportMultipleWorkflows(assets)
   clearSelection()
+}
+
+const handleDownloadSelected = () => {
+  downloadMultipleAssets(selectedAssets.value)
+  clearSelection()
+}
+
+const handleDeleteSelected = async () => {
+  if (await deleteAssets(selectedAssets.value)) {
+    clearSelection()
+  }
 }
 
 const handleZoomClick = (asset: AssetItem) => {
@@ -662,16 +682,6 @@ const copyJobId = async () => {
       })
     }
   }
-}
-
-const handleDownloadSelected = () => {
-  downloadMultipleAssets(selectedAssets.value)
-  clearSelection()
-}
-
-const handleDeleteSelected = async () => {
-  await deleteMultipleAssets(selectedAssets.value)
-  clearSelection()
 }
 
 const handleApproachEnd = useDebounceFn(async () => {

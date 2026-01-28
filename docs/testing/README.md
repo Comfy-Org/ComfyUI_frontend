@@ -43,7 +43,7 @@ pnpm test:unit
 # Run a specific test file
 pnpm test:unit -- src/path/to/file.test.ts
 
-# Run unit tests in watch mode  
+# Run unit tests in watch mode
 pnpm test:unit -- --watch
 ```
 
