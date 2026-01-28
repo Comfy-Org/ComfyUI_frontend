@@ -319,8 +319,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
   async function deleteBlueprint(nodeType: string) {
     const name = nodeType.slice(typePrefix.length)
-    if (!(name in subgraphCache))
-      throw new Error('not yet loaded')
+    if (!(name in subgraphCache)) throw new Error('not yet loaded')
 
     if (isGlobalBlueprint(name)) {
       useToastStore().add({
