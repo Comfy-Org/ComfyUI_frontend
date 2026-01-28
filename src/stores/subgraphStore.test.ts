@@ -24,6 +24,7 @@ vi.mock('@/scripts/api', () => ({
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
     listUserDataFullInfo: vi.fn(),
+    getGlobalSubgraphs: vi.fn(),
     apiURL: vi.fn(),
     addEventListener: vi.fn()
   }
@@ -59,7 +60,13 @@ const mockGraph = {
 
 describe('useSubgraphStore', () => {
   let store: ReturnType<typeof useSubgraphStore>
-  const mockFetch = async (filenames: Record<string, unknown>) => {
+  const mockFetch = async (
+    filenames: Record<string, unknown>,
+    globalSubgraphs: Record<
+      string,
+      { name: string; info: { node_pack: string; category?: string }; data: string }
+    > = {}
+  ) => {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
       Object.keys(filenames).map((filename) => ({
         path: filename,
@@ -67,13 +74,13 @@ describe('useSubgraphStore', () => {
         size: 1 // size !== -1 for remote workflows
       }))
     )
-    vi.mocked(api).getUserData = vi.fn(
-      (f) =>
-        ({
-          status: 200,
-          text: () => JSON.stringify(filenames[f.slice(10)])
-        }) as any
+    vi.mocked(api).getUserData = vi.fn((f) =>
+      Promise.resolve({
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify(filenames[f.slice(10)]))
+      } as Response)
     )
+    vi.mocked(api.getGlobalSubgraphs).mockResolvedValue(globalSubgraphs)
     return await store.fetchSubgraphs()
   }
 
@@ -135,14 +142,18 @@ describe('useSubgraphStore', () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(store.isGlobalBlueprint('test')).toBe(false)
   })
-  it('should identify blueprints with non-blueprint python_module as global', async () => {
+  it('should identify global blueprints loaded from getGlobalSubgraphs', async () => {
+    await mockFetch({}, {
+      global_test: {
+        name: 'Global Test Blueprint',
+        info: { node_pack: 'comfy_essentials' },
+        data: JSON.stringify(mockGraph)
+      }
+    })
+    expect(store.isGlobalBlueprint('global_test')).toBe(true)
+  })
+  it('should return false for non-existent blueprints', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    const nodeDef = store.subgraphBlueprints.find(
-      (d) => d.name === 'SubgraphBlueprint.test'
-    )
-    if (nodeDef) {
-      ;(nodeDef as any).python_module = 'comfy_essentials'
-    }
-    expect(store.isGlobalBlueprint('test')).toBe(true)
+    expect(store.isGlobalBlueprint('nonexistent')).toBe(false)
   })
 })
