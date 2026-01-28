@@ -14,7 +14,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
-import { GetNodeParentGroupKey } from '../shared'
+import { GetNodeParentGroupKey, getWidgetGroupKey } from '../shared'
+import WidgetGroup from './WidgetGroup.vue'
 import WidgetItem from './WidgetItem.vue'
 
 const {
@@ -83,6 +84,34 @@ function isWidgetShownOnParents(
 }
 
 const isEmpty = computed(() => widgets.value.length === 0)
+
+type WidgetEntry = { widget: IBaseWidget; node: LGraphNode }
+type WidgetGroup = {
+  key: string
+  items: WidgetEntry[]
+}
+
+/**
+ * Group widgets by their group key (for dynamic widget grouping).
+ * Widgets with the same group key are placed together in a single group.
+ */
+const groupedWidgets = computed((): WidgetGroup[] => {
+  const groups: WidgetGroup[] = []
+  const keyToGroup = new Map<string, WidgetGroup>()
+
+  for (const entry of widgets.value) {
+    const key = getWidgetGroupKey(entry.widget)
+    let group = keyToGroup.get(key)
+    if (!group) {
+      group = { key, items: [] }
+      keyToGroup.set(key, group)
+      groups.push(group)
+    }
+    group.items.push(entry)
+  }
+
+  return groups
+})
 
 const displayLabel = computed(
   () => label ?? (node ? node.title : t('rightSidePanel.inputs'))
@@ -167,17 +196,22 @@ defineExpose({
         class="space-y-2 rounded-lg px-4 pt-1 relative"
       >
         <TransitionGroup name="list-scale">
-          <WidgetItem
-            v-for="{ widget, node } in widgets"
-            :key="`${node.id}-${widget.name}-${widget.type}`"
-            :widget="widget"
-            :node="node"
+          <WidgetGroup
+            v-for="group in groupedWidgets"
+            :key="group.key"
             :is-draggable="isDraggable"
-            :hidden-favorite-indicator="hiddenFavoriteIndicator"
-            :show-node-name="showNodeName"
-            :parents="parents"
-            :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
-          />
+          >
+            <WidgetItem
+              v-for="{ widget, node } in group.items"
+              :key="`${node.id}-${widget.name}-${widget.type}`"
+              :widget="widget"
+              :node="node"
+              :hidden-favorite-indicator="hiddenFavoriteIndicator"
+              :show-node-name="showNodeName"
+              :parents="parents"
+              :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+            />
+          </WidgetGroup>
         </TransitionGroup>
       </div>
     </PropertiesAccordionItem>

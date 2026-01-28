@@ -23,7 +23,6 @@ import WidgetActions from './WidgetActions.vue'
 const {
   widget,
   node,
-  isDraggable = false,
   hiddenFavoriteIndicator = false,
   showNodeName = false,
   parents = [],
@@ -31,7 +30,6 @@ const {
 } = defineProps<{
   widget: IBaseWidget
   node: LGraphNode
-  isDraggable?: boolean
   hiddenFavoriteIndicator?: boolean
   showNodeName?: boolean
   parents?: SubgraphNode[]
@@ -104,22 +102,11 @@ const displayLabel = customRef((track, trigger) => {
 
 <template>
   <div
-    :class="
-      cn(
-        'widget-item col-span-full grid grid-cols-subgrid rounded-lg group',
-        isDraggable &&
-          'draggable-item !will-change-auto drag-handle cursor-grab bg-comfy-menu-bg [&.is-draggable]:cursor-grabbing outline-comfy-menu-bg [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0 [&.is-draggable]:opacity-70'
-      )
-    "
+    class="widget-item col-span-full grid grid-cols-subgrid rounded-lg group drag-handle"
   >
     <!-- widget header -->
     <div
-      :class="
-        cn(
-          'min-h-8 flex items-center justify-between gap-1 mb-1.5 min-w-0',
-          isDraggable && 'pointer-events-none'
-        )
-      "
+      class="widget-item-header min-h-8 flex items-center justify-between gap-1 mb-1.5 min-w-0"
     >
       <EditableText
         v-if="widget.name"
@@ -168,16 +155,6 @@ const displayLabel = customRef((track, trigger) => {
       :node-id="String(node.id)"
       :node-type="node.type"
       :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
-    />
-    <!-- Drag handle -->
-    <div
-      :class="
-        cn(
-          'pointer-events-none mt-1.5 mx-auto max-w-40 w-1/2 h-1 rounded-lg bg-transparent transition-colors duration-150',
-          'group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted',
-          !isDraggable && 'opacity-0'
-        )
-      "
     />
   </div>
 </template>

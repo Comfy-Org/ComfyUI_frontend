@@ -2,6 +2,10 @@ import { remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import {
+  autoPromoteDynamicChildren,
+  invalidateProxyWidgetsForNode
+} from '@/core/graph/subgraph/proxyWidgetUtils'
 import type {
   ISlotType,
   INodeInputSlot,
@@ -126,7 +130,13 @@ function dynamicComboWidget(
             ensureWidgetForInput(node, newInput)
         }
       }
+
+      const childWidgets = node.widgets!.filter(isInGroup)
+      for (const child of childWidgets) {
+        child.dynamicWidgetParent = widget.name
+      }
     })
+    widget.dynamicWidgetRoot = true
 
     const inputInsertionPoint =
       node.inputs.findIndex((i) => i.name === widget.name) + 1
@@ -179,6 +189,12 @@ function dynamicComboWidget(
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
+
+    // Auto-promote new child widgets if parent dynamic combo is promoted
+    autoPromoteDynamicChildren(node, widget)
+    // Mark proxy widgets as needing re-checking for hidden state
+    invalidateProxyWidgetsForNode(node)
+
     app.canvas?.setDirty(true, true)
   }
   //A little hacky, but onConfigure won't work.

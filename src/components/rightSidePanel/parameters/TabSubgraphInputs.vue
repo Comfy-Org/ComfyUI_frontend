@@ -24,7 +24,7 @@ import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/f
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
-import { searchWidgets } from '../shared'
+import { getWidgetGroupKey, searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -103,6 +103,57 @@ const widgetsList = computed((): NodeWidgetsList => {
   return result
 })
 
+/**
+ * Get the group key for a widget by its proxyWidgets entry.
+ * Returns the parent widget name if this is a child, otherwise the widget's own name.
+ */
+function getGroupKeyForEntry(widgetName: string): string {
+  const { widgets = [] } = node
+
+  // Find the actual widget to check dynamicWidgetParent
+  const widget = widgets.find((w) => {
+    if (isProxyWidget(w)) {
+      return w._overlay.widgetName === widgetName
+    }
+    return w.name === widgetName
+  })
+
+  if (widget) {
+    return getWidgetGroupKey(widget)
+  }
+  return widgetName
+}
+
+type ProxyWidgetGroup = {
+  key: string
+  indices: number[]
+}
+
+/**
+ * Build a list of groups from proxyWidgets.
+ * Each group contains the indices of widgets that belong together.
+ * Groups are ordered by the first occurrence of their members.
+ */
+function buildProxyWidgetGroups(pw: [string, string][]): ProxyWidgetGroup[] {
+  const groups: ProxyWidgetGroup[] = []
+  const keyToGroup = new Map<string, ProxyWidgetGroup>()
+
+  for (let i = 0; i < pw.length; i++) {
+    const [, widgetName] = pw[i]
+    const key = getGroupKeyForEntry(widgetName)
+
+    let group = keyToGroup.get(key)
+    if (!group) {
+      group = { key, indices: [] }
+      keyToGroup.set(key, group)
+      groups.push(group)
+    }
+    group.indices.push(i)
+  }
+
+  return groups
+}
+
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const interiorNodes = node.subgraph.nodes
   const proxyWidgetsValue = parseProxyWidgets(node.properties.proxyWidgets)
@@ -178,11 +229,42 @@ function setDraggableState() {
       this.draggableItem as HTMLElement
     )
 
-    // Update proxyWidgets order
+    // Build groups from proxyWidgets
+    // Each draggable item corresponds to a group (container or single widget)
     const pw = proxyWidgets.value
-    const [w] = pw.splice(oldPosition, 1)
-    pw.splice(newPosition, 0, w)
-    proxyWidgets.value = pw
+    const groups = buildProxyWidgetGroups(pw)
+
+    if (oldPosition >= groups.length || newPosition >= groups.length) {
+      console.error('[TabSubgraphInputs] position out of bounds')
+      return
+    }
+
+    // Get the group being moved
+    const movedGroup = groups[oldPosition]
+    const movedIndices = movedGroup.indices
+
+    // Extract the entries being moved (in their original order)
+    const movedEntries: [string, string][] = movedIndices.map((i) => pw[i])
+
+    const newPw: [string, string][] = []
+    const reorderedGroups = [...groups]
+    reorderedGroups.splice(oldPosition, 1)
+    reorderedGroups.splice(newPosition, 0, movedGroup)
+
+    // Flatten back to proxyWidgets, preserving entry order within each group
+    for (const group of reorderedGroups) {
+      if (group === movedGroup) {
+        // Use the entries we extracted earlier
+        newPw.push(...movedEntries)
+      } else {
+        // Add entries from this group in their original order
+        for (const idx of group.indices) {
+          newPw.push(pw[idx])
+        }
+      }
+    }
+
+    proxyWidgets.value = newPw
     canvasStore.canvas?.setDirty(true, true)
     triggerRef(proxyWidgets)
   }

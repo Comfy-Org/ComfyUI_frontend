@@ -1,5 +1,6 @@
 import {
   demoteWidget,
+  isDynamicComboChild,
   promoteRecommendedWidgets
 } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
@@ -37,6 +38,12 @@ type Overlay = Partial<IBaseWidget> & {
   widgetName: string
   isProxyWidget: boolean
   node?: LGraphNode
+  /** Hidden state for disconnected dynamic combo children */
+  hidden?: boolean
+  /** Flag to trigger re-resolution when source node's widgets change */
+  needsResolve?: boolean
+  /** Cached dynamicWidgetParent for grouping when widget is disconnected */
+  dynamicWidgetParent?: string
 }
 // A ProxyWidget can be treated like a normal widget.
 // the _overlay property can be used to directly access the Overlay object
@@ -142,11 +149,21 @@ function newProxyWidget(
   widgetName: string
 ) {
   const name = `${nodeId}: ${widgetName}`
-  const overlay = {
+
+  // Determine dynamicWidgetParent from widget name pattern (parentName.childName)
+  // This ensures grouping works even when the backing widget is disconnected
+  let dynamicWidgetParent: string | undefined
+  const dotIndex = widgetName.indexOf('.')
+  if (dotIndex !== -1) {
+    dynamicWidgetParent = widgetName.slice(0, dotIndex)
+  }
+
+  const overlay: Overlay = {
     //items specific for proxy management
     nodeId,
     graph: subgraphNode.subgraph,
     widgetName,
+    dynamicWidgetParent,
     //Items which normally exist on widgets
     afterQueued: undefined,
     computedHeight: undefined,
@@ -169,9 +186,15 @@ function resolveLinkedWidget(
   const n = getNodeByExecutionId(graph, nodeId)
   if (!n) return [undefined, undefined]
   const widget = n.widgets?.find((w: IBaseWidget) => w.name === widgetName)
-  //Slightly hacky. Force recursive resolution of nested widgets
+  // Slightly hacky. Force recursive resolution of nested widgets
   if (widget && isProxyWidget(widget) && isDisconnectedWidget(widget))
     widget.computedHeight = 20
+
+  // Cache dynamicWidgetParent in overlay for use when widget becomes disconnected
+  if (widget?.dynamicWidgetParent) {
+    overlay.dynamicWidgetParent = widget.dynamicWidgetParent
+  }
+
   return [n, widget]
 }
 
@@ -188,6 +211,18 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       }
     })
   }
+
+  function updateHiddenState() {
+    const shouldHide =
+      backingWidget === disconnectedWidget &&
+      linkedNode !== undefined &&
+      isDynamicComboChild(linkedNode, overlay.widgetName)
+    if (overlay.hidden !== shouldHide) {
+      overlay.hidden = shouldHide
+      subgraphNode.setDirtyCanvas(true, true)
+    }
+  }
+
   /**
    * A set of handlers which define widget interaction
    * Many arguments are shared between function calls
@@ -201,6 +236,13 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
    */
   const handler = {
     get(_t: IBaseWidget, property: string, receiver: object) {
+      // Re-resolve when marked dirty (source node's widgets changed)
+      if (property === 'hidden' && overlay.needsResolve) {
+        ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
+        backingWidget = linkedWidget ?? disconnectedWidget
+        overlay.needsResolve = false
+        updateHiddenState()
+      }
       let redirectedTarget: object = backingWidget
       let redirectedReceiver = receiver
       if (property == '_overlay') return overlay
@@ -220,9 +262,10 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
         if (linkedNode && linkedWidget?.computedDisabled) {
           demoteWidget(linkedNode, linkedWidget, [subgraphNode])
         }
-        //update linkage regularly, but no more than once per frame
+        // Update linkage regularly, but no more than once per frame
         ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
         backingWidget = linkedWidget ?? disconnectedWidget
+        updateHiddenState()
       }
       if (Object.prototype.hasOwnProperty.call(overlay, property)) {
         redirectedTarget = overlay

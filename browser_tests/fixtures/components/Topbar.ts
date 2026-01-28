@@ -60,6 +60,11 @@ export class Topbar {
     await tab.locator('.close-button').click({ force: true })
   }
 
+  async switchToTab(index: number) {
+    const tabs = this.page.locator('.workflow-tabs button')
+    await tabs.nth(index).click()
+  }
+
   getSaveDialog(): Locator {
     return this.page.locator('.p-dialog-content input')
   }
