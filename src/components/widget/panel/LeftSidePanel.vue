@@ -8,6 +8,7 @@
     >
       <div v-if="'items' in item" class="flex flex-col gap-2">
         <NavTitle
+          v-if="item.title"
           v-model="collapsedGroups[item.title]"
           :title="item.title"
           :collapsible="item.collapsible"
