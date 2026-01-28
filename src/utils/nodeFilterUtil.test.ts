@@ -11,7 +11,7 @@ describe('nodeFilterUtil', () => {
   ): LGraphNode => {
     // Create a custom class with the nodeData static property
     class MockNode extends LGraphNode {
-      static nodeData = isOutputNode ? { output_node: true } : {}
+      static override nodeData = isOutputNode ? { output_node: true } : {}
     }
 
     const node = new MockNode('')
@@ -72,7 +72,7 @@ describe('nodeFilterUtil', () => {
 
     it('should handle nodes with undefined output_node', () => {
       class MockNodeWithOtherData extends LGraphNode {
-        static nodeData = { someOtherProperty: true }
+        static override nodeData = { someOtherProperty: true }
       }
 
       const node = new MockNodeWithOtherData('')

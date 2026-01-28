@@ -261,7 +261,17 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
-  nodeDefStore.showDevOnly = settingStore.get('Comfy.DevMode')
+  const devModeEnabled = settingStore.get('Comfy.DevMode')
+  nodeDefStore.showDevOnly = devModeEnabled
+
+  // Update skip_list on all registered node types for dev-only nodes
+  // This ensures LiteGraph's getNodeTypesCategories/getNodeTypesInCategory
+  // correctly filter dev-only nodes from the right-click context menu
+  for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
+    if (nodeType.nodeData?.dev_only) {
+      nodeType.skip_list = !devModeEnabled
+    }
+  }
 })
 
 watchEffect(() => {

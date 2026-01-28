@@ -233,6 +233,12 @@ export class LGraphNode
   static description?: string
   static filter?: string
   static skip_list?: boolean
+  static nodeData?: {
+    dev_only?: boolean
+    deprecated?: boolean
+    experimental?: boolean
+    [key: string]: unknown
+  }
 
   static resizeHandleSize = 15
   static resizeEdgeSize = 5
