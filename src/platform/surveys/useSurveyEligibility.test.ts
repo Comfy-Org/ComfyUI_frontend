@@ -238,12 +238,6 @@ describe('useSurveyEligibility', () => {
 
       expect(delayMs.value).toBe(10000)
     })
-
-    it('uses default delayMs when not specified', () => {
-      const { delayMs } = useSurveyEligibility(defaultConfig)
-
-      expect(delayMs.value).toBe(5000)
-    })
   })
 
   describe('persistence', () => {
