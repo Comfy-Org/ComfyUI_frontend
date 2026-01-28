@@ -14,6 +14,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import { HideLayoutFieldKey } from '@/types/widgetTypes'
+
 import { GetNodeParentGroupKey } from '../shared'
 import WidgetItem from './WidgetItem.vue'
 
@@ -52,7 +54,7 @@ const rootElement = ref<HTMLElement>()
 const widgets = shallowRef(widgetsProp)
 watchEffect(() => (widgets.value = widgetsProp))
 
-provide('hideLayoutField', true)
+provide(HideLayoutFieldKey, true)
 
 const canvasStore = useCanvasStore()
 const { t } = useI18n()
