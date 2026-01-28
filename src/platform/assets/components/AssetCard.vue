@@ -82,14 +82,14 @@
       </h3>
       <p
         :id="descId"
-        v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
+        v-tooltip.top="{ value: asset.secondaryText, showDelay: tooltipDelay }"
         :class="
           cn(
             'm-0 text-sm line-clamp-2 [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box] text-muted-foreground'
           )
         "
       >
-        {{ asset.description }}
+        {{ asset.secondaryText }}
       </p>
       <div class="flex items-center justify-between gap-2 mt-auto">
         <div class="flex gap-3 text-xs text-muted-foreground">
