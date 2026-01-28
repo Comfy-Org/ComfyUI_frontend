@@ -21,11 +21,7 @@ import type { RemoteConfig } from './types'
  * - 'authenticated': Config loaded with auth (user-specific flags available)
  * - 'error': Failed to load config
  */
-export type RemoteConfigState =
-  | 'unloaded'
-  | 'anonymous'
-  | 'authenticated'
-  | 'error'
+type RemoteConfigState = 'unloaded' | 'anonymous' | 'authenticated' | 'error'
 
 /**
  * Current load state of remote configuration
