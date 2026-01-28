@@ -62,14 +62,6 @@ interface AcceptInviteResponse {
   workspace_name: string
 }
 
-interface BillingPortalRequest {
-  return_url: string
-}
-
-interface BillingPortalResponse {
-  billing_portal_url: string
-}
-
 interface CreateWorkspacePayload {
   name: string
 }
@@ -81,6 +73,9 @@ interface UpdateWorkspacePayload {
 interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
 }
+
+//We need endpoints for the /plans to populate the PricingTableWorkspace
+//
 
 class WorkspaceApiError extends Error {
   constructor(
@@ -317,28 +312,6 @@ export const workspaceApi = {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),
         null,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  /**
-   * Access the billing portal for the current workspace.
-   * POST /api/billing/portal
-   */
-  async accessBillingPortal(
-    returnUrl?: string
-  ): Promise<BillingPortalResponse> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await workspaceApiClient.post<BillingPortalResponse>(
-        api.apiURL('/billing/portal'),
-        {
-          return_url: returnUrl ?? window.location.href
-        } satisfies BillingPortalRequest,
         { headers }
       )
       return response.data

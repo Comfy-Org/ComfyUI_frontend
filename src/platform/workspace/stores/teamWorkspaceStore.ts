@@ -561,10 +561,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     }
   }
 
-  // ════════════════════════════════════════════════════════════
-  // INVITE LINK HELPERS
-  // ════════════════════════════════════════════════════════════
-
   function buildInviteLink(token: string): string {
     const baseUrl = window.location.origin
     return `${baseUrl}?invite=${encodeURIComponent(token)}`
