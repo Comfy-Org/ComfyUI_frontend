@@ -4,7 +4,7 @@ import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Dynamic Combo Widgets in Subgraphs', () => {
-  const TEST_NODE_TYPE = 'TestDynamicComboNode'
+  const TEST_NODE_TYPE = 'DevToolsDynamicComboNode'
 
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
