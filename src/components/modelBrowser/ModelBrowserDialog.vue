@@ -148,6 +148,7 @@ import type { ComfyModelDef } from '@/stores/modelStore'
 import type { EnrichedModel } from '@/types/modelBrowserTypes'
 import type { NavGroupData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { createModelNode } from '@/utils/modelBrowser/createModelNode'
 
 import ModelBrowserStates from './ModelBrowserStates.vue'
 import ModelCard from './ModelCard.vue'
@@ -319,13 +320,28 @@ function handleModelFocus(model: EnrichedModel) {
   focusedModel.value = model
 }
 
-function handleModelSelect(_model: EnrichedModel) {
+function handleModelSelect(model: EnrichedModel) {
   // Track model selection
   telemetry?.trackUiButtonClicked({
     button_id: 'model_browser_model_selected'
   })
 
-  emit('select', _model.original)
+  // Create node on canvas
+  const result = createModelNode(model)
+
+  if (result.success) {
+    // Emit legacy select event for backward compatibility
+    emit('select', model.original)
+    // Close dialog after successful node creation
+    handleClose()
+  } else {
+    // Log error - error details already logged by createModelNode
+    console.error(
+      `Failed to create node for model ${model.displayName}:`,
+      result.error.message
+    )
+    // Don't close dialog on error so user can try again
+  }
 }
 
 function handleShowInfo(model: EnrichedModel) {
