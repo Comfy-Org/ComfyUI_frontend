@@ -2544,7 +2544,7 @@
     "tagsPlaceholder": "e.g., models, checkpoint",
     "tryAdjustingFilters": "Try adjusting your search or filters",
     "unknown": "Unknown",
-    "unsupportedUrlSource": "Only URLs from {sources} are supported",
+    "unsupportedUrlSource": "This URL is not supported. Use a direct model link from {sources}. See the how-to videos below for help.",
     "upgradeFeatureDescription": "This feature is only available with Creator or Pro plans.",
     "upgradeToUnlockFeature": "Upgrade to unlock this feature",
     "upload": "Import",
