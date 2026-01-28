@@ -5,7 +5,7 @@ on:
   push:
     branches: [main, master, core/*, desktop/*]
   pull_request:
-    branches-ignore: [wip/*, draft/*, temp/*]
+    branches-ignore: [wip/*, draft/*, temp/*, version-bump-*]
   workflow_dispatch:
   workflow_run:
     workflows: ['i18n: Update Core']
