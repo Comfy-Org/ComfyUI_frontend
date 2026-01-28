@@ -262,7 +262,7 @@ const uploadFiles = async (files: File[]): Promise<string[]> => {
   const failedUploads = results.filter((result) => !result.success)
   if (failedUploads.length > 0) {
     failedUploads.forEach((result) => {
-      toastStore.addAlert(result.error || 'Upload failed')
+      toastStore.addAlert(result.error || t('toastMessages.fileUploadFailed'))
     })
   }
 
