@@ -265,7 +265,7 @@ When mocking composables that return reactive refs, define the mock implementati
 2. **Use singleton pattern** — The factory runs once; all calls to the composable return the same mock object
 3. **Access mocks per-test** — Call the composable directly in each test to get the singleton instance rather than storing in a shared variable
 4. **Wrap in `vi.mocked()` for type safety** — Use `vi.mocked(service.method).mockResolvedValue(...)` when configuring
-5. **Rely on `vi.clearAllMocks()`** — Resets call counts without recreating instances; ref values may need manual reset if mutated
+5. **Rely on `vi.resetAllMocks()`** — Resets call counts without recreating instances; ref values may need manual reset if mutated
 
 ### Pattern
 
