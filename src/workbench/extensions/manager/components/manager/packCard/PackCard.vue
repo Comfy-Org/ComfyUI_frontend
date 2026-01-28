@@ -11,7 +11,7 @@
     "
   >
     <!-- Banner -->
-    <div class="w-full cursor-pointer rounded-t-lg">
+    <div class="w-full rounded-t-lg">
       <PackBanner :node-pack="nodePack" />
     </div>
 

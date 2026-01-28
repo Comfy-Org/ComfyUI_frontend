@@ -1,12 +1,12 @@
 import { whenever } from '@vueuse/core'
 import { orderBy } from 'es-toolkit/compat'
+import { compare, valid } from 'semver'
 import type { Ref } from 'vue'
 import { computed } from 'vue'
 
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
-import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
@@ -73,12 +73,20 @@ export function useManagerDisplayPacks(
 
   const filterOutdated = (packs: NodePack[]) =>
     packs.filter((p) => {
-      const { isUpdateAvailable } = usePackUpdateStatus(p)
-      return isUpdateAvailable.value
+      const installedVersion = comfyManagerStore.getInstalledPackVersion(
+        p.id ?? ''
+      )
+      const latestVersion = p.latest_version?.version
+      if (
+        !comfyManagerStore.isPackInstalled(p.id) ||
+        !installedVersion ||
+        !latestVersion ||
+        !valid(installedVersion) // nightly builds
+      ) {
+        return false
+      }
+      return compare(latestVersion, installedVersion) > 0
     })
-
-  const filterMissing = (packs: NodePack[]) =>
-    packs.filter((p) => !comfyManagerStore.isPackInstalled(p.id))
 
   // Data fetching triggers using whenever
   const needsInstalledPacks = computed(() =>
@@ -165,7 +173,7 @@ export function useManagerDisplayPacks(
         const base = hasSearch
           ? filterWorkflowPack(searchResults.value)
           : workflowPacks.value
-        return sortPacks(filterMissing(base))
+        return sortPacks(filterNotInstalled(base))
       }
 
       default:
@@ -191,7 +199,9 @@ export function useManagerDisplayPacks(
     return false
   })
 
-  const missingNodePacks = computed(() => filterMissing(workflowPacks.value))
+  const missingNodePacks = computed(() =>
+    filterNotInstalled(workflowPacks.value)
+  )
 
   return {
     displayPacks,
