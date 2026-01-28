@@ -1,6 +1,6 @@
 import { api } from '@/scripts/api'
 
-import { remoteConfig } from './remoteConfig'
+import { remoteConfig, remoteConfigState } from './remoteConfig'
 
 interface RefreshRemoteConfigOptions {
   /**
@@ -12,7 +12,12 @@ interface RefreshRemoteConfigOptions {
 
 /**
  * Loads remote configuration from the backend /features endpoint
- * and updates the reactive remoteConfig ref
+ * and updates the reactive remoteConfig ref.
+ *
+ * Sets remoteConfigState to:
+ * - 'anonymous' when loaded without auth
+ * - 'authenticated' when loaded with auth
+ * - 'error' when load fails
  */
 export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
@@ -28,6 +33,7 @@ export async function refreshRemoteConfig(
       const config = await response.json()
       window.__CONFIG__ = config
       remoteConfig.value = config
+      remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
       return
     }
 
@@ -35,10 +41,12 @@ export async function refreshRemoteConfig(
     if (response.status === 401 || response.status === 403) {
       window.__CONFIG__ = {}
       remoteConfig.value = {}
+      remoteConfigState.value = 'error'
     }
   } catch (error) {
     console.error('Failed to fetch remote config:', error)
     window.__CONFIG__ = {}
     remoteConfig.value = {}
+    remoteConfigState.value = 'error'
   }
 }
