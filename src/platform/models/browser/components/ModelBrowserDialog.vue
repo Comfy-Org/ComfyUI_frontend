@@ -296,7 +296,7 @@ const navItems = computed<NavGroupData[]>(() => {
         },
         {
           id: 'bookmarked',
-          label: `${t('executionList.bookmarks')} (${bookmarkCount.value})`,
+          label: `${t('executionList.workflowTreeType.bookmarks')} (${bookmarkCount.value})`,
           icon: 'icon-[lucide--star]'
         }
       ]
