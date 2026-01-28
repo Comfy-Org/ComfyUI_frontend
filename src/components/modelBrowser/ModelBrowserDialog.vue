@@ -18,9 +18,14 @@
         :is-loading="isLoading"
         :error="error"
         :is-empty="filteredModels.length === 0"
-        :empty-message="$t('modelBrowser.noModels')"
-        :show-clear-filters="false"
+        :empty-message="
+          searchQuery
+            ? $t('modelBrowser.noModelsForFilter')
+            : $t('modelBrowser.noModels')
+        "
+        :show-clear-filters="!!searchQuery"
         @retry="retryLoad"
+        @clear-filters="clearFilters"
       >
         <div class="flex-1 overflow-auto p-6">
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -62,9 +67,12 @@ const { isLoading, error, models, loadModels, retryLoad } = useModelLoader()
 
 const focusedModel = ref<EnrichedModel | null>(null)
 
-const { searchQuery, filteredModels } = useModelBrowserFiltering(models, {
-  searchDebounce: 300
-})
+const { searchQuery, filteredModels, clearFilters } = useModelBrowserFiltering(
+  models,
+  {
+    searchDebounce: 300
+  }
+)
 
 onMounted(() => {
   loadModels()
