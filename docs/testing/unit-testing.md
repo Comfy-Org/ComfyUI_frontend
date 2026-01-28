@@ -326,4 +326,7 @@ beforeEach(() => {
 vi.mock('@/path/to/composable')
 vi.mocked(useMyComposable).mockReturnValue({ isLoading: ref(false) })
 ```
+
+```
+
 ```
