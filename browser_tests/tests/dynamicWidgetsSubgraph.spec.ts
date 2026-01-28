@@ -266,7 +266,7 @@ test.describe('Dynamic Combo Widgets in Subgraphs', () => {
       subgraphWidgetName('dynamic_combo')
     )
     await comboWidget!.setValue('two')
-    await comfyPage.page.waitForTimeout(500)
+    await comfyPage.nextFrame()
 
     expect(await reloadedSubgraph.getWidgets()).toEqual([
       widget('dynamic_combo', true, 'two'),
@@ -285,7 +285,7 @@ test.describe('Dynamic Combo Widgets in Subgraphs', () => {
     await comfyPage.nextFrame()
 
     const subgraphNode = await testNode.convertToSubgraph()
-    await comfyPage.page.waitForTimeout(500)
+    await comfyPage.nextFrame()
 
     await subgraphNode.click('title')
     await comfyPage.nextFrame()

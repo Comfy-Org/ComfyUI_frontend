@@ -30,18 +30,23 @@ export class PropertiesPanel {
   async promoteWidget(widgetName: string) {
     await this.ensureOpen()
 
-    // Click on Advanced Inputs to expand it
-    const advancedInputsButton = this.root
-      .getByRole('button')
-      .filter({ hasText: /advanced inputs/i })
-    await advancedInputsButton.click()
-
-    // Find the widget row and click the more options button
+    // Check if widget is already visible in Advanced Inputs section
     const widgetRow = this.root
       .locator('[class*="widget-item"], [class*="input-item"]')
       .filter({ hasText: widgetName })
       .first()
+    const isAdvancedExpanded = await widgetRow.isVisible()
 
+    if (!isAdvancedExpanded) {
+      // Click on Advanced Inputs to expand it
+      const advancedInputsButton = this.root
+        .getByRole('button')
+        .filter({ hasText: /advanced inputs/i })
+      await advancedInputsButton.click()
+      await widgetRow.waitFor({ state: 'visible', timeout: 5000 })
+    }
+
+    // Find and click the more options button
     const moreButton = widgetRow.locator('button').filter({
       has: this.page.locator('[class*="lucide--more-vertical"]')
     })
@@ -51,18 +56,16 @@ export class PropertiesPanel {
     await this.page.getByText('Show input').click()
 
     // Close and reopen panel to refresh the UI state
-    await this.page.getByLabel('Toggle properties panel').click()
-    await this.page.getByLabel('Toggle properties panel').click()
+    await this.close()
+    await this.ensureOpen()
   }
 
   async demoteWidget(widgetName: string) {
     await this.ensureOpen()
 
     // Check if INPUTS section content is already visible
-    const inputsContent = this.root.locator('div').filter({
-      hasText: new RegExp(`^${widgetName}$`)
-    })
-    const isInputsExpanded = await inputsContent.first().isVisible()
+    const widgetRow = this.root.locator('span').getByText(widgetName).first()
+    const isInputsExpanded = await widgetRow.isVisible()
 
     if (!isInputsExpanded) {
       // Click on INPUTS section to expand it (where promoted widgets appear)
@@ -72,17 +75,11 @@ export class PropertiesPanel {
       await inputsButton.click()
     }
 
-    // Find the widget row and click the more options button
-    const widgetRow = this.root
-      .locator('div')
-      .filter({ hasText: new RegExp(`^${widgetName}$`) })
-      .first()
-
     await widgetRow.waitFor({ state: 'visible', timeout: 5000 })
 
-    // Find the more options button (the vertical dots icon button)
+    // Find the more options button in the widget-item-header
     const moreButton = widgetRow
-      .locator('..')
+      .locator('xpath=ancestor::*[contains(@class, "widget-item-header")]')
       .locator('button')
       .filter({
         has: this.page.locator('[class*="more-vertical"], [class*="lucide"]')
