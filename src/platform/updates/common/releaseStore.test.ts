@@ -108,9 +108,8 @@ describe('useReleaseStore', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
-    // Reset mocks to initial implementations
     vi.resetAllMocks()
     mockSystemStatsState.reset()
   })
