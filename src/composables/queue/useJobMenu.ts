@@ -210,8 +210,8 @@ export function useJobMenu(
     if (!task || !preview) return
 
     const asset = mapTaskOutputToAssetItem(task, preview)
-    const success = await mediaAssetActions.confirmDelete(asset)
-    if (success) {
+    const confirmed = await mediaAssetActions.deleteAssets(asset)
+    if (confirmed) {
       await queueStore.update()
     }
   }

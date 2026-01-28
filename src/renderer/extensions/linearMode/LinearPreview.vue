@@ -144,7 +144,7 @@ async function rerun(e: Event) {
             {
               icon: 'icon-[lucide--trash-2]',
               label: t('queue.jobMenu.deleteAsset'),
-              action: () => mediaActions.confirmDelete(selectedItem!)
+              action: () => mediaActions.deleteAssets(selectedItem!)
             }
           ]
         ]"
