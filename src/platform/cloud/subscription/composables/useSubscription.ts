@@ -121,21 +121,18 @@ function useSubscriptionInternal() {
       : baseName
     const unitPrice = getTierPrice(tierKey, isYearly)
     const value = isYearly && tierKey !== 'founder' ? unitPrice * 12 : unitPrice
+
     pushDataLayerEvent({
       event: 'purchase',
       transaction_id: status.subscription_id,
       value,
       currency: 'USD',
-      items: [
-        {
-          item_id: `${billingCycle}_${tierKey}`,
-          item_name: planName,
-          item_category: 'subscription',
-          item_variant: billingCycle,
-          price: value,
-          quantity: 1
-        }
-      ]
+      item_id: `${billingCycle}_${tierKey}`,
+      item_name: planName,
+      item_category: 'subscription',
+      item_variant: billingCycle,
+      price: value,
+      quantity: 1
     })
 
     clearPendingSubscriptionPurchase()

@@ -237,14 +237,10 @@ describe('useSubscription', () => {
         event: 'purchase',
         transaction_id: 'sub_123',
         currency: 'USD',
-        items: [
-          {
-            item_id: 'monthly_creator',
-            item_variant: 'monthly',
-            item_category: 'subscription',
-            quantity: 1
-          }
-        ]
+        item_id: 'monthly_creator',
+        item_variant: 'monthly',
+        item_category: 'subscription',
+        quantity: 1
       })
       expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
     })
