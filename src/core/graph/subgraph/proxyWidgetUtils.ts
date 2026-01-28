@@ -207,7 +207,7 @@ export function autoPromoteDynamicChildren(
 /**
  * Get parent SubgraphNodes based on current navigation context.
  */
-export function getParentNodes(): SubgraphNode[] {
+function getParentNodes(): SubgraphNode[] {
   //NOTE: support for determining parents of a subgraph is limited
   //This function will require rework to properly support linked subgraphs
   //Either by including actual parents in the navigation stack,
