@@ -107,6 +107,7 @@
     "modelUploaded": "تم استيراد النموذج بنجاح.",
     "noAssetsFound": "لم يتم العثور على أصول",
     "noModelsInFolder": "لا توجد {type} متاحة في هذا المجلد",
+    "noResultsCanImport": "حاول تعديل البحث أو عوامل التصفية.\nيمكنك أيضًا إضافة النماذج باستخدام زر \"استيراد\" أعلاه.",
     "noValidSourceDetected": "لم يتم اكتشاف مصدر استيراد صالح",
     "notSureLeaveAsIs": "لست متأكدًا؟ فقط اتركه كما هو",
     "onlyCivitaiUrlsSupported": "يتم دعم روابط Civitai فقط",
@@ -1260,8 +1261,10 @@
     }
   },
   "manager": {
+    "actions": "الإجراءات",
     "allMissingNodesInstalled": "تم تثبيت جميع العقد المفقودة بنجاح",
     "applyChanges": "تطبيق التغييرات",
+    "basicInfo": "معلومات أساسية",
     "changingVersion": "تغيير الإصدار من {from} إلى {to}",
     "clickToFinishSetup": "انقر",
     "conflicts": {
@@ -1324,12 +1327,24 @@
     "license": "الرخصة",
     "loadingVersions": "جاري تحميل الإصدارات...",
     "mixedSelectionMessage": "لا يمكن تنفيذ إجراء جماعي على تحديد مختلط",
+    "nav": {
+      "allExtensions": "جميع الإضافات",
+      "allInWorkflow": "الكل في: {workflowName}",
+      "allInstalled": "جميع المثبتة",
+      "conflicting": "تعارض",
+      "inWorkflowSection": "في سير العمل",
+      "installedSection": "المثبتة",
+      "missingNodes": "عقد مفقودة",
+      "notInstalled": "غير مثبت",
+      "updatesAvailable": "تحديثات متوفرة"
+    },
     "nightlyVersion": "ليلي",
     "noDescription": "لا يوجد وصف متاح",
     "noNodesFound": "لم يتم العثور على عقد",
     "noNodesFoundDescription": "لم يمكن تحليل عقد الحزمة، أو أن الحزمة هي امتداد للواجهة فقط ولا تحتوي على أي عقد.",
     "noResultsFound": "لم يتم العثور على نتائج مطابقة لبحثك.",
     "nodePack": "حزمة العقد",
+    "nodePackInfo": "معلومات حزمة العقد",
     "notAvailable": "غير متوفر",
     "packsSelected": "الحزم المحددة",
     "repository": "المستودع",
@@ -1337,6 +1352,7 @@
     "restartingBackend": "جاري إعادة تشغيل الخلفية لتطبيق التغييرات...",
     "searchPlaceholder": "بحث",
     "selectVersion": "اختر الإصدار",
+    "selected": "المحدد",
     "sort": {
       "created": "الأحدث",
       "downloads": "الأكثر شيوعاً",
