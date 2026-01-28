@@ -15,11 +15,15 @@
  * while ensuring the open source version contains no telemetry dependencies.
  */
 import { MixpanelTelemetryProvider } from './providers/cloud/MixpanelTelemetryProvider'
+import type {
+  initGtm as gtmInit,
+  pushDataLayerEvent as gtmPushDataLayerEvent
+} from './gtm'
 import type { TelemetryProvider } from './types'
 
 type GtmModule = {
-  initGtm: () => void
-  pushDataLayerEvent: (event: Record<string, unknown>) => void
+  initGtm: typeof gtmInit
+  pushDataLayerEvent: typeof gtmPushDataLayerEvent
 }
 
 // Singleton instance
