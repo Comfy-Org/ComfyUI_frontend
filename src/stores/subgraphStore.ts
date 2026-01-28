@@ -352,7 +352,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
 
   function isGlobalBlueprint(name: string): boolean {
     const nodeDef = subgraphDefCache.value.get(name)
-    return nodeDef?.python_module !== 'blueprint'
+    return nodeDef !== undefined && nodeDef.python_module !== 'blueprint'
   }
 
   return {
