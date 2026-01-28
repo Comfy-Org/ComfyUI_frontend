@@ -5,7 +5,7 @@ import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowser
  * Format folder name to display badge
  * Converts folder name to uppercase badge text
  */
-export function formatModelTypeBadge(folderName: string): string {
+function formatModelTypeBadge(folderName: string): string {
   const badges: Record<string, string> = {
     checkpoints: 'CHECKPOINT',
     loras: 'LORA',
@@ -33,7 +33,7 @@ export function formatModelTypeBadge(folderName: string): string {
  * Generate fallback preview URL for a model when no image URL is provided
  * Format: /api/experiment/models/preview/{folder}/{pathIndex}/{encodedFilename}
  */
-export function getPreviewUrl(model: EnrichedModel): string {
+function getPreviewUrl(model: EnrichedModel): string {
   const encodedFilename = encodeURIComponent(model.fileName)
   return `/api/experiment/models/preview/${model.directory}/${model.pathIndex}/${encodedFilename}`
 }
@@ -85,7 +85,7 @@ export function transformToEnrichedModel(
  * Calls the original model's load() method and returns updated enriched model
  * Returns a new object to maintain immutability
  */
-export async function loadModelMetadata(
+async function loadModelMetadata(
   model: EnrichedModel
 ): Promise<EnrichedModel> {
   await model.original.load()

@@ -7,7 +7,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 import type { SelectOption } from '@/components/input/types'
 
-export interface UseModelBrowserFilteringOptions {
+interface UseModelBrowserFilteringOptions {
   /** Debounce delay for search in milliseconds */
   searchDebounce?: number
 }

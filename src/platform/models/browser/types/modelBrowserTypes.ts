@@ -53,20 +53,6 @@ export interface EnrichedModel {
 }
 
 /**
- * Model browser filter options
- */
-export interface ModelBrowserFilters {
-  /** Search query string */
-  searchQuery?: string
-  /** Selected model type (directory name) */
-  modelType?: string | null
-  /** Sort field */
-  sortBy?: 'name' | 'size' | 'modified'
-  /** Sort direction */
-  sortDirection?: 'asc' | 'desc'
-}
-
-/**
  * Options for opening the model browser dialog
  */
 export interface ModelBrowserDialogOptions {
