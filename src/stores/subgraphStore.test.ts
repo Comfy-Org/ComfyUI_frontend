@@ -64,7 +64,11 @@ describe('useSubgraphStore', () => {
     filenames: Record<string, unknown>,
     globalSubgraphs: Record<
       string,
-      { name: string; info: { node_pack: string; category?: string }; data: string }
+      {
+        name: string
+        info: { node_pack: string; category?: string }
+        data: string
+      }
     > = {}
   ) => {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
@@ -143,13 +147,16 @@ describe('useSubgraphStore', () => {
     expect(store.isGlobalBlueprint('test')).toBe(false)
   })
   it('should identify global blueprints loaded from getGlobalSubgraphs', async () => {
-    await mockFetch({}, {
-      global_test: {
-        name: 'Global Test Blueprint',
-        info: { node_pack: 'comfy_essentials' },
-        data: JSON.stringify(mockGraph)
+    await mockFetch(
+      {},
+      {
+        global_test: {
+          name: 'Global Test Blueprint',
+          info: { node_pack: 'comfy_essentials' },
+          data: JSON.stringify(mockGraph)
+        }
       }
-    })
+    )
     expect(store.isGlobalBlueprint('global_test')).toBe(true)
   })
   it('should return false for non-existent blueprints', async () => {

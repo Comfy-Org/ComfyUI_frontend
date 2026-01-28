@@ -129,7 +129,9 @@ const subgraphStore = useSubgraphStore()
 const isUserBlueprint = computed(() => {
   const name = nodeDef.value.name
   if (!name.startsWith(subgraphStore.typePrefix)) return false
-  return !subgraphStore.isGlobalBlueprint(name.slice(subgraphStore.typePrefix.length))
+  return !subgraphStore.isGlobalBlueprint(
+    name.slice(subgraphStore.typePrefix.length)
+  )
 })
 const menuItems = computed<MenuItem[]>(() => {
   const name = nodeDef.value.name.slice(subgraphStore.typePrefix.length)
