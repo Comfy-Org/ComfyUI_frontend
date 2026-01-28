@@ -23,9 +23,9 @@ runs:
         cache: 'pnpm'
         cache-dependency-path: './pnpm-lock.yaml'
 
-    # Restore tool caches before running any build/lint operations
-    - name: Restore tool output cache
-      uses: actions/cache/restore@v5
+    # Cache tool outputs (restore on start, save on completion)
+    - name: Cache tool outputs
+      uses: actions/cache@v5
       with:
         path: |
           ./.cache
