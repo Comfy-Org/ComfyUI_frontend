@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "選択ツールボックスを表示"
+    "name": "選択ツールボックスを表示",
+    "tooltip": "ノードが選択されているときにフローティングツールバーを表示し、よく使う操作に素早くアクセスできます。"
   },
   "Comfy_ConfirmClear": {
     "name": "ワークフローをクリアする際に確認を要求する"
@@ -147,7 +148,8 @@
       "Linear": "リニア",
       "Spline": "スプライン",
       "Straight": "ストレート"
-    }
+    },
+    "tooltip": "キャンバス上のノード間の接続リンクの外観と表示を制御します。"
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "3Dビューアーを有効化（ベータ）",
@@ -272,6 +274,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "画像プレビューの下に幅×高さを表示する"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "すべてのノードで常に高度なウィジェットを表示",
+    "tooltip": "有効にすると、すべてのノードで高度なウィジェットが個別に展開しなくても常に表示されます。"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "ノードスロットにリンクを自動スナップ",
     "tooltip": "ノードの上にリンクをドラッグすると、リンクがノードの有効な入力スロットに自動的にスナップします"
@@ -331,6 +337,10 @@
   "Comfy_Queue_MaxHistoryItems": {
     "name": "キュー履歴サイズ",
     "tooltip": "キュー履歴に表示されるタスクの最大数。"
+  },
+  "Comfy_Queue_QPOV2": {
+    "name": "アセットサイドパネルで統一ジョブキューを使用",
+    "tooltip": "フローティングジョブキューパネルを、アセットサイドパネルに埋め込まれた同等のジョブキューに置き換えます。無効にすると、フローティングパネルのレイアウトに戻ります。"
   },
   "Comfy_Sidebar_Location": {
     "name": "サイドバーの位置",
@@ -466,6 +476,7 @@
     "tooltip": "リルート中心点からのベジエ制御点のオフセット"
   },
   "pysssss_SnapToGrid": {
-    "name": "常にグリッドにスナップ"
+    "name": "常にグリッドにスナップ",
+    "tooltip": "有効にすると、ノードを移動またはサイズ変更した際に自動的にグリッドに揃えます。"
   }
 }

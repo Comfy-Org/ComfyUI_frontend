@@ -22,6 +22,7 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   AssetDownloadWsMessage,
+  CustomNodesI18n,
   EmbeddingsResponse,
   ExecutedWsMessage,
   ExecutingWsMessage,
@@ -35,6 +36,7 @@ import type {
   LogsRawResponse,
   LogsWsMessage,
   NotificationWsMessage,
+  PreviewMethod,
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
@@ -44,8 +46,7 @@ import type {
   StatusWsMessageStatus,
   SystemStats,
   User,
-  UserDataFullInfo,
-  PreviewMethod
+  UserDataFullInfo
 } from '@/schemas/apiSchema'
 import type {
   JobDetail,
@@ -520,10 +521,11 @@ export class ComfyApi extends EventTarget {
     }
 
     // Get auth token and set cloud params if available
+    // Uses workspace token (if enabled) or Firebase token
     if (isCloud) {
       try {
         const authStore = await this.getAuthStore()
-        const authToken = await authStore?.getIdToken()
+        const authToken = await authStore?.getAuthToken()
         if (authToken) {
           params.set('token', authToken)
         }
@@ -951,7 +953,7 @@ export class ComfyApi extends EventTarget {
    * @param {*} type The endpoint to post to
    * @param {*} body Optional POST data
    */
-  async #postItem(type: string, body: any) {
+  async #postItem(type: string, body?: Record<string, unknown>) {
     try {
       await this.fetchApi('/' + type, {
         method: 'POST',
@@ -1074,7 +1076,7 @@ export class ComfyApi extends EventTarget {
    */
   async storeUserData(
     file: string,
-    data: any,
+    data: unknown,
     options: RequestInit & {
       overwrite?: boolean
       stringify?: boolean
@@ -1091,7 +1093,7 @@ export class ComfyApi extends EventTarget {
       `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
       {
         method: 'POST',
-        body: options?.stringify ? JSON.stringify(data) : data,
+        body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
         ...options
       }
     )
@@ -1251,7 +1253,7 @@ export class ComfyApi extends EventTarget {
    *
    * @returns The custom nodes i18n data
    */
-  async getCustomNodesI18n(): Promise<Record<string, any>> {
+  async getCustomNodesI18n(): Promise<CustomNodesI18n> {
     return (await axios.get(this.apiURL('/i18n'))).data
   }
 

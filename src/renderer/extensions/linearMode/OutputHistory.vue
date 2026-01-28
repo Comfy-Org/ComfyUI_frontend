@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { useEventListener, useInfiniteScroll, useScroll } from '@vueuse/core'
-import { computed, ref, toRaw, useTemplateRef, watch } from 'vue'
+import {
+  useAsyncState,
+  useEventListener,
+  useInfiniteScroll,
+  useScroll
+} from '@vueuse/core'
+import { computed, ref, toRaw, toValue, useTemplateRef, watch } from 'vue'
+import type { MaybeRef } from 'vue'
 
 import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarIcon from '@/components/sidebar/SidebarIcon.vue'
 import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useProgressBarBackground } from '@/composables/useProgressBarBackground'
+import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
@@ -16,13 +24,21 @@ import {
   getMediaType,
   mediaTypes
 } from '@/renderer/extensions/linearMode/mediaTypes'
-import { useQueueStore } from '@/stores/queueStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
+import { getJobDetail } from '@/services/jobOutputCache'
+import { useQueueStore, ResultItemImpl } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
 const displayWorkflows = ref(false)
 const outputs = useMediaAssets('output')
+const {
+  progressBarContainerClass,
+  progressBarPrimaryClass,
+  progressBarSecondaryClass,
+  progressPercentStyle
+} = useProgressBarBackground()
+const { totalPercent, currentNodePercent } = useQueueProgress()
 const queueStore = useQueueStore()
 const settingStore = useSettingStore()
 
@@ -46,14 +62,14 @@ defineExpose({ onWheel })
 
 const selectedIndex = ref<[number, number]>([-1, 0])
 
-watch(selectedIndex, () => {
+function doEmit() {
   const [index] = selectedIndex.value
   emit('updateSelection', [
     outputs.media.value[index],
     selectedOutput.value,
     selectedIndex.value[0] <= 0
   ])
-})
+}
 
 const outputsRef = useTemplateRef('outputsRef')
 const { reset: resetInfiniteScroll } = useInfiniteScroll(
@@ -72,36 +88,76 @@ watch(selectedIndex, () => {
   const [index, key] = selectedIndex.value
   if (!outputsRef.value) return
 
-  const outputElement = outputsRef.value?.children?.[index]?.children?.[key]
+  const outputElement = outputsRef.value?.querySelectorAll(
+    `[data-output-index="${index}"]`
+  )?.[key]
   if (!outputElement) return
 
   //container: 'nearest' is nice, but bleeding edge and chrome only
   outputElement.scrollIntoView({ block: 'nearest' })
 })
 
-function allOutputs(item?: AssetItem) {
+function outputCount(item?: AssetItem) {
   const user_metadata = getOutputAssetMetadata(item?.user_metadata)
-  if (!user_metadata?.allOutputs) return []
+  return user_metadata?.outputCount ?? 0
+}
 
-  return user_metadata.allOutputs
+const outputsCache: Record<string, MaybeRef<ResultItemImpl[]>> = {}
+
+function flattenNodeOutput([nodeId, nodeOutput]: [
+  string | number,
+  NodeExecutionOutput
+]): ResultItemImpl[] {
+  const knownOutputs: Record<string, ResultItem[]> = {}
+  if (nodeOutput.audio) knownOutputs.audio = nodeOutput.audio
+  if (nodeOutput.images) knownOutputs.images = nodeOutput.images
+  if (nodeOutput.video) knownOutputs.video = nodeOutput.video
+  if (nodeOutput.gifs) knownOutputs.gifs = nodeOutput.gifs as ResultItem[]
+  if (nodeOutput['3d']) knownOutputs['3d'] = nodeOutput['3d'] as ResultItem[]
+
+  return Object.entries(knownOutputs).flatMap(([mediaType, outputs]) =>
+    outputs.map(
+      (output) => new ResultItemImpl({ ...output, mediaType, nodeId })
+    )
+  )
+}
+
+function allOutputs(item?: AssetItem): MaybeRef<ResultItemImpl[]> {
+  if (item?.id && outputsCache[item.id]) return outputsCache[item.id]
+
+  const user_metadata = getOutputAssetMetadata(item?.user_metadata)
+  if (!user_metadata) return []
+  if (
+    user_metadata.allOutputs &&
+    user_metadata.outputCount &&
+    user_metadata.outputCount < user_metadata.allOutputs.length
+  )
+    return user_metadata.allOutputs
+
+  const outputRef = useAsyncState(
+    getJobDetail(user_metadata.promptId).then((jobDetail) => {
+      if (!jobDetail?.outputs) return []
+      return Object.entries(jobDetail.outputs).flatMap(flattenNodeOutput)
+    }),
+    []
+  ).state
+  outputsCache[item!.id] = outputRef
+  return outputRef
 }
 
 const selectedOutput = computed(() => {
   const [index, key] = selectedIndex.value
   if (index < 0) return undefined
 
-  const output = allOutputs(outputs.media.value[index])[key]
-  if (output) return output
-
-  return allOutputs(outputs.media.value[0])[0]
+  return toValue(allOutputs(outputs.media.value[index]))[key]
 })
 
+watch([selectedIndex, selectedOutput], doEmit)
 watch(
   () => outputs.media.value,
   (newAssets, oldAssets) => {
     if (newAssets.length === oldAssets.length || oldAssets.length === 0) return
     if (selectedIndex.value[0] <= 0) {
-      //force update
       selectedIndex.value = [0, 0]
       return
     }
@@ -120,8 +176,7 @@ function gotoNextOutput() {
     selectedIndex.value = [0, 0]
     return
   }
-  const currentItem = outputs.media.value[index]
-  if (allOutputs(currentItem)[key + 1]) {
+  if (key + 1 < outputCount(outputs.media.value[index])) {
     selectedIndex.value = [index, key + 1]
     return
   }
@@ -139,8 +194,8 @@ function gotoPreviousOutput() {
   }
 
   if (index > 0) {
-    const currentItem = outputs.media.value[index - 1]
-    selectedIndex.value = [index - 1, allOutputs(currentItem).length - 1]
+    const len = outputCount(outputs.media.value[index - 1])
+    selectedIndex.value = [index - 1, len - 1]
     return
   }
 
@@ -246,24 +301,35 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             queueStore.runningTasks.length + queueStore.pendingTasks.length
           "
         />
+        <div class="absolute -bottom-1 w-full h-3 rounded-sm overflow-clip">
+          <div :class="progressBarContainerClass">
+            <div
+              :class="progressBarPrimaryClass"
+              :style="progressPercentStyle(totalPercent)"
+            />
+            <div
+              :class="progressBarSecondaryClass"
+              :style="progressPercentStyle(currentNodePercent)"
+            />
+          </div>
+        </div>
       </section>
-      <section
-        v-for="(item, index) in outputs.media.value"
-        :key="index"
-        data-testid="linear-job"
-        class="py-3 not-md:h-24 border-border-subtle flex md:flex-col md:w-full px-1 first:border-t-0 first:border-l-0 md:border-t-2 not-md:border-l-2"
-      >
-        <template v-for="(output, key) in allOutputs(item)" :key>
+      <template v-for="(item, index) in outputs.media.value" :key="index">
+        <div
+          class="border-border-subtle not-md:border-l md:border-t first:border-none not-md:h-21 md:w-full m-3"
+        />
+        <template v-for="(output, key) in toValue(allOutputs(item))" :key>
           <img
             v-if="getMediaType(output) === 'images'"
             :class="
               cn(
-                'p-1 rounded-lg aspect-square object-cover',
+                'p-1 rounded-lg aspect-square object-cover not-md:h-20 md:w-full',
                 index === selectedIndex[0] &&
                   key === selectedIndex[1] &&
                   'border-2'
               )
             "
+            :data-output-index="index"
             :src="output.url"
             @click="selectedIndex = [index, key]"
           />
@@ -277,6 +343,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
                   'border-2'
               )
             "
+            :data-output-index="index"
             @click="selectedIndex = [index, key]"
           >
             <i
@@ -286,7 +353,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
             />
           </div>
         </template>
-      </section>
+      </template>
     </article>
   </div>
   <Teleport

@@ -1,6 +1,10 @@
 import { computed, reactive, readonly } from 'vue'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { isCloud } from '@/platform/distribution/types'
+import {
+  isAuthenticatedConfigLoaded,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 
 /**
@@ -94,7 +98,20 @@ export function useFeatureFlags() {
         )
       )
     },
+    /**
+     * Whether team workspaces feature is enabled.
+     * IMPORTANT: Returns false until authenticated remote config is loaded.
+     * This ensures we never use workspace tokens when the feature is disabled,
+     * and prevents race conditions during initialization.
+     */
     get teamWorkspacesEnabled() {
+      if (!isCloud) return false
+
+      // Only return true if authenticated config has been loaded.
+      // This prevents race conditions where code checks this flag before
+      // WorkspaceAuthGate has refreshed the config with auth.
+      if (!isAuthenticatedConfigLoaded.value) return false
+
       return (
         remoteConfig.value.team_workspaces_enabled ??
         api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)

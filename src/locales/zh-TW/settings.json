@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "顯示選取工具箱"
+    "name": "顯示選取工具箱",
+    "tooltip": "當選取節點時顯示浮動工具列，快速存取常用操作。"
   },
   "Comfy_ConfirmClear": {
     "name": "清除工作流程時需要確認"
@@ -147,7 +148,8 @@
       "Linear": "線性",
       "Spline": "曲線",
       "Straight": "直線"
-    }
+    },
+    "tooltip": "控制畫布上節點連接線的外觀與可見性。"
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "啟用 3D 檢視器（測試版）",
@@ -272,6 +274,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "在圖片預覽下方顯示寬度 × 高度"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "在所有節點上總是顯示進階小工具",
+    "tooltip": "啟用後，所有節點的進階小工具將始終可見，無需單獨展開。"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "自動吸附連結到節點插槽",
     "tooltip": "拖曳連結到節點時，連結會自動吸附到節點上可用的輸入插槽"
@@ -331,6 +337,10 @@
   "Comfy_Queue_MaxHistoryItems": {
     "name": "佇列歷史記錄大小",
     "tooltip": "佇列歷史中顯示的最大任務數量。"
+  },
+  "Comfy_Queue_QPOV2": {
+    "name": "在資產側邊欄中使用統一任務佇列",
+    "tooltip": "將浮動任務佇列面板替換為嵌入資產側邊欄的等效任務佇列。您可以停用此選項以恢復浮動面板佈局。"
   },
   "Comfy_Sidebar_Location": {
     "name": "側邊欄位置",
@@ -466,6 +476,7 @@
     "tooltip": "貝茲控制點相對於重導中心點的偏移量"
   },
   "pysssss_SnapToGrid": {
-    "name": "總是對齊格線"
+    "name": "總是對齊格線",
+    "tooltip": "啟用後，移動或調整節點大小時會自動對齊網格。"
   }
 }

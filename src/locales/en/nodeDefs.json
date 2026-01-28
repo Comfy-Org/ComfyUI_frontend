@@ -328,6 +328,68 @@
       }
     }
   },
+  "BriaImageEditNode": {
+    "display_name": "Bria FIBO Image Edit",
+    "description": "Edit images using Bria latest model",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Instruction to edit image"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "A string containing the structured edit prompt in JSON format. Use this instead of usual prompt for precise, programmatic control."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "guidance_scale": {
+        "name": "guidance_scale",
+        "tooltip": "Higher value makes the image follow the prompt more closely."
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "Moderation settings"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "If omitted, the edit applies to the entire image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "moderation_prompt_content_moderation": {
+        "name": "prompt_content_moderation"
+      },
+      "moderation_visual_input_moderation": {
+        "name": "visual_input_moderation"
+      },
+      "moderation_visual_output_moderation": {
+        "name": "visual_output_moderation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDanceFirstLastFrameNode": {
     "display_name": "ByteDance First-Last-Frame to Video",
     "description": "Generate video using prompt and first and last frames.",
@@ -371,42 +433,9 @@
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
       },
-      "control_after_generate": {
-        "name": "control after generate"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "ByteDanceImageEditNode": {
-    "display_name": "ByteDance Image Edit",
-    "description": "Edit images using ByteDance models via api based on prompt",
-    "inputs": {
-      "model": {
-        "name": "model"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "The base image to edit"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Instruction to edit image"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed to use for generation"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Higher value makes the image follow the prompt more closely"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Whether to add an \"AI generated\" watermark to the image"
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -547,6 +576,10 @@
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
       },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -649,6 +682,10 @@
       "watermark": {
         "name": "watermark",
         "tooltip": "Whether to add an \"AI generated\" watermark to the video."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "This parameter is ignored for any model except seedance-1-5-pro."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -2021,10 +2058,15 @@
       "choice": {
         "name": "choice"
       },
-      "option0": {}
+      "index": {},
+      "option1": {}
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "INDEX",
         "tooltip": null
       }
     }
@@ -5989,7 +6031,7 @@
     }
   },
   "LoraLoader": {
-    "display_name": "Load LoRA",
+    "display_name": "Load LoRA (Model and CLIP)",
     "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
@@ -6022,8 +6064,62 @@
       }
     }
   },
+  "LoraLoaderBypass": {
+    "display_name": "Load LoRA (Bypass) (For debugging)",
+    "description": "Apply LoRA in bypass mode. Unlike regular LoRA, this doesn't modify model weights - instead it injects the LoRA computation during forward pass. Useful for training scenarios.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The diffusion model the LoRA will be applied to."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "The CLIP model the LoRA will be applied to."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "The name of the LoRA."
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "How strongly to modify the diffusion model. This value can be negative."
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "How strongly to modify the CLIP model. This value can be negative."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The modified diffusion model."
+      },
+      "1": {
+        "tooltip": "The modified CLIP model."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "display_name": "Load LoRA (Bypass, Model Only) (for debugging)",
+    "description": "Apply LoRA in bypass mode. Unlike regular LoRA, this doesn't modify model weights - instead it injects the LoRA computation during forward pass. Useful for training scenarios.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "The modified diffusion model."
+      }
+    }
+  },
   "LoraLoaderModelOnly": {
-    "display_name": "LoraLoaderModelOnly",
+    "display_name": "Load LoRA",
     "description": "LoRAs are used to modify diffusion and CLIP models, altering the way in which latents are denoised such as applying styles. Multiple LoRA nodes can be linked together.",
     "inputs": {
       "model": {
@@ -6747,6 +6843,126 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "display_name": "Magnific Image Relight",
+    "description": "Relight an image with lighting adjustments and optional reference-based light transfer.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to relight."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descriptive guidance for lighting. Supports emphasis notation (1-1.4)."
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "Intensity of light transfer application."
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "Stylistic output preference."
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "Restricts generation freedom to match original more closely."
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "Modifies background based on prompt/reference."
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "Maintains texture and fine details from original."
+      },
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "Fine-tuning options for advanced lighting control."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Optional reference image to transfer lighting from."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "display_name": "Magnific Image Skin Enhancer",
+    "description": "Skin enhancement for portraits with multiple processing modes.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The portrait image to enhance."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "Sharpening intensity level."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "Smart grain intensity level."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Processing mode: creative for artistic enhancement, faithful for preserving original appearance, flexible for targeted optimization."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "display_name": "Magnific Image Style Transfer",
+    "description": "Transfer the style from a reference image to your input image.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The image to apply style transfer to."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "The reference image to extract style from."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "Percentage of style strength."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "Maintains the structure of the original image."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "Style transfer flavor."
+      },
+      "engine": {
+        "name": "engine",
+        "tooltip": "Processing engine selection."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "Enable portrait mode for facial enhancements."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "When disabled, expect each generation to introduce a degree of randomness, leading to more diverse outcomes."
       }
     },
     "outputs": {
@@ -9783,8 +9999,8 @@
     }
   },
   "OpenAIGPTImage1": {
-    "display_name": "OpenAI GPT Image 1",
-    "description": "Generates images synchronously via OpenAI's GPT Image 1 endpoint.",
+    "display_name": "OpenAI GPT Image 1.5",
+    "description": "Generates images synchronously via OpenAI's GPT Image endpoint.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -11206,18 +11422,27 @@
   },
   "ResizeImageMaskNode": {
     "display_name": "Resize Image/Mask",
+    "description": "Resize an image or mask using various scaling methods.",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Select how to resize: by exact dimensions, scale factor, matching another image, etc."
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Interpolation algorithm. 'area' is best for downscaling, 'lanczos' for upscaling, 'nearest-exact' for pixel art."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "crop"
+      },
+      "resize_type_height": {
+        "name": "height"
+      },
+      "resize_type_width": {
+        "name": "width"
       }
     },
     "outputs": {
@@ -13362,6 +13587,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Image(s) to Model (Pro)",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The LowPoly option is unavailable for the `3.1` model."
+      },
+      "image": {
+        "name": "image"
+      },
+      "face_count": {
+        "name": "face_count"
+      },
+      "generate_type": {
+        "name": "generate_type"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "image_left": {
+        "name": "image_left"
+      },
+      "image_right": {
+        "name": "image_right"
+      },
+      "image_back": {
+        "name": "image_back"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Text to Model (Pro)",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "The LowPoly option is unavailable for the `3.1` model."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Supports up to 1024 characters."
+      },
+      "face_count": {
+        "name": "face_count"
+      },
+      "generate_type": {
+        "name": "generate_type"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13437,6 +13740,40 @@
       },
       "prompt": {
         "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "image1": {
+        "name": "image1"
+      },
+      "image2": {
+        "name": "image2"
+      },
+      "image3": {
+        "name": "image3"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeZImageOmni": {
+    "display_name": "TextEncodeZImageOmni",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "auto_resize_images": {
+        "name": "auto_resize_images"
+      },
+      "image_encoder": {
+        "name": "image_encoder"
       },
       "vae": {
         "name": "vae"
@@ -13718,24 +14055,24 @@
         "name": "bucket_mode",
         "tooltip": "Enable resolution bucket mode. When enabled, expects pre-bucketed latents from ResolutionBucket node."
       },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "Enable bypass mode for training. When enabled, adapters are applied via forward hooks instead of weight modification. Useful for quantized models where weights cannot be directly modified."
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
     },
     "outputs": {
       "0": {
-        "name": "model",
-        "tooltip": "Model with LoRA applied"
-      },
-      "1": {
         "name": "lora",
         "tooltip": "LoRA weights"
       },
-      "2": {
+      "1": {
         "name": "loss_map",
         "tooltip": "Loss history"
       },
-      "3": {
+      "2": {
         "name": "steps",
         "tooltip": "Total training steps"
       }
@@ -15671,6 +16008,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "mode": {
+        "name": "mode"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "audio_encoder_output_1": {
+        "name": "audio_encoder_output_1"
+      },
+      "motion_frame_count": {
+        "name": "motion_frame_count",
+        "tooltip": "Number of previous frames to use as motion context."
+      },
+      "audio_scale": {
+        "name": "audio_scale"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "start_image": {
+        "name": "start_image"
+      },
+      "previous_frames": {
+        "name": "previous_frames"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": null
+      },
+      "1": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "trim_image",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16183,6 +16593,43 @@
       },
       "3": {
         "name": "trim_latent",
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedFlashVSRNode": {
+    "display_name": "FlashVSR Video Upscale",
+    "description": "Fast, high-quality video upscaler that boosts resolution and restores clarity for low-resolution or blurry footage.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "target_resolution": {
+        "name": "target_resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "WavespeedImageUpscaleNode": {
+    "display_name": "WaveSpeed Image Upscale",
+    "description": "Boost image resolution and quality, upscaling photos to 4K or 8K for sharp, detailed results.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "target_resolution": {
+        "name": "target_resolution"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

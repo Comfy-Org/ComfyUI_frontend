@@ -3,10 +3,11 @@
 This command creates patch/hotfix releases for ComfyUI Frontend by backporting fixes to stable core branches. It handles both automated backports (preferred) and manual cherry-picking (fallback).
 
 **Process Overview:**
+
 1. **Check automated backports first** (via labels)
 2. **Skip to version bump** if backports already merged
 3. **Manual cherry-picking** if automation failed
-4. **Create patch release** with version bump  
+4. **Create patch release** with version bump
 5. **Publish GitHub release** (manually uncheck "latest")
 6. **Update ComfyUI requirements.txt** via PR
 
@@ -14,7 +15,8 @@ This command creates patch/hotfix releases for ComfyUI Frontend by backporting f
 Create a hotfix release by backporting commits/PRs from main to a core branch: $ARGUMENTS
 
 Expected format: Comma-separated list of commits or PR numbers
-Examples: 
+Examples:
+
 - `#1234,#5678` (PRs - preferred)
 - `abc123,def456` (commit hashes)
 - `#1234,abc123` (mixed)
@@ -25,7 +27,7 @@ If no arguments provided, the command will guide you through identifying commits
 ## Prerequisites
 
 - Push access to repository
-- GitHub CLI (`gh`) authenticated  
+- GitHub CLI (`gh`) authenticated
 - Clean working tree
 - Understanding of what fixes need backporting
 
@@ -36,11 +38,13 @@ If no arguments provided, the command will guide you through identifying commits
 **Check if automated backports were attempted:**
 
 1. **For each PR, check existing backport labels:**
+
    ```bash
    gh pr view #1234 --json labels | jq -r '.labels[].name'
    ```
 
 2. **If no backport labels exist, add them now:**
+
    ```bash
    # Add backport labels (this triggers automated backports)
    gh pr edit #1234 --add-label "needs-backport"
@@ -48,6 +52,7 @@ If no arguments provided, the command will guide you through identifying commits
    ```
 
 3. **Check for existing backport PRs:**
+
    ```bash
    # Check for backport PRs created by automation
    PR_NUMBER=${ARGUMENTS%%,*}  # Extract first PR number from arguments
@@ -58,18 +63,22 @@ If no arguments provided, the command will guide you through identifying commits
 4. **Handle existing backport scenarios:**
 
    **Scenario A: Automated backports already merged**
+
    ```bash
    # Check if backport PRs were merged to core branches
    gh pr list --search "backport-${PR_NUMBER}-to" --state merged
    ```
+
    - If backport PRs are merged → Skip to Step 10 (Version Bump)
    - **CONFIRMATION**: Automated backports completed, proceeding to version bump?
 
    **Scenario B: Automated backport PRs exist but not merged**
+
    ```bash
    # Show open backport PRs that need merging
    gh pr list --search "backport-${PR_NUMBER}-to" --state open
    ```
+
    - **ACTION REQUIRED**: Merge the existing backport PRs first
    - Use: `gh pr merge [PR_NUMBER] --merge` for each backport PR
    - After merging, return to this command and skip to Step 10 (Version Bump)
@@ -127,6 +136,7 @@ If no arguments provided, the command will guide you through identifying commits
 ### Step 6: Cherry-pick Changes
 
 For each commit:
+
 1. Attempt cherry-pick: `git cherry-pick <commit>`
 2. If conflicts occur:
    - Display conflict details
@@ -198,6 +208,7 @@ For each commit:
    ```
 3. **CRITICAL**: Verify "Release" label is added
 4. Create standardized release notes:
+
    ```bash
    cat > release-notes-${NEW_VERSION}.md << 'EOF'
    ## ⚠️ Breaking Changes
@@ -231,12 +242,14 @@ For each commit:
    **Full Changelog**: https://github.com/Comfy-Org/ComfyUI_frontend/compare/v${CURRENT_VERSION}...v${NEW_VERSION}
    EOF
    ```
+
    - For hotfixes, typically only populate the "Bug Fixes" section
    - Include links to the cherry-picked PRs/commits
    - Update the PR body with the release notes:
      ```bash
      gh pr edit ${PR_NUMBER} --body-file release-notes-${NEW_VERSION}.md
      ```
+
 5. **CONFIRMATION REQUIRED**: Release PR has "Release" label?
 
 ### Step 12: Monitor Release Process
@@ -262,7 +275,7 @@ For each commit:
 2. **Find the DRAFT release** (e.g., "v1.23.5 Draft")
 3. **Click "Edit release"**
 4. **UNCHECK "Set as the latest release"** ⚠️ **CRITICAL**
-   - This prevents the hotfix from showing as "latest" 
+   - This prevents the hotfix from showing as "latest"
    - Main branch should always be "latest release"
 5. **Click "Publish release"**
 6. **CONFIRMATION REQUIRED**: Draft release published with "latest" unchecked?
@@ -272,6 +285,7 @@ For each commit:
 **IMPORTANT**: Create PR to update ComfyUI's requirements.txt via fork:
 
 1. **Setup fork (if needed):**
+
    ```bash
    # Check if fork already exists
    if gh repo view ComfyUI --json owner | jq -r '.owner.login' | grep -q "$(gh api user --jq .login)"; then
@@ -284,30 +298,32 @@ For each commit:
    ```
 
 2. **Clone fork and create branch:**
+
    ```bash
    # Clone your fork (or use existing clone)
    GITHUB_USER=$(gh api user --jq .login)
    if [ ! -d "ComfyUI-fork" ]; then
      gh repo clone ${GITHUB_USER}/ComfyUI ComfyUI-fork
    fi
-   
+
    cd ComfyUI-fork
    git checkout master
    git pull origin master
-   
+
    # Create update branch
    BRANCH_NAME="update-frontend-${NEW_VERSION}"
    git checkout -b ${BRANCH_NAME}
    ```
 
 3. **Update requirements.txt:**
+
    ```bash
    # Update the version in requirements.txt
    sed -i "s/comfyui-frontend-package==[0-9].*$/comfyui-frontend-package==${NEW_VERSION}/" requirements.txt
-   
+
    # Verify the change
    grep "comfyui-frontend-package" requirements.txt
-   
+
    # Commit the change
    git add requirements.txt
    git commit -m "Bump frontend to ${NEW_VERSION}"
@@ -321,7 +337,8 @@ For each commit:
      --repo comfyanonymous/ComfyUI \
      --title "Bump frontend to ${NEW_VERSION}" \
      --body "$(cat <<EOF
-Bump frontend to ${NEW_VERSION}
+   Bump frontend to ${NEW_VERSION}
+   ```
 
 \`\`\`
 python main.py --front-end-version Comfy-Org/ComfyUI_frontend@${NEW_VERSION}
@@ -334,15 +351,19 @@ python main.py --front-end-version Comfy-Org/ComfyUI_frontend@${NEW_VERSION}
 ## Changes
 
 - Fix: [Brief description of hotfixes included]
-EOF
-)"
-   ```
+  EOF
+  )"
+
+  ```
+
+  ```
 
 5. **Clean up:**
+
    ```bash
    # Return to original directory
    cd ..
-   
+
    # Keep fork directory for future updates
    echo "Fork directory 'ComfyUI-fork' kept for future use"
    ```
@@ -375,6 +396,7 @@ EOF
 ## Safety Checks
 
 Throughout the process:
+
 - Always verify core branch matches ComfyUI's requirements.txt
 - For PRs: Ensure using correct commits (merge vs individual)
 - Check version numbers follow semantic versioning
@@ -385,6 +407,7 @@ Throughout the process:
 ## Rollback Procedures
 
 If something goes wrong:
+
 - Before push: `git reset --hard origin/core/X.Y`
 - After PR creation: Close PR and start over
 - After failed release: Create new patch version with fixes
@@ -404,16 +427,16 @@ If something goes wrong:
 ## Modern Workflow Context
 
 **Primary Backport Method:** Automated via `needs-backport` + `X.YY` labels
-**This Command Usage:** 
+**This Command Usage:**
+
 - Smart path detection - skip to version bump if backports already merged
 - Fallback to manual cherry-picking only when automation fails/has conflicts
-**Complete Hotfix:** Includes GitHub release publishing + ComfyUI requirements.txt integration
+  **Complete Hotfix:** Includes GitHub release publishing + ComfyUI requirements.txt integration
 
 ## Workflow Paths
 
 - **Path A:** Backports already merged → Skip to Step 10 (Version Bump)
-- **Path B:** Backport PRs need merging → Merge them → Skip to Step 10 (Version Bump)  
+- **Path B:** Backport PRs need merging → Merge them → Skip to Step 10 (Version Bump)
 - **Path C:** No/failed backports → Manual cherry-picking (Steps 2-9) → Version Bump (Step 10)
-
 
 This process ensures a complete hotfix release with proper GitHub publishing, ComfyUI integration, and multiple safety checkpoints.

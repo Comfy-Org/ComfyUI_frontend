@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "선택 도구 상자 표시"
+    "name": "선택 도구 상자 표시",
+    "tooltip": "노드가 선택되었을 때 공통 작업에 빠르게 접근할 수 있는 플로팅 툴바를 표시합니다."
   },
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
@@ -147,7 +148,8 @@
       "Linear": "선형",
       "Spline": "스플라인",
       "Straight": "직선"
-    }
+    },
+    "tooltip": "캔버스에서 노드 간 연결 링크의 모양과 표시 여부를 제어합니다."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "3D 뷰어 활성화 (베타)",
@@ -272,6 +274,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "이미지 미리보기 아래에 너비 × 높이 표시"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "모든 노드에서 고급 위젯 항상 표시",
+    "tooltip": "이 옵션을 활성화하면, 모든 노드에서 고급 위젯이 개별적으로 확장하지 않아도 항상 표시됩니다."
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "링크를 노드 슬롯에 자동 스냅",
     "tooltip": "링크를 노드 위로 드래그할 때 링크가 노드의 유효한 입력 슬롯에 자동으로 스냅됩니다."
@@ -331,6 +337,10 @@
   "Comfy_Queue_MaxHistoryItems": {
     "name": "실행 큐 기록 갯수",
     "tooltip": "실행 큐 기록에 표시되는 최대 작업 수입니다."
+  },
+  "Comfy_Queue_QPOV2": {
+    "name": "에셋 사이드 패널에서 통합 작업 큐 사용",
+    "tooltip": "떠다니는 작업 큐 패널을 에셋 사이드 패널에 내장된 동등한 작업 큐로 대체합니다. 이 옵션을 비활성화하면 기존의 떠다니는 패널 레이아웃으로 돌아갈 수 있습니다."
   },
   "Comfy_Sidebar_Location": {
     "name": "사이드바 위치",
@@ -466,6 +476,7 @@
     "tooltip": "경유점 중심에서 베지어 제어점까지의 오프셋"
   },
   "pysssss_SnapToGrid": {
-    "name": "항상 그리드에 스냅"
+    "name": "항상 그리드에 스냅",
+    "tooltip": "활성화하면 노드를 이동하거나 크기를 조정할 때 자동으로 그리드에 정렬됩니다."
   }
 }

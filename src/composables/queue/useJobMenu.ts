@@ -6,6 +6,7 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { st, t } from '@/i18n'
 import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -15,6 +16,7 @@ import { downloadBlob } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
 import { getJobWorkflow } from '@/services/jobOutputCache'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
@@ -44,6 +46,7 @@ export function useJobMenu(
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const queueStore = useQueueStore()
+  const executionStore = useExecutionStore()
   const { copyToClipboard } = useCopyToClipboard()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
@@ -72,10 +75,15 @@ export function useJobMenu(
     const target = resolveItem(item)
     if (!target) return
     if (target.state === 'running' || target.state === 'initialization') {
-      await api.interrupt(target.id)
+      if (isCloud) {
+        await api.deleteItem('queue', target.id)
+      } else {
+        await api.interrupt(target.id)
+      }
     } else if (target.state === 'pending') {
       await api.deleteItem('queue', target.id)
     }
+    executionStore.clearInitializationByPromptId(target.id)
     await queueStore.update()
   }
 
@@ -202,8 +210,8 @@ export function useJobMenu(
     if (!task || !preview) return
 
     const asset = mapTaskOutputToAssetItem(task, preview)
-    const success = await mediaAssetActions.confirmDelete(asset)
-    if (success) {
+    const confirmed = await mediaAssetActions.deleteAssets(asset)
+    if (confirmed) {
       await queueStore.update()
     }
   }

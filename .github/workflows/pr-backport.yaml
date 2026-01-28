@@ -462,7 +462,6 @@ jobs:
             fi
           done < "$FILE"
 
-
       - name: Remove needs-backport label
         if: steps.filter-targets.outputs.skip != 'true' && success()
         run: gh pr edit ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }} --remove-label "needs-backport"

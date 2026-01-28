@@ -3,6 +3,7 @@ import { onClickOutside } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { evaluateInput } from '@/lib/litegraph/src/utils/widget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -41,7 +42,8 @@ const modelValue = defineModel<number>({ default: 0 })
 
 const formattedValue = computed(() => {
   const unformattedValue = dragValue.value ?? modelValue.value
-  if (!isFinite(unformattedValue)) return `${unformattedValue}`
+  if ((unformattedValue as unknown) === '' || !isFinite(unformattedValue))
+    return `${unformattedValue}`
 
   return n(unformattedValue, {
     useGrouping: useGrouping.value,
@@ -64,7 +66,6 @@ function updateValue(e: UIEvent) {
   textEdit.value = false
 }
 
-const sharedButtonClass = 'w-8 bg-transparent border-0 text-sm text-smoke-700'
 const canDecrement = computed(
   () =>
     modelValue.value > filteredProps.value.min &&
@@ -158,14 +159,15 @@ function handleMouseMove(e: PointerEvent) {
 function handleMouseUp() {
   const newValue = dragValue.value
   if (newValue === undefined) return
-  modelValue.value = newValue
-  dragValue.value = undefined
 
-  if (dragDelta.value === 0) {
+  if (newValue === modelValue.value) {
     textEdit.value = true
     inputField.value?.focus()
     inputField.value?.setSelectionRange(0, -1)
   }
+
+  modelValue.value = newValue
+  dragValue.value = undefined
   dragDelta.value = 0
 }
 
@@ -174,6 +176,20 @@ const buttonTooltip = computed(() => {
     return 'Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)'
   }
   return null
+})
+
+const sliderWidth = computed(() => {
+  const { max, min, step } = filteredProps.value
+  if (
+    min === undefined ||
+    max === undefined ||
+    step === undefined ||
+    (max - min) / step >= 100
+  )
+    return 0
+  const value = dragValue.value ?? modelValue.value
+  const ratio = (value - min) / (max - min)
+  return (ratio * 100).toFixed(0)
 })
 </script>
 
@@ -184,18 +200,27 @@ const buttonTooltip = computed(() => {
       v-tooltip="buttonTooltip"
       v-bind="filteredProps"
       :aria-label="widget.name"
-      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7')"
+      :class="cn(WidgetInputBaseClass, 'grow text-xs flex h-7 relative')"
     >
-      <button
+      <div
+        class="absolute size-full rounded-lg pointer-events-none overflow-clip"
+      >
+        <div
+          class="bg-primary-background/15 size-full"
+          :style="{ width: `${sliderWidth}%` }"
+        />
+      </div>
+      <Button
         v-if="!buttonsDisabled"
         data-testid="decrement"
-        :class="
-          cn(sharedButtonClass, 'pi pi-minus', !canDecrement && 'opacity-60')
-        "
+        class="h-full w-8 rounded-r-none hover:bg-base-foreground/20 disabled:opacity-30"
+        variant="muted-textonly"
         :disabled="!canDecrement"
         tabindex="-1"
         @click="modelValue -= stepValue"
-      />
+      >
+        <i class="pi pi-minus" />
+      </Button>
       <div class="relative min-w-[4ch] flex-1 py-1.5 my-0.25">
         <input
           ref="inputField"
@@ -243,16 +268,17 @@ const buttonTooltip = computed(() => {
       </div>
 
       <slot />
-      <button
+      <Button
         v-if="!buttonsDisabled"
         data-testid="increment"
-        :class="
-          cn(sharedButtonClass, 'pi pi-plus', !canIncrement && 'opacity-60')
-        "
+        class="h-full w-8 rounded-l-none hover:bg-base-foreground/20 disabled:opacity-30"
+        variant="muted-textonly"
         :disabled="!canIncrement"
         tabindex="-1"
         @click="modelValue += stepValue"
-      />
+      >
+        <i class="pi pi-plus" />
+      </Button>
     </div>
   </WidgetLayoutField>
 </template>

@@ -24,6 +24,7 @@
     "assets": "アセット",
     "baseModels": "ベースモデル",
     "browseAssets": "アセットを閲覧",
+    "byType": "タイプ別",
     "checkpoints": "チェックポイント",
     "civitaiLinkExample": "{example} {link}",
     "civitaiLinkExampleStrong": "例：",
@@ -45,6 +46,10 @@
       "failed": "ダウンロードに失敗しました",
       "inProgress": "{assetName}をダウンロード中..."
     },
+    "emptyImported": {
+      "canImport": "まだインポートされたモデルはありません。「モデルをインポート」をクリックして追加してください。",
+      "restricted": "パーソナルモデルはCreator以上のプランでのみ利用可能です。"
+    },
     "errorFileTooLarge": "ファイルが許可された最大サイズを超えています",
     "errorFormatNotAllowed": "SafeTensor形式のみ許可されています",
     "errorModelTypeNotSupported": "このモデルタイプはサポートされていません",
@@ -61,6 +66,7 @@
     "finish": "完了",
     "genericLinkPlaceholder": "ここにリンクを貼り付けてください",
     "importAnother": "別のファイルをインポート",
+    "imported": "インポート済み",
     "jobId": "ジョブID",
     "loadingModels": "{type}を読み込み中...",
     "maxFileSize": "最大ファイルサイズ：{size}",
@@ -70,6 +76,30 @@
       "threeDModelPlaceholder": "3Dモデル"
     },
     "modelAssociatedWithLink": "ご提供いただいたリンクに関連付けられているモデル：",
+    "modelInfo": {
+      "addBaseModel": "ベースモデルを追加...",
+      "addTag": "タグを追加...",
+      "additionalTags": "追加タグ",
+      "baseModelUnknown": "ベースモデル不明",
+      "basicInfo": "基本情報",
+      "compatibleBaseModels": "互換性のあるベースモデル",
+      "description": "説明",
+      "descriptionNotSet": "説明が設定されていません",
+      "descriptionPlaceholder": "このモデルの説明を追加...",
+      "displayName": "表示名",
+      "editDisplayName": "表示名を編集",
+      "fileName": "ファイル名",
+      "modelDescription": "モデル説明",
+      "modelTagging": "モデルタグ付け",
+      "modelType": "モデルタイプ",
+      "noAdditionalTags": "追加タグなし",
+      "selectModelPrompt": "モデルを選択して情報を表示してください",
+      "selectModelType": "モデルタイプを選択...",
+      "source": "ソース",
+      "title": "モデル情報",
+      "triggerPhrases": "トリガーフレーズ",
+      "viewOnSource": "{source} で表示"
+    },
     "modelName": "モデル名",
     "modelNamePlaceholder": "このモデルの名前を入力してください",
     "modelTypeSelectorLabel": "モデルの種類は何ですか？",
@@ -237,6 +267,12 @@
       "signUpWithGoogle": "Googleでサインアップ",
       "title": "アカウントを作成する"
     }
+  },
+  "boundingBox": {
+    "height": "高さ",
+    "width": "幅",
+    "x": "X",
+    "y": "Y"
   },
   "breadcrumbsMenu": {
     "clearWorkflow": "ワークフローをクリア",
@@ -678,6 +714,7 @@
     "clearAll": "すべてクリア",
     "clearFilters": "フィルターをクリア",
     "close": "閉じる",
+    "closeDialog": "ダイアログを閉じる",
     "color": "色",
     "comfy": "Comfy",
     "comfyOrgLogoAlt": "ComfyOrgロゴ",
@@ -694,6 +731,7 @@
     "control_before_generate": "生成前の制御",
     "copied": "コピーしました",
     "copy": "コピー",
+    "copyAll": "すべてコピー",
     "copyJobId": "ジョブIDをコピー",
     "copyToClipboard": "クリップボードにコピー",
     "copyURL": "URLをコピー",
@@ -756,6 +794,8 @@
     "goToNode": "ノードに移動",
     "graphNavigation": "グラフナビゲーション",
     "halfSpeed": "0.5倍速",
+    "hideLeftPanel": "左パネルを非表示",
+    "hideRightPanel": "右パネルを非表示",
     "icon": "アイコン",
     "imageFailedToLoad": "画像の読み込みに失敗しました",
     "imagePreview": "画像プレビュー - 矢印キーで画像を切り替え",
@@ -797,6 +837,7 @@
     "name": "名前",
     "newFolder": "新しいフォルダー",
     "next": "次へ",
+    "nightly": "NIGHTLY",
     "no": "いいえ",
     "noAudioRecorded": "音声が録音されていません",
     "noItems": "項目がありません",
@@ -811,6 +852,7 @@
     "nodeSlotsError": "ノードスロットエラー",
     "nodeWidgetsError": "ノードウィジェットエラー",
     "nodes": "ノード",
+    "nodesCount": "{count} ノード | {count} ノード | {count} ノード",
     "nodesRunning": "ノードが実行中",
     "none": "なし",
     "nothingToCopy": "コピーするものがありません",
@@ -885,7 +927,9 @@
     "selectedFile": "選択されたファイル",
     "setAsBackground": "背景として設定",
     "settings": "設定",
+    "showLeftPanel": "左パネルを表示",
     "showReport": "レポートを表示",
+    "showRightPanel": "右パネルを表示",
     "singleSelectDropdown": "単一選択ドロップダウン",
     "sort": "並び替え",
     "source": "ソース",
@@ -908,6 +952,7 @@
     "updating": "更新中",
     "upload": "アップロード",
     "usageHint": "使用ヒント",
+    "use": "使用",
     "user": "ユーザー",
     "versionMismatchWarning": "バージョン互換性の警告",
     "versionMismatchWarningMessage": "{warning}: {detail} 更新手順については https://docs.comfy.org/installation/update_comfyui#common-update-issues をご覧ください。",
@@ -915,11 +960,10 @@
     "videoPreview": "ビデオプレビュー - 矢印キーでビデオを切り替え",
     "viewImageOfTotal": "画像 {index} / {total} を表示",
     "viewVideoOfTotal": "ビデオ {index} / {total} を表示",
-    "vitePreloadErrorMessage": "アプリの新しいバージョンがリリースされました。再読み込みしますか？\n再読み込みしない場合、アプリの一部が正しく動作しない可能性があります。\n再読み込み前に進行状況を保存してから拒否することもできます。",
-    "vitePreloadErrorTitle": "新しいバージョンが利用可能",
     "volume": "音量",
     "warning": "警告",
-    "workflow": "ワークフロー"
+    "workflow": "ワークフロー",
+    "you": "あなた"
   },
   "graphCanvasMenu": {
     "fitView": "ビューに合わせる",
@@ -981,6 +1025,11 @@
   },
   "imageCompare": {
     "noImages": "比較する画像がありません"
+  },
+  "imageCrop": {
+    "cropPreviewAlt": "切り抜きプレビュー",
+    "loading": "読み込み中...",
+    "noInputImage": "入力画像が接続されていません"
   },
   "importFailed": {
     "copyError": "コピーエラー",
@@ -1606,17 +1655,25 @@
       "title": "このワークフローには不足しているノードがあります"
     }
   },
+  "nightly": {
+    "badge": {
+      "label": "プレビュー版",
+      "tooltip": "現在、ComfyUI のナイトリーバージョンを使用しています。これらの機能についてご意見があれば、フィードバックボタンからお知らせください。"
+    }
+  },
   "nodeCategories": {
     "": "",
     "3d": "3d",
     "3d_models": "3Dモデル",
     "BFL": "BFL",
+    "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1627,11 +1684,13 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
     "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
     "_for_testing": "_テスト用",
     "advanced": "高度な機能",
     "animation": "アニメーション",
@@ -1841,6 +1900,7 @@
     },
     "groupSettings": "グループ設定",
     "groups": "グループ",
+    "hideAdvancedInputsButton": "詳細入力を非表示",
     "hideInput": "入力を非表示",
     "info": "情報",
     "inputs": "入力",
@@ -2073,6 +2133,7 @@
     "NodeLibrary": "ノードライブラリ",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "通知設定",
+    "Other": "その他",
     "PLY": "PLY",
     "PlanCredits": "プランとクレジット",
     "Pointer": "ポインタ",
@@ -2092,7 +2153,8 @@
     "Vue Nodes": "Vueノード",
     "VueNodes": "Vueノード",
     "Window": "ウィンドウ",
-    "Workflow": "ワークフロー"
+    "Workflow": "ワークフロー",
+    "Workspace": "ワークスペース"
   },
   "shape": {
     "CARD": "カード",
@@ -2118,12 +2180,14 @@
     "viewControls": "ビューコントロール"
   },
   "sideToolbar": {
+    "activeJobStatus": "アクティブジョブ: {status}",
     "assets": "アセット",
     "backToAssets": "すべてのアセットに戻る",
     "browseTemplates": "サンプルテンプレートを表示",
     "downloads": "ダウンロード",
     "generatedAssetsHeader": "生成されたアセット",
     "helpCenter": "ヘルプセンター",
+    "importedAssetsHeader": "インポート済みアセット",
     "labels": {
       "assets": "アセット",
       "console": "コンソール",
@@ -2168,6 +2232,7 @@
     "queue": "キュー",
     "queueProgressOverlay": {
       "activeJobs": "{count}件のアクティブジョブ",
+      "activeJobsShort": "{count} 件のアクティブ | {count} 件のアクティブ",
       "activeJobsSuffix": "アクティブジョブ",
       "cancelJobTooltip": "ジョブをキャンセル",
       "clearHistory": "ジョブキュー履歴をクリア",
@@ -2256,9 +2321,15 @@
     "beta": "ベータ版",
     "billedMonthly": "毎月請求",
     "billedYearly": "{total} 年間請求",
+    "billingComingSoon": {
+      "message": "チーム向けの請求機能が近日中に追加されます。ワークスペースごとに席数単位でプランに加入できるようになります。今後のアップデートをお待ちください。",
+      "title": "近日公開"
+    },
+    "cancelSubscription": "サブスクリプションをキャンセル",
     "changeTo": "{plan}に変更",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud ロゴ",
+    "contactOwnerToSubscribe": "サブスクリプションのためにワークスペースのオーナーに連絡してください",
     "contactUs": "お問い合わせ",
     "creditsRemainingThisMonth": "今月残りのクレジット",
     "creditsRemainingThisYear": "今年残りのクレジット",
@@ -2271,6 +2342,7 @@
     "haveQuestions": "ご質問やエンタープライズについてのお問い合わせはこちら",
     "invoiceHistory": "請求履歴",
     "learnMore": "詳細を見る",
+    "managePayment": "支払いを管理",
     "managePlan": "プランを管理",
     "manageSubscription": "サブスクリプションを管理",
     "maxDuration": {
@@ -2306,6 +2378,7 @@
     "subscribeToComfyCloud": "Comfy Cloudを購読",
     "subscribeToRun": "購読する",
     "subscribeToRunFull": "実行を購読",
+    "subscriptionRequiredMessage": "クラウドでワークフローを実行するにはメンバーにサブスクリプションが必要です",
     "tierNameYearly": "{name} 年間",
     "tiers": {
       "creator": {
@@ -2337,6 +2410,7 @@
     "viewMoreDetails": "詳細を表示",
     "viewMoreDetailsPlans": "プランと価格の詳細を見る",
     "viewUsageHistory": "利用履歴を表示",
+    "workspaceNotSubscribed": "このワークスペースはサブスクリプションに加入していません",
     "yearly": "年額",
     "yearlyCreditsLabel": "年間合計クレジット",
     "yearlyDiscount": "20%割引",
@@ -2438,6 +2512,7 @@
     "failedToLoadModel": "3Dモデルの読み込みに失敗しました",
     "failedToPurchaseCredits": "クレジットの購入に失敗しました: {error}",
     "failedToQueue": "キューに追加できませんでした",
+    "failedToSaveDraft": "ワークフロードラフトの保存に失敗しました",
     "failedToToggleCamera": "カメラの切り替えに失敗しました",
     "failedToToggleGrid": "グリッドの切り替えに失敗しました",
     "failedToUpdateBackgroundColor": "背景色の更新に失敗しました",
@@ -2486,7 +2561,8 @@
     "notSet": "未設定",
     "provider": "サインイン方法",
     "title": "ユーザー設定",
-    "updatePassword": "パスワードを更新"
+    "updatePassword": "パスワードを更新",
+    "workspaceSettings": "ワークスペース設定"
   },
   "validation": {
     "descriptionRequired": "説明が必要です",
@@ -2577,6 +2653,9 @@
     "saveWorkflow": "ワークフローを保存"
   },
   "workspace": {
+    "addedToWorkspace": "{workspaceName}に追加されました",
+    "inviteAccepted": "招待を承諾しました",
+    "inviteFailed": "招待の承諾に失敗しました",
     "unsavedChanges": {
       "message": "未保存の変更があります。破棄してワークスペースを切り替えますか？",
       "title": "未保存の変更"
@@ -2590,6 +2669,128 @@
       "tokenExchangeFailed": "ワークスペースの認証に失敗しました: {error}",
       "workspaceNotFound": "ワークスペースが見つかりません"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "作成",
+      "message": "ワークスペースはメンバーでクレジットプールを共有できます。作成後、あなたがオーナーになります。",
+      "nameLabel": "ワークスペース名*",
+      "namePlaceholder": "ワークスペース名を入力",
+      "title": "新しいワークスペースを作成"
+    },
+    "dashboard": {
+      "placeholder": "ダッシュボードのワークスペース設定"
+    },
+    "deleteDialog": {
+      "message": "未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
+      "messageWithName": "「{name}」を削除しますか？未使用のクレジットや保存されていないアセットは失われます。この操作は元に戻せません。",
+      "title": "このワークスペースを削除しますか？"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "ワークスペース名",
+      "save": "保存",
+      "title": "ワークスペースの詳細を編集"
+    },
+    "invite": "招待",
+    "inviteLimitReached": "メンバーの上限50人に達しました",
+    "inviteMember": "メンバーを招待",
+    "inviteMemberDialog": {
+      "createLink": "リンクを作成",
+      "linkCopied": "コピーしました",
+      "linkCopyFailed": "コピーに失敗しました",
+      "linkStep": {
+        "copyLink": "リンクをコピー",
+        "done": "完了",
+        "message": "相手のアカウントがこのメールアドレスを使用していることを確認してください。",
+        "title": "このリンクを相手に送信してください"
+      },
+      "message": "共有可能な招待リンクを作成して送信してください",
+      "placeholder": "招待する人のメールアドレスを入力",
+      "title": "このワークスペースに人を招待"
+    },
+    "leaveDialog": {
+      "leave": "退出",
+      "message": "ワークスペースのオーナーに連絡しない限り、再参加できません。",
+      "title": "このワークスペースを退出しますか？"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "招待リンクをコピー",
+        "removeMember": "メンバーを削除",
+        "revokeInvite": "招待を取り消す"
+      },
+      "columns": {
+        "expiryDate": "有効期限",
+        "inviteDate": "招待日",
+        "joinDate": "参加日"
+      },
+      "createNewWorkspace": "新しいワークスペースを作成してください。",
+      "membersCount": "{count}/50人のメンバー",
+      "noInvites": "保留中の招待はありません",
+      "noMembers": "メンバーがいません",
+      "pendingInvitesCount": "{count}件の招待保留中",
+      "personalWorkspaceMessage": "現在、個人用ワークスペースには他のメンバーを招待できません。メンバーを追加するには、",
+      "tabs": {
+        "active": "アクティブ",
+        "pendingCount": "保留中（{count}）"
+      }
+    },
+    "menu": {
+      "deleteWorkspace": "ワークスペースを削除",
+      "deleteWorkspaceDisabledTooltip": "まずワークスペースの有効なサブスクリプションをキャンセルしてください",
+      "editWorkspace": "ワークスペースの詳細を編集",
+      "leaveWorkspace": "ワークスペースを退出"
+    },
+    "removeMemberDialog": {
+      "error": "メンバーの削除に失敗しました",
+      "message": "このメンバーはワークスペースから削除されます。使用済みのクレジットは返金されません。",
+      "remove": "メンバーを削除",
+      "success": "メンバーを削除しました",
+      "title": "このメンバーを削除しますか？"
+    },
+    "revokeInviteDialog": {
+      "message": "このメンバーは今後ワークスペースに参加できなくなります。招待リンクは無効になります。",
+      "revoke": "招待を取り消す",
+      "title": "この人の招待を取り消しますか？"
+    },
+    "tabs": {
+      "dashboard": "ダッシュボード",
+      "membersCount": "メンバー（{count}）",
+      "planCredits": "プランとクレジット"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "ワークスペースの作成に失敗しました",
+      "failedToDeleteWorkspace": "ワークスペースの削除に失敗しました",
+      "failedToFetchWorkspaces": "ワークスペースの読み込みに失敗しました",
+      "failedToLeaveWorkspace": "ワークスペースの退出に失敗しました",
+      "failedToUpdateWorkspace": "ワークスペースの更新に失敗しました",
+      "workspaceCreated": {
+        "message": "プランに加入し、チームメイトを招待して、コラボレーションを始めましょう。",
+        "subscribe": "プランに加入",
+        "title": "ワークスペースを作成しました"
+      },
+      "workspaceDeleted": {
+        "message": "ワークスペースは完全に削除されました。",
+        "title": "ワークスペースを削除しました"
+      },
+      "workspaceLeft": {
+        "message": "ワークスペースから退出しました。",
+        "title": "ワークスペースから退出しました"
+      },
+      "workspaceUpdated": {
+        "message": "ワークスペースの詳細が保存されました。",
+        "title": "ワークスペースが更新されました"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "新しいワークスペースを作成",
+    "maxWorkspacesReached": "所有できるワークスペースは10個までです。新しく作成するには1つ削除してください。",
+    "personal": "個人用",
+    "roleMember": "メンバー",
+    "roleOwner": "オーナー",
+    "subscribe": "サブスクライブ",
+    "switchWorkspace": "ワークスペースを切り替え"
   },
   "zoomControls": {
     "hideMinimap": "ミニマップを非表示",

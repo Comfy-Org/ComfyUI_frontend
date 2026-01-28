@@ -1,5 +1,7 @@
+import { useToast } from 'primevue'
 import { tryOnScopeDispose } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -9,27 +11,27 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
-import {
-  getWithAccessTracking,
-  setWithEviction
-} from '@/platform/workflow/persistence/services/workflowSessionStorageService'
 import { useCommandStore } from '@/stores/commandStore'
 
-const WORKFLOW_KEY_PATTERN = /^workflow:/
-
 export function useWorkflowPersistence() {
+  const { t } = useI18n()
   const workflowStore = useWorkflowStore()
   const settingStore = useSettingStore()
   const route = useRoute()
   const router = useRouter()
   const templateUrlLoader = useTemplateUrlLoader()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
+  const workflowDraftStore = useWorkflowDraftStore()
+  const toast = useToast()
 
   const ensureTemplateQueryFromIntent = async () => {
     hydratePreservedQuery(TEMPLATE_NAMESPACE)
@@ -49,63 +51,77 @@ export function useWorkflowPersistence() {
     settingStore.get('Comfy.Workflow.Persist')
   )
 
+  const lastSavedJsonByPath = ref<Record<string, string>>({})
+
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
-    const workflowData = comfyApp.rootGraph.serialize()
-    const workflowJson = JSON.stringify(workflowData)
+    const activeWorkflow = workflowStore.activeWorkflow
+    if (!activeWorkflow) return
+    const graphData = comfyApp.rootGraph.serialize()
+    const workflowJson = JSON.stringify(graphData)
+    const workflowPath = activeWorkflow.path
+
+    if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
+
+    try {
+      workflowDraftStore.saveDraft(activeWorkflow.path, {
+        data: workflowJson,
+        updatedAt: Date.now(),
+        name: activeWorkflow.key,
+        isTemporary: activeWorkflow.isTemporary
+      })
+    } catch (error) {
+      console.error('Failed to save draft', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('toastMessages.failedToSaveDraft'),
+        life: 3000
+      })
+      return
+    }
 
     try {
       localStorage.setItem('workflow', workflowJson)
+      if (api.clientId) {
+        sessionStorage.setItem(`workflow:${api.clientId}`, workflowJson)
+      }
     } catch (error) {
-      console.warn(
-        '[WorkflowPersistence] Failed to save to localStorage:',
-        error
+      // Only log our own keys and aggregate stats
+      const ourKeys = Object.keys(sessionStorage).filter(
+        (key) => key.startsWith('workflow:') || key === 'workflow'
       )
+      console.error('QuotaExceededError details:', {
+        workflowSizeKB: Math.round(workflowJson.length / 1024),
+        totalStorageItems: Object.keys(sessionStorage).length,
+        ourWorkflowKeys: ourKeys.length,
+        ourWorkflowSizes: ourKeys.map((key) => ({
+          key,
+          sizeKB: Math.round(sessionStorage[key].length / 1024)
+        })),
+        error: error instanceof Error ? error.message : String(error)
+      })
+      throw error
     }
 
-    if (api.clientId) {
-      const key = `workflow:${api.clientId}`
-      setWithEviction(key, workflowData, WORKFLOW_KEY_PATTERN)
-    }
-  }
+    lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-  const loadWorkflowFromData = async (
-    workflowData: ComfyWorkflowJSON | null,
-    workflowName: string | null
-  ) => {
-    if (!workflowData) return false
-    await comfyApp.loadGraphData(workflowData, true, true, workflowName)
-    return true
+    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
+      workflowDraftStore.removeDraft(activeWorkflow.path)
+      return
+    }
   }
 
   const loadPreviousWorkflowFromStorage = async () => {
     const workflowName = getStorageValue('Comfy.PreviousWorkflow')
-    const clientId = api.initialClientId ?? api.clientId
-
-    // Try loading from session storage first
-    if (clientId) {
-      const sessionWorkflow = getWithAccessTracking<ComfyWorkflowJSON>(
-        `workflow:${clientId}`
-      )
-      if (await loadWorkflowFromData(sessionWorkflow, workflowName)) {
-        return true
-      }
-    }
-
-    // Fall back to local storage (raw JSON, no LRU wrapper)
-    const localWorkflowJson = localStorage.getItem('workflow')
-    if (localWorkflowJson) {
-      try {
-        const localWorkflow = JSON.parse(localWorkflowJson) as ComfyWorkflowJSON
-        return await loadWorkflowFromData(localWorkflow, workflowName)
-      } catch {
-        console.warn(
-          '[WorkflowPersistence] Failed to parse localStorage workflow'
-        )
-      }
-    }
-
-    return false
+    const preferredPath = workflowName
+      ? `${ComfyWorkflow.basePath}${workflowName}`
+      : null
+    return await workflowDraftStore.loadPersistedWorkflow({
+      workflowName,
+      preferredPath,
+      fallbackToLatestDraft: !workflowName
+    })
   }
 
   const loadDefaultWorkflow = async () => {
@@ -152,6 +168,7 @@ export function useWorkflowPersistence() {
       persistCurrentWorkflow()
     }
   )
+
   api.addEventListener('graphChanged', persistCurrentWorkflow)
 
   // Clean up event listener when component unmounts
@@ -169,24 +186,33 @@ export function useWorkflowPersistence() {
       }
 
       const paths = openWorkflows.value
-        .filter((workflow) => workflow?.isPersisted)
-        .map((workflow) => workflow.path)
-      const activeIndex = openWorkflows.value.findIndex(
-        (workflow) => workflow.path === activeWorkflow.value?.path
-      )
+        .map((workflow) => workflow?.path)
+        .filter(
+          (path): path is string =>
+            typeof path === 'string' && path.startsWith(ComfyWorkflow.basePath)
+        )
+      const activeIndex = paths.indexOf(activeWorkflow.value.path)
 
       return { paths, activeIndex }
     }
   )
 
   // Get storage values before setting watchers
-  const storedWorkflows = JSON.parse(
+  const parsedWorkflows = JSON.parse(
     getStorageValue('Comfy.OpenWorkflowsPaths') || '[]'
   )
-  const storedActiveIndex = JSON.parse(
+  const storedWorkflows = Array.isArray(parsedWorkflows)
+    ? parsedWorkflows.filter(
+        (entry): entry is string => typeof entry === 'string'
+      )
+    : []
+  const parsedIndex = JSON.parse(
     getStorageValue('Comfy.ActiveWorkflowIndex') || '-1'
   )
-
+  const storedActiveIndex =
+    typeof parsedIndex === 'number' && Number.isFinite(parsedIndex)
+      ? parsedIndex
+      : -1
   watch(restoreState, ({ paths, activeIndex }) => {
     if (workflowPersistenceEnabled.value) {
       setStorageValue('Comfy.OpenWorkflowsPaths', JSON.stringify(paths))
@@ -197,12 +223,29 @@ export function useWorkflowPersistence() {
   const restoreWorkflowTabsState = () => {
     if (!workflowPersistenceEnabled.value) return
     const isRestorable = storedWorkflows?.length > 0 && storedActiveIndex >= 0
-    if (isRestorable) {
-      workflowStore.openWorkflowsInBackground({
-        left: storedWorkflows.slice(0, storedActiveIndex),
-        right: storedWorkflows.slice(storedActiveIndex)
-      })
-    }
+    if (!isRestorable) return
+
+    storedWorkflows.forEach((path: string) => {
+      if (workflowStore.getWorkflowByPath(path)) return
+      const draft = workflowDraftStore.getDraft(path)
+      if (!draft?.isTemporary) return
+      try {
+        const workflowData = JSON.parse(draft.data)
+        workflowStore.createTemporary(draft.name, workflowData)
+      } catch (err) {
+        console.warn(
+          'Failed to parse workflow draft, creating with default',
+          err
+        )
+        workflowDraftStore.removeDraft(path)
+        workflowStore.createTemporary(draft.name)
+      }
+    })
+
+    workflowStore.openWorkflowsInBackground({
+      left: storedWorkflows.slice(0, storedActiveIndex),
+      right: storedWorkflows.slice(storedActiveIndex)
+    })
   }
 
   return {

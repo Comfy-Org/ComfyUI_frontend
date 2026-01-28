@@ -70,17 +70,17 @@
 </template>
 
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed } from 'vue'
 
+import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
 
-const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
+const { node } = defineProps<{
+  node: ComfyNodeDefImpl
+}>()
 
-const nodeHelpStore = useNodeHelpStore()
-const { renderedHelpHtml, isLoading, error } = storeToRefs(nodeHelpStore)
+const { renderedHelpHtml, isLoading, error } = useNodeHelpContent(() => node)
 
 const inputList = computed(() =>
   Object.values(node.inputs).map((spec) => ({

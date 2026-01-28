@@ -13,6 +13,7 @@ import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -94,7 +95,7 @@ const createAssetBrowserWidget = (
   const displayLabel = currentValue ?? t('widgets.selectModel')
   const assetBrowserDialog = useAssetBrowserDialog()
 
-  async function openModal(this: IBaseWidget) {
+  async function openModal(widget: IBaseWidget) {
     if (!isAssetWidget(widget)) {
       throw new Error(`Expected asset widget but received ${widget.type}`)
     }
@@ -115,7 +116,7 @@ const createAssetBrowserWidget = (
           return
         }
 
-        const filename = validatedAsset.data.user_metadata?.filename
+        const filename = getAssetFilename(validatedAsset.data)
         const validatedFilename = assetFilenameSchema.safeParse(filename)
 
         if (!validatedFilename.success) {
@@ -129,7 +130,7 @@ const createAssetBrowserWidget = (
         }
 
         const oldValue = widget.value
-        this.value = validatedFilename.data
+        widget.value = validatedFilename.data
         node.onWidgetChanged?.(
           widget.name,
           validatedFilename.data,

@@ -21,35 +21,26 @@
         {
           "name": "MODEL",
           "type": "MODEL",
-          "links": [
-            12
-          ],
+          "links": [12],
           "shape": 3
         },
         {
           "name": "CLIP",
           "type": "CLIP",
-          "links": [
-            10,
-            11
-          ],
+          "links": [10, 11],
           "shape": 3
         },
         {
           "name": "VAE",
           "type": "VAE",
-          "links": [
-            17
-          ],
+          "links": [17],
           "shape": 3
         }
       ],
       "properties": {
         "Node name for S&R": "CheckpointLoaderSimple"
       },
-      "widgets_values": [
-        "v1-5-pruned-emaonly.ckpt"
-      ]
+      "widgets_values": ["v1-5-pruned-emaonly.ckpt"]
     },
     {
       "id": "CLIPTextEncode.0",
@@ -76,9 +67,7 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
-          "links": [
-            13
-          ],
+          "links": [13],
           "shape": 3
         }
       ],
@@ -114,18 +103,14 @@
         {
           "name": "CONDITIONING",
           "type": "CONDITIONING",
-          "links": [
-            14
-          ],
+          "links": [14],
           "shape": 3
         }
       ],
       "properties": {
         "Node name for S&R": "CLIPTextEncode"
       },
-      "widgets_values": [
-        "text, watermark"
-      ]
+      "widgets_values": ["text, watermark"]
     },
     {
       "id": "EmptyLatentImage.0",
@@ -146,20 +131,14 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [
-            15
-          ],
+          "links": [15],
           "shape": 3
         }
       ],
       "properties": {
         "Node name for S&R": "EmptyLatentImage"
       },
-      "widgets_values": [
-        512,
-        512,
-        1
-      ]
+      "widgets_values": [512, 512, 1]
     },
     {
       "id": "KSampler.0",
@@ -201,24 +180,14 @@
         {
           "name": "LATENT",
           "type": "LATENT",
-          "links": [
-            16
-          ],
+          "links": [16],
           "shape": 3
         }
       ],
       "properties": {
         "Node name for S&R": "KSampler"
       },
-      "widgets_values": [
-        3,
-        "randomize",
-        20,
-        8,
-        "euler",
-        "normal",
-        1
-      ]
+      "widgets_values": [3, "randomize", 20, 8, "euler", "normal", 1]
     },
     {
       "id": "VAEDecode.0",
@@ -250,9 +219,7 @@
         {
           "name": "IMAGE",
           "type": "IMAGE",
-          "links": [
-            18
-          ],
+          "links": [18],
           "shape": 3
         }
       ],
@@ -283,94 +250,26 @@
       ],
       "outputs": [],
       "properties": {},
-      "widgets_values": [
-        "ComfyUI"
-      ]
+      "widgets_values": ["ComfyUI"]
     }
   ],
   "links": [
-    [
-      10,
-      "CheckpointLoaderSimple.0",
-      1,
-      "CLIPTextEncode.0",
-      0,
-      "CLIP"
-    ],
-    [
-      11,
-      "CheckpointLoaderSimple.0",
-      1,
-      "CLIPTextEncode.1",
-      0,
-      "CLIP"
-    ],
-    [
-      12,
-      "CheckpointLoaderSimple.0",
-      0,
-      "KSampler.0",
-      0,
-      "MODEL"
-    ],
-    [
-      13,
-      "CLIPTextEncode.0",
-      0,
-      "KSampler.0",
-      1,
-      "CONDITIONING"
-    ],
-    [
-      14,
-      "CLIPTextEncode.1",
-      0,
-      "KSampler.0",
-      2,
-      "CONDITIONING"
-    ],
-    [
-      15,
-      "EmptyLatentImage.0",
-      0,
-      "KSampler.0",
-      3,
-      "LATENT"
-    ],
-    [
-      16,
-      "KSampler.0",
-      0,
-      "VAEDecode.0",
-      0,
-      "LATENT"
-    ],
-    [
-      17,
-      "CheckpointLoaderSimple.0",
-      2,
-      "VAEDecode.0",
-      1,
-      "VAE"
-    ],
-    [
-      18,
-      "VAEDecode.0",
-      0,
-      "SaveImage.0",
-      0,
-      "IMAGE"
-    ]
+    [10, "CheckpointLoaderSimple.0", 1, "CLIPTextEncode.0", 0, "CLIP"],
+    [11, "CheckpointLoaderSimple.0", 1, "CLIPTextEncode.1", 0, "CLIP"],
+    [12, "CheckpointLoaderSimple.0", 0, "KSampler.0", 0, "MODEL"],
+    [13, "CLIPTextEncode.0", 0, "KSampler.0", 1, "CONDITIONING"],
+    [14, "CLIPTextEncode.1", 0, "KSampler.0", 2, "CONDITIONING"],
+    [15, "EmptyLatentImage.0", 0, "KSampler.0", 3, "LATENT"],
+    [16, "KSampler.0", 0, "VAEDecode.0", 0, "LATENT"],
+    [17, "CheckpointLoaderSimple.0", 2, "VAEDecode.0", 1, "VAE"],
+    [18, "VAEDecode.0", 0, "SaveImage.0", 0, "IMAGE"]
   ],
   "groups": [],
   "config": {},
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

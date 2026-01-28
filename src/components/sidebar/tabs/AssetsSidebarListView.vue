@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <div
       v-if="activeJobItems.length"
-      class="flex max-h-[50%] flex-col gap-2 overflow-y-auto px-2"
+      class="flex max-h-[50%] scrollbar-custom flex-col gap-2 overflow-y-auto px-2"
     >
       <AssetsListItem
         v-for="job in activeJobItems"
@@ -44,9 +44,15 @@
       :class="cn('px-2', activeJobItems.length && 'mt-2')"
     >
       <div
-        class="flex items-center py-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
+        class="flex items-center p-2 text-sm font-normal leading-normal text-muted-foreground font-inter"
       >
-        {{ t('sideToolbar.generatedAssetsHeader') }}
+        {{
+          t(
+            assetType === 'input'
+              ? 'sideToolbar.importedAssetsHeader'
+              : 'sideToolbar.generatedAssetsHeader'
+          )
+        }}
       </div>
     </div>
 
@@ -57,39 +63,47 @@
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">
-        <AssetsListItem
-          role="button"
-          tabindex="0"
-          :aria-label="
-            t('assetBrowser.ariaLabel.assetCard', {
-              name: item.asset.name,
-              type: getMediaTypeFromFilename(item.asset.name)
-            })
-          "
-          :class="getAssetCardClass(isSelected(item.asset.id))"
-          :preview-url="item.asset.preview_url"
-          :preview-alt="item.asset.name"
-          :icon-name="
-            iconForMediaType(getMediaTypeFromFilename(item.asset.name))
-          "
-          :primary-text="getAssetPrimaryText(item.asset)"
-          :secondary-text="getAssetSecondaryText(item.asset)"
-          @mouseenter="onAssetEnter(item.asset.id)"
-          @mouseleave="onAssetLeave(item.asset.id)"
-          @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
-          @click.stop="emit('select-asset', item.asset)"
-        >
-          <template v-if="hoveredAssetId === item.asset.id" #actions>
-            <Button
-              variant="secondary"
-              size="icon"
-              :aria-label="t('mediaAsset.actions.moreOptions')"
-              @click.stop="emit('context-menu', $event, item.asset)"
-            >
-              <i class="icon-[lucide--ellipsis] size-4" />
-            </Button>
-          </template>
-        </AssetsListItem>
+        <div class="relative">
+          <LoadingOverlay
+            :loading="assetsStore.isAssetDeleting(item.asset.id)"
+            size="sm"
+          >
+            <i class="pi pi-trash text-xs" />
+          </LoadingOverlay>
+          <AssetsListItem
+            role="button"
+            tabindex="0"
+            :aria-label="
+              t('assetBrowser.ariaLabel.assetCard', {
+                name: item.asset.name,
+                type: getMediaTypeFromFilename(item.asset.name)
+              })
+            "
+            :class="getAssetCardClass(isSelected(item.asset.id))"
+            :preview-url="item.asset.preview_url"
+            :preview-alt="item.asset.name"
+            :icon-name="
+              iconForMediaType(getMediaTypeFromFilename(item.asset.name))
+            "
+            :primary-text="getAssetPrimaryText(item.asset)"
+            :secondary-text="getAssetSecondaryText(item.asset)"
+            @mouseenter="onAssetEnter(item.asset.id)"
+            @mouseleave="onAssetLeave(item.asset.id)"
+            @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
+            @click.stop="emit('select-asset', item.asset)"
+          >
+            <template v-if="hoveredAssetId === item.asset.id" #actions>
+              <Button
+                variant="secondary"
+                size="icon"
+                :aria-label="t('mediaAsset.actions.moreOptions')"
+                @click.stop="emit('context-menu', $event, item.asset)"
+              >
+                <i class="icon-[lucide--ellipsis] size-4" />
+              </Button>
+            </template>
+          </AssetsListItem>
+        </div>
       </template>
     </VirtualGrid>
   </div>
@@ -99,6 +113,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useJobActions } from '@/composables/queue/useJobActions'
@@ -108,7 +123,8 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import type { JobState } from '@/types/queue'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { isActiveJobState } from '@/utils/queueUtil'
 import {
   formatDuration,
   formatSize,
@@ -118,10 +134,17 @@ import {
 import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
 
-const { assets, isSelected } = defineProps<{
+const {
+  assets,
+  isSelected,
+  assetType = 'output'
+} = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  assetType?: 'input' | 'output'
 }>()
+
+const assetsStore = useAssetsStore()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
@@ -159,12 +182,6 @@ const listGridStyle = {
   gridTemplateColumns: 'minmax(0, 1fr)',
   padding: '0 0.5rem',
   gap: '0.5rem'
-}
-
-function isActiveJobState(state: JobState): boolean {
-  return (
-    state === 'pending' || state === 'initialization' || state === 'running'
-  )
 }
 
 function getAssetPrimaryText(asset: AssetItem): string {

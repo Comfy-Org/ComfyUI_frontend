@@ -102,16 +102,23 @@ export interface LGraphConfig {
   links_ontop?: boolean
 }
 
+export interface GroupNodeConfigEntry {
+  input?: Record<string, { name?: string; visible?: boolean }>
+  output?: Record<number, { name?: string; visible?: boolean }>
+}
+
 export interface GroupNodeWorkflowData {
   external: (number | string)[][]
   links: SerialisedLLinkArray[]
   nodes: {
     index?: number
     type?: string
+    title?: string
     inputs?: unknown[]
     outputs?: unknown[]
+    widgets_values?: unknown[]
   }[]
-  config?: Record<number, unknown>
+  config?: Record<number, GroupNodeConfigEntry>
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -1571,8 +1578,21 @@ export class LGraph
 
     // Inputs, outputs, and links
     const links = internalLinks.map((x) => x.asSerialisable())
-    const inputs = mapSubgraphInputsAndLinks(resolvedInputLinks, links)
-    const outputs = mapSubgraphOutputsAndLinks(resolvedOutputLinks, links)
+
+    const internalReroutes = new Map([...reroutes].map((r) => [r.id, r]))
+    const externalReroutes = new Map(
+      [...this.reroutes].filter(([id]) => !internalReroutes.has(id))
+    )
+    const inputs = mapSubgraphInputsAndLinks(
+      resolvedInputLinks,
+      links,
+      internalReroutes
+    )
+    const outputs = mapSubgraphOutputsAndLinks(
+      resolvedOutputLinks,
+      links,
+      externalReroutes
+    )
 
     // Prepare subgraph data
     const data = {
@@ -1714,10 +1734,10 @@ export class LGraph
     // Reconnect output links in parent graph
     i = 0
     for (const [, connections] of outputsGroupedByOutput.entries()) {
-      // Special handling: Subgraph output node
       i++
       for (const connection of connections) {
         const { input, inputNode, link, subgraphOutput } = connection
+        // Special handling: Subgraph output node
         if (link.target_id === SUBGRAPH_OUTPUT_ID) {
           link.origin_id = subgraphNode.id
           link.origin_slot = i - 1
@@ -2013,33 +2033,50 @@ export class LGraph
         while (parentId) {
           instance.parentId = parentId
           instance = this.reroutes.get(parentId)
-          if (!instance) throw new Error('Broken Id link when unpacking')
+          if (!instance) {
+            console.error('Broken Id link when unpacking')
+            break
+          }
           if (instance.linkIds.has(linkInstance.id))
             throw new Error('Infinite parentId loop')
           instance.linkIds.add(linkInstance.id)
           parentId = instance.parentId
         }
       }
+      if (!instance) continue
       parentId = newLink.iparent
       while (parentId) {
         const migratedId = rerouteIdMap.get(parentId)
-        if (!migratedId) throw new Error('Broken Id link when unpacking')
+        if (!migratedId) {
+          console.error('Broken Id link when unpacking')
+          break
+        }
         instance.parentId = migratedId
         instance = this.reroutes.get(migratedId)
-        if (!instance) throw new Error('Broken Id link when unpacking')
+        if (!instance) {
+          console.error('Broken Id link when unpacking')
+          break
+        }
         if (instance.linkIds.has(linkInstance.id))
           throw new Error('Infinite parentId loop')
         instance.linkIds.add(linkInstance.id)
         const oldReroute = subgraphNode.subgraph.reroutes.get(parentId)
-        if (!oldReroute) throw new Error('Broken Id link when unpacking')
+        if (!oldReroute) {
+          console.error('Broken Id link when unpacking')
+          break
+        }
         parentId = oldReroute.parentId
       }
+      if (!instance) break
       if (!newLink.externalFirst) {
         parentId = newLink.eparent
         while (parentId) {
           instance.parentId = parentId
           instance = this.reroutes.get(parentId)
-          if (!instance) throw new Error('Broken Id link when unpacking')
+          if (!instance) {
+            console.error('Broken Id link when unpacking')
+            break
+          }
           if (instance.linkIds.has(linkInstance.id))
             throw new Error('Infinite parentId loop')
           instance.linkIds.add(linkInstance.id)
@@ -2545,6 +2582,7 @@ export class Subgraph
 
     this.inputNode.configure(data.inputNode)
     this.outputNode.configure(data.outputNode)
+    for (const node of this.nodes) node.updateComputedDisabled()
   }
 
   override configure(
@@ -2565,6 +2603,10 @@ export class Subgraph
   }
 
   addInput(name: string, type: string): SubgraphInput {
+    if (name === null || type === null) {
+      throw new Error('Name and type are required for subgraph input')
+    }
+
     this.events.dispatch('adding-input', { name, type })
 
     const input = new SubgraphInput(
@@ -2583,6 +2625,10 @@ export class Subgraph
   }
 
   addOutput(name: string, type: string): SubgraphOutput {
+    if (name === null || type === null) {
+      throw new Error('Name and type are required for subgraph output')
+    }
+
     this.events.dispatch('adding-output', { name, type })
 
     const output = new SubgraphOutput(

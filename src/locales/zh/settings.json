@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "显示选择工具箱"
+    "name": "显示选择工具箱",
+    "tooltip": "当选择节点时显示浮动工具栏，便于快速访问常用操作。"
   },
   "Comfy_ConfirmClear": {
     "name": "清除工作流时需要确认"
@@ -147,7 +148,8 @@
       "Linear": "直线",
       "Spline": "曲线",
       "Straight": "直角线"
-    }
+    },
+    "tooltip": "控制画布上节点之间连接线的外观和可见性。"
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "启用3D查看器（测试版）",
@@ -272,6 +274,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "在图像预览下方显示宽度×高度"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "始终在所有节点上显示高级控件",
+    "tooltip": "启用后，所有节点的高级控件将始终可见，无需单独展开。"
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "连线自动吸附到节点接口",
     "tooltip": "在节点上拖动连线时，连线会自动吸附到节点的可用输入接口。"
@@ -331,6 +337,10 @@
   "Comfy_Queue_MaxHistoryItems": {
     "name": "队列历史大小",
     "tooltip": "队列历史中显示的最大任务数量。"
+  },
+  "Comfy_Queue_QPOV2": {
+    "name": "在资源侧边栏中使用统一作业队列",
+    "tooltip": "将浮动作业队列面板替换为嵌入资源侧边栏的等效作业队列。您可以禁用此选项以恢复为浮动面板布局。"
   },
   "Comfy_Sidebar_Location": {
     "name": "侧边栏位置",
@@ -466,6 +476,7 @@
     "tooltip": "贝塞尔控制点从重新路由中心点的偏移"
   },
   "pysssss_SnapToGrid": {
-    "name": "始终吸附到网格"
+    "name": "始终吸附到网格",
+    "tooltip": "启用后，移动或调整节点大小时会自动对齐到网格。"
   }
 }

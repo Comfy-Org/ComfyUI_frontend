@@ -25,8 +25,6 @@ import type {
   ShowDialogOptions
 } from '@/stores/dialogStore'
 
-import ManagerDialogContent from '@/workbench/extensions/manager/components/manager/ManagerDialogContent.vue'
-import ManagerHeader from '@/workbench/extensions/manager/components/manager/ManagerHeader.vue'
 import ImportFailedNodeContent from '@/workbench/extensions/manager/components/manager/ImportFailedNodeContent.vue'
 import ImportFailedNodeFooter from '@/workbench/extensions/manager/components/manager/ImportFailedNodeFooter.vue'
 import ImportFailedNodeHeader from '@/workbench/extensions/manager/components/manager/ImportFailedNodeHeader.vue'
@@ -43,6 +41,7 @@ export type ConfirmationDialogType =
   | 'delete'
   | 'dirtyClose'
   | 'reinstall'
+  | 'info'
 
 /**
  * Minimal interface for execution error dialogs.
@@ -104,6 +103,7 @@ export const useDialogService = () => {
       | 'user'
       | 'credits'
       | 'subscription'
+      | 'workspace'
   ) {
     const props = panel ? { props: { defaultPanel: panel } } : undefined
 
@@ -149,32 +149,6 @@ export const useDialogService = () => {
           })
         }
       }
-    })
-  }
-
-  function showManagerDialog(
-    props: ComponentAttrs<typeof ManagerDialogContent> = {}
-  ) {
-    dialogStore.showDialog({
-      key: 'global-manager',
-      component: ManagerDialogContent,
-      headerComponent: ManagerHeader,
-      dialogComponentProps: {
-        closable: true,
-        pt: {
-          pcCloseButton: {
-            root: {
-              class: 'bg-dialog-surface w-9 h-9 p-1.5 rounded-full text-white'
-            }
-          },
-          header: { class: 'py-0! px-6 m-0! h-[68px]' },
-          content: {
-            class: 'p-0! h-full w-[90vw] max-w-full flex-1 overflow-hidden'
-          },
-          root: { class: 'manager-dialog' }
-        }
-      },
-      props
     })
   }
 
@@ -419,20 +393,10 @@ export const useDialogService = () => {
     }
   }
 
-  function toggleManagerDialog(
-    props?: ComponentAttrs<typeof ManagerDialogContent>
-  ) {
-    if (dialogStore.isDialogOpen('global-manager')) {
-      dialogStore.closeDialog({ key: 'global-manager' })
-    } else {
-      showManagerDialog(props)
-    }
-  }
-
   function showLayoutDialog(options: {
     key: string
     component: Component
-    props: { onClose: () => void }
+    props: { onClose: () => void } & Record<string, unknown>
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
@@ -557,13 +521,137 @@ export const useDialogService = () => {
     show()
   }
 
+  // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
+  const workspaceDialogPt = {
+    headless: true,
+    pt: {
+      header: { class: 'p-0! hidden' },
+      content: { class: 'p-0! m-0! rounded-2xl' },
+      root: { class: 'rounded-2xl' }
+    }
+  } as const
+
+  async function showDeleteWorkspaceDialog(options?: {
+    workspaceId?: string
+    workspaceName?: string
+  }) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/DeleteWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'delete-workspace',
+      component,
+      props: options,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showCreateWorkspaceDialog(
+    onConfirm?: (name: string) => void | Promise<void>
+  ) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/CreateWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'create-workspace',
+      component,
+      props: { onConfirm },
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
+  async function showLeaveWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/LeaveWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'leave-workspace',
+      component,
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showEditWorkspaceDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/EditWorkspaceDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'edit-workspace',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
+  async function showRemoveMemberDialog(memberId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RemoveMemberDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'remove-member',
+      component,
+      props: { memberId },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  async function showInviteMemberDialog() {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/InviteMemberDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'invite-member',
+      component,
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[512px] w-full' }
+        }
+      }
+    })
+  }
+
+  async function showRevokeInviteDialog(inviteId: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/workspace/RevokeInviteDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'revoke-invite',
+      component,
+      props: { inviteId },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
+  function showBillingComingSoonDialog() {
+    return dialogStore.showDialog({
+      key: 'billing-coming-soon',
+      title: t('subscription.billingComingSoon.title'),
+      component: ConfirmationDialogContent,
+      props: {
+        message: t('subscription.billingComingSoon.message'),
+        type: 'info' as ConfirmationDialogType,
+        onConfirm: () => {}
+      },
+      dialogComponentProps: {
+        pt: {
+          root: { class: 'max-w-[360px]' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
     showSettingsDialog,
     showAboutDialog,
     showExecutionErrorDialog,
-    showManagerDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showSubscriptionRequiredDialog,
@@ -573,9 +661,16 @@ export const useDialogService = () => {
     prompt,
     showErrorDialog,
     confirm,
-    toggleManagerDialog,
     showLayoutDialog,
     showImportFailedNodeDialog,
-    showNodeConflictDialog
+    showNodeConflictDialog,
+    showDeleteWorkspaceDialog,
+    showCreateWorkspaceDialog,
+    showLeaveWorkspaceDialog,
+    showEditWorkspaceDialog,
+    showRemoveMemberDialog,
+    showRevokeInviteDialog,
+    showInviteMemberDialog,
+    showBillingComingSoonDialog
   }
 }

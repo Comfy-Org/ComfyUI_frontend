@@ -1,4 +1,4 @@
-name: "CI: Size Data"
+name: 'CI: Size Data'
 
 on:
   push:

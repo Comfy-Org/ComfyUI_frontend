@@ -130,10 +130,16 @@
                 'transition-all cursor-pointer hover:bg-accent-background duration-150 active:scale-95'
               )
             "
-            @click.stop="handleShowAdvancedInputs"
+            @click.stop="showAdvancedState = !showAdvancedState"
           >
-            <i class="icon-[lucide--settings-2] size-4" />
-            <span>{{ t('rightSidePanel.showAdvancedInputsButton') }}</span>
+            <template v-if="showAdvancedState">
+              <i class="icon-[lucide--chevron-up] size-4" />
+              <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
+            </template>
+            <template v-else>
+              <i class="icon-[lucide--settings-2] size-4" />
+              <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
+            </template>
           </button>
         </div>
       </div>
@@ -152,7 +158,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import {
+  computed,
+  customRef,
+  nextTick,
+  onErrorCaptured,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -212,6 +226,8 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
+const settingStore = useSettingStore()
+
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
@@ -248,7 +264,7 @@ const bypassed = computed(
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeOpacity = computed(() => {
-  const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
+  const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -482,19 +498,56 @@ const lgraphNode = computed(() => {
 
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
-  if (!node || !(node instanceof SubgraphNode)) return false
+  if (!node) return false
 
-  // Check if there are hidden inputs (widgets not promoted)
-  const interiorNodes = node.subgraph.nodes
-  const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
+  // For subgraph nodes: check for unpromoted widgets
+  if (node instanceof SubgraphNode) {
+    const interiorNodes = node.subgraph.nodes
+    const allInteriorWidgets = interiorNodes.flatMap((n) => n.widgets ?? [])
+    return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+  }
 
-  return allInteriorWidgets.some((w) => !w.computedDisabled && !w.promoted)
+  // For regular nodes: show button if there are advanced widgets and they're currently hidden
+  const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
+  const alwaysShowAdvanced = settingStore.get(
+    'Comfy.Node.AlwaysShowAdvancedWidgets'
+  )
+  return hasAdvancedWidgets && !alwaysShowAdvanced
 })
 
-function handleShowAdvancedInputs() {
-  const rightSidePanelStore = useRightSidePanelStore()
-  rightSidePanelStore.focusSection('advanced-inputs')
-}
+const showAdvancedState = customRef((track, trigger) => {
+  let internalState = false
+
+  const node = lgraphNode.value
+  if (node && !(node instanceof SubgraphNode)) {
+    internalState = !!node.showAdvanced
+  }
+
+  return {
+    get() {
+      track()
+      return internalState
+    },
+    set(value: boolean) {
+      const node = lgraphNode.value
+      if (!node) return
+
+      if (node instanceof SubgraphNode) {
+        // Do not modify internalState for subgraph nodes
+        const rightSidePanelStore = useRightSidePanelStore()
+        if (value) {
+          rightSidePanelStore.focusSection('advanced-inputs')
+        } else {
+          rightSidePanelStore.closePanel()
+        }
+      } else {
+        node.showAdvanced = value
+        internalState = value
+      }
+      trigger()
+    }
+  }
+})
 
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]

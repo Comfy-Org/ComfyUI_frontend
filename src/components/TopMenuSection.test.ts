@@ -1,12 +1,21 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
+import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
+import type {
+  JobListItem,
+  JobStatus
+} from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCommandStore } from '@/stores/commandStore'
+import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isElectron } from '@/utils/envUtil'
 
 const mockData = vi.hoisted(() => ({ isLoggedIn: false }))
@@ -27,7 +36,7 @@ vi.mock('@/stores/firebaseAuthStore', () => ({
   }))
 }))
 
-function createWrapper() {
+function createWrapper(pinia = createTestingPinia({ createSpy: vi.fn })) {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -36,7 +45,9 @@ function createWrapper() {
         sideToolbar: {
           queueProgressOverlay: {
             viewJobHistory: 'View job history',
-            expandCollapsedQueue: 'Expand collapsed queue'
+            expandCollapsedQueue: 'Expand collapsed queue',
+            activeJobsShort: '{count} active | {count} active',
+            clearQueueTooltip: 'Clear queue'
           }
         }
       }
@@ -45,18 +56,36 @@ function createWrapper() {
 
   return mount(TopMenuSection, {
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
+      plugins: [pinia, i18n],
       stubs: {
         SubgraphBreadcrumb: true,
         QueueProgressOverlay: true,
         CurrentUserButton: true,
-        LoginButton: true
+        LoginButton: true,
+        ContextMenu: {
+          name: 'ContextMenu',
+          props: ['model'],
+          template: '<div />'
+        }
       },
       directives: {
         tooltip: () => {}
       }
     }
   })
+}
+
+function createJob(id: string, status: JobStatus): JobListItem {
+  return {
+    id,
+    status,
+    create_time: 0,
+    priority: 0
+  }
+}
+
+function createTask(id: string, status: JobStatus): TaskItemImpl {
+  return new TaskItemImpl(createJob(id, status))
 }
 
 describe('TopMenuSection', () => {
@@ -99,5 +128,105 @@ describe('TopMenuSection', () => {
         })
       })
     })
+  })
+
+  it('shows the active jobs label with the current count', async () => {
+    const wrapper = createWrapper()
+    const queueStore = useQueueStore()
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+    queueStore.runningTasks = [
+      createTask('running-1', 'in_progress'),
+      createTask('running-2', 'in_progress')
+    ]
+
+    await nextTick()
+
+    const queueButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
+    expect(queueButton.text()).toContain('3 active')
+  })
+
+  it('hides queue progress overlay when QPO V2 is enabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const wrapper = createWrapper(pinia)
+
+    await nextTick()
+
+    expect(wrapper.find('[data-testid="queue-overlay-toggle"]').exists()).toBe(
+      true
+    )
+    expect(
+      wrapper.findComponent({ name: 'QueueProgressOverlay' }).exists()
+    ).toBe(false)
+  })
+
+  it('toggles the queue progress overlay when QPO V2 is disabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    )
+    const wrapper = createWrapper(pinia)
+    const commandStore = useCommandStore(pinia)
+
+    await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
+
+    expect(commandStore.execute).toHaveBeenCalledWith(
+      'Comfy.Queue.ToggleOverlay'
+    )
+  })
+
+  it('opens the assets sidebar tab when QPO V2 is enabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const wrapper = createWrapper(pinia)
+    const sidebarTabStore = useSidebarTabStore(pinia)
+
+    await wrapper.find('[data-testid="queue-overlay-toggle"]').trigger('click')
+
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+  })
+
+  it('toggles the assets sidebar tab when QPO V2 is enabled', async () => {
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+    const settingStore = useSettingStore(pinia)
+    vi.mocked(settingStore.get).mockImplementation((key) =>
+      key === 'Comfy.Queue.QPOV2' ? true : undefined
+    )
+    const wrapper = createWrapper(pinia)
+    const sidebarTabStore = useSidebarTabStore(pinia)
+    const toggleButton = wrapper.find('[data-testid="queue-overlay-toggle"]')
+
+    await toggleButton.trigger('click')
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+
+    await toggleButton.trigger('click')
+    expect(sidebarTabStore.activeSidebarTabId).toBe(null)
+  })
+
+  it('disables the clear queue context menu item when no queued jobs exist', () => {
+    const wrapper = createWrapper()
+    const menu = wrapper.findComponent({ name: 'ContextMenu' })
+    const model = menu.props('model') as MenuItem[]
+    expect(model[0]?.label).toBe('Clear queue')
+    expect(model[0]?.disabled).toBe(true)
+  })
+
+  it('enables the clear queue context menu item when queued jobs exist', async () => {
+    const wrapper = createWrapper()
+    const queueStore = useQueueStore()
+    queueStore.pendingTasks = [createTask('pending-1', 'pending')]
+
+    await nextTick()
+
+    const menu = wrapper.findComponent({ name: 'ContextMenu' })
+    const model = menu.props('model') as MenuItem[]
+    expect(model[0]?.disabled).toBe(false)
   })
 })

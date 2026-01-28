@@ -38,7 +38,7 @@ function useSubscriptionInternal() {
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
-  const { getAuthHeader } = useFirebaseAuthStore()
+  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -168,7 +168,7 @@ function useSubscriptionInternal() {
    * @returns Subscription status or null if no subscription exists
    */
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
@@ -203,6 +203,10 @@ function useSubscriptionInternal() {
       if (loggedIn) {
         try {
           await fetchSubscriptionStatus()
+        } catch (error) {
+          // Network errors are expected during navigation/component unmount
+          // and when offline - log for debugging but don't surface to user
+          console.error('Failed to fetch subscription status:', error)
         } finally {
           isInitialized.value = true
         }
@@ -217,7 +221,7 @@ function useSubscriptionInternal() {
 
   const initiateSubscriptionCheckout =
     async (): Promise<CloudSubscriptionCheckoutResponse> => {
-      const authHeader = await getAuthHeader()
+      const authHeader = await getFirebaseAuthHeader()
       if (!authHeader) {
         throw new FirebaseAuthStoreError(
           t('toastMessages.userNotAuthenticated')

@@ -162,7 +162,7 @@ export class ComfyApp {
 
   // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
-  get graph(): unknown {
+  get graph() {
     return this.rootGraphInternal!
   }
 
@@ -1349,8 +1349,9 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
-    let comfyOrgAuthToken = await useFirebaseAuthStore().getIdToken()
-    let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
+    const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
+    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
       while (this.queueItems.length) {
@@ -1433,7 +1434,7 @@ export class ComfyApp {
   async handleFile(file: File, openSource?: WorkflowOpenSource) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
-    if (!workflowData) {
+    if (_.isEmpty(workflowData)) {
       if (file.type.startsWith('image')) {
         const transfer = new DataTransfer()
         transfer.items.add(file)

@@ -1,6 +1,7 @@
 import { useRafFn } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
@@ -39,7 +40,7 @@ describe('useMinimapViewport', () => {
         { pos: [100, 100], size: [150, 80] },
         { pos: [300, 200], size: [120, 60] }
       ]
-    } as any
+    } as Partial<LGraph> as LGraph
 
     vi.mocked(useRafFn, { partial: true }).mockReturnValue({
       resume: vi.fn(),
@@ -48,8 +49,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should initialize with default bounds', () => {
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -80,8 +81,8 @@ describe('useMinimapViewport', () => {
 
     vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
 
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -97,8 +98,10 @@ describe('useMinimapViewport', () => {
 
     vi.mocked(calculateNodeBounds).mockReturnValue(null)
 
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref({ _nodes: [] } as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref({
+      _nodes: []
+    } as Partial<LGraph> as LGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -115,8 +118,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should update canvas dimensions', () => {
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -145,8 +148,8 @@ describe('useMinimapViewport', () => {
     vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
     vi.mocked(calculateMinimapScale).mockReturnValue(0.5)
 
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -181,8 +184,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should center view on world coordinates', () => {
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -209,8 +212,8 @@ describe('useMinimapViewport', () => {
       pause: stopSyncMock
     })
 
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -222,8 +225,8 @@ describe('useMinimapViewport', () => {
   })
 
   it('should handle null canvas gracefully', () => {
-    const canvasRef = ref(null as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(null) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -250,8 +253,8 @@ describe('useMinimapViewport', () => {
     vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
     vi.mocked(calculateMinimapScale).mockReturnValue(0.4)
 
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 
@@ -268,8 +271,8 @@ describe('useMinimapViewport', () => {
       configurable: true
     })
 
-    const canvasRef = ref(mockCanvas as any)
-    const graphRef = ref(mockGraph as any)
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
 
     const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
 

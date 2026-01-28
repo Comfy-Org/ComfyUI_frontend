@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref, shallowRef } from 'vue'
+import type { Ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMinimapRenderer } from '@/renderer/extensions/minimap/composables/useMinimapRenderer'
@@ -20,20 +21,20 @@ describe('useMinimapRenderer', () => {
 
     mockContext = {
       clearRect: vi.fn()
-    } as any
+    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
 
     mockCanvas = {
       getContext: vi.fn().mockReturnValue(mockContext)
-    } as any
+    } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockGraph = {
       _nodes: [{ id: '1', pos: [0, 0], size: [100, 100] }]
-    } as any
+    } as Partial<LGraph> as LGraph
   })
 
   it('should initialize with full redraw needed', () => {
     const canvasRef = shallowRef<HTMLCanvasElement | null>(mockCanvas)
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -66,9 +67,9 @@ describe('useMinimapRenderer', () => {
   })
 
   it('should handle empty graph with fast path', () => {
-    const emptyGraph = { _nodes: [] } as any
+    const emptyGraph = { _nodes: [] } as Partial<LGraph> as LGraph
     const canvasRef = ref(mockCanvas)
-    const graphRef = ref(emptyGraph)
+    const graphRef = ref(emptyGraph) as Ref<LGraph | null>
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -106,7 +107,7 @@ describe('useMinimapRenderer', () => {
     const { renderMinimapToCanvas } =
       await import('@/renderer/extensions/minimap/minimapCanvasRenderer')
     const canvasRef = ref(mockCanvas)
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -153,7 +154,7 @@ describe('useMinimapRenderer', () => {
     const updateViewport = vi.fn()
 
     const canvasRef = ref(mockCanvas)
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -192,7 +193,7 @@ describe('useMinimapRenderer', () => {
 
   it('should force full redraw when requested', () => {
     const canvasRef = ref(mockCanvas)
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({
@@ -231,7 +232,7 @@ describe('useMinimapRenderer', () => {
 
   it('should handle null canvas gracefully', () => {
     const canvasRef = shallowRef<HTMLCanvasElement | null>(null)
-    const graphRef = ref(mockGraph as any)
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })
     const scaleRef = ref(1)
     const updateFlagsRef = ref<UpdateFlags>({

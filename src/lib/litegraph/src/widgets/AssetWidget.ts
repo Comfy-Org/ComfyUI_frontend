@@ -53,6 +53,6 @@ export class AssetWidget
 
   override onClick() {
     //Open Modal
-    this.options.openModal()
+    this.options.openModal(this)
   }
 }

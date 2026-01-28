@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "Mostrar caja de herramientas de selección"
+    "name": "Mostrar caja de herramientas de selección",
+    "tooltip": "Muestra una barra de herramientas flotante cuando se seleccionan nodos, proporcionando acceso rápido a acciones comunes."
   },
   "Comfy_ConfirmClear": {
     "name": "Requerir confirmación al borrar el flujo de trabajo"
@@ -147,7 +148,8 @@
       "Linear": "Lineal",
       "Spline": "Spline",
       "Straight": "Recto"
-    }
+    },
+    "tooltip": "Controla la apariencia y visibilidad de los enlaces de conexión entre nodos en el lienzo."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "Habilitar visor 3D (Beta)",
@@ -272,6 +274,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Mostrar ancho × altura debajo de la vista previa de la imagen"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Mostrar siempre los widgets avanzados en todos los nodos",
+    "tooltip": "Cuando está activado, los widgets avanzados siempre son visibles en todos los nodos sin necesidad de expandirlos individualmente."
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Enlace de ajuste automático a la ranura del nodo",
     "tooltip": "Al arrastrar un enlace sobre un nodo, el enlace se ajustará automáticamente a una ranura de entrada viable en el nodo"
@@ -331,6 +337,10 @@
   "Comfy_Queue_MaxHistoryItems": {
     "name": "Tamaño del historial de la cola",
     "tooltip": "El número máximo de tareas que se muestran en el historial de la cola."
+  },
+  "Comfy_Queue_QPOV2": {
+    "name": "Usar la cola de trabajos unificada en el panel lateral de Activos",
+    "tooltip": "Reemplaza el panel flotante de la cola de trabajos por una cola de trabajos equivalente integrada en el panel lateral de Activos. Puedes desactivar esto para volver al diseño del panel flotante."
   },
   "Comfy_Sidebar_Location": {
     "name": "Ubicación de la barra lateral",
@@ -466,6 +476,7 @@
     "tooltip": "El punto de control bezier desplazado desde el punto central de reenrutamiento"
   },
   "pysssss_SnapToGrid": {
-    "name": "Siempre ajustar a la cuadrícula"
+    "name": "Siempre ajustar a la cuadrícula",
+    "tooltip": "Cuando está activado, los nodos se alinearán automáticamente a la cuadrícula al moverlos o cambiar su tamaño."
   }
 }

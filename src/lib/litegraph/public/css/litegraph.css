@@ -613,7 +613,7 @@
   margin: 0 10px;
   padding: 2px 5px;
 }
-.litegraph .graphdialog input[type="checkbox"] {
+.litegraph .graphdialog input[type='checkbox'] {
   width: 16px;
   height: 16px;
 }

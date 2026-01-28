@@ -34,7 +34,7 @@ It can be integrated easily in any existing web applications and graphs can be r
 
 </details>
 
-![Node Graph](imgs/node_graph_example.png "Node graph example")
+![Node Graph](imgs/node_graph_example.png 'Node graph example')
 
 ## Features
 
@@ -61,16 +61,16 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph'
 Here is an example of how to build a node that sums two inputs:
 
 ```ts
-import { LiteGraph, LGraphNode } from "./litegraph"
+import { LiteGraph, LGraphNode } from './litegraph'
 
 class MyAddNode extends LGraphNode {
   // Name to show
-  title = "Sum"
+  title = 'Sum'
 
   constructor() {
-    this.addInput("A", "number")
-    this.addInput("B", "number")
-    this.addOutput("A+B", "number")
+    this.addInput('A', 'number')
+    this.addInput('B', 'number')
+    this.addOutput('A+B', 'number')
     this.properties.precision = 1
   }
 
@@ -85,7 +85,7 @@ class MyAddNode extends LGraphNode {
 }
 
 // Register the node type
-LiteGraph.registerNodeType("basic/sum", MyAddNode)
+LiteGraph.registerNodeType('basic/sum', MyAddNode)
 ```
 
 ## Server side
@@ -93,14 +93,14 @@ LiteGraph.registerNodeType("basic/sum", MyAddNode)
 It also works server-side using NodeJS although some nodes do not work in server (audio, graphics, input, etc).
 
 ```ts
-import { LiteGraph, LGraph } from "./litegraph.js"
+import { LiteGraph, LGraph } from './litegraph.js'
 
 const graph = new LGraph()
 
-const firstNode = LiteGraph.createNode("basic/sum")
+const firstNode = LiteGraph.createNode('basic/sum')
 graph.add(firstNode)
 
-const secondNode = LiteGraph.createNode("basic/sum")
+const secondNode = LiteGraph.createNode('basic/sum')
 graph.add(secondNode)
 
 firstNode.connect(0, secondNode, 1)
@@ -112,7 +112,7 @@ graph.start()
 
 ### [ComfyUI](https://github.com/comfyanonymous/ComfyUI)
 
-![ComfyUI default workflow](https://github.com/comfyanonymous/ComfyUI/blob/6efe561c2a7321501b1b27f47039c7616dda1860/comfyui_screenshot.png "ComfyUI default workflow")
+![ComfyUI default workflow](https://github.com/comfyanonymous/ComfyUI/blob/6efe561c2a7321501b1b27f47039c7616dda1860/comfyui_screenshot.png 'ComfyUI default workflow')
 
 ### Projects using the original litegraph.js
 
@@ -122,15 +122,15 @@ graph.start()
 
 ### [webglstudio.org](http://webglstudio.org)
 
-![WebGLStudio](imgs/webglstudio.gif "WebGLStudio")
+![WebGLStudio](imgs/webglstudio.gif 'WebGLStudio')
 
 ### [MOI Elephant](http://moiscript.weebly.com/elephant-systegraveme-nodal.html)
 
-![MOI Elephant](imgs/elephant.gif "MOI Elephant")
+![MOI Elephant](imgs/elephant.gif 'MOI Elephant')
 
 ### Mynodes
 
-![MyNodes](imgs/mynodes.png "MyNodes")
+![MyNodes](imgs/mynodes.png 'MyNodes')
 
 </details>
 
