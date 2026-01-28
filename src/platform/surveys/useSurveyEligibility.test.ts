@@ -187,7 +187,8 @@ describe('useSurveyEligibility', () => {
     it('markSurveyShown makes user ineligible', () => {
       setFeatureUsage('test-feature', 5)
 
-      const { isEligible, markSurveyShown } = useSurveyEligibility(defaultConfig)
+      const { isEligible, markSurveyShown } =
+        useSurveyEligibility(defaultConfig)
 
       expect(isEligible.value).toBe(true)
 
