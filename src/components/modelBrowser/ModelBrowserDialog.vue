@@ -176,21 +176,9 @@ const { availableFileFormats, availableModelTypes } =
   useModelFilterOptions(models)
 
 const sortOptions = computed<SortOption[]>(() => [
-  {
-    label: t('modelBrowser.sortRecent'),
-    value: 'modified',
-    direction: 'desc'
-  },
-  {
-    label: t('modelBrowser.sortAZ'),
-    value: 'name',
-    direction: 'asc'
-  },
-  {
-    label: t('modelBrowser.sortZA'),
-    value: 'name',
-    direction: 'desc'
-  }
+  { label: t('modelBrowser.sortByName'), value: 'name' },
+  { label: t('modelBrowser.sortBySize'), value: 'size' },
+  { label: t('modelBrowser.sortByDate'), value: 'modified' }
 ])
 
 const navItems = computed<NavGroupData[]>(() => {

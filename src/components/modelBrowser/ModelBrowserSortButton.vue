@@ -1,50 +1,51 @@
 <template>
-  <div class="flex items-center w-full md:w-auto">
-    <Select
-      :model-value="currentSortValue"
-      @update:model-value="handleSortChange"
+  <div class="flex items-center justify-between gap-2 w-full md:w-auto">
+    <span class="text-sm text-muted-foreground"
+      >{{ $t('modelBrowser.sortBy') }}:</span
     >
-      <SelectTrigger class="w-[180px]">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem
-          v-for="option in sortOptions"
-          :key="`${option.value}-${option.direction}`"
-          :value="`${option.value}-${option.direction}`"
-        >
-          <div class="flex items-center gap-2">
-            <i
-              v-if="option.value === 'name' && option.direction === 'asc'"
-              class="icon-[lucide--arrow-up] size-4"
-            />
-            <i
-              v-else-if="option.value === 'name' && option.direction === 'desc'"
-              class="icon-[lucide--arrow-down] size-4"
-            />
-            <span>{{ option.label }}</span>
-          </div>
-        </SelectItem>
-      </SelectContent>
-    </Select>
+    <div
+      class="flex items-center rounded-lg bg-secondary-background p-1 gap-1 shrink-0"
+    >
+      <button
+        v-for="option in sortOptions"
+        :key="option.value"
+        :class="
+          cn(
+            'inline-flex items-center justify-center gap-1.5 cursor-pointer appearance-none border-none transition-colors h-8 px-3 rounded-md text-sm font-medium whitespace-nowrap',
+            sortBy === option.value
+              ? 'bg-base-background text-base-foreground'
+              : 'bg-transparent text-muted-foreground hover:text-base-foreground'
+          )
+        "
+        :aria-label="`${option.label} ${sortBy === option.value ? (sortDirection === 'asc' ? '(ascending)' : '(descending)') : ''}`"
+        @click="handleSortClick(option.value)"
+      >
+        <span>{{ option.label }}</span>
+        <i
+          v-if="sortBy === option.value"
+          :class="
+            cn(
+              'size-3.5 transition-transform',
+              sortDirection === 'asc'
+                ? 'icon-[lucide--arrow-up]'
+                : 'icon-[lucide--arrow-down]'
+            )
+          "
+        />
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 export interface SortOption {
   label: string
   value: 'name' | 'size' | 'modified'
-  direction: 'asc' | 'desc'
 }
 
-const { sortBy, sortDirection } = defineProps<{
+const { sortBy, sortDirection, sortOptions } = defineProps<{
   sortBy: 'name' | 'size' | 'modified'
   sortDirection: 'asc' | 'desc'
   sortOptions: SortOption[]
@@ -55,15 +56,14 @@ const emit = defineEmits<{
   'update:sortDirection': [value: 'asc' | 'desc']
 }>()
 
-const currentSortValue = computed(() => `${sortBy}-${sortDirection}`)
-
-function handleSortChange(value: unknown) {
-  if (!value || typeof value !== 'string') return
-  const [newSortBy, newDirection] = value.split('-') as [
-    'name' | 'size' | 'modified',
-    'asc' | 'desc'
-  ]
-  emit('update:sortBy', newSortBy)
-  emit('update:sortDirection', newDirection)
+function handleSortClick(value: 'name' | 'size' | 'modified') {
+  if (sortBy === value) {
+    // Toggle direction if clicking the same option
+    emit('update:sortDirection', sortDirection === 'asc' ? 'desc' : 'asc')
+  } else {
+    // Set new sort field with default ascending direction
+    emit('update:sortBy', value)
+    emit('update:sortDirection', 'asc')
+  }
 }
 </script>
