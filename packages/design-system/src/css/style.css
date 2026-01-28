@@ -317,6 +317,12 @@
   --modal-card-tag-background: var(--color-smoke-200);
   --modal-card-tag-foreground: var(--base-foreground);
   --modal-panel-background: var(--color-white);
+
+  /* Table tokens */
+  --table-row-even-background: #f9fafb;
+  --table-row-odd-background: #ffffff;
+  --table-row-hover-background: #f3f4f6;
+  --table-header-background: #f5f5f5;
 }
 
 .dark-theme {
@@ -454,6 +460,12 @@
   --modal-card-tag-background: var(--color-ash-800);
   --modal-card-tag-foreground: var(--base-foreground);
   --modal-panel-background: var(--color-charcoal-600);
+
+  /* Table tokens */
+  --table-row-even-background: #1e1e1e;
+  --table-row-odd-background: #252525;
+  --table-row-hover-background: #2a2a2a;
+  --table-header-background: #1a1a1a;
 }
 
 @theme inline {
@@ -590,6 +602,12 @@
   --color-accent-background: var(--accent-background);
   --color-brand-yellow: var(--brand-yellow);
   --color-brand-blue: var(--brand-blue);
+
+  /* Table tokens */
+  --color-table-row-even-background: var(--table-row-even-background);
+  --color-table-row-odd-background: var(--table-row-odd-background);
+  --color-table-row-hover-background: var(--table-row-hover-background);
+  --color-table-header-background: var(--table-header-background);
 }
 
 @custom-variant dark-theme {

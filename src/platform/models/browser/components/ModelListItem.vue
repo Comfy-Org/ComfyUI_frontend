@@ -7,12 +7,12 @@
       cn(
         'grid grid-cols-[48px_1fr_120px_120px_100px_100px_40px] gap-4 items-center px-4 py-3 transition-colors duration-150',
         'select-none appearance-none m-0 text-left border-none',
-        'hover:bg-[#2a2a2a]',
+        'hover:bg-table-row-hover-background',
         focused
           ? 'bg-secondary-background outline-solid outline-base-foreground outline-2'
           : rowIndex % 2 === 0
-            ? 'bg-[#1e1e1e]'
-            : 'bg-[#252525]'
+            ? 'bg-table-row-even-background'
+            : 'bg-table-row-odd-background'
       )
     "
     :data-focused="focused"
