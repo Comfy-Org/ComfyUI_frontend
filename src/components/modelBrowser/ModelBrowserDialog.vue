@@ -1,6 +1,8 @@
 <template>
   <BaseModalLayout
+    v-model:right-panel-open="isRightPanelOpen"
     :content-title="$t('modelBrowser.title')"
+    :right-panel-title="$t('modelBrowser.modelInfo')"
     @close="handleClose"
   >
     <template #leftPanelHeaderTitle>
@@ -57,6 +59,20 @@
         </div>
       </ModelBrowserStates>
     </template>
+
+    <template #rightPanel>
+      <LocalModelInfoPanel
+        v-if="focusedModel"
+        :model="focusedModel"
+        @use="handleModelSelect"
+      />
+      <div
+        v-else
+        class="flex h-full items-center justify-center break-words p-6 text-center text-muted-foreground"
+      >
+        {{ $t('modelBrowser.selectModelToViewInfo') }}
+      </div>
+    </template>
   </BaseModalLayout>
 </template>
 
@@ -76,6 +92,7 @@ import type { NavGroupData } from '@/types/navTypes'
 
 import ModelBrowserStates from './ModelBrowserStates.vue'
 import ModelCard from './ModelCard.vue'
+import LocalModelInfoPanel from './LocalModelInfoPanel.vue'
 
 const { t } = useI18n()
 
@@ -88,6 +105,7 @@ const { isLoading, error, models, loadModels, retryLoad } = useModelLoader()
 
 const focusedModel = ref<EnrichedModel | null>(null)
 const selectedNavItem = ref<string>('all')
+const isRightPanelOpen = ref(false)
 
 const { modelTypes, fetchModelTypes } = useModelTypes()
 
@@ -151,5 +169,6 @@ function handleModelSelect(model: EnrichedModel) {
 
 function handleShowInfo(model: EnrichedModel) {
   focusedModel.value = model
+  isRightPanelOpen.value = true
 }
 </script>

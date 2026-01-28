@@ -2831,6 +2831,7 @@
     "use": "Use",
     "showInfo": "Show Info",
     "modelInfo": "Model Info",
+    "selectModelToViewInfo": "Select a model to view details",
     "searchPlaceholder": "Search models...",
     "allModels": "All Models",
     "filterByType": "BY TYPE",
@@ -2841,6 +2842,17 @@
     "error": "Failed to load models",
     "errorLoading": "Failed to load models",
     "retry": "Retry",
-    "clearFilters": "Clear Filters"
+    "clearFilters": "Clear Filters",
+    "basicInfo": "Basic Info",
+    "displayName": "Display Name",
+    "fileName": "File Name",
+    "filePath": "File Path",
+    "fileSize": "File Size",
+    "lastModified": "Last Modified",
+    "modelTagging": "Model Tagging",
+    "modelType": "Model Type",
+    "additionalTags": "Additional Tags",
+    "modelDescription": "Model Description",
+    "description": "Description"
   }
 }
