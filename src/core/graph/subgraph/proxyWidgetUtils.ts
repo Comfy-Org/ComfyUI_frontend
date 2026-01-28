@@ -184,13 +184,24 @@ export function autoPromoteDynamicChildren(
   node: LGraphNode,
   parentWidget: IBaseWidget
 ) {
-  if (!parentWidget.promoted) return
-
   const parents = getSubgraphParents(node)
   if (!parents.length) return
 
+  // Check if the parent widget is actually promoted on any parent SubgraphNode.
+  // This is more reliable than checking parentWidget.promoted, which may not
+  // be set after workflow reload (the flag is only synced when navigating into
+  // the subgraph).
+  const nodeId = String(node.id)
+  const promotedOnParents = parents.filter((parent) =>
+    getProxyWidgets(parent).some(
+      ([id, name]) => id === nodeId && name === parentWidget.name
+    )
+  )
+
+  if (!promotedOnParents.length) return
+
   const childWidgets = getChildWidgets(node, parentWidget.name)
-  promoteWidgetsToProxy(node, childWidgets, parents)
+  promoteWidgetsToProxy(node, childWidgets, promotedOnParents)
 }
 
 /**

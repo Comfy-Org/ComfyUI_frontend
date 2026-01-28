@@ -263,6 +263,26 @@ class NodeWidgetReference {
       [this.node.id, this.index] as const
     )
   }
+
+  async setValue(value: unknown, useCanvasGraph = false) {
+    await this.node.comfyPage.page.evaluate(
+      ([id, index, val, useCanvas]) => {
+        const graph = useCanvas
+          ? window['app'].canvas.graph
+          : window['app'].graph
+        const node = graph.getNodeById(id)
+        if (!node) throw new Error(`Node ${id} not found.`)
+        const widget = node.widgets[index]
+        if (!widget) throw new Error(`Widget ${index} not found.`)
+        widget.value = val
+        if (widget.callback) {
+          widget.callback(val, window['app'].canvas, node, null, null)
+        }
+      },
+      [this.node.id, this.index, value, useCanvasGraph] as const
+    )
+    await this.node.comfyPage.nextFrame()
+  }
 }
 export class NodeReference {
   constructor(
@@ -339,8 +359,43 @@ export class NodeReference {
   async getWidget(index: number) {
     return new NodeWidgetReference(index, this)
   }
+
+  async getWidgetByName(
+    name: string,
+    useCanvasGraph = false
+  ): Promise<NodeWidgetReference | null> {
+    const index = await this.comfyPage.page.evaluate(
+      ([id, widgetName, useCanvas]) => {
+        const graph = useCanvas
+          ? window['app'].canvas.graph
+          : window['app'].graph
+        const node = graph.getNodeById(id)
+        if (!node?.widgets) return -1
+        return node.widgets.findIndex(
+          (w: { name: string }) => w.name === widgetName
+        )
+      },
+      [this.id, name, useCanvasGraph] as const
+    )
+    if (index === -1) return null
+    return new NodeWidgetReference(index, this)
+  }
+
+  async getWidgets(): Promise<
+    Array<{ name: string; visible: boolean; value: unknown }>
+  > {
+    return await this.comfyPage.page.evaluate((id) => {
+      const node = window['app'].graph.getNodeById(id)
+      if (!node?.widgets) return []
+
+      return node.widgets.map((w) => {
+        const isHidden = w.hidden === true || w.options?.hidden === true
+        return { name: w.name, visible: !isHidden, value: w.value }
+      })
+    }, this.id)
+  }
   async click(
-    position: 'title' | 'collapse',
+    position: 'title' | 'collapse' | 'subgraph',
     options?: Parameters<Page['click']>[1] & { moveMouseToEmptyArea?: boolean }
   ) {
     const nodePos = await this.getPosition()
@@ -352,6 +407,9 @@ export class NodeReference {
         break
       case 'collapse':
         clickPos = { x: nodePos.x + 5, y: nodePos.y - 10 }
+        break
+      case 'subgraph':
+        clickPos = { x: nodePos.x + nodeSize.width - 15, y: nodePos.y - 15 }
         break
       default:
         throw new Error(`Invalid click position ${position}`)

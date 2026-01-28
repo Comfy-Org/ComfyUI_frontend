@@ -13,6 +13,7 @@ import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { PropertiesPanel } from './components/PropertiesPanel'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
@@ -26,32 +27,20 @@ dotenv.config()
 
 type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
-class ComfyPropertiesPanel {
-  readonly root: Locator
-  readonly panelTitle: Locator
-  readonly searchBox: Locator
-
-  constructor(readonly page: Page) {
-    this.root = page.getByTestId('properties-panel')
-    this.panelTitle = this.root.locator('h3')
-    this.searchBox = this.root.getByPlaceholder('Search...')
-  }
-}
-
 class ComfyMenu {
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
   private _workflowsTab: WorkflowsSidebarTab | null = null
   private _topbar: Topbar | null = null
 
   public readonly sideToolbar: Locator
-  public readonly propertiesPanel: ComfyPropertiesPanel
+  public readonly propertiesPanel: PropertiesPanel
   public readonly themeToggleButton: Locator
   public readonly saveButton: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.locator('.side-tool-bar-container')
     this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
-    this.propertiesPanel = new ComfyPropertiesPanel(page)
+    this.propertiesPanel = new PropertiesPanel(page)
     this.saveButton = page
       .locator('button[title="Save the current workflow"]')
       .nth(0)
@@ -1582,6 +1571,31 @@ export class ComfyPage {
     return await this.page.evaluate(() => {
       return window['app'].graph.nodes
     })
+  }
+
+  async isInSubgraph(): Promise<boolean> {
+    return await this.page.evaluate(() => {
+      const graph = window['app'].canvas.graph
+      return graph?.constructor?.name === 'Subgraph'
+    })
+  }
+
+  async createNode(
+    nodeType: string,
+    position: Position = { x: 200, y: 200 }
+  ): Promise<NodeReference> {
+    const nodeId = await this.page.evaluate(
+      ({ nodeType, pos }) => {
+        const node = window['LiteGraph'].createNode(nodeType)
+        if (!node) throw new Error(`Failed to create node: ${nodeType}`)
+        window['app'].graph.add(node)
+        node.pos = [pos.x, pos.y]
+        return node.id
+      },
+      { nodeType, pos: position }
+    )
+    await this.nextFrame()
+    return this.getNodeRefById(nodeId)
   }
   async waitForGraphNodes(count: number) {
     await this.page.waitForFunction((count) => {
