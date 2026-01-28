@@ -2827,11 +2827,13 @@
     }
   },
   "modelBrowser": {
-    "title": "Browse Models",
+    "title": "Model Library",
     "use": "Use",
     "showInfo": "Show Info",
     "modelInfo": "Model Info",
     "searchPlaceholder": "Search models...",
+    "allModels": "All Models",
+    "filterByType": "BY TYPE",
     "noModels": "No models found",
     "noModelsForFilter": "No models match your filters",
     "noFavorites": "No favorite models",

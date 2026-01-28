@@ -3,6 +3,21 @@
     :content-title="$t('modelBrowser.title')"
     @close="handleClose"
   >
+    <template #leftPanelHeaderTitle>
+      <i class="icon-[comfy--ai-model] size-4" />
+      <h2 class="flex-auto select-none text-base font-semibold text-nowrap">
+        {{ $t('modelBrowser.title') }}
+      </h2>
+    </template>
+
+    <template #leftPanel>
+      <LeftSidePanel
+        v-model="selectedNavItem"
+        data-component-id="ModelBrowserDialog-LeftSidePanel"
+        :nav-items="navItems"
+      />
+    </template>
+
     <template #header>
       <SearchBox
         v-model="searchQuery"
@@ -46,17 +61,23 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
+import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useModelBrowserFiltering } from '@/composables/useModelBrowserFiltering'
 import { useModelLoader } from '@/composables/useModelLoader'
+import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { NavGroupData } from '@/types/navTypes'
 
 import ModelBrowserStates from './ModelBrowserStates.vue'
 import ModelCard from './ModelCard.vue'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   select: [model: ComfyModelDef]
@@ -66,16 +87,54 @@ const emit = defineEmits<{
 const { isLoading, error, models, loadModels, retryLoad } = useModelLoader()
 
 const focusedModel = ref<EnrichedModel | null>(null)
+const selectedNavItem = ref<string>('all')
 
-const { searchQuery, filteredModels, clearFilters } = useModelBrowserFiltering(
-  models,
-  {
+const { modelTypes, fetchModelTypes } = useModelTypes()
+
+const { searchQuery, selectedModelType, filteredModels, clearFilters } =
+  useModelBrowserFiltering(models, {
     searchDebounce: 300
+  })
+
+const navItems = computed<NavGroupData[]>(() => {
+  const typeItems =
+    modelTypes.value?.map((type) => ({
+      id: type.value,
+      label: type.name,
+      icon: 'icon-[lucide--folder]'
+    })) || []
+
+  return [
+    {
+      title: '',
+      collapsible: false,
+      items: [
+        {
+          id: 'all',
+          label: t('modelBrowser.allModels'),
+          icon: 'icon-[comfy--ai-model]'
+        }
+      ]
+    },
+    {
+      title: t('modelBrowser.filterByType'),
+      collapsible: false,
+      items: typeItems
+    }
+  ]
+})
+
+watch(selectedNavItem, (newValue) => {
+  if (newValue === 'all') {
+    selectedModelType.value = null
+  } else {
+    selectedModelType.value = newValue
   }
-)
+})
 
 onMounted(() => {
   loadModels()
+  fetchModelTypes()
 })
 
 function handleClose() {
