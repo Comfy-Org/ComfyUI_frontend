@@ -75,7 +75,7 @@ jobs:
           path: comfyui
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff726bdc2363c7a39199e4a04bc1303ce20650 # v4
         with:
           version: 10
 

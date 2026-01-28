@@ -29,7 +29,7 @@ jobs:
           ref: refs/pull/${{ github.event.pull_request.number }}/head
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff726bdc2363c7a39199e4a04bc1303ce20650 # v4
         with:
           version: 10
 
@@ -44,7 +44,7 @@ jobs:
           pnpm install -g typescript @vue/compiler-sfc
 
       - name: Run Claude PR Review
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@2817c54db8f44f3a0485d57292566bf07d428a25 # v1
         with:
           label_trigger: 'claude-review'
           prompt: |

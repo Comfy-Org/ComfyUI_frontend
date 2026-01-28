@@ -142,7 +142,7 @@ jobs:
           echo "✅ Branch '$BRANCH' exists"
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff726bdc2363c7a39199e4a04bc1303ce20650 # v4
         with:
           version: 10
 
@@ -180,7 +180,7 @@ jobs:
           echo "capitalised=${CAPITALISED_TYPE@u}" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
           commit-message: '[release] Increment version to ${{ steps.bump-version.outputs.NEW_VERSION }}'
