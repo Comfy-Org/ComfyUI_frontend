@@ -524,7 +524,6 @@ class Load3d {
     this.viewHelperManager.recreateViewHelper()
 
     this.handleResize()
-    this.forceRender()
   }
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
@@ -586,7 +585,6 @@ class Load3d {
     }
 
     this.handleResize()
-    this.forceRender()
 
     this.loadingPromise = null
   }
@@ -620,7 +618,6 @@ class Load3d {
     this.targetHeight = height
     this.targetAspectRatio = width / height
     this.handleResize()
-    this.forceRender()
   }
 
   addEventListener<T>(event: string, callback: EventCallback<T>): void {
@@ -633,7 +630,6 @@ class Load3d {
 
   refreshViewport(): void {
     this.handleResize()
-    this.forceRender()
   }
 
   handleResize(): void {
