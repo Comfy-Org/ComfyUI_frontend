@@ -249,6 +249,31 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     return token ? { Authorization: `Bearer ${token}` } : null
   }
 
+  /**
+   * Returns the raw auth token (not wrapped in a header object).
+   * Priority: workspace token > Firebase token.
+   * Use this for WebSocket connections and backend node auth.
+   */
+  const getAuthToken = async (): Promise<string | undefined> => {
+    if (flags.teamWorkspacesEnabled) {
+      const workspaceToken = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.TOKEN
+      )
+      const expiresAt = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT
+      )
+
+      if (workspaceToken && expiresAt) {
+        const expiryTime = parseInt(expiresAt, 10)
+        if (Date.now() < expiryTime) {
+          return workspaceToken
+        }
+      }
+    }
+
+    return await getIdToken()
+  }
+
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
     isFetchingBalance.value = true
     try {
@@ -557,6 +582,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     updatePassword: _updatePassword,
     deleteAccount: _deleteAccount,
     getAuthHeader,
-    getFirebaseAuthHeader
+    getFirebaseAuthHeader,
+    getAuthToken
   }
 })

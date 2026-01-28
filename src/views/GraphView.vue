@@ -52,7 +52,6 @@ import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { SERVER_CONFIG_ITEMS } from '@/constants/serverConfig'
 import { i18n, loadLocale } from '@/i18n'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -244,27 +243,6 @@ const onReconnected = () => {
       life: 2000
     })
   }
-}
-
-// Initialize workspace store when feature flag and auth become available
-// Uses watch because remoteConfig loads asynchronously after component mount
-if (isCloud) {
-  const { flags } = useFeatureFlags()
-
-  watch(
-    () => [flags.teamWorkspacesEnabled, firebaseAuthStore.isAuthenticated],
-    async ([enabled, isAuthenticated]) => {
-      if (!enabled || !isAuthenticated) return
-
-      const { useTeamWorkspaceStore } =
-        await import('@/platform/workspace/stores/teamWorkspaceStore')
-      const workspaceStore = useTeamWorkspaceStore()
-      if (workspaceStore.initState === 'uninitialized') {
-        await workspaceStore.initialize()
-      }
-    },
-    { immediate: true }
-  )
 }
 
 useEventListener(api, 'status', onStatus)
