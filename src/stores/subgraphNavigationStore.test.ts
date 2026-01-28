@@ -6,6 +6,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 
 vi.mock('@/scripts/app', () => {
   const mockCanvas = {
@@ -136,7 +137,6 @@ describe('useSubgraphNavigationStore', () => {
   it('should clear navigation when activeSubgraph becomes undefined', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
-    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
     // Create mock subgraph and graph structure
     const mockSubgraph = {

@@ -4,6 +4,11 @@ import { ref } from 'vue'
 import type { Ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  calculateMinimapScale,
+  calculateNodeBounds,
+  enforceMinimumBounds
+} from '@/renderer/core/spatial/boundsCalculator'
 import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
@@ -66,10 +71,7 @@ describe('useMinimapViewport', () => {
     expect(viewport.scale.value).toBe(1)
   })
 
-  it('should calculate graph bounds from nodes', async () => {
-    const { calculateNodeBounds, enforceMinimumBounds } =
-      await import('@/renderer/core/spatial/boundsCalculator')
-
+  it('should calculate graph bounds from nodes', () => {
     vi.mocked(calculateNodeBounds).mockReturnValue({
       minX: 100,
       minY: 100,
@@ -92,10 +94,7 @@ describe('useMinimapViewport', () => {
     expect(enforceMinimumBounds).toHaveBeenCalled()
   })
 
-  it('should handle empty graph', async () => {
-    const { calculateNodeBounds } =
-      await import('@/renderer/core/spatial/boundsCalculator')
-
+  it('should handle empty graph', () => {
     vi.mocked(calculateNodeBounds).mockReturnValue(null)
 
     const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
@@ -131,11 +130,7 @@ describe('useMinimapViewport', () => {
     })
   })
 
-  it('should calculate viewport transform', async () => {
-    const { calculateNodeBounds, enforceMinimumBounds, calculateMinimapScale } =
-      await import('@/renderer/core/spatial/boundsCalculator')
-
-    // Mock the bounds calculation
+  it('should calculate viewport transform', () => {
     vi.mocked(calculateNodeBounds).mockReturnValue({
       minX: 0,
       minY: 0,
@@ -236,10 +231,7 @@ describe('useMinimapViewport', () => {
     expect(() => viewport.centerViewOn(100, 100)).not.toThrow()
   })
 
-  it('should calculate scale correctly', async () => {
-    const { calculateMinimapScale, calculateNodeBounds, enforceMinimumBounds } =
-      await import('@/renderer/core/spatial/boundsCalculator')
-
+  it('should calculate scale correctly', () => {
     const testBounds = {
       minX: 0,
       minY: 0,
