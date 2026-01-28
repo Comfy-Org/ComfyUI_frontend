@@ -70,7 +70,7 @@ type AssetBadge = {
 
 // Display properties for transformed assets
 export interface AssetDisplayItem extends AssetItem {
-  description: string
+  secondaryText: string
   badges: AssetBadge[]
   stats: {
     formattedDate?: string
@@ -116,13 +116,11 @@ export function useAssetBrowser(
 
   // Transform API asset to display asset
   function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
-    // Extract description from metadata or create from tags
-    const typeTag = asset.tags.find((tag) => tag !== 'models')
-    const description = getAssetFilename(asset)
+    const secondaryText = getAssetFilename(asset)
 
-    // Create badges from tags and metadata
     const badges: AssetBadge[] = []
 
+    const typeTag = asset.tags.find((tag) => tag !== 'models')
     // Type badge from non-root tag
     if (typeTag) {
       // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
@@ -150,7 +148,7 @@ export function useAssetBrowser(
 
     return {
       ...asset,
-      description,
+      secondaryText,
       badges,
       stats
     }
