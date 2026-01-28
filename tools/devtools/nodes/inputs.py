@@ -303,6 +303,91 @@ class NodeWithV2ComboInput:
         return (combo_input,)
 
 
+class NodeWithDynamicCombo:
+    """
+    Test node with DynamicCombo that shows/hides widgets based on selection.
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "first_widget": (
+                    "INT",
+                    {},
+                ),
+                "dynamic_combo": (
+                    "COMFY_DYNAMICCOMBO_V3",
+                    {
+                        "options": [
+                            {
+                                "key": "none",
+                                "inputs": {"required": {}},
+                            },
+                            {
+                                "key": "one",
+                                "inputs": {
+                                    "required": {
+                                        "w1": (
+                                            "INT",
+                                            {},
+                                        ),
+                                    }
+                                },
+                            },
+                            {
+                                "key": "two",
+                                "inputs": {
+                                    "required": {
+                                        "w1": (
+                                            "INT",
+                                            {},
+                                        ),
+                                        "w2": (
+                                            "INT",
+                                            {},
+                                        ),
+                                    }
+                                },
+                            },
+                            {
+                                "key": "three",
+                                "inputs": {
+                                    "required": {
+                                        "w1": (
+                                            "INT",
+                                            {},
+                                        ),
+                                        "w2": (
+                                            "INT",
+                                            {},
+                                        ),
+                                        "w3": (
+                                            "INT",
+                                            {},
+                                        ),
+                                    }
+                                },
+                            },
+                        ],
+                    },
+                ),
+                "last_widget": (
+                    "INT",
+                    {},
+                ),
+            }
+        }
+
+    RETURN_TYPES = ("INT",)
+    FUNCTION = "execute"
+    CATEGORY = "DevTools/Testing"
+    DESCRIPTION = "Test node for dynamic combo widget behavior"
+
+    def execute(self, **kwargs):
+        print(kwargs)
+        return (1,)
+
 NODE_CLASS_MAPPINGS = {
     "DevToolsLongComboDropdown": LongComboDropdown,
     "DevToolsNodeWithOptionalInput": NodeWithOptionalInput,
@@ -318,6 +403,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsNodeWithSeedInput": NodeWithSeedInput,
     "DevToolsNodeWithValidation": NodeWithValidation,
     "DevToolsNodeWithV2ComboInput": NodeWithV2ComboInput,
+    "DevToolsDynamicComboNode": NodeWithDynamicCombo,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -335,6 +421,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsNodeWithSeedInput": "Node With Seed Input",
     "DevToolsNodeWithValidation": "Node With Validation",
     "DevToolsNodeWithV2ComboInput": "Node With V2 Combo Input",
+    "DevToolsDynamicComboNode": "Dynamic Combo Node",
 }
 
 __all__ = [
@@ -352,6 +439,7 @@ __all__ = [
     "NodeWithSeedInput",
     "NodeWithValidation",
     "NodeWithV2ComboInput",
+    "NodeWithDynamicCombo",
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
 ]
