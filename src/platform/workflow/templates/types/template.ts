@@ -1,3 +1,16 @@
+export interface LogoInfo {
+  /** Provider name matching index_logo.json */
+  provider: string
+  /** Tailwind positioning classes */
+  position?: string
+  /** Size: 'sm' (24px), 'md' (32px), 'lg' (48px) */
+  size?: 'sm' | 'md' | 'lg'
+  /** Opacity 0-1, default 0.9 */
+  opacity?: number
+}
+
+export type LogoIndex = Record<string, string>
+
 export interface TemplateInfo {
   name: string
   /**
@@ -47,6 +60,10 @@ export interface TemplateInfo {
    * If not specified, the template will be included on all distributions.
    */
   includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
+  /**
+   * Logo overlays to display on the template thumbnail.
+   */
+  logos?: LogoInfo[]
 }
 
 export enum TemplateIncludeOnDistributionEnum {

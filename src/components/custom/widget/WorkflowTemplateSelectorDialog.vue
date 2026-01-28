@@ -251,6 +251,11 @@
                         "
                       />
                     </template>
+                    <LogoOverlay
+                      v-if="template.logos?.length"
+                      :logos="template.logos"
+                      :get-logo-url="getLogoUrl"
+                    />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
                       class="absolute inset-0 z-10 m-auto h-12 w-12"
@@ -392,6 +397,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -472,7 +478,8 @@ const {
   loadWorkflowTemplate,
   getTemplateThumbnailUrl,
   getTemplateTitle,
-  getTemplateDescription
+  getTemplateDescription,
+  getLogoUrl
 } = useTemplateWorkflows()
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
