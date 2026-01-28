@@ -38,7 +38,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find Update Comment
-        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
         id: 'find-update-comment'
         with:
           issue-number: ${{ steps.pr-info.outputs.pr-number }}
@@ -46,7 +46,7 @@ jobs:
           body-includes: 'Updating Playwright Expectations'
 
       - name: Add Starting Reaction
-        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
         with:
           comment-id: ${{ steps.find-update-comment.outputs.comment-id }}
           issue-number: ${{ steps.pr-info.outputs.pr-number }}
@@ -301,7 +301,7 @@ jobs:
           echo "✓ Commit and push successful"
 
       - name: Add Done Reaction
-        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
         if: github.event_name == 'issue_comment' && steps.commit.outputs.has-changes == 'true'
         with:
           comment-id: ${{ needs.setup.outputs.comment-id }}

@@ -117,7 +117,7 @@ jobs:
         env:
           COMFYUI_FRONTEND_VERSION: ${{ needs.build.outputs.version }}
       - name: Publish pypi package
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
         with:
           password: ${{ secrets.PYPI_TOKEN }}
           packages-dir: comfyui_frontend_package/dist

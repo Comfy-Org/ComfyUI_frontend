@@ -9,3 +9,4 @@ files:
 # Actions that don't need SHA pinning (official GitHub actions are trusted)
 ignore_actions:
   - name: actions/.*
+    ref: .*

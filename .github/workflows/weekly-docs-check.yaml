@@ -49,7 +49,7 @@ jobs:
           fi
 
       - name: Run Claude Documentation Review
-        uses: anthropics/claude-code-action@2817c54db8f44f3a0485d57292566bf07d428a25 # v1
+        uses: anthropics/claude-code-action@2817c54db8f44f3a0485d57292566bf07d428a25 # v1.0.37
         with:
           prompt: |
             Is all documentation still 100% accurate?
@@ -130,7 +130,7 @@ jobs:
 
       - name: Create or Update Pull Request
         if: steps.check_changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
           commit-message: 'docs: weekly documentation accuracy update'
