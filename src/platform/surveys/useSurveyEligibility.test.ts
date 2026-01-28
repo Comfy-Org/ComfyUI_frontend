@@ -1,21 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSurveyEligibility } from './useSurveyEligibility'
+
 const SURVEY_STATE_KEY = 'Comfy.SurveyState'
 const FEATURE_USAGE_KEY = 'Comfy.FeatureUsage'
 
-const mockIsNightly = vi.hoisted(() => ({ value: true }))
-const mockIsCloud = vi.hoisted(() => ({ value: false }))
-const mockIsDesktop = vi.hoisted(() => ({ value: false }))
+const mockDistribution = vi.hoisted(() => ({
+  isNightly: true,
+  isCloud: false,
+  isDesktop: false
+}))
 
 vi.mock('@/platform/distribution/types', () => ({
   get isNightly() {
-    return mockIsNightly.value
+    return mockDistribution.isNightly
   },
   get isCloud() {
-    return mockIsCloud.value
+    return mockDistribution.isCloud
   },
   get isDesktop() {
-    return mockIsDesktop.value
+    return mockDistribution.isDesktop
   }
 }))
 
@@ -27,13 +31,12 @@ describe('useSurveyEligibility', () => {
 
   beforeEach(() => {
     localStorage.clear()
-    vi.resetModules()
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2024-06-15T12:00:00Z'))
 
-    mockIsNightly.value = true
-    mockIsCloud.value = false
-    mockIsDesktop.value = false
+    mockDistribution.isNightly = true
+    mockDistribution.isCloud = false
+    mockDistribution.isDesktop = false
   })
 
   afterEach(() => {
@@ -52,60 +55,52 @@ describe('useSurveyEligibility', () => {
   }
 
   describe('eligibility checks', () => {
-    it('is not eligible when not nightly', async () => {
-      mockIsNightly.value = false
+    it('is not eligible when not nightly', () => {
+      mockDistribution.isNightly = false
       setFeatureUsage('test-feature', 5)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
       const { isEligible } = useSurveyEligibility(defaultConfig)
 
       expect(isEligible.value).toBe(false)
     })
 
-    it('is not eligible on cloud', async () => {
-      mockIsCloud.value = true
+    it('is not eligible on cloud', () => {
+      mockDistribution.isCloud = true
       setFeatureUsage('test-feature', 5)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
       const { isEligible } = useSurveyEligibility(defaultConfig)
 
       expect(isEligible.value).toBe(false)
     })
 
-    it('is not eligible on desktop', async () => {
-      mockIsDesktop.value = true
+    it('is not eligible on desktop', () => {
+      mockDistribution.isDesktop = true
       setFeatureUsage('test-feature', 5)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
       const { isEligible } = useSurveyEligibility(defaultConfig)
 
       expect(isEligible.value).toBe(false)
     })
 
-    it('is not eligible below threshold', async () => {
+    it('is not eligible below threshold', () => {
       setFeatureUsage('test-feature', 2)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible, hasReachedThreshold } =
-        useSurveyEligibility(defaultConfig)
+      const { isEligible } = useSurveyEligibility(defaultConfig)
 
-      expect(hasReachedThreshold.value).toBe(false)
       expect(isEligible.value).toBe(false)
     })
 
-    it('is eligible when all conditions met', async () => {
+    it('is eligible when all conditions met', () => {
       setFeatureUsage('test-feature', 3)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
       const { isEligible } = useSurveyEligibility(defaultConfig)
 
       expect(isEligible.value).toBe(true)
     })
 
-    it('respects custom threshold', async () => {
+    it('respects custom threshold', () => {
       setFeatureUsage('test-feature', 5)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
       const { isEligible } = useSurveyEligibility({
         ...defaultConfig,
         triggerThreshold: 10
@@ -114,86 +109,71 @@ describe('useSurveyEligibility', () => {
       expect(isEligible.value).toBe(false)
     })
 
-    it('is not eligible when survey already seen', async () => {
+    it('is not eligible when survey already seen', () => {
       setFeatureUsage('test-feature', 5)
       localStorage.setItem(
         SURVEY_STATE_KEY,
         JSON.stringify({
-          seenSurveys: { 'test-feature': Date.now() },
-          lastSurveyShown: null,
-          optedOut: false
+          optedOut: false,
+          seenSurveys: { 'test-feature': Date.now() }
         })
       )
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible, hasSeenSurvey } = useSurveyEligibility(defaultConfig)
+      const { isEligible } = useSurveyEligibility(defaultConfig)
 
-      expect(hasSeenSurvey.value).toBe(true)
       expect(isEligible.value).toBe(false)
     })
 
-    it('is not eligible during global cooldown', async () => {
+    it('is not eligible during global cooldown', () => {
       setFeatureUsage('test-feature', 5)
       const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000
       localStorage.setItem(
         SURVEY_STATE_KEY,
         JSON.stringify({
-          seenSurveys: { 'other-feature': threeDaysAgo },
-          lastSurveyShown: threeDaysAgo,
-          optedOut: false
+          optedOut: false,
+          seenSurveys: { 'other-feature': threeDaysAgo }
         })
       )
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible, isInGlobalCooldown } =
-        useSurveyEligibility(defaultConfig)
+      const { isEligible } = useSurveyEligibility(defaultConfig)
 
-      expect(isInGlobalCooldown.value).toBe(true)
       expect(isEligible.value).toBe(false)
     })
 
-    it('is eligible after global cooldown expires', async () => {
+    it('is eligible after global cooldown expires', () => {
       setFeatureUsage('test-feature', 5)
       const fiveDaysAgo = Date.now() - 5 * 24 * 60 * 60 * 1000
       localStorage.setItem(
         SURVEY_STATE_KEY,
         JSON.stringify({
-          seenSurveys: { 'other-feature': fiveDaysAgo },
-          lastSurveyShown: fiveDaysAgo,
-          optedOut: false
+          optedOut: false,
+          seenSurveys: { 'other-feature': fiveDaysAgo }
         })
       )
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible, isInGlobalCooldown } =
-        useSurveyEligibility(defaultConfig)
+      const { isEligible } = useSurveyEligibility(defaultConfig)
 
-      expect(isInGlobalCooldown.value).toBe(false)
       expect(isEligible.value).toBe(true)
     })
 
-    it('is not eligible when opted out', async () => {
+    it('is not eligible when opted out', () => {
       setFeatureUsage('test-feature', 5)
       localStorage.setItem(
         SURVEY_STATE_KEY,
         JSON.stringify({
-          seenSurveys: {},
-          lastSurveyShown: null,
-          optedOut: true
+          optedOut: true,
+          seenSurveys: {}
         })
       )
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible, hasOptedOut } = useSurveyEligibility(defaultConfig)
+      const { isEligible } = useSurveyEligibility(defaultConfig)
 
-      expect(hasOptedOut.value).toBe(true)
       expect(isEligible.value).toBe(false)
     })
 
-    it('is not eligible when config disabled', async () => {
+    it('is not eligible when config disabled', () => {
       setFeatureUsage('test-feature', 5)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
       const { isEligible } = useSurveyEligibility({
         ...defaultConfig,
         enabled: false
@@ -204,67 +184,52 @@ describe('useSurveyEligibility', () => {
   })
 
   describe('actions', () => {
-    it('markSurveyShown marks feature as seen and sets cooldown', async () => {
+    it('markSurveyShown makes user ineligible', () => {
       setFeatureUsage('test-feature', 5)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible, markSurveyShown, hasSeenSurvey, isInGlobalCooldown } =
-        useSurveyEligibility(defaultConfig)
+      const { isEligible, markSurveyShown } = useSurveyEligibility(defaultConfig)
 
       expect(isEligible.value).toBe(true)
 
       markSurveyShown()
 
-      expect(hasSeenSurvey.value).toBe(true)
-      expect(isInGlobalCooldown.value).toBe(true)
       expect(isEligible.value).toBe(false)
     })
 
-    it('optOut prevents all future surveys', async () => {
+    it('optOut prevents all future surveys', () => {
       setFeatureUsage('test-feature', 5)
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { isEligible, optOut, hasOptedOut } =
-        useSurveyEligibility(defaultConfig)
+      const { isEligible, optOut } = useSurveyEligibility(defaultConfig)
 
       expect(isEligible.value).toBe(true)
 
       optOut()
 
-      expect(hasOptedOut.value).toBe(true)
       expect(isEligible.value).toBe(false)
     })
 
-    it('resetState clears all survey state', async () => {
+    it('resetState restores eligibility', () => {
       setFeatureUsage('test-feature', 5)
       localStorage.setItem(
         SURVEY_STATE_KEY,
         JSON.stringify({
-          seenSurveys: { 'test-feature': Date.now() },
-          lastSurveyShown: Date.now(),
-          optedOut: true
+          optedOut: true,
+          seenSurveys: { 'test-feature': Date.now() }
         })
       )
 
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { resetState, hasSeenSurvey, isInGlobalCooldown, hasOptedOut } =
-        useSurveyEligibility(defaultConfig)
+      const { isEligible, resetState } = useSurveyEligibility(defaultConfig)
 
-      expect(hasSeenSurvey.value).toBe(true)
-      expect(isInGlobalCooldown.value).toBe(true)
-      expect(hasOptedOut.value).toBe(true)
+      expect(isEligible.value).toBe(false)
 
       resetState()
 
-      expect(hasSeenSurvey.value).toBe(false)
-      expect(isInGlobalCooldown.value).toBe(false)
-      expect(hasOptedOut.value).toBe(false)
+      expect(isEligible.value).toBe(true)
     })
   })
 
   describe('config values', () => {
-    it('exposes delayMs from config', async () => {
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
+    it('exposes delayMs from config', () => {
       const { delayMs } = useSurveyEligibility({
         ...defaultConfig,
         delayMs: 10000
@@ -273,8 +238,7 @@ describe('useSurveyEligibility', () => {
       expect(delayMs.value).toBe(10000)
     })
 
-    it('uses default delayMs when not specified', async () => {
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
+    it('uses default delayMs when not specified', () => {
       const { delayMs } = useSurveyEligibility(defaultConfig)
 
       expect(delayMs.value).toBe(5000)
@@ -282,22 +246,19 @@ describe('useSurveyEligibility', () => {
   })
 
   describe('persistence', () => {
-    it('loads existing state from localStorage', async () => {
+    it('loads existing state from localStorage', () => {
       setFeatureUsage('test-feature', 5)
       localStorage.setItem(
         SURVEY_STATE_KEY,
         JSON.stringify({
-          seenSurveys: { 'test-feature': 1000 },
-          lastSurveyShown: 1000,
-          optedOut: false
+          optedOut: false,
+          seenSurveys: { 'test-feature': 1000 }
         })
       )
 
-      vi.resetModules()
-      const { useSurveyEligibility } = await import('./useSurveyEligibility')
-      const { hasSeenSurvey } = useSurveyEligibility(defaultConfig)
+      const { isEligible } = useSurveyEligibility(defaultConfig)
 
-      expect(hasSeenSurvey.value).toBe(true)
+      expect(isEligible.value).toBe(false)
     })
   })
 })

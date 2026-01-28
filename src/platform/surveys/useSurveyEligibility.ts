@@ -16,9 +16,8 @@ interface FeatureSurveyConfig {
 }
 
 interface SurveyState {
-  seenSurveys: Record<string, number>
-  lastSurveyShown: number | null
   optedOut: boolean
+  seenSurveys: Record<string, number>
 }
 
 const STORAGE_KEY = 'Comfy.SurveyState'
@@ -30,9 +29,8 @@ export function useSurveyEligibility(
   config: MaybeRefOrGetter<FeatureSurveyConfig>
 ) {
   const state = useStorage<SurveyState>(STORAGE_KEY, {
-    seenSurveys: {},
-    lastSurveyShown: null,
-    optedOut: false
+    optedOut: false,
+    seenSurveys: {}
   })
   const resolvedConfig = computed(() => toValue(config))
 
@@ -44,7 +42,7 @@ export function useSurveyEligibility(
   const delayMs = computed(
     () => resolvedConfig.value.delayMs ?? DEFAULT_DELAY_MS
   )
-  const enabled = computed(() => resolvedConfig.value.enabled ?? true)
+  const isSurveyEnabled = computed(() => resolvedConfig.value.enabled ?? true)
 
   const isNightlyLocalhost = computed(() => isNightly && !isCloud && !isDesktop)
 
@@ -55,14 +53,16 @@ export function useSurveyEligibility(
   )
 
   const isInGlobalCooldown = computed(() => {
-    if (!state.value.lastSurveyShown) return false
-    return Date.now() - state.value.lastSurveyShown < GLOBAL_COOLDOWN_MS
+    const timestamps = Object.values(state.value.seenSurveys)
+    if (timestamps.length === 0) return false
+    const lastShown = Math.max(...timestamps)
+    return Date.now() - lastShown < GLOBAL_COOLDOWN_MS
   })
 
   const hasOptedOut = computed(() => state.value.optedOut)
 
   const isEligible = computed(() => {
-    if (!enabled.value) return false
+    if (!isSurveyEnabled.value) return false
     if (!isNightlyLocalhost.value) return false
     if (!hasReachedThreshold.value) return false
     if (hasSeenSurvey.value) return false
@@ -73,9 +73,7 @@ export function useSurveyEligibility(
   })
 
   function markSurveyShown() {
-    const now = Date.now()
-    state.value.seenSurveys[resolvedConfig.value.featureId] = now
-    state.value.lastSurveyShown = now
+    state.value.seenSurveys[resolvedConfig.value.featureId] = Date.now()
   }
 
   function optOut() {
@@ -84,18 +82,13 @@ export function useSurveyEligibility(
 
   function resetState() {
     state.value = {
-      seenSurveys: {},
-      lastSurveyShown: null,
-      optedOut: false
+      optedOut: false,
+      seenSurveys: {}
     }
   }
 
   return {
     isEligible,
-    hasReachedThreshold,
-    hasSeenSurvey,
-    isInGlobalCooldown,
-    hasOptedOut,
     delayMs,
     markSurveyShown,
     optOut,
