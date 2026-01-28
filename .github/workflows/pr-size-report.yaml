@@ -33,15 +33,15 @@ jobs:
         github.event_name == 'workflow_dispatch'
       )
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4.1.0
+        uses: pnpm/action-setup@v4
         with:
           version: 10
 
       - name: Install Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '24.x'
           cache: pnpm
@@ -50,7 +50,7 @@ jobs:
         run: pnpm install
 
       - name: Download size data
-        uses: dawidd6/action-download-artifact@v11
+        uses: dawidd6/action-download-artifact@v12
         with:
           name: size-data
           run_id: ${{ github.event_name == 'workflow_dispatch' && inputs.run_id || github.event.workflow_run.id }}
@@ -75,7 +75,7 @@ jobs:
           fi
 
       - name: Download previous size data
-        uses: dawidd6/action-download-artifact@v11
+        uses: dawidd6/action-download-artifact@v12
         with:
           branch: ${{ steps.pr-base.outputs.content }}
           workflow: ci-size-data.yaml

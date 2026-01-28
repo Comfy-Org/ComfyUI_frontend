@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: main
@@ -33,7 +33,7 @@ jobs:
           version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -49,7 +49,7 @@ jobs:
           fi
 
       - name: Run Claude Documentation Review
-        uses: anthropics/claude-code-action@v1.0.6
+        uses: anthropics/claude-code-action@v1
         with:
           prompt: |
             Is all documentation still 100% accurate?
@@ -130,7 +130,7 @@ jobs:
 
       - name: Create or Update Pull Request
         if: steps.check_changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
           commit-message: 'docs: weekly documentation accuracy update'

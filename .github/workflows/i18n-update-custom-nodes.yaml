@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       # Setup playwright environment with custom node repository
       - name: Setup ComfyUI Server (without launching)
@@ -36,7 +36,7 @@ jobs:
 
       # Install the custom node repository
       - name: Checkout custom node repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.owner }}/${{ inputs.repository }}
           path: 'ComfyUI/custom_nodes/${{ inputs.repository }}'
@@ -113,7 +113,7 @@ jobs:
           git commit -m "Update locales"
 
       - name: Install SSH key For PUSH
-        uses: shimataro/ssh-key-action@d4fffb50872869abe2d9a9098a6d9c5aa7d16be4
+        uses: shimataro/ssh-key-action@v2
         with:
           # PR private key from action server
           key: ${{ secrets.PR_SSH_PRIVATE_KEY }}

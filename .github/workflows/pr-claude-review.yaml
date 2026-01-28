@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           ref: refs/pull/${{ github.event.pull_request.number }}/head
@@ -34,7 +34,7 @@ jobs:
           version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -44,7 +44,7 @@ jobs:
           pnpm install -g typescript @vue/compiler-sfc
 
       - name: Run Claude PR Review
-        uses: anthropics/claude-code-action@v1.0.6
+        uses: anthropics/claude-code-action@v1
         with:
           label_trigger: 'claude-review'
           prompt: |

@@ -18,7 +18,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -26,7 +26,7 @@ jobs:
           version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
           cache: 'pnpm'
@@ -35,7 +35,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Checkout ComfyUI-Manager repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: Comfy-Org/ComfyUI-Manager
           path: ComfyUI-Manager
@@ -86,7 +86,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.check-changes.outputs.changed == 'true'
-        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.PR_GH_TOKEN }}
           commit-message: '[chore] Update ComfyUI-Manager API types from ComfyUI-Manager@${{ steps.manager-info.outputs.commit }}'

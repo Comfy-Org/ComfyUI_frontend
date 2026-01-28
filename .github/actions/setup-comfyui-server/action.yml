@@ -16,7 +16,7 @@ runs:
 
     # Checkout ComfyUI repo, install the dev_tools node and start server
     - name: Checkout ComfyUI
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
       with:
         repository: 'comfyanonymous/ComfyUI'
         path: 'ComfyUI'
@@ -33,7 +33,7 @@ runs:
         fi
 
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.10'
 

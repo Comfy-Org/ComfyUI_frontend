@@ -61,13 +61,13 @@ jobs:
 
     steps:
       - name: Checkout ComfyUI_frontend
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           path: frontend
 
       - name: Checkout ComfyUI (sparse)
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: Comfy-Org/ComfyUI
           sparse-checkout: |
@@ -80,7 +80,7 @@ jobs:
           version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: lts/*
 
@@ -169,7 +169,7 @@ jobs:
 
     steps:
       - name: Checkout ComfyUI fork
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ inputs.comfyui_fork || 'Comfy-Org/ComfyUI' }}
           token: ${{ secrets.PR_GH_TOKEN }}
