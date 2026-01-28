@@ -56,10 +56,25 @@
         </span>
       </div>
 
-      <!-- Info Button (top-right) -->
+      <!-- Action Buttons (top-right) -->
       <div
         class="flex gap-1 items-center shrink-0 outline-hidden border-none p-0 rounded-lg shadow-sm transition-all duration-200 bg-secondary-background absolute top-1.5 sm:top-2 right-1.5 sm:right-2 invisible group-hover:visible group-focus-within:visible"
       >
+        <button
+          class="relative inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap appearance-none border-none font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 sm:[&_svg]:size-4 [&_svg]:shrink-0 bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover h-5 sm:h-6 rounded-sm px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs"
+          :aria-label="
+            isBookmarked
+              ? $t('workflowTabs.removeFromBookmarks')
+              : $t('workflowTabs.addToBookmarks')
+          "
+          @click.stop="handleToggleBookmark"
+        >
+          <i
+            :class="
+              isBookmarked ? 'icon-[lucide--star-off]' : 'icon-[lucide--star]'
+            "
+          />
+        </button>
         <button
           class="relative inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap appearance-none border-none font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 sm:[&_svg]:size-4 [&_svg]:shrink-0 bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover h-5 sm:h-6 rounded-sm px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs"
           :aria-label="$t('modelBrowser.viewDetails')"
@@ -118,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 import {
@@ -126,6 +141,7 @@ import {
   formatModifiedDate
 } from '@/platform/models/browser/utils/modelTransform'
 import { getModelTypeIcon } from '@/platform/models/browser/utils/modelTypeIcons'
+import { useModelBookmarks } from '@/platform/models/browser/composables/useModelBookmarks'
 import { cn } from '@/utils/tailwindUtil'
 
 const { model, focused = false } = defineProps<{
@@ -140,6 +156,8 @@ const emit = defineEmits<{
 }>()
 
 const imageError = ref(false)
+const { isBookmarked: checkIsBookmarked, toggleBookmark } = useModelBookmarks()
+const isBookmarked = computed(() => checkIsBookmarked(model.id))
 
 function handleClick() {
   emit('focus', model)
@@ -147,5 +165,9 @@ function handleClick() {
 
 function handleSelect() {
   emit('select', model)
+}
+
+function handleToggleBookmark() {
+  toggleBookmark(model)
 }
 </script>

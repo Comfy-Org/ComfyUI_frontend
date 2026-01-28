@@ -181,6 +181,7 @@ import { useModelFilterOptions } from '@/platform/models/browser/composables/use
 import { useModelKeyboardNav } from '@/platform/models/browser/composables/useModelKeyboardNav'
 import { useModelLoader } from '@/platform/models/browser/composables/useModelLoader'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+import { useModelBookmarks } from '@/platform/models/browser/composables/useModelBookmarks'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
@@ -216,8 +217,10 @@ const focusedModel = ref<EnrichedModel | null>(null)
 const selectedNavItem = ref<string>('all')
 const isRightPanelOpen = ref(false)
 const viewMode = ref<'grid' | 'list'>('grid')
+const showOnlyBookmarked = ref(false)
 
 const { modelTypes, fetchModelTypes } = useModelTypes()
+const { filterBookmarkedModels, bookmarkCount } = useModelBookmarks()
 
 const {
   searchQuery,
@@ -226,10 +229,18 @@ const {
   selectedModelTypes,
   sortBy,
   sortDirection,
-  filteredModels,
+  filteredModels: baseFilteredModels,
   clearFilters
 } = useModelBrowserFiltering(models, {
   searchDebounce: 300
+})
+
+// Apply bookmark filter on top of base filters
+const filteredModels = computed(() => {
+  if (showOnlyBookmarked.value) {
+    return filterBookmarkedModels(baseFilteredModels.value)
+  }
+  return baseFilteredModels.value
 })
 
 const { availableFileFormats, availableModelTypes } =
@@ -282,6 +293,11 @@ const navItems = computed<NavGroupData[]>(() => {
           id: 'all',
           label: t('modelBrowser.allModels'),
           icon: 'icon-[lucide--list]'
+        },
+        {
+          id: 'bookmarked',
+          label: `${t('executionList.bookmarks')} (${bookmarkCount.value})`,
+          icon: 'icon-[lucide--star]'
         }
       ]
     },
@@ -296,8 +312,13 @@ const navItems = computed<NavGroupData[]>(() => {
 watch(selectedNavItem, (newValue) => {
   if (newValue === 'all') {
     selectedModelType.value = null
+    showOnlyBookmarked.value = false
+  } else if (newValue === 'bookmarked') {
+    selectedModelType.value = null
+    showOnlyBookmarked.value = true
   } else {
     selectedModelType.value = newValue
+    showOnlyBookmarked.value = false
   }
 })
 
