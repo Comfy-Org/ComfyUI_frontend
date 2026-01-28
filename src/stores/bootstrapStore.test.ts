@@ -42,10 +42,11 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   }))
 }))
 
+const mockNeedsLogin = ref(false)
 vi.mock('@/stores/userStore', () => ({
   useUserStore: vi.fn(() => ({
     initialize: vi.fn().mockResolvedValue(undefined),
-    needsLogin: false
+    needsLogin: mockNeedsLogin
   }))
 }))
 
@@ -65,6 +66,7 @@ describe('bootstrapStore', () => {
   beforeEach(() => {
     mockIsSettingsReady.value = false
     mockIsFirebaseInitialized.value = false
+    mockNeedsLogin.value = false
     mockDistributionTypes.isCloud = false
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()

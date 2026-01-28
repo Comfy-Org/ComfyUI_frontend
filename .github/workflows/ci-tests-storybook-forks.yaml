@@ -1,9 +1,9 @@
 # Description: Deploys Storybook previews from forked PRs (forks can't access deployment secrets)
-name: "CI: Tests Storybook (Deploy for Forks)"
+name: 'CI: Tests Storybook (Deploy for Forks)'
 
 on:
   workflow_run:
-    workflows: ["CI: Tests Storybook"]
+    workflows: ['CI: Tests Storybook']
     types: [requested, completed]
 
 env:

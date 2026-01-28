@@ -5,10 +5,7 @@
     {
       "id": 3,
       "type": "KSampler",
-      "pos": [
-        0,
-        30
-      ],
+      "pos": [0, 30],
       "size": {
         "0": 315,
         "1": 262
@@ -36,7 +33,7 @@
           "name": "latent_image",
           "type": "LATENT",
           "link": null
-        } ,
+        },
         {
           "name": "dynamic_input",
           "type": "FLOAT",
@@ -72,10 +69,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

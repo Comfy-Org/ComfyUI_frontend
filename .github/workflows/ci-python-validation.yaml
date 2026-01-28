@@ -1,5 +1,5 @@
 # Description: Validates Python code in tools/devtools directory
-name: "CI: Python Validation"
+name: 'CI: Python Validation'
 
 on:
   pull_request:

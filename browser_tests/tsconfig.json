@@ -7,7 +7,5 @@
     "noUnusedParameters": true,
     "resolveJsonModule": true
   },
-  "include": [
-    "**/*.ts",
-  ]
+  "include": ["**/*.ts"]
 }
