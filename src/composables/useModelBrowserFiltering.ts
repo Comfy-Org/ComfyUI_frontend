@@ -15,6 +15,8 @@ export interface UseModelBrowserFilteringOptions {
 /**
  * Composable for filtering and searching models
  */
+const MAX_SEARCH_LENGTH = 100
+
 export function useModelBrowserFiltering(
   models: MaybeRefOrGetter<EnrichedModel[]>,
   options: UseModelBrowserFilteringOptions = {}
@@ -28,6 +30,14 @@ export function useModelBrowserFiltering(
   const selectedModelTypes = ref<SelectOption[]>([])
   const sortBy = ref<'name' | 'size' | 'modified'>('modified')
   const sortDirection = ref<'asc' | 'desc'>('desc')
+
+  // Validated search query - enforce max length and trim
+  const validatedSearchQuery = computed({
+    get: () => searchQuery.value,
+    set: (value: string) => {
+      searchQuery.value = value.slice(0, MAX_SEARCH_LENGTH)
+    }
+  })
 
   // Debounced search query per spec requirement (300ms)
   const debouncedSearchQuery = refDebounced(searchQuery, searchDebounce)
@@ -149,8 +159,8 @@ export function useModelBrowserFiltering(
   }
 
   return {
-    // State
-    searchQuery,
+    // State (expose validated version for v-model binding)
+    searchQuery: validatedSearchQuery,
     selectedModelType,
     selectedFileFormats,
     selectedModelTypes,

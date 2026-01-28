@@ -144,6 +144,7 @@ import { useModelFilterOptions } from '@/composables/useModelFilterOptions'
 import { useModelKeyboardNav } from '@/composables/useModelKeyboardNav'
 import { useModelLoader } from '@/composables/useModelLoader'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import type { EnrichedModel } from '@/types/modelBrowserTypes'
 import type { NavGroupData } from '@/types/navTypes'
@@ -157,6 +158,7 @@ import ViewModeToggle from './ViewModeToggle.vue'
 import type { SortOption } from './ModelBrowserSortButton.vue'
 
 const { t } = useI18n()
+const telemetry = useTelemetry()
 
 const emit = defineEmits<{
   select: [model: ComfyModelDef]
@@ -261,6 +263,23 @@ watch(selectedNavItem, (newValue) => {
   }
 })
 
+// Track search queries - only fire once when search starts
+watch(searchQuery, (newQuery, oldQuery) => {
+  const searchStarted = !oldQuery && newQuery
+  if (searchStarted) {
+    telemetry?.trackUiButtonClicked({
+      button_id: 'model_browser_search'
+    })
+  }
+})
+
+// Track filter changes - any filter type
+watch([selectedModelType, selectedFileFormats, selectedModelTypes], () => {
+  telemetry?.trackUiButtonClicked({
+    button_id: 'model_browser_filter_applied'
+  })
+})
+
 // Keyboard navigation
 useModelKeyboardNav(gridItems, focusedModel, isRightPanelOpen, viewMode, {
   onShowInfo: handleShowInfo,
@@ -270,9 +289,19 @@ useModelKeyboardNav(gridItems, focusedModel, isRightPanelOpen, viewMode, {
 onMounted(() => {
   loadModels()
   fetchModelTypes()
+
+  // Track dialog opened
+  telemetry?.trackUiButtonClicked({
+    button_id: 'model_browser_opened'
+  })
 })
 
 function handleClose() {
+  // Track dialog closed
+  telemetry?.trackUiButtonClicked({
+    button_id: 'model_browser_closed'
+  })
+
   emit('close')
 }
 
@@ -280,8 +309,13 @@ function handleModelFocus(model: EnrichedModel) {
   focusedModel.value = model
 }
 
-function handleModelSelect(model: EnrichedModel) {
-  emit('select', model.original)
+function handleModelSelect(_model: EnrichedModel) {
+  // Track model selection
+  telemetry?.trackUiButtonClicked({
+    button_id: 'model_browser_model_selected'
+  })
+
+  emit('select', _model.original)
 }
 
 function handleShowInfo(model: EnrichedModel) {
