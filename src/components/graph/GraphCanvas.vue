@@ -261,6 +261,10 @@ watchEffect(() => {
 })
 
 watchEffect(() => {
+  nodeDefStore.showDevOnly = settingStore.get('Comfy.DevMode')
+})
+
+watchEffect(() => {
   const spellcheckEnabled = settingStore.get('Comfy.TextareaWidget.Spellcheck')
   const textareas = document.querySelectorAll<HTMLTextAreaElement>(
     'textarea.comfy-multiline-input'

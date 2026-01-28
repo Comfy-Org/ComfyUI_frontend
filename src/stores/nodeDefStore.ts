@@ -41,6 +41,7 @@ export class ComfyNodeDefImpl
   readonly help: string
   readonly deprecated: boolean
   readonly experimental: boolean
+  readonly dev_only: boolean
   readonly output_node: boolean
   readonly api_node: boolean
   /**
@@ -133,6 +134,7 @@ export class ComfyNodeDefImpl
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
+    this.dev_only = obj.dev_only ?? false
     this.output_node = obj.output_node
     this.api_node = !!obj.api_node
     this.input = obj.input ?? {}
@@ -174,6 +176,7 @@ export class ComfyNodeDefImpl
   get nodeLifeCycleBadgeText(): string {
     if (this.deprecated) return '[DEPR]'
     if (this.experimental) return '[BETA]'
+    if (this.dev_only) return '[DEV]'
     return ''
   }
 }
@@ -303,6 +306,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
+  const showDevOnly = ref(false)
   const nodeDefFilters = ref<NodeDefFilter[]>([])
 
   const nodeDefs = computed(() => {
@@ -422,6 +426,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       predicate: (nodeDef) => showExperimental.value || !nodeDef.experimental
     })
 
+    // Dev-only nodes filter
+    registerNodeDefFilter({
+      id: 'core.dev_only',
+      name: 'Hide Dev-Only Nodes',
+      description: 'Hides nodes marked as dev-only unless dev mode is enabled',
+      predicate: (nodeDef) => showDevOnly.value || !nodeDef.dev_only
+    })
+
     // Subgraph nodes filter
     // Filter out litegraph typed subgraphs, saved blueprints are added in separately
     registerNodeDefFilter({
@@ -446,6 +458,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByDisplayName,
     showDeprecated,
     showExperimental,
+    showDevOnly,
     nodeDefFilters,
 
     nodeDefs,
