@@ -128,8 +128,12 @@ const editBlueprint = async () => {
   await useSubgraphStore().editBlueprint(props.node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const subgraphStore = useSubgraphStore()
 const menuItems = computed<MenuItem[]>(() => {
-  const items: MenuItem[] = [
+  const name = nodeDef.value.name.slice(subgraphStore.typePrefix.length)
+  if (subgraphStore.isGlobalBlueprint(name)) return []
+
+  return [
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
@@ -137,7 +141,6 @@ const menuItems = computed<MenuItem[]>(() => {
       command: deleteBlueprint
     }
   ]
-  return items
 })
 function handleContextMenu(event: Event) {
   if (!nodeDef.value.name.startsWith(useSubgraphStore().typePrefix)) return

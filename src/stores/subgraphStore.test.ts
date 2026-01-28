@@ -113,7 +113,7 @@ describe('useSubgraphStore', () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(
       useNodeDefStore().nodeDefs.filter(
-        (d) => d.category == 'Subgraph Blueprints'
+        (d) => d.category === 'Subgraph Blueprints/User'
       )
     ).toHaveLength(1)
   })
@@ -130,5 +130,19 @@ describe('useSubgraphStore', () => {
       name: 'SubgraphBlueprint.test'
     } as ComfyNodeDefV1)
     expect(res).toBeTruthy()
+  })
+  it('should identify user blueprints as non-global', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    expect(store.isGlobalBlueprint('test')).toBe(false)
+  })
+  it('should identify blueprints with non-blueprint python_module as global', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    const nodeDef = store.subgraphBlueprints.find(
+      (d) => d.name === 'SubgraphBlueprint.test'
+    )
+    if (nodeDef) {
+      ;(nodeDef as any).python_module = 'comfy_essentials'
+    }
+    expect(store.isGlobalBlueprint('test')).toBe(true)
   })
 })

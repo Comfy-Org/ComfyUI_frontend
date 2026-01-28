@@ -151,7 +151,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       options.path = SubgraphBlueprint.basePath + options.path
       const bp = await new SubgraphBlueprint(options, true).load()
       useWorkflowStore().attachWorkflow(bp)
-      registerNodeDef(bp)
+      registerNodeDef(bp, { category: 'Subgraph Blueprints/User' })
     }
     async function loadInstalledBlueprints() {
       async function loadGlobalBlueprint([k, v]: [string, GlobalSubgraphData]) {
@@ -165,11 +165,15 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         blueprint.filename = v.name
         useWorkflowStore().attachWorkflow(blueprint)
         const loaded = await blueprint.load()
+        const category = v.info.category
+          ? `Subgraph Blueprints/${v.info.category}`
+          : 'Subgraph Blueprints'
         registerNodeDef(
           loaded,
           {
             python_module: v.info.node_pack,
-            display_name: v.name
+            display_name: v.name,
+            category
           },
           k
         )
@@ -316,8 +320,17 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   async function deleteBlueprint(nodeType: string) {
     const name = nodeType.slice(typePrefix.length)
     if (!(name in subgraphCache))
-      //As loading is blocked on in startup, this can likely be changed to invalid type
       throw new Error('not yet loaded')
+
+    if (isGlobalBlueprint(name)) {
+      useToastStore().add({
+        severity: 'warn',
+        summary: t('subgraphStore.cannotDeleteGlobal'),
+        life: 4000
+      })
+      return
+    }
+
     if (
       !(await useDialogService().confirm({
         title: t('subgraphStore.confirmDeleteTitle'),
@@ -338,11 +351,17 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     return workflow instanceof SubgraphBlueprint
   }
 
+  function isGlobalBlueprint(name: string): boolean {
+    const nodeDef = subgraphDefCache.value.get(name)
+    return nodeDef?.python_module !== 'blueprint'
+  }
+
   return {
     deleteBlueprint,
     editBlueprint,
     fetchSubgraphs,
     getBlueprint,
+    isGlobalBlueprint,
     isSubgraphBlueprint,
     publishSubgraph,
     subgraphBlueprints,
