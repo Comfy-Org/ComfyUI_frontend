@@ -19,15 +19,17 @@ whenever(feedbackRef, () => {
 })
 </script>
 <template>
-  <a
+  <Button
     v-if="isMobile"
+    as="a"
     :href="`https://form.typeform.com/to/${dataTfWidget}`"
     target="_blank"
+    variant="inverted"
+    class="rounded-full size-12"
+    v-bind="$attrs"
   >
-    <Button variant="inverted" class="rounded-full size-12" v-bind="$attrs">
-      <i class="icon-[lucide--circle-question-mark] size-6" />
-    </Button>
-  </a>
+    <i class="icon-[lucide--circle-question-mark] size-6" />
+  </Button>
   <Popover v-else>
     <template #button>
       <Button variant="inverted" class="rounded-full size-12" v-bind="$attrs">
