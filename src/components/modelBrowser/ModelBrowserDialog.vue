@@ -74,33 +74,43 @@
         @retry="retryLoad"
         @clear-filters="clearFilters"
       >
-        <div class="flex-1 overflow-auto p-6">
-          <div
-            v-if="viewMode === 'grid'"
-            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-          >
+        <VirtualGrid
+          :items="gridItems"
+          :grid-style="gridStyle"
+          :default-item-height="
+            viewMode === 'grid'
+              ? GRID_ITEM_DEFAULT_HEIGHT
+              : LIST_ITEM_DEFAULT_HEIGHT
+          "
+          :default-item-width="
+            viewMode === 'grid' ? GRID_ITEM_DEFAULT_WIDTH : 0
+          "
+          :buffer-rows="VIRTUAL_GRID_BUFFER_ROWS"
+          role="grid"
+          :aria-label="$t('modelBrowser.title')"
+          class="flex-1"
+        >
+          <template #item="{ item }">
             <ModelCard
-              v-for="model in filteredModels"
-              :key="model.id"
-              :model="model"
-              :focused="focusedModel?.id === model.id"
+              v-if="viewMode === 'grid'"
+              role="gridcell"
+              :model="item.model"
+              :focused="focusedModel?.id === item.model.id"
               @focus="handleModelFocus"
               @select="handleModelSelect"
               @show-info="handleShowInfo"
             />
-          </div>
-          <div v-else class="flex flex-col gap-2">
             <ModelListItem
-              v-for="model in filteredModels"
-              :key="model.id"
-              :model="model"
-              :focused="focusedModel?.id === model.id"
+              v-else
+              role="row"
+              :model="item.model"
+              :focused="focusedModel?.id === item.model.id"
               @focus="handleModelFocus"
               @select="handleModelSelect"
               @show-info="handleShowInfo"
             />
-          </div>
-        </div>
+          </template>
+        </VirtualGrid>
       </ModelBrowserStates>
     </template>
 
@@ -122,9 +132,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
+import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useModelBrowserFiltering } from '@/composables/useModelBrowserFiltering'
@@ -150,6 +162,13 @@ const emit = defineEmits<{
   select: [model: ComfyModelDef]
   close: []
 }>()
+
+// Virtual grid configuration constants
+const GRID_ITEM_DEFAULT_HEIGHT = 260
+const LIST_ITEM_DEFAULT_HEIGHT = 100
+const GRID_ITEM_DEFAULT_WIDTH = 180
+const GRID_MIN_COLUMN_WIDTH = 180
+const VIRTUAL_GRID_BUFFER_ROWS = 2
 
 const { isLoading, error, models, loadModels, retryLoad } = useModelLoader()
 
@@ -188,6 +207,23 @@ const gridItems = computed(() =>
     model
   }))
 )
+
+const gridStyle = computed<CSSProperties>(() => {
+  if (viewMode.value === 'list') {
+    return {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.5rem',
+      padding: '1.5rem'
+    }
+  }
+  return {
+    display: 'grid',
+    gridTemplateColumns: `repeat(auto-fill, minmax(${GRID_MIN_COLUMN_WIDTH}px, 1fr))`,
+    gap: '1rem',
+    padding: '1.5rem'
+  }
+})
 
 const navItems = computed<NavGroupData[]>(() => {
   const typeItems =
