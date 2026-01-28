@@ -11,22 +11,27 @@ Rejected
 ComfyUI's frontend requires modifications to PrimeVue components that cannot be achieved through the library's customization APIs. Two specific technical incompatibilities have been identified with the transform-based canvas architecture:
 
 **Screen Coordinate Hit-Testing Conflicts:**
+
 - PrimeVue components use `getBoundingClientRect()` for screen coordinate calculations that don't account for CSS transforms
 - The Slider component directly uses raw `pageX/pageY` coordinates ([lines 102-103](https://github.com/primefaces/primevue/blob/master/packages/primevue/src/slider/Slider.vue#L102-L103)) without transform-aware positioning
 - This breaks interaction in transformed coordinate spaces where screen coordinates don't match logical element positions
 
 **Virtual Canvas Scroll Interference:**
+
 - LiteGraph's infinite canvas uses scroll coordinates semantically for graph navigation via the `DragAndScale` coordinate system
 - PrimeVue overlay components automatically trigger `scrollIntoView` behavior which interferes with this virtual positioning
 - This issue is documented in [PrimeVue discussion #4270](https://github.com/orgs/primefaces/discussions/4270) where the feature request was made to disable this behavior
 
 **Historical Overlay Issues:**
+
 - Previous z-index positioning conflicts required manual workarounds (commit `6d4eafb0`) where PrimeVue Dialog components needed `autoZIndex: false` and custom mask styling, later resolved by removing PrimeVue's automatic z-index management entirely
 
 **Minimal Update Overhead:**
+
 - Analysis of git history shows only 2 PrimeVue version updates in 2+ years, indicating that upstream sync overhead is negligible for this project
 
 **Future Interaction System Requirements:**
+
 - The ongoing canvas architecture evolution will require more granular control over component interaction and event handling as the transform-based system matures
 - Predictable need for additional component modifications beyond current identified issues
 

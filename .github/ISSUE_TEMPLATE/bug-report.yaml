@@ -60,7 +60,7 @@ body:
     attributes:
       label: ComfyUI Frontend Version
       description: Found in Settings > About (e.g., "1.3.45")
-      placeholder: "1.3.45"
+      placeholder: '1.3.45'
     validations:
       required: true
 

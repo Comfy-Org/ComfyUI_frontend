@@ -7,14 +7,8 @@
   "printWidth": 80,
   "ignorePatterns": [
     "packages/registry-types/src/comfyRegistryTypes.ts",
+    "public/materialdesignicons.min.css",
     "src/types/generatedManagerTypes.ts",
-    "**/*.md",
-    "**/*.json",
-    "**/*.css",
-    "**/*.yaml",
-    "**/*.yml",
-    "**/*.html",
-    "**/*.svg",
-    "**/*.xml"
+    "**/__fixtures__/**/*.json"
   ]
 }
