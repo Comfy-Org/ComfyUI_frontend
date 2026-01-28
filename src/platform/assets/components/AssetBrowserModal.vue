@@ -211,7 +211,11 @@ const shouldShowLeftPanel = computed(() => {
 })
 
 const emptyMessage = computed(() => {
-  if (!isImportedSelected.value) return undefined
+  if (!isImportedSelected.value) {
+    return isUploadButtonEnabled.value
+      ? t('assetBrowser.noResultsCanImport')
+      : undefined
+  }
 
   return isUploadButtonEnabled.value
     ? t('assetBrowser.emptyImported.canImport')
