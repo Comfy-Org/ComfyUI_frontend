@@ -1,22 +1,22 @@
 {
   "name": "@comfyorg/shared-frontend-utils",
-  "private": true,
   "version": "1.0.0",
+  "private": true,
   "description": "Shared frontend utils for ComfyUI Frontend",
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
   "keywords": [],
-  "packageManager": "pnpm@10.17.1",
   "type": "module",
   "exports": {
     "./formatUtil": "./src/formatUtil.ts",
     "./networkUtil": "./src/networkUtil.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "axios": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:"
-  }
+  },
+  "packageManager": "pnpm@10.17.1"
 }

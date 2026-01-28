@@ -7,30 +7,17 @@
     {
       "id": 2,
       "type": "8bfe4227-f272-49e1-a892-0a972a86867c",
-      "pos": [
-        -317,
-        -336
-      ],
-      "size": [
-        210,
-        58
-      ],
+      "pos": [-317, -336],
+      "size": [210, 58],
       "flags": {},
       "order": 0,
       "mode": 0,
       "inputs": [],
       "outputs": [],
       "properties": {
-        "proxyWidgets": [
-          [
-            "-1",
-            "batch_size"
-          ]
-        ]
+        "proxyWidgets": [["-1", "batch_size"]]
       },
-      "widgets_values": [
-        1
-      ]
+      "widgets_values": [1]
     }
   ],
   "links": [],
@@ -51,34 +38,19 @@
         "name": "New Subgraph",
         "inputNode": {
           "id": -10,
-          "bounding": [
-            -562,
-            -358,
-            120,
-            60
-          ]
+          "bounding": [-562, -358, 120, 60]
         },
         "outputNode": {
           "id": -20,
-          "bounding": [
-            -52,
-            -358,
-            120,
-            40
-          ]
+          "bounding": [-52, -358, 120, 40]
         },
         "inputs": [
           {
             "id": "b4a8bc2a-8e9f-41aa-938d-c567a11d2c00",
             "name": "batch_size",
             "type": "INT",
-            "linkIds": [
-              1
-            ],
-            "pos": [
-              -462,
-              -338
-            ]
+            "linkIds": [1],
+            "pos": [-462, -338]
           }
         ],
         "outputs": [],
@@ -87,14 +59,8 @@
           {
             "id": 1,
             "type": "EmptyLatentImage",
-            "pos": [
-              -382,
-              -376
-            ],
-            "size": [
-              270,
-              106
-            ],
+            "pos": [-382, -376],
+            "size": [270, 106],
             "flags": {},
             "order": 0,
             "mode": 0,
@@ -120,11 +86,7 @@
             "properties": {
               "Node name for S&R": "EmptyLatentImage"
             },
-            "widgets_values": [
-              512,
-              512,
-              1
-            ]
+            "widgets_values": [512, 512, 1]
           }
         ],
         "groups": [],

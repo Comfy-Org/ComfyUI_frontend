@@ -2058,10 +2058,8 @@
       "choice": {
         "name": "انتخاب"
       },
-      "index": {
-      },
-      "option1": {
-      }
+      "index": {},
+      "option1": {}
     },
     "outputs": [
       null,
@@ -6217,8 +6215,7 @@
   "Load3D": {
     "display_name": "بارگذاری ۳بعدی و انیمیشن",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "ارتفاع"
       },
@@ -6228,10 +6225,8 @@
       "model_file": {
         "name": "فایل مدل"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "عرض"
       }
@@ -6326,13 +6321,11 @@
     "description": "بارگذاری یک تصویر از پوشه خروجی. با کلیک روی دکمه تازه‌سازی، فهرست تصاویر به‌روزرسانی شده و اولین تصویر به طور خودکار انتخاب می‌شود تا تکرار آسان‌تر شود.",
     "display_name": "بارگذاری تصویر (از خروجی‌ها)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "تصویر"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "انتخاب فایل برای بارگذاری"
       }
@@ -10592,10 +10585,8 @@
   "PreviewAny": {
     "display_name": "پیش‌نمایش به صورت متن",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "سورس"
       }
@@ -16614,8 +16605,7 @@
       "image": {
         "name": "تصویر"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "عرض"
       }

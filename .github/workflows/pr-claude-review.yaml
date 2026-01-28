@@ -1,5 +1,5 @@
 # Description: AI-powered code review triggered by adding the 'claude-review' label to a PR
-name: "PR: Claude Review"
+name: 'PR: Claude Review'
 
 permissions:
   contents: read
@@ -46,7 +46,7 @@ jobs:
       - name: Run Claude PR Review
         uses: anthropics/claude-code-action@v1.0.6
         with:
-          label_trigger: "claude-review"
+          label_trigger: 'claude-review'
           prompt: |
             Read the file .claude/commands/comprehensive-pr-review.md and follow ALL the instructions exactly.
 

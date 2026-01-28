@@ -11,9 +11,7 @@
           { "name": "a", "type": "number", "link": null },
           { "name": "b", "type": "number", "link": null }
         ],
-        "outputs": [
-          { "name": "result", "type": "number", "links": [] }
-        ],
+        "outputs": [{ "name": "result", "type": "number", "links": [] }],
         "properties": { "operation": "add" },
         "flags": {},
         "mode": 0
@@ -23,10 +21,10 @@
     "groups": [],
     "config": {},
     "definitions": { "subgraphs": [] },
-    
+
     "id": "simple-subgraph-uuid",
     "name": "Simple Math Subgraph",
-    
+
     "inputNode": {
       "id": -10,
       "type": "subgraph/input",
@@ -49,7 +47,7 @@
       "flags": {},
       "mode": 0
     },
-    
+
     "inputs": [
       {
         "name": "input_a",
@@ -57,7 +55,7 @@
         "pos": [0, 0]
       },
       {
-        "name": "input_b", 
+        "name": "input_b",
         "type": "number",
         "pos": [0, 1]
       }
@@ -84,9 +82,7 @@
           { "name": "a", "type": "number", "link": null },
           { "name": "b", "type": "number", "link": null }
         ],
-        "outputs": [
-          { "name": "result", "type": "number", "links": [1] }
-        ],
+        "outputs": [{ "name": "result", "type": "number", "links": [1] }],
         "properties": {},
         "flags": {},
         "mode": 0
@@ -100,9 +96,7 @@
           { "name": "a", "type": "number", "link": 1 },
           { "name": "b", "type": "number", "link": null }
         ],
-        "outputs": [
-          { "name": "result", "type": "number", "links": [2] }
-        ],
+        "outputs": [{ "name": "result", "type": "number", "links": [2] }],
         "properties": {},
         "flags": {},
         "mode": 0
@@ -116,9 +110,7 @@
           { "name": "a", "type": "number", "link": null },
           { "name": "b", "type": "number", "link": null }
         ],
-        "outputs": [
-          { "name": "result", "type": "boolean", "links": [] }
-        ],
+        "outputs": [{ "name": "result", "type": "boolean", "links": [] }],
         "properties": { "operation": "greater_than" },
         "flags": {},
         "mode": 0
@@ -132,9 +124,7 @@
           { "name": "a", "type": "string", "link": null },
           { "name": "b", "type": "string", "link": null }
         ],
-        "outputs": [
-          { "name": "result", "type": "string", "links": [] }
-        ],
+        "outputs": [{ "name": "result", "type": "string", "links": [] }],
         "properties": {},
         "flags": {},
         "mode": 0
@@ -161,10 +151,10 @@
     "groups": [],
     "config": {},
     "definitions": { "subgraphs": [] },
-    
+
     "id": "complex-subgraph-uuid",
     "name": "Complex Processing Subgraph",
-    
+
     "inputNode": {
       "id": -10,
       "type": "subgraph/input",
@@ -187,7 +177,7 @@
       "flags": {},
       "mode": 0
     },
-    
+
     "inputs": [
       {
         "name": "number1",
@@ -236,7 +226,7 @@
     "links": {},
     "groups": [],
     "config": {},
-    "definitions": { 
+    "definitions": {
       "subgraphs": [
         {
           "version": 1,
@@ -247,9 +237,7 @@
               "pos": [200, 100],
               "size": [100, 40],
               "inputs": [],
-              "outputs": [
-                { "name": "value", "type": "number", "links": [] }
-              ],
+              "outputs": [{ "name": "value", "type": "number", "links": [] }],
               "properties": { "value": 42 },
               "flags": {},
               "mode": 0
@@ -259,10 +247,10 @@
           "groups": [],
           "config": {},
           "definitions": { "subgraphs": [] },
-          
+
           "id": "nested-level2-uuid",
           "name": "Level 2 Subgraph",
-          
+
           "inputNode": {
             "id": -10,
             "type": "subgraph/input",
@@ -285,7 +273,7 @@
             "flags": {},
             "mode": 0
           },
-          
+
           "inputs": [],
           "outputs": [
             {
@@ -298,10 +286,10 @@
         }
       ]
     },
-    
+
     "id": "nested-level1-uuid",
     "name": "Level 1 Subgraph",
-    
+
     "inputNode": {
       "id": -10,
       "type": "subgraph/input",
@@ -324,7 +312,7 @@
       "flags": {},
       "mode": 0
     },
-    
+
     "inputs": [
       {
         "name": "external_input",
@@ -349,10 +337,10 @@
     "groups": [],
     "config": {},
     "definitions": { "subgraphs": [] },
-    
+
     "id": "empty-subgraph-uuid",
     "name": "Empty Subgraph",
-    
+
     "inputNode": {
       "id": -10,
       "type": "subgraph/input",
@@ -375,7 +363,7 @@
       "flags": {},
       "mode": 0
     },
-    
+
     "inputs": [],
     "outputs": [],
     "widgets": []
@@ -388,10 +376,10 @@
     "groups": [],
     "config": {},
     "definitions": { "subgraphs": [] },
-    
+
     "id": "max-io-subgraph-uuid",
     "name": "Max I/O Subgraph",
-    
+
     "inputNode": {
       "id": -10,
       "type": "subgraph/input",
@@ -414,7 +402,7 @@
       "flags": {},
       "mode": 0
     },
-    
+
     "inputs": [
       { "name": "input_0", "type": "number", "pos": [0, 0] },
       { "name": "input_1", "type": "string", "pos": [0, 1] },

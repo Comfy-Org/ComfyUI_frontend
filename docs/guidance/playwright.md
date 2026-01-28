@@ -17,6 +17,7 @@ See `docs/testing/*.md` for detailed patterns.
 ## Test Tags
 
 Tags are respected by config:
+
 - `@mobile` - Mobile viewport tests
 - `@2x` - High DPI tests
 
