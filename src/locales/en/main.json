@@ -2859,6 +2859,8 @@
     "sortAZ": "A-Z",
     "sortZA": "Z-A",
     "fileFormats": "File Formats",
-    "modelTypes": "Model Types"
+    "modelTypes": "Model Types",
+    "viewGrid": "Grid view",
+    "viewList": "List view"
   }
 }

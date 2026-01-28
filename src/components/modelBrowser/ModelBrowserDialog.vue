@@ -32,6 +32,10 @@
       />
     </template>
 
+    <template #header-right-area>
+      <ViewModeToggle v-model="viewMode" />
+    </template>
+
     <template #contentFilter>
       <ModelBrowserFilterBar
         :available-file-formats="availableFileFormats"
@@ -71,8 +75,22 @@
         @clear-filters="clearFilters"
       >
         <div class="flex-1 overflow-auto p-6">
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div
+            v-if="viewMode === 'grid'"
+            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+          >
             <ModelCard
+              v-for="model in filteredModels"
+              :key="model.id"
+              :model="model"
+              :focused="focusedModel?.id === model.id"
+              @focus="handleModelFocus"
+              @select="handleModelSelect"
+              @show-info="handleShowInfo"
+            />
+          </div>
+          <div v-else class="flex flex-col gap-2">
+            <ModelListItem
               v-for="model in filteredModels"
               :key="model.id"
               :model="model"
@@ -119,8 +137,10 @@ import type { NavGroupData } from '@/types/navTypes'
 
 import ModelBrowserStates from './ModelBrowserStates.vue'
 import ModelCard from './ModelCard.vue'
+import ModelListItem from './ModelListItem.vue'
 import LocalModelInfoPanel from './LocalModelInfoPanel.vue'
 import ModelBrowserFilterBar from './ModelBrowserFilterBar.vue'
+import ViewModeToggle from './ViewModeToggle.vue'
 import type { SortOption } from './ModelBrowserSortButton.vue'
 
 const { t } = useI18n()
@@ -135,6 +155,7 @@ const { isLoading, error, models, loadModels, retryLoad } = useModelLoader()
 const focusedModel = ref<EnrichedModel | null>(null)
 const selectedNavItem = ref<string>('all')
 const isRightPanelOpen = ref(false)
+const viewMode = ref<'grid' | 'list'>('grid')
 
 const { modelTypes, fetchModelTypes } = useModelTypes()
 
