@@ -42,13 +42,13 @@
       <!-- Cancel button overlay -->
       <Button
         v-if="hovered && canCancelJob"
-        :variant="cancelAction.variant"
+        variant="destructive"
         size="icon"
         :aria-label="cancelAction.label"
-        class="absolute top-1 right-1"
+        class="absolute top-2 right-2"
         @click.stop="runCancelJob()"
       >
-        <i :class="cancelAction.icon" class="size-3" />
+        <i :class="cancelAction.icon" />
       </Button>
     </div>
 
