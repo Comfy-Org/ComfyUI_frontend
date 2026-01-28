@@ -96,7 +96,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         this.hasPromptedSave = true
       }
       const ret = await super.save()
-      useSubgraphStore().updateDef(await this.load())
+      useSubgraphStore().registerNodeDef(await this.load(), {
+        category: 'Subgraph Blueprints/User'
+      })
       return ret
     }
 
@@ -104,7 +106,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       this.validateSubgraph()
       this.hasPromptedSave = true
       const ret = await super.saveAs(path)
-      useSubgraphStore().updateDef(await this.load())
+      useSubgraphStore().registerNodeDef(await this.load(), {
+        category: 'Subgraph Blueprints/User'
+      })
       return ret
     }
     override async load({ force = false }: { force?: boolean } = {}): Promise<
@@ -288,16 +292,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     await workflow.save()
     //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
-    registerNodeDef(loadedWorkflow)
     useToastStore().add({
       severity: 'success',
       summary: t('subgraphStore.publishSuccess'),
       detail: t('subgraphStore.publishSuccessMessage'),
       life: 4000
     })
-  }
-  function updateDef(blueprint: LoadedComfyWorkflow) {
-    registerNodeDef(blueprint)
   }
   async function editBlueprint(nodeType: string) {
     const name = nodeType.slice(typePrefix.length)
@@ -365,6 +365,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     publishSubgraph,
     subgraphBlueprints,
     typePrefix,
-    updateDef
+    registerNodeDef
   }
 })
