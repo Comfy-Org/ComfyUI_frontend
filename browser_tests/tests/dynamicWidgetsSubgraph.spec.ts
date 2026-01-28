@@ -310,7 +310,9 @@ test.describe('Dynamic Combo Widgets in Subgraphs', () => {
 
     await comfyPage.page.keyboard.press('Escape')
     await comfyPage.nextFrame()
-    expect(await comfyPage.isInSubgraph()).toBe(false)
+    await expect
+      .poll(() => comfyPage.isInSubgraph(), { timeout: 5000 })
+      .toBe(false)
 
     const outerSubgraph = await getSubgraphNode(comfyPage)
     expect(await outerSubgraph.getWidgets()).toEqual([
