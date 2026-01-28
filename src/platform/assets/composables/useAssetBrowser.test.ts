@@ -84,14 +84,14 @@ describe('useAssetBrowser', () => {
       expect(result.name).toBe(apiAsset.name)
 
       // Adds display properties
-      expect(result.description).toBe('Test model')
+      expect(result.secondaryText).toBe('test-asset.safetensors')
       expect(result.badges).toContainEqual({
         label: 'checkpoints',
         type: 'type'
       })
     })
 
-    it('creates fallback description from tags when metadata missing', () => {
+    it('creates secondaryText from filename when metadata missing', () => {
       const apiAsset = createApiAsset({
         tags: ['models', 'loras'],
         user_metadata: undefined
@@ -100,7 +100,7 @@ describe('useAssetBrowser', () => {
       const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
       const result = filteredAssets.value[0]
 
-      expect(result.description).toBe('loras model')
+      expect(result.secondaryText).toBe('test-asset.safetensors')
     })
 
     it('removes category prefix from badge labels', () => {
