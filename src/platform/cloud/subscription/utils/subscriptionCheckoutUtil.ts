@@ -35,8 +35,8 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
-  const { getAuthHeader } = useFirebaseAuthStore()
-  const authHeader = await getAuthHeader()
+  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
+  const authHeader = await getFirebaseAuthHeader()
 
   if (!authHeader) {
     throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))

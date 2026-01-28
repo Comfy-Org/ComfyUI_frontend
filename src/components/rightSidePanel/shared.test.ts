@@ -38,8 +38,20 @@ describe('searchWidgets', () => {
 
     expect(searchWidgets(widgets, 'width')).toHaveLength(1)
     expect(searchWidgets(widgets, 'slider')).toHaveLength(1)
-    expect(searchWidgets(widgets, 'high')).toHaveLength(1)
     expect(searchWidgets(widgets, 'image')).toHaveLength(1)
+  })
+
+  it('should support fuzzy matching (e.g., "high" matches both "height" and value "high")', () => {
+    const widgets = [
+      createWidget('width', 'number', '100', 'Size Control'),
+      createWidget('height', 'slider', '200', 'Image Height'),
+      createWidget('quality', 'text', 'high', 'Quality')
+    ]
+
+    const results = searchWidgets(widgets, 'high')
+    expect(results).toHaveLength(2)
+    expect(results.some((r) => r.widget.name === 'height')).toBe(true)
+    expect(results.some((r) => r.widget.name === 'quality')).toBe(true)
   })
 
   it('should handle multiple search words', () => {

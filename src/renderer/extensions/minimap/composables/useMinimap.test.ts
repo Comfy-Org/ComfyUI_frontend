@@ -1,5 +1,49 @@
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
+
+import {
+  createMockCanvas2DContext,
+  createMockMinimapCanvas
+} from '@/utils/__tests__/litegraphTestUtils'
+
+interface MockNode {
+  id: string
+  pos: number[]
+  size: number[]
+  color?: string
+  constructor?: { color: string }
+  outputs?: { links: string[] }[] | null
+}
+
+interface MockGraph {
+  _nodes: MockNode[]
+  links: Record<string, { id: string; target_id: string }>
+  getNodeById: Mock
+  setDirtyCanvas: Mock
+  onNodeAdded: ((node: MockNode) => void) | null
+  onNodeRemoved: ((node: MockNode) => void) | null
+  onConnectionChange: ((node: MockNode) => void) | null
+}
+
+interface MockCanvas {
+  graph: MockGraph
+  canvas: {
+    width: number
+    height: number
+    clientWidth: number
+    clientHeight: number
+  }
+  ds: {
+    scale: number
+    offset: [number, number]
+  }
+  setDirty: Mock
+}
+
+interface MockContainerElement {
+  getBoundingClientRect: Mock
+}
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
@@ -39,15 +83,15 @@ vi.mock('@vueuse/core', () => {
       }
     }),
     useThrottleFn: vi.fn((callback) => {
-      return (...args: any[]) => {
+      return (...args: unknown[]) => {
         return callback(...args)
       }
     })
   }
 })
 
-let mockCanvas: any
-let mockGraph: any
+let moduleMockCanvas: MockCanvas = null!
+let moduleMockGraph: MockGraph = null!
 
 const setupMocks = () => {
   const mockNodes = [
@@ -72,7 +116,7 @@ const setupMocks = () => {
     }
   ]
 
-  mockGraph = {
+  moduleMockGraph = {
     _nodes: mockNodes,
     links: {
       link1: {
@@ -87,8 +131,8 @@ const setupMocks = () => {
     onConnectionChange: null
   }
 
-  mockCanvas = {
-    graph: mockGraph,
+  moduleMockCanvas = {
+    graph: moduleMockGraph,
     canvas: {
       width: 1000,
       height: 800,
@@ -105,8 +149,11 @@ const setupMocks = () => {
 
 setupMocks()
 
-const defaultCanvasStore = {
-  canvas: mockCanvas,
+const defaultCanvasStore: {
+  canvas: MockCanvas | null
+  getCanvas: () => MockCanvas | null
+} = {
+  canvas: moduleMockCanvas,
   getCanvas: () => defaultCanvasStore.canvas
 }
 
@@ -142,7 +189,7 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
-      graph: mockGraph
+      graph: moduleMockGraph
     }
   }
 }))
@@ -158,16 +205,16 @@ const { useMinimap } =
 const { api } = await import('@/scripts/api')
 
 describe('useMinimap', () => {
-  let mockCanvas: any
-  let mockGraph: any
-  let mockCanvasElement: any
-  let mockContainerElement: any
-  let mockContext2D: any
+  let moduleMockCanvasElement: HTMLCanvasElement
+  let mockContainerElement: MockContainerElement
+  let mockContext2D: CanvasRenderingContext2D
 
   async function createAndInitializeMinimap() {
     const minimap = useMinimap({
-      containerRefMaybe: shallowRef(mockContainerElement),
-      canvasRefMaybe: shallowRef(mockCanvasElement)
+      containerRefMaybe: shallowRef(
+        mockContainerElement as Partial<HTMLDivElement> as HTMLDivElement
+      ),
+      canvasRefMaybe: shallowRef(moduleMockCanvasElement)
     })
     await minimap.init()
     await nextTick()
@@ -181,28 +228,15 @@ describe('useMinimap', () => {
     mockPause.mockClear()
     mockResume.mockClear()
 
-    mockContext2D = {
-      clearRect: vi.fn(),
-      fillRect: vi.fn(),
-      strokeRect: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      arc: vi.fn(),
-      fill: vi.fn(),
-      fillStyle: '',
-      strokeStyle: '',
-      lineWidth: 0
-    }
+    mockContext2D = createMockCanvas2DContext()
 
-    mockCanvasElement = {
-      getContext: vi.fn().mockReturnValue(mockContext2D),
-      width: 250,
-      height: 200,
-      clientWidth: 250,
-      clientHeight: 200
-    }
+    moduleMockCanvasElement = createMockMinimapCanvas({
+      getContext: vi
+        .fn()
+        .mockImplementation((contextId) =>
+          contextId === '2d' ? mockContext2D : null
+        ) as HTMLCanvasElement['getContext']
+    })
 
     const mockRect = {
       left: 100,
@@ -241,7 +275,7 @@ describe('useMinimap', () => {
       }
     ]
 
-    mockGraph = {
+    moduleMockGraph = {
       _nodes: mockNodes,
       links: {
         link1: {
@@ -256,8 +290,8 @@ describe('useMinimap', () => {
       onConnectionChange: null
     }
 
-    mockCanvas = {
-      graph: mockGraph,
+    moduleMockCanvas = {
+      graph: moduleMockGraph,
       canvas: {
         width: 1000,
         height: 800,
@@ -271,7 +305,7 @@ describe('useMinimap', () => {
       setDirty: vi.fn()
     }
 
-    defaultCanvasStore.canvas = mockCanvas
+    defaultCanvasStore.canvas = moduleMockCanvas
 
     defaultSettingStore.get = vi.fn().mockReturnValue(true)
     defaultSettingStore.set = vi.fn().mockResolvedValue(undefined)
@@ -338,9 +372,9 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      expect(mockGraph.onNodeAdded).toBeDefined()
-      expect(mockGraph.onNodeRemoved).toBeDefined()
-      expect(mockGraph.onConnectionChange).toBeDefined()
+      expect(moduleMockGraph.onNodeAdded).toBeDefined()
+      expect(moduleMockGraph.onNodeRemoved).toBeDefined()
+      expect(moduleMockGraph.onConnectionChange).toBeDefined()
     })
 
     it('should handle visibility from settings', async () => {
@@ -377,18 +411,20 @@ describe('useMinimap', () => {
         onConnectionChange: vi.fn()
       }
 
-      mockGraph.onNodeAdded = originalCallbacks.onNodeAdded
-      mockGraph.onNodeRemoved = originalCallbacks.onNodeRemoved
-      mockGraph.onConnectionChange = originalCallbacks.onConnectionChange
+      moduleMockGraph.onNodeAdded = originalCallbacks.onNodeAdded
+      moduleMockGraph.onNodeRemoved = originalCallbacks.onNodeRemoved
+      moduleMockGraph.onConnectionChange = originalCallbacks.onConnectionChange
 
       const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
       minimap.destroy()
 
-      expect(mockGraph.onNodeAdded).toBe(originalCallbacks.onNodeAdded)
-      expect(mockGraph.onNodeRemoved).toBe(originalCallbacks.onNodeRemoved)
-      expect(mockGraph.onConnectionChange).toBe(
+      expect(moduleMockGraph.onNodeAdded).toBe(originalCallbacks.onNodeAdded)
+      expect(moduleMockGraph.onNodeRemoved).toBe(
+        originalCallbacks.onNodeRemoved
+      )
+      expect(moduleMockGraph.onConnectionChange).toBe(
         originalCallbacks.onConnectionChange
       )
     })
@@ -421,7 +457,7 @@ describe('useMinimap', () => {
     it('should verify context is obtained during render', async () => {
       const minimap = await createAndInitializeMinimap()
 
-      const getContextSpy = vi.spyOn(mockCanvasElement, 'getContext')
+      const getContextSpy = vi.spyOn(moduleMockCanvasElement, 'getContext')
 
       await minimap.init()
 
@@ -429,10 +465,12 @@ describe('useMinimap', () => {
       minimap.renderMinimap()
 
       // Force a render by triggering a graph change
-      mockGraph._nodes.push({
+      moduleMockGraph._nodes.push({
         id: 'new-node',
         pos: [150, 150],
-        size: [100, 50]
+        size: [100, 50],
+        constructor: { color: '#666' },
+        outputs: []
       })
 
       // Trigger RAF to process changes
@@ -452,15 +490,15 @@ describe('useMinimap', () => {
       minimap.renderMinimap()
 
       // Force a render by modifying a node position
-      mockGraph._nodes[0].pos = [50, 50]
+      moduleMockGraph._nodes[0].pos = [50, 50]
 
       // Trigger RAF to process changes
       await triggerRAF()
       await nextTick()
 
       const renderingOccurred =
-        mockContext2D.clearRect.mock.calls.length > 0 ||
-        mockContext2D.fillRect.mock.calls.length > 0
+        vi.mocked(mockContext2D.clearRect).mock.calls.length > 0 ||
+        vi.mocked(mockContext2D.fillRect).mock.calls.length > 0
 
       if (!renderingOccurred) {
         console.log('Minimap visible:', minimap.visible.value)
@@ -469,12 +507,15 @@ describe('useMinimap', () => {
         console.log('Graph exists:', !!defaultCanvasStore.canvas?.graph)
         console.log(
           'clearRect calls:',
-          mockContext2D.clearRect.mock.calls.length
+          vi.mocked(mockContext2D.clearRect).mock.calls.length
         )
-        console.log('fillRect calls:', mockContext2D.fillRect.mock.calls.length)
+        console.log(
+          'fillRect calls:',
+          vi.mocked(mockContext2D.fillRect).mock.calls.length
+        )
         console.log(
           'getContext calls:',
-          mockCanvasElement.getContext.mock.calls.length
+          vi.mocked(moduleMockCanvasElement.getContext).mock.calls.length
         )
       }
 
@@ -482,7 +523,11 @@ describe('useMinimap', () => {
     })
 
     it('should not render when context is null', async () => {
-      mockCanvasElement.getContext = vi.fn().mockReturnValue(null)
+      moduleMockCanvasElement = createMockMinimapCanvas({
+        getContext: vi
+          .fn()
+          .mockImplementation(() => null) as HTMLCanvasElement['getContext']
+      })
 
       const minimap = await createAndInitializeMinimap()
 
@@ -491,12 +536,18 @@ describe('useMinimap', () => {
 
       expect(mockContext2D.clearRect).not.toHaveBeenCalled()
 
-      mockCanvasElement.getContext = vi.fn().mockReturnValue(mockContext2D)
+      moduleMockCanvasElement = createMockMinimapCanvas({
+        getContext: vi
+          .fn()
+          .mockImplementation((contextId) =>
+            contextId === '2d' ? mockContext2D : null
+          ) as HTMLCanvasElement['getContext']
+      })
     })
 
     it('should handle empty graph', async () => {
-      const originalNodes = [...mockGraph._nodes]
-      mockGraph._nodes = []
+      const originalNodes = [...moduleMockGraph._nodes]
+      moduleMockGraph._nodes = []
 
       const minimap = await createAndInitializeMinimap()
 
@@ -513,7 +564,7 @@ describe('useMinimap', () => {
       // The key test is that it doesn't crash and properly initializes
       expect(mockContext2D.clearRect).toHaveBeenCalled()
 
-      mockGraph._nodes = originalNodes
+      moduleMockGraph._nodes = originalNodes
     })
   })
 
@@ -530,7 +581,7 @@ describe('useMinimap', () => {
       minimap.handlePointerDown(pointerEvent)
 
       expect(mockContainerElement.getBoundingClientRect).toHaveBeenCalled()
-      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(moduleMockCanvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
     it('should handle pointer move while dragging (mouse)', async () => {
@@ -550,8 +601,8 @@ describe('useMinimap', () => {
       })
       minimap.handlePointerMove(pointerMoveEvent)
 
-      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
-      expect(mockCanvas.ds.offset).toBeDefined()
+      expect(moduleMockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(moduleMockCanvas.ds.offset).toBeDefined()
     })
 
     it('should handle pointer up to stop dragging (mouse)', async () => {
@@ -566,7 +617,7 @@ describe('useMinimap', () => {
 
       minimap.handlePointerUp()
 
-      mockCanvas.setDirty.mockClear()
+      moduleMockCanvas.setDirty.mockClear()
 
       const pointerMoveEvent = new PointerEvent('pointermove', {
         clientX: 200,
@@ -575,7 +626,7 @@ describe('useMinimap', () => {
       })
       minimap.handlePointerMove(pointerMoveEvent)
 
-      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
+      expect(moduleMockCanvas.setDirty).not.toHaveBeenCalled()
     })
 
     it('should handle pointer down and start dragging (touch)', async () => {
@@ -590,7 +641,7 @@ describe('useMinimap', () => {
       minimap.handlePointerDown(pointerEvent)
 
       expect(mockContainerElement.getBoundingClientRect).toHaveBeenCalled()
-      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(moduleMockCanvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
     it('should handle pointer move while dragging (touch)', async () => {
@@ -610,8 +661,8 @@ describe('useMinimap', () => {
       })
       minimap.handlePointerMove(pointerMoveEvent)
 
-      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
-      expect(mockCanvas.ds.offset).toBeDefined()
+      expect(moduleMockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(moduleMockCanvas.ds.offset).toBeDefined()
     })
 
     it('should handle pointer move while dragging (pen)', async () => {
@@ -631,14 +682,14 @@ describe('useMinimap', () => {
       })
       minimap.handlePointerMove(pointerMoveEvent)
 
-      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
-      expect(mockCanvas.ds.offset).toBeDefined()
+      expect(moduleMockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(moduleMockCanvas.ds.offset).toBeDefined()
     })
 
     it('should not move when not dragging with pointer', async () => {
       const minimap = await createAndInitializeMinimap()
 
-      mockCanvas.setDirty.mockClear()
+      moduleMockCanvas.setDirty.mockClear()
 
       const pointerMoveEvent = new PointerEvent('pointermove', {
         clientX: 200,
@@ -647,7 +698,7 @@ describe('useMinimap', () => {
       })
       minimap.handlePointerMove(pointerMoveEvent)
 
-      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
+      expect(moduleMockCanvas.setDirty).not.toHaveBeenCalled()
     })
 
     it('should handle pointer up to stop dragging (touch)', async () => {
@@ -662,7 +713,7 @@ describe('useMinimap', () => {
 
       minimap.handlePointerUp()
 
-      mockCanvas.setDirty.mockClear()
+      moduleMockCanvas.setDirty.mockClear()
 
       const pointerMoveEvent = new PointerEvent('pointermove', {
         clientX: 200,
@@ -671,7 +722,7 @@ describe('useMinimap', () => {
       })
       minimap.handlePointerMove(pointerMoveEvent)
 
-      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
+      expect(moduleMockCanvas.setDirty).not.toHaveBeenCalled()
     })
   })
 
@@ -695,8 +746,8 @@ describe('useMinimap', () => {
       minimap.handleWheel(wheelEvent)
 
       expect(preventDefault).toHaveBeenCalled()
-      expect(mockCanvas.ds.scale).toBeCloseTo(1.1)
-      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(moduleMockCanvas.ds.scale).toBeCloseTo(1.1)
+      expect(moduleMockCanvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
     it('should handle wheel zoom out', async () => {
@@ -718,8 +769,8 @@ describe('useMinimap', () => {
       minimap.handleWheel(wheelEvent)
 
       expect(preventDefault).toHaveBeenCalled()
-      expect(mockCanvas.ds.scale).toBeCloseTo(0.9)
-      expect(mockCanvas.setDirty).toHaveBeenCalledWith(true, true)
+      expect(moduleMockCanvas.ds.scale).toBeCloseTo(0.9)
+      expect(moduleMockCanvas.setDirty).toHaveBeenCalledWith(true, true)
     })
 
     it('should respect zoom limits', async () => {
@@ -727,7 +778,7 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      mockCanvas.ds.scale = 0.1
+      moduleMockCanvas.ds.scale = 0.1
 
       const wheelEvent = new WheelEvent('wheel', {
         deltaY: 100,
@@ -742,7 +793,7 @@ describe('useMinimap', () => {
 
       minimap.handleWheel(wheelEvent)
 
-      expect(mockCanvas.ds.scale).toBe(0.1)
+      expect(moduleMockCanvas.ds.scale).toBe(0.1)
     })
 
     it('should update container rect if needed', async () => {
@@ -790,15 +841,17 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      mockCanvas.canvas.clientWidth = 1200
-      mockCanvas.canvas.clientHeight = 900
+      moduleMockCanvas.canvas.clientWidth = 1200
+      moduleMockCanvas.canvas.clientHeight = 900
 
-      const resizeHandler = (window.addEventListener as any).mock.calls.find(
-        (call: any) => call[0] === 'resize'
-      )?.[1]
+      const resizeHandler = vi
+        .mocked(window.addEventListener)
+        .mock.calls.find((call) => call[0] === 'resize')?.[1] as
+        | EventListener
+        | undefined
 
       if (resizeHandler) {
-        resizeHandler()
+        resizeHandler(new Event('resize'))
       }
 
       await nextTick()
@@ -817,12 +870,13 @@ describe('useMinimap', () => {
         id: 'node3',
         pos: [300, 200],
         size: [100, 100],
-        constructor: { color: '#666' }
+        constructor: { color: '#666' },
+        outputs: []
       }
 
-      mockGraph._nodes.push(newNode)
-      if (mockGraph.onNodeAdded) {
-        mockGraph.onNodeAdded(newNode)
+      moduleMockGraph._nodes.push(newNode)
+      if (moduleMockGraph.onNodeAdded) {
+        moduleMockGraph.onNodeAdded(newNode)
       }
 
       await new Promise((resolve) => setTimeout(resolve, 600))
@@ -833,11 +887,11 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      const removedNode = mockGraph._nodes[0]
-      mockGraph._nodes.splice(0, 1)
+      const removedNode = moduleMockGraph._nodes[0]
+      moduleMockGraph._nodes.splice(0, 1)
 
-      if (mockGraph.onNodeRemoved) {
-        mockGraph.onNodeRemoved(removedNode)
+      if (moduleMockGraph.onNodeRemoved) {
+        moduleMockGraph.onNodeRemoved(removedNode)
       }
 
       await new Promise((resolve) => setTimeout(resolve, 600))
@@ -848,8 +902,8 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      if (mockGraph.onConnectionChange) {
-        mockGraph.onConnectionChange(mockGraph._nodes[0])
+      if (moduleMockGraph.onConnectionChange) {
+        moduleMockGraph.onConnectionChange(moduleMockGraph._nodes[0])
       }
 
       await new Promise((resolve) => setTimeout(resolve, 600))
@@ -870,7 +924,7 @@ describe('useMinimap', () => {
 
   describe('edge cases', () => {
     it('should handle missing node outputs', async () => {
-      mockGraph._nodes[0].outputs = null
+      moduleMockGraph._nodes[0].outputs = null
       const minimap = await createAndInitializeMinimap()
 
       await expect(minimap.init()).resolves.not.toThrow()
@@ -878,8 +932,8 @@ describe('useMinimap', () => {
     })
 
     it('should handle invalid link references', async () => {
-      mockGraph.links.link1.target_id = 'invalid-node'
-      mockGraph.getNodeById.mockReturnValue(null)
+      moduleMockGraph.links.link1.target_id = 'invalid-node'
+      moduleMockGraph.getNodeById.mockReturnValue(null)
 
       const minimap = await createAndInitializeMinimap()
 
@@ -898,16 +952,13 @@ describe('useMinimap', () => {
     })
 
     it('should handle nodes without color', async () => {
-      mockGraph._nodes[0].color = undefined
+      moduleMockGraph._nodes[0].color = undefined
 
       const minimap = await createAndInitializeMinimap()
 
       await minimap.init()
 
-      const renderMinimap = (minimap as any).renderMinimap
-      if (renderMinimap) {
-        renderMinimap()
-      }
+      minimap.renderMinimap()
 
       expect(mockContext2D.fillRect).toHaveBeenCalled()
       expect(mockContext2D.fillStyle).toBeDefined()

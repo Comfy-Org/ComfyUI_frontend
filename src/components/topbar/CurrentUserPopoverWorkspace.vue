@@ -36,15 +36,6 @@
         <span class="truncate text-sm text-base-foreground">{{
           workspaceName
         }}</span>
-        <div
-          v-if="workspaceTierName"
-          class="shrink-0 rounded bg-secondary-background-hover px-1.5 py-0.5 text-xs"
-        >
-          {{ workspaceTierName }}
-        </div>
-        <span v-else class="shrink-0 text-xs text-muted-foreground">
-          {{ $t('workspaceSwitcher.subscribe') }}
-        </span>
       </div>
       <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
     </div>
@@ -92,15 +83,23 @@
         >
           {{ $t('subscription.addCredits') }}
         </Button>
-        <!-- Unsubscribed: Show Subscribe button (disabled until billing is ready) -->
+        <!-- Unsubscribed: Show Subscribe button -->
         <SubscribeButton
-          v-else
-          disabled
+          v-else-if="isPersonalWorkspace"
           :fluid="false"
           :label="$t('workspaceSwitcher.subscribe')"
           size="sm"
           variant="gradient"
         />
+        <!-- Non-personal workspace: Navigate to workspace settings -->
+        <Button
+          v-else
+          variant="primary"
+          size="sm"
+          @click="handleOpenPlanAndCreditsSettings"
+        >
+          {{ $t('workspaceSwitcher.subscribe') }}
+        </Button>
       </div>
 
       <Divider class="mx-0 my-2" />
@@ -198,7 +197,6 @@ import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
@@ -219,10 +217,10 @@ import { useDialogService } from '@/services/dialogService'
 
 const workspaceStore = useTeamWorkspaceStore()
 const {
+  initState,
   workspaceName,
   isInPersonalWorkspace: isPersonalWorkspace,
-  isWorkspaceSubscribed,
-  subscriptionPlan
+  isWorkspaceSubscribed
 } = storeToRefs(workspaceStore)
 const { workspaceRole } = useWorkspaceUI()
 const workspaceSwitcherPopover = ref<InstanceType<typeof Popover> | null>(null)
@@ -237,27 +235,20 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription } = useSubscription()
+const { isActiveSubscription, subscriptionStatus } = useSubscription()
 const { totalCredits, isLoadingBalance } = useSubscriptionCredits()
 const subscriptionDialog = useSubscriptionDialog()
-const { t } = useI18n()
 
-const displayedCredits = computed(() =>
-  isWorkspaceSubscribed.value ? totalCredits.value : '0'
-)
-
-// Workspace subscription tier name (not user tier)
-const workspaceTierName = computed(() => {
-  if (!isWorkspaceSubscribed.value) return null
-  if (!subscriptionPlan.value) return null
-  // Convert plan to display name
-  if (subscriptionPlan.value === 'PRO_MONTHLY')
-    return t('subscription.tiers.pro.name')
-  if (subscriptionPlan.value === 'PRO_YEARLY')
-    return t('subscription.tierNameYearly', {
-      name: t('subscription.tiers.pro.name')
-    })
-  return null
+const displayedCredits = computed(() => {
+  if (initState.value !== 'ready') return ''
+  // Only personal workspaces have subscription status from useSubscription()
+  // Team workspaces don't have backend subscription data yet
+  if (isPersonalWorkspace.value) {
+    // Wait for subscription status to load
+    if (subscriptionStatus.value === null) return ''
+    return isActiveSubscription.value ? totalCredits.value : '0'
+  }
+  return '0'
 })
 
 const canUpgrade = computed(() => {

@@ -1,5 +1,5 @@
 # Description: Linting and code formatting validation for pull requests
-name: "CI: Lint Format"
+name: 'CI: Lint Format'
 
 on:
   pull_request:

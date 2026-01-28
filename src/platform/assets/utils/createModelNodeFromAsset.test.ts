@@ -226,6 +226,30 @@ describe('createModelNodeFromAsset', () => {
       expect(result.success).toBe(true)
       expect(vi.mocked(app).canvas.graph!.add).toHaveBeenCalledWith(mockNode)
     })
+    it('should fallback to asset.metadata.filename when user_metadata.filename missing', async () => {
+      const asset = createMockAsset({
+        user_metadata: {},
+        metadata: { filename: 'models/checkpoints/from-metadata.safetensors' }
+      })
+      const mockNode = await createMockNode()
+      await setupMocks({ createdNode: mockNode })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(true)
+      expect(mockNode.widgets?.[0].value).toBe(
+        'models/checkpoints/from-metadata.safetensors'
+      )
+    })
+    it('should fallback to asset.name when both filename sources missing', async () => {
+      const asset = createMockAsset({
+        user_metadata: {},
+        metadata: undefined
+      })
+      const mockNode = await createMockNode()
+      await setupMocks({ createdNode: mockNode })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(true)
+      expect(mockNode.widgets?.[0].value).toBe('test-model.safetensors')
+    })
     it('should add node to active subgraph when present', async () => {
       const asset = createMockAsset()
       const mockNode = await createMockNode()
@@ -253,27 +277,18 @@ describe('createModelNodeFromAsset', () => {
     })
     it.each([
       {
-        case: 'missing user_metadata',
-        overrides: { user_metadata: undefined },
+        case: 'missing user_metadata with no fallback',
+        overrides: { user_metadata: undefined, metadata: undefined, name: '' },
         expectedCode: 'INVALID_ASSET' as const,
-        errorPattern: /missing required user_metadata/
+        errorPattern: /Invalid filename.*expected non-empty string/
       },
       {
-        case: 'missing filename property',
-        overrides: { user_metadata: {} },
-        expectedCode: 'INVALID_ASSET' as const,
-        errorPattern:
-          /Invalid filename.*expected non-empty string, got undefined/
-      },
-      {
-        case: 'non-string filename',
-        overrides: { user_metadata: { filename: 123 } },
-        expectedCode: 'INVALID_ASSET' as const,
-        errorPattern: /Invalid filename.*expected non-empty string, got number/
-      },
-      {
-        case: 'empty filename',
-        overrides: { user_metadata: { filename: '' } },
+        case: 'empty filename with no fallback',
+        overrides: {
+          user_metadata: { filename: '' },
+          metadata: undefined,
+          name: ''
+        },
         expectedCode: 'INVALID_ASSET' as const,
         errorPattern: /Invalid filename.*expected non-empty string/
       }

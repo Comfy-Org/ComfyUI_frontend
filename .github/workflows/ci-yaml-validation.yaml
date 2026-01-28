@@ -1,5 +1,5 @@
 # Description: Validates YAML syntax and style using yamllint with relaxed rules
-name: "CI: YAML Validation"
+name: 'CI: YAML Validation'
 
 on:
   push:

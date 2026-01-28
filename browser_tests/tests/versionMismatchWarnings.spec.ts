@@ -38,6 +38,10 @@ test.describe('Version Mismatch Warnings', () => {
 
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.setSetting(
+      'Comfy.VersionCompatibility.DisableWarnings',
+      false
+    )
   })
 
   test('should show version mismatch warnings when installed version lower than required', async ({

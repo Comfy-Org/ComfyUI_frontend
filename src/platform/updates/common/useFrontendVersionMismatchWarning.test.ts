@@ -40,17 +40,20 @@ vi.mock('@/scripts/api', () => ({
 // Mock vue-i18n
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string, params?: any) => {
+    t: (key: string, params?: Record<string, string | number> | unknown) => {
       if (key === 'g.versionMismatchWarning')
         return 'Version Compatibility Warning'
       if (key === 'g.versionMismatchWarningMessage' && params) {
-        return `${params.warning}: ${params.detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.`
+        const p = params as Record<string, string>
+        return `${p.warning}: ${p.detail} Visit https://docs.comfy.org/installation/update_comfyui#common-update-issues for update instructions.`
       }
       if (key === 'g.frontendOutdated' && params) {
-        return `Frontend version ${params.frontendVersion} is outdated. Backend requires ${params.requiredVersion} or higher.`
+        const p = params as Record<string, string>
+        return `Frontend version ${p.frontendVersion} is outdated. Backend requires ${p.requiredVersion} or higher.`
       }
       if (key === 'g.frontendNewer' && params) {
-        return `Frontend version ${params.frontendVersion} may not be compatible with backend version ${params.backendVersion}.`
+        const p = params as Record<string, string>
+        return `Frontend version ${p.frontendVersion} may not be compatible with backend version ${p.backendVersion}.`
       }
       return key
     }

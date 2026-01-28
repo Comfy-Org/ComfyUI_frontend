@@ -9,17 +9,66 @@
         {{ workspaceName }}
       </h1>
     </div>
-    <Tabs :value="activeTab" @update:value="setActiveTab">
+    <Tabs unstyled :value="activeTab" @update:value="setActiveTab">
       <div class="flex w-full items-center">
-        <TabList class="w-full">
-          <Tab value="plan">{{ $t('workspacePanel.tabs.planCredits') }}</Tab>
+        <TabList unstyled class="flex w-full gap-2">
+          <Tab
+            value="plan"
+            :class="
+              cn(
+                buttonVariants({
+                  variant: activeTab === 'plan' ? 'secondary' : 'textonly',
+                  size: 'md'
+                }),
+                activeTab === 'plan' && 'text-base-foreground no-underline'
+              )
+            "
+          >
+            {{ $t('workspacePanel.tabs.planCredits') }}
+          </Tab>
+          <Tab
+            value="members"
+            :class="
+              cn(
+                buttonVariants({
+                  variant: activeTab === 'members' ? 'secondary' : 'textonly',
+                  size: 'md'
+                }),
+                activeTab === 'members' && 'text-base-foreground no-underline',
+                'ml-2'
+              )
+            "
+          >
+            {{
+              $t('workspacePanel.tabs.membersCount', {
+                count: isInPersonalWorkspace ? 1 : members.length
+              })
+            }}
+          </Tab>
         </TabList>
-
+        <Button
+          v-if="permissions.canInviteMembers"
+          v-tooltip="
+            inviteTooltip
+              ? { value: inviteTooltip, showDelay: 0 }
+              : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+          "
+          variant="secondary"
+          size="lg"
+          :disabled="isInviteLimitReached"
+          :class="isInviteLimitReached && 'opacity-50 cursor-not-allowed'"
+          :aria-label="$t('workspacePanel.inviteMember')"
+          @click="handleInviteMember"
+        >
+          {{ $t('workspacePanel.invite') }}
+          <i class="pi pi-plus ml-1 text-sm" />
+        </Button>
         <template v-if="permissions.canAccessWorkspaceMenu">
           <Button
             v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-            variant="muted-textonly"
-            size="icon"
+            class="ml-2"
+            variant="secondary"
+            size="lg"
             :aria-label="$t('g.moreOptions')"
             @click="menu?.toggle($event)"
           >
@@ -36,7 +85,7 @@
                 :class="[
                   'flex items-center gap-2 px-3 py-2',
                   item.class,
-                  item.disabled ? 'pointer-events-auto' : ''
+                  item.disabled ? 'pointer-events-auto' : 'cursor-pointer'
                 ]"
                 @click="
                   item.command?.({
@@ -53,9 +102,12 @@
         </template>
       </div>
 
-      <TabPanels>
+      <TabPanels unstyled>
         <TabPanel value="plan">
-          <SubscriptionPanelContent />
+          <SubscriptionPanelContentWorkspace />
+        </TabPanel>
+        <TabPanel value="members">
+          <MembersPanelContent :key="workspaceRole" />
         </TabPanel>
       </TabPanels>
     </Tabs>
@@ -74,8 +126,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import MembersPanelContent from '@/components/dialog/content/setting/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
-import SubscriptionPanelContent from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
+import { buttonVariants } from '@/components/ui/button/button.variants'
+import SubscriptionPanelContentWorkspace from '@/platform/cloud/subscription/components/SubscriptionPanelContentWorkspace.vue'
+import { cn } from '@/utils/tailwindUtil'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -88,12 +143,20 @@ const { t } = useI18n()
 const {
   showLeaveWorkspaceDialog,
   showDeleteWorkspaceDialog,
+  showInviteMemberDialog,
   showEditWorkspaceDialog
 } = useDialogService()
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName, isWorkspaceSubscribed } = storeToRefs(workspaceStore)
-
-const { activeTab, setActiveTab, permissions, uiConfig } = useWorkspaceUI()
+const {
+  workspaceName,
+  members,
+  isInviteLimitReached,
+  isWorkspaceSubscribed,
+  isInPersonalWorkspace
+} = storeToRefs(workspaceStore)
+const { fetchMembers, fetchPendingInvites } = workspaceStore
+const { activeTab, setActiveTab, workspaceRole, permissions, uiConfig } =
+  useWorkspaceUI()
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -122,6 +185,16 @@ const deleteTooltip = computed(() => {
   const tooltipKey = uiConfig.value.workspaceMenuDisabledTooltip
   return tooltipKey ? t(tooltipKey) : null
 })
+
+const inviteTooltip = computed(() => {
+  if (!isInviteLimitReached.value) return null
+  return t('workspacePanel.inviteLimitReached')
+})
+
+function handleInviteMember() {
+  if (isInviteLimitReached.value) return
+  showInviteMemberDialog()
+}
 
 const menuItems = computed(() => {
   const items = []
@@ -159,5 +232,7 @@ const menuItems = computed(() => {
 
 onMounted(() => {
   setActiveTab(defaultTab)
+  fetchMembers()
+  fetchPendingInvites()
 })
 </script>
