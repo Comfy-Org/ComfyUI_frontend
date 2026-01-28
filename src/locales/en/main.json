@@ -2458,9 +2458,10 @@
     "allModels": "All Models",
     "byType": "By type",
     "emptyImported": {
-      "canImport": "No imported models yet. Click \"Import Model\" to add your own.",
+      "canImport": "No imported models yet. Click \"Import\" to add your own.",
       "restricted": "Personal models are only available at Creator tier and above."
     },
+    "noResultsCanImport": "Try adjusting your search or filters.\nYou can also add models using the \"Import\" button above.",
     "imported": "Imported",
     "assetCollection": "Asset collection",
     "assets": "Assets",

@@ -9,7 +9,6 @@ import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { pushDataLayerEvent } from '@/platform/telemetry/gtm'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
@@ -36,16 +35,6 @@ function getBasePath(): string {
 }
 
 const basePath = getBasePath()
-
-function pushPageView(): void {
-  if (!isCloud || typeof window === 'undefined') return
-
-  pushDataLayerEvent({
-    event: 'page_view',
-    page_location: window.location.href,
-    page_title: document.title
-  })
-}
 
 const router = createRouter({
   history: isFileProtocol
@@ -103,10 +92,6 @@ installPreservedQueryTracker(router, [
     keys: ['invite']
   }
 ])
-
-router.afterEach(() => {
-  pushPageView()
-})
 
 if (isCloud) {
   const { flags } = useFeatureFlags()
