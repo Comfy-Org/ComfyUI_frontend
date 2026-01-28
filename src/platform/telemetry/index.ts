@@ -14,13 +14,25 @@
  * This approach maintains complete separation between cloud and OSS builds
  * while ensuring the open source version contains no telemetry dependencies.
  */
-import { isCloud } from '@/platform/distribution/types'
-
 import { MixpanelTelemetryProvider } from './providers/cloud/MixpanelTelemetryProvider'
 import type { TelemetryProvider } from './types'
 
+type GtmModule = {
+  initGtm: () => void
+  pushDataLayerEvent: (event: Record<string, unknown>) => void
+}
+
 // Singleton instance
 let _telemetryProvider: TelemetryProvider | null = null
+let gtmModulePromise: Promise<GtmModule> | null = null
+const IS_CLOUD_BUILD = __DISTRIBUTION__ === 'cloud'
+
+function loadGtmModule(): Promise<GtmModule> {
+  if (!gtmModulePromise) {
+    gtmModulePromise = import('./gtm')
+  }
+  return gtmModulePromise
+}
 
 /**
  * Telemetry factory - conditionally creates provider based on distribution
@@ -32,11 +44,25 @@ let _telemetryProvider: TelemetryProvider | null = null
 export function useTelemetry(): TelemetryProvider | null {
   if (_telemetryProvider === null) {
     // Use distribution check for tree-shaking
-    if (isCloud) {
+    if (IS_CLOUD_BUILD) {
       _telemetryProvider = new MixpanelTelemetryProvider()
     }
     // For OSS builds, _telemetryProvider stays null
   }
 
   return _telemetryProvider
+}
+
+export function initGtm(): void {
+  if (!IS_CLOUD_BUILD || typeof window === 'undefined') return
+  void loadGtmModule().then(({ initGtm }) => {
+    initGtm()
+  })
+}
+
+export function pushDataLayerEvent(event: Record<string, unknown>): void {
+  if (!IS_CLOUD_BUILD || typeof window === 'undefined') return
+  void loadGtmModule().then(({ pushDataLayerEvent }) => {
+    pushDataLayerEvent(event)
+  })
 }
