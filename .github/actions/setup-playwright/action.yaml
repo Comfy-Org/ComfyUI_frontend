@@ -11,7 +11,7 @@ runs:
         echo "playwright-version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
 
     - name: Cache Playwright Browsers
-      uses: actions/cache@v5
+      uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5.0.2
       id: cache-playwright-browsers
       with:
         path: '~/.cache/ms-playwright'
