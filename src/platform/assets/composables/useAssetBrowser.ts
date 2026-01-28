@@ -9,8 +9,8 @@ import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vu
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetBaseModels,
-  getAssetDescription,
-  getAssetDisplayName
+  getAssetDisplayName,
+  getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -118,9 +118,7 @@ export function useAssetBrowser(
   function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
     // Extract description from metadata or create from tags
     const typeTag = asset.tags.find((tag) => tag !== 'models')
-    const description =
-      getAssetDescription(asset) ||
-      `${typeTag || t('assetBrowser.unknown')} model`
+    const description = getAssetFilename(asset)
 
     // Create badges from tags and metadata
     const badges: AssetBadge[] = []
