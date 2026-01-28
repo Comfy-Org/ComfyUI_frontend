@@ -24,12 +24,14 @@ Have another idea? Drop into Discord or open an issue, and let's chat!
 ### Initial Setup
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Comfy-Org/ComfyUI_frontend.git
    cd ComfyUI_frontend
    ```
 
 2. Install dependencies:
+
    ```bash
    pnpm install
    ```
@@ -83,8 +85,7 @@ Make sure your desktop machine and touch device are on the same network. On your
 navigate to `http://<server_ip>:5173` (e.g. `http://192.168.2.20:5173` here), to access the ComfyUI frontend.
 
 > ⚠️ IMPORTANT:
-The dev server will NOT load JavaScript extensions from custom nodes. Only core extensions (built into the frontend) will be loaded. This is because the shim system that allows custom node JavaScript to import frontend modules only works in production builds. Python custom nodes still function normally. See [Extension Development Guide](docs/extensions/development.md) for details and workarounds. And See [Extension Overview](docs/extensions/README.md) for extensions overview.
-
+> The dev server will NOT load JavaScript extensions from custom nodes. Only core extensions (built into the frontend) will be loaded. This is because the shim system that allows custom node JavaScript to import frontend modules only works in production builds. Python custom nodes still function normally. See [Extension Development Guide](docs/extensions/development.md) for details and workarounds. And See [Extension Overview](docs/extensions/README.md) for extensions overview.
 
 ## Development Workflow
 
@@ -109,7 +110,6 @@ When you fix a bug that affects a version in feature freeze, we use an automated
 2. Before merging, add these labels to your PR:
    - `needs-backport` - triggers the automated backport workflow
    - `core/1.24` - targets the `core/1.24` release candidate branch
-   
 3. Merge your PR normally
 4. The automated workflow will:
    - Create a new branch from `core/1.24`
@@ -127,6 +127,7 @@ When you fix a bug that affects a version in feature freeze, we use an automated
 #### Handling Conflicts
 
 If the automated cherry-pick fails due to conflicts, the workflow will comment on your PR with:
+
 - The list of conflicting files
 - Instructions to manually cherry-pick to the release candidate branch
 
@@ -241,6 +242,7 @@ The original litegraph repository (https://github.com/Comfy-Org/litegraph.js) is
 ## Questions?
 
 If you have questions about contributing:
+
 - Check existing issues and discussions
 - Ask in our [Discord](https://discord.com/invite/comfyorg)
 - Open a new issue for clarification

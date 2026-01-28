@@ -2056,10 +2056,8 @@
       "choice": {
         "name": "seçim"
       },
-      "index": {
-      },
-      "option1": {
-      }
+      "index": {},
+      "option1": {}
     },
     "outputs": [
       null,
@@ -6208,8 +6206,7 @@
   "Load3D": {
     "display_name": "3D Yükle",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "yükseklik"
       },
@@ -6219,10 +6216,8 @@
       "model_file": {
         "name": "model_dosyası"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "genişlik"
       }
@@ -6311,13 +6306,11 @@
     "description": "Çıktı klasöründen bir görüntü yükleyin. Yenile düğmesine tıklandığında, düğüm görüntü listesini güncelleyecek ve otomatik olarak ilk görüntüyü seçecek, bu da kolay yinelemeye olanak tanıyacaktır.",
     "display_name": "Görüntü Yükle (Çıktılardan)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "görüntü"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "yüklenecek dosyayı seçin"
       }
@@ -10576,10 +10569,8 @@
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "kaynak"
       }
@@ -16587,8 +16578,7 @@
       "image": {
         "name": "görüntü"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "genişlik"
       }

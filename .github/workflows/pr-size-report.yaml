@@ -1,4 +1,4 @@
-name: "PR: Size Report"
+name: 'PR: Size Report'
 
 on:
   workflow_run:
