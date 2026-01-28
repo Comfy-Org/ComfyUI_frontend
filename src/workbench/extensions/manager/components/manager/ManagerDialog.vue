@@ -2,6 +2,7 @@
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
     :content-title="$t('manager.discoverCommunityContent')"
+    :right-panel-title="$t('manager.nodePackInfo')"
     class="manager-dialog"
   >
     <template #leftPanelHeaderTitle>
@@ -428,8 +429,10 @@ const isRightPanelOpen = ref(false)
 
 watch(
   () => selectedNodePacks.value.length,
-  (length) => {
-    isRightPanelOpen.value = length > 0
+  (length, oldLength) => {
+    if (length > 0 && oldLength === 0) {
+      isRightPanelOpen.value = true
+    }
   }
 )
 
@@ -518,6 +521,7 @@ watch([searchQuery, selectedNavId], () => {
     pageNumber.value = 0
     gridContainer.scrollTop = 0
   }
+  unSelectItems()
 })
 
 watchEffect(() => {

@@ -118,9 +118,9 @@ describe('DescriptionTabPanel', () => {
       it(test.name, () => {
         const wrapper = mountComponent({ nodePack: test.nodePack })
         if (test.expected.isUrl) {
-          const link = wrapper.findAll('a').find((a) =>
-            a.text().includes(test.expected.text)
-          )
+          const link = wrapper
+            .findAll('a')
+            .find((a) => a.text().includes(test.expected.text))
           expect(link).toBeDefined()
           expect(link!.attributes('href')).toBe(test.expected.text)
         } else {

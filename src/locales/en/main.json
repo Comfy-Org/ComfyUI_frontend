@@ -282,6 +282,7 @@
   },
   "manager": {
     "title": "Nodes Manager",
+    "nodePackInfo": "Node Pack Info",
     "basicInfo": "Basic Info",
     "actions": "Actions",
     "selected": "Selected",
