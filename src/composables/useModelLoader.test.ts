@@ -1,8 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 
 import { ComfyModelDef, useModelStore } from '@/stores/modelStore'
 
 import { useModelLoader } from './useModelLoader'
+
+interface MockModelFolder {
+  directory: string
+  models: Record<string, ComfyModelDef>
+}
+
+interface MockModelStore {
+  modelFolders: MockModelFolder[]
+  loadModelFolders: Mock
+  loadModels: Mock
+}
 
 vi.mock('@/stores/modelStore', () => ({
   useModelStore: vi.fn(),
@@ -37,7 +49,7 @@ vi.mock('@/stores/modelStore', () => ({
 }))
 
 describe('useModelLoader', () => {
-  let mockModelStore: ReturnType<typeof useModelStore>
+  let mockModelStore: MockModelStore
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -60,9 +72,11 @@ describe('useModelLoader', () => {
       ],
       loadModelFolders: vi.fn().mockResolvedValue(undefined),
       loadModels: vi.fn().mockResolvedValue(undefined)
-    } as any
+    }
 
-    vi.mocked(useModelStore).mockReturnValue(mockModelStore)
+    vi.mocked(useModelStore).mockReturnValue(
+      mockModelStore as unknown as ReturnType<typeof useModelStore>
+    )
   })
 
   it('should initialize with default state', () => {

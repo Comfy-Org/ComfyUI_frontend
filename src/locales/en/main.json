@@ -2830,8 +2830,15 @@
     "title": "Browse Models",
     "use": "Use",
     "showInfo": "Show Info",
+    "modelInfo": "Model Info",
+    "searchPlaceholder": "Search models...",
     "noModels": "No models found",
+    "noModelsForFilter": "No models match your filters",
+    "noFavorites": "No favorite models",
     "loading": "Loading models...",
-    "error": "Failed to load models"
+    "error": "Failed to load models",
+    "errorLoading": "Failed to load models",
+    "retry": "Retry",
+    "clearFilters": "Clear Filters"
   }
 }
