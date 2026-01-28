@@ -1,0 +1,11 @@
+# pinact configuration
+# https://github.com/suzuki-shunsuke/pinact
+version: 3
+
+files:
+  - pattern: .github/workflows/*.yaml
+  - pattern: .github/workflows/*.yml
+
+# Actions that don't need SHA pinning (official GitHub actions are trusted)
+ignore_actions:
+  - name: actions/.*
