@@ -129,6 +129,7 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useModelBrowserFiltering } from '@/composables/useModelBrowserFiltering'
 import { useModelFilterOptions } from '@/composables/useModelFilterOptions'
+import { useModelKeyboardNav } from '@/composables/useModelKeyboardNav'
 import { useModelLoader } from '@/composables/useModelLoader'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { ComfyModelDef } from '@/stores/modelStore'
@@ -181,6 +182,13 @@ const sortOptions = computed<SortOption[]>(() => [
   { label: t('modelBrowser.sortByDate'), value: 'modified' }
 ])
 
+const gridItems = computed(() =>
+  filteredModels.value.map((model) => ({
+    key: model.id,
+    model
+  }))
+)
+
 const navItems = computed<NavGroupData[]>(() => {
   const typeItems =
     modelTypes.value?.map((type) => ({
@@ -215,6 +223,12 @@ watch(selectedNavItem, (newValue) => {
   } else {
     selectedModelType.value = newValue
   }
+})
+
+// Keyboard navigation
+useModelKeyboardNav(gridItems, focusedModel, isRightPanelOpen, viewMode, {
+  onShowInfo: handleShowInfo,
+  onClose: handleClose
 })
 
 onMounted(() => {
