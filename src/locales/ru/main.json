@@ -87,6 +87,7 @@
       "descriptionNotSet": "Описание не задано",
       "descriptionPlaceholder": "Добавьте описание для этой модели...",
       "displayName": "Отображаемое имя",
+      "editDisplayName": "Редактировать отображаемое имя",
       "fileName": "Имя файла",
       "modelDescription": "Описание модели",
       "modelTagging": "Теги модели",
@@ -730,6 +731,7 @@
     "control_before_generate": "управление до генерации",
     "copied": "Скопировано",
     "copy": "Копировать",
+    "copyAll": "Скопировать всё",
     "copyJobId": "Копировать ID задания",
     "copyToClipboard": "Скопировать в буфер обмена",
     "copyURL": "Скопировать URL",
@@ -958,11 +960,10 @@
     "videoPreview": "Предварительный просмотр видео - Используйте клавиши со стрелками для навигации между видео",
     "viewImageOfTotal": "Просмотр изображения {index} из {total}",
     "viewVideoOfTotal": "Просмотр видео {index} из {total}",
-    "vitePreloadErrorMessage": "Вышла новая версия приложения. Хотите перезагрузить?\nЕсли нет, некоторые части приложения могут работать некорректно.\nВы можете отказаться и сохранить свой прогресс перед перезагрузкой.",
-    "vitePreloadErrorTitle": "Доступна новая версия",
     "volume": "Громкость",
     "warning": "Предупреждение",
-    "workflow": "Рабочий процесс"
+    "workflow": "Рабочий процесс",
+    "you": "Вы"
   },
   "graphCanvasMenu": {
     "fitView": "Подгонять под выделенные",
@@ -1672,6 +1673,7 @@
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1682,6 +1684,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1897,6 +1900,7 @@
     },
     "groupSettings": "Настройки группы",
     "groups": "Группы",
+    "hideAdvancedInputsButton": "Скрыть расширенные параметры",
     "hideInput": "Скрыть вход",
     "info": "Информация",
     "inputs": "ВХОДЫ",
@@ -2129,6 +2133,7 @@
     "NodeLibrary": "Библиотека нод",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Настройки уведомлений",
+    "Other": "Другое",
     "PLY": "PLY",
     "PlanCredits": "План и кредиты",
     "Pointer": "Указатель",
@@ -2148,7 +2153,8 @@
     "Vue Nodes": "Vue Nodes",
     "VueNodes": "Vue узлы",
     "Window": "Окно",
-    "Workflow": "Рабочий процесс"
+    "Workflow": "Рабочий процесс",
+    "Workspace": "Рабочее пространство"
   },
   "shape": {
     "CARD": "Карточка",
@@ -2315,9 +2321,15 @@
     "beta": "БЕТА",
     "billedMonthly": "Оплата ежемесячно",
     "billedYearly": "{total} Оплата ежегодно",
+    "billingComingSoon": {
+      "message": "Скоро появится командная оплата. Вы сможете оформить подписку на тариф для вашего рабочего пространства с оплатой за каждого участника. Следите за обновлениями.",
+      "title": "Скоро будет"
+    },
+    "cancelSubscription": "Отменить подписку",
     "changeTo": "Перейти на {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Логотип Comfy Cloud",
+    "contactOwnerToSubscribe": "Свяжитесь с владельцем рабочего пространства для оформления подписки",
     "contactUs": "Связаться с нами",
     "creditsRemainingThisMonth": "Кредитов осталось в этом месяце",
     "creditsRemainingThisYear": "Кредитов осталось в этом году",
@@ -2330,6 +2342,7 @@
     "haveQuestions": "Есть вопросы или интересует корпоративное решение?",
     "invoiceHistory": "История счетов",
     "learnMore": "Узнать больше",
+    "managePayment": "Управление оплатой",
     "managePlan": "Управление планом",
     "manageSubscription": "Управление подпиской",
     "maxDuration": {
@@ -2365,6 +2378,7 @@
     "subscribeToComfyCloud": "Подписаться на Comfy Cloud",
     "subscribeToRun": "Подписаться",
     "subscribeToRunFull": "Подписаться для запуска",
+    "subscriptionRequiredMessage": "Для запуска рабочих процессов в облаке участникам требуется подписка",
     "tierNameYearly": "{name} Ежегодно",
     "tiers": {
       "creator": {
@@ -2396,6 +2410,7 @@
     "viewMoreDetails": "Подробнее",
     "viewMoreDetailsPlans": "Подробнее о планах и ценах",
     "viewUsageHistory": "История использования",
+    "workspaceNotSubscribed": "Это рабочее пространство не имеет подписки",
     "yearly": "Ежегодно",
     "yearlyCreditsLabel": "Годовые кредиты",
     "yearlyDiscount": "СКИДКА 20%",
@@ -2497,6 +2512,7 @@
     "failedToLoadModel": "Не удалось загрузить 3D-модель",
     "failedToPurchaseCredits": "Не удалось купить кредиты: {error}",
     "failedToQueue": "Не удалось поставить в очередь",
+    "failedToSaveDraft": "Не удалось сохранить черновик рабочего процесса",
     "failedToToggleCamera": "Не удалось переключить камеру",
     "failedToToggleGrid": "Не удалось переключить сетку",
     "failedToUpdateBackgroundColor": "Не удалось обновить цвет фона",
@@ -2545,7 +2561,8 @@
     "notSet": "Не задано",
     "provider": "Способ входа",
     "title": "Настройки пользователя",
-    "updatePassword": "Обновить пароль"
+    "updatePassword": "Обновить пароль",
+    "workspaceSettings": "Настройки рабочего пространства"
   },
   "validation": {
     "descriptionRequired": "Описание обязательно",
@@ -2636,6 +2653,9 @@
     "saveWorkflow": "Сохранить рабочий процесс"
   },
   "workspace": {
+    "addedToWorkspace": "Вы были добавлены в {workspaceName}",
+    "inviteAccepted": "Приглашение принято",
+    "inviteFailed": "Не удалось принять приглашение",
     "unsavedChanges": {
       "message": "У вас есть несохранённые изменения. Хотите их отменить и переключиться на другое рабочее пространство?",
       "title": "Несохранённые изменения"
@@ -2649,6 +2669,128 @@
       "tokenExchangeFailed": "Не удалось выполнить аутентификацию с рабочим пространством: {error}",
       "workspaceNotFound": "Рабочее пространство не найдено"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "Создать",
+      "message": "Рабочие пространства позволяют участникам использовать общий пул кредитов. После создания вы станете владельцем.",
+      "nameLabel": "Название рабочего пространства*",
+      "namePlaceholder": "Введите название рабочего пространства",
+      "title": "Создать новое рабочее пространство"
+    },
+    "dashboard": {
+      "placeholder": "Настройки рабочего пространства"
+    },
+    "deleteDialog": {
+      "message": "Все неиспользованные кредиты или несохранённые ресурсы будут потеряны. Это действие необратимо.",
+      "messageWithName": "Удалить «{name}»? Все неиспользованные кредиты или несохранённые ресурсы будут потеряны. Это действие необратимо.",
+      "title": "Удалить это рабочее пространство?"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "Название рабочего пространства",
+      "save": "Сохранить",
+      "title": "Редактировать детали рабочего пространства"
+    },
+    "invite": "Пригласить",
+    "inviteLimitReached": "Достигнут лимит в 50 участников",
+    "inviteMember": "Пригласить участника",
+    "inviteMemberDialog": {
+      "createLink": "Создать ссылку",
+      "linkCopied": "Скопировано",
+      "linkCopyFailed": "Не удалось скопировать ссылку",
+      "linkStep": {
+        "copyLink": "Скопировать ссылку",
+        "done": "Готово",
+        "message": "Убедитесь, что его аккаунт использует этот email.",
+        "title": "Отправьте эту ссылку человеку"
+      },
+      "message": "Создайте ссылку-приглашение для отправки человеку",
+      "placeholder": "Введите email человека",
+      "title": "Пригласить человека в это рабочее пространство"
+    },
+    "leaveDialog": {
+      "leave": "Покинуть",
+      "message": "Вы не сможете присоединиться снова, если не свяжетесь с владельцем рабочего пространства.",
+      "title": "Покинуть это рабочее пространство?"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "Скопировать ссылку приглашения",
+        "removeMember": "Удалить участника",
+        "revokeInvite": "Отозвать приглашение"
+      },
+      "columns": {
+        "expiryDate": "Дата истечения",
+        "inviteDate": "Дата приглашения",
+        "joinDate": "Дата вступления"
+      },
+      "createNewWorkspace": "создайте новое.",
+      "membersCount": "{count}/50 участников",
+      "noInvites": "Нет ожидающих приглашений",
+      "noMembers": "Нет участников",
+      "pendingInvitesCount": "{count} ожидающее приглашение | {count} ожидающих приглашений",
+      "personalWorkspaceMessage": "Вы не можете приглашать других участников в ваше личное рабочее пространство. Чтобы добавить участников,",
+      "tabs": {
+        "active": "Активные",
+        "pendingCount": "Ожидают ({count})"
+      }
+    },
+    "menu": {
+      "deleteWorkspace": "Удалить рабочее пространство",
+      "deleteWorkspaceDisabledTooltip": "Сначала отмените активную подписку рабочего пространства",
+      "editWorkspace": "Редактировать детали рабочего пространства",
+      "leaveWorkspace": "Покинуть рабочее пространство"
+    },
+    "removeMemberDialog": {
+      "error": "Не удалось удалить участника",
+      "message": "Этот участник будет удалён из вашего рабочего пространства. Использованные им кредиты не будут возвращены.",
+      "remove": "Удалить участника",
+      "success": "Участник удалён",
+      "title": "Удалить этого участника?"
+    },
+    "revokeInviteDialog": {
+      "message": "Этот человек больше не сможет присоединиться к вашему рабочему пространству. Его ссылка-приглашение будет аннулирована.",
+      "revoke": "Отозвать приглашение",
+      "title": "Отозвать приглашение?"
+    },
+    "tabs": {
+      "dashboard": "Панель управления",
+      "membersCount": "Участники ({count})",
+      "planCredits": "Тариф и кредиты"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "Не удалось создать рабочее пространство",
+      "failedToDeleteWorkspace": "Не удалось удалить рабочее пространство",
+      "failedToFetchWorkspaces": "Не удалось загрузить рабочие пространства",
+      "failedToLeaveWorkspace": "Не удалось покинуть рабочее пространство",
+      "failedToUpdateWorkspace": "Не удалось обновить рабочее пространство",
+      "workspaceCreated": {
+        "message": "Оформите подписку, пригласите коллег и начните совместную работу.",
+        "subscribe": "Оформить подписку",
+        "title": "Рабочее пространство создано"
+      },
+      "workspaceDeleted": {
+        "message": "Рабочее пространство было безвозвратно удалено.",
+        "title": "Рабочее пространство удалено"
+      },
+      "workspaceLeft": {
+        "message": "Вы вышли из рабочего пространства.",
+        "title": "Вы покинули рабочее пространство"
+      },
+      "workspaceUpdated": {
+        "message": "Детали рабочего пространства сохранены.",
+        "title": "Рабочее пространство обновлено"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "Создать новое рабочее пространство",
+    "maxWorkspacesReached": "Вы можете владеть только 10 рабочими пространствами. Удалите одно, чтобы создать новое.",
+    "personal": "Личное",
+    "roleMember": "Участник",
+    "roleOwner": "Владелец",
+    "subscribe": "Оформить подписку",
+    "switchWorkspace": "Сменить рабочее пространство"
   },
   "zoomControls": {
     "hideMinimap": "Скрыть миникарту",

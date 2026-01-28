@@ -1,5 +1,7 @@
 <template>
-  <div class="absolute left-2 bottom-2 flex flex-wrap justify-start gap-1">
+  <div
+    class="absolute left-2 bottom-2 flex flex-wrap justify-start gap-1 select-none"
+  >
     <span
       v-for="badge in badges"
       :key="badge.label"

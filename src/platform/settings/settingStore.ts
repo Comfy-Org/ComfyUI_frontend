@@ -1,4 +1,6 @@
+import { retry } from 'es-toolkit'
 import _ from 'es-toolkit/compat'
+import { until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { compare, valid } from 'semver'
 import { ref } from 'vue'
@@ -46,6 +48,39 @@ function onChange(
 export const useSettingStore = defineStore('setting', () => {
   const settingValues = ref<Record<string, any>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
+
+  const {
+    isReady,
+    isLoading,
+    error,
+    execute: loadSettingValues
+  } = useAsyncState(
+    async () => {
+      if (Object.keys(settingsById.value).length) {
+        throw new Error(
+          'Setting values must be loaded before any setting is registered.'
+        )
+      }
+      settingValues.value = await retry(() => api.getSettings(), {
+        retries: 3,
+        delay: (attempt) => Math.min(1000 * Math.pow(2, attempt), 8000)
+      })
+      await migrateZoomThresholdToFontSize()
+    },
+    undefined,
+    { immediate: false }
+  )
+
+  async function load(): Promise<void> {
+    if (isReady.value) return
+
+    if (isLoading.value) {
+      await until(isLoading).toBe(false)
+      return
+    }
+
+    await loadSettingValues()
+  }
 
   /**
    * Check if a setting's value exists, i.e. if the user has set it manually.
@@ -170,7 +205,11 @@ export const useSettingStore = defineStore('setting', () => {
       throw new Error('Settings must have an ID')
     }
     if (setting.id in settingsById.value) {
-      throw new Error(`Setting ${setting.id} must have a unique ID.`)
+      // Setting already registered - skip to allow component remounting
+      // TODO: Add store reset methods to bootstrapStore and settingStore, then
+      // replace window.location.reload() with router.push() in SidebarLogoutIcon.vue
+      console.warn(`Setting already registered: ${setting.id}`)
+      return
     }
 
     settingsById.value[setting.id] = setting
@@ -182,22 +221,6 @@ export const useSettingStore = defineStore('setting', () => {
       )
     }
     onChange(setting, get(setting.id), undefined)
-  }
-
-  /*
-   * Load setting values from server.
-   * This needs to be called before any setting is registered.
-   */
-  async function loadSettingValues() {
-    if (Object.keys(settingsById.value).length) {
-      throw new Error(
-        'Setting values must be loaded before any setting is registered.'
-      )
-    }
-    settingValues.value = await api.getSettings()
-
-    // Migrate old zoom threshold setting to new font size setting
-    await migrateZoomThresholdToFontSize()
   }
 
   /**
@@ -242,8 +265,11 @@ export const useSettingStore = defineStore('setting', () => {
   return {
     settingValues,
     settingsById,
+    isReady,
+    isLoading,
+    error,
+    load,
     addSetting,
-    loadSettingValues,
     set,
     get,
     exists,

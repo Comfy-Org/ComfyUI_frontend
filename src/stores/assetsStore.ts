@@ -279,12 +279,15 @@ export const useAssetsStore = defineStore('assets', () => {
 
       const pendingRequestByKey = new Map<string, ModelPaginationState>()
 
-      function createState(): ModelPaginationState {
+      function createState(
+        existingAssets?: Map<string, AssetItem>
+      ): ModelPaginationState {
+        const assets = new Map(existingAssets)
         return reactive({
-          assets: new Map(),
+          assets,
           offset: 0,
           hasMore: true,
-          isLoading: false
+          isLoading: true
         })
       }
 
@@ -336,8 +339,10 @@ export const useAssetsStore = defineStore('assets', () => {
         key: string,
         fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
       ): Promise<void> {
-        const state = createState()
-        state.isLoading = true
+        const existingState = modelStateByKey.value.get(key)
+        const state = createState(existingState?.assets)
+
+        const seenIds = new Set<string>()
 
         const hasExistingData = modelStateByKey.value.has(key)
         if (hasExistingData) {
@@ -363,18 +368,14 @@ export const useAssetsStore = defineStore('assets', () => {
                   pendingRequestByKey.delete(key)
                   modelStateByKey.value.set(key, state)
                 }
-                state.assets = new Map(newAssets.map((a) => [a.id, a]))
-              } else {
-                const assetsToAdd = newAssets.filter(
-                  (a) => !state.assets.has(a.id)
-                )
-                if (assetsToAdd.length > 0) {
-                  assetsArrayCache.delete(key)
-                  for (const asset of assetsToAdd) {
-                    state.assets.set(asset.id, asset)
-                  }
-                }
               }
+
+              // Merge new assets into existing map and track seen IDs
+              for (const asset of newAssets) {
+                seenIds.add(asset.id)
+                state.assets.set(asset.id, asset)
+              }
+              state.assets = new Map(state.assets)
 
               state.offset += newAssets.length
               state.hasMore = newAssets.length === MODEL_BATCH_SIZE
@@ -388,17 +389,24 @@ export const useAssetsStore = defineStore('assets', () => {
               }
             } catch (err) {
               if (isStale(key, state)) return
+              console.error(`Error loading batch for ${key}:`, err)
+
               state.error = err instanceof Error ? err : new Error(String(err))
               state.hasMore = false
-              console.error(`Error loading batch for ${key}:`, err)
-              if (state.offset === 0) {
-                state.isLoading = false
-                pendingRequestByKey.delete(key)
-                // TODO: Add toast indicator for first-batch load failures
-              }
+              state.isLoading = false
+              pendingRequestByKey.delete(key)
+
               return
             }
           }
+
+          const staleIds = [...state.assets.keys()].filter(
+            (id) => !seenIds.has(id)
+          )
+          for (const id of staleIds) {
+            state.assets.delete(id)
+          }
+          assetsArrayCache.delete(key)
         }
 
         await loadBatches()

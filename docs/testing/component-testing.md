@@ -79,7 +79,7 @@ describe('ColorCustomizationSelector', () => {
       }
     })
   }
-  
+
   it('initializes with predefined color when provided', async () => {
     const wrapper = mountComponent({
       modelValue: '#0d6efd'
@@ -109,16 +109,16 @@ describe('SidebarIcon with tooltip', () => {
   it('shows tooltip on hover', async () => {
     const tooltipShowDelay = 300
     const tooltipText = 'Settings'
-    
+
     const wrapper = mount(SidebarIcon, {
       global: {
         plugins: [PrimeVue],
         directives: { tooltip: Tooltip }
       },
-      props: { 
+      props: {
         icon: 'pi pi-cog',
         selected: false,
-        tooltip: tooltipText 
+        tooltip: tooltipText
       }
     })
 
@@ -137,13 +137,13 @@ describe('SidebarIcon with tooltip', () => {
         plugins: [PrimeVue],
         directives: { tooltip: Tooltip }
       },
-      props: { 
-        icon: 'pi pi-cog', 
+      props: {
+        icon: 'pi pi-cog',
         selected: false,
-        tooltip: tooltipText 
+        tooltip: tooltipText
       }
     })
-    
+
     expect(wrapper.attributes('aria-label')).toEqual(tooltipText)
   })
 })
@@ -196,10 +196,10 @@ describe('EditableText', () => {
 
     // Initially in view mode
     expect(wrapper.find('input').exists()).toBe(false)
-    
+
     // Click to edit
     await wrapper.find('.editable-text').trigger('click')
-    
+
     // Should switch to edit mode
     expect(wrapper.find('input').exists()).toBe(true)
     expect(wrapper.find('input').element.value).toBe('Initial Text')
@@ -215,17 +215,17 @@ describe('EditableText', () => {
 
     // Switch to edit mode
     await wrapper.find('.editable-text').trigger('click')
-    
+
     // Change input value
     const input = wrapper.find('input')
     await input.setValue('New Text')
-    
+
     // Press enter to save
     await input.trigger('keydown.enter')
-    
+
     // Check if event was emitted with new value
     expect(wrapper.emitted('update:modelValue')[0]).toEqual(['New Text'])
-    
+
     // Should switch back to view mode
     expect(wrapper.find('input').exists()).toBe(false)
   })
@@ -247,17 +247,17 @@ it('shows dropdown options when clicked', async () => {
       selectedVersion: '1.1.0'
     }
   })
-  
+
   // Initially dropdown should be hidden
   expect(wrapper.find('.p-dropdown-panel').isVisible()).toBe(false)
-  
+
   // Click dropdown
   await wrapper.find('.p-dropdown').trigger('click')
   await nextTick() // Wait for Vue to update the DOM
-  
+
   // Dropdown should be visible now
   expect(wrapper.find('.p-dropdown-panel').isVisible()).toBe(true)
-  
+
   // Options should match the provided versions
   const options = wrapper.findAll('.p-dropdown-item')
   expect(options.length).toBe(3)
@@ -286,7 +286,7 @@ const waitForPromises = async () => {
 
 it('fetches versions on mount', async () => {
   mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
-  
+
   mountComponent()
   await waitForPromises() // Wait for async operations and reactivity
 
@@ -302,13 +302,14 @@ When components use `onMounted` or other lifecycle hooks with async operations:
 it('shows loading state while fetching versions', async () => {
   // Delay the promise resolution
   mockGetPackVersions.mockImplementationOnce(
-    () => new Promise((resolve) => 
-      setTimeout(() => resolve(defaultMockVersions), 1000)
-    )
+    () =>
+      new Promise((resolve) =>
+        setTimeout(() => resolve(defaultMockVersions), 1000)
+      )
   )
 
   const wrapper = mountComponent()
-  
+
   // Check loading state before promises resolve
   expect(wrapper.text()).toContain('Loading versions...')
 })
@@ -347,13 +348,13 @@ Testing components with computed properties that depend on async data:
 ```typescript
 it('displays special options and version options in the listbox', async () => {
   mockGetPackVersions.mockResolvedValueOnce(defaultMockVersions)
-  
+
   const wrapper = mountComponent()
   await waitForPromises() // Wait for data fetching and computed property updates
-  
+
   const listbox = wrapper.findComponent(Listbox)
   const options = listbox.props('options')!
-  
+
   // Now options should be populated through computed properties
   expect(options.length).toBe(defaultMockVersions.length + 2)
 })

@@ -12,7 +12,6 @@ This guide covers patterns and examples for unit testing utilities, composables,
 6. [Testing with Debounce and Throttle](#testing-with-debounce-and-throttle)
 7. [Mocking Node Definitions](#mocking-node-definitions)
 
-
 ## Testing Vue Composables with Reactivity
 
 Testing Vue composables requires handling reactivity correctly:
@@ -37,16 +36,18 @@ describe('useServerLogs', () => {
 
     // Simulate log event handler being called
     const mockHandler = vi.mocked(useEventListener).mock.calls[0][2]
-    mockHandler(new CustomEvent('logs', {
-      detail: {
-        type: 'logs',
-        entries: [{ m: 'Log message' }]
-      }
-    }))
-    
+    mockHandler(
+      new CustomEvent('logs', {
+        detail: {
+          type: 'logs',
+          entries: [{ m: 'Log message' }]
+        }
+      })
+    )
+
     // Must wait for Vue reactivity to update
     await nextTick()
-    
+
     expect(logs.value).toEqual(['Log message'])
   })
 })
@@ -72,12 +73,12 @@ describe('LGraph', () => {
   it('should serialize graph nodes', async () => {
     // Register node type
     LiteGraph.registerNodeType('dummy', DummyNode)
-    
+
     // Create graph with nodes
     const graph = new LGraph()
     const node = new DummyNode()
     graph.add(node)
-    
+
     // Test serialization
     const result = graph.serialize()
     expect(result.nodes).toHaveLength(1)
@@ -99,18 +100,18 @@ import { defaultGraph } from '@/scripts/defaultGraph'
 describe('workflow validation', () => {
   it('should validate default workflow', async () => {
     const validWorkflow = JSON.parse(JSON.stringify(defaultGraph))
-    
+
     // Validate workflow
     const result = await validateComfyWorkflow(validWorkflow)
     expect(result).not.toBeNull()
   })
-  
+
   it('should handle position format conversion', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
-    
+
     // Legacy position format as object
     workflow.nodes[0].pos = { '0': 100, '1': 200 }
-    
+
     // Should convert to array format
     const result = await validateComfyWorkflow(workflow)
     expect(result.nodes[0].pos).toEqual([100, 200])
@@ -139,7 +140,7 @@ vi.mock('@/scripts/api', () => ({
 it('should subscribe to logs API', () => {
   // Call function that uses the API
   startListening()
-  
+
   // Verify API was called correctly
   expect(api.subscribeLogs).toHaveBeenCalledWith(true)
 })
@@ -167,9 +168,9 @@ describe('Function using debounce', () => {
   it('calls debounced function immediately in tests', () => {
     const mockFn = vi.fn()
     const debouncedFn = debounce(mockFn, 1000)
-    
+
     debouncedFn()
-    
+
     // No need to wait - our mock makes it execute immediately
     expect(mockFn).toHaveBeenCalled()
   })
@@ -190,25 +191,25 @@ describe('debounced function', () => {
   })
 
   afterEach(() => {
-    vi.useRealTimers() 
+    vi.useRealTimers()
   })
 
   it('should debounce function calls', () => {
     const mockFn = vi.fn()
     const debouncedFn = debounce(mockFn, 1000)
-    
+
     // Call multiple times
     debouncedFn()
     debouncedFn()
     debouncedFn()
-    
+
     // Function not called yet (debounced)
     expect(mockFn).not.toHaveBeenCalled()
-    
+
     // Advance time just before debounce period
     vi.advanceTimersByTime(999)
     expect(mockFn).not.toHaveBeenCalled()
-    
+
     // Advance to debounce completion
     vi.advanceTimersByTime(1)
     expect(mockFn).toHaveBeenCalledTimes(1)
@@ -223,7 +224,10 @@ Creating mock node definitions for testing:
 ```typescript
 // Example from: tests-ui/tests/apiTypes.test.ts
 import { describe, expect, it } from 'vitest'
-import { type ComfyNodeDef, validateComfyNodeDef } from '@/schemas/nodeDefSchema'
+import {
+  type ComfyNodeDef,
+  validateComfyNodeDef
+} from '@/schemas/nodeDefSchema'
 
 // Create a complete mock node definition
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {

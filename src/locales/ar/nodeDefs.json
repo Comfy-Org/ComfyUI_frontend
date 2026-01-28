@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "تحرير الصور باستخدام نماذج ByteDance عبر واجهة برمجة التطبيقات بناءً على المطالبة النصية",
-    "display_name": "تحرير الصور من ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "التحكم بعد التوليد"
-      },
-      "guidance_scale": {
-        "name": "مقياس التوجيه",
-        "tooltip": "القيمة الأعلى تجعل الصورة تتبع النص الموجه بشكل أكبر"
-      },
-      "image": {
-        "name": "الصورة",
-        "tooltip": "الصورة الأساسية للتحرير"
-      },
-      "model": {
-        "name": "النموذج"
-      },
-      "prompt": {
-        "name": "المطالبة النصية",
-        "tooltip": "تعليمات لتحرير الصورة"
-      },
-      "seed": {
-        "name": "البذرة",
-        "tooltip": "البذرة المستخدمة في التوليد"
-      },
-      "watermark": {
-        "name": "علامة مائية",
-        "tooltip": "ما إذا كان سيتم إضافة علامة مائية \"تم إنشاؤها بالذكاء الاصطناعي\" إلى الصورة"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "إنشاء الصور باستخدام نماذج ByteDance عبر API استنادًا إلى النص الموجه",
     "display_name": "صورة ByteDance",
@@ -2093,14 +2056,16 @@
       "choice": {
         "name": "اختيار"
       },
-      "option0": {
-      }
+      "index": {},
+      "option1": {}
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "الفهرس",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "تحميل نموذج ControlNet (فرق)",
@@ -6241,8 +6206,7 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "الارتفاع"
       },
@@ -6252,10 +6216,8 @@
       "model_file": {
         "name": "ملف النموذج"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "العرض"
       }
@@ -6344,13 +6306,11 @@
     "description": "تحميل صورة من مجلد المخرجات. عند الضغط على زر التحديث، سيقوم العقدة بتحديث قائمة الصور واختيار أول صورة تلقائياً لتسهيل التكرار.",
     "display_name": "تحميل صورة (من المخرجات)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "صورة"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "اختر ملف للتحميل"
       }
@@ -6449,6 +6409,60 @@
       },
       "1": {
         "tooltip": "نموذج CLIP المعدل."
+      }
+    }
+  },
+  "LoraLoaderBypass": {
+    "description": "تطبيق LoRA في وضع التجاوز. على عكس LoRA العادي، لا يقوم هذا بتعديل أوزان النموذج - بل يحقن حساب LoRA أثناء التمرير الأمامي. مفيد في سيناريوهات التدريب.",
+    "display_name": "تحميل LoRA (تجاوز) (لأغراض التصحيح)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "نموذج CLIP الذي سيتم تطبيق LoRA عليه."
+      },
+      "lora_name": {
+        "name": "اسم LoRA",
+        "tooltip": "اسم LoRA."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج الانتشار الذي سيتم تطبيق LoRA عليه."
+      },
+      "strength_clip": {
+        "name": "قوة التعديل على CLIP",
+        "tooltip": "مدى قوة تعديل نموذج CLIP. يمكن أن تكون هذه القيمة سالبة."
+      },
+      "strength_model": {
+        "name": "قوة التعديل على النموذج",
+        "tooltip": "مدى قوة تعديل نموذج الانتشار. يمكن أن تكون هذه القيمة سالبة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "نموذج الانتشار المعدل."
+      },
+      "1": {
+        "tooltip": "نموذج CLIP المعدل."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "تطبيق LoRA في وضع التجاوز. على عكس LoRA العادي، لا يقوم هذا بتعديل أوزان النموذج - بل يحقن حساب LoRA أثناء التمرير الأمامي. مفيد في سيناريوهات التدريب.",
+    "display_name": "تحميل LoRA (تجاوز، النموذج فقط) (لأغراض التصحيح)",
+    "inputs": {
+      "lora_name": {
+        "name": "اسم LoRA"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "strength_model": {
+        "name": "قوة التعديل على النموذج"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "نموذج الانتشار المعدل."
       }
     }
   },
@@ -6811,6 +6825,126 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "تُستخدم لتحديد ما إذا كان يجب إعادة تشغيل العقدة؛ النتائج الفعلية غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "description": "إعادة إضاءة صورة مع تعديلات الإضاءة وخيار نقل الإضاءة من مرجع.",
+    "display_name": "إعادة إضاءة الصورة Magnific",
+    "inputs": {
+      "advanced_settings": {
+        "name": "إعدادات متقدمة",
+        "tooltip": "خيارات ضبط دقيق للتحكم المتقدم في الإضاءة."
+      },
+      "change_background": {
+        "name": "تغيير الخلفية",
+        "tooltip": "يعدل الخلفية بناءً على التوجيه/المرجع."
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "الصورة التي سيتم إعادة إضاءتها."
+      },
+      "interpolate_from_original": {
+        "name": "التقريب من الأصل",
+        "tooltip": "يقيّد حرية التوليد لمطابقة الأصل بشكل أكبر."
+      },
+      "light_transfer_strength": {
+        "name": "شدة نقل الإضاءة",
+        "tooltip": "شدة تطبيق نقل الإضاءة."
+      },
+      "preserve_details": {
+        "name": "الحفاظ على التفاصيل",
+        "tooltip": "يحافظ على النسيج والتفاصيل الدقيقة من الأصل."
+      },
+      "prompt": {
+        "name": "التوجيه",
+        "tooltip": "إرشادات وصفية للإضاءة. يدعم تدوين التأكيد (١-١.٤)."
+      },
+      "reference_image": {
+        "name": "صورة مرجعية",
+        "tooltip": "صورة مرجعية اختيارية لنقل الإضاءة منها."
+      },
+      "style": {
+        "name": "النمط",
+        "tooltip": "تفضيل النتيجة الأسلوبية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "تحسين البشرة للصور الشخصية مع أوضاع معالجة متعددة.",
+    "display_name": "محسّن البشرة للصورة Magnific",
+    "inputs": {
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة البورتريه التي سيتم تحسينها."
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "وضع المعالجة: إبداعي للتعزيز الفني، واقعي للحفاظ على المظهر الأصلي، مرن للتحسين المستهدف."
+      },
+      "sharpen": {
+        "name": "حدة التوضيح",
+        "tooltip": "مستوى شدة التوضيح."
+      },
+      "smart_grain": {
+        "name": "الحبيبات الذكية",
+        "tooltip": "مستوى شدة الحبيبات الذكية."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "نقل النمط من صورة مرجعية إلى صورتك المدخلة.",
+    "display_name": "نقل نمط الصورة Magnific",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "اختيار محرك المعالجة."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "عند التعطيل، توقع أن تقدم كل عملية توليد درجة من العشوائية، مما يؤدي إلى نتائج أكثر تنوعًا."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "نوع نقل النمط."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "الصورة التي سيتم تطبيق نقل النمط عليها."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "تفعيل وضع البورتريه لتحسينات الوجه."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "الصورة المرجعية لاستخلاص النمط منها."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "يحافظ على بنية الصورة الأصلية."
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "نسبة قوة النمط."
       }
     },
     "outputs": {
@@ -10435,10 +10569,8 @@
   "PreviewAny": {
     "display_name": "معاينة أي",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "المصدر"
       }
@@ -11271,19 +11403,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "تغيير حجم صورة أو قناع باستخدام طرق تحجيم مختلفة.",
     "display_name": "تغيير حجم الصورة/القناع",
     "inputs": {
       "input": {
         "name": "الإدخال"
       },
       "resize_type": {
-        "name": "نوع تغيير الحجم"
+        "name": "نوع تغيير الحجم",
+        "tooltip": "اختر طريقة تغيير الحجم: حسب الأبعاد الدقيقة، عامل التحجيم، مطابقة صورة أخرى، إلخ."
       },
-      "resize_type_multiplier": {
-        "name": "المضاعف"
+      "resize_type_crop": {
+        "name": "قص"
+      },
+      "resize_type_height": {
+        "name": "الارتفاع"
+      },
+      "resize_type_width": {
+        "name": "العرض"
       },
       "scale_method": {
-        "name": "طريقة التحجيم"
+        "name": "طريقة التحجيم",
+        "tooltip": "خوارزمية الاستيفاء. 'area' هي الأفضل لتصغير الحجم، و'lanczos' لتكبير الحجم، و'nearest-exact' لفن البكسل."
       }
     },
     "outputs": {
@@ -13417,6 +13558,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: من صورة إلى نموذج (احترافي)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "face_count": {
+        "name": "عدد الأوجه"
+      },
+      "generate_type": {
+        "name": "نوع التوليد"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "image_back": {
+        "name": "الصورة الخلفية"
+      },
+      "image_left": {
+        "name": "الصورة اليسرى"
+      },
+      "image_right": {
+        "name": "الصورة اليمنى"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "خيار LowPoly غير متوفر لنموذج `3.1`."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ملف النموذج",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: من نص إلى نموذج (احترافي)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "face_count": {
+        "name": "عدد الأوجه"
+      },
+      "generate_type": {
+        "name": "نوع التوليد"
+      },
+      "generate_type_pbr": {
+        "name": "PBR"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "خيار LowPoly غير متوفر لنموذج `3.1`."
+      },
+      "prompt": {
+        "name": "الموجه",
+        "tooltip": "يدعم حتى ١٠٢٤ حرفاً."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة تتحكم فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ملف النموذج",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13750,6 +13969,10 @@
       "bucket_mode": {
         "name": "وضع الدلو",
         "tooltip": "تمكين وضع دلو الدقة. عند التمكين، يتوقع وجود بيانات كامنة مجمعة مسبقًا من عقدة ResolutionBucket."
+      },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "تفعيل وضع التجاوز أثناء التدريب. عند التفعيل، يتم تطبيق المحولات عبر forward hooks بدلاً من تعديل الأوزان. مفيد للنماذج المحوّلة حيث لا يمكن تعديل الأوزان مباشرة."
       },
       "control_after_generate": {
         "name": "التحكم بعد التوليد"
@@ -15717,6 +15940,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "مخرجات ترميز الصوت ١"
+      },
+      "audio_scale": {
+        "name": "مقياس الصوت"
+      },
+      "clip_vision_output": {
+        "name": "مخرجات clip للرؤية"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "mode": {
+        "name": "الوضع"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_patch": {
+        "name": "تصحيح النموذج"
+      },
+      "motion_frame_count": {
+        "name": "عدد إطارات الحركة",
+        "tooltip": "عدد الإطارات السابقة المستخدمة كسياق للحركة."
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "positive": {
+        "name": "إيجابي"
+      },
+      "previous_frames": {
+        "name": "الإطارات السابقة"
+      },
+      "start_image": {
+        "name": "صورة البداية"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "النموذج",
+        "tooltip": null
+      },
+      "1": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "3": {
+        "name": "الفضاء الكامن",
+        "tooltip": null
+      },
+      "4": {
+        "name": "قص الصورة",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16282,8 +16578,7 @@
       "image": {
         "name": "صورة"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "العرض"
       }
