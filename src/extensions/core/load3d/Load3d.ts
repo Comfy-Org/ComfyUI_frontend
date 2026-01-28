@@ -157,9 +157,11 @@ class Load3d {
   }
 
   private initResizeObserver(container: Element | HTMLElement): void {
+    if (typeof ResizeObserver === 'undefined') return
+
+    this.resizeObserver?.disconnect()
     this.resizeObserver = new ResizeObserver(() => {
       this.handleResize()
-      this.forceRender()
     })
     this.resizeObserver.observe(container)
   }
