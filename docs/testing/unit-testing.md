@@ -11,6 +11,7 @@ This guide covers patterns and examples for unit testing utilities, composables,
 5. [Mocking Utility Functions](#mocking-utility-functions)
 6. [Testing with Debounce and Throttle](#testing-with-debounce-and-throttle)
 7. [Mocking Node Definitions](#mocking-node-definitions)
+8. [Mocking Composables with Reactive State](#mocking-composables-with-reactive-state)
 
 ## Testing Vue Composables with Reactivity
 
@@ -252,4 +253,77 @@ const EXAMPLE_NODE_DEF: ComfyNodeDef = {
 it('should validate node definition', () => {
   expect(validateComfyNodeDef(EXAMPLE_NODE_DEF)).not.toBeNull()
 })
+```
+
+## Mocking Composables with Reactive State
+
+When mocking composables that return reactive refs, define the mock implementation inline in `vi.mock()`'s factory function. This ensures stable singleton instances across all test invocations.
+
+### Rules
+
+1. **Define mocks in the factory function** — Create `vi.fn()` and `ref()` instances directly inside `vi.mock()`, not in `beforeEach`
+2. **Use singleton pattern** — The factory runs once; all calls to the composable return the same mock object
+3. **Access mocks per-test** — Call the composable directly in each test to get the singleton instance rather than storing in a shared variable
+4. **Wrap in `vi.mocked()` for type safety** — Use `vi.mocked(service.method).mockResolvedValue(...)` when configuring
+5. **Rely on `vi.clearAllMocks()`** — Resets call counts without recreating instances; ref values may need manual reset if mutated
+
+### Pattern
+
+```typescript
+// Example from: src/platform/updates/common/releaseStore.test.ts
+import { ref } from 'vue'
+
+vi.mock('@/path/to/composable', () => {
+  const doSomething = vi.fn()
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
+  return {
+    useMyComposable: () => ({
+      doSomething,
+      isLoading,
+      error
+    })
+  }
+})
+
+describe('MyStore', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should call the composable method', async () => {
+    const service = useMyComposable()
+    vi.mocked(service.doSomething).mockResolvedValue({ data: 'test' })
+
+    await store.initialize()
+
+    expect(service.doSomething).toHaveBeenCalledWith(expectedArgs)
+  })
+
+  it('should handle errors from the composable', async () => {
+    const service = useMyComposable()
+    vi.mocked(service.doSomething).mockResolvedValue(null)
+    service.error.value = 'Something went wrong'
+
+    await store.initialize()
+
+    expect(store.error).toBe('Something went wrong')
+  })
+})
+```
+
+### Anti-patterns
+
+```typescript
+// ❌ Don't configure mock return values in beforeEach with shared variable
+let mockService: { doSomething: Mock }
+beforeEach(() => {
+  mockService = { doSomething: vi.fn() }
+  vi.mocked(useMyComposable).mockReturnValue(mockService)
+})
+
+// ❌ Don't auto-mock then override — reactive refs won't work correctly
+vi.mock('@/path/to/composable')
+vi.mocked(useMyComposable).mockReturnValue({ isLoading: ref(false) })
+```
 ```
