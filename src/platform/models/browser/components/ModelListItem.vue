@@ -5,7 +5,7 @@
     :aria-selected="focused"
     :class="
       cn(
-        'grid grid-cols-[48px_1fr_120px_120px_100px_100px_40px] gap-4 items-center px-4 py-3 transition-colors duration-150',
+        'grid grid-cols-[48px_1fr_40px] sm:grid-cols-[48px_1fr_120px_100px_100px_40px] gap-2 sm:gap-4 items-center px-2 sm:px-4 py-3 transition-colors duration-150',
         'select-none appearance-none m-0 text-left border-none',
         'hover:bg-table-row-hover-background',
         focused
@@ -58,13 +58,8 @@
       </span>
     </div>
 
-    <!-- Column 3: Base Model -->
-    <div class="text-sm text-muted-foreground truncate">
-      {{ getBaseModel(model) }}
-    </div>
-
-    <!-- Column 4: Model Type -->
-    <div>
+    <!-- Column 3: Model Type (hidden on mobile) -->
+    <div class="hidden sm:block">
       <span
         class="px-2 py-0.5 rounded text-xs font-medium text-modal-card-tag-foreground bg-modal-card-tag-background"
       >
@@ -72,17 +67,17 @@
       </span>
     </div>
 
-    <!-- Column 5: File Size -->
-    <div class="text-sm text-muted-foreground truncate">
+    <!-- Column 4: File Size (hidden on mobile) -->
+    <div class="hidden sm:block text-sm text-muted-foreground truncate">
       {{ model.size ? formatFileSize(model.size) : '-' }}
     </div>
 
-    <!-- Column 6: Date Modified -->
-    <div class="text-sm text-muted-foreground truncate">
+    <!-- Column 5: Date Modified (hidden on mobile) -->
+    <div class="hidden sm:block text-sm text-muted-foreground truncate">
       {{ model.modified ? formatModifiedDate(model.modified) : '-' }}
     </div>
 
-    <!-- Column 7: Actions -->
+    <!-- Column 6: Actions -->
     <div class="flex items-center justify-end gap-2">
       <button
         v-tooltip.left="$t('modelBrowser.viewDetails')"
@@ -131,24 +126,5 @@ function handleClick() {
 
 function handleSelect() {
   emit('select', model)
-}
-
-/**
- * Get base model information from model metadata
- * Returns the architecture ID or directory as fallback
- */
-function getBaseModel(model: EnrichedModel): string {
-  if (model.architectureId) {
-    // Format architecture ID for display (e.g., "sd15" -> "SD 1.5")
-    return model.architectureId
-      .replace('stable-diffusion-', 'SD ')
-      .replace('xl-', 'XL ')
-      .replace('-v1-base', '')
-      .replace(/-/g, ' ')
-      .toUpperCase()
-  }
-
-  // Fallback to directory or model format
-  return model.directory || model.format
 }
 </script>

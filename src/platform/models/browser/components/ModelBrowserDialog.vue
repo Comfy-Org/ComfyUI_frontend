@@ -26,17 +26,29 @@
         v-model="searchQuery"
         :autofocus="true"
         size="lg"
-        :placeholder="$t('modelBrowser.searchPlaceholder')"
-        class="max-w-96"
+        :placeholder="$t('g.search')"
+        class="hidden md:block max-w-96"
       />
     </template>
 
-    <template #header-right-area>
-      <ViewModeToggle v-model="viewMode" />
-    </template>
-
     <template #contentFilter>
+      <!-- Mobile search row -->
+      <div
+        class="flex md:hidden items-center gap-2 px-3 sm:px-6 pt-3 pb-2"
+        data-component-id="mobile-search-row"
+      >
+        <SearchBox
+          v-model="searchQuery"
+          :autofocus="true"
+          size="lg"
+          :placeholder="$t('g.search')"
+          class="flex-1"
+        />
+      </div>
+
+      <!-- Filter bar -->
       <ModelBrowserFilterBar
+        v-model:view-mode="viewMode"
         :available-file-formats="availableFileFormats"
         :available-model-types="availableModelTypes"
         :selected-file-formats="selectedFileFormats"
@@ -181,7 +193,6 @@ import ModelCard from './ModelCard.vue'
 import ModelListItem from './ModelListItem.vue'
 import LocalModelInfoPanel from './LocalModelInfoPanel.vue'
 import ModelBrowserFilterBar from './ModelBrowserFilterBar.vue'
-import ViewModeToggle from './ViewModeToggle.vue'
 import type { SortOption } from './ModelBrowserSortButton.vue'
 
 const { t } = useI18n()
@@ -225,9 +236,9 @@ const { availableFileFormats, availableModelTypes } =
   useModelFilterOptions(models)
 
 const sortOptions = computed<SortOption[]>(() => [
-  { label: t('modelBrowser.sortByName'), value: 'name' },
-  { label: t('modelBrowser.sortBySize'), value: 'size' },
-  { label: t('modelBrowser.sortByDate'), value: 'modified' }
+  { label: t('modelBrowser.sortByDate'), value: 'modified' },
+  { label: t('projects.sortAZ'), value: 'name' },
+  { label: t('modelBrowser.sortBySize'), value: 'size' }
 ])
 
 const gridItems = computed(() =>

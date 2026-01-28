@@ -1,39 +1,35 @@
 <template>
-  <div class="flex items-center justify-between gap-2 w-full md:w-auto">
-    <span class="text-sm text-muted-foreground"
-      >{{ $t('modelBrowser.sortBy') }}:</span
+  <div
+    class="flex items-center rounded-lg bg-secondary-background p-1 gap-1 shrink-0"
+  >
+    <button
+      v-for="option in sortOptions"
+      :key="option.value"
+      :class="
+        cn(
+          'inline-flex items-center justify-center gap-1.5 cursor-pointer appearance-none border-none transition-colors h-8 px-3 rounded-md text-sm font-medium whitespace-nowrap',
+          sortBy === option.value
+            ? 'bg-base-background text-base-foreground'
+            : 'bg-transparent text-muted-foreground hover:text-base-foreground'
+        )
+      "
+      :aria-label="`${option.label} ${sortBy === option.value ? (sortDirection === 'asc' ? '(ascending)' : '(descending)') : ''}`"
+      @click="handleSortClick(option.value)"
     >
-    <div
-      class="flex items-center rounded-lg bg-secondary-background p-1 gap-1 shrink-0"
-    >
-      <button
-        v-for="option in sortOptions"
-        :key="option.value"
+      <span>{{ getDisplayLabel(option) }}</span>
+      <i
         :class="
           cn(
-            'inline-flex items-center justify-center gap-1.5 cursor-pointer appearance-none border-none transition-colors h-8 px-3 rounded-md text-sm font-medium whitespace-nowrap',
+            'size-3.5',
             sortBy === option.value
-              ? 'bg-base-background text-base-foreground'
-              : 'bg-transparent text-muted-foreground hover:text-base-foreground'
-          )
-        "
-        :aria-label="`${option.label} ${sortBy === option.value ? (sortDirection === 'asc' ? '(ascending)' : '(descending)') : ''}`"
-        @click="handleSortClick(option.value)"
-      >
-        <span>{{ option.label }}</span>
-        <i
-          v-if="sortBy === option.value"
-          :class="
-            cn(
-              'size-3.5 transition-transform',
-              sortDirection === 'asc'
+              ? sortDirection === 'asc'
                 ? 'icon-[lucide--arrow-up]'
                 : 'icon-[lucide--arrow-down]'
-            )
-          "
-        />
-      </button>
-    </div>
+              : 'icon-[lucide--arrow-up-down]'
+          )
+        "
+      />
+    </button>
   </div>
 </template>
 
@@ -55,6 +51,18 @@ const emit = defineEmits<{
   'update:sortBy': [value: 'name' | 'size' | 'modified']
   'update:sortDirection': [value: 'asc' | 'desc']
 }>()
+
+function getDisplayLabel(option: SortOption): string {
+  // For name sorting, show Z-A when descending
+  if (
+    sortBy === option.value &&
+    sortDirection === 'desc' &&
+    option.value === 'name'
+  ) {
+    return 'Z-A'
+  }
+  return option.label
+}
 
 function handleSortClick(value: 'name' | 'size' | 'modified') {
   if (sortBy === value) {

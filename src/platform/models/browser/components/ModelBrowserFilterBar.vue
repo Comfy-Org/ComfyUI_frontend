@@ -25,18 +25,23 @@
       @update:model-value="$emit('update:selectedModelTypes', $event)"
     />
 
-    <!-- Right side: Sort Buttons -->
+    <!-- Right side: Sort Buttons and View Mode Toggle -->
     <div
-      class="flex flex-col md:flex-row gap-2 md:gap-4 w-full md:w-auto md:ml-auto"
+      class="flex flex-col sm:flex-row gap-2 md:gap-4 w-full md:w-auto md:ml-auto"
       data-component-id="filter-bar-right"
     >
-      <div class="flex items-center w-full md:w-auto">
+      <div class="flex items-center gap-2 w-full md:w-auto">
         <ModelBrowserSortButton
           :sort-by="sortBy"
           :sort-direction="sortDirection"
           :sort-options="sortOptions"
           @update:sort-by="$emit('update:sortBy', $event)"
           @update:sort-direction="$emit('update:sortDirection', $event)"
+        />
+        <ViewModeToggle
+          :model-value="viewMode"
+          class="hidden md:flex"
+          @update:model-value="$emit('update:viewMode', $event)"
         />
       </div>
     </div>
@@ -46,6 +51,7 @@
 <script setup lang="ts">
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import ModelBrowserSortButton from './ModelBrowserSortButton.vue'
+import ViewModeToggle from './ViewModeToggle.vue'
 import type { SortOption } from './ModelBrowserSortButton.vue'
 import type { SelectOption } from '@/components/input/types'
 
@@ -57,6 +63,7 @@ defineProps<{
   sortBy: 'name' | 'size' | 'modified'
   sortDirection: 'asc' | 'desc'
   sortOptions: SortOption[]
+  viewMode: 'grid' | 'list'
 }>()
 
 defineEmits<{
@@ -64,5 +71,6 @@ defineEmits<{
   'update:selectedModelTypes': [value: SelectOption[]]
   'update:sortBy': [value: 'name' | 'size' | 'modified']
   'update:sortDirection': [value: 'asc' | 'desc']
+  'update:viewMode': [value: 'grid' | 'list']
 }>()
 </script>
