@@ -150,13 +150,13 @@ import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useKeybindingService } from '@/services/keybindingService'
-import { useCommandStore } from '@/stores/commandStore'
 import {
   KeyComboImpl,
   KeybindingImpl,
+  useKeybindingService,
   useKeybindingStore
-} from '@/stores/keybindingStore'
+} from '@/platform/keybindings'
+import { useCommandStore } from '@/stores/commandStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import PanelTemplate from './PanelTemplate.vue'

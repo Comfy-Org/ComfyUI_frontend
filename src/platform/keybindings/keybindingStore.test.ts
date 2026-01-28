@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { KeybindingImpl, useKeybindingStore } from '@/platform/keybindings'
 
 describe('useKeybindingStore', () => {
   beforeEach(() => {
@@ -176,18 +176,14 @@ describe('useKeybindingStore', () => {
       combo: { key: 'I', ctrl: true }
     })
 
-    // Add default keybinding
     store.addDefaultKeybinding(defaultKeybinding)
     expect(store.keybindings).toHaveLength(1)
 
-    // Unset the default keybinding
     store.unsetKeybinding(defaultKeybinding)
     expect(store.keybindings).toHaveLength(0)
 
-    // Add the same keybinding as a user keybinding
     store.addUserKeybinding(defaultKeybinding)
 
-    // Check that the keybinding is back and not in the unset list
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybinding(defaultKeybinding.combo)).toEqual(
       defaultKeybinding
@@ -200,10 +196,7 @@ describe('useKeybindingStore', () => {
       commandId: 'test.command',
       combo: { key: 'J', ctrl: true }
     })
-    // Add default keybinding.
-    // This can happen when we change default keybindings.
     store.addDefaultKeybinding(keybinding)
-    // Add user keybinding.
     store.addUserKeybinding(keybinding)
 
     expect(store.keybindings).toHaveLength(1)
@@ -211,10 +204,6 @@ describe('useKeybindingStore', () => {
   })
 
   it('Should keep previously customized keybindings after default keybindings change', () => {
-    // Initially command 'foo' was bound to 'K, Ctrl'. User unset it and bound the
-    // command to 'A, Ctrl'.
-    // Now we change the default keybindings of 'foo' to 'A, Ctrl'.
-    // The user customized keybinding should be kept.
     const store = useKeybindingStore()
 
     const userUnsetKeybindings = [
@@ -391,18 +380,15 @@ describe('useKeybindingStore', () => {
   it('should handle complex scenario with both unset and user keybindings', () => {
     const store = useKeybindingStore()
 
-    // Create default keybinding
     const defaultKeybinding = new KeybindingImpl({
       commandId: 'test.command',
       combo: { key: 'Q', ctrl: true }
     })
     store.addDefaultKeybinding(defaultKeybinding)
 
-    // Unset default keybinding
     store.unsetKeybinding(defaultKeybinding)
     expect(store.keybindings).toHaveLength(0)
 
-    // Add user keybinding with different combo
     const userKeybinding = new KeybindingImpl({
       commandId: 'test.command',
       combo: { key: 'R', alt: true }
@@ -413,7 +399,6 @@ describe('useKeybindingStore', () => {
       userKeybinding
     )
 
-    // Reset keybinding to default
     const result = store.resetKeybindingForCommand('test.command')
 
     expect(result).toBe(true)
