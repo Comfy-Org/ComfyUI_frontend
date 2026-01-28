@@ -65,6 +65,7 @@ import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPa
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useModelBrowserDialog } from '@/composables/useModelBrowserDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -115,7 +116,8 @@ const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 /**
  * Handle sidebar tab icon click.
  * - Emits UI button telemetry for known tabs
- * - Delegates to the corresponding toggle command
+ * - For model-library tab, opens model browser dialog instead
+ * - Delegates to the corresponding toggle command for other tabs
  */
 const onTabClick = async (item: SidebarTabExtension) => {
   const telemetry = useTelemetry()
@@ -129,11 +131,14 @@ const onTabClick = async (item: SidebarTabExtension) => {
     telemetry?.trackUiButtonClicked({
       button_id: 'sidebar_tab_node_library_selected'
     })
-  else if (isModelLibraryTab)
+  else if (isModelLibraryTab) {
     telemetry?.trackUiButtonClicked({
       button_id: 'sidebar_tab_model_library_selected'
     })
-  else if (isWorkflowsTab)
+    const { show } = useModelBrowserDialog()
+    show()
+    return
+  } else if (isWorkflowsTab)
     telemetry?.trackUiButtonClicked({
       button_id: 'sidebar_tab_workflows_selected'
     })

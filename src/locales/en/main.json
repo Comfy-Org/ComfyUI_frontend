@@ -132,6 +132,7 @@
     "searchSettings": "Search Settings",
     "searchNodes": "Search Nodes",
     "searchModels": "Search Models",
+    "browseModels": "Browse Models",
     "searchKeybindings": "Search Keybindings",
     "searchExtensions": "Search Extensions",
     "search": "Search",
@@ -2824,5 +2825,13 @@
       "label": "Preview Version",
       "tooltip": "You are using a nightly version of ComfyUI. Please use the feedback button to share your thoughts about these features."
     }
+  },
+  "modelBrowser": {
+    "title": "Browse Models",
+    "use": "Use",
+    "showInfo": "Show Info",
+    "noModels": "No models found",
+    "loading": "Loading models...",
+    "error": "Failed to load models"
   }
 }
