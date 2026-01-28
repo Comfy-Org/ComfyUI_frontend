@@ -1,8 +1,8 @@
 import { ref, shallowRef } from 'vue'
 
-import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 import { useModelStore } from '@/stores/modelStore'
-import { transformToEnrichedModel } from '@/utils/modelBrowser/modelTransform'
+import { transformToEnrichedModel } from '@/platform/models/browser/utils/modelTransform'
 
 const modelCache = {
   data: null as EnrichedModel[] | null,

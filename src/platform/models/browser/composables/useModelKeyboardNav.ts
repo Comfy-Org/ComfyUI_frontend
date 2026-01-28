@@ -1,7 +1,7 @@
 import { nextTick, onMounted, onUnmounted } from 'vue'
 import type { Ref } from 'vue'
 
-import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 
 interface GridItem {
   key: string

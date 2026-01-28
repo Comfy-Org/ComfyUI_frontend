@@ -1,5 +1,5 @@
 import type { LGraphNode, Point } from '@/lib/litegraph/src/litegraph'
-import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 import { createNodeFromModel } from '@/utils/nodeCreation/createNodeFromModel'
 
 interface CreateNodeOptions {

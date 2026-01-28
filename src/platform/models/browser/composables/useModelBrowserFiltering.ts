@@ -4,7 +4,7 @@ import { refDebounced } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 import type { SelectOption } from '@/components/input/types'
 
 export interface UseModelBrowserFilteringOptions {

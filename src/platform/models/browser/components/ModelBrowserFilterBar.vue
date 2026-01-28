@@ -45,8 +45,8 @@
 
 <script setup lang="ts">
 import MultiSelect from '@/components/input/MultiSelect.vue'
-import ModelBrowserSortButton from '@/components/modelBrowser/ModelBrowserSortButton.vue'
-import type { SortOption } from '@/components/modelBrowser/ModelBrowserSortButton.vue'
+import ModelBrowserSortButton from './ModelBrowserSortButton.vue'
+import type { SortOption } from './ModelBrowserSortButton.vue'
 import type { SelectOption } from '@/components/input/types'
 
 defineProps<{

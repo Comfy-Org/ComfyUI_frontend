@@ -2,8 +2,8 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
 import { ComfyModelDef } from '@/stores/modelStore'
-import type { EnrichedModel } from '@/types/modelBrowserTypes'
-import { transformToEnrichedModel } from '@/utils/modelBrowser/modelTransform'
+import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
+import { transformToEnrichedModel } from '@/platform/models/browser/utils/modelTransform'
 
 import ModelCard from './ModelCard.vue'
 

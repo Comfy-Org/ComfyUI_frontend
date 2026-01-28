@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import type { SelectOption } from '@/components/input/types'
-import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 
 /**
  * Composable that extracts available filter options from model data

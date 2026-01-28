@@ -251,12 +251,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 import {
   formatFileSize,
   formatModifiedDate
-} from '@/utils/modelBrowser/modelTransform'
-import { getModelTypeIcon } from '@/utils/modelBrowser/modelTypeIcons'
+} from '@/platform/models/browser/utils/modelTransform'
+import { getModelTypeIcon } from '@/platform/models/browser/utils/modelTypeIcons'
 import { cn } from '@/utils/tailwindUtil'
 
 const { model } = defineProps<{

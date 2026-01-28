@@ -1,9 +1,9 @@
 import type { Component } from 'vue'
 
-import ModelBrowserDialog from '@/components/modelBrowser/ModelBrowserDialog.vue'
+import ModelBrowserDialog from '@/platform/models/browser/components/ModelBrowserDialog.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyModelDef } from '@/stores/modelStore'
-import type { ModelBrowserDialogOptions } from '@/types/modelBrowserTypes'
+import type { ModelBrowserDialogOptions } from '@/platform/models/browser/types/modelBrowserTypes'
 
 const DIALOG_KEY = 'global-model-browser'
 

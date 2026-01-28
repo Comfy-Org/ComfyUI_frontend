@@ -1,5 +1,5 @@
 import type { ComfyModelDef } from '@/stores/modelStore'
-import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 
 /**
  * Format folder name to display badge
