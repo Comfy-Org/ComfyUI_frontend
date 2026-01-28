@@ -91,6 +91,21 @@ export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
 
+  // Track assets currently being deleted (for loading overlay)
+  const deletingAssetIds = shallowReactive(new Set<string>())
+
+  const setAssetDeleting = (assetId: string, isDeleting: boolean) => {
+    if (isDeleting) {
+      deletingAssetIds.add(assetId)
+    } else {
+      deletingAssetIds.delete(assetId)
+    }
+  }
+
+  const isAssetDeleting = (assetId: string): boolean => {
+    return deletingAssetIds.has(assetId)
+  }
+
   // Pagination state
   const historyOffset = ref(0)
   const hasMoreHistory = ref(true)
@@ -617,6 +632,11 @@ export const useAssetsStore = defineStore('assets', () => {
     historyError,
     hasMoreHistory,
     isLoadingMore,
+
+    // Deletion tracking
+    deletingAssetIds,
+    setAssetDeleting,
+    isAssetDeleting,
 
     // Actions
     updateInputs,

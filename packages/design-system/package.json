@@ -10,12 +10,6 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "nx": {
-    "tags": [
-      "scope:shared",
-      "type:design"
-    ]
-  },
   "dependencies": {
     "@iconify-json/lucide": "catalog:",
     "@iconify/tailwind": "catalog:"
@@ -24,5 +18,11 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:"
   },
-  "packageManager": "pnpm@10.17.1"
+  "packageManager": "pnpm@10.17.1",
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "type:design"
+    ]
+  }
 }

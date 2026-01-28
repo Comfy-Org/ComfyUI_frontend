@@ -29,10 +29,10 @@ describe('useWorkflowStore', () => {
   beforeEach(() => {
     // Create a fresh pinia and activate it for each test
     setActivePinia(createPinia())
-    
+
     // Initialize the store
     store = useWorkflowStore()
-    
+
     // Clear any mocks
     vi.clearAllMocks()
   })
@@ -119,18 +119,21 @@ describe('getters', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     store = useModelStore()
-    
+
     // Set up test data
     store.models = {
       checkpoints: [
-        { name: 'model1.safetensors', path: 'models/checkpoints/model1.safetensors' },
+        {
+          name: 'model1.safetensors',
+          path: 'models/checkpoints/model1.safetensors'
+        },
         { name: 'model2.ckpt', path: 'models/checkpoints/model2.ckpt' }
       ],
       loras: [
         { name: 'lora1.safetensors', path: 'models/loras/lora1.safetensors' }
       ]
     }
-    
+
     // Mock API
     vi.mocked(api.getModelInfo).mockImplementation(async (modelName) => {
       if (modelName.includes('model1')) {

@@ -112,6 +112,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
+    vi.resetModules()
     setActivePinia(createPinia())
     vi.clearAllMocks()
     capturedFilenames.values = []
