@@ -3,6 +3,16 @@
     :content-title="$t('modelBrowser.title')"
     @close="handleClose"
   >
+    <template #header>
+      <SearchBox
+        v-model="searchQuery"
+        :autofocus="true"
+        size="lg"
+        :placeholder="$t('modelBrowser.searchPlaceholder')"
+        class="max-w-96"
+      />
+    </template>
+
     <template #content>
       <ModelBrowserStates
         :is-loading="isLoading"
@@ -33,6 +43,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 
+import SearchBox from '@/components/common/SearchBox.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import { useModelBrowserFiltering } from '@/composables/useModelBrowserFiltering'
 import { useModelLoader } from '@/composables/useModelLoader'
@@ -51,7 +62,7 @@ const { isLoading, error, models, loadModels, retryLoad } = useModelLoader()
 
 const focusedModel = ref<EnrichedModel | null>(null)
 
-const { filteredModels } = useModelBrowserFiltering(models, {
+const { searchQuery, filteredModels } = useModelBrowserFiltering(models, {
   searchDebounce: 300
 })
 
