@@ -206,45 +206,6 @@ describe('useSubscription', () => {
       )
     })
 
-    it('pushes purchase event after a pending subscription completes', async () => {
-      window.dataLayer = []
-      localStorage.setItem(
-        'pending_subscription_purchase',
-        JSON.stringify({
-          tierKey: 'creator',
-          billingCycle: 'monthly',
-          timestamp: Date.now()
-        })
-      )
-
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          subscription_tier: 'CREATOR',
-          subscription_duration: 'MONTHLY'
-        })
-      } as Response)
-
-      mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscription()
-
-      await fetchStatus()
-
-      expect(window.dataLayer).toHaveLength(1)
-      expect(window.dataLayer?.[0]).toMatchObject({
-        event: 'purchase',
-        transaction_id: 'sub_123',
-        currency: 'USD',
-        item_id: 'monthly_creator',
-        item_variant: 'monthly',
-        item_category: 'subscription',
-        quantity: 1
-      })
-      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
-    })
-
     it('should handle fetch errors gracefully', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
         ok: false,

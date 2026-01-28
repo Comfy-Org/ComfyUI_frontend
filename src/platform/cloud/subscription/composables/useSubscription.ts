@@ -8,20 +8,12 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { pushDataLayerEvent } from '@/platform/telemetry/gtm'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import { useDialogService } from '@/services/dialogService'
-import {
-  getTierPrice,
-  TIER_TO_KEY
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import {
-  clearPendingSubscriptionPurchase,
-  getPendingSubscriptionPurchase
-} from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
@@ -101,42 +93,7 @@ function useSubscriptionInternal() {
       : baseName
   })
 
-  function buildApiUrl(path: string): string {
-    return `${getComfyApiBaseUrl()}${path}`
-  }
-
-  function trackSubscriptionPurchase(
-    status: CloudSubscriptionStatusResponse | null
-  ): void {
-    if (!status?.is_active || !status.subscription_id) return
-
-    const pendingPurchase = getPendingSubscriptionPurchase()
-    if (!pendingPurchase) return
-
-    const { tierKey, billingCycle } = pendingPurchase
-    const isYearly = billingCycle === 'yearly'
-    const baseName = t(`subscription.tiers.${tierKey}.name`)
-    const planName = isYearly
-      ? t('subscription.tierNameYearly', { name: baseName })
-      : baseName
-    const unitPrice = getTierPrice(tierKey, isYearly)
-    const value = isYearly && tierKey !== 'founder' ? unitPrice * 12 : unitPrice
-
-    pushDataLayerEvent({
-      event: 'purchase',
-      transaction_id: status.subscription_id,
-      value,
-      currency: 'USD',
-      item_id: `${billingCycle}_${tierKey}`,
-      item_name: planName,
-      item_category: 'subscription',
-      item_variant: billingCycle,
-      price: value,
-      quantity: 1
-    })
-
-    clearPendingSubscriptionPurchase()
-  }
+  const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
   const fetchStatus = wrapWithErrorHandlingAsync(
     fetchSubscriptionStatus,
@@ -237,12 +194,6 @@ function useSubscriptionInternal() {
 
     const statusData = await response.json()
     subscriptionStatus.value = statusData
-
-    try {
-      await trackSubscriptionPurchase(statusData)
-    } catch (error) {
-      console.error('Failed to track subscription purchase', error)
-    }
     return statusData
   }
 
