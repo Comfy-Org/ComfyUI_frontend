@@ -8,6 +8,8 @@ files:
 
 # Actions that don't need SHA pinning (official GitHub actions are trusted)
 ignore_actions:
+  - name: actions/cache
+    ref: v5
   - name: actions/checkout
     ref: v6
   - name: actions/setup-node
