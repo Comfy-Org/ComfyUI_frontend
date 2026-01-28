@@ -5,7 +5,6 @@
     class="size-full max-h-full max-w-full min-w-0 model-browser-layout"
     :content-title="$t('modelBrowser.title')"
     :right-panel-title="$t('modelBrowser.modelInfo')"
-    @close="handleClose"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--ai-model] size-4" />
@@ -131,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, provide, ref, watch } from 'vue'
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -148,6 +147,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyModelDef } from '@/stores/modelStore'
 import type { EnrichedModel } from '@/types/modelBrowserTypes'
 import type { NavGroupData } from '@/types/navTypes'
+import { OnCloseKey } from '@/types/widgetTypes'
 
 import ModelBrowserStates from './ModelBrowserStates.vue'
 import ModelCard from './ModelCard.vue'
@@ -297,6 +297,13 @@ onMounted(() => {
 })
 
 function handleClose() {
+  // If right panel is open, close it first
+  if (isRightPanelOpen.value) {
+    isRightPanelOpen.value = false
+    return
+  }
+
+  // Otherwise, close the dialog
   // Track dialog closed
   telemetry?.trackUiButtonClicked({
     button_id: 'model_browser_closed'
@@ -304,6 +311,9 @@ function handleClose() {
 
   emit('close')
 }
+
+// Provide close handler for BaseModalLayout
+provide(OnCloseKey, handleClose)
 
 function handleModelFocus(model: EnrichedModel) {
   focusedModel.value = model
