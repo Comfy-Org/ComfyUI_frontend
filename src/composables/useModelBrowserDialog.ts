@@ -33,6 +33,16 @@ export function useModelBrowserDialog() {
         initialModelType,
         onSelect: handleModelSelected,
         onClose: handleClose
+      },
+      dialogComponentProps: {
+        headless: true,
+        modal: true,
+        closable: false,
+        pt: {
+          root: {
+            class: 'flex items-center justify-center'
+          }
+        }
       }
     })
   }

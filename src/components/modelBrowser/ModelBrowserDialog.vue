@@ -1,6 +1,8 @@
 <template>
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
+    data-component-id="ModelBrowserDialog"
+    class="size-full max-h-full max-w-full min-w-0"
     :content-title="$t('modelBrowser.title')"
     :right-panel-title="$t('modelBrowser.modelInfo')"
     @close="handleClose"
