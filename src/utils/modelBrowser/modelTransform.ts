@@ -30,7 +30,7 @@ export function formatModelTypeBadge(folderName: string): string {
 }
 
 /**
- * Generate preview URL for a model
+ * Generate fallback preview URL for a model when no image URL is provided
  * Format: /api/experiment/models/preview/{folder}/{pathIndex}/{encodedFilename}
  */
 export function getPreviewUrl(model: EnrichedModel): string {
@@ -74,8 +74,8 @@ export function transformToEnrichedModel(
     enriched.triggerPhrase = model.trigger_phrase || undefined
   }
 
-  // Set preview URL
-  enriched.previewUrl = getPreviewUrl(enriched)
+  // Set preview URL: use model.image if available (from metadata), otherwise generate fallback
+  enriched.previewUrl = model.image || getPreviewUrl(enriched)
 
   return enriched
 }
@@ -100,7 +100,8 @@ export async function loadModelMetadata(
     resolution: model.original.resolution || undefined,
     usageHint: model.original.usage_hint || undefined,
     triggerPhrase: model.original.trigger_phrase || undefined,
-    displayName: model.original.title || model.simplifiedName
+    displayName: model.original.title || model.simplifiedName,
+    previewUrl: model.original.image || model.previewUrl
   }
 }
 

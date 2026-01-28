@@ -21,7 +21,9 @@
         class="flex size-full items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
       >
         <i
-          :class="cn(getTypeIcon(model.type), 'size-16 text-muted-foreground')"
+          :class="
+            cn(getModelTypeIcon(model.type), 'size-16 text-muted-foreground')
+          "
         />
       </div>
     </div>
@@ -254,6 +256,7 @@ import {
   formatFileSize,
   formatModifiedDate
 } from '@/utils/modelBrowser/modelTransform'
+import { getModelTypeIcon } from '@/utils/modelBrowser/modelTypeIcons'
 import { cn } from '@/utils/tailwindUtil'
 
 const { model } = defineProps<{
@@ -272,28 +275,4 @@ const descriptionOpen = ref(true)
 const filePath = computed(() => {
   return `${model.directory}/${model.fileName}`
 })
-
-function getTypeIcon(type: string): string {
-  const icons: Record<string, string> = {
-    CHECKPOINT: 'icon-[lucide--box]',
-    LORA: 'icon-[lucide--layers]',
-    VAE: 'icon-[lucide--cpu]',
-    CONTROLNET: 'icon-[lucide--sliders-horizontal]',
-    EMBEDDING: 'icon-[lucide--type]',
-    UPSCALE: 'icon-[lucide--arrow-up]',
-    'CLIP VISION': 'icon-[lucide--eye]',
-    'IP-ADAPTER': 'icon-[lucide--image]',
-    SAM: 'icon-[lucide--scissors]',
-    DIFFUSION: 'icon-[lucide--sparkles]',
-    ANIMATEDIFF: 'icon-[lucide--film]',
-    'MOTION LORA': 'icon-[lucide--move]',
-    AUDIO: 'icon-[lucide--music]',
-    CLIP: 'icon-[lucide--text]',
-    UNET: 'icon-[lucide--network]',
-    GLIGEN: 'icon-[lucide--grid-3x3]',
-    STYLE: 'icon-[lucide--palette]',
-    PHOTOMAKER: 'icon-[lucide--camera]'
-  }
-  return icons[type] || 'icon-[comfy--ai-model]'
-}
 </script>

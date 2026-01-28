@@ -25,7 +25,14 @@
         v-if="imageError || !model.previewUrl"
         class="flex size-full cursor-pointer items-center justify-center bg-gradient-to-br from-smoke-400 via-smoke-800 to-charcoal-400"
       >
-        <!-- Fallback empty gradient -->
+        <i
+          :class="
+            cn(
+              getModelTypeIcon(model.type),
+              'size-12 sm:size-16 text-muted-foreground'
+            )
+          "
+        />
       </div>
       <img
         v-else
@@ -118,6 +125,7 @@ import {
   formatFileSize,
   formatModifiedDate
 } from '@/utils/modelBrowser/modelTransform'
+import { getModelTypeIcon } from '@/utils/modelBrowser/modelTypeIcons'
 import { cn } from '@/utils/tailwindUtil'
 
 const { model, focused = false } = defineProps<{
