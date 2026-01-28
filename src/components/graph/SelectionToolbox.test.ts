@@ -13,6 +13,8 @@ import {
   createMockCanvas,
   createMockPositionable
 } from '@/utils/__tests__/litegraphTestUtils'
+import * as litegraphUtil from '@/utils/litegraphUtil'
+import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 
 function createMockExtensionService(): ReturnType<typeof useExtensionService> {
   return {
@@ -289,9 +291,8 @@ describe('SelectionToolbox', () => {
       )
     })
 
-    it('should show mask editor only for single image nodes', async () => {
-      const mockUtils = await import('@/utils/litegraphUtil')
-      const isImageNodeSpy = vi.spyOn(mockUtils, 'isImageNode')
+    it('should show mask editor only for single image nodes', () => {
+      const isImageNodeSpy = vi.spyOn(litegraphUtil, 'isImageNode')
 
       // Single image node
       isImageNodeSpy.mockReturnValue(true)
@@ -307,9 +308,8 @@ describe('SelectionToolbox', () => {
       expect(wrapper2.find('.mask-editor-button').exists()).toBe(false)
     })
 
-    it('should show Color picker button only for single Load3D nodes', async () => {
-      const mockUtils = await import('@/utils/litegraphUtil')
-      const isLoad3dNodeSpy = vi.spyOn(mockUtils, 'isLoad3dNode')
+    it('should show Color picker button only for single Load3D nodes', () => {
+      const isLoad3dNodeSpy = vi.spyOn(litegraphUtil, 'isLoad3dNode')
 
       // Single Load3D node
       isLoad3dNodeSpy.mockReturnValue(true)
@@ -325,13 +325,9 @@ describe('SelectionToolbox', () => {
       expect(wrapper2.find('.load-3d-viewer-button').exists()).toBe(false)
     })
 
-    it('should show ExecuteButton only when output nodes are selected', async () => {
-      const mockNodeFilterUtil = await import('@/utils/nodeFilterUtil')
-      const isOutputNodeSpy = vi.spyOn(mockNodeFilterUtil, 'isOutputNode')
-      const filterOutputNodesSpy = vi.spyOn(
-        mockNodeFilterUtil,
-        'filterOutputNodes'
-      )
+    it('should show ExecuteButton only when output nodes are selected', () => {
+      const isOutputNodeSpy = vi.spyOn(nodeFilterUtil, 'isOutputNode')
+      const filterOutputNodesSpy = vi.spyOn(nodeFilterUtil, 'filterOutputNodes')
 
       // With output node selected
       isOutputNodeSpy.mockReturnValue(true)

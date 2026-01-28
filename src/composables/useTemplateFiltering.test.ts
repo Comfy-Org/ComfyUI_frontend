@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import type { IFuseOptions } from 'fuse.js'
 
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
+import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 
 const defaultSettingStore = {
   get: vi.fn((key: string) => {
@@ -49,9 +50,6 @@ vi.mock('@/scripts/api', () => ({
     getFuseOptions: mockGetFuseOptions
   }
 }))
-
-const { useTemplateFiltering } =
-  await import('@/composables/useTemplateFiltering')
 
 describe('useTemplateFiltering', () => {
   beforeEach(() => {
