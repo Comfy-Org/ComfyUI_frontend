@@ -73,6 +73,31 @@
         @retry="retryLoad"
         @clear-filters="clearFilters"
       >
+        <!-- Table Header for List View -->
+        <div
+          v-if="viewMode === 'list'"
+          class="grid grid-cols-[48px_1fr_120px_120px_100px_100px_40px] gap-4 items-center px-4 py-2 bg-[#1a1a1a] border-b border-border-default sticky top-0 z-10"
+        >
+          <div></div>
+          <!-- Thumbnail column -->
+          <div class="text-xs font-medium text-muted-foreground">
+            {{ $t('modelBrowser.columns.modelName') }}
+          </div>
+          <div class="text-xs font-medium text-muted-foreground">
+            {{ $t('modelBrowser.columns.baseModel') }}
+          </div>
+          <div class="text-xs font-medium text-muted-foreground">
+            {{ $t('modelBrowser.columns.modelType') }}
+          </div>
+          <div class="text-xs font-medium text-muted-foreground">
+            {{ $t('modelBrowser.columns.fileSize') }}
+          </div>
+          <div class="text-xs font-medium text-muted-foreground">
+            {{ $t('modelBrowser.columns.dateModified') }}
+          </div>
+          <div></div>
+          <!-- Actions column -->
+        </div>
         <VirtualGrid
           :items="gridItems"
           :grid-style="gridStyle"
@@ -103,6 +128,7 @@
               v-else
               role="row"
               :model="item.model"
+              :row-index="item.index"
               :focused="focusedModel?.id === item.model.id"
               @focus="handleModelFocus"
               @select="handleModelSelect"
@@ -205,9 +231,10 @@ const sortOptions = computed<SortOption[]>(() => [
 ])
 
 const gridItems = computed(() =>
-  filteredModels.value.map((model) => ({
+  filteredModels.value.map((model, index) => ({
     key: model.id,
-    model
+    model,
+    index
   }))
 )
 
@@ -216,8 +243,7 @@ const gridStyle = computed<CSSProperties>(() => {
     return {
       display: 'flex',
       flexDirection: 'column',
-      gap: '0.5rem',
-      padding: '0.5rem'
+      gap: '0'
     }
   }
   return {

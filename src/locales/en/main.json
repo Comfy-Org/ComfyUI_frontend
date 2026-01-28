@@ -2830,6 +2830,7 @@
     "title": "Model Library",
     "use": "Use",
     "showInfo": "Show Info",
+    "viewDetails": "View details",
     "modelInfo": "Model Info",
     "selectModelToViewInfo": "Select a model to view details",
     "searchPlaceholder": "Search models...",
@@ -2843,6 +2844,13 @@
     "errorLoading": "Failed to load models",
     "retry": "Retry",
     "clearFilters": "Clear Filters",
+    "columns": {
+      "modelName": "Model name",
+      "baseModel": "Base model",
+      "modelType": "Model type",
+      "fileSize": "File size",
+      "dateModified": "Date modified"
+    },
     "basicInfo": "Basic Info",
     "displayName": "Display Name",
     "fileName": "File Name",

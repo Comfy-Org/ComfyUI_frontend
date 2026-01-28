@@ -62,10 +62,10 @@
       >
         <button
           class="relative inline-flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap appearance-none border-none font-medium font-inter transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-3 sm:[&_svg]:size-4 [&_svg]:shrink-0 bg-secondary-background text-secondary-foreground hover:bg-secondary-background-hover h-5 sm:h-6 rounded-sm px-1.5 sm:px-2 py-0.5 sm:py-1 text-xs"
-          :aria-label="$t('modelBrowser.showInfo')"
+          :aria-label="$t('modelBrowser.viewDetails')"
           @click.stop="emit('show-info', model)"
         >
-          <i class="icon-[lucide--info]" />
+          <i class="icon-[lucide--file-text]" />
         </button>
       </div>
     </div>
