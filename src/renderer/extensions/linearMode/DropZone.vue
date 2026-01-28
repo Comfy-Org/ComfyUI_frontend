@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { useDropZone } from '@vueuse/core'
 import { ref } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-defineProps<{
+const props = defineProps<{
   onDragOver?: (e: DragEvent) => boolean
   onDragDrop?: (e: DragEvent) => Promise<boolean> | boolean
   dropIndicator?: {
@@ -14,24 +15,38 @@ defineProps<{
   }
 }>()
 
+const dropZoneRef = ref<HTMLElement | null>(null)
 const canAcceptDrop = ref(false)
+
+const { isOverDropZone } = useDropZone(dropZoneRef, {
+  onDrop: (_files, event) => {
+    // Stop propagation to prevent global handlers from creating a new node
+    event?.stopPropagation()
+
+    if (props.onDragDrop && event) {
+      props.onDragDrop(event)
+    }
+    canAcceptDrop.value = false
+  },
+  onOver: (_, event) => {
+    if (props.onDragOver && event) {
+      canAcceptDrop.value = props.onDragOver(event)
+    }
+  },
+  onLeave: () => {
+    canAcceptDrop.value = false
+  }
+})
 </script>
 <template>
   <div
     v-if="onDragOver && onDragDrop"
+    ref="dropZoneRef"
     :class="
       cn(
         'rounded-lg ring-inset ring-primary-500',
-        canAcceptDrop && 'ring-4 bg-primary-500/10'
+        canAcceptDrop && isOverDropZone && 'ring-4 bg-primary-500/10'
       )
-    "
-    @dragover.prevent="canAcceptDrop = onDragOver?.($event)"
-    @dragleave="canAcceptDrop = false"
-    @drop.stop.prevent="
-      (e: DragEvent) => {
-        onDragDrop!(e)
-        canAcceptDrop = false
-      }
     "
   >
     <slot />

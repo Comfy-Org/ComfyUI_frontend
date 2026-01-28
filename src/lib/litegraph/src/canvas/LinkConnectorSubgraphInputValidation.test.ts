@@ -9,10 +9,20 @@ import {
   LLink
 } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
-import type { NodeInputSlot } from '@/lib/litegraph/src/litegraph'
+import type {
+  CanvasPointerEvent,
+  NodeInputSlot
+} from '@/lib/litegraph/src/litegraph'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+import {
+  createMockCanvasPointerEvent,
+  createMockNodeInputSlot
+} from '@/utils/__tests__/litegraphTestUtils'
+
+type MockPointerEvent = CanvasPointerEvent
+type MockRenderLink = ToOutputRenderLink
 
 describe('LinkConnector SubgraphInput connection validation', () => {
   let connector: LinkConnector
@@ -206,10 +216,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       connector.state.connectingTo = 'output'
 
       // Create mock event
-      const mockEvent = {
-        canvasX: 100,
-        canvasY: 100
-      } as any
+      const mockEvent: MockPointerEvent = createMockCanvasPointerEvent(100, 100)
 
       // Mock the getSlotInPosition to return the subgraph input
       const mockGetSlotInPosition = vi.fn().mockReturnValue(subgraph.inputs[0])
@@ -256,10 +263,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       connector.state.connectingTo = 'output'
 
       // Create mock event
-      const mockEvent = {
-        canvasX: 100,
-        canvasY: 100
-      } as any
+      const mockEvent: MockPointerEvent = createMockCanvasPointerEvent(100, 100)
 
       // Mock the getSlotInPosition to return the subgraph input
       const mockGetSlotInPosition = vi.fn().mockReturnValue(subgraph.inputs[0])
@@ -342,12 +346,12 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       })
 
       // Create a mock render link without the method
-      const mockLink = {
-        fromSlot: { type: 'number' }
+      const mockLink: Partial<MockRenderLink> = {
+        fromSlot: createMockNodeInputSlot({ type: 'number' })
         // No canConnectToSubgraphInput method
-      } as any
+      }
 
-      connector.renderLinks.push(mockLink)
+      connector.renderLinks.push(mockLink as MockRenderLink)
 
       const subgraphInput = subgraph.inputs[0]
 

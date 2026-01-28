@@ -79,8 +79,7 @@ const workspaceName = ref('')
 
 const isValidName = computed(() => {
   const name = workspaceName.value.trim()
-  // Allow alphanumeric, spaces, hyphens, underscores (safe characters)
-  const safeNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\s\-_]*$/
+  const safeNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\s\-_'.,()&+]*$/
   return name.length >= 1 && name.length <= 50 && safeNameRegex.test(name)
 })
 
