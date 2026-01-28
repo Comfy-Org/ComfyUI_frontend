@@ -11,6 +11,7 @@ const mockShowSubscriptionRequiredDialog = vi.fn()
 const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
+const mockPushDataLayerEvent = vi.fn()
 const mockTelemetry = {
   trackSubscription: vi.fn(),
   trackMonthlySubscriptionCancelled: vi.fn()
@@ -24,6 +25,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
+  pushDataLayerEvent: mockPushDataLayerEvent,
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
@@ -78,6 +80,7 @@ describe('useSubscription', () => {
     mockIsLoggedIn.value = false
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
+    mockPushDataLayerEvent.mockReset()
     window.__CONFIG__ = {
       subscription_required: true
     } as typeof window.__CONFIG__
@@ -204,6 +207,49 @@ describe('useSubscription', () => {
           })
         })
       )
+    })
+
+    it('pushes purchase event after a pending subscription completes', async () => {
+      window.dataLayer = []
+      localStorage.setItem(
+        'pending_subscription_purchase',
+        JSON.stringify({
+          tierKey: 'creator',
+          billingCycle: 'monthly',
+          timestamp: Date.now()
+        })
+      )
+
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_123',
+          subscription_tier: 'CREATOR',
+          subscription_duration: 'MONTHLY'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      const { fetchStatus } = useSubscription()
+
+      await fetchStatus()
+
+      expect(window.dataLayer).toHaveLength(1)
+      expect(window.dataLayer?.[0]).toMatchObject({
+        event: 'purchase',
+        transaction_id: 'sub_123',
+        currency: 'USD',
+        items: [
+          {
+            item_id: 'monthly_creator',
+            item_variant: 'monthly',
+            item_category: 'subscription',
+            quantity: 1
+          }
+        ]
+      })
+      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
     })
 
     it('should handle fetch errors gracefully', async () => {
