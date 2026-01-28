@@ -46,6 +46,9 @@ export function transformToEnrichedModel(
   folderName?: string
 ): EnrichedModel {
   const directory = folderName || model.directory
+  const extension = model.file_name.split('.').pop()
+  const format =
+    extension && extension !== model.file_name ? extension : 'unknown'
 
   const enriched: EnrichedModel = {
     id: model.key,
@@ -55,6 +58,7 @@ export function transformToEnrichedModel(
     directory: model.directory,
     displayName: model.title || model.simplified_file_name,
     type: formatModelTypeBadge(directory),
+    format: format,
     pathIndex: model.path_index,
     original: model
   }

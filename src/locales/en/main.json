@@ -2853,6 +2853,12 @@
     "modelType": "Model Type",
     "additionalTags": "Additional Tags",
     "modelDescription": "Model Description",
-    "description": "Description"
+    "description": "Description",
+    "sortBy": "Sort by",
+    "sortRecent": "Recent",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
+    "fileFormats": "File Formats",
+    "modelTypes": "Model Types"
   }
 }

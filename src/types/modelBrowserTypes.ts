@@ -13,6 +13,8 @@ export interface EnrichedModel {
   fileName: string
   /** Simplified file name without path and .safetensors extension */
   simplifiedName: string
+  /** File format/extension (e.g., 'safetensors', 'ckpt', 'pt') */
+  format: string
   /** Directory/folder name (e.g., 'checkpoints', 'loras') */
   directory: string
   /** Display name (from metadata title or simplified name) */

@@ -30,17 +30,41 @@
       />
     </template>
 
+    <template #contentFilter>
+      <ModelBrowserFilterBar
+        :available-file-formats="availableFileFormats"
+        :available-model-types="availableModelTypes"
+        :selected-file-formats="selectedFileFormats"
+        :selected-model-types="selectedModelTypes"
+        :sort-by="sortBy"
+        :sort-direction="sortDirection"
+        :sort-options="sortOptions"
+        @update:selected-file-formats="selectedFileFormats = $event"
+        @update:selected-model-types="selectedModelTypes = $event"
+        @update:sort-by="sortBy = $event"
+        @update:sort-direction="sortDirection = $event"
+      />
+    </template>
+
     <template #content>
       <ModelBrowserStates
         :is-loading="isLoading"
         :error="error"
         :is-empty="filteredModels.length === 0"
         :empty-message="
-          searchQuery
+          searchQuery ||
+          selectedFileFormats.length > 0 ||
+          selectedModelTypes.length > 0
             ? $t('modelBrowser.noModelsForFilter')
             : $t('modelBrowser.noModels')
         "
-        :show-clear-filters="!!searchQuery"
+        :show-clear-filters="
+          !!(
+            searchQuery ||
+            selectedFileFormats.length > 0 ||
+            selectedModelTypes.length > 0
+          )
+        "
         @retry="retryLoad"
         @clear-filters="clearFilters"
       >
@@ -84,6 +108,7 @@ import SearchBox from '@/components/common/SearchBox.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useModelBrowserFiltering } from '@/composables/useModelBrowserFiltering'
+import { useModelFilterOptions } from '@/composables/useModelFilterOptions'
 import { useModelLoader } from '@/composables/useModelLoader'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import type { ComfyModelDef } from '@/stores/modelStore'
@@ -93,6 +118,8 @@ import type { NavGroupData } from '@/types/navTypes'
 import ModelBrowserStates from './ModelBrowserStates.vue'
 import ModelCard from './ModelCard.vue'
 import LocalModelInfoPanel from './LocalModelInfoPanel.vue'
+import ModelBrowserFilterBar from './ModelBrowserFilterBar.vue'
+import type { SortOption } from './ModelBrowserSortButton.vue'
 
 const { t } = useI18n()
 
@@ -109,10 +136,39 @@ const isRightPanelOpen = ref(false)
 
 const { modelTypes, fetchModelTypes } = useModelTypes()
 
-const { searchQuery, selectedModelType, filteredModels, clearFilters } =
-  useModelBrowserFiltering(models, {
-    searchDebounce: 300
-  })
+const {
+  searchQuery,
+  selectedModelType,
+  selectedFileFormats,
+  selectedModelTypes,
+  sortBy,
+  sortDirection,
+  filteredModels,
+  clearFilters
+} = useModelBrowserFiltering(models, {
+  searchDebounce: 300
+})
+
+const { availableFileFormats, availableModelTypes } =
+  useModelFilterOptions(models)
+
+const sortOptions = computed<SortOption[]>(() => [
+  {
+    label: t('modelBrowser.sortRecent'),
+    value: 'modified',
+    direction: 'desc'
+  },
+  {
+    label: t('modelBrowser.sortAZ'),
+    value: 'name',
+    direction: 'asc'
+  },
+  {
+    label: t('modelBrowser.sortZA'),
+    value: 'name',
+    direction: 'desc'
+  }
+])
 
 const navItems = computed<NavGroupData[]>(() => {
   const typeItems =

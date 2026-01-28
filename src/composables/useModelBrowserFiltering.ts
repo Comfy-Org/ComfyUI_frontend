@@ -5,6 +5,7 @@ import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import type { EnrichedModel } from '@/types/modelBrowserTypes'
+import type { SelectOption } from '@/components/input/types'
 
 export interface UseModelBrowserFilteringOptions {
   /** Debounce delay for search in milliseconds */
@@ -23,8 +24,10 @@ export function useModelBrowserFiltering(
   // Filter state
   const searchQuery = ref('')
   const selectedModelType = ref<string | null>(null)
-  const sortBy = ref<'name' | 'size' | 'modified'>('name')
-  const sortDirection = ref<'asc' | 'desc'>('asc')
+  const selectedFileFormats = ref<SelectOption[]>([])
+  const selectedModelTypes = ref<SelectOption[]>([])
+  const sortBy = ref<'name' | 'size' | 'modified'>('modified')
+  const sortDirection = ref<'asc' | 'desc'>('desc')
 
   // Debounced search query per spec requirement (300ms)
   const debouncedSearchQuery = refDebounced(searchQuery, searchDebounce)
@@ -43,7 +46,7 @@ export function useModelBrowserFiltering(
     ignoreLocation: true
   }
 
-  // Step 1: Filter by model type
+  // Step 1: Filter by model type (left panel navigation)
   const typeFiltered = computed(() => {
     const modelList = toValue(models)
     if (!selectedModelType.value) {
@@ -54,20 +57,46 @@ export function useModelBrowserFiltering(
     )
   })
 
-  // Step 2: Filter by search query (fuzzy search)
+  // Step 2: Filter by file formats (filter bar)
+  const fileFormatFiltered = computed(() => {
+    if (selectedFileFormats.value.length === 0) {
+      return typeFiltered.value
+    }
+    const selectedFormats = new Set(
+      selectedFileFormats.value.map((opt) => opt.value)
+    )
+    return typeFiltered.value.filter((model) =>
+      selectedFormats.has(model.format)
+    )
+  })
+
+  // Step 3: Filter by model types (filter bar)
+  const modelTypeFiltered = computed(() => {
+    if (selectedModelTypes.value.length === 0) {
+      return fileFormatFiltered.value
+    }
+    const selectedTypes = new Set(
+      selectedModelTypes.value.map((opt) => opt.value)
+    )
+    return fileFormatFiltered.value.filter((model) =>
+      selectedTypes.has(model.type)
+    )
+  })
+
+  // Step 4: Filter by search query (fuzzy search)
   const searchFiltered = computed(() => {
     const query = debouncedSearchQuery.value.trim()
     if (!query) {
-      return typeFiltered.value
+      return modelTypeFiltered.value
     }
 
-    // Create Fuse instance with type-filtered results for efficient search
-    const fuse = new Fuse(typeFiltered.value, fuseOptions)
+    // Create Fuse instance with filtered results for efficient search
+    const fuse = new Fuse(modelTypeFiltered.value, fuseOptions)
     const results = fuse.search(query)
     return results.map((result) => result.item)
   })
 
-  // Step 3: Sort results
+  // Step 5: Sort results
   const filteredModels = computed(() => {
     const modelsToSort = searchFiltered.value
     const hasSearchQuery = debouncedSearchQuery.value.trim() !== ''
@@ -91,7 +120,7 @@ export function useModelBrowserFiltering(
       case 'modified':
         sorted = sortByUtil(modelsToSort, [
           (m) =>
-            m.modified !== undefined ? m.modified : Number.MAX_SAFE_INTEGER
+            m.modified !== undefined ? m.modified : Number.MIN_SAFE_INTEGER
         ])
         break
       default:
@@ -109,8 +138,10 @@ export function useModelBrowserFiltering(
   function clearFilters() {
     searchQuery.value = ''
     selectedModelType.value = null
-    sortBy.value = 'name'
-    sortDirection.value = 'asc'
+    selectedFileFormats.value = []
+    selectedModelTypes.value = []
+    sortBy.value = 'modified'
+    sortDirection.value = 'desc'
   }
 
   function clearSearch() {
@@ -121,6 +152,8 @@ export function useModelBrowserFiltering(
     // State
     searchQuery,
     selectedModelType,
+    selectedFileFormats,
+    selectedModelTypes,
     sortBy,
     sortDirection,
 
