@@ -2,6 +2,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import type { BillingCycle } from './subscriptionTierRank'
 
 type PendingSubscriptionPurchase = {
+  firebaseUid: string
   tierKey: TierKey
   billingCycle: BillingCycle
   timestamp: number
@@ -22,11 +23,14 @@ const safeRemove = (): void => {
 
 export function startSubscriptionPurchaseTracking(
   tierKey: TierKey,
-  billingCycle: BillingCycle
+  billingCycle: BillingCycle,
+  firebaseUid: string
 ): void {
   if (typeof window === 'undefined') return
+  if (!firebaseUid) return
   try {
     const payload: PendingSubscriptionPurchase = {
+      firebaseUid,
       tierKey,
       billingCycle,
       timestamp: Date.now()
@@ -37,8 +41,11 @@ export function startSubscriptionPurchaseTracking(
   }
 }
 
-export function getPendingSubscriptionPurchase(): PendingSubscriptionPurchase | null {
+export function getPendingSubscriptionPurchase(
+  firebaseUid: string
+): PendingSubscriptionPurchase | null {
   if (typeof window === 'undefined') return null
+  if (!firebaseUid) return null
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -50,8 +57,9 @@ export function getPendingSubscriptionPurchase(): PendingSubscriptionPurchase | 
       return null
     }
 
-    const { tierKey, billingCycle, timestamp } = parsed
+    const { firebaseUid: storedUid, tierKey, billingCycle, timestamp } = parsed
     if (
+      storedUid !== firebaseUid ||
       !VALID_TIERS.includes(tierKey) ||
       !VALID_CYCLES.includes(billingCycle) ||
       typeof timestamp !== 'number'

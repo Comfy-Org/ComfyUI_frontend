@@ -10,7 +10,8 @@ const {
   mockShowSubscriptionRequiredDialog,
   mockGetAuthHeader,
   mockPushDataLayerEvent,
-  mockTelemetry
+  mockTelemetry,
+  mockUserId
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
   mockReportError: vi.fn(),
@@ -23,7 +24,8 @@ const {
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionCancelled: vi.fn()
-  }
+  },
+  mockUserId: { value: 'user-123' }
 }))
 
 let scope: ReturnType<typeof effectScope> | undefined
@@ -89,7 +91,8 @@ vi.mock('@/services/dialogService', () => ({
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
-    getFirebaseAuthHeader: mockGetAuthHeader
+    getFirebaseAuthHeader: mockGetAuthHeader,
+    userId: mockUserId.value
   })),
   FirebaseAuthStoreError: class extends Error {}
 }))
@@ -112,6 +115,7 @@ describe('useSubscription', () => {
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
     mockPushDataLayerEvent.mockReset()
+    mockUserId.value = 'user-123'
     mockPushDataLayerEvent.mockImplementation((event) => {
       const dataLayer = window.dataLayer ?? (window.dataLayer = [])
       dataLayer.push(event)
@@ -249,6 +253,7 @@ describe('useSubscription', () => {
       localStorage.setItem(
         'pending_subscription_purchase',
         JSON.stringify({
+          firebaseUid: 'user-123',
           tierKey: 'creator',
           billingCycle: 'monthly',
           timestamp: Date.now()
@@ -284,6 +289,38 @@ describe('useSubscription', () => {
           }
         ]
       })
+      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
+    })
+
+    it('ignores pending purchase when user does not match', async () => {
+      window.dataLayer = []
+      localStorage.setItem(
+        'pending_subscription_purchase',
+        JSON.stringify({
+          firebaseUid: 'user-123',
+          tierKey: 'creator',
+          billingCycle: 'monthly',
+          timestamp: Date.now()
+        })
+      )
+
+      mockUserId.value = 'user-456'
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_123',
+          subscription_tier: 'CREATOR',
+          subscription_duration: 'MONTHLY'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+
+      expect(window.dataLayer).toHaveLength(0)
       expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
     })
 

@@ -45,7 +45,7 @@ function useSubscriptionInternal() {
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
-  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
+  const { getFirebaseAuthHeader, userId } = useFirebaseAuthStore()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -109,7 +109,9 @@ function useSubscriptionInternal() {
   ): void {
     if (!status?.is_active || !status.subscription_id) return
 
-    const pendingPurchase = getPendingSubscriptionPurchase()
+    if (!userId) return
+
+    const pendingPurchase = getPendingSubscriptionPurchase(userId)
     if (!pendingPurchase) return
 
     const { tierKey, billingCycle } = pendingPurchase
