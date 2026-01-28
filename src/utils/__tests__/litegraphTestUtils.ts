@@ -9,10 +9,12 @@ import type {
   LGraph,
   LGraphCanvas,
   LGraphGroup,
-  LinkNetwork
+  LinkNetwork,
+  LLink
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
+import type { ChangeTracker } from '@/scripts/changeTracker'
 
 /**
  * Creates a mock LGraphNode with minimal required properties
@@ -202,4 +204,100 @@ export function createMockFileList(files: File[]): FileList {
     files
   )
   return fileList as FileList
+}
+
+/**
+ * Creates a mock ChangeTracker for workflow testing
+ * The ChangeTracker requires a proper ComfyWorkflowJSON structure
+ */
+export function createMockChangeTracker(
+  overrides: Record<string, unknown> = {}
+): ChangeTracker {
+  const partial = {
+    activeState: {
+      last_node_id: 0,
+      last_link_id: 0,
+      nodes: [],
+      links: [],
+      groups: [],
+      config: {},
+      version: 0.4
+    },
+    undoQueue: [],
+    redoQueue: [],
+    changeCount: 0,
+    reset: vi.fn(),
+    ...overrides
+  }
+  return partial as Partial<ChangeTracker> as ChangeTracker
+}
+
+/**
+ * Creates a mock MinimapCanvas for minimap testing
+ */
+export function createMockMinimapCanvas(
+  overrides: Partial<HTMLCanvasElement> = {}
+): HTMLCanvasElement {
+  const mockGetContext = vi.fn()
+  mockGetContext.mockImplementation((contextId: string) =>
+    contextId === '2d' ? createMockCanvas2DContext() : null
+  )
+
+  const partial: Partial<HTMLCanvasElement> = {
+    width: 200,
+    height: 200,
+    clientWidth: 200,
+    clientHeight: 200,
+    getContext: mockGetContext as HTMLCanvasElement['getContext'],
+    ...overrides
+  }
+  return partial as HTMLCanvasElement
+}
+
+/**
+ * Creates a mock CanvasRenderingContext2D for canvas testing
+ */
+export function createMockCanvas2DContext(
+  overrides: Partial<CanvasRenderingContext2D> = {}
+): CanvasRenderingContext2D {
+  const partial: Partial<CanvasRenderingContext2D> = {
+    clearRect: vi.fn(),
+    fillRect: vi.fn(),
+    strokeRect: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    stroke: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    fillStyle: '',
+    strokeStyle: '',
+    lineWidth: 1,
+    ...overrides
+  }
+  return partial as CanvasRenderingContext2D
+}
+
+export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
+  const partial: Partial<LLink> = {
+    id: 1,
+    type: '*',
+    origin_id: 1,
+    origin_slot: 0,
+    target_id: 2,
+    target_slot: 0,
+    _pos: [0, 0],
+    ...overrides
+  }
+  return partial as LLink
+}
+
+export function createMockLinks(links: LLink[]): LGraph['links'] {
+  const map = new Map<number, LLink>()
+  const record: Record<number, LLink> = {}
+  for (const link of links) {
+    map.set(link.id, link)
+    record[link.id] = link
+  }
+  return Object.assign(map, record) as LGraph['links']
 }

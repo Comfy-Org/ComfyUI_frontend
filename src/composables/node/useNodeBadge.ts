@@ -71,6 +71,9 @@ export const useNodeBadge = () => {
   }
 
   onMounted(() => {
+    if (extensionStore.isExtensionInstalled('Comfy.NodeBadge')) return
+
+    // TODO: Fix the composables and watchers being setup in onMounted
     const nodePricing = useNodePricing()
 
     watch(
