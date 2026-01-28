@@ -22,6 +22,7 @@ export interface Member {
   name: string
   email: string
   joined_at: string
+  role: WorkspaceRole
 }
 
 interface PaginationInfo {
@@ -100,6 +101,18 @@ const workspaceApiClient = axios.create({
 
 async function getAuthHeaderOrThrow() {
   const authHeader = await useFirebaseAuthStore().getAuthHeader()
+  if (!authHeader) {
+    throw new WorkspaceApiError(
+      t('toastMessages.userNotAuthenticated'),
+      401,
+      'NOT_AUTHENTICATED'
+    )
+  }
+  return authHeader
+}
+
+async function getFirebaseHeaderOrThrow() {
+  const authHeader = await useFirebaseAuthStore().getFirebaseAuthHeader()
   if (!authHeader) {
     throw new WorkspaceApiError(
       t('toastMessages.userNotAuthenticated'),
@@ -296,9 +309,10 @@ export const workspaceApi = {
   /**
    * Accept a workspace invite.
    * POST /api/invites/:token/accept
+   * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await getAuthHeaderOrThrow()
+    const headers = await getFirebaseHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),

@@ -142,7 +142,7 @@
     "uploadFailed": "导入失败",
     "uploadModel": "导入模型",
     "uploadModelDescription1": "粘贴 Civitai 模型下载链接，将其添加到库中。",
-    "uploadModelDescription1Generic": "站贴模型下载链接，将其添加到模型库中。",
+    "uploadModelDescription1Generic": "粘贴模型下载链接，将其添加到模型库中。",
     "uploadModelDescription2": "目前仅支持 <a href=\"https://civitai.com\" target=\"_blank\" class=\"text-muted-foreground\">https://civitai.com</a> 链接。",
     "uploadModelDescription2Generic": "仅支持来自以下提供服务的 URL ：",
     "uploadModelDescription2Link": "https://civitai.com/models",
@@ -482,7 +482,7 @@
     "Open Image": "打开图像",
     "Open in Mask Editor": "用遮罩编辑器打开",
     "Outputs": "输出",
-    "Paste": "站贴",
+    "Paste": "粘贴",
     "Pin": "固定",
     "Properties": "属性",
     "Properties Panel": "属性面板",
@@ -960,11 +960,10 @@
     "videoPreview": "视频预览 - 使用方向键切换视频",
     "viewImageOfTotal": "查看第 {index} 张图片，共 {total} 张",
     "viewVideoOfTotal": "查看第 {index} 个视频，共 {total} 个",
-    "vitePreloadErrorMessage": "应用已发布新版本。是否立即重新加载？\n如果不重新加载，应用的某些功能可能无法正常工作。\n您可以先拒绝，保存进度后再重新加载。",
-    "vitePreloadErrorTitle": "新版本可用",
     "volume": "音量",
     "warning": "警告",
-    "workflow": "工作流"
+    "workflow": "工作流",
+    "you": "你"
   },
   "graphCanvasMenu": {
     "fitView": "适应视图",
@@ -1674,6 +1673,7 @@
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1684,6 +1684,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1899,6 +1900,7 @@
     },
     "groupSettings": "分组设置",
     "groups": "分组",
+    "hideAdvancedInputsButton": "隐藏高级输入",
     "hideInput": "隐藏输入",
     "info": "信息",
     "inputs": "输入",
@@ -2330,6 +2332,10 @@
     "beta": "测试版",
     "billedMonthly": "每月付款",
     "billedYearly": "{total} 每年付款",
+    "billingComingSoon": {
+      "message": "团队计费功能即将上线。您将可以为您的工作区按成员数订阅套餐。敬请关注后续更新。",
+      "title": "即将推出"
+    },
     "cancelSubscription": "取消订阅",
     "changeTo": "更改为 {plan}",
     "comfyCloud": "Comfy 云",
@@ -2517,6 +2523,7 @@
     "failedToLoadModel": "无法加载3D模型",
     "failedToPurchaseCredits": "购买积分失败：{error}",
     "failedToQueue": "排队失败",
+    "failedToSaveDraft": "保存工作流草稿失败",
     "failedToToggleCamera": "切换镜头失败",
     "failedToToggleGrid": "切换网格失败",
     "failedToUpdateBackgroundColor": "更新背景色失败",
@@ -2657,6 +2664,9 @@
     "saveWorkflow": "保存工作流"
   },
   "workspace": {
+    "addedToWorkspace": "您已被加入 {workspaceName}",
+    "inviteAccepted": "邀请已接受",
+    "inviteFailed": "接受邀请失败",
     "unsavedChanges": {
       "message": "您有未保存的更改。是否要放弃这些更改并切换工作区？",
       "title": "未保存的更改"
@@ -2679,6 +2689,9 @@
       "namePlaceholder": "请输入工作区名称",
       "title": "创建新工作区"
     },
+    "dashboard": {
+      "placeholder": "仪表盘工作区设置"
+    },
     "deleteDialog": {
       "message": "任何未使用的积分或未保存的资源都将丢失。此操作无法撤销。",
       "messageWithName": "删除“{name}”？任何未使用的积分或未保存的资源都将丢失。此操作无法撤销。",
@@ -2689,10 +2702,49 @@
       "save": "保存",
       "title": "编辑工作区详情"
     },
+    "invite": "邀请",
+    "inviteLimitReached": "您已达到最多 50 名成员的上限",
+    "inviteMember": "邀请成员",
+    "inviteMemberDialog": {
+      "createLink": "创建链接",
+      "linkCopied": "已复制",
+      "linkCopyFailed": "复制链接失败",
+      "linkStep": {
+        "copyLink": "复制链接",
+        "done": "完成",
+        "message": "请确保其账号使用的是该邮箱。",
+        "title": "将此链接发送给对方"
+      },
+      "message": "创建一个可分享的邀请链接发送给他人",
+      "placeholder": "输入对方邮箱",
+      "title": "邀请他人加入此工作区"
+    },
     "leaveDialog": {
       "leave": "离开",
       "message": "除非联系工作区所有者，否则您将无法重新加入。",
       "title": "离开此工作区？"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "复制邀请链接",
+        "removeMember": "移除成员",
+        "revokeInvite": "撤销邀请"
+      },
+      "columns": {
+        "expiryDate": "过期日期",
+        "inviteDate": "邀请日期",
+        "joinDate": "加入日期"
+      },
+      "createNewWorkspace": "创建新工作区。",
+      "membersCount": "{count}/50 名成员",
+      "noInvites": "暂无待处理邀请",
+      "noMembers": "暂无成员",
+      "pendingInvitesCount": "{count} 个待处理邀请",
+      "personalWorkspaceMessage": "您目前无法邀请其他成员加入您的个人工作区。如需添加成员，请",
+      "tabs": {
+        "active": "已激活",
+        "pendingCount": "待处理（{count}）"
+      }
     },
     "menu": {
       "deleteWorkspace": "删除工作区",
@@ -2700,14 +2752,42 @@
       "editWorkspace": "编辑工作区详情",
       "leaveWorkspace": "离开工作区"
     },
+    "removeMemberDialog": {
+      "error": "移除成员失败",
+      "message": "该成员将被移出您的工作区。其已使用的积分不会被退还。",
+      "remove": "移除成员",
+      "success": "成员已移除",
+      "title": "移除该成员？"
+    },
+    "revokeInviteDialog": {
+      "message": "该成员将无法再加入您的工作区，其邀请链接将失效。",
+      "revoke": "取消邀请",
+      "title": "取消邀请此人？"
+    },
     "tabs": {
+      "dashboard": "仪表盘",
+      "membersCount": "成员（{count}）",
       "planCredits": "套餐与积分"
     },
     "toast": {
       "failedToCreateWorkspace": "创建工作区失败",
       "failedToDeleteWorkspace": "删除工作区失败",
+      "failedToFetchWorkspaces": "加载工作区失败",
       "failedToLeaveWorkspace": "离开工作区失败",
       "failedToUpdateWorkspace": "更新工作区失败",
+      "workspaceCreated": {
+        "message": "订阅套餐，邀请队友，开始协作。",
+        "subscribe": "订阅",
+        "title": "工作区已创建"
+      },
+      "workspaceDeleted": {
+        "message": "该工作区已被永久删除。",
+        "title": "工作区已删除"
+      },
+      "workspaceLeft": {
+        "message": "您已退出该工作区。",
+        "title": "已退出工作区"
+      },
       "workspaceUpdated": {
         "message": "工作区详情已保存。",
         "title": "工作区已更新"
@@ -2717,6 +2797,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "创建新工作区",
     "maxWorkspacesReached": "您最多只能拥有10个工作区。请删除一个以创建新工作区。",
+    "personal": "个人",
     "roleMember": "成员",
     "roleOwner": "所有者",
     "subscribe": "订阅",

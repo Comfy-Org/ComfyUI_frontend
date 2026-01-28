@@ -6,6 +6,7 @@
  * Uses Fuse.js for fuzzy matching against category keywords.
  */
 import Fuse from 'fuse.js'
+import type { SurveyResponses, SurveyResponsesNormalized } from '../types'
 
 interface CategoryMapping {
   name: string
@@ -583,21 +584,19 @@ export function normalizeUseCase(rawUseCase: unknown): string {
  * Apply normalization to survey responses
  * Creates both normalized and raw versions of responses
  */
-export function normalizeSurveyResponses(responses: {
-  industry?: string
-  useCase?: string
-  [key: string]: any
-}) {
-  const normalized = { ...responses }
+export function normalizeSurveyResponses(
+  responses: SurveyResponses
+): SurveyResponsesNormalized {
+  const normalized: SurveyResponsesNormalized = { ...responses }
 
   // Normalize industry
-  if (responses.industry) {
+  if (typeof responses.industry === 'string') {
     normalized.industry_normalized = normalizeIndustry(responses.industry)
     normalized.industry_raw = responses.industry
   }
 
   // Normalize use case
-  if (responses.useCase) {
+  if (typeof responses.useCase === 'string') {
     normalized.useCase_normalized = normalizeUseCase(responses.useCase)
     normalized.useCase_raw = responses.useCase
   }

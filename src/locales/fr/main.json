@@ -960,11 +960,10 @@
     "videoPreview": "Aperçu de la vidéo - Utilisez les flèches pour naviguer entre les vidéos",
     "viewImageOfTotal": "Voir l'image {index} sur {total}",
     "viewVideoOfTotal": "Voir la vidéo {index} sur {total}",
-    "vitePreloadErrorMessage": "Une nouvelle version de l'application a été publiée. Souhaitez-vous recharger ?\nSi vous refusez, certaines parties de l'application pourraient ne pas fonctionner correctement.\nN'hésitez pas à refuser et à sauvegarder votre progression avant de recharger.",
-    "vitePreloadErrorTitle": "Nouvelle version disponible",
     "volume": "Volume",
     "warning": "Avertissement",
-    "workflow": "Flux de travail"
+    "workflow": "Flux de travail",
+    "you": "Vous"
   },
   "graphCanvasMenu": {
     "fitView": "Adapter la vue",
@@ -1674,6 +1673,7 @@
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1684,6 +1684,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1899,6 +1900,7 @@
     },
     "groupSettings": "Paramètres du groupe",
     "groups": "Groupes",
+    "hideAdvancedInputsButton": "Masquer les entrées avancées",
     "hideInput": "Masquer l’entrée",
     "info": "Infos",
     "inputs": "ENTRÉES",
@@ -2319,6 +2321,10 @@
     "beta": "BÊTA",
     "billedMonthly": "Facturé mensuellement",
     "billedYearly": "{total} facturé annuellement",
+    "billingComingSoon": {
+      "message": "La facturation d'équipe arrive bientôt. Vous pourrez souscrire à un abonnement pour votre espace de travail avec un tarif par utilisateur. Restez à l'écoute pour les mises à jour.",
+      "title": "Bientôt disponible"
+    },
     "cancelSubscription": "Annuler l’abonnement",
     "changeTo": "Changer pour {plan}",
     "comfyCloud": "Comfy Cloud",
@@ -2506,6 +2512,7 @@
     "failedToLoadModel": "Échec du chargement du modèle 3D",
     "failedToPurchaseCredits": "Échec de l'achat de crédits : {error}",
     "failedToQueue": "Échec de la mise en file d'attente",
+    "failedToSaveDraft": "Échec de l’enregistrement du brouillon du flux de travail",
     "failedToToggleCamera": "Échec de l’activation/désactivation de la caméra",
     "failedToToggleGrid": "Échec de l’activation/désactivation de la grille",
     "failedToUpdateBackgroundColor": "Échec de la mise à jour de la couleur d’arrière-plan",
@@ -2646,6 +2653,9 @@
     "saveWorkflow": "Enregistrer le flux de travail"
   },
   "workspace": {
+    "addedToWorkspace": "Vous avez été ajouté à {workspaceName}",
+    "inviteAccepted": "Invitation acceptée",
+    "inviteFailed": "Échec de l'acceptation de l'invitation",
     "unsavedChanges": {
       "message": "Vous avez des modifications non enregistrées. Voulez-vous les abandonner et changer d’espace de travail ?",
       "title": "Modifications non enregistrées"
@@ -2668,6 +2678,9 @@
       "namePlaceholder": "Saisissez le nom de l’espace de travail",
       "title": "Créer un nouvel espace de travail"
     },
+    "dashboard": {
+      "placeholder": "Paramètres de l'espace de travail du tableau de bord"
+    },
     "deleteDialog": {
       "message": "Tout crédit inutilisé ou ressource non enregistrée sera perdu. Cette action est irréversible.",
       "messageWithName": "Supprimer « {name} » ? Tout crédit inutilisé ou ressource non enregistrée sera perdu. Cette action est irréversible.",
@@ -2678,10 +2691,49 @@
       "save": "Enregistrer",
       "title": "Modifier les détails de l’espace de travail"
     },
+    "invite": "Inviter",
+    "inviteLimitReached": "Vous avez atteint le maximum de 50 membres",
+    "inviteMember": "Inviter un membre",
+    "inviteMemberDialog": {
+      "createLink": "Créer le lien",
+      "linkCopied": "Copié",
+      "linkCopyFailed": "Échec de la copie du lien",
+      "linkStep": {
+        "copyLink": "Copier le lien",
+        "done": "Terminé",
+        "message": "Assurez-vous que son compte utilise cet email.",
+        "title": "Envoyez ce lien à la personne"
+      },
+      "message": "Créez un lien d'invitation partageable à envoyer à quelqu'un",
+      "placeholder": "Entrez l'email de la personne",
+      "title": "Inviter une personne dans cet espace de travail"
+    },
     "leaveDialog": {
       "leave": "Quitter",
       "message": "Vous ne pourrez pas le rejoindre à nouveau sans contacter le propriétaire de l’espace de travail.",
       "title": "Quitter cet espace de travail ?"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "Copier le lien d'invitation",
+        "removeMember": "Retirer le membre",
+        "revokeInvite": "Révoquer l'invitation"
+      },
+      "columns": {
+        "expiryDate": "Date d'expiration",
+        "inviteDate": "Date d'invitation",
+        "joinDate": "Date d'adhésion"
+      },
+      "createNewWorkspace": "créez-en un nouveau.",
+      "membersCount": "{count}/50 membres",
+      "noInvites": "Aucune invitation en attente",
+      "noMembers": "Aucun membre",
+      "pendingInvitesCount": "{count} invitation en attente | {count} invitations en attente",
+      "personalWorkspaceMessage": "Vous ne pouvez pas inviter d'autres membres dans votre espace de travail personnel pour le moment. Pour ajouter des membres à un espace de travail,",
+      "tabs": {
+        "active": "Actif",
+        "pendingCount": "En attente ({count})"
+      }
     },
     "menu": {
       "deleteWorkspace": "Supprimer l’espace de travail",
@@ -2689,14 +2741,42 @@
       "editWorkspace": "Modifier les détails de l’espace de travail",
       "leaveWorkspace": "Quitter l’espace de travail"
     },
+    "removeMemberDialog": {
+      "error": "Échec du retrait du membre",
+      "message": "Ce membre sera retiré de votre espace de travail. Les crédits qu'il a utilisés ne seront pas remboursés.",
+      "remove": "Retirer le membre",
+      "success": "Membre retiré",
+      "title": "Retirer ce membre ?"
+    },
+    "revokeInviteDialog": {
+      "message": "Cette personne ne pourra plus rejoindre votre espace de travail. Son lien d'invitation sera invalidé.",
+      "revoke": "Annuler l'invitation",
+      "title": "Annuler l'invitation de cette personne ?"
+    },
     "tabs": {
+      "dashboard": "Tableau de bord",
+      "membersCount": "Membres ({count})",
       "planCredits": "Forfait & Crédits"
     },
     "toast": {
       "failedToCreateWorkspace": "Échec de la création de l’espace de travail",
       "failedToDeleteWorkspace": "Échec de la suppression de l’espace de travail",
+      "failedToFetchWorkspaces": "Échec du chargement des espaces de travail",
       "failedToLeaveWorkspace": "Échec de la sortie de l’espace de travail",
       "failedToUpdateWorkspace": "Échec de la mise à jour de l’espace de travail",
+      "workspaceCreated": {
+        "message": "Abonnez-vous à un plan, invitez des coéquipiers et commencez à collaborer.",
+        "subscribe": "S'abonner",
+        "title": "Espace de travail créé"
+      },
+      "workspaceDeleted": {
+        "message": "L'espace de travail a été définitivement supprimé.",
+        "title": "Espace de travail supprimé"
+      },
+      "workspaceLeft": {
+        "message": "Vous avez quitté l'espace de travail.",
+        "title": "Espace de travail quitté"
+      },
       "workspaceUpdated": {
         "message": "Les détails de l’espace de travail ont été enregistrés.",
         "title": "Espace de travail mis à jour"
@@ -2706,6 +2786,7 @@
   "workspaceSwitcher": {
     "createWorkspace": "Créer un nouvel espace de travail",
     "maxWorkspacesReached": "Vous ne pouvez posséder que 10 espaces de travail. Supprimez-en un pour en créer un nouveau.",
+    "personal": "Personnel",
     "roleMember": "Membre",
     "roleOwner": "Propriétaire",
     "subscribe": "S’abonner",

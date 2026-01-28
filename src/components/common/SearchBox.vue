@@ -14,7 +14,12 @@
       :placeholder
       :autofocus
       unstyled
-      class="absolute inset-0 size-full pl-11 border-none outline-none bg-transparent text-sm"
+      :class="
+        cn(
+          'absolute inset-0 size-full border-none outline-none bg-transparent text-sm',
+          isLarge ? 'pl-11' : 'pl-8'
+        )
+      "
       :aria-label="placeholder"
     />
     <Button
@@ -29,7 +34,7 @@
     <InputIcon v-if="!modelValue" :class="icon" />
     <Button
       v-if="modelValue"
-      class="clear-button absolute left-0"
+      :class="cn('clear-button absolute', isLarge ? 'left-2' : 'left-0')"
       variant="textonly"
       size="icon"
       @click="modelValue = ''"
@@ -83,6 +88,8 @@ const {
   class?: string
 }>()
 
+const isLarge = computed(() => size === 'lg')
+
 const emit = defineEmits<{
   (e: 'search', value: string, filters: TFilter[]): void
   (e: 'showFilter', event: Event): void
@@ -109,7 +116,10 @@ watchDebounced(
 
 const wrapperStyle = computed(() => {
   if (showBorder) {
-    return cn('rounded p-2 border border-solid border-border-default')
+    return cn(
+      'rounded p-2 border border-solid border-border-default box-border',
+      isLarge.value ? 'h-10' : 'h-8'
+    )
   }
 
   // Size-specific classes matching button sizes for consistency

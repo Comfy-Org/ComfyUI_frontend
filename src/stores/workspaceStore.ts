@@ -1,3 +1,4 @@
+import { useMagicKeys } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -18,7 +19,7 @@ import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
 export const useWorkspaceStore = defineStore('workspace', () => {
   const spinner = ref(false)
-  const shiftDown = ref(false)
+  const { shift: shiftDown } = useMagicKeys()
   /**
    * Whether the workspace is in focus mode.
    * When in focus mode, only the graph editor is visible.

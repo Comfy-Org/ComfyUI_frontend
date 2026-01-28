@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -531,7 +532,7 @@ describe.skip('SubgraphNode Cleanup', () => {
 
     // Now trigger an event - only node1 should respond
     subgraph.events.dispatch('input-added', {
-      input: { name: 'test', type: 'number', id: 'test-id' } as any
+      input: { name: 'test', type: 'number', id: 'test-id' } as SubgraphInput
     })
 
     // Only node1 should have added an input
@@ -558,7 +559,7 @@ describe.skip('SubgraphNode Cleanup', () => {
 
     // Trigger an event - no nodes should respond
     subgraph.events.dispatch('input-added', {
-      input: { name: 'test', type: 'number', id: 'test-id' } as any
+      input: { name: 'test', type: 'number', id: 'test-id' } as SubgraphInput
     })
 
     // Without cleanup: all 3 removed nodes would have added an input

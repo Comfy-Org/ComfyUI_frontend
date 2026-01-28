@@ -67,7 +67,7 @@ const MOCK_ASSETS = {
 } as const
 
 // Helper functions
-function mockApiResponse(assets: any[], options = {}) {
+function mockApiResponse(assets: unknown[], options = {}) {
   const response = {
     assets,
     total: assets.length,

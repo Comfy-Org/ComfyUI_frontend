@@ -67,10 +67,9 @@ import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelector
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
-
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
+  const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()

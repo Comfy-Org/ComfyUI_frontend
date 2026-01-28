@@ -52,7 +52,8 @@
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "显示选择工具箱"
+    "name": "显示选择工具箱",
+    "tooltip": "当选择节点时显示浮动工具栏，便于快速访问常用操作。"
   },
   "Comfy_ConfirmClear": {
     "name": "清除工作流时需要确认"
@@ -147,7 +148,8 @@
       "Linear": "直线",
       "Spline": "曲线",
       "Straight": "直角线"
-    }
+    },
+    "tooltip": "控制画布上节点之间连接线的外观和可见性。"
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "启用3D查看器（测试版）",
@@ -271,6 +273,10 @@
   },
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "在图像预览下方显示宽度×高度"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "始终在所有节点上显示高级控件",
+    "tooltip": "启用后，所有节点的高级控件将始终可见，无需单独展开。"
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "连线自动吸附到节点接口",
@@ -470,6 +476,7 @@
     "tooltip": "贝塞尔控制点从重新路由中心点的偏移"
   },
   "pysssss_SnapToGrid": {
-    "name": "始终吸附到网格"
+    "name": "始终吸附到网格",
+    "tooltip": "启用后，移动或调整节点大小时会自动对齐到网格。"
   }
 }

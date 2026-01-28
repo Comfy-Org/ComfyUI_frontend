@@ -1,5 +1,5 @@
 # Description: Generates and updates translations for core ComfyUI components using OpenAI
-name: "i18n: Update Core"
+name: 'i18n: Update Core'
 
 on:
   # Manual dispatch for urgent translation updates

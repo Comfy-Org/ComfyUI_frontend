@@ -5,6 +5,7 @@ Context for automated PR review system.
 ## Review Scope
 
 This automated review performs comprehensive analysis:
+
 - Architecture and design patterns
 - Security vulnerabilities
 - Performance implications
