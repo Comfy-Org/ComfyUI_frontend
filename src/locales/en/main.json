@@ -2863,12 +2863,14 @@
     "modelDescription": "Model Description",
     "description": "Description",
     "sortBy": "Sort by",
-    "sortByName": "Name",
+    "sortAZ": "A-Z",
+    "sortZA": "Z-A",
     "sortBySize": "Size",
-    "sortByDate": "Date",
+    "sortRecent": "Date",
     "fileFormats": "File Formats",
     "modelTypes": "Model Types",
     "viewGrid": "Grid view",
-    "viewList": "List view"
+    "viewList": "List view",
+    "bookmarked": "Bookmarked"
   }
 }

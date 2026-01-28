@@ -247,8 +247,8 @@ const { availableFileFormats, availableModelTypes } =
   useModelFilterOptions(models)
 
 const sortOptions = computed<SortOption[]>(() => [
-  { label: t('modelBrowser.sortByDate'), value: 'modified' },
-  { label: t('projects.sortAZ'), value: 'name' },
+  { label: t('assetBrowser.sortRecent'), value: 'modified' },
+  { label: t('assetBrowser.sortAZ'), value: 'name' },
   { label: t('modelBrowser.sortBySize'), value: 'size' }
 ])
 
@@ -296,8 +296,8 @@ const navItems = computed<NavGroupData[]>(() => {
         },
         {
           id: 'bookmarked',
-          label: `${t('executionList.workflowTreeType.bookmarks')} (${bookmarkCount.value})`,
-          icon: 'icon-[lucide--star]'
+          label: `${t('modelBrowser.bookmarked')} (${bookmarkCount.value})`,
+          icon: 'icon-[lucide--bookmark]'
         }
       ]
     },

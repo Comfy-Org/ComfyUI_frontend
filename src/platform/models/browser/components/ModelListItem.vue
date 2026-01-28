@@ -80,6 +80,28 @@
     <!-- Column 6: Actions -->
     <div class="flex items-center justify-end gap-2">
       <button
+        v-tooltip.left="
+          isBookmarked
+            ? $t('tabMenu.removeFromBookmarks')
+            : $t('tabMenu.addToBookmarks')
+        "
+        class="inline-flex items-center justify-center cursor-pointer appearance-none border-none bg-transparent transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:text-base-foreground p-0"
+        :aria-label="
+          isBookmarked
+            ? $t('tabMenu.removeFromBookmarks')
+            : $t('tabMenu.addToBookmarks')
+        "
+        @click.stop="handleToggleBookmark"
+      >
+        <i
+          :class="
+            isBookmarked
+              ? 'icon-[lucide--bookmark-check] size-4'
+              : 'icon-[lucide--bookmark] size-4'
+          "
+        />
+      </button>
+      <button
         v-tooltip.left="$t('modelBrowser.viewDetails')"
         class="inline-flex items-center justify-center cursor-pointer appearance-none border-none bg-transparent transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:text-base-foreground p-0"
         :aria-label="$t('modelBrowser.viewDetails')"
@@ -92,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 import type { EnrichedModel } from '@/platform/models/browser/types/modelBrowserTypes'
 import {
@@ -100,6 +122,7 @@ import {
   formatModifiedDate
 } from '@/platform/models/browser/utils/modelTransform'
 import { getModelTypeIcon } from '@/platform/models/browser/utils/modelTypeIcons'
+import { useModelBookmarks } from '@/platform/models/browser/composables/useModelBookmarks'
 import { cn } from '@/utils/tailwindUtil'
 
 const {
@@ -119,6 +142,8 @@ const emit = defineEmits<{
 }>()
 
 const imageError = ref(false)
+const { isBookmarked: checkIsBookmarked, toggleBookmark } = useModelBookmarks()
+const isBookmarked = computed(() => checkIsBookmarked(model.id))
 
 function handleClick() {
   emit('focus', model)
@@ -126,5 +151,9 @@ function handleClick() {
 
 function handleSelect() {
   emit('select', model)
+}
+
+function handleToggleBookmark() {
+  toggleBookmark(model)
 }
 </script>

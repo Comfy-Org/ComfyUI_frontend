@@ -35,6 +35,9 @@
 
 <script setup lang="ts">
 import { cn } from '@/utils/tailwindUtil'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 export interface SortOption {
   label: string
@@ -59,7 +62,7 @@ function getDisplayLabel(option: SortOption): string {
     sortDirection === 'desc' &&
     option.value === 'name'
   ) {
-    return 'Z-A'
+    return t('assetBrowser.sortZA')
   }
   return option.label
 }
