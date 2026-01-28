@@ -41,6 +41,12 @@ export function useModelBrowserDialog() {
         pt: {
           root: {
             class: 'flex items-center justify-center'
+          },
+          header: {
+            class: 'hidden'
+          },
+          content: {
+            class: '!p-0 overflow-y-hidden'
           }
         }
       }

@@ -2,7 +2,7 @@
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
     data-component-id="ModelBrowserDialog"
-    class="size-full max-h-full max-w-full min-w-0"
+    class="size-full max-h-full max-w-full min-w-0 model-browser-layout"
     :content-title="$t('modelBrowser.title')"
     :right-panel-title="$t('modelBrowser.modelInfo')"
     @close="handleClose"
@@ -216,7 +216,7 @@ const gridStyle = computed<CSSProperties>(() => {
       display: 'flex',
       flexDirection: 'column',
       gap: '0.5rem',
-      padding: '1.5rem'
+      padding: '0.5rem'
     }
   }
   return {
