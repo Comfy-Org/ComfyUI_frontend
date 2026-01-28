@@ -63,39 +63,47 @@
       @approach-end="emit('approach-end')"
     >
       <template #item="{ item }">
-        <AssetsListItem
-          role="button"
-          tabindex="0"
-          :aria-label="
-            t('assetBrowser.ariaLabel.assetCard', {
-              name: item.asset.name,
-              type: getMediaTypeFromFilename(item.asset.name)
-            })
-          "
-          :class="getAssetCardClass(isSelected(item.asset.id))"
-          :preview-url="item.asset.preview_url"
-          :preview-alt="item.asset.name"
-          :icon-name="
-            iconForMediaType(getMediaTypeFromFilename(item.asset.name))
-          "
-          :primary-text="getAssetPrimaryText(item.asset)"
-          :secondary-text="getAssetSecondaryText(item.asset)"
-          @mouseenter="onAssetEnter(item.asset.id)"
-          @mouseleave="onAssetLeave(item.asset.id)"
-          @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
-          @click.stop="emit('select-asset', item.asset)"
-        >
-          <template v-if="hoveredAssetId === item.asset.id" #actions>
-            <Button
-              variant="secondary"
-              size="icon"
-              :aria-label="t('mediaAsset.actions.moreOptions')"
-              @click.stop="emit('context-menu', $event, item.asset)"
-            >
-              <i class="icon-[lucide--ellipsis] size-4" />
-            </Button>
-          </template>
-        </AssetsListItem>
+        <div class="relative">
+          <LoadingOverlay
+            :loading="assetsStore.isAssetDeleting(item.asset.id)"
+            size="sm"
+          >
+            <i class="pi pi-trash text-xs" />
+          </LoadingOverlay>
+          <AssetsListItem
+            role="button"
+            tabindex="0"
+            :aria-label="
+              t('assetBrowser.ariaLabel.assetCard', {
+                name: item.asset.name,
+                type: getMediaTypeFromFilename(item.asset.name)
+              })
+            "
+            :class="getAssetCardClass(isSelected(item.asset.id))"
+            :preview-url="item.asset.preview_url"
+            :preview-alt="item.asset.name"
+            :icon-name="
+              iconForMediaType(getMediaTypeFromFilename(item.asset.name))
+            "
+            :primary-text="getAssetPrimaryText(item.asset)"
+            :secondary-text="getAssetSecondaryText(item.asset)"
+            @mouseenter="onAssetEnter(item.asset.id)"
+            @mouseleave="onAssetLeave(item.asset.id)"
+            @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
+            @click.stop="emit('select-asset', item.asset)"
+          >
+            <template v-if="hoveredAssetId === item.asset.id" #actions>
+              <Button
+                variant="secondary"
+                size="icon"
+                :aria-label="t('mediaAsset.actions.moreOptions')"
+                @click.stop="emit('context-menu', $event, item.asset)"
+              >
+                <i class="icon-[lucide--ellipsis] size-4" />
+              </Button>
+            </template>
+          </AssetsListItem>
+        </div>
       </template>
     </VirtualGrid>
   </div>
@@ -105,6 +113,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useJobActions } from '@/composables/queue/useJobActions'
@@ -114,6 +123,7 @@ import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { isActiveJobState } from '@/utils/queueUtil'
 import {
   formatDuration,
@@ -133,6 +143,8 @@ const {
   isSelected: (assetId: string) => boolean
   assetType?: 'input' | 'output'
 }>()
+
+const assetsStore = useAssetsStore()
 
 const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem): void
