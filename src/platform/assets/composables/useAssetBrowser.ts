@@ -9,8 +9,8 @@ import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vu
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetBaseModels,
-  getAssetDescription,
-  getAssetDisplayName
+  getAssetDisplayName,
+  getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
@@ -70,7 +70,7 @@ type AssetBadge = {
 
 // Display properties for transformed assets
 export interface AssetDisplayItem extends AssetItem {
-  description: string
+  secondaryText: string
   badges: AssetBadge[]
   stats: {
     formattedDate?: string
@@ -116,15 +116,11 @@ export function useAssetBrowser(
 
   // Transform API asset to display asset
   function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
-    // Extract description from metadata or create from tags
-    const typeTag = asset.tags.find((tag) => tag !== 'models')
-    const description =
-      getAssetDescription(asset) ||
-      `${typeTag || t('assetBrowser.unknown')} model`
+    const secondaryText = getAssetFilename(asset)
 
-    // Create badges from tags and metadata
     const badges: AssetBadge[] = []
 
+    const typeTag = asset.tags.find((tag) => tag !== 'models')
     // Type badge from non-root tag
     if (typeTag) {
       // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
@@ -152,7 +148,7 @@ export function useAssetBrowser(
 
     return {
       ...asset,
-      description,
+      secondaryText,
       badges,
       stats
     }
