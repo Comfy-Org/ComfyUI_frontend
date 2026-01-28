@@ -42,6 +42,8 @@ type Overlay = Partial<IBaseWidget> & {
   hidden?: boolean
   /** Flag to trigger re-resolution when source node's widgets change */
   needsResolve?: boolean
+  /** Cached dynamicWidgetParent for grouping when widget is disconnected */
+  dynamicWidgetParent?: string
 }
 // A ProxyWidget can be treated like a normal widget.
 // the _overlay property can be used to directly access the Overlay object
@@ -147,11 +149,21 @@ function newProxyWidget(
   widgetName: string
 ) {
   const name = `${nodeId}: ${widgetName}`
-  const overlay = {
+
+  // Determine dynamicWidgetParent from widget name pattern (parentName.childName)
+  // This ensures grouping works even when the backing widget is disconnected
+  let dynamicWidgetParent: string | undefined
+  const dotIndex = widgetName.indexOf('.')
+  if (dotIndex !== -1) {
+    dynamicWidgetParent = widgetName.slice(0, dotIndex)
+  }
+
+  const overlay: Overlay = {
     //items specific for proxy management
     nodeId,
     graph: subgraphNode.subgraph,
     widgetName,
+    dynamicWidgetParent,
     //Items which normally exist on widgets
     afterQueued: undefined,
     computedHeight: undefined,
@@ -177,6 +189,12 @@ function resolveLinkedWidget(
   // Slightly hacky. Force recursive resolution of nested widgets
   if (widget && isProxyWidget(widget) && isDisconnectedWidget(widget))
     widget.computedHeight = 20
+
+  // Cache dynamicWidgetParent in overlay for use when widget becomes disconnected
+  if (widget?.dynamicWidgetParent) {
+    overlay.dynamicWidgetParent = widget.dynamicWidgetParent
+  }
+
   return [n, widget]
 }
 

@@ -2,7 +2,11 @@ import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { describe, expect, it, beforeEach } from 'vitest'
-import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
+import {
+  flatAndCategorizeSelectedItems,
+  getWidgetGroupKey,
+  searchWidgets
+} from './shared'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 describe('searchWidgets', () => {
@@ -186,5 +190,111 @@ describe('flatAndCategorizeSelectedItems', () => {
     expect(result.groups).toEqual([testGroup1])
     expect(result.others).toEqual([unknownItem])
     expect(result.all).not.toContain(unknownItem)
+  })
+})
+
+describe('getWidgetGroupKey', () => {
+  it('should return parent name for child widgets', () => {
+    const widget = {
+      name: 'dynamic_combo.w1',
+      type: 'number',
+      dynamicWidgetParent: 'dynamic_combo'
+    } as IBaseWidget
+
+    expect(getWidgetGroupKey(widget)).toBe('dynamic_combo')
+  })
+
+  it('should return widget name for parent widgets (dynamic combo roots)', () => {
+    const widget = {
+      name: 'dynamic_combo',
+      type: 'combo',
+      dynamicWidgetRoot: true
+    } as IBaseWidget
+
+    expect(getWidgetGroupKey(widget)).toBe('dynamic_combo')
+  })
+
+  it('should return widget name for regular widgets', () => {
+    const widget = {
+      name: 'regular_widget',
+      type: 'number'
+    } as IBaseWidget
+
+    expect(getWidgetGroupKey(widget)).toBe('regular_widget')
+  })
+
+  it('should return widget name if dynamicWidgetParent is empty string', () => {
+    const widget = {
+      name: 'some_widget',
+      type: 'number',
+      dynamicWidgetParent: ''
+    } as IBaseWidget
+
+    // Empty string is falsy, so widget is treated as its own group
+    expect(getWidgetGroupKey(widget)).toBe('some_widget')
+  })
+
+  it('should use _overlay.widgetName for proxy widgets (parent)', () => {
+    // Proxy widgets have names with node ID prefix like "1: dynamic_combo"
+    const proxyWidget = {
+      name: '1: dynamic_combo',
+      type: 'combo',
+      dynamicWidgetRoot: true,
+      _overlay: { widgetName: 'dynamic_combo', nodeId: '1' }
+    } as unknown as IBaseWidget
+
+    // Should return base name so it matches children's dynamicWidgetParent
+    expect(getWidgetGroupKey(proxyWidget)).toBe('dynamic_combo')
+  })
+
+  it('should group proxy parent and children together', () => {
+    // Parent proxy widget
+    const parentProxy = {
+      name: '1: dynamic_combo',
+      type: 'combo',
+      dynamicWidgetRoot: true,
+      _overlay: { widgetName: 'dynamic_combo', nodeId: '1' }
+    } as unknown as IBaseWidget
+
+    // Child proxy widget
+    const childProxy = {
+      name: '1: dynamic_combo.w1',
+      type: 'number',
+      dynamicWidgetParent: 'dynamic_combo',
+      _overlay: { widgetName: 'dynamic_combo.w1', nodeId: '1' }
+    } as unknown as IBaseWidget
+
+    // Both should return 'dynamic_combo' so they're in the same group
+    expect(getWidgetGroupKey(parentProxy)).toBe('dynamic_combo')
+    expect(getWidgetGroupKey(childProxy)).toBe('dynamic_combo')
+  })
+
+  it('should group disconnected child widgets using overlay.dynamicWidgetParent', () => {
+    // Disconnected child widget - dynamicWidgetParent is stored in overlay
+    // because the backing widget (disconnectedWidget) doesn't have this property
+    const disconnectedChild = {
+      name: '1: dynamic_combo.child_widget',
+      type: 'button', // disconnectedWidget type
+      // No dynamicWidgetParent on widget itself
+      _overlay: {
+        widgetName: 'dynamic_combo.child_widget',
+        nodeId: '1',
+        dynamicWidgetParent: 'dynamic_combo' // Stored in overlay
+      }
+    } as unknown as IBaseWidget
+
+    // Should use overlay.dynamicWidgetParent
+    expect(getWidgetGroupKey(disconnectedChild)).toBe('dynamic_combo')
+  })
+
+  it('should not group widgets without dynamicWidgetParent in overlay', () => {
+    // Regular widget without dynamicWidgetParent in widget or overlay
+    const regularWidget = {
+      name: 'some_widget',
+      type: 'number',
+      _overlay: { widgetName: 'some_widget', nodeId: '1' }
+    } as unknown as IBaseWidget
+
+    expect(getWidgetGroupKey(regularWidget)).toBe('some_widget')
   })
 })

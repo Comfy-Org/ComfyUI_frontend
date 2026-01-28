@@ -250,6 +250,41 @@ function repeatItems<T>(items: T[]): T[] {
   return result
 }
 
+/**
+ * Get the base widget name, stripping any node ID prefix.
+ * Proxy widgets on SubgraphNodes have names like "1: widgetName".
+ */
+function getBaseWidgetName(widget: IBaseWidget): string {
+  // Check if it's a proxy widget with _overlay
+  const overlay = (widget as { _overlay?: { widgetName?: string } })._overlay
+  if (overlay?.widgetName) {
+    return overlay.widgetName
+  }
+  return widget.name
+}
+
+export function getWidgetGroupKey(widget: IBaseWidget): string {
+  // Check dynamicWidgetParent on the widget (works for connected widgets)
+  if (widget.dynamicWidgetParent) {
+    return widget.dynamicWidgetParent
+  }
+
+  // For proxy widgets, check the overlay for dynamicWidgetParent
+  // This handles disconnected widgets where the backing widget doesn't have the property
+  // as the actual widget doesn't exist, and is the disconnected widget.
+  const overlay = (
+    widget as {
+      _overlay?: { dynamicWidgetParent?: string; widgetName?: string }
+    }
+  )._overlay
+  if (overlay?.dynamicWidgetParent) {
+    return overlay.dynamicWidgetParent
+  }
+
+  // Use base name to match children's dynamicWidgetParent values
+  return getBaseWidgetName(widget)
+}
+
 export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
   const settingStore = useSettingStore()
 
