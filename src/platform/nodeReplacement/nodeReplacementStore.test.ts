@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useNodeReplacementStore } from '@/stores/nodeReplacementStore'
+import { useNodeReplacementStore } from './nodeReplacementStore'
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn()

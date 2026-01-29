@@ -1,4 +1,4 @@
-import type { NodeReplacementResponse } from '@/types/nodeReplacementTypes'
+import type { NodeReplacementResponse } from '../types'
 
 import { api } from '@/scripts/api'
 
