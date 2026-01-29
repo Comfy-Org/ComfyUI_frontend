@@ -41,8 +41,8 @@ describe('LogoOverlay', () => {
   it('applies default position when not specified', () => {
     const wrapper = mountOverlay([{ provider: 'Google' }])
     const container = wrapper.find('div')
-    expect(container.classes()).toContain('bottom-2')
-    expect(container.classes()).toContain('right-2')
+    expect(container.classes()).toContain('top-2')
+    expect(container.classes()).toContain('left-2')
   })
 
   it('applies custom position from logo config', () => {
@@ -54,37 +54,37 @@ describe('LogoOverlay', () => {
     expect(container.classes()).toContain('left-2')
   })
 
-  it('applies default medium size class', () => {
+  it('renders logo with fixed size and circular shape', () => {
     const wrapper = mountOverlay([{ provider: 'Google' }])
     const img = wrapper.find('img')
-    expect(img.classes()).toContain('h-8')
-    expect(img.classes()).toContain('w-8')
+    expect(img.classes()).toContain('h-5')
+    expect(img.classes()).toContain('w-5')
+    expect(img.classes()).toContain('rounded-[50%]')
   })
 
-  it('applies small size class', () => {
-    const wrapper = mountOverlay([{ provider: 'Google', size: 'sm' }])
-    const img = wrapper.find('img')
-    expect(img.classes()).toContain('h-6')
-    expect(img.classes()).toContain('w-6')
-  })
-
-  it('applies large size class', () => {
-    const wrapper = mountOverlay([{ provider: 'Google', size: 'lg' }])
-    const img = wrapper.find('img')
-    expect(img.classes()).toContain('h-12')
-    expect(img.classes()).toContain('w-12')
-  })
-
-  it('applies default opacity', () => {
+  it('renders pill container with correct styling', () => {
     const wrapper = mountOverlay([{ provider: 'Google' }])
-    const container = wrapper.find('div')
-    expect(container.attributes('style')).toContain('opacity: 0.9')
+    const pill = wrapper.find('.rounded-full')
+    expect(pill.exists()).toBe(true)
+    expect(pill.classes()).toContain('bg-black/20')
+  })
+
+  it('displays provider name in pill', () => {
+    const wrapper = mountOverlay([{ provider: 'Google' }])
+    const span = wrapper.find('span')
+    expect(span.text()).toBe('Google')
+  })
+
+  it('applies default opacity of 1', () => {
+    const wrapper = mountOverlay([{ provider: 'Google' }])
+    const pill = wrapper.find('.rounded-full')
+    expect(pill.attributes('style')).toContain('opacity: 1')
   })
 
   it('applies custom opacity', () => {
     const wrapper = mountOverlay([{ provider: 'Google', opacity: 0.5 }])
-    const container = wrapper.find('div')
-    expect(container.attributes('style')).toContain('opacity: 0.5')
+    const pill = wrapper.find('.rounded-full')
+    expect(pill.attributes('style')).toContain('opacity: 0.5')
   })
 
   it('images are not draggable', () => {
