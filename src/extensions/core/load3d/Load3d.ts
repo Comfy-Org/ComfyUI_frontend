@@ -55,6 +55,7 @@ class Load3d {
   private rightMouseMoved: boolean = false
   private readonly dragThreshold: number = 5
   private contextMenuAbortController: AbortController | null = null
+  private resizeObserver: ResizeObserver | null = null
 
   constructor(container: Element | HTMLElement, options: Load3DOptions = {}) {
     this.clock = new THREE.Clock()
@@ -145,6 +146,7 @@ class Load3d {
     this.STATUS_MOUSE_ON_VIEWER = false
 
     this.initContextMenu()
+    this.initResizeObserver(container)
 
     this.handleResize()
     this.startAnimation()
@@ -152,6 +154,14 @@ class Load3d {
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  private initResizeObserver(container: Element | HTMLElement): void {
+    this.resizeObserver = new ResizeObserver(() => {
+      this.handleResize()
+      this.forceRender()
+    })
+    this.resizeObserver.observe(container)
   }
 
   /**
@@ -809,6 +819,11 @@ class Load3d {
   }
 
   public remove(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
+      this.resizeObserver = null
+    }
+
     if (this.contextMenuAbortController) {
       this.contextMenuAbortController.abort()
       this.contextMenuAbortController = null
