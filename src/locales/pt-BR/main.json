@@ -1436,6 +1436,7 @@
       "download": "Baixar",
       "exportWorkflow": "Exportar fluxo de trabalho",
       "insertAsNodeInWorkflow": "Inserir como nó no fluxo de trabalho",
+      "addToWorkflow": "Inserir como nó no fluxo de trabalho",
       "inspect": "Inspecionar recurso",
       "more": "Mais opções",
       "moreOptions": "Mais opções",

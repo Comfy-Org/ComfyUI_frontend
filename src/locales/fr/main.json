@@ -1436,6 +1436,7 @@
       "download": "Télécharger",
       "exportWorkflow": "Exporter le flux de travail",
       "insertAsNodeInWorkflow": "Insérer comme nœud dans le workflow",
+      "addToWorkflow": "Insérer comme nœud dans le workflow",
       "inspect": "Inspecter l’actif",
       "more": "Plus d’options",
       "moreOptions": "Plus d’options",

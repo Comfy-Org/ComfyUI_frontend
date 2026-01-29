@@ -1436,6 +1436,7 @@
       "download": "İndir",
       "exportWorkflow": "İş akışını dışa aktar",
       "insertAsNodeInWorkflow": "Çalışma akışına düğüm olarak ekle",
+      "addToWorkflow": "Çalışma akışına düğüm olarak ekle",
       "inspect": "Varlığı incele",
       "more": "Daha fazla seçenek",
       "moreOptions": "Daha fazla seçenek",

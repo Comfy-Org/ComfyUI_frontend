@@ -2631,6 +2631,7 @@
       "moreOptions": "More options",
       "seeMoreOutputs": "See more outputs",
       "insertAsNodeInWorkflow": "Insert as node in workflow",
+      "addToWorkflow": "Insert as node in workflow",
       "download": "Download",
       "openWorkflow": "Open as workflow in new tab",
       "exportWorkflow": "Export workflow",

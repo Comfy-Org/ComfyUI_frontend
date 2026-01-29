@@ -1436,6 +1436,7 @@
       "download": "다운로드",
       "exportWorkflow": "워크플로우 내보내기",
       "insertAsNodeInWorkflow": "워크플로우에 노드로 삽입",
+      "addToWorkflow": "워크플로우에 노드로 삽입",
       "inspect": "에셋 검사",
       "more": "더 많은 옵션",
       "moreOptions": "더 많은 옵션",

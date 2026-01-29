@@ -1436,6 +1436,7 @@
       "download": "تنزيل",
       "exportWorkflow": "تصدير سير العمل",
       "insertAsNodeInWorkflow": "إدراج كعقدة في سير العمل",
+      "addToWorkflow": "إدراج كعقدة في سير العمل",
       "inspect": "تفقد الأصل",
       "more": "خيارات أخرى",
       "moreOptions": "خيارات أخرى",

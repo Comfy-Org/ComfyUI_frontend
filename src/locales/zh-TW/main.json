@@ -1436,6 +1436,7 @@
       "download": "下載",
       "exportWorkflow": "匯出工作流程",
       "insertAsNodeInWorkflow": "插入為工作流程節點",
+      "addToWorkflow": "插入為工作流程節點",
       "inspect": "檢查資產",
       "more": "更多選項",
       "moreOptions": "更多選項",

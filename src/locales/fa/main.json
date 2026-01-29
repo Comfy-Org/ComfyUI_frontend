@@ -1436,6 +1436,7 @@
       "download": "دانلود",
       "exportWorkflow": "خروجی گرفتن از workflow",
       "insertAsNodeInWorkflow": "افزودن به عنوان node در workflow",
+      "addToWorkflow": "افزودن به عنوان node در workflow",
       "inspect": "بررسی دارایی",
       "more": "گزینه‌های بیشتر",
       "moreOptions": "گزینه‌های بیشتر",

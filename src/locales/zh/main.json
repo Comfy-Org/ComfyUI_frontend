@@ -1436,6 +1436,7 @@
       "download": "下载",
       "exportWorkflow": "导出工作流",
       "insertAsNodeInWorkflow": "作为节点插入到工作流",
+      "addToWorkflow": "作为节点插入到工作流",
       "inspect": "查看资产",
       "more": "更多设置",
       "moreOptions": "更多选项",

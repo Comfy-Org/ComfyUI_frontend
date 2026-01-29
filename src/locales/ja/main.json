@@ -1436,6 +1436,7 @@
       "download": "ダウンロード",
       "exportWorkflow": "ワークフローをエクスポート",
       "insertAsNodeInWorkflow": "ワークフローにノードとして挿入",
+      "addToWorkflow": "ワークフローにノードとして挿入",
       "inspect": "アセットを確認",
       "more": "その他のオプション",
       "moreOptions": "その他のオプション",
