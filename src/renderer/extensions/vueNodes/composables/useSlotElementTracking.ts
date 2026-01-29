@@ -31,13 +31,19 @@ function scheduleSlotLayoutSync(nodeId: string) {
   raf.schedule()
 }
 
-function flushScheduledSlotLayoutSync() {
-  if (pendingNodes.size === 0) return
+export function flushScheduledSlotLayoutSync() {
+  if (pendingNodes.size === 0) {
+    // Even if no pending nodes, clear the flag (e.g., graph with no nodes)
+    layoutStore.setPendingSlotSync(false)
+    return
+  }
   const conv = useSharedCanvasPositionConversion()
   for (const nodeId of Array.from(pendingNodes)) {
     pendingNodes.delete(nodeId)
     syncNodeSlotLayoutsFromDOM(nodeId, conv)
   }
+  // Clear the pending sync flag - slots are now synced
+  layoutStore.setPendingSlotSync(false)
 }
 
 export function syncNodeSlotLayoutsFromDOM(

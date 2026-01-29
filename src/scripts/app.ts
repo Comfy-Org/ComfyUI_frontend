@@ -5,6 +5,8 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -730,6 +732,11 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
+      // Set pending sync flag to suppress link rendering until slots are synced
+      if (LiteGraph.vueNodesMode) {
+        layoutStore.setPendingSlotSync(true)
+      }
+
       fixLinkInputSlots(this)
 
       // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
@@ -739,6 +746,12 @@ export class ComfyApp {
 
       // Fire after onConfigure, used by primitives to generate widget using input nodes config
       triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
+
+      // Flush pending slot layout syncs to fix link alignment after undo/redo
+      if (LiteGraph.vueNodesMode) {
+        flushScheduledSlotLayoutSync()
+        app.canvas?.setDirty(true, true)
+      }
 
       return r
     }
