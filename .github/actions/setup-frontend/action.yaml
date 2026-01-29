@@ -23,18 +23,6 @@ runs:
         cache: 'pnpm'
         cache-dependency-path: './pnpm-lock.yaml'
 
-    # Cache tool outputs (restore on start, save on completion)
-    - name: Cache tool outputs
-      uses: actions/cache@v5
-      with:
-        path: |
-          ./.cache
-          ./tsconfig.tsbuildinfo
-        key: tool-cache-${{ runner.os }}-${{ hashFiles('./pnpm-lock.yaml') }}-${{ hashFiles('./src/**/*.{ts,vue,js,mts}', './*.config.*') }}
-        restore-keys: |
-          tool-cache-${{ runner.os }}-${{ hashFiles('./pnpm-lock.yaml') }}-
-          tool-cache-${{ runner.os }}-
-
     - name: Install dependencies
       shell: bash
       run: pnpm install --frozen-lockfile
