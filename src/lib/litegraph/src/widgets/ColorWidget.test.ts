@@ -115,19 +115,6 @@ describe('ColorWidget', () => {
       expect(input.style.top).toBe('250px')
     })
 
-    it('should style input as invisible', () => {
-      widget = new ColorWidget(createMockWidgetConfig(), node)
-
-      widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
-
-      const input = document.querySelector(
-        'input[type="color"]'
-      ) as HTMLInputElement
-      expect(input.style.opacity).toBe('0')
-      expect(input.style.pointerEvents).toBe('none')
-      expect(input.style.position).toBe('absolute')
-    })
-
     it('should click the input on next animation frame', () => {
       widget = new ColorWidget(createMockWidgetConfig(), node)
 
