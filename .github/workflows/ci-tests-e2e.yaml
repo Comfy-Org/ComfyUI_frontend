@@ -6,7 +6,8 @@ on:
     branches: [main, master, core/*, desktop/*]
   pull_request:
     branches-ignore:
-      [wip/*, draft/*, temp/*, vue-nodes-migration, sno-playwright-*]
+      [wip/*, draft/*, temp/*]
+  workflow_dispatch: 
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
