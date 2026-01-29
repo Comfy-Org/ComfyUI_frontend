@@ -11,6 +11,7 @@
 *.ts text eol=lf
 *.vue text eol=lf
 *.yaml text eol=lf
+*.yml text eol=lf
 
 # Generated files
 packages/registry-types/src/comfyRegistryTypes.ts linguist-generated=true
