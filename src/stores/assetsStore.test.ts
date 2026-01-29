@@ -598,39 +598,53 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('concurrent request handling', () => {
-    it('should discard stale request when newer request starts', async () => {
+    it('should short-circuit concurrent calls to prevent duplicate work', async () => {
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
       const firstBatch = Array.from({ length: 5 }, (_, i) =>
         createMockAsset(`first-${i}`)
       )
-      const secondBatch = Array.from({ length: 10 }, (_, i) =>
-        createMockAsset(`second-${i}`)
-      )
 
-      let resolveFirst: (value: ReturnType<typeof createMockAsset>[]) => void
-      const firstPromise = new Promise<ReturnType<typeof createMockAsset>[]>(
-        (resolve) => {
-          resolveFirst = resolve
-        }
-      )
-      let callCount = 0
-      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
-        async () => {
-          callCount++
-          return callCount === 1 ? firstPromise : secondBatch
-        }
-      )
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(firstBatch)
 
+      // Start two concurrent requests for the same category
       const firstRequest = store.updateModelsForNodeType(nodeType)
       const secondRequest = store.updateModelsForNodeType(nodeType)
-      resolveFirst!(firstBatch)
       await Promise.all([firstRequest, secondRequest])
 
-      expect(store.getAssets(nodeType)).toHaveLength(10)
+      // Second request should be short-circuited, only one API call made
       expect(
-        store.getAssets(nodeType).every((a) => a.id.startsWith('second-'))
-      ).toBe(true)
+        vi.mocked(assetService.getAssetsForNodeType)
+      ).toHaveBeenCalledTimes(1)
+      expect(store.getAssets(nodeType)).toHaveLength(5)
+    })
+
+    it('should allow new request after previous completes', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const firstBatch = [createMockAsset('first-1')]
+      const secondBatch = [
+        createMockAsset('second-1'),
+        createMockAsset('second-2')
+      ]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        firstBatch
+      )
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getAssets(nodeType)).toHaveLength(1)
+
+      // After first completes, a new request should work
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        secondBatch
+      )
+      store.invalidateCategory('checkpoints')
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.getAssets(nodeType)).toHaveLength(2)
+      expect(
+        vi.mocked(assetService.getAssetsForNodeType)
+      ).toHaveBeenCalledTimes(2)
     })
   })
 
