@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { GlobalSubgraphData } from '@/scripts/api'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -62,14 +63,7 @@ describe('useSubgraphStore', () => {
   let store: ReturnType<typeof useSubgraphStore>
   async function mockFetch(
     filenames: Record<string, unknown>,
-    globalSubgraphs: Record<
-      string,
-      {
-        name: string
-        info: { node_pack: string; category?: string }
-        data: string
-      }
-    > = {}
+    globalSubgraphs: Record<string, GlobalSubgraphData> = {}
   ) {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
       Object.keys(filenames).map((filename) => ({
