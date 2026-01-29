@@ -40,7 +40,6 @@
       <!-- Main Image -->
       <img
         v-if="!imageError"
-        ref="currentImageEl"
         :src="currentImageUrl"
         :alt="imageAltText"
         class="block size-full object-contain pointer-events-none"
@@ -128,8 +127,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 
 interface ImagePreviewProps {
@@ -142,7 +141,6 @@ interface ImagePreviewProps {
 const props = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
 const nodeOutputStore = useNodeOutputStore()
 
 const actionButtonClass =
@@ -156,7 +154,6 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 
-const currentImageEl = ref<HTMLImageElement>()
 const imageWrapperEl = ref<HTMLDivElement>()
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -201,6 +198,10 @@ const handleImageLoad = (event: Event) => {
   if (img.naturalWidth && img.naturalHeight) {
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
   }
+
+  if (props.nodeId) {
+    nodeOutputStore.syncLegacyNodeImgs(props.nodeId, img, currentIndex.value)
+  }
 }
 
 const handleImageError = () => {
@@ -210,19 +211,11 @@ const handleImageError = () => {
   actualDimensions.value = null
 }
 
-// In vueNodes mode, we need to set them manually before opening the mask editor.
-const setupNodeForMaskEditor = () => {
-  if (!props.nodeId || !currentImageEl.value) return
-  const node = app.rootGraph?.getNodeById(props.nodeId)
-  if (!node) return
-  node.imageIndex = currentIndex.value
-  node.imgs = [currentImageEl.value]
-  app.canvas?.select(node)
-}
-
 const handleEditMask = () => {
-  setupNodeForMaskEditor()
-  void commandStore.execute('Comfy.MaskEditor.OpenMaskEditor')
+  if (!props.nodeId) return
+  const node = app.rootGraph?.getNodeById(Number(props.nodeId))
+  if (!node) return
+  useMaskEditor().openMaskEditor(node)
 }
 
 const handleDownload = () => {
