@@ -1190,5 +1190,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     versionAdded: '1.39.0'
+  },
+  {
+    id: 'Comfy.NodeReplacement.Enabled',
+    category: ['Comfy', 'Workflow', 'NodeReplacement'],
+    name: 'Enable automatic node replacement',
+    tooltip:
+      'When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists.',
+    type: 'boolean',
+    defaultValue: true,
+    experimental: true,
+    versionAdded: '1.40.0'
   }
 ]
