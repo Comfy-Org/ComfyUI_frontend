@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import type { SystemStats } from '../../src/schemas/apiSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.describe('Version Mismatch Warnings', () => {
+test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
   const ALWAYS_AHEAD_OF_INSTALLED_VERSION = '100.100.100'
   const ALWAYS_BEHIND_INSTALLED_VERSION = '0.0.0'
 

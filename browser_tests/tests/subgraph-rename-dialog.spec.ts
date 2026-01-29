@@ -12,7 +12,7 @@ const SELECTORS = {
   promptDialog: '.graphdialog input'
 } as const
 
-test.describe('Subgraph Slot Rename Dialog', () => {
+test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })

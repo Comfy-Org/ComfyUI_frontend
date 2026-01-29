@@ -8,7 +8,7 @@ test.beforeEach(async ({ comfyPage }) => {
 
 // If an input is optional by node definition, it should be shown as
 // a hollow circle no matter what shape it was defined in the workflow JSON.
-test.describe('Optional input', { tag: '@screenshot' }, () => {
+test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   test('No shape specified', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/optional_input_no_shape')
     await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')

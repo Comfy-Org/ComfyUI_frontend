@@ -13,7 +13,7 @@ async function checkTemplateFileExists(
   return response.ok()
 }
 
-test.describe('Templates', () => {
+test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.Workflow.ShowMissingModelsWarning', false)

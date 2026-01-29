@@ -10,7 +10,7 @@ test.beforeEach(async ({ comfyPage }) => {
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
-test.describe('Selection Toolbox', { tag: '@screenshot' }, () => {
+test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
   })

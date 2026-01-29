@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('LOD Threshold', () => {
+test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
   test('Should switch to low quality mode at correct zoom threshold', async ({
     comfyPage
   }) => {

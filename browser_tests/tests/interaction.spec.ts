@@ -13,7 +13,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Item Interaction', { tag: '@screenshot' }, () => {
+test.describe('Item Interaction', { tag: ['@screenshot', '@node'] }, () => {
   test('Can select/delete all items', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('groups/mixed_graph_items')
     await comfyPage.canvas.press('Control+a')

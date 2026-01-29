@@ -7,43 +7,49 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Canvas Right Click Menu', { tag: '@screenshot' }, () => {
-  test('Can add node', async ({ comfyPage }) => {
-    await comfyPage.rightClickCanvas()
-    await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
-    await comfyPage.page.getByText('Add Node').click()
-    await comfyPage.nextFrame()
-    await comfyPage.page.getByText('loaders').click()
-    await comfyPage.nextFrame()
-    await comfyPage.page.getByText('Load VAE').click()
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('add-node-node-added.png')
-  })
+test.describe(
+  'Canvas Right Click Menu',
+  { tag: ['@screenshot', '@ui'] },
+  () => {
+    test('Can add node', async ({ comfyPage }) => {
+      await comfyPage.rightClickCanvas()
+      await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
+      await comfyPage.page.getByText('Add Node').click()
+      await comfyPage.nextFrame()
+      await comfyPage.page.getByText('loaders').click()
+      await comfyPage.nextFrame()
+      await comfyPage.page.getByText('Load VAE').click()
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot('add-node-node-added.png')
+    })
 
-  test('Can add group', async ({ comfyPage }) => {
-    await comfyPage.rightClickCanvas()
-    await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
-    await comfyPage.page.getByText('Add Group', { exact: true }).click()
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('add-group-group-added.png')
-  })
+    test('Can add group', async ({ comfyPage }) => {
+      await comfyPage.rightClickCanvas()
+      await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
+      await comfyPage.page.getByText('Add Group', { exact: true }).click()
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'add-group-group-added.png'
+      )
+    })
 
-  test('Can convert to group node', async ({ comfyPage }) => {
-    await comfyPage.select2Nodes()
-    await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
-    await comfyPage.rightClickCanvas()
-    await comfyPage.clickContextMenuItem('Convert to Group Node (Deprecated)')
-    await comfyPage.promptDialogInput.fill('GroupNode2CLIP')
-    await comfyPage.page.keyboard.press('Enter')
-    await comfyPage.promptDialogInput.waitFor({ state: 'hidden' })
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'right-click-node-group-node.png'
-    )
-  })
-})
+    test('Can convert to group node', async ({ comfyPage }) => {
+      await comfyPage.select2Nodes()
+      await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
+      await comfyPage.rightClickCanvas()
+      await comfyPage.clickContextMenuItem('Convert to Group Node (Deprecated)')
+      await comfyPage.promptDialogInput.fill('GroupNode2CLIP')
+      await comfyPage.page.keyboard.press('Enter')
+      await comfyPage.promptDialogInput.waitFor({ state: 'hidden' })
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'right-click-node-group-node.png'
+      )
+    })
+  }
+)
 
-test.describe('Node Right Click Menu', { tag: '@screenshot' }, () => {
+test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
   test('Can open properties panel', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')

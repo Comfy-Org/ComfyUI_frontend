@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Keybindings', () => {
+test.describe('Keybindings', { tag: '@keyboard' }, () => {
   test('Should execute command', async ({ comfyPage }) => {
     await comfyPage.registerCommand('TestCommand', () => {
       window['foo'] = true

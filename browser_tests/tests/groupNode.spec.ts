@@ -8,7 +8,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Group Node', () => {
+test.describe('Group Node', { tag: '@node' }, () => {
   test.describe('Node library sidebar', () => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     const groupNodeCategory = 'group nodes>workflow'

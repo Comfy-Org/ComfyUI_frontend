@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Graph Canvas Menu', () => {
+test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Set link render mode to spline to make sure it's not affected by other tests'
     // side effects.

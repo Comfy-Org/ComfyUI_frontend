@@ -7,7 +7,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Node search box', () => {
+test.describe('Node search box', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.LinkRelease.Action', 'search box')
     await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
@@ -257,7 +257,7 @@ test.describe('Node search box', () => {
   })
 })
 
-test.describe('Release context menu', () => {
+test.describe('Release context menu', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.LinkRelease.Action', 'context menu')
     await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')

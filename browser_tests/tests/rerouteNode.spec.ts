@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { getMiddlePoint } from '../fixtures/utils/litegraphUtils'
 
-test.describe('Reroute Node', { tag: '@screenshot' }, () => {
+test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
@@ -38,92 +38,96 @@ test.describe('Reroute Node', { tag: '@screenshot' }, () => {
   })
 })
 
-test.describe('LiteGraph Native Reroute Node', { tag: '@screenshot' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-    await comfyPage.setSetting('LiteGraph.Reroute.SplineOffset', 80)
-  })
+test.describe(
+  'LiteGraph Native Reroute Node',
+  { tag: ['@screenshot', '@node'] },
+  () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+      await comfyPage.setSetting('LiteGraph.Reroute.SplineOffset', 80)
+    })
 
-  test('loads from workflow', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('reroute/native_reroute')
-    await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
-  })
+    test('loads from workflow', async ({ comfyPage }) => {
+      await comfyPage.loadWorkflow('reroute/native_reroute')
+      await expect(comfyPage.canvas).toHaveScreenshot('native_reroute.png')
+    })
 
-  test('@2x @0.5x Can add reroute by alt clicking on link', async ({
-    comfyPage
-  }) => {
-    const loadCheckpointNode = (
-      await comfyPage.getNodeRefsByTitle('Load Checkpoint')
-    )[0]
-    const clipEncodeNode = (
-      await comfyPage.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
-    )[0]
+    test('@2x @0.5x Can add reroute by alt clicking on link', async ({
+      comfyPage
+    }) => {
+      const loadCheckpointNode = (
+        await comfyPage.getNodeRefsByTitle('Load Checkpoint')
+      )[0]
+      const clipEncodeNode = (
+        await comfyPage.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
+      )[0]
 
-    const slot1 = await loadCheckpointNode.getOutput(1)
-    const slot2 = await clipEncodeNode.getInput(0)
-    const middlePoint = getMiddlePoint(
-      await slot1.getPosition(),
-      await slot2.getPosition()
-    )
+      const slot1 = await loadCheckpointNode.getOutput(1)
+      const slot2 = await clipEncodeNode.getInput(0)
+      const middlePoint = getMiddlePoint(
+        await slot1.getPosition(),
+        await slot2.getPosition()
+      )
 
-    await comfyPage.page.keyboard.down('Alt')
-    await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
-    await comfyPage.page.keyboard.up('Alt')
+      await comfyPage.page.keyboard.down('Alt')
+      await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
+      await comfyPage.page.keyboard.up('Alt')
 
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'native_reroute_alt_click.png'
-    )
-  })
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'native_reroute_alt_click.png'
+      )
+    })
 
-  test('Can add reroute by clicking middle of link context menu', async ({
-    comfyPage
-  }) => {
-    const loadCheckpointNode = (
-      await comfyPage.getNodeRefsByTitle('Load Checkpoint')
-    )[0]
-    const clipEncodeNode = (
-      await comfyPage.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
-    )[0]
+    test('Can add reroute by clicking middle of link context menu', async ({
+      comfyPage
+    }) => {
+      const loadCheckpointNode = (
+        await comfyPage.getNodeRefsByTitle('Load Checkpoint')
+      )[0]
+      const clipEncodeNode = (
+        await comfyPage.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
+      )[0]
 
-    const slot1 = await loadCheckpointNode.getOutput(1)
-    const slot2 = await clipEncodeNode.getInput(0)
-    const middlePoint = getMiddlePoint(
-      await slot1.getPosition(),
-      await slot2.getPosition()
-    )
+      const slot1 = await loadCheckpointNode.getOutput(1)
+      const slot2 = await clipEncodeNode.getInput(0)
+      const middlePoint = getMiddlePoint(
+        await slot1.getPosition(),
+        await slot2.getPosition()
+      )
 
-    await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
-    await comfyPage.page
-      .locator('.litecontextmenu .litemenu-entry', { hasText: 'Add Reroute' })
-      .click()
+      await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
+      await comfyPage.page
+        .locator('.litecontextmenu .litemenu-entry', { hasText: 'Add Reroute' })
+        .click()
 
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'native_reroute_context_menu.png'
-    )
-  })
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'native_reroute_context_menu.png'
+      )
+    })
 
-  test('Can delete link that is connected to two reroutes', async ({
-    comfyPage
-  }) => {
-    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/4695
-    await comfyPage.loadWorkflow(
-      'reroute/single-native-reroute-default-workflow'
-    )
+    test('Can delete link that is connected to two reroutes', async ({
+      comfyPage
+    }) => {
+      // https://github.com/Comfy-Org/ComfyUI_frontend/issues/4695
+      await comfyPage.loadWorkflow(
+        'reroute/single-native-reroute-default-workflow'
+      )
 
-    // To find the clickable midpoint button, we use the hardcoded value from the browser logs
-    // since the link is a bezier curve and not a straight line.
-    const middlePoint = { x: 359.4188232421875, y: 468.7716979980469 }
+      // To find the clickable midpoint button, we use the hardcoded value from the browser logs
+      // since the link is a bezier curve and not a straight line.
+      const middlePoint = { x: 359.4188232421875, y: 468.7716979980469 }
 
-    // Click the middle point of the link to open the context menu.
-    await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
+      // Click the middle point of the link to open the context menu.
+      await comfyPage.page.mouse.click(middlePoint.x, middlePoint.y)
 
-    // Click the "Delete" context menu option.
-    await comfyPage.page
-      .locator('.litecontextmenu .litemenu-entry', { hasText: 'Delete' })
-      .click()
+      // Click the "Delete" context menu option.
+      await comfyPage.page
+        .locator('.litecontextmenu .litemenu-entry', { hasText: 'Delete' })
+        .click()
 
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'native_reroute_delete_from_midpoint_context_menu.png'
-    )
-  })
-})
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'native_reroute_delete_from_midpoint_context_menu.png'
+      )
+    })
+  }
+)
