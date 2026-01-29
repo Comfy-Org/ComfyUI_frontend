@@ -1301,6 +1301,28 @@
     "discoverCommunityContent": "커뮤니티에서 만든 노드 팩 및 확장 프로그램을 찾아보세요...",
     "downloads": "다운로드",
     "enablePackToChangeVersion": "버전을 변경하려면 이 팩을 활성화하세요",
+    "emptyState": {
+      "allInstalled": {
+        "title": "설치된 확장 프로그램 없음",
+        "message": "아직 설치한 확장 프로그램이 없습니다."
+      },
+      "conflicting": {
+        "title": "충돌 없음",
+        "message": "모든 확장 프로그램이 호환됩니다."
+      },
+      "missing": {
+        "title": "누락된 노드 없음",
+        "message": "필요한 모든 노드가 설치되어 있습니다."
+      },
+      "updateAvailable": {
+        "title": "모두 최신 상태",
+        "message": "모든 확장 프로그램이 최신 버전입니다."
+      },
+      "workflow": {
+        "title": "워크플로에 확장 프로그램 없음",
+        "message": "이 워크플로는 확장 노드를 사용하지 않습니다."
+      }
+    },
     "errorConnecting": "Comfy Node Registry에 연결하는 중 오류가 발생했습니다.",
     "extensionsSuccessfullyInstalled": "확장이 성공적으로 설치되어 사용할 준비가 되었습니다!",
     "failed": "실패 ({count})",
