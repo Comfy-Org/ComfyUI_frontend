@@ -4,15 +4,15 @@
   synced with the stateStorage (localStorage). -->
   <LiteGraphCanvasSplitterOverlay v-if="comfyAppReady">
     <template v-if="showUI" #workflow-tabs>
+      <!-- Native drag area for Electron (when tabs are NOT in topbar) -->
+      <div
+        v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
+        class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
+      />
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         class="workflow-tabs-container pointer-events-auto relative h-9.5 w-full"
       >
-        <!-- Native drag area for Electron -->
-        <div
-          v-if="isNativeWindow() && workflowTabsPosition !== 'Topbar'"
-          class="app-drag fixed top-0 left-0 z-10 h-[var(--comfy-topbar-height)] w-full"
-        />
         <div
           class="flex h-full items-center border-b border-interface-stroke bg-comfy-menu-bg shadow-interface"
         >
@@ -225,13 +225,11 @@ const handleVueNodeLifecycleReset = async () => {
   }
 }
 
-watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
-
 watch(
-  () => canvasStore.isInSubgraph,
-  async (newValue, oldValue) => {
-    if (oldValue && !newValue) {
-      useWorkflowStore().updateActiveGraph()
+  () => [canvasStore.currentGraph, canvasStore.isInSubgraph] as const,
+  async ([_graph, isInSubgraph], [_prevGraph, wasInSubgraph]) => {
+    if (wasInSubgraph && !isInSubgraph) {
+      workflowStore.updateActiveGraph()
     }
     await handleVueNodeLifecycleReset()
   }
@@ -294,15 +292,18 @@ watch(
   }
 )
 
+let paletteWatcherRunId = 0
 watch(
   [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],
   async ([canvas, currentPaletteId]) => {
     if (!canvas) return
-
+    const runId = ++paletteWatcherRunId
     await colorPaletteService.loadColorPalette(currentPaletteId)
+    if (runId !== paletteWatcherRunId) return
   }
 )
 
+let backgroundWatcherRunId = 0
 watch(
   () => settingStore.get('Comfy.Canvas.BackgroundImage'),
   async () => {
@@ -310,8 +311,10 @@ watch(
     const currentPaletteId = colorPaletteStore.activePaletteId
     if (!currentPaletteId) return
 
+    const runId = ++backgroundWatcherRunId
     // Reload color palette to apply background image
     await colorPaletteService.loadColorPalette(currentPaletteId)
+    if (runId !== backgroundWatcherRunId) return
     // Mark background canvas as dirty
     canvasStore.canvas.setDirty(false, true)
   }
@@ -319,7 +322,10 @@ watch(
 watch(
   () => colorPaletteStore.activePaletteId,
   async (newValue) => {
-    await settingStore.set('Comfy.ColorPalette', newValue)
+    // Guard against ping-pong: only set if value actually differs
+    if (newValue && settingStore.get('Comfy.ColorPalette') !== newValue) {
+      await settingStore.set('Comfy.ColorPalette', newValue)
+    }
   }
 )
 
@@ -330,7 +336,7 @@ watch(
   ([nodeLocationProgressStates, canvas]) => {
     if (!canvas?.graph) return
     for (const node of canvas.graph.nodes) {
-      const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
+      const nodeLocatorId = workflowStore.nodeIdToNodeLocatorId(node.id)
       const progressState = nodeLocationProgressStates[nodeLocatorId]
       if (progressState && progressState.state === 'running') {
         node.progress = progressState.value / progressState.max
@@ -341,8 +347,7 @@ watch(
 
     // Force canvas redraw to ensure progress updates are visible
     canvas.setDirty(true, false)
-  },
-  { deep: true }
+  }
 )
 
 // Update node slot errors for LiteGraph nodes
@@ -396,6 +401,7 @@ useEventListener(
 
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
+const commandStore = useCommandStore()
 const { flags } = useFeatureFlags()
 // Set up invite loader during setup phase so useRoute/useRouter work correctly
 const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
@@ -410,20 +416,26 @@ usePaste()
 useWorkflowAutoSave()
 
 // Start watching for locale change after the initial value is loaded.
+let localeWatcherRunId = 0
 watch(
   () => settingStore.get('Comfy.Locale'),
   async (_newLocale, oldLocale) => {
     if (!oldLocale) return
+    const runId = ++localeWatcherRunId
+    await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
+    if (runId !== localeWatcherRunId) return
     await Promise.all([
       until(() => isSettingsReady.value || !!settingsError.value).toBe(true),
       until(() => isI18nReady.value || !!i18nError.value).toBe(true)
     ])
+    if (runId !== localeWatcherRunId) return
     if (settingsError.value || i18nError.value) {
       console.warn(
         'Somehow the Locale setting was changed while the settings or i18n had a setup error'
       )
     }
-    await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+    await commandStore.execute('Comfy.RefreshNodeDefinitions')
+    if (runId !== localeWatcherRunId) return
     await useWorkflowService().reloadCurrentWorkflow()
   }
 )
@@ -435,6 +447,10 @@ useEventListener(
   }
 )
 
+let disposed = false
+let prevOnSelectionChange: typeof comfyApp.canvas.onSelectionChange | null =
+  null
+
 onMounted(async () => {
   comfyApp.vueAppReady = true
   workspaceStore.spinner = true
@@ -443,6 +459,7 @@ onMounted(async () => {
   ChangeTracker.init()
 
   await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
+  if (disposed) return
 
   if (settingsError.value) {
     if (settingsError.value instanceof UnauthorizedError) {
@@ -461,6 +478,8 @@ onMounted(async () => {
     until(() => isI18nReady.value || !!i18nError.value).toBe(true),
     useNewUserService().initializeIfNewUser()
   ])
+  if (disposed) return
+
   if (i18nError.value) {
     console.warn(
       '[GraphCanvas] Failed to load custom nodes i18n:',
@@ -470,6 +489,8 @@ onMounted(async () => {
 
   // @ts-expect-error fixme ts strict error
   await comfyApp.setup(canvasRef.value)
+  if (disposed) return
+
   canvasStore.canvas = comfyApp.canvas
   canvasStore.canvas.render_canvas_border = false
   workspaceStore.spinner = false
@@ -482,6 +503,7 @@ onMounted(async () => {
 
   vueNodeLifecycle.setupEmptyGraphListener()
 
+  prevOnSelectionChange = comfyApp.canvas.onSelectionChange
   comfyApp.canvas.onSelectionChange = useChainCallback(
     comfyApp.canvas.onSelectionChange,
     () => canvasStore.updateSelectedItems()
@@ -494,10 +516,13 @@ onMounted(async () => {
 
   // Restore saved workflow and workflow tabs state
   await workflowPersistence.initializeWorkflow()
+  if (disposed) return
+
   workflowPersistence.restoreWorkflowTabsState()
 
   // Load template from URL if present
   await workflowPersistence.loadTemplateFromUrlIfPresent()
+  if (disposed) return
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
@@ -515,6 +540,10 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  disposed = true
   vueNodeLifecycle.cleanup()
+  if (prevOnSelectionChange && comfyApp.canvas) {
+    comfyApp.canvas.onSelectionChange = prevOnSelectionChange
+  }
 })
 </script>
