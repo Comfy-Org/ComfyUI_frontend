@@ -992,6 +992,44 @@ export class LGraph
       }
     }
 
+    // Handle SubgraphNode-specific cleanup
+    if (node.isSubgraphNode()) {
+      const subgraphId = node.subgraph.id
+
+      // Fire onRemoved for all nodes inside the subgraph
+      for (const innerNode of node.subgraph.nodes) {
+        innerNode.onRemoved?.()
+        node.subgraph.onNodeRemoved?.(innerNode)
+      }
+
+      // Remove subgraph definition if no other nodes reference it
+      const hasOtherReferences = this.rootGraph.nodes.some(
+        (n) => n !== node && n.isSubgraphNode() && n.subgraph.id === subgraphId
+      )
+
+      if (!hasOtherReferences) {
+        // Also check nested subgraphs for references
+        let foundInNested = false
+        for (const subgraph of this.rootGraph.subgraphs.values()) {
+          if (subgraph.id === subgraphId) continue
+          for (const subNode of subgraph.nodes) {
+            if (
+              subNode.isSubgraphNode() &&
+              subNode.subgraph.id === subgraphId
+            ) {
+              foundInNested = true
+              break
+            }
+          }
+          if (foundInNested) break
+        }
+
+        if (!foundInNested) {
+          this.rootGraph.subgraphs.delete(subgraphId)
+        }
+      }
+    }
+
     // callback
     node.onRemoved?.()
 

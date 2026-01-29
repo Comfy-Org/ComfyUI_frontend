@@ -5,6 +5,7 @@ import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import type {
   ISubgraphInput,
@@ -47,8 +48,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override readonly type: UUID
   override readonly isVirtualNode = true as const
+  override graph: GraphOrSubgraph | null
 
   get rootGraph(): LGraph {
+    if (!this.graph) throw new NullGraphError()
     return this.graph.rootGraph
   }
 
@@ -67,12 +70,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   constructor(
     /** The (sub)graph that contains this subgraph instance. */
-    override readonly graph: GraphOrSubgraph,
+    graph: GraphOrSubgraph,
     /** The definition of this subgraph; how its nodes are configured, etc. */
     readonly subgraph: Subgraph,
     instanceData: ExportedSubgraphInstance
   ) {
     super(subgraph.name, subgraph.id)
+    this.graph = graph
 
     // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
@@ -496,7 +500,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const subgraphInstanceIdPath = [...subgraphNodePath, this.id]
 
     // Store the subgraph node DTO
-    const parentSubgraphNode = this.graph.rootGraph
+    const parentSubgraphNode = this.rootGraph
       .resolveSubgraphIdPath(subgraphNodePath)
       .at(-1)
     const subgraphNodeDto = new ExecutableNodeDTO(

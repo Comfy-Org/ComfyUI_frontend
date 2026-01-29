@@ -54,7 +54,7 @@ describe.skip('SubgraphNode Construction', () => {
   it('should maintain reference to root graph', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const parentGraph = subgraphNode.graph
+    const parentGraph = subgraphNode.graph!
 
     expect(subgraphNode.rootGraph).toBe(parentGraph.rootGraph)
   })
