@@ -1,4 +1,5 @@
 import { toString } from 'es-toolkit/compat'
+import { toValue } from 'vue'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -2799,6 +2800,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             pointer.onClick = () => {}
             return
           }
+        }
+      }
+      for (const badge of node.badges.map(toValue).filter((b) => b.onClick)) {
+        if (isInRect(pos[0], pos[1], badge.boundingRect)) {
+          pointer.onClick = badge.onClick
+          return
         }
       }
 
