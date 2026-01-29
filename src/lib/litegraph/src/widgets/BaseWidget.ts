@@ -57,10 +57,10 @@ export abstract class BaseWidget<
     maxWidth?: number
   }
 
-  #node: LGraphNode
+  private _node: LGraphNode
   /** The node that this widget belongs to. */
   get node() {
-    return this.#node
+    return this._node
   }
 
   linkedWidgets?: IBaseWidget[]
@@ -97,20 +97,20 @@ export abstract class BaseWidget<
     canvas: LGraphCanvas
   ): boolean
 
-  #value?: TWidget['value']
+  private _value?: TWidget['value']
   get value(): TWidget['value'] {
-    return this.#value
+    return this._value
   }
 
   set value(value: TWidget['value']) {
-    this.#value = value
+    this._value = value
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
   constructor(widget: TWidget, node: LGraphNode)
   constructor(widget: TWidget & { node: LGraphNode }, node?: LGraphNode) {
     // Private fields
-    this.#node = node ?? widget.node
+    this._node = node ?? widget.node
 
     // The set and get functions for DOM widget values are hacked on to the options object;
     // attempting to set value before options will throw.
