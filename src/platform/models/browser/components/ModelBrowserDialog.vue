@@ -88,15 +88,12 @@
         <!-- Table Header for List View -->
         <div
           v-if="viewMode === 'list'"
-          class="grid grid-cols-[48px_1fr_120px_120px_100px_100px_40px] gap-4 items-center px-4 py-2 bg-table-header-background border-b border-border-default sticky top-0 z-10"
+          class="grid grid-cols-[48px_1fr_120px_100px_100px_40px] gap-4 items-center px-4 py-2 bg-table-header-background border-b border-border-default sticky top-0 z-10"
         >
           <div></div>
           <!-- Thumbnail column -->
           <div class="text-xs font-medium text-muted-foreground">
             {{ $t('modelBrowser.columns.modelName') }}
-          </div>
-          <div class="text-xs font-medium text-muted-foreground">
-            {{ $t('modelBrowser.columns.baseModel') }}
           </div>
           <div class="text-xs font-medium text-muted-foreground">
             {{ $t('modelBrowser.columns.modelType') }}

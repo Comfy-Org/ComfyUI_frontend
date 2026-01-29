@@ -81,31 +81,6 @@ export function transformToEnrichedModel(
 }
 
 /**
- * Load metadata for an enriched model
- * Calls the original model's load() method and returns updated enriched model
- * Returns a new object to maintain immutability
- */
-async function loadModelMetadata(
-  model: EnrichedModel
-): Promise<EnrichedModel> {
-  await model.original.load()
-
-  // Return new enriched model with loaded metadata (immutable)
-  return {
-    ...model,
-    description: model.original.description || undefined,
-    tags: model.original.tags.length > 0 ? model.original.tags : undefined,
-    author: model.original.author || undefined,
-    architectureId: model.original.architecture_id || undefined,
-    resolution: model.original.resolution || undefined,
-    usageHint: model.original.usage_hint || undefined,
-    triggerPhrase: model.original.trigger_phrase || undefined,
-    displayName: model.original.title || model.simplifiedName,
-    previewUrl: model.original.image || model.previewUrl
-  }
-}
-
-/**
  * Format file size to human-readable string
  */
 export function formatFileSize(bytes?: number): string {
