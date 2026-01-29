@@ -1965,6 +1965,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.addEventListener('pointercancel', this._mousecancel_callback, true)
 
     canvas.addEventListener('contextmenu', this._doNothing)
+    // Prevent middle-click paste on Linux (PRIMARY clipboard) - fixes #4464
+    canvas.addEventListener('auxclick', this._doNothing)
 
     // Keyboard
     this._key_callback = this.processKey.bind(this)
@@ -2003,6 +2005,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     canvas.removeEventListener('keydown', this._key_callback!)
     document.removeEventListener('keyup', this._key_callback!)
     canvas.removeEventListener('contextmenu', this._doNothing)
+    canvas.removeEventListener('auxclick', this._doNothing)
     canvas.removeEventListener('dragenter', this._doReturnTrue)
 
     this._mousedown_callback = undefined
