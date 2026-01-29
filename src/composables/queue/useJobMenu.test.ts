@@ -40,7 +40,7 @@ vi.mock('@/platform/assets/composables/media/assetMappers', () => ({
 }))
 
 const mediaAssetActionsMock = {
-  confirmDelete: vi.fn()
+  deleteAssets: vi.fn()
 }
 vi.mock('@/platform/assets/composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => mediaAssetActionsMock
@@ -198,7 +198,7 @@ describe('useJobMenu', () => {
     }))
     queueStoreMock.update.mockResolvedValue(undefined)
     queueStoreMock.delete.mockResolvedValue(undefined)
-    mediaAssetActionsMock.confirmDelete.mockResolvedValue(false)
+    mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
     mapTaskOutputToAssetItemMock.mockImplementation((task, output) => ({
       task,
       output
@@ -666,7 +666,7 @@ describe('useJobMenu', () => {
   })
 
   it('deletes preview asset when confirmed', async () => {
-    mediaAssetActionsMock.confirmDelete.mockResolvedValue(true)
+    mediaAssetActionsMock.deleteAssets.mockResolvedValue(true)
     const { jobMenuEntries } = mountJobMenu()
     const preview = { filename: 'foo', subfolder: 'bar', type: 'output' }
     const taskRef = { previewOutput: preview }
@@ -681,7 +681,7 @@ describe('useJobMenu', () => {
   })
 
   it('does not refresh queue when delete cancelled', async () => {
-    mediaAssetActionsMock.confirmDelete.mockResolvedValue(false)
+    mediaAssetActionsMock.deleteAssets.mockResolvedValue(false)
     const { jobMenuEntries } = mountJobMenu()
     setCurrentItem(
       createJobItem({

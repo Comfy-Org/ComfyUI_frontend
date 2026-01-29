@@ -19,6 +19,7 @@
 ### How Extensions Load
 
 **Backend Flow (Python Custom Nodes):**
+
 1. ComfyUI server starts → scans `/custom_nodes/` directories
 2. Loads Python modules (e.g., `/custom_nodes/ComfyUI-Impact-Pack/__init__.py`)
 3. Python code registers new node types with the server
@@ -27,12 +28,14 @@
 
 **Frontend Flow (JavaScript):**
 
-*Core Extensions (always available):*
+_Core Extensions (always available):_
+
 1. Built directly into the frontend bundle at `/src/extensions/core/`
 2. Loaded immediately when the frontend starts
 3. No network requests needed - they're part of the compiled code
 
-*Custom Node JavaScript (loaded dynamically):*
+_Custom Node JavaScript (loaded dynamically):_
+
 1. Frontend starts → calls `/extensions` API
 2. Server responds with list of JavaScript files from:
    - `/web/extensions/*.js` (legacy location)
@@ -42,6 +45,7 @@
 5. These registered hooks enhance the UI for their associated Python nodes
 
 **The Key Distinction:**
+
 - **Python nodes** = Backend processing (what shows in your node menu)
 - **JavaScript extensions** = Frontend enhancements (how nodes look/behave in the UI)
 - A custom node package can have both, just Python, or (rarely) just JavaScript
@@ -58,6 +62,7 @@ ComfyUI migrated to TypeScript and Vite, but thousands of extensions rely on the
 
 **Production Build:**
 During production build, a custom Vite plugin:
+
 - Binds all module exports to `window.comfyAPI`
 - Generates shim files that re-export from this global object
 
@@ -73,6 +78,7 @@ import { api } from '/scripts/api.js'
 ```
 
 **Why Dev Server Can't Support This:**
+
 - The dev server serves raw source files without bundling
 - Vite refuses to transform node_modules in unbundled mode
 - Creating real-time shims would require intercepting every module request
@@ -81,6 +87,7 @@ import { api } from '/scripts/api.js'
 ### The Trade-off
 
 This was the least friction approach:
+
 - ✅ Extensions work in production without changes
 - ✅ Developers get modern tooling (TypeScript, hot reload)
 - ❌ Extension testing requires production build or workarounds
@@ -104,11 +111,13 @@ The alternative would have been breaking all existing extensions or staying with
 ### Option 2: Use Production Build
 
 Build the frontend for full functionality:
+
 ```bash
 pnpm build
 ```
 
 For faster iteration during development, use watch mode:
+
 ```bash
 pnpm exec vite build --watch
 ```
@@ -118,6 +127,7 @@ Note: Watch mode provides faster rebuilds than full builds, but still no hot rel
 ### Option 3: Test Against Cloud/Staging
 
 For cloud extensions, modify `.env`:
+
 ```
 DEV_SERVER_COMFYUI_URL=http://stagingcloud.comfy.org/
 ```

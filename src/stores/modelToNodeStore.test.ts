@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -82,7 +83,7 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
 
 describe('useModelToNodeStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
   })
 
@@ -330,7 +331,7 @@ describe('useModelToNodeStore', () => {
 
     it('should not register when nodeDefStore is empty', () => {
       // Create fresh Pinia for this test to avoid state persistence
-      setActivePinia(createPinia())
+      setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: {}
@@ -355,7 +356,7 @@ describe('useModelToNodeStore', () => {
 
     it('should return empty Record when nodeDefStore is empty', () => {
       // Create fresh Pinia for this test to avoid state persistence
-      setActivePinia(createPinia())
+      setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: {}

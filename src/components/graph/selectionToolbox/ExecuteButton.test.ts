@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
+import { useSelectionState } from '@/composables/graph/useSelectionState'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -47,7 +48,7 @@ describe('ExecuteButton', () => {
     }
   })
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // Set up Pinia with testing utilities
     setActivePinia(
       createTestingPinia({
@@ -71,10 +72,7 @@ describe('ExecuteButton', () => {
     vi.spyOn(commandStore, 'execute').mockResolvedValue()
 
     // Update the useSelectionState mock
-    const { useSelectionState } = vi.mocked(
-      await import('@/composables/graph/useSelectionState')
-    )
-    useSelectionState.mockReturnValue({
+    vi.mocked(useSelectionState).mockReturnValue({
       selectedNodes: {
         value: mockSelectedNodes
       }

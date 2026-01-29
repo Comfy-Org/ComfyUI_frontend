@@ -14,6 +14,7 @@ import { VueFire, VueFireAuth } from 'vuefire'
 import { getFirebaseConfig } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
+import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -43,6 +44,7 @@ const firebaseApp = initializeApp(getFirebaseConfig())
 
 const app = createApp(App)
 const pinia = createPinia()
+
 Sentry.init({
   app,
   dsn: __SENTRY_DSN__,
@@ -87,5 +89,8 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+const bootstrapStore = useBootstrapStore(pinia)
+void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')

@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as VueI18nModule from 'vue-i18n'
 
@@ -79,7 +80,7 @@ describe('useSubscriptionCredits', () => {
   let authStore: ReturnType<typeof useFirebaseAuthStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     authStore = useFirebaseAuthStore()
     vi.clearAllMocks()
   })

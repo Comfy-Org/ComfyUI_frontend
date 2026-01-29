@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
+import { useMediaAssetActions } from './useMediaAssetActions'
+
 // Use vi.hoisted to create a mutable reference for isCloud
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
@@ -112,6 +114,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
+    vi.resetModules()
     setActivePinia(createPinia())
     vi.clearAllMocks()
     capturedFilenames.values = []
@@ -125,7 +128,6 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use asset.name as filename', async () => {
-        const { useMediaAssetActions } = await import('./useMediaAssetActions')
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -145,7 +147,6 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use asset_hash as filename when available', async () => {
-        const { useMediaAssetActions } = await import('./useMediaAssetActions')
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -159,7 +160,6 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should fall back to asset.name when asset_hash is not available', async () => {
-        const { useMediaAssetActions } = await import('./useMediaAssetActions')
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -173,7 +173,6 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should fall back to asset.name when asset_hash is null', async () => {
-        const { useMediaAssetActions } = await import('./useMediaAssetActions')
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -195,7 +194,6 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use asset_hash for each asset', async () => {
-        const { useMediaAssetActions } = await import('./useMediaAssetActions')
         const actions = useMediaAssetActions()
 
         const assets = [

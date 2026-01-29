@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { app } from '@/scripts/app'
@@ -59,7 +60,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
 
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 
@@ -137,7 +138,7 @@ describe('useExecutionStore - Node Error Lookups', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
   })
 

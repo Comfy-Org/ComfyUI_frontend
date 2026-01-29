@@ -14,10 +14,12 @@ export const IsInstallingKey: InjectionKey<Ref<boolean>> =
 
 export enum ManagerTab {
   All = 'all',
-  Installed = 'installed',
+  NotInstalled = 'notInstalled',
+  AllInstalled = 'allInstalled',
+  UpdateAvailable = 'updateAvailable',
+  Conflicting = 'conflicting',
   Workflow = 'workflow',
-  Missing = 'missing',
-  UpdateAvailable = 'updateAvailable'
+  Missing = 'missing'
 }
 
 export type TaskLog = {
