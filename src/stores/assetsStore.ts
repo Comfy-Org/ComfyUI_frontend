@@ -546,6 +546,54 @@ export const useAssetsStore = defineStore('assets', () => {
         }
       }
 
+      /**
+       * Invalidate model caches for a given category (e.g., 'checkpoints', 'loras')
+       * Refreshes all node types that provide this category plus tag-based caches
+       * @param category The model category to invalidate (e.g., 'checkpoints')
+       */
+      async function invalidateModelsForCategory(
+        category: string
+      ): Promise<void> {
+        const providers = modelToNodeStore
+          .getAllNodeProviders(category)
+          .filter((provider) => provider.nodeDef?.name)
+
+        const nodeTypeUpdates = providers.map((provider) =>
+          updateModelsForNodeType(provider.nodeDef.name)
+        )
+
+        const tagUpdates = [
+          updateModelsForTag(category),
+          updateModelsForTag('models')
+        ]
+
+        await Promise.allSettled([...nodeTypeUpdates, ...tagUpdates])
+      }
+
+      /**
+       * Remove a specific asset from all caches for a given category
+       * Used for optimistic updates after asset deletion
+       * @param assetId The asset ID to remove
+       * @param category The model category (e.g., 'loras')
+       */
+      function removeAssetFromCache(assetId: string, category: string): void {
+        const providers = modelToNodeStore.getAllNodeProviders(category)
+
+        for (const provider of providers) {
+          const nodeType = provider.nodeDef?.name
+          if (!nodeType) continue
+
+          const state = modelStateByKey.value.get(nodeType)
+          if (!state) continue
+
+          state.assets.delete(assetId)
+          assetsArrayCache.delete(nodeType)
+        }
+
+        assetsArrayCache.delete(`tag:${category}`)
+        assetsArrayCache.delete('tag:models')
+      }
+
       return {
         getAssets,
         isLoading,
@@ -555,7 +603,9 @@ export const useAssetsStore = defineStore('assets', () => {
         updateModelsForNodeType,
         updateModelsForTag,
         updateAssetMetadata,
-        updateAssetTags
+        updateAssetTags,
+        invalidateModelsForCategory,
+        removeAssetFromCache
       }
     }
 
@@ -569,7 +619,9 @@ export const useAssetsStore = defineStore('assets', () => {
       updateModelsForNodeType: async () => {},
       updateModelsForTag: async () => {},
       updateAssetMetadata: async () => {},
-      updateAssetTags: async () => {}
+      updateAssetTags: async () => {},
+      invalidateModelsForCategory: async () => {},
+      removeAssetFromCache: () => {}
     }
   }
 
@@ -582,7 +634,9 @@ export const useAssetsStore = defineStore('assets', () => {
     updateModelsForNodeType,
     updateModelsForTag,
     updateAssetMetadata,
-    updateAssetTags
+    updateAssetTags,
+    invalidateModelsForCategory,
+    removeAssetFromCache
   } = getModelState()
 
   // Watch for completed downloads and refresh model caches
@@ -658,6 +712,8 @@ export const useAssetsStore = defineStore('assets', () => {
     updateModelsForNodeType,
     updateModelsForTag,
     updateAssetMetadata,
-    updateAssetTags
+    updateAssetTags,
+    invalidateModelsForCategory,
+    removeAssetFromCache
   }
 })

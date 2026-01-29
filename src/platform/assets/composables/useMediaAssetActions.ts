@@ -14,6 +14,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -585,6 +586,27 @@ export function useMediaAssetActions() {
               if (hasInputAssets) {
                 await assetsStore.updateInputs()
               }
+
+              // Invalidate model caches for affected categories
+              const modelToNodeStore = useModelToNodeStore()
+              const modelCategories = new Set<string>()
+              const excludedTags = ['models', 'input', 'output']
+
+              for (const asset of assetArray) {
+                for (const tag of asset.tags ?? []) {
+                  if (excludedTags.includes(tag)) continue
+                  const providers = modelToNodeStore.getAllNodeProviders(tag)
+                  if (providers.length > 0) {
+                    modelCategories.add(tag)
+                  }
+                }
+              }
+
+              await Promise.allSettled(
+                [...modelCategories].map((category) =>
+                  assetsStore.invalidateModelsForCategory(category)
+                )
+              )
 
               // Show appropriate feedback based on results
               if (failed.length === 0) {

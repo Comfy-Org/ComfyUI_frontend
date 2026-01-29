@@ -36,6 +36,32 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+// Mock modelToNodeStore with proper node providers
+vi.mock('@/stores/modelToNodeStore', () => ({
+  useModelToNodeStore: () => ({
+    getAllNodeProviders: vi.fn((category: string) => {
+      const providers: Record<
+        string,
+        Array<{ nodeDef: { name: string }; key: string }>
+      > = {
+        checkpoints: [
+          { nodeDef: { name: 'CheckpointLoaderSimple' }, key: 'ckpt_name' },
+          { nodeDef: { name: 'ImageOnlyCheckpointLoader' }, key: 'ckpt_name' }
+        ],
+        loras: [
+          { nodeDef: { name: 'LoraLoader' }, key: 'lora_name' },
+          { nodeDef: { name: 'LoraLoaderModelOnly' }, key: 'lora_name' }
+        ],
+        vae: [{ nodeDef: { name: 'VAELoader' }, key: 'vae_name' }]
+      }
+      return providers[category] ?? []
+    }),
+    getNodeProvider: vi.fn(),
+    getCategoryForNodeType: vi.fn(),
+    registerDefaults: vi.fn()
+  })
+}))
+
 // Mock TaskItemImpl
 vi.mock('@/stores/queueStore', () => ({
   TaskItemImpl: class {
@@ -472,12 +498,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     mockIsCloud.value = false
   })
 
-  const createMockAsset = (id: string) => ({
+  const createMockAsset = (id: string, tags: string[] = ['models']) => ({
     id,
     name: `asset-${id}`,
     size: 100,
     created_at: new Date().toISOString(),
-    tags: ['models'],
+    tags,
     preview_url: `http://test.com/${id}`
   })
 
@@ -612,6 +638,83 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(loadingStates).toContain(true)
       expect(loadingStates).toContain(false)
+    })
+  })
+
+  describe('invalidateModelsForCategory', () => {
+    it('should invalidate model cache for all node types providing a category', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        createMockAsset('existing-1'),
+        createMockAsset('existing-2')
+      ])
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getAssets(nodeType)).toHaveLength(2)
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        createMockAsset('existing-1')
+      ])
+
+      await store.invalidateModelsForCategory('checkpoints')
+
+      expect(store.getAssets(nodeType)).toHaveLength(1)
+    })
+
+    it('should invalidate multiple node types for same category', async () => {
+      const store = useAssetsStore()
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([
+        createMockAsset('asset-1')
+      ])
+
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      await store.updateModelsForNodeType('ImageOnlyCheckpointLoader')
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
+
+      await store.invalidateModelsForCategory('checkpoints')
+
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(0)
+      expect(store.getAssets('ImageOnlyCheckpointLoader')).toHaveLength(0)
+    })
+
+    it('should also invalidate tag-based caches', async () => {
+      const store = useAssetsStore()
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
+        createMockAsset('tag-asset-1')
+      ])
+
+      await store.updateModelsForTag('checkpoints')
+      expect(store.getAssets('tag:checkpoints')).toHaveLength(1)
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([])
+
+      await store.invalidateModelsForCategory('checkpoints')
+
+      expect(store.getAssets('tag:checkpoints')).toHaveLength(0)
+    })
+  })
+
+  describe('removeAssetFromCache', () => {
+    it('should remove specific asset from node type cache', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'LoraLoader'
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
+        createMockAsset('lora-1'),
+        createMockAsset('lora-2'),
+        createMockAsset('lora-3')
+      ])
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getAssets(nodeType)).toHaveLength(3)
+
+      store.removeAssetFromCache('lora-2', 'loras')
+
+      expect(store.getAssets(nodeType)).toHaveLength(2)
+      expect(store.getAssets(nodeType).map((a) => a.id)).not.toContain('lora-2')
     })
   })
 })
