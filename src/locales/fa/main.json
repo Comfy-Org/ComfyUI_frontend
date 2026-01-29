@@ -749,6 +749,7 @@
     "deleteImage": "حذف تصویر",
     "deprecated": "منسوخ",
     "description": "توضیحات",
+    "devOnly": "فقط برای توسعه‌دهندگان",
     "devices": "دستگاه‌ها",
     "disableAll": "غیرفعال‌سازی همه",
     "disableSelected": "غیرفعال‌سازی انتخاب‌شده‌ها",
@@ -2323,6 +2324,7 @@
   },
   "subgraphStore": {
     "blueprintName": "نام زیرگراف",
+    "cannotDeleteGlobal": "امکان حذف blueprints نصب‌شده وجود ندارد",
     "confirmDelete": "این عمل باعث حذف دائمی بلوپرینت از کتابخانه شما می‌شود",
     "confirmDeleteTitle": "حذف بلوپرینت؟",
     "hidden": "پارامترهای مخفی / تو در تو",

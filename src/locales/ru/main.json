@@ -749,6 +749,7 @@
     "deleteImage": "Удалить изображение",
     "deprecated": "Устарело",
     "description": "Описание",
+    "devOnly": "Только для разработчиков",
     "devices": "Устройства",
     "disableAll": "Отключить все",
     "disableSelected": "Отключить выбранное",
@@ -2312,6 +2313,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Имя подграфа",
+    "cannotDeleteGlobal": "Невозможно удалить установленные blueprints",
     "confirmDelete": "Это действие навсегда удалит подграф из вашей библиотеки",
     "confirmDeleteTitle": "Удалить подграф?",
     "hidden": "Скрытые / вложенные параметры",

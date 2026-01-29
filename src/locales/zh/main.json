@@ -749,6 +749,7 @@
     "deleteImage": "删除图片",
     "deprecated": "已弃用",
     "description": "描述",
+    "devOnly": "开发专用",
     "devices": "设备",
     "disableAll": "禁用全部",
     "disableSelected": "禁用选中项",
@@ -2323,6 +2324,7 @@
   },
   "subgraphStore": {
     "blueprintName": "子工作流名称",
+    "cannotDeleteGlobal": "无法删除已安装的蓝图",
     "confirmDelete": "此操作将永久从您的库中移除该子工作流",
     "confirmDeleteTitle": "删除子工作流？",
     "hidden": "隐藏/嵌套参数",

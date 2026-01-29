@@ -749,6 +749,7 @@
     "deleteImage": "حذف الصورة",
     "deprecated": "مهمل",
     "description": "الوصف",
+    "devOnly": "للمطورين فقط",
     "devices": "الأجهزة",
     "disableAll": "تعطيل الكل",
     "disableSelected": "تعطيل المحدد",
@@ -2312,6 +2313,7 @@
   },
   "subgraphStore": {
     "blueprintName": "اسم المخطط الفرعي",
+    "cannotDeleteGlobal": "لا يمكن حذف المخططات المثبتة",
     "confirmDelete": "سيؤدي هذا الإجراء إلى إزالة المخطط نهائيًا من مكتبتك",
     "confirmDeleteTitle": "حذف المخطط؟",
     "hidden": "معاملات مخفية / متداخلة",

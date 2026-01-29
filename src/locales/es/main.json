@@ -749,6 +749,7 @@
     "deleteImage": "Eliminar imagen",
     "deprecated": "DEPR",
     "description": "Descripción",
+    "devOnly": "DEV",
     "devices": "Dispositivos",
     "disableAll": "Deshabilitar todo",
     "disableSelected": "Deshabilitar seleccionados",
@@ -2312,6 +2313,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Nombre del subgrafo",
+    "cannotDeleteGlobal": "No se pueden eliminar los blueprints instalados",
     "confirmDelete": "Esta acción eliminará permanentemente el subgrafo de tu biblioteca",
     "confirmDeleteTitle": "¿Eliminar subgrafo?",
     "hidden": "Parámetros ocultos/anidados",

@@ -749,6 +749,7 @@
     "deleteImage": "Görseli sil",
     "deprecated": "ESKİ",
     "description": "Açıklama",
+    "devOnly": "YALNIZCA GELİŞTİRİCİ",
     "devices": "Cihazlar",
     "disableAll": "Tümünü Devre Dışı Bırak",
     "disableSelected": "Seçilenleri Devre Dışı Bırak",
@@ -2312,6 +2313,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Alt Grafik adı",
+    "cannotDeleteGlobal": "Yüklü şablonlar silinemez",
     "confirmDelete": "Bu işlem taslağı kütüphanenizden kalıcı olarak kaldıracaktır",
     "confirmDeleteTitle": "Taslak silinsin mi?",
     "hidden": "Gizli / iç içe parametreler",
