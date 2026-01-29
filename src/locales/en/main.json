@@ -121,6 +121,7 @@
     "customize": "Customize",
     "experimental": "BETA",
     "deprecated": "DEPR",
+    "devOnly": "DEV",
     "loadWorkflow": "Load Workflow",
     "goToNode": "Go to Node",
     "setAsBackground": "Set as Background",
@@ -756,6 +757,7 @@
       "title": "Queue Progress",
       "total": "Total: {percent}",
       "colonPercent": ": {percent}",
+      "inlineTotalLabel": "Total",
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
       "viewList": "List view",
@@ -993,7 +995,8 @@
     "showAll": "Show all",
     "hidden": "Hidden / nested parameters",
     "hideAll": "Hide all",
-    "showRecommended": "Show recommended widgets"
+    "showRecommended": "Show recommended widgets",
+    "cannotDeleteGlobal": "Cannot delete installed blueprints"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
@@ -2544,7 +2547,7 @@
     "tagsPlaceholder": "e.g., models, checkpoint",
     "tryAdjustingFilters": "Try adjusting your search or filters",
     "unknown": "Unknown",
-    "unsupportedUrlSource": "Only URLs from {sources} are supported",
+    "unsupportedUrlSource": "This URL is not supported. Use a direct model link from {sources}. See the how-to videos below for help.",
     "upgradeFeatureDescription": "This feature is only available with Creator or Pro plans.",
     "upgradeToUnlockFeature": "Upgrade to unlock this feature",
     "upload": "Import",

@@ -34,7 +34,7 @@ describe('ModelInfoPanel', () => {
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     last_access_time: '2024-01-01T00:00:00Z',
-    description: 'A test model description',
+    secondaryText: 'A test model description',
     badges: [],
     stats: {},
     ...overrides

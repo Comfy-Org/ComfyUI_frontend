@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -6,6 +7,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 
 vi.mock('@/scripts/app', () => {
   const mockCanvas = {
@@ -46,7 +48,7 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('should not clear navigation stack when workflow internal state changes', async () => {
@@ -136,7 +138,6 @@ describe('useSubgraphNavigationStore', () => {
   it('should clear navigation when activeSubgraph becomes undefined', async () => {
     const navigationStore = useSubgraphNavigationStore()
     const workflowStore = useWorkflowStore()
-    const { findSubgraphPathById } = await import('@/utils/graphTraversalUtil')
 
     // Create mock subgraph and graph structure
     const mockSubgraph = {

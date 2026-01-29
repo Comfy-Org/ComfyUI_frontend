@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useTelemetry } from '@/platform/telemetry'
+
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
 }))
@@ -9,17 +11,14 @@ describe('useTelemetry', () => {
     vi.clearAllMocks()
   })
 
-  it('should return null when not in cloud distribution', async () => {
-    const { useTelemetry } = await import('@/platform/telemetry')
+  it('should return null when not in cloud distribution', () => {
     const provider = useTelemetry()
 
     // Should return null for OSS builds
     expect(provider).toBeNull()
-  }, 10000)
+  })
 
-  it('should return null consistently for OSS builds', async () => {
-    const { useTelemetry } = await import('@/platform/telemetry')
-
+  it('should return null consistently for OSS builds', () => {
     const provider1 = useTelemetry()
     const provider2 = useTelemetry()
 

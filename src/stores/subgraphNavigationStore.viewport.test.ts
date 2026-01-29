@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -46,7 +47,7 @@ const mockCanvas = app.canvas as any
 
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     // Reset canvas state
     mockCanvas.ds.scale = 1
     mockCanvas.ds.offset = [0, 0]

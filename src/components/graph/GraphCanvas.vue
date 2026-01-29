@@ -149,7 +149,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { newUserService } from '@/services/newUserService'
+import { useNewUserService } from '@/services/useNewUserService'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -457,11 +457,9 @@ onMounted(async () => {
   // Register core settings immediately after settings are ready
   CORE_SETTINGS.forEach(settingStore.addSetting)
 
-  // Wait for both i18n and newUserService in parallel
-  // (newUserService only needs settings, not i18n)
   await Promise.all([
     until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-    newUserService().initializeIfNewUser(settingStore)
+    useNewUserService().initializeIfNewUser()
   ])
   if (i18nError.value) {
     console.warn(

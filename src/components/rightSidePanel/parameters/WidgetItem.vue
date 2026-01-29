@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, customRef, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -15,6 +17,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { renameWidget } from '@/utils/widgetUtil'
 
@@ -38,6 +41,7 @@ const {
   isShownOnParents?: boolean
 }>()
 
+const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const isEditing = ref(false)
@@ -59,7 +63,13 @@ const sourceNodeName = computed((): string | null => {
     const { graph, nodeId } = widget._overlay
     sourceNode = getNodeByExecutionId(graph, nodeId)
   }
-  return sourceNode ? sourceNode.title || sourceNode.type : null
+  if (!sourceNode) return null
+  const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
+  return resolveNodeDisplayName(sourceNode, {
+    emptyLabel: fallbackNodeTitle,
+    untitledLabel: fallbackNodeTitle,
+    st
+  })
 })
 
 const hasParents = computed(() => parents?.length > 0)

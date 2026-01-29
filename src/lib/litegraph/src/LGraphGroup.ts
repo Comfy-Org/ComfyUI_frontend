@@ -18,6 +18,7 @@ import {
   containsCentre,
   containsRect,
   createBounds,
+  isInRect,
   isInRectangle,
   isPointInRect,
   snapPoint
@@ -370,6 +371,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     )
   }
 
-  isPointInside = LGraphNode.prototype.isPointInside
+  isPointInside(x: number, y: number): boolean {
+    return isInRect(x, y, this.boundingRect)
+  }
   setDirtyCanvas = LGraphNode.prototype.setDirtyCanvas
 }
