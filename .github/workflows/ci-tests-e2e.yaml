@@ -7,7 +7,7 @@ on:
   pull_request:
     branches-ignore:
       [wip/*, draft/*, temp/*]
-  workflow_dispatch: 
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
