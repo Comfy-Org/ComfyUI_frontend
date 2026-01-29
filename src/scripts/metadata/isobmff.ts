@@ -72,11 +72,11 @@ const findIsobmffBoxByType = (
   return null
 }
 
-const extractJson = <T = unknown>(
+const extractJson = (
   data: Uint8Array,
   start: number,
   end: number
-): T | null => {
+): ComfyWorkflowJSON | ComfyApiWorkflow | null => {
   let jsonStart = start
   while (jsonStart < end && data[jsonStart] !== ASCII.OPEN_BRACE) {
     jsonStart++
@@ -85,7 +85,7 @@ const extractJson = <T = unknown>(
 
   try {
     const jsonText = new TextDecoder().decode(data.slice(jsonStart, end))
-    return JSON.parse(jsonText) as T
+    return JSON.parse(jsonText)
   } catch {
     return null
   }
@@ -137,11 +137,7 @@ const extractMetadataValueFromDataBox = (
     lowerKeyName === ComfyMetadataTags.PROMPT.toLowerCase() ||
     lowerKeyName === ComfyMetadataTags.WORKFLOW.toLowerCase()
   ) {
-    return extractJson<ComfyWorkflowJSON | ComfyApiWorkflow>(
-      data,
-      valueStart,
-      dataBoxEnd
-    )
+    return extractJson(data, valueStart, dataBoxEnd)
   }
   return null
 }

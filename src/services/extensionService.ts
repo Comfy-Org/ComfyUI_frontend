@@ -3,7 +3,6 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
@@ -74,7 +73,7 @@ export const useExtensionService = () => {
       // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets(app)
+          const widgets = await extension.getCustomWidgets()
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
@@ -83,7 +82,7 @@ export const useExtensionService = () => {
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
       const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user),
         (error) => {
           console.error('[Extension Auth Hook Error]', {
             extension: extension.name,
@@ -141,15 +140,18 @@ export const useExtensionService = () => {
    * @param  {unknown[]} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensions = (
-    method: keyof ComfyExtension,
-    ...args: unknown[]
+  type FunctionPropertyNames<T> = {
+    [K in keyof T]: T[K] extends (...args: unknown[]) => unknown ? K : never
+  }[keyof T]
+  const invokeExtensions = <T extends FunctionPropertyNames<ComfyExtension>>(
+    method: T,
+    ...args: Parameters<ComfyExtension[T]>
   ) => {
-    const results: unknown[] = []
+    const results: ReturnType<ComfyExtension[T]>[] = []
     for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
         try {
-          results.push(ext[method](...args, app))
+          results.push(ext[method](...args))
         } catch (error) {
           console.error(
             `Error calling extension '${ext.name}' method '${method}'`,
@@ -170,9 +172,11 @@ export const useExtensionService = () => {
    * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensionsAsync = async (
-    method: keyof ComfyExtension,
-    ...args: unknown[]
+  const invokeExtensionsAsync = async <
+    T extends FunctionPropertyNames<ComfyExtension>
+  >(
+    method: T,
+    ...args: Parameters<ComfyExtension[T]>
   ) => {
     return await Promise.all(
       extensionStore.enabledExtensions.map(async (ext) => {
@@ -183,7 +187,7 @@ export const useExtensionService = () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
             }
 
-            const result = await ext[method](...args, app)
+            const result = await ext[method](...args)
 
             // Clear current extension after setup
             if (method === 'setup') {
