@@ -511,7 +511,7 @@ export function mergeIfValid(
 
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  async beforeRegisterNodeDef(nodeType, _nodeData, app) {
+  async beforeRegisterNodeDef(nodeType, _nodeData) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
       console.warn(

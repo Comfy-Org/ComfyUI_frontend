@@ -180,7 +180,7 @@ jobs:
         with:
           pattern: snapshots-shard-*
           path: ./downloaded-snapshots
-          merge-multiple: false
+          merge-multiple: true
 
       - name: List downloaded files
         run: |
@@ -206,13 +206,13 @@ jobs:
           echo "MERGING CHANGED SNAPSHOTS"
           echo "=========================================="
 
-          # Check if any artifacts were downloaded
+          # Check if any artifacts were downloaded (merge-multiple puts files directly in path)
           if [ ! -d "./downloaded-snapshots" ]; then
             echo "No snapshot artifacts to merge"
             echo "=========================================="
             echo "MERGE COMPLETE"
             echo "=========================================="
-            echo "Shards merged: 0"
+            echo "Files merged: 0"
             exit 0
           fi
 
@@ -222,37 +222,29 @@ jobs:
             exit 1
           fi
 
-          merged_count=0
+          # Count files to merge
+          file_count=$(find ./downloaded-snapshots -type f | wc -l)
 
-          # For each shard's changed files, copy them directly
-          for shard_dir in ./downloaded-snapshots/snapshots-shard-*/; do
-            if [ ! -d "$shard_dir" ]; then
-              continue
-            fi
+          if [ "$file_count" -eq 0 ]; then
+            echo "No snapshot files found in downloaded artifacts"
+            echo "=========================================="
+            echo "MERGE COMPLETE"
+            echo "=========================================="
+            echo "Files merged: 0"
+            exit 0
+          fi
 
-            shard_name=$(basename "$shard_dir")
-            file_count=$(find "$shard_dir" -type f | wc -l)
+          echo "Merging $file_count snapshot file(s)..."
 
-            if [ "$file_count" -eq 0 ]; then
-              echo "  $shard_name: no files"
-              continue
-            fi
+          # Copy all files directly, preserving directory structure
+          # With merge-multiple: true, files are directly in ./downloaded-snapshots/ without shard subdirs
+          cp -v -r ./downloaded-snapshots/* browser_tests/ 2>&1 | sed 's/^/  /'
 
-            echo "Processing $shard_name ($file_count file(s))..."
-
-            # Copy files directly, preserving directory structure
-            # Since files are already in correct structure (no browser_tests/ prefix), just copy them all
-            cp -v -r "$shard_dir"* browser_tests/ 2>&1 | sed 's/^/  /'
-
-            merged_count=$((merged_count + 1))
-            echo "  ✓ Merged"
-            echo ""
-          done
-
+          echo ""
           echo "=========================================="
           echo "MERGE COMPLETE"
           echo "=========================================="
-          echo "Shards merged: $merged_count"
+          echo "Files merged: $file_count"
 
       - name: Show changes
         run: |
