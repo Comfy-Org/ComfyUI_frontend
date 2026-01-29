@@ -320,7 +320,7 @@ test.describe('Support', () => {
     await expect(newPage).toHaveURL(/.*support\.comfy\.org.*/)
 
     const url = new URL(newPage.url())
-    expect(url.searchParams.get('tf_42243568391700')).toBe('oss')
+    expect(url.searchParams.get('tf_42243568391700')).toBe('oss-nightly')
 
     await newPage.close()
   })
