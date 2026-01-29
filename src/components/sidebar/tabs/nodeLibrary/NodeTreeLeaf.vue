@@ -134,8 +134,7 @@ const isUserBlueprint = computed(() => {
   )
 })
 const menuItems = computed<MenuItem[]>(() => {
-  const name = nodeDef.value.name.slice(subgraphStore.typePrefix.length)
-  if (subgraphStore.isGlobalBlueprint(name)) return []
+  if (!isUserBlueprint.value) return []
 
   return [
     {
