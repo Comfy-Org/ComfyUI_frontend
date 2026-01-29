@@ -1493,6 +1493,7 @@
     "Gemini": "Gemini",
     "video_models": "video_models",
     "gligen": "gligen",
+    "Grok": "Grok",
     "sd": "sd",
     "Ideogram": "Ideogram",
     "postprocessing": "postprocessing",
