@@ -25,10 +25,7 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
-import {
-  pushDataLayerEvent as pushDataLayerEventBase,
-  useTelemetry
-} from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -88,7 +85,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (!isCloud || typeof window === 'undefined') return
 
     try {
-      pushDataLayerEventBase(event)
+      window.dataLayer = window.dataLayer || []
+      window.dataLayer.push(event)
     } catch (error) {
       console.warn('Failed to push data layer event', error)
     }

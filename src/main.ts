@@ -32,8 +32,8 @@ if (isCloud) {
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
 
-  const { initGtm } = await import('@/platform/telemetry')
-  initGtm()
+  const { initTelemetry } = await import('@/platform/telemetry')
+  await initTelemetry()
 }
 
 const ComfyUIPreset = definePreset(Aura, {

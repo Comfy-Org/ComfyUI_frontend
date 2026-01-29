@@ -9,7 +9,7 @@ import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { pushDataLayerEvent } from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useUserStore } from '@/stores/userStore'
@@ -40,10 +40,8 @@ const basePath = getBasePath()
 function pushPageView(): void {
   if (!isCloud || typeof window === 'undefined') return
 
-  pushDataLayerEvent({
-    event: 'page_view',
-    page_location: window.location.href,
-    page_title: document.title
+  useTelemetry()?.trackPageView(document.title, {
+    path: window.location.href
   })
 }
 
