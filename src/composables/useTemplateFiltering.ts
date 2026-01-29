@@ -1,4 +1,4 @@
-import { refThrottled, watchDebounced } from '@vueuse/core'
+import { refDebounced, watchDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 import { computed, ref, watch } from 'vue'
