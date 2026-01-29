@@ -4,7 +4,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { fetchNodeReplacements } from './services/nodeReplacementService'
+import { fetchNodeReplacements } from './nodeReplacementService'
 
 export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
   const replacements = ref<NodeReplacementResponse>({})
