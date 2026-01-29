@@ -41,7 +41,7 @@
           :is-small="isSmall"
         />
         <SidebarHelpCenterIcon v-if="!isIntegratedTabBar" :is-small="isSmall" />
-        <SidebarBottomPanelToggleButton :is-small="isSmall" />
+        <SidebarBottomPanelToggleButton v-if="!isCloud" :is-small="isSmall" />
         <SidebarShortcutsToggleButton :is-small="isSmall" />
         <SidebarSettingsButton :is-small="isSmall" />
         <ModeToggle
@@ -65,6 +65,7 @@ import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPa
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
