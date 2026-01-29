@@ -147,6 +147,21 @@ describe('useAssetSelection', () => {
       expect(isSelected('asset-0')).toBe(false)
       expect(selectedCount.value).toBe(0)
     })
+
+    it('toggles with meta key (macOS)', () => {
+      const { handleAssetClick, isSelected, selectedCount } =
+        useAssetSelection()
+      const assets = createMockAssets(3)
+
+      handleAssetClick(assets[0], 0, assets)
+
+      mockMetaKey.value = true
+      handleAssetClick(assets[2], 2, assets)
+
+      expect(isSelected('asset-0')).toBe(true)
+      expect(isSelected('asset-2')).toBe(true)
+      expect(selectedCount.value).toBe(2)
+    })
   })
 
   describe('selectAll', () => {
