@@ -1,7 +1,7 @@
 <template>
   <div
-    v-for="(logo, index) in validLogos"
-    :key="index"
+    v-for="logo in validLogos"
+    :key="logo.provider"
     :class="
       cn('pointer-events-none absolute z-10', logo.position ?? defaultPosition)
     "
