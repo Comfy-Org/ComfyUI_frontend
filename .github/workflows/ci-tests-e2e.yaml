@@ -5,8 +5,7 @@ on:
   push:
     branches: [main, master, core/*, desktop/*]
   pull_request:
-    branches-ignore:
-      [wip/*, draft/*, temp/*]
+    branches-ignore: [wip/*, draft/*, temp/*]
   workflow_dispatch:
 
 concurrency:
