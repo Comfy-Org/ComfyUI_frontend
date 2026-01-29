@@ -80,7 +80,7 @@
               })
             "
             :class="getAssetCardClass(isSelected(item.asset.id))"
-            :preview-url="item.asset.preview_url"
+            :preview-url="item.asset.preview_url ?? undefined"
             :preview-alt="item.asset.name"
             :icon-name="
               iconForMediaType(getMediaTypeFromFilename(item.asset.name))

@@ -10,7 +10,7 @@
       muted
       loop
       playsinline
-      :poster="asset.preview_url"
+      :poster="asset.preview_url ?? undefined"
       class="relative size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
       @click.stop
       @play="onVideoPlay"

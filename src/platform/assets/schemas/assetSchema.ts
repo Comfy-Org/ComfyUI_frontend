@@ -8,8 +8,8 @@ const zAsset = z.object({
   size: z.number().optional(), // TBD: Will be provided by history API in the future
   mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
-  preview_id: z.string().nullable().optional(),
-  preview_url: z.string().optional(),
+  preview_id: z.string().nullish(),
+  preview_url: z.string().nullish(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
   is_immutable: z.boolean().optional(),
