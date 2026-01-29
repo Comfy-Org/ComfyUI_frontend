@@ -4,6 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
+import { uploadMediaBatch } from '@/platform/assets/services/uploadService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -16,7 +17,6 @@ import type {
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import type { ResultItemType } from '@/schemas/apiSchema'
-import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -248,46 +248,30 @@ function updateSelectedItems(selectedItems: Set<SelectedKey>) {
   modelValue.value = name
 }
 
-// Upload file function (copied from useNodeImageUpload.ts)
-const uploadFile = async (
-  file: File,
-  isPasted: boolean = false,
-  formFields: Partial<{ type: ResultItemType }> = {}
-) => {
-  const body = new FormData()
-  body.append('image', file)
-  if (isPasted) body.append('subfolder', 'pasted')
-  if (formFields.type) body.append('type', formFields.type)
+// Handle multiple file uploads using shared uploadMediaBatch service
+const uploadFiles = async (files: File[]): Promise<string[]> => {
+  const folder = props.uploadFolder ?? 'input'
+  const assetsStore = useAssetsStore()
 
-  const resp = await api.fetchApi('/upload/image', {
-    method: 'POST',
-    body
-  })
+  const results = await uploadMediaBatch(
+    files.map((file) => ({ source: file })),
+    { type: folder }
+  )
 
-  if (resp.status !== 200) {
-    toastStore.addAlert(resp.status + ' - ' + resp.statusText)
-    return null
+  // Collect failed uploads for error reporting
+  const failedUploads = results.filter((result) => !result.success)
+  if (failedUploads.length > 0) {
+    failedUploads.forEach((result) => {
+      toastStore.addAlert(result.error || t('toastMessages.fileUploadFailed'))
+    })
   }
 
-  const data = await resp.json()
-
-  // Update AssetsStore when uploading to input folder
-  if (formFields.type === 'input' || (!formFields.type && !isPasted)) {
-    const assetsStore = useAssetsStore()
+  // Update AssetsStore once after all uploads when uploading to input folder
+  if (folder === 'input' && results.some((result) => result.success)) {
     await assetsStore.updateInputs()
   }
 
-  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
-}
-
-// Handle multiple file uploads
-const uploadFiles = async (files: File[]): Promise<string[]> => {
-  const folder = props.uploadFolder ?? 'input'
-  const uploadPromises = files.map((file) =>
-    uploadFile(file, false, { type: folder })
-  )
-  const results = await Promise.all(uploadPromises)
-  return results.filter((path): path is string => path !== null)
+  return results.filter((result) => result.success).map((result) => result.path)
 }
 
 async function handleFilesUpdate(files: File[]) {
