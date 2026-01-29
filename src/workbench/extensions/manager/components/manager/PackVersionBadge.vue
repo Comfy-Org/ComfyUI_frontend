@@ -27,9 +27,14 @@
 
     <Popover
       ref="popoverRef"
+      append-to="body"
       :pt="{
+        root: {
+          class: 'before:hidden after:hidden [&_.p-popover-arrow]:hidden'
+        },
         content: { class: 'p-0 shadow-lg' }
       }"
+      @show="fixPopoverIntoViewport"
     >
       <PackVersionSelectorPopover
         :installed-version="installedVersion"
@@ -44,7 +49,7 @@
 <script setup lang="ts">
 import Popover from 'primevue/popover'
 import { valid as validSemver } from 'semver'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import PackVersionSelectorPopover from '@/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue'
@@ -65,6 +70,7 @@ const {
 
 const { isUpdateAvailable } = usePackUpdateStatus(() => nodePack)
 const popoverRef = ref()
+const lastTargetEl = ref<HTMLElement | null>(null)
 
 const managerStore = useComfyManagerStore()
 
@@ -87,11 +93,65 @@ const installedVersion = computed(() => {
 })
 
 const toggleVersionSelector = (event: Event) => {
+  lastTargetEl.value = event.currentTarget as HTMLElement
   popoverRef.value.toggle(event)
 }
 
 const closeVersionSelector = () => {
   popoverRef.value.hide()
+}
+
+const fixPopoverIntoViewport = async () => {
+  await nextTick()
+
+  const popoverEl: HTMLElement | undefined =
+    popoverRef.value?.container ?? popoverRef.value?.$el
+  const targetEl = lastTargetEl.value
+  if (!popoverEl || !targetEl) return
+
+  requestAnimationFrame(() => {
+    const boundaryEl =
+      targetEl.closest('.p-dialog') ??
+      targetEl.closest('.manager-dialog') ??
+      targetEl.closest('[role="dialog"]') ??
+      document.documentElement
+
+    const boundary = boundaryEl.getBoundingClientRect()
+    const targetRect = targetEl.getBoundingClientRect()
+
+    popoverEl.style.transform = ''
+
+    const rect = popoverEl.getBoundingClientRect()
+
+    const M = 8 // keep away from dialog edge
+    const GAP = 10
+
+    const spaceBelow = boundary.bottom - targetRect.bottom
+    const spaceAbove = targetRect.top - boundary.top
+
+    // Decide side (below by default; flip to above if needed)
+    const placeAbove = spaceBelow < rect.height + GAP && spaceAbove > spaceBelow
+
+    // 1) Top with a GAP (prevents covering trigger)
+    let top = placeAbove
+      ? targetRect.top - rect.height - GAP
+      : targetRect.bottom + GAP
+
+    // Clamp vertically
+    top = Math.min(top, boundary.bottom - rect.height - M)
+    top = Math.max(top, boundary.top + M)
+
+    // 2) Left (align to trigger, then clamp)
+    let left = targetRect.left
+    left = Math.min(left, boundary.right - rect.width - M)
+    left = Math.max(left, boundary.left + M)
+
+    // Apply position
+    popoverEl.style.top = `${Math.round(top)}px`
+    popoverEl.style.left = `${Math.round(left)}px`
+
+    popoverEl.classList.toggle('p-popover-flipped', placeAbove)
+  })
 }
 
 // If the card is unselected, automatically close the version selector popover
