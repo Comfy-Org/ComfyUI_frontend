@@ -1,4 +1,3 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, Point } from '@/lib/litegraph/src/litegraph'
 import { assetItemSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -7,10 +6,7 @@ import {
   MODELS_TAG
 } from '@/platform/assets/services/assetService'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
-import { useLitegraphService } from '@/services/litegraphService'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { createNodeFromModel } from '@/utils/nodeCreation/createNodeFromModel'
 
 interface CreateNodeOptions {
   position?: Point
@@ -117,81 +113,19 @@ export function createModelNodeFromAsset(
     }
   }
 
-  const modelToNodeStore = useModelToNodeStore()
-  const provider = modelToNodeStore.getNodeProvider(category)
-  if (!provider) {
-    console.error(`No node provider registered for category: ${category}`)
+  // Use shared core function to create node
+  const result = createNodeFromModel(category, filename, validAsset.id, options)
+
+  if (!result.success) {
+    // Map generic error to asset-specific error format
     return {
       success: false,
       error: {
-        code: 'NO_PROVIDER',
-        message: `No node provider registered for category: ${category}`,
-        assetId: validAsset.id,
-        details: { category }
-      }
+        ...result.error,
+        assetId: result.error.itemId
+      } as NodeCreationError
     }
   }
 
-  const litegraphService = useLitegraphService()
-  const pos = options?.position ?? litegraphService.getCanvasCenter()
-
-  const node = LiteGraph.createNode(
-    provider.nodeDef.name,
-    provider.nodeDef.display_name,
-    { pos }
-  )
-
-  if (!node) {
-    console.error(`Failed to create node for type: ${provider.nodeDef.name}`)
-    return {
-      success: false,
-      error: {
-        code: 'NODE_CREATION_FAILED',
-        message: `Failed to create node for type: ${provider.nodeDef.name}`,
-        assetId: validAsset.id,
-        details: { nodeType: provider.nodeDef.name }
-      }
-    }
-  }
-
-  const workflowStore = useWorkflowStore()
-  const targetGraph = workflowStore.isSubgraphActive
-    ? workflowStore.activeSubgraph
-    : app.canvas.graph
-
-  if (!targetGraph) {
-    console.error('No active graph available')
-    return {
-      success: false,
-      error: {
-        code: 'NO_GRAPH',
-        message: 'No active graph available',
-        assetId: validAsset.id
-      }
-    }
-  }
-
-  const widget = node.widgets?.find((w) => w.name === provider.key)
-  if (!widget) {
-    console.error(
-      `Widget ${provider.key} not found on node ${provider.nodeDef.name}`
-    )
-    return {
-      success: false,
-      error: {
-        code: 'MISSING_WIDGET',
-        message: `Widget ${provider.key} not found on node ${provider.nodeDef.name}`,
-        assetId: validAsset.id,
-        details: { widgetName: provider.key, nodeType: provider.nodeDef.name }
-      }
-    }
-  }
-
-  // Set widget value BEFORE adding to graph so the node is created with correct value
-  widget.value = filename
-
-  // Now add the node to the graph with the correct widget value already set
-  targetGraph.add(node)
-
-  return { success: true, value: node }
+  return result
 }
