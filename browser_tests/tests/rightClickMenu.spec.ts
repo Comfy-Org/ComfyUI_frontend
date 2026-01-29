@@ -7,7 +7,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Canvas Right Click Menu', () => {
+test.describe('Canvas Right Click Menu', { tag: '@screenshot' }, () => {
   test('Can add node', async ({ comfyPage }) => {
     await comfyPage.rightClickCanvas()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
@@ -43,7 +43,7 @@ test.describe('Canvas Right Click Menu', () => {
   })
 })
 
-test.describe('Node Right Click Menu', () => {
+test.describe('Node Right Click Menu', { tag: '@screenshot' }, () => {
   test('Can open properties panel', async ({ comfyPage }) => {
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')

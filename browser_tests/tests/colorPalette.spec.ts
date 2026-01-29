@@ -151,7 +151,7 @@ const customColorPalettes: Record<string, Palette> = {
   }
 }
 
-test.describe('Color Palette', () => {
+test.describe('Color Palette', { tag: '@screenshot' }, () => {
   test('Can show custom color palette', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
@@ -194,7 +194,7 @@ test.describe('Color Palette', () => {
   })
 })
 
-test.describe('Node Color Adjustments', () => {
+test.describe('Node Color Adjustments', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('nodes/every_node_color')
   })

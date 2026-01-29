@@ -15,29 +15,33 @@ test.describe('Graph Canvas Menu', () => {
     await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
   })
 
-  test('Can toggle link visibility', async ({ comfyPage }) => {
-    const button = comfyPage.page.getByTestId('toggle-link-visibility-button')
-    await button.click()
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'canvas-with-hidden-links.png'
-    )
-    const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
-      return window['LiteGraph'].HIDDEN_LINK
-    })
-    expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).toBe(
-      hiddenLinkRenderMode
-    )
+  test(
+    'Can toggle link visibility',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const button = comfyPage.page.getByTestId('toggle-link-visibility-button')
+      await button.click()
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'canvas-with-hidden-links.png'
+      )
+      const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
+        return window['LiteGraph'].HIDDEN_LINK
+      })
+      expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).toBe(
+        hiddenLinkRenderMode
+      )
 
-    await button.click()
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'canvas-with-visible-links.png'
-    )
-    expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).not.toBe(
-      hiddenLinkRenderMode
-    )
-  })
+      await button.click()
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'canvas-with-visible-links.png'
+      )
+      expect(await comfyPage.getSetting('Comfy.LinkRenderMode')).not.toBe(
+        hiddenLinkRenderMode
+      )
+    }
+  )
 
   test('Toggle minimap button is clickable and has correct test id', async ({
     comfyPage

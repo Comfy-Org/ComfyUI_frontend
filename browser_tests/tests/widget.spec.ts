@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Combo text widget', () => {
+test.describe('Combo text widget', { tag: '@screenshot' }, () => {
   test('Truncates text when resized', async ({ comfyPage }) => {
     await comfyPage.resizeLoadCheckpointNode(0.2, 1)
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -79,7 +79,7 @@ test.describe('Combo text widget', () => {
   })
 })
 
-test.describe('Boolean widget', () => {
+test.describe('Boolean widget', { tag: '@screenshot' }, () => {
   test('Can toggle', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/boolean_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('boolean_widget.png')
@@ -92,7 +92,7 @@ test.describe('Boolean widget', () => {
   })
 })
 
-test.describe('Slider widget', () => {
+test.describe('Slider widget', { tag: '@screenshot' }, () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/simple_slider')
     const node = (await comfyPage.getFirstNodeRef())!
@@ -113,7 +113,7 @@ test.describe('Slider widget', () => {
   })
 })
 
-test.describe('Number widget', () => {
+test.describe('Number widget', { tag: '@screenshot' }, () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/seed_widget')
 
@@ -134,7 +134,7 @@ test.describe('Number widget', () => {
   })
 })
 
-test.describe('Dynamic widget manipulation', () => {
+test.describe('Dynamic widget manipulation', { tag: '@screenshot' }, () => {
   test('Auto expand node when widget is added dynamically', async ({
     comfyPage
   }) => {
@@ -149,7 +149,7 @@ test.describe('Dynamic widget manipulation', () => {
   })
 })
 
-test.describe('Image widget', () => {
+test.describe('Image widget', { tag: '@screenshot' }, () => {
   test('Can load image', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_image_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png')
@@ -236,7 +236,7 @@ test.describe('Image widget', () => {
   })
 })
 
-test.describe('Animated image widget', () => {
+test.describe('Animated image widget', { tag: '@screenshot' }, () => {
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3718
   test.skip('Shows preview of uploaded animated image', async ({
     comfyPage
@@ -328,7 +328,7 @@ test.describe('Animated image widget', () => {
   })
 })
 
-test.describe('Load audio widget', () => {
+test.describe('Load audio widget', { tag: '@screenshot' }, () => {
   test('Can load audio', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_audio_widget')
     // Wait for the audio widget to be rendered in the DOM

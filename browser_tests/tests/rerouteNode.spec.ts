@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { getMiddlePoint } from '../fixtures/utils/litegraphUtils'
 
-test.describe('Reroute Node', () => {
+test.describe('Reroute Node', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
@@ -38,7 +38,7 @@ test.describe('Reroute Node', () => {
   })
 })
 
-test.describe('LiteGraph Native Reroute Node', () => {
+test.describe('LiteGraph Native Reroute Node', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
     await comfyPage.setSetting('LiteGraph.Reroute.SplineOffset', 80)

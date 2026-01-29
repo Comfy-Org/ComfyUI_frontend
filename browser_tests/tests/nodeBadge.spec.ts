@@ -8,7 +8,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Node Badge', () => {
+test.describe('Node Badge', { tag: '@screenshot' }, () => {
   test('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
       const LGraphBadge = window['LGraphBadge']
@@ -66,7 +66,7 @@ test.describe('Node Badge', () => {
   })
 })
 
-test.describe('Node source badge', () => {
+test.describe('Node source badge', { tag: '@screenshot' }, () => {
   Object.values(NodeBadgeMode).forEach(async (mode) => {
     test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
       // Execution error workflow has both custom node and core node.
@@ -80,7 +80,7 @@ test.describe('Node source badge', () => {
   })
 })
 
-test.describe('Node badge color', () => {
+test.describe('Node badge color', { tag: '@screenshot' }, () => {
   test('Can show node badge with unknown color palette', async ({
     comfyPage
   }) => {

@@ -7,7 +7,7 @@ test.beforeEach(async ({ comfyPage }) => {
 })
 
 test.describe('Note Node', () => {
-  test('Can load node nodes', async ({ comfyPage }) => {
+  test('Can load node nodes', { tag: '@screenshot' }, async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('nodes/note_nodes')
     await expect(comfyPage.canvas).toHaveScreenshot('note_nodes.png')
   })
