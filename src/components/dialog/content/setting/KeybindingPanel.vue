@@ -145,7 +145,7 @@ import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
@@ -194,7 +194,7 @@ const selectedCommandData = ref<ICommandData | null>(null)
 const editDialogVisible = ref(false)
 const newBindingKeyCombo = ref<KeyComboImpl | null>(null)
 const currentEditingCommand = ref<ICommandData | null>(null)
-const keybindingInput = ref<InstanceType<typeof InputText> | null>(null)
+const keybindingInput = ref()
 
 const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
   if (!currentEditingCommand.value) {
@@ -225,11 +225,9 @@ function editKeybinding(commandData: ICommandData) {
   editDialogVisible.value = true
 }
 
-watchEffect(() => {
-  if (editDialogVisible.value) {
-    // nextTick doesn't work here, so we use a timeout instead
+watch(editDialogVisible, (visible) => {
+  if (visible) {
     setTimeout(() => {
-      // @ts-expect-error - $el is an internal property of the InputText component
       keybindingInput.value?.$el?.focus()
     }, 300)
   }
@@ -265,18 +263,23 @@ function cancelEdit() {
 }
 
 async function saveKeybinding() {
-  if (currentEditingCommand.value && newBindingKeyCombo.value) {
-    const updated = keybindingStore.updateKeybindingOnCommand(
-      new KeybindingImpl({
-        commandId: currentEditingCommand.value.id,
-        combo: newBindingKeyCombo.value
-      })
-    )
-    if (updated) {
-      await keybindingService.persistUserKeybindings()
-    }
-  }
+  if (!currentEditingCommand.value || !newBindingKeyCombo.value) return
+
+  // Capture values before closing dialog
+  const commandId = currentEditingCommand.value.id
+  const combo = newBindingKeyCombo.value
+
+  // Close dialog FIRST to prevent warning flash during store update
   cancelEdit()
+
+  // Update store after dialog is closed
+  const updated = keybindingStore.updateKeybindingOnCommand(
+    new KeybindingImpl({ commandId, combo })
+  )
+
+  if (updated) {
+    await keybindingService.persistUserKeybindings()
+  }
 }
 
 async function resetKeybinding(commandData: ICommandData) {
