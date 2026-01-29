@@ -24,7 +24,7 @@
       />
       <img
         v-else
-        :src="asset.preview_url"
+        :src="asset.preview_url ?? undefined"
         :alt="displayName"
         class="size-full object-cover cursor-pointer"
       />
