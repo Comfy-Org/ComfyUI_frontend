@@ -1,6 +1,8 @@
 <template>
   <div
     class="relative max-h-[200px] min-h-[28px] w-full overflow-y-auto rounded-lg px-4 py-2 text-xs"
+    @wheel="canvasInteractions.handleWheel"
+    @pointerdown="canvasInteractions.handlePointer"
   >
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
@@ -16,6 +18,7 @@ import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
@@ -25,6 +28,7 @@ const props = defineProps<{
 }>()
 
 const executionStore = useExecutionStore()
+const canvasInteractions = useCanvasInteractions()
 const isParentNodeExecuting = ref(true)
 const formattedText = computed(() => {
   const src = modelValue.value
