@@ -38,6 +38,17 @@ describe('LGraph', () => {
 
     expect(result1).toEqual(result2)
   })
+
+  it('should handle adding null node gracefully', () => {
+    const graph = new LGraph()
+    const initialNodeCount = graph.nodes.length
+
+    const result = graph.add(null)
+
+    expect(result).toBeUndefined()
+    expect(graph.nodes.length).toBe(initialNodeCount)
+  })
+
   test('can be instantiated', ({ expect }) => {
     // @ts-expect-error Intentional - extra holds any / all consumer data that should be serialised
     const graph = new LGraph({ extra: 'TestGraph' })
