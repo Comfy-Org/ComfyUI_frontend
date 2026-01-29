@@ -12,6 +12,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
 import { app } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
@@ -135,18 +136,26 @@ export const useExtensionService = () => {
     }
   }
 
+  type FunctionPropertyNames<T> = {
+    [K in keyof T]: T[K] extends (...args: unknown[]) => unknown ? K : never
+  }[keyof T]
+  type RemoveLastAppParam<T> = T extends (
+    ...args: [...infer Rest, ComfyApp]
+  ) => infer R
+    ? (...args: Rest) => R
+    : T
+
+  type ComfyExtensionParamsWithoutApp<T extends keyof ComfyExtension> =
+    RemoveLastAppParam<ComfyExtension[T]>
   /**
    * Invoke an extension callback
    * @param {keyof ComfyExtension} method The extension callback to execute
    * @param  {unknown[]} args Any arguments to pass to the callback
    * @returns
    */
-  type FunctionPropertyNames<T> = {
-    [K in keyof T]: T[K] extends (...args: unknown[]) => unknown ? K : never
-  }[keyof T]
   const invokeExtensions = <T extends FunctionPropertyNames<ComfyExtension>>(
     method: T,
-    ...args: Parameters<ComfyExtension[T]>
+    ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
     const results: ReturnType<ComfyExtension[T]>[] = []
     for (const ext of extensionStore.enabledExtensions) {
@@ -173,9 +182,11 @@ export const useExtensionService = () => {
    * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensionsAsync = async (
-    method: keyof ComfyExtension,
-    ...args: unknown[]
+  const invokeExtensionsAsync = async <
+    T extends FunctionPropertyNames<ComfyExtension>
+  >(
+    method: T,
+    ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
     return await Promise.all(
       extensionStore.enabledExtensions.map(async (ext) => {
