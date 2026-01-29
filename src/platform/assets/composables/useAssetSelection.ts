@@ -45,13 +45,9 @@ export function useAssetSelection() {
       const start = Math.min(selectionStore.lastSelectedIndex, index)
       const end = Math.max(selectionStore.lastSelectedIndex, index)
 
-      // Batch operation for better performance
+      // Select only the range from anchor to clicked item
       const rangeIds = allAssets.slice(start, end + 1).map((a) => a.id)
-      const existingIds = Array.from(selectionStore.selectedAssetIds)
-      const combinedIds = [...new Set([...existingIds, ...rangeIds])]
-
-      // Single update instead of multiple forEach operations
-      selectionStore.setSelection(combinedIds)
+      selectionStore.setSelection(rangeIds)
 
       // Don't update lastSelectedIndex for shift selection
       return
