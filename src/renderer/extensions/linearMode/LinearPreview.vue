@@ -170,8 +170,14 @@ async function rerun(e: Event) {
   <article
     v-else-if="getMediaType(selectedOutput) === 'text'"
     class="w-full max-w-128 m-auto my-12 overflow-y-auto"
-    v-text="selectedOutput!.url"
-  />
+  >
+    <pre class="whitespace-pre-wrap font-mono text-sm">{{
+      selectedOutput!.content
+    }}</pre>
+    <p v-if="selectedOutput!.truncated" class="text-muted mt-2 text-xs">
+      {{ t('linearMode.textTruncated') }}
+    </p>
+  </article>
   <Preview3d
     v-else-if="getMediaType(selectedOutput) === '3d'"
     :model-url="selectedOutput!.url"

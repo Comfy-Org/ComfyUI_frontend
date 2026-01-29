@@ -2713,7 +2713,8 @@
     "runCount": "Run count:",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
-    "downloadAll": "Download All"
+    "downloadAll": "Download All",
+    "textTruncated": "Text truncated to 1KB for preview. View full output in job details."
   },
   "missingNodes": {
     "cloud": {

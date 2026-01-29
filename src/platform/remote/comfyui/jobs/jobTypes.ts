@@ -19,11 +19,13 @@ const zJobStatus = z.enum([
 ])
 
 const zPreviewOutput = z.object({
-  filename: z.string(),
-  subfolder: z.string(),
-  type: resultItemType,
+  filename: z.string().optional(),
+  subfolder: z.string().optional(),
+  type: resultItemType.optional(),
   nodeId: z.string(),
-  mediaType: z.string()
+  mediaType: z.string(),
+  content: z.string().optional(),
+  truncated: z.boolean().optional()
 })
 
 /**

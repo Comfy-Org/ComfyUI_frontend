@@ -29,5 +29,6 @@ export const mediaTypes: Record<string, StatItem> = {
 export function getMediaType(output?: ResultItemImpl) {
   if (!output) return ''
   if (output.isVideo) return 'video'
+  if (output.isText) return 'text'
   return output.mediaType
 }

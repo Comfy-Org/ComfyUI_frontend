@@ -44,6 +44,10 @@ export class ResultItemImpl {
   format?: string
   frame_rate?: number
 
+  // Text output specific fields
+  content?: string
+  truncated?: boolean
+
   constructor(obj: Record<string, any>) {
     this.filename = obj.filename ?? ''
     this.subfolder = obj.subfolder ?? ''
@@ -54,6 +58,9 @@ export class ResultItemImpl {
 
     this.format = obj.format
     this.frame_rate = obj.frame_rate
+
+    this.content = obj.content
+    this.truncated = obj.truncated
   }
 
   get urlParams(): URLSearchParams {
@@ -202,8 +209,14 @@ export class ResultItemImpl {
     return getMediaTypeFromFilename(this.filename) === '3D'
   }
 
+  get isText(): boolean {
+    return this.mediaType === 'text' && this.content !== undefined
+  }
+
   get supportsPreview(): boolean {
-    return this.isImage || this.isVideo || this.isAudio || this.is3D
+    return (
+      this.isImage || this.isVideo || this.isAudio || this.is3D || this.isText
+    )
   }
 
   static filterPreviewable(
