@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -240,7 +241,7 @@ describe('useQueueStore', () => {
   let store: ReturnType<typeof useQueueStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useQueueStore()
     vi.clearAllMocks()
   })

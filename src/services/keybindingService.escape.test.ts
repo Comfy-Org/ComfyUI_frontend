@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
@@ -30,7 +31,7 @@ describe('keybindingService - Escape key handling', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
     // Mock command store execute
     const commandStore = useCommandStore()
