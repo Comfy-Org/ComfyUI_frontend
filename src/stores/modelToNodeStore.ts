@@ -85,10 +85,12 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     if (exactMatch && exactMatch.length > 0) return exactMatch
 
     const topLevel = modelType.split('/')[0]
-    if (topLevel !== modelType) {
-      const fallback = modelToNodeMap.value[topLevel]
-      if (fallback && fallback.length > 0) return fallback
-    }
+    if (topLevel === modelType) return undefined
+
+    const fallback = modelToNodeMap.value[topLevel]
+
+    if (fallback && fallback.length > 0) return fallback
+    
     return undefined
   }
 
