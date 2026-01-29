@@ -158,13 +158,19 @@ export function useTemplateWorkflows() {
    */
   const fetchTemplateJson = async (id: string, sourceModule: string) => {
     if (sourceModule === 'default') {
-      // Default templates provided by frontend are served on this separate endpoint
       return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
     } else {
       return fetch(
         api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
       ).then((r) => r.json())
     }
+  }
+
+  /**
+   * Gets logo URL for a provider name
+   */
+  const getLogoUrl = (provider: string): string => {
+    return workflowTemplatesStore.getLogoUrl(provider)
   }
 
   return {
@@ -183,6 +189,7 @@ export function useTemplateWorkflows() {
     getTemplateThumbnailUrl,
     getTemplateTitle,
     getTemplateDescription,
-    loadWorkflowTemplate
+    loadWorkflowTemplate,
+    getLogoUrl
   }
 }

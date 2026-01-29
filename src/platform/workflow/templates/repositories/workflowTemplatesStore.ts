@@ -9,6 +9,7 @@ import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import type {
+  LogoIndex,
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
@@ -31,6 +32,7 @@ export const useWorkflowTemplatesStore = defineStore(
     const customTemplates = shallowRef<{ [moduleName: string]: string[] }>({})
     const coreTemplates = shallowRef<WorkflowTemplates[]>([])
     const englishTemplates = shallowRef<WorkflowTemplates[]>([])
+    const logoIndex = shallowRef<LogoIndex>({})
     const isLoaded = ref(false)
     const knownTemplateNames = ref(new Set<string>())
 
@@ -475,15 +477,18 @@ export const useWorkflowTemplatesStore = defineStore(
           customTemplates.value = await api.getWorkflowTemplates()
           const locale = i18n.global.locale.value
 
-          const [coreResult, englishResult] = await Promise.all([
-            api.getCoreWorkflowTemplates(locale),
-            isCloud && locale !== 'en'
-              ? api.getCoreWorkflowTemplates('en')
-              : Promise.resolve([])
-          ])
+          const [coreResult, englishResult, logoIndexResult] =
+            await Promise.all([
+              api.getCoreWorkflowTemplates(locale),
+              isCloud && locale !== 'en'
+                ? api.getCoreWorkflowTemplates('en')
+                : Promise.resolve([]),
+              fetchLogoIndex()
+            ])
 
           coreTemplates.value = coreResult
           englishTemplates.value = englishResult
+          logoIndex.value = logoIndexResult
 
           const coreNames = coreTemplates.value.flatMap((category) =>
             category.templates.map((template) => template.name)
@@ -496,6 +501,22 @@ export const useWorkflowTemplatesStore = defineStore(
       } catch (error) {
         console.error('Error fetching workflow templates:', error)
       }
+    }
+
+    async function fetchLogoIndex(): Promise<LogoIndex> {
+      try {
+        const response = await fetch(api.fileURL('/templates/index_logo.json'))
+        if (!response.ok) return {}
+        return await response.json()
+      } catch {
+        return {}
+      }
+    }
+
+    function getLogoUrl(provider: string): string {
+      const logoPath = logoIndex.value[provider]
+      if (!logoPath) return ''
+      return api.fileURL(`/templates/${logoPath}`)
     }
 
     function getEnglishMetadata(templateName: string): {
@@ -534,7 +555,8 @@ export const useWorkflowTemplatesStore = defineStore(
       loadWorkflowTemplates,
       knownTemplateNames,
       getTemplateByName,
-      getEnglishMetadata
+      getEnglishMetadata,
+      getLogoUrl
     }
   }
 )
