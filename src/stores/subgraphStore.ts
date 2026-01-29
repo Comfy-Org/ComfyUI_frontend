@@ -96,7 +96,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         this.hasPromptedSave = true
       }
       const ret = await super.save()
-      useSubgraphStore().registerNodeDef(await this.load(), {
+      registerNodeDef(await this.load(), {
         category: 'Subgraph Blueprints/User'
       })
       return ret
@@ -106,7 +106,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       this.validateSubgraph()
       this.hasPromptedSave = true
       const ret = await super.saveAs(path)
-      useSubgraphStore().registerNodeDef(await this.load(), {
+      registerNodeDef(await this.load(), {
         category: 'Subgraph Blueprints/User'
       })
       return ret
@@ -364,7 +364,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     isSubgraphBlueprint,
     publishSubgraph,
     subgraphBlueprints,
-    typePrefix,
-    registerNodeDef
+    typePrefix
   }
 })
