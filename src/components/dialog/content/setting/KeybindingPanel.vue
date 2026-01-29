@@ -265,18 +265,15 @@ function cancelEdit() {
 }
 
 async function saveKeybinding() {
-  if (currentEditingCommand.value && newBindingKeyCombo.value) {
-    const updated = keybindingStore.updateKeybindingOnCommand(
-      new KeybindingImpl({
-        commandId: currentEditingCommand.value.id,
-        combo: newBindingKeyCombo.value
-      })
-    )
-    if (updated) {
-      await keybindingService.persistUserKeybindings()
-    }
-  }
+  const commandId = currentEditingCommand.value?.id
+  const combo = newBindingKeyCombo.value
   cancelEdit()
+  if (!combo || commandId == undefined) return
+
+  const updated = keybindingStore.updateKeybindingOnCommand(
+    new KeybindingImpl({ commandId, combo })
+  )
+  if (updated) await keybindingService.persistUserKeybindings()
 }
 
 async function resetKeybinding(commandData: ICommandData) {
