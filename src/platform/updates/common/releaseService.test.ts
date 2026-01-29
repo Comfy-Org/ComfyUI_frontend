@@ -190,7 +190,7 @@ describe('useReleaseService', () => {
     })
 
     it('should set loading state correctly', async () => {
-      let resolvePromise: (value: any) => void
+      let resolvePromise: (value: unknown) => void
       const promise = new Promise((resolve) => {
         resolvePromise = resolve
       })

@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "Редактирование изображений с использованием моделей ByteDance через API на основе промпта",
-    "display_name": "Редактирование изображений ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Более высокое значение заставляет изображение точнее следовать промпту"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "Базовое изображение для редактирования"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Инструкция для редактирования изображения"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Сид для использования при генерации"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Добавлять ли водяной знак \"Сгенерировано ИИ\" на изображение"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "Генерация изображений с использованием моделей ByteDance через API на основе промпта",
     "display_name": "Изображение ByteDance",
@@ -2093,14 +2056,16 @@
       "choice": {
         "name": "выбор"
       },
-      "option0": {
-      }
+      "index": {},
+      "option1": {}
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "ИНДЕКС",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "Загрузить модель ControlNet (дифф)",
@@ -3415,6 +3380,142 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "Изменить существующее изображение на основе текстового запроса",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "Количество редактируемых изображений для генерации"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "Генерировать изображения с помощью Grok на основе текстового запроса",
+    "display_name": "Grok Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "Количество изображений для генерации"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "Редактировать существующее видео на основе текстового запроса.",
+    "display_name": "Grok Video Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Максимальная поддерживаемая длительность — 8,7 секунд и размер файла 50 МБ."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "Генерировать видео по запросу или изображению",
+    "display_name": "Grok Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Соотношение сторон выходного видео."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Длительность выходного видео в секундах."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого видео."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Разрешение выходного видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6241,8 +6342,7 @@
   "Load3D": {
     "display_name": "Загрузить 3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "высота"
       },
@@ -6252,10 +6352,8 @@
       "model_file": {
         "name": "файл модели"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "ширина"
       }
@@ -6344,13 +6442,11 @@
     "description": "Загрузите изображение из папки вывода. При нажатии кнопки обновления, узел обновит список изображений и автоматически выберет первое изображение, что позволяет легко итерировать.",
     "display_name": "Загрузить изображение (из выходных данных)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "изображение"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "выберите файл для загрузки"
       }
@@ -6449,6 +6545,60 @@
       },
       "1": {
         "tooltip": "Модифицированная модель CLIP."
+      }
+    }
+  },
+  "LoraLoaderBypass": {
+    "description": "Применяет LoRA в режиме обхода. В отличие от обычной LoRA, веса модели не изменяются — вычисления LoRA внедряются во время прямого прохода. Полезно для сценариев обучения.",
+    "display_name": "Загрузка LoRA (Обход) (для отладки)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "Модель CLIP, к которой будет применяться LoRA."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "Имя LoRA."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Диффузионная модель, к которой будет применяться LoRA."
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "Степень изменения модели CLIP. Может быть отрицательным значением."
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "Степень изменения диффузионной модели. Может быть отрицательным значением."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Изменённая диффузионная модель."
+      },
+      "1": {
+        "tooltip": "Изменённая модель CLIP."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "Применяет LoRA в режиме обхода. В отличие от обычной LoRA, веса модели не изменяются — вычисления LoRA внедряются во время прямого прохода. Полезно для сценариев обучения.",
+    "display_name": "Загрузка LoRA (Обход, только модель) (для отладки)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "model"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Изменённая диффузионная модель."
       }
     }
   },
@@ -6811,6 +6961,126 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed для определения, нужно ли повторно запускать узел; фактические результаты всегда недетерминированы, независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "description": "Изменение освещения изображения с возможностью передачи света по ссылке.",
+    "display_name": "Magnific: Пересвет изображения",
+    "inputs": {
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "Тонкая настройка для продвинутого управления освещением."
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "Изменяет фон на основе промпта или референса."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Изображение для пересвета."
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "Ограничивает свободу генерации для большего соответствия оригиналу."
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "Интенсивность применения передачи света."
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "Сохраняет текстуру и мелкие детали оригинала."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Описание для управления освещением. Поддерживает нотацию акцентов (1-1.4)."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Необязательное референсное изображение для передачи освещения."
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "Предпочтительный стиль результата."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "Улучшение кожи на портретах с несколькими режимами обработки.",
+    "display_name": "Magnific: Улучшение кожи на изображении",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Портрет для улучшения."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Режим обработки: creative — для художественного улучшения, faithful — для сохранения оригинального вида, flexible — для целевой оптимизации."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "Уровень резкости."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "Уровень интеллектуального зерна."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "Переносите стиль с эталонного изображения на ваше входное изображение.",
+    "display_name": "Magnific Перенос стиля изображения",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "Выбор движка обработки."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "Если отключено, каждое новое поколение будет содержать элемент случайности, что приведёт к более разнообразным результатам."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "Вариант переноса стиля."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Изображение, к которому будет применён перенос стиля."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "Включить портретный режим для улучшения лиц."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Эталонное изображение, из которого будет извлекаться стиль."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "Сохраняет структуру исходного изображения."
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "Процент силы стиля."
       }
     },
     "outputs": {
@@ -10435,10 +10705,8 @@
   "PreviewAny": {
     "display_name": "Предпросмотр любого",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "источник"
       }
@@ -11271,19 +11539,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Изменить размер изображения или mask с помощью различных методов масштабирования.",
     "display_name": "Изменить размер изображения/маски",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Выберите способ изменения размера: по точным размерам, коэффициенту масштабирования, подгонке под другое изображение и т.д."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "обрезка"
+      },
+      "resize_type_height": {
+        "name": "высота"
+      },
+      "resize_type_width": {
+        "name": "ширина"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Алгоритм интерполяции. 'area' лучше всего подходит для уменьшения, 'lanczos' — для увеличения, 'nearest-exact' — для пиксель-арта."
       }
     },
     "outputs": {
@@ -13417,6 +13694,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Изображение(я) в модель (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "face_count": {
+        "name": "количество граней"
+      },
+      "generate_type": {
+        "name": "тип генерации"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "image_back": {
+        "name": "изображение сзади"
+      },
+      "image_left": {
+        "name": "изображение слева"
+      },
+      "image_right": {
+        "name": "изображение справа"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Опция LowPoly недоступна для модели `3.1`."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "файл_модели",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Текст в модель (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "face_count": {
+        "name": "количество граней"
+      },
+      "generate_type": {
+        "name": "тип генерации"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Опция LowPoly недоступна для модели `3.1`."
+      },
+      "prompt": {
+        "name": "промпт",
+        "tooltip": "Поддерживается до 1024 символов."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "файл_модели",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13750,6 +14105,10 @@
       "bucket_mode": {
         "name": "режим корзины разрешений",
         "tooltip": "Включить режим корзины разрешений. При включении ожидает предварительно разбитые латенты от узла ResolutionBucket."
+      },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "Включить режим обхода для обучения. При включении адаптеры применяются через forward hooks вместо изменения весов. Полезно для квантизованных моделей, где веса нельзя изменить напрямую."
       },
       "control_after_generate": {
         "name": "управление после генерации"
@@ -15717,6 +16076,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "выход аудиоэнкодера 1"
+      },
+      "audio_scale": {
+        "name": "масштаб аудио"
+      },
+      "clip_vision_output": {
+        "name": "выход clip vision"
+      },
+      "height": {
+        "name": "высота"
+      },
+      "length": {
+        "name": "длина"
+      },
+      "mode": {
+        "name": "режим"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "model_patch": {
+        "name": "патч модели"
+      },
+      "motion_frame_count": {
+        "name": "количество кадров движения",
+        "tooltip": "Количество предыдущих кадров, используемых как контекст движения."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "positive": {
+        "name": "позитивный"
+      },
+      "previous_frames": {
+        "name": "предыдущие кадры"
+      },
+      "start_image": {
+        "name": "стартовое изображение"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "ширина"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "модель",
+        "tooltip": null
+      },
+      "1": {
+        "name": "позитивный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "негативный",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "обрезанное изображение",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16282,8 +16714,7 @@
       "image": {
         "name": "изображение"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "ширина"
       }

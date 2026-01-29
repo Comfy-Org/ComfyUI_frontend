@@ -1,7 +1,4 @@
-import {
-  type CallbackParams,
-  useChainCallback
-} from '@/composables/functional/useChainCallback'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
@@ -11,7 +8,10 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
@@ -26,7 +26,7 @@ import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
-  controlValues?: any[]
+  controlValues?: TWidgetValue[]
   lastType?: string
   static override category: string
   constructor(title: string) {
@@ -511,7 +511,7 @@ export function mergeIfValid(
 
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  async beforeRegisterNodeDef(nodeType, _nodeData, app) {
+  async beforeRegisterNodeDef(nodeType, _nodeData) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
       console.warn(
@@ -561,7 +561,7 @@ app.registerExtension({
     const origOnInputDblClick = nodeType.prototype.onInputDblClick
     nodeType.prototype.onInputDblClick = function (
       this: LGraphNode,
-      ...[slot, ...args]: CallbackParams<typeof origOnInputDblClick>
+      ...[slot, ...args]: Parameters<NonNullable<typeof origOnInputDblClick>>
     ) {
       const r = origOnInputDblClick?.apply(this, [slot, ...args])
 

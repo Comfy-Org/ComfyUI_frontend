@@ -1,4 +1,5 @@
 import { toString } from 'es-toolkit/compat'
+import { toValue } from 'vue'
 
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -2801,6 +2802,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
       }
+      for (const badge of node.badges.map(toValue).filter((b) => b.onClick)) {
+        if (isInRect(pos[0], pos[1], badge.boundingRect)) {
+          pointer.onClick = badge.onClick
+          return
+        }
+      }
 
       // Mousedown callback - can block drag
       if (node.onMouseDown?.(e, pos, this)) {
@@ -4283,6 +4290,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     item.selected = true
     this.selectedItems.add(item)
     this.state.selectionChanged = true
+
+    if (item instanceof LGraphGroup) {
+      item.recomputeInsideNodes()
+      return
+    }
+
     if (!(item instanceof LGraphNode)) return
 
     // Node-specific handling

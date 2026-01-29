@@ -87,6 +87,7 @@
       "descriptionNotSet": "Sin descripción",
       "descriptionPlaceholder": "Agrega una descripción para este modelo...",
       "displayName": "Nombre para mostrar",
+      "editDisplayName": "Editar nombre para mostrar",
       "fileName": "Nombre de archivo",
       "modelDescription": "Descripción del modelo",
       "modelTagging": "Etiquetado del modelo",
@@ -106,6 +107,7 @@
     "modelUploaded": "Modelo importado correctamente.",
     "noAssetsFound": "No se encontraron recursos",
     "noModelsInFolder": "No hay {type} disponibles en esta carpeta",
+    "noResultsCanImport": "Intenta ajustar tu búsqueda o filtros.\nTambién puedes añadir modelos usando el botón \"Importar\" de arriba.",
     "noValidSourceDetected": "No se detectó una fuente de importación válida",
     "notSureLeaveAsIs": "¿No estás seguro? Déjalo como está",
     "onlyCivitaiUrlsSupported": "Solo se admiten URLs de Civitai",
@@ -730,6 +732,7 @@
     "control_before_generate": "control antes de generar",
     "copied": "Copiado",
     "copy": "Copiar",
+    "copyAll": "Copiar todo",
     "copyJobId": "Copiar ID de trabajo",
     "copyToClipboard": "Copiar al portapapeles",
     "copyURL": "Copiar URL",
@@ -746,6 +749,7 @@
     "deleteImage": "Eliminar imagen",
     "deprecated": "DEPR",
     "description": "Descripción",
+    "devOnly": "DEV",
     "devices": "Dispositivos",
     "disableAll": "Deshabilitar todo",
     "disableSelected": "Deshabilitar seleccionados",
@@ -958,11 +962,10 @@
     "videoPreview": "Vista previa de video - Usa las teclas de flecha para navegar entre videos",
     "viewImageOfTotal": "Ver imagen {index} de {total}",
     "viewVideoOfTotal": "Ver video {index} de {total}",
-    "vitePreloadErrorMessage": "Se ha lanzado una nueva versión de la aplicación. ¿Deseas recargar?\nSi no lo haces, algunas partes de la aplicación podrían no funcionar correctamente.\nPuedes rechazar y guardar tu progreso antes de recargar.",
-    "vitePreloadErrorTitle": "Nueva versión disponible",
     "volume": "Volumen",
     "warning": "Advertencia",
-    "workflow": "Flujo de trabajo"
+    "workflow": "Flujo de trabajo",
+    "you": "Tú"
   },
   "graphCanvasMenu": {
     "fitView": "Ajustar vista",
@@ -1259,8 +1262,10 @@
     }
   },
   "manager": {
+    "actions": "Acciones",
     "allMissingNodesInstalled": "Todos los nodos faltantes se han instalado exitosamente",
     "applyChanges": "Aplicar Cambios",
+    "basicInfo": "Información básica",
     "changingVersion": "Cambiando versión de {from} a {to}",
     "clickToFinishSetup": "Haz clic",
     "conflicts": {
@@ -1323,12 +1328,24 @@
     "license": "Licencia",
     "loadingVersions": "Cargando versiones...",
     "mixedSelectionMessage": "No se puede realizar acción masiva en selección mixta",
+    "nav": {
+      "allExtensions": "Todas las extensiones",
+      "allInWorkflow": "Todo en: {workflowName}",
+      "allInstalled": "Todo instalado",
+      "conflicting": "En conflicto",
+      "inWorkflowSection": "EN EL FLUJO DE TRABAJO",
+      "installedSection": "INSTALADO",
+      "missingNodes": "Nodos faltantes",
+      "notInstalled": "No instalado",
+      "updatesAvailable": "Actualizaciones disponibles"
+    },
     "nightlyVersion": "Nocturna",
     "noDescription": "No hay descripción disponible",
     "noNodesFound": "No se encontraron nodos",
     "noNodesFoundDescription": "Los nodos del paquete no se pudieron analizar, o el paquete es solo una extensión de frontend y no tiene ningún nodo.",
     "noResultsFound": "No se encontraron resultados que coincidan con tu búsqueda.",
     "nodePack": "Paquete de Nodos",
+    "nodePackInfo": "Información del paquete de nodos",
     "notAvailable": "No Disponible",
     "packsSelected": "Paquetes Seleccionados",
     "repository": "Repositorio",
@@ -1336,6 +1353,7 @@
     "restartingBackend": "Reiniciando backend para aplicar cambios...",
     "searchPlaceholder": "Buscar",
     "selectVersion": "Seleccionar Versión",
+    "selected": "Seleccionado",
     "sort": {
       "created": "Más reciente",
       "downloads": "Más Popular",
@@ -1668,10 +1686,12 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1682,6 +1702,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1897,6 +1918,7 @@
     },
     "groupSettings": "Configuración de grupo",
     "groups": "Grupos",
+    "hideAdvancedInputsButton": "Ocultar entradas avanzadas",
     "hideInput": "Ocultar entrada",
     "info": "Información",
     "inputs": "ENTRADAS",
@@ -2129,6 +2151,7 @@
     "NodeLibrary": "Biblioteca de Nodos",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Preferencias de notificación",
+    "Other": "Otros",
     "PLY": "PLY",
     "PlanCredits": "Plan y créditos",
     "Pointer": "Puntero",
@@ -2148,7 +2171,8 @@
     "Vue Nodes": "Nodos Vue",
     "VueNodes": "Nodos Vue",
     "Window": "Ventana",
-    "Workflow": "Flujo de Trabajo"
+    "Workflow": "Flujo de Trabajo",
+    "Workspace": "Espacio de trabajo"
   },
   "shape": {
     "CARD": "Card",
@@ -2242,6 +2266,7 @@
       "filterBy": "Filtrar por",
       "filterCurrentWorkflow": "Flujo de trabajo actual",
       "filterJobs": "Filtrar trabajos",
+      "inlineTotalLabel": "Total",
       "interruptAll": "Interrumpir todos los trabajos en ejecución",
       "jobQueue": "Cola de trabajos",
       "jobsCompleted": "{count} trabajo completado | {count} trabajos completados",
@@ -2288,6 +2313,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Nombre del subgrafo",
+    "cannotDeleteGlobal": "No se pueden eliminar los blueprints instalados",
     "confirmDelete": "Esta acción eliminará permanentemente el subgrafo de tu biblioteca",
     "confirmDeleteTitle": "¿Eliminar subgrafo?",
     "hidden": "Parámetros ocultos/anidados",
@@ -2315,9 +2341,15 @@
     "beta": "BETA",
     "billedMonthly": "Facturado mensualmente",
     "billedYearly": "{total} facturado anualmente",
+    "billingComingSoon": {
+      "message": "La facturación para equipos estará disponible pronto. Podrás suscribirte a un plan para tu espacio de trabajo con precios por usuario. Mantente atento para más actualizaciones.",
+      "title": "Próximamente"
+    },
+    "cancelSubscription": "Cancelar suscripción",
     "changeTo": "Cambiar a {plan}",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Logo de Comfy Cloud",
+    "contactOwnerToSubscribe": "Contacta al propietario del espacio de trabajo para suscribirte",
     "contactUs": "Contáctanos",
     "creditsRemainingThisMonth": "Créditos restantes este mes",
     "creditsRemainingThisYear": "Créditos restantes este año",
@@ -2330,6 +2362,7 @@
     "haveQuestions": "¿Tienes preguntas o buscas soluciones empresariales?",
     "invoiceHistory": "Historial de facturas",
     "learnMore": "Más información",
+    "managePayment": "Gestionar pago",
     "managePlan": "Gestionar plan",
     "manageSubscription": "Gestionar suscripción",
     "maxDuration": {
@@ -2365,6 +2398,7 @@
     "subscribeToComfyCloud": "Suscribirse a Comfy Cloud",
     "subscribeToRun": "Suscribirse",
     "subscribeToRunFull": "Suscribirse a Ejecutar",
+    "subscriptionRequiredMessage": "Se requiere una suscripción para que los miembros ejecuten flujos de trabajo en la nube",
     "tierNameYearly": "{name} Anual",
     "tiers": {
       "creator": {
@@ -2396,6 +2430,7 @@
     "viewMoreDetails": "Ver más detalles",
     "viewMoreDetailsPlans": "Ver más detalles sobre planes y precios",
     "viewUsageHistory": "Ver historial de uso",
+    "workspaceNotSubscribed": "Este espacio de trabajo no tiene una suscripción",
     "yearly": "Anual",
     "yearlyCreditsLabel": "Total de créditos anuales",
     "yearlyDiscount": "20% DESCUENTO",
@@ -2497,6 +2532,7 @@
     "failedToLoadModel": "Error al cargar el modelo 3D",
     "failedToPurchaseCredits": "No se pudo comprar créditos: {error}",
     "failedToQueue": "Error al encolar",
+    "failedToSaveDraft": "No se pudo guardar el borrador del flujo de trabajo",
     "failedToToggleCamera": "No se pudo alternar la cámara",
     "failedToToggleGrid": "No se pudo alternar la cuadrícula",
     "failedToUpdateBackgroundColor": "No se pudo actualizar el color de fondo",
@@ -2545,7 +2581,8 @@
     "notSet": "No establecido",
     "provider": "Método de inicio de sesión",
     "title": "Configuración de usuario",
-    "updatePassword": "Actualizar contraseña"
+    "updatePassword": "Actualizar contraseña",
+    "workspaceSettings": "Configuración del espacio de trabajo"
   },
   "validation": {
     "descriptionRequired": "Descripción es requerida",
@@ -2636,6 +2673,9 @@
     "saveWorkflow": "Guardar flujo de trabajo"
   },
   "workspace": {
+    "addedToWorkspace": "Has sido añadido a {workspaceName}",
+    "inviteAccepted": "Invitación aceptada",
+    "inviteFailed": "No se pudo aceptar la invitación",
     "unsavedChanges": {
       "message": "Tienes cambios no guardados. ¿Quieres descartarlos y cambiar de espacio de trabajo?",
       "title": "Cambios no guardados"
@@ -2649,6 +2689,128 @@
       "tokenExchangeFailed": "No se pudo autenticar con el espacio de trabajo: {error}",
       "workspaceNotFound": "Espacio de trabajo no encontrado"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "Crear",
+      "message": "Los espacios de trabajo permiten a los miembros compartir un único fondo de créditos. Te convertirás en el propietario después de crearlo.",
+      "nameLabel": "Nombre del espacio de trabajo*",
+      "namePlaceholder": "Introduce el nombre del espacio de trabajo",
+      "title": "Crear un nuevo espacio de trabajo"
+    },
+    "dashboard": {
+      "placeholder": "Configuración del panel del espacio de trabajo"
+    },
+    "deleteDialog": {
+      "message": "Cualquier crédito no utilizado o recurso no guardado se perderá. Esta acción no se puede deshacer.",
+      "messageWithName": "¿Eliminar \"{name}\"? Cualquier crédito no utilizado o recurso no guardado se perderá. Esta acción no se puede deshacer.",
+      "title": "¿Eliminar este espacio de trabajo?"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "Nombre del espacio de trabajo",
+      "save": "Guardar",
+      "title": "Editar detalles del espacio de trabajo"
+    },
+    "invite": "Invitar",
+    "inviteLimitReached": "Has alcanzado el máximo de 50 miembros",
+    "inviteMember": "Invitar miembro",
+    "inviteMemberDialog": {
+      "createLink": "Crear enlace",
+      "linkCopied": "Copiado",
+      "linkCopyFailed": "No se pudo copiar el enlace",
+      "linkStep": {
+        "copyLink": "Copiar enlace",
+        "done": "Listo",
+        "message": "Asegúrate de que su cuenta use este correo electrónico.",
+        "title": "Envía este enlace a la persona"
+      },
+      "message": "Crea un enlace de invitación para compartir y envíalo a alguien",
+      "placeholder": "Introduce el correo electrónico de la persona",
+      "title": "Invitar a una persona a este espacio de trabajo"
+    },
+    "leaveDialog": {
+      "leave": "Abandonar",
+      "message": "No podrás unirte de nuevo a menos que contactes al propietario del espacio de trabajo.",
+      "title": "¿Abandonar este espacio de trabajo?"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "Copiar enlace de invitación",
+        "removeMember": "Eliminar miembro",
+        "revokeInvite": "Revocar invitación"
+      },
+      "columns": {
+        "expiryDate": "Fecha de vencimiento",
+        "inviteDate": "Fecha de invitación",
+        "joinDate": "Fecha de ingreso"
+      },
+      "createNewWorkspace": "crea uno nuevo.",
+      "membersCount": "{count}/50 Miembros",
+      "noInvites": "No hay invitaciones pendientes",
+      "noMembers": "No hay miembros",
+      "pendingInvitesCount": "{count} invitación pendiente | {count} invitaciones pendientes",
+      "personalWorkspaceMessage": "No puedes invitar a otros miembros a tu espacio de trabajo personal en este momento. Para agregar miembros a un espacio de trabajo,",
+      "tabs": {
+        "active": "Activo",
+        "pendingCount": "Pendientes ({count})"
+      }
+    },
+    "menu": {
+      "deleteWorkspace": "Eliminar espacio de trabajo",
+      "deleteWorkspaceDisabledTooltip": "Primero cancela la suscripción activa de tu espacio de trabajo",
+      "editWorkspace": "Editar detalles del espacio de trabajo",
+      "leaveWorkspace": "Abandonar espacio de trabajo"
+    },
+    "removeMemberDialog": {
+      "error": "No se pudo eliminar al miembro",
+      "message": "Este miembro será eliminado de tu espacio de trabajo. Los créditos que haya utilizado no serán reembolsados.",
+      "remove": "Eliminar miembro",
+      "success": "Miembro eliminado",
+      "title": "¿Eliminar a este miembro?"
+    },
+    "revokeInviteDialog": {
+      "message": "Este miembro ya no podrá unirse a tu espacio de trabajo. Su enlace de invitación será invalidado.",
+      "revoke": "Desinvitar",
+      "title": "¿Desinvitar a esta persona?"
+    },
+    "tabs": {
+      "dashboard": "Panel",
+      "membersCount": "Miembros ({count})",
+      "planCredits": "Plan y créditos"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "No se pudo crear el espacio de trabajo",
+      "failedToDeleteWorkspace": "No se pudo eliminar el espacio de trabajo",
+      "failedToFetchWorkspaces": "No se pudieron cargar los espacios de trabajo",
+      "failedToLeaveWorkspace": "No se pudo abandonar el espacio de trabajo",
+      "failedToUpdateWorkspace": "No se pudo actualizar el espacio de trabajo",
+      "workspaceCreated": {
+        "message": "Suscríbete a un plan, invita a compañeros y comienza a colaborar.",
+        "subscribe": "Suscribirse",
+        "title": "Espacio de trabajo creado"
+      },
+      "workspaceDeleted": {
+        "message": "El espacio de trabajo ha sido eliminado permanentemente.",
+        "title": "Espacio de trabajo eliminado"
+      },
+      "workspaceLeft": {
+        "message": "Has salido del espacio de trabajo.",
+        "title": "Saliste del espacio de trabajo"
+      },
+      "workspaceUpdated": {
+        "message": "Los detalles del espacio de trabajo se han guardado.",
+        "title": "Espacio de trabajo actualizado"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "Crear nuevo espacio de trabajo",
+    "maxWorkspacesReached": "Solo puedes ser propietario de 10 espacios de trabajo. Elimina uno para crear uno nuevo.",
+    "personal": "Personal",
+    "roleMember": "Miembro",
+    "roleOwner": "Propietario",
+    "subscribe": "Suscribirse",
+    "switchWorkspace": "Cambiar espacio de trabajo"
   },
   "zoomControls": {
     "hideMinimap": "Ocultar minimapa",

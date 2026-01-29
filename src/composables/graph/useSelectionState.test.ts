@@ -1,55 +1,19 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
 
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isImageNode, isLGraphNode } from '@/utils/litegraphUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
+import {
+  createMockLGraphNode,
+  createMockPositionable
+} from '@/utils/__tests__/litegraphTestUtils'
 
-// Test interfaces
-interface TestNodeConfig {
-  type?: string
-  mode?: LGraphEventMode
-  flags?: { collapsed?: boolean }
-  pinned?: boolean
-  removable?: boolean
-}
-
-interface TestNode {
-  type: string
-  mode: LGraphEventMode
-  flags?: { collapsed?: boolean }
-  pinned?: boolean
-  removable?: boolean
-  isSubgraphNode: () => boolean
-}
-
-type MockedItem = TestNode | { type: string; isNode: boolean }
-
-// Mock all stores
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn()
-}))
-
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: vi.fn()
-}))
-
-vi.mock('@/stores/workspace/sidebarTabStore', () => ({
-  useSidebarTabStore: vi.fn()
-}))
-
-vi.mock('@/stores/workspace/nodeHelpStore', () => ({
-  useNodeHelpStore: vi.fn()
-}))
-
+// Mock composables
 vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
   useNodeLibrarySidebarTab: vi.fn()
 }))
@@ -63,102 +27,28 @@ vi.mock('@/utils/nodeFilterUtil', () => ({
   filterOutputNodes: vi.fn()
 }))
 
-const createTestNode = (config: TestNodeConfig = {}): TestNode => {
-  return {
-    type: config.type || 'TestNode',
-    mode: config.mode || LGraphEventMode.ALWAYS,
-    flags: config.flags,
-    pinned: config.pinned,
-    removable: config.removable,
-    isSubgraphNode: () => false
-  }
+// Mock comment/connection objects with additional properties
+const mockComment = {
+  ...createMockPositionable({ id: 999 }),
+  type: 'comment',
+  isNode: false
+}
+const mockConnection = {
+  ...createMockPositionable({ id: 1000 }),
+  type: 'connection',
+  isNode: false
 }
 
-// Mock comment/connection objects
-const mockComment = { type: 'comment', isNode: false }
-const mockConnection = { type: 'connection', isNode: false }
-
 describe('useSelectionState', () => {
-  // Mock store instances
-  let mockSelectedItems: Ref<MockedItem[]>
-
   beforeEach(() => {
     vi.clearAllMocks()
-    setActivePinia(createPinia())
 
-    // Setup mock canvas store with proper ref
-    mockSelectedItems = ref([])
-    vi.mocked(useCanvasStore).mockReturnValue({
-      selectedItems: mockSelectedItems,
-      // Add minimal required properties for the store
-      $id: 'canvas',
-      $state: {} as any,
-      $patch: vi.fn(),
-      $reset: vi.fn(),
-      $subscribe: vi.fn(),
-      $onAction: vi.fn(),
-      $dispose: vi.fn(),
-      _customProperties: new Set(),
-      _p: {} as any
-    } as any)
-
-    // Setup mock node def store
-    vi.mocked(useNodeDefStore).mockReturnValue({
-      fromLGraphNode: vi.fn((node: TestNode) => {
-        if (node?.type === 'TestNode') {
-          return { nodePath: 'test.TestNode', name: 'TestNode' }
-        }
-        return null
-      }),
-      // Add minimal required properties for the store
-      $id: 'nodeDef',
-      $state: {} as any,
-      $patch: vi.fn(),
-      $reset: vi.fn(),
-      $subscribe: vi.fn(),
-      $onAction: vi.fn(),
-      $dispose: vi.fn(),
-      _customProperties: new Set(),
-      _p: {} as any
-    } as any)
-
-    // Setup mock sidebar tab store
-    const mockToggleSidebarTab = vi.fn()
-    vi.mocked(useSidebarTabStore).mockReturnValue({
-      activeSidebarTabId: null,
-      toggleSidebarTab: mockToggleSidebarTab,
-      // Add minimal required properties for the store
-      $id: 'sidebarTab',
-      $state: {} as any,
-      $patch: vi.fn(),
-      $reset: vi.fn(),
-      $subscribe: vi.fn(),
-      $onAction: vi.fn(),
-      $dispose: vi.fn(),
-      _customProperties: new Set(),
-      _p: {} as any
-    } as any)
-
-    // Setup mock node help store
-    const mockOpenHelp = vi.fn()
-    const mockCloseHelp = vi.fn()
-    const mockNodeHelpStore = {
-      isHelpOpen: false,
-      currentHelpNode: null,
-      openHelp: mockOpenHelp,
-      closeHelp: mockCloseHelp,
-      // Add minimal required properties for the store
-      $id: 'nodeHelp',
-      $state: {} as any,
-      $patch: vi.fn(),
-      $reset: vi.fn(),
-      $subscribe: vi.fn(),
-      $onAction: vi.fn(),
-      $dispose: vi.fn(),
-      _customProperties: new Set(),
-      _p: {} as any
-    }
-    vi.mocked(useNodeHelpStore).mockReturnValue(mockNodeHelpStore as any)
+    // Create testing Pinia instance
+    setActivePinia(
+      createTestingPinia({
+        createSpy: vi.fn
+      })
+    )
 
     // Setup mock composables
     vi.mocked(useNodeLibrarySidebarTab).mockReturnValue({
@@ -166,7 +56,7 @@ describe('useSelectionState', () => {
       title: 'Node Library',
       type: 'custom',
       render: () => null
-    } as any)
+    } as ReturnType<typeof useNodeLibrarySidebarTab>)
 
     // Setup mock utility functions
     vi.mocked(isLGraphNode).mockImplementation((item: unknown) => {
@@ -177,8 +67,8 @@ describe('useSelectionState', () => {
       const typedNode = node as { type?: string }
       return typedNode?.type === 'ImageNode'
     })
-    vi.mocked(filterOutputNodes).mockImplementation(
-      (nodes: TestNode[]) => nodes.filter((n) => n.type === 'OutputNode') as any
+    vi.mocked(filterOutputNodes).mockImplementation((nodes) =>
+      nodes.filter((n) => n.type === 'OutputNode')
     )
   })
 
@@ -189,10 +79,10 @@ describe('useSelectionState', () => {
     })
 
     test('should return true when items selected', () => {
-      // Update the mock data before creating the composable
-      const node1 = createTestNode()
-      const node2 = createTestNode()
-      mockSelectedItems.value = [node1, node2]
+      const canvasStore = useCanvasStore()
+      const node1 = createMockLGraphNode({ id: 1 })
+      const node2 = createMockLGraphNode({ id: 2 })
+      canvasStore.$state.selectedItems = [node1, node2]
 
       const { hasAnySelection } = useSelectionState()
       expect(hasAnySelection.value).toBe(true)
@@ -201,9 +91,13 @@ describe('useSelectionState', () => {
 
   describe('Node Type Filtering', () => {
     test('should pick only LGraphNodes from mixed selections', () => {
-      // Update the mock data before creating the composable
-      const graphNode = createTestNode()
-      mockSelectedItems.value = [graphNode, mockComment, mockConnection]
+      const canvasStore = useCanvasStore()
+      const graphNode = createMockLGraphNode({ id: 3 })
+      canvasStore.$state.selectedItems = [
+        graphNode,
+        mockComment,
+        mockConnection
+      ]
 
       const { selectedNodes } = useSelectionState()
       expect(selectedNodes.value).toHaveLength(1)
@@ -213,9 +107,12 @@ describe('useSelectionState', () => {
 
   describe('Node State Computation', () => {
     test('should detect bypassed nodes', () => {
-      // Update the mock data before creating the composable
-      const bypassedNode = createTestNode({ mode: LGraphEventMode.BYPASS })
-      mockSelectedItems.value = [bypassedNode]
+      const canvasStore = useCanvasStore()
+      const bypassedNode = createMockLGraphNode({
+        id: 4,
+        mode: LGraphEventMode.BYPASS
+      })
+      canvasStore.$state.selectedItems = [bypassedNode]
 
       const { selectedNodes } = useSelectionState()
       const isBypassed = selectedNodes.value.some(
@@ -225,10 +122,13 @@ describe('useSelectionState', () => {
     })
 
     test('should detect pinned/collapsed states', () => {
-      // Update the mock data before creating the composable
-      const pinnedNode = createTestNode({ pinned: true })
-      const collapsedNode = createTestNode({ flags: { collapsed: true } })
-      mockSelectedItems.value = [pinnedNode, collapsedNode]
+      const canvasStore = useCanvasStore()
+      const pinnedNode = createMockLGraphNode({ id: 5, pinned: true })
+      const collapsedNode = createMockLGraphNode({
+        id: 6,
+        flags: { collapsed: true }
+      })
+      canvasStore.$state.selectedItems = [pinnedNode, collapsedNode]
 
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned === true)
@@ -244,9 +144,9 @@ describe('useSelectionState', () => {
     })
 
     test('should provide non-reactive state computation', () => {
-      // Update the mock data before creating the composable
-      const node = createTestNode({ pinned: true })
-      mockSelectedItems.value = [node]
+      const canvasStore = useCanvasStore()
+      const node = createMockLGraphNode({ id: 7, pinned: true })
+      canvasStore.$state.selectedItems = [node]
 
       const { selectedNodes } = useSelectionState()
       const isPinned = selectedNodes.value.some((n) => n.pinned === true)
@@ -262,7 +162,7 @@ describe('useSelectionState', () => {
       expect(isBypassed).toBe(false)
 
       // Test with empty selection using new composable instance
-      mockSelectedItems.value = []
+      canvasStore.$state.selectedItems = []
       const { selectedNodes: newSelectedNodes } = useSelectionState()
       const newIsPinned = newSelectedNodes.value.some((n) => n.pinned === true)
       expect(newIsPinned).toBe(false)

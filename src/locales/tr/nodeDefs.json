@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "İstek üzerine api aracılığıyla ByteDance modellerini kullanarak görüntüleri düzenleyin",
-    "display_name": "ByteDance Görüntü Düzenleme",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturma sonrası kontrol"
-      },
-      "guidance_scale": {
-        "name": "rehberlik_ölçeği",
-        "tooltip": "Daha yüksek değer, görüntünün isteği daha yakından takip etmesini sağlar"
-      },
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Düzenlenecek temel görüntü"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "istek",
-        "tooltip": "Görüntüyü düzenleme talimatı"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Oluşturma için kullanılacak tohum değeri"
-      },
-      "watermark": {
-        "name": "filigran",
-        "tooltip": "Görüntüye \"Yapay zeka tarafından oluşturulmuştur\" filigranı eklenip eklenmeyeceği"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "İstek üzerine api aracılığıyla ByteDance modellerini kullanarak görüntüler oluşturun",
     "display_name": "ByteDance Görüntü",
@@ -2093,14 +2056,16 @@
       "choice": {
         "name": "seçim"
       },
-      "option0": {
-      }
+      "index": {},
+      "option1": {}
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "ControlNet Modelini Yükle (fark)",
@@ -3415,6 +3380,142 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "Mevcut bir görüntüyü metin istemine göre değiştir",
+    "display_name": "Grok Görüntü Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "görüntü sayısı",
+        "tooltip": "Oluşturulacak düzenlenmiş görüntü sayısı"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "Bir metin istemine göre Grok ile görüntüler oluştur",
+    "display_name": "Grok Görüntü",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en boy oranı"
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "görüntü sayısı",
+        "tooltip": "Oluşturulacak görüntü sayısı"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Görüntüyü oluşturmak için kullanılan metin istemi"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "Mevcut bir videoyu metin istemine göre düzenle.",
+    "display_name": "Grok Video Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İstenen videonun metin açıklaması."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Maksimum desteklenen süre 8.7 saniye ve 50MB dosya boyutudur."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "Bir istem veya görüntüden video oluştur",
+    "display_name": "Grok Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en boy oranı",
+        "tooltip": "Çıktı videonun en boy oranı."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre",
+        "tooltip": "Çıktı videonun süresi (saniye cinsinden)."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "İstenen videonun metin açıklaması."
+      },
+      "resolution": {
+        "name": "çözünürlük",
+        "tooltip": "Çıktı videonun çözünürlüğü."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak belirlenemezdir."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6241,8 +6342,7 @@
   "Load3D": {
     "display_name": "3D Yükle",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "yükseklik"
       },
@@ -6252,10 +6352,8 @@
       "model_file": {
         "name": "model_dosyası"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "genişlik"
       }
@@ -6344,13 +6442,11 @@
     "description": "Çıktı klasöründen bir görüntü yükleyin. Yenile düğmesine tıklandığında, düğüm görüntü listesini güncelleyecek ve otomatik olarak ilk görüntüyü seçecek, bu da kolay yinelemeye olanak tanıyacaktır.",
     "display_name": "Görüntü Yükle (Çıktılardan)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "görüntü"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "yüklenecek dosyayı seçin"
       }
@@ -6449,6 +6545,60 @@
       },
       "1": {
         "tooltip": "Değiştirilmiş CLIP modeli."
+      }
+    }
+  },
+  "LoraLoaderBypass": {
+    "description": "LoRA'yı bypass modunda uygula. Normal LoRA'dan farklı olarak, model ağırlıklarını değiştirmez - bunun yerine LoRA hesaplamasını ileri geçiş sırasında enjekte eder. Eğitim senaryoları için kullanışlıdır.",
+    "display_name": "LoRA Yükle (Bypass) (Hata Ayıklama İçin)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA'nın uygulanacağı CLIP modeli."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "LoRA'nın adı."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "LoRA'nın uygulanacağı difüzyon modeli."
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "CLIP modelini ne kadar güçlü değiştireceği. Bu değer negatif olabilir."
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "Difüzyon modelini ne kadar güçlü değiştireceği. Bu değer negatif olabilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Değiştirilmiş difüzyon modeli."
+      },
+      "1": {
+        "tooltip": "Değiştirilmiş CLIP modeli."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "LoRA'yı bypass modunda uygula. Normal LoRA'dan farklı olarak, model ağırlıklarını değiştirmez - bunun yerine LoRA hesaplamasını ileri geçiş sırasında enjekte eder. Eğitim senaryoları için kullanışlıdır.",
+    "display_name": "LoRA Yükle (Bypass, Sadece Model) (Hata Ayıklama İçin)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "model"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Değiştirilmiş difüzyon modeli."
       }
     }
   },
@@ -6811,6 +6961,126 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Düğümün yeniden çalışıp çalışmayacağını belirlemek için tohum; gerçek sonuçlar tohumdan bağımsız olarak belirleyici değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "description": "Bir görseli ışık ayarlarıyla ve isteğe bağlı referans tabanlı ışık transferiyle yeniden ışıklandır.",
+    "display_name": "Magnific Görsel Yeniden Işıklandırma",
+    "inputs": {
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "Gelişmiş ışık kontrolü için ince ayar seçenekleri."
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "Arka planı prompt/referansa göre değiştirir."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Yeniden ışıklandırılacak görsel."
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "Oluşturulan görselin orijinale daha yakın olmasını sınırlar."
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "Işık transferi uygulama yoğunluğu."
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "Orijinalden doku ve ince detayları korur."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Işıklandırma için açıklayıcı rehberlik. Vurgu notasyonu (1-1.4) desteklenir."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Işıklandırmanın aktarılacağı isteğe bağlı referans görsel."
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "Çıktı için stil tercihi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "Portreler için çoklu işleme modlarıyla cilt iyileştirme.",
+    "display_name": "Magnific Görsel Cilt İyileştirici",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "İyileştirilecek portre görseli."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "İşleme modu: Sanatsal iyileştirme için yaratıcı, orijinal görünümü korumak için sadık, hedefli optimizasyon için esnek."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "Keskinleştirme yoğunluk seviyesi."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "Akıllı gren yoğunluk seviyesi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "Bir referans görüntüsünün stilini giriş görüntünüze aktarın.",
+    "display_name": "Magnific Görüntü Stil Transferi",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "İşleme motoru seçimi."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "Devre dışı bırakıldığında, her üretimde bir miktar rastgelelik beklenir ve bu da daha çeşitli sonuçlar elde edilmesini sağlar."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "Stil transferi türü."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Stil transferinin uygulanacağı görüntü."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "Yüz iyileştirmeleri için portre modunu etkinleştir."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Stilinin çıkarılacağı referans görüntü."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "Orijinal görüntünün yapısını korur."
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "Stil gücü yüzdesi."
       }
     },
     "outputs": {
@@ -10435,10 +10705,8 @@
   "PreviewAny": {
     "display_name": "Herhangi Bir Şeyi Önizle",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "kaynak"
       }
@@ -11271,19 +11539,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Bir görüntüyü veya maskeyi çeşitli ölçeklendirme yöntemleriyle yeniden boyutlandırın.",
     "display_name": "Görsel/Maske Yeniden Boyutlandır",
     "inputs": {
       "input": {
         "name": "input"
       },
       "resize_type": {
-        "name": "resize_type"
+        "name": "resize_type",
+        "tooltip": "Yeniden boyutlandırma yöntemini seçin: tam boyutlar, ölçek faktörü, başka bir görüntüyle eşleştirme vb."
       },
-      "resize_type_multiplier": {
-        "name": "multiplier"
+      "resize_type_crop": {
+        "name": "kırp"
+      },
+      "resize_type_height": {
+        "name": "yükseklik"
+      },
+      "resize_type_width": {
+        "name": "genişlik"
       },
       "scale_method": {
-        "name": "scale_method"
+        "name": "scale_method",
+        "tooltip": "Enterpolasyon algoritması. 'area' küçültme için en iyisidir, 'lanczos' büyütme için uygundur, 'nearest-exact' piksel sanatı için idealdir."
       }
     },
     "outputs": {
@@ -13417,6 +13694,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Görsel(ler)den Modele (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "face_count": {
+        "name": "yüz sayısı"
+      },
+      "generate_type": {
+        "name": "oluşturma türü"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "görsel"
+      },
+      "image_back": {
+        "name": "arka görsel"
+      },
+      "image_left": {
+        "name": "sol görsel"
+      },
+      "image_right": {
+        "name": "sağ görsel"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "`3.1` modeli için LowPoly seçeneği kullanılamaz."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Metinden Modele (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "face_count": {
+        "name": "yüz sayısı"
+      },
+      "generate_type": {
+        "name": "oluşturma türü"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "`3.1` modeli için LowPoly seçeneği kullanılamaz."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "En fazla 1024 karakter desteklenir."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_dosyası",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13750,6 +14105,10 @@
       "bucket_mode": {
         "name": "bucket_mode",
         "tooltip": "Çözünürlük kova modunu etkinleştir. Etkinleştirildiğinde, ResolutionBucket düğümünden önceden kovalanmış latentler beklenir."
+      },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "Eğitim için bypass modunu etkinleştir. Etkinleştirildiğinde, adapter'lar ağırlık değişikliği yerine forward hook'lar ile uygulanır. Ağırlıkların doğrudan değiştirilemediği quantized modeller için kullanışlıdır."
       },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol et"
@@ -15717,6 +16076,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "audio_encoder_output_1"
+      },
+      "audio_scale": {
+        "name": "audio_scale"
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "mode": {
+        "name": "mod"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_patch": {
+        "name": "model_patch"
+      },
+      "motion_frame_count": {
+        "name": "hareket_kare_sayısı",
+        "tooltip": "Hareket bağlamı olarak kullanılacak önceki karelerin sayısı."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "previous_frames": {
+        "name": "önceki_kareler"
+      },
+      "start_image": {
+        "name": "başlangıç_görseli"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model",
+        "tooltip": null
+      },
+      "1": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "kırpılmış_görsel",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16282,8 +16714,7 @@
       "image": {
         "name": "görüntü"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "genişlik"
       }

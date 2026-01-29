@@ -60,6 +60,7 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
+  unrefElement,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
@@ -85,6 +86,9 @@ const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
   queueOverlayExpanded?: boolean
 }>()
 
+const emit = defineEmits<{
+  (event: 'update:progressTarget', target: HTMLElement | null): void
+}>()
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
 const { t } = useI18n()
@@ -97,9 +101,10 @@ const isQueuePanelV2Enabled = computed(() =>
 )
 
 const panelRef = ref<ComponentPublicInstance | null>(null)
-const panelElement = computed(
-  () => (panelRef.value?.$el as HTMLElement | undefined) ?? null
-)
+const panelElement = computed<HTMLElement | null>(() => {
+  const element = unrefElement(panelRef)
+  return element instanceof HTMLElement ? element : null
+})
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
@@ -281,8 +286,13 @@ const inlineProgressTarget = computed(() => {
   if (isDocked.value) return topMenuContainer ?? null
   return panelElement.value
 })
-
-defineExpose({ panelElement })
+watch(
+  panelElement,
+  (target) => {
+    emit('update:progressTarget', target)
+  },
+  { immediate: true }
+)
 
 // Handle drag state changes
 watch(isDragging, (dragging) => {

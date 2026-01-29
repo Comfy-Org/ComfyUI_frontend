@@ -1,3 +1,5 @@
+import { toValue } from 'vue'
+
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPosFromSlot,
@@ -233,6 +235,14 @@ export class LGraphNode
   static description?: string
   static filter?: string
   static skip_list?: boolean
+  static nodeData?: {
+    dev_only?: boolean
+    deprecated?: boolean
+    experimental?: boolean
+    output_node?: boolean
+    api_node?: boolean
+    name?: string
+  }
 
   static resizeHandleSize = 15
   static resizeEdgeSize = 5
@@ -785,6 +795,7 @@ export class LGraphNode
     if (this.graph) {
       this.graph._version++
     }
+    if (info.id === -1) info.id = this.id
     for (const j in info) {
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
@@ -2075,7 +2086,13 @@ export class LGraphNode
    * checks if a point is inside the shape of a node
    */
   isPointInside(x: number, y: number): boolean {
-    return isInRect(x, y, this.boundingRect)
+    if (isInRect(x, y, this.boundingRect)) return true
+
+    for (const badge of this.badges.map(toValue).filter((b) => b.onClick)) {
+      if (isInRect(x - this.pos[0], y - this.pos[1], badge.boundingRect))
+        return true
+    }
+    return false
   }
 
   /**

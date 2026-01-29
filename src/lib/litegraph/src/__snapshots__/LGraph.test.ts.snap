@@ -26,7 +26,6 @@ LGraph {
       "font_size": 14,
       "graph": [Circular],
       "id": 123,
-      "isPointInside": [Function],
       "selected": undefined,
       "setDirtyCanvas": [Function],
       "title": "A group to test with",

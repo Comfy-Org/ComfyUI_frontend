@@ -6,10 +6,12 @@ import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -27,6 +29,7 @@ export const useWorkflowService = () => {
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
+  const workflowDraftStore = useWorkflowDraftStore()
 
   async function getFilename(defaultName: string): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
@@ -290,6 +293,27 @@ export const useWorkflowService = () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
       activeWorkflow.changeTracker.store()
+      if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
+        const activeState = activeWorkflow.activeState
+        if (activeState) {
+          try {
+            const workflowJson = JSON.stringify(activeState)
+            workflowDraftStore.saveDraft(activeWorkflow.path, {
+              data: workflowJson,
+              updatedAt: Date.now(),
+              name: activeWorkflow.key,
+              isTemporary: activeWorkflow.isTemporary
+            })
+          } catch {
+            toastStore.add({
+              severity: 'error',
+              summary: t('g.error'),
+              detail: t('toastMessages.failedToSaveDraft'),
+              life: 3000
+            })
+          }
+        }
+      }
       // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(activeWorkflow)
       domWidgetStore.clear()
@@ -315,8 +339,11 @@ export const useWorkflowService = () => {
     if (
       workflowData.extra?.linearMode !== undefined ||
       !workflowData.nodes.length
-    )
+    ) {
+      if (workflowData.extra?.linearMode && !useCanvasStore().linearMode)
+        useTelemetry()?.trackEnterLinear({ source: 'workflow' })
       useCanvasStore().linearMode = !!workflowData.extra?.linearMode
+    }
 
     if (value === null || typeof value === 'string') {
       const path = value as string | null

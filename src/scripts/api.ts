@@ -231,7 +231,10 @@ type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
 
 export type GlobalSubgraphData = {
   name: string
-  info: { node_pack: string }
+  info: {
+    node_pack: string
+    category?: string
+  }
   data: string | Promise<string>
 }
 
@@ -521,10 +524,11 @@ export class ComfyApi extends EventTarget {
     }
 
     // Get auth token and set cloud params if available
+    // Uses workspace token (if enabled) or Firebase token
     if (isCloud) {
       try {
         const authStore = await this.getAuthStore()
-        const authToken = await authStore?.getIdToken()
+        const authToken = await authStore?.getAuthToken()
         if (authToken) {
           params.set('token', authToken)
         }

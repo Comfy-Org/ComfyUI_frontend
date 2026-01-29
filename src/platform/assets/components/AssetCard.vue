@@ -7,7 +7,7 @@
     :tabindex="interactive ? 0 : -1"
     :class="
       cn(
-        'rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
+        'select-none rounded-2xl overflow-hidden transition-all duration-200 bg-modal-card-background p-2 gap-2 flex flex-col h-full',
         interactive &&
           'group appearance-none bg-transparent m-0 outline-none text-left hover:bg-secondary-background focus:bg-secondary-background border-none focus:outline-solid outline-base-foreground outline-4',
         focused && 'bg-secondary-background outline-solid'
@@ -82,14 +82,14 @@
       </h3>
       <p
         :id="descId"
-        v-tooltip.top="{ value: asset.description, showDelay: tooltipDelay }"
+        v-tooltip.top="{ value: asset.secondaryText, showDelay: tooltipDelay }"
         :class="
           cn(
             'm-0 text-sm line-clamp-2 [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [display:-webkit-box] text-muted-foreground'
           )
         "
       >
-        {{ asset.description }}
+        {{ asset.secondaryText }}
       </p>
       <div class="flex items-center justify-between gap-2 mt-auto">
         <div class="flex gap-3 text-xs text-muted-foreground">

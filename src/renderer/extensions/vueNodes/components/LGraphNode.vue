@@ -130,10 +130,16 @@
                 'transition-all cursor-pointer hover:bg-accent-background duration-150 active:scale-95'
               )
             "
-            @click.stop="handleShowAdvancedInputs"
+            @click.stop="showAdvancedState = !showAdvancedState"
           >
-            <i class="icon-[lucide--settings-2] size-4" />
-            <span>{{ t('rightSidePanel.showAdvancedInputsButton') }}</span>
+            <template v-if="showAdvancedState">
+              <i class="icon-[lucide--chevron-up] size-4" />
+              <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
+            </template>
+            <template v-else>
+              <i class="icon-[lucide--settings-2] size-4" />
+              <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
+            </template>
           </button>
         </div>
       </div>
@@ -144,7 +150,9 @@
       v-if="!isCollapsed && nodeData.resizable !== false"
       role="button"
       :aria-label="t('g.resizeFromBottomRight')"
-      :class="cn(baseResizeHandleClasses, 'right-0 bottom-0 cursor-se-resize')"
+      :class="
+        cn(baseResizeHandleClasses, '-right-1 -bottom-1 cursor-se-resize')
+      "
       @pointerdown.stop="handleResizePointerDown"
     />
   </div>
@@ -152,7 +160,15 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, onMounted, ref, watch } from 'vue'
+import {
+  computed,
+  customRef,
+  nextTick,
+  onErrorCaptured,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
@@ -212,6 +228,8 @@ const { nodeData, error = null } = defineProps<LGraphNodeProps>()
 
 const { t } = useI18n()
 
+const settingStore = useSettingStore()
+
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
@@ -248,7 +266,7 @@ const bypassed = computed(
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeOpacity = computed(() => {
-  const globalOpacity = useSettingStore().get('Comfy.Node.Opacity') ?? 1
+  const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -328,7 +346,7 @@ function initSizeStyles() {
 }
 
 const baseResizeHandleClasses =
-  'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const MIN_NODE_WIDTH = 225
 
@@ -493,20 +511,45 @@ const showAdvancedInputsButton = computed(() => {
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden
   const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
-  return hasAdvancedWidgets && !node.showAdvanced
+  const alwaysShowAdvanced = settingStore.get(
+    'Comfy.Node.AlwaysShowAdvancedWidgets'
+  )
+  return hasAdvancedWidgets && !alwaysShowAdvanced
 })
 
-function handleShowAdvancedInputs() {
-  const node = lgraphNode.value
-  if (!node) return
+const showAdvancedState = customRef((track, trigger) => {
+  let internalState = false
 
-  if (node instanceof SubgraphNode) {
-    const rightSidePanelStore = useRightSidePanelStore()
-    rightSidePanelStore.focusSection('advanced-inputs')
-  } else {
-    node.showAdvanced = true
+  const node = lgraphNode.value
+  if (node && !(node instanceof SubgraphNode)) {
+    internalState = !!node.showAdvanced
   }
-}
+
+  return {
+    get() {
+      track()
+      return internalState
+    },
+    set(value: boolean) {
+      const node = lgraphNode.value
+      if (!node) return
+
+      if (node instanceof SubgraphNode) {
+        // Do not modify internalState for subgraph nodes
+        const rightSidePanelStore = useRightSidePanelStore()
+        if (value) {
+          rightSidePanelStore.focusSection('advanced-inputs')
+        } else {
+          rightSidePanelStore.closePanel()
+        }
+      } else {
+        node.showAdvanced = value
+        internalState = value
+      }
+      trigger()
+    }
+  }
+})
 
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]

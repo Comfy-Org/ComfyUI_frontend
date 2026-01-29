@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "ویرایش تصاویر با استفاده از مدل‌های ByteDance از طریق API بر اساس پرامپت",
-    "display_name": "ویرایش تصویر ByteDance",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "مقدار بالاتر باعث می‌شود تصویر بیشتر از پرامپت پیروی کند"
-      },
-      "image": {
-        "name": "تصویر",
-        "tooltip": "تصویر پایه برای ویرایش"
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "دستورالعمل ویرایش تصویر"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed مورد استفاده برای تولید"
-      },
-      "watermark": {
-        "name": "واترمارک",
-        "tooltip": "آیا واترمارک «تولید شده توسط هوش مصنوعی» به تصویر اضافه شود یا خیر"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "تولید تصویر با استفاده از مدل‌های ByteDance از طریق API بر اساس پرامپت",
     "display_name": "تصویر ByteDance",
@@ -2095,14 +2058,16 @@
       "choice": {
         "name": "انتخاب"
       },
-      "option0": {
-      }
+      "index": {},
+      "option1": {}
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "INDEX",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "بارگذاری مدل ControlNet (diff)",
@@ -3420,6 +3385,142 @@
       },
       "2": {
         "name": "نرخ فریم",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
+    "display_name": "ویرایش تصویر Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "number_of_images": {
+        "name": "تعداد تصاویر",
+        "tooltip": "تعداد تصاویر ویرایش‌شده برای تولید"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "تولید تصویر با استفاده از Grok بر اساس یک متن راهنما",
+    "display_name": "تصویر Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "number_of_images": {
+        "name": "تعداد تصاویر",
+        "tooltip": "تعداد تصاویر برای تولید"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "ویرایش یک ویدیوی موجود بر اساس یک متن راهنما.",
+    "display_name": "ویرایش ویدیو Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی از ویدیوی مورد نظر."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "حداکثر مدت زمان پشتیبانی‌شده ۸.۷ ثانیه و حجم فایل ۵۰ مگابایت است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "تولید ویدیو از یک راهنما یا تصویر",
+    "display_name": "ویدیو Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد",
+        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان",
+        "tooltip": "مدت زمان ویدیوی خروجی بر حسب ثانیه."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی از ویدیوی مورد نظر."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح ویدیوی خروجی."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6250,8 +6351,7 @@
   "Load3D": {
     "display_name": "بارگذاری ۳بعدی و انیمیشن",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "ارتفاع"
       },
@@ -6261,10 +6361,8 @@
       "model_file": {
         "name": "فایل مدل"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "عرض"
       }
@@ -6359,13 +6457,11 @@
     "description": "بارگذاری یک تصویر از پوشه خروجی. با کلیک روی دکمه تازه‌سازی، فهرست تصاویر به‌روزرسانی شده و اولین تصویر به طور خودکار انتخاب می‌شود تا تکرار آسان‌تر شود.",
     "display_name": "بارگذاری تصویر (از خروجی‌ها)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "تصویر"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "انتخاب فایل برای بارگذاری"
       }
@@ -6464,6 +6560,60 @@
       },
       "1": {
         "tooltip": "مدل CLIP تغییر یافته."
+      }
+    }
+  },
+  "LoraLoaderBypass": {
+    "description": "اعمال LoRA در حالت bypass. برخلاف LoRA معمولی، این روش وزن‌های مدل را تغییر نمی‌دهد بلکه محاسبات LoRA را در طول عبور رو به جلو تزریق می‌کند. مناسب برای سناریوهای آموزش.",
+    "display_name": "بارگذاری LoRA (حالت Bypass) (برای اشکال‌زدایی)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "مدل CLIP که LoRA بر روی آن اعمال می‌شود."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "نام LoRA."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل diffusion که LoRA بر روی آن اعمال می‌شود."
+      },
+      "strength_clip": {
+        "name": "قدرت_clip",
+        "tooltip": "میزان شدت تغییر مدل CLIP. این مقدار می‌تواند منفی باشد."
+      },
+      "strength_model": {
+        "name": "قدرت_مدل",
+        "tooltip": "میزان شدت تغییر مدل diffusion. این مقدار می‌تواند منفی باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل diffusion تغییر یافته."
+      },
+      "1": {
+        "tooltip": "مدل CLIP تغییر یافته."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "اعمال LoRA در حالت bypass. برخلاف LoRA معمولی، این روش وزن‌های مدل را تغییر نمی‌دهد بلکه محاسبات LoRA را در طول عبور رو به جلو تزریق می‌کند. مناسب برای سناریوهای آموزش.",
+    "display_name": "بارگذاری LoRA (حالت Bypass، فقط مدل) (برای اشکال‌زدایی)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "strength_model": {
+        "name": "قدرت_مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "مدل diffusion تغییر یافته."
       }
     }
   },
@@ -6827,6 +6977,126 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "description": "بازنورپردازی تصویر با تنظیمات نور و انتقال نور مبتنی بر مرجع (اختیاری).",
+    "display_name": "بازنورپردازی تصویر Magnific",
+    "inputs": {
+      "advanced_settings": {
+        "name": "تنظیمات_پیشرفته",
+        "tooltip": "گزینه‌های تنظیم دقیق برای کنترل پیشرفته نورپردازی."
+      },
+      "change_background": {
+        "name": "تغییر_پس‌زمینه",
+        "tooltip": "پس‌زمینه را بر اساس پرامپت/مرجع تغییر می‌دهد."
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که قرار است بازنورپردازی شود."
+      },
+      "interpolate_from_original": {
+        "name": "درون‌یابی_از_مبدأ",
+        "tooltip": "آزادی تولید را محدود می‌کند تا با تصویر اصلی بیشتر مطابقت داشته باشد."
+      },
+      "light_transfer_strength": {
+        "name": "شدت_انتقال_نور",
+        "tooltip": "شدت اعمال انتقال نور."
+      },
+      "preserve_details": {
+        "name": "حفظ_جزئیات",
+        "tooltip": "بافت و جزئیات ریز تصویر اصلی را حفظ می‌کند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "راهنمای توصیفی برای نورپردازی. از نشانه‌گذاری تأکید (۱-۱.۴) پشتیبانی می‌کند."
+      },
+      "reference_image": {
+        "name": "تصویر_مرجع",
+        "tooltip": "تصویر مرجع اختیاری برای انتقال نور از آن."
+      },
+      "style": {
+        "name": "سبک",
+        "tooltip": "ترجیح خروجی از نظر سبک."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "بهبود پوست برای پرتره‌ها با حالت‌های پردازشی مختلف.",
+    "display_name": "بهبود پوست تصویر Magnific",
+    "inputs": {
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر پرتره‌ای که باید بهبود یابد."
+      },
+      "mode": {
+        "name": "حالت",
+        "tooltip": "حالت پردازش: creative برای بهبود هنری، faithful برای حفظ ظاهر اصلی، flexible برای بهینه‌سازی هدفمند."
+      },
+      "sharpen": {
+        "name": "شارپ‌سازی",
+        "tooltip": "سطح شدت شارپ‌سازی."
+      },
+      "smart_grain": {
+        "name": "دانه‌بندی_هوشمند",
+        "tooltip": "سطح شدت دانه‌بندی هوشمند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "سبک را از یک تصویر مرجع به تصویر ورودی خود منتقل کنید.",
+    "display_name": "انتقال سبک تصویر Magnific",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "انتخاب موتور پردازش."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "در صورت غیرفعال بودن، هر بار تولید تصویر مقداری تصادفی بودن به همراه دارد که منجر به نتایج متنوع‌تر می‌شود."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "نوع انتقال سبک."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "تصویری که قرار است انتقال سبک روی آن اعمال شود."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "فعال‌سازی حالت پرتره برای بهبود چهره."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "تصویر مرجعی که سبک از آن استخراج می‌شود."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "ساختار تصویر اصلی را حفظ می‌کند."
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "درصد قدرت سبک."
       }
     },
     "outputs": {
@@ -10451,10 +10721,8 @@
   "PreviewAny": {
     "display_name": "پیش‌نمایش به صورت متن",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "سورس"
       }
@@ -11287,19 +11555,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "تغییر اندازه تصویر یا mask با استفاده از روش‌های مختلف مقیاس‌گذاری.",
     "display_name": "تغییر اندازه تصویر/ماسک",
     "inputs": {
       "input": {
         "name": "ورودی"
       },
       "resize_type": {
-        "name": "نوع تغییر اندازه"
+        "name": "نوع تغییر اندازه",
+        "tooltip": "نحوه تغییر اندازه را انتخاب کنید: بر اساس ابعاد دقیق، ضریب مقیاس، تطبیق با تصویر دیگر و غیره."
       },
-      "resize_type_multiplier": {
-        "name": "ضریب"
+      "resize_type_crop": {
+        "name": "برش"
+      },
+      "resize_type_height": {
+        "name": "ارتفاع"
+      },
+      "resize_type_width": {
+        "name": "عرض"
       },
       "scale_method": {
-        "name": "روش مقیاس‌دهی"
+        "name": "روش مقیاس‌دهی",
+        "tooltip": "الگوریتم درون‌یابی. 'area' برای کاهش اندازه بهترین است، 'lanczos' برای افزایش اندازه، و 'nearest-exact' برای هنر پیکسلی مناسب است."
       }
     },
     "outputs": {
@@ -13444,6 +13721,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "generate_type": {
+        "name": "نوع تولید"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "image_back": {
+        "name": "تصویر پشت"
+      },
+      "image_left": {
+        "name": "تصویر چپ"
+      },
+      "image_right": {
+        "name": "تصویر راست"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "گزینه LowPoly برای مدل `۳.۱` در دسترس نیست."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: تبدیل متن به مدل (پیشرفته)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "face_count": {
+        "name": "تعداد وجه‌ها"
+      },
+      "generate_type": {
+        "name": "نوع تولید"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "گزینه LowPoly برای مدل `۳.۱` در دسترس نیست."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "حداکثر تا ۱۰۲۴ کاراکتر پشتیبانی می‌شود."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فایل مدل",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13778,6 +14133,10 @@
         "name": "حالت سطل‌بندی رزولوشن",
         "tooltip": "فعال‌سازی حالت سطل‌بندی رزولوشن. در صورت فعال بودن، انتظار می‌رود لاتنت‌های پیش‌سطل‌بندی شده از node ResolutionBucket دریافت شود."
       },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "فعال‌سازی حالت bypass برای آموزش. در این حالت، آداپتورها از طریق forward hookها به جای تغییر وزن‌ها اعمال می‌شوند. این روش برای مدل‌های quantized که امکان تغییر مستقیم وزن‌ها وجود ندارد، مفید است."
+      },
       "control_after_generate": {
         "name": "کنترل پس از تولید"
       },
@@ -13850,10 +14209,6 @@
       "2": {
         "name": "نقشه خطا",
         "tooltip": "تاریخچه خطا"
-      },
-      "3": {
-        "name": "مراحل",
-        "tooltip": "کل مراحل آموزش"
       }
     }
   },
@@ -15748,6 +16103,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "خروجی رمزگذار صوتی ۱"
+      },
+      "audio_scale": {
+        "name": "مقیاس صوتی"
+      },
+      "clip_vision_output": {
+        "name": "خروجی بینایی clip"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "mode": {
+        "name": "حالت"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_patch": {
+        "name": "patch مدل"
+      },
+      "motion_frame_count": {
+        "name": "تعداد فریم‌های حرکتی",
+        "tooltip": "تعداد فریم‌های قبلی که به عنوان زمینه حرکت استفاده می‌شود."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "previous_frames": {
+        "name": "فریم‌های قبلی"
+      },
+      "start_image": {
+        "name": "تصویر شروع"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مدل",
+        "tooltip": null
+      },
+      "1": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "2": {
+        "name": "منفی",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latent",
+        "tooltip": null
+      },
+      "4": {
+        "name": "تصویر برش‌خورده",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16313,8 +16741,7 @@
       "image": {
         "name": "تصویر"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "عرض"
       }

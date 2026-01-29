@@ -1,11 +1,12 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
 
 describe('useKeybindingStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
   it('should add and retrieve default keybindings', () => {

@@ -1,6 +1,7 @@
 import { FirebaseError } from 'firebase/app'
 import * as firebaseAuth from 'firebase/auth'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
@@ -82,6 +83,21 @@ vi.mock('@/stores/toastStore', () => ({
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 
+const mockDistributionTypes = vi.hoisted(() => ({
+  isCloud: false,
+  isDesktop: false
+}))
+
+vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+
+const mockApiKeyStore = vi.hoisted(() => ({
+  getAuthHeader: vi.fn().mockReturnValue(null)
+}))
+
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: () => mockApiKeyStore
+}))
+
 describe('useFirebaseAuthStore', () => {
   let store: ReturnType<typeof useFirebaseAuthStore>
   let authStateCallback: (user: any) => void
@@ -138,7 +154,7 @@ describe('useFirebaseAuthStore', () => {
     })
 
     // Initialize Pinia
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useFirebaseAuthStore()
 
     // Reset and set up getIdToken mock
@@ -147,12 +163,9 @@ describe('useFirebaseAuthStore', () => {
   })
 
   describe('token refresh events', () => {
-    beforeEach(async () => {
-      vi.resetModules()
-      vi.doMock('@/platform/distribution/types', () => ({
-        isCloud: true,
-        isDesktop: true
-      }))
+    beforeEach(() => {
+      mockDistributionTypes.isCloud = true
+      mockDistributionTypes.isDesktop = true
 
       vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(
         (_auth, callback) => {
@@ -163,9 +176,8 @@ describe('useFirebaseAuthStore', () => {
 
       vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
 
-      setActivePinia(createPinia())
-      const storeModule = await import('@/stores/firebaseAuthStore')
-      store = storeModule.useFirebaseAuthStore()
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      store = useFirebaseAuthStore()
     })
 
     it("should not increment tokenRefreshTrigger on the user's first ID token event", () => {
@@ -442,13 +454,8 @@ describe('useFirebaseAuthStore', () => {
       // This test reproduces the issue where getAuthHeader fails due to network errors
       // when Firebase Auth tries to refresh tokens offline
 
-      // Mock useApiKeyAuthStore to return null (no API key fallback)
-      const mockApiKeyStore = {
-        getAuthHeader: vi.fn().mockReturnValue(null)
-      }
-      vi.doMock('@/stores/apiKeyAuthStore', () => ({
-        useApiKeyAuthStore: () => mockApiKeyStore
-      }))
+      // Configure mockApiKeyStore to return null (no API key fallback)
+      mockApiKeyStore.getAuthHeader.mockReturnValue(null)
 
       // Setup user with network error on token refresh
       mockUser.getIdToken.mockReset()

@@ -1,6 +1,10 @@
 <template>
   <WidgetLayoutField :widget>
-    <div class="ml-auto flex w-fit items-center gap-2">
+    <div
+      :class="
+        cn('flex w-fit items-center gap-2', !hideLayoutField && 'ml-auto')
+      "
+    >
       <span
         v-if="stateLabel"
         :class="
@@ -29,6 +33,7 @@ import { computed } from 'vue'
 
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 import {
   STANDARD_EXCLUDED_PROPS,
@@ -42,6 +47,8 @@ const { widget } = defineProps<{
 }>()
 
 const modelValue = defineModel<boolean>()
+
+const hideLayoutField = useHideLayoutField()
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)

@@ -67,10 +67,9 @@ import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelector
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
-
 const moveSelectedNodesVersionAdded = '1.22.2'
 export function useCoreCommands(): ComfyCommand[] {
+  const { isActiveSubscription, showSubscriptionDialog } = useSubscription()
   const workflowService = useWorkflowService()
   const workflowStore = useWorkflowStore()
   const dialogService = useDialogService()
@@ -1235,8 +1234,11 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
       label: 'Toggle Simple Mode',
-      function: () => {
+      function: (metadata?: Record<string, unknown>) => {
+        const source =
+          typeof metadata?.source === 'string' ? metadata.source : 'keybind'
         const newMode = !canvasStore.linearMode
+        if (newMode) useTelemetry()?.trackEnterLinear({ source })
         app.rootGraph.extra.linearMode = newMode
         workflowStore.activeWorkflow?.changeTracker?.checkState()
         canvasStore.linearMode = newMode

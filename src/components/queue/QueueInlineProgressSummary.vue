@@ -37,7 +37,7 @@ import { useI18n } from 'vue-i18n'
 import { st } from '@/i18n'
 import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useExecutionStore } from '@/stores/executionStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
 const props = defineProps<{
   hidden?: boolean
@@ -53,13 +53,11 @@ const {
 } = useQueueProgress()
 
 const currentNodeName = computed(() => {
-  const node = executionStore.executingNode
-  if (!node) return t('g.emDash')
-  const title = (node.title ?? '').toString().trim()
-  if (title) return title
-  const nodeType = (node.type ?? '').toString().trim() || t('g.untitled')
-  const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-  return st(key, nodeType)
+  return resolveNodeDisplayName(executionStore.executingNode, {
+    emptyLabel: t('g.emDash'),
+    untitledLabel: t('g.untitled'),
+    st
+  })
 })
 
 const shouldShow = computed(

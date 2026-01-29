@@ -87,6 +87,7 @@
       "descriptionNotSet": "Açıklama ayarlanmadı",
       "descriptionPlaceholder": "Bu model için bir açıklama ekleyin...",
       "displayName": "Görünen Ad",
+      "editDisplayName": "Görünen Adı Düzenle",
       "fileName": "Dosya Adı",
       "modelDescription": "Model Açıklaması",
       "modelTagging": "Model Etiketleme",
@@ -106,6 +107,7 @@
     "modelUploaded": "Model başarıyla içe aktarıldı.",
     "noAssetsFound": "Varlık bulunamadı",
     "noModelsInFolder": "Bu klasörde {type} mevcut değil",
+    "noResultsCanImport": "Aramanızı veya filtrelerinizi ayarlamayı deneyin.\nAyrıca yukarıdaki \"İçe Aktar\" butonunu kullanarak modeller ekleyebilirsiniz.",
     "noValidSourceDetected": "Geçerli bir içe aktarma kaynağı tespit edilmedi",
     "notSureLeaveAsIs": "Emin değil misiniz? Olduğu gibi bırakın",
     "onlyCivitaiUrlsSupported": "Yalnızca Civitai URL'leri destekleniyor",
@@ -730,6 +732,7 @@
     "control_before_generate": "oluşturmadan önce kontrol et",
     "copied": "Kopyalandı",
     "copy": "Kopyala",
+    "copyAll": "Tümünü Kopyala",
     "copyJobId": "İş Kimliğini Kopyala",
     "copyToClipboard": "Panoya Kopyala",
     "copyURL": "URL'yi Kopyala",
@@ -746,6 +749,7 @@
     "deleteImage": "Görseli sil",
     "deprecated": "ESKİ",
     "description": "Açıklama",
+    "devOnly": "YALNIZCA GELİŞTİRİCİ",
     "devices": "Cihazlar",
     "disableAll": "Tümünü Devre Dışı Bırak",
     "disableSelected": "Seçilenleri Devre Dışı Bırak",
@@ -958,11 +962,10 @@
     "videoPreview": "Video önizlemesi - Videolar arasında gezinmek için ok tuşlarını kullanın",
     "viewImageOfTotal": "{total} görüntüden {index}. görüntüyü görüntüle",
     "viewVideoOfTotal": "{total} videodan {index}. videoyu görüntüle",
-    "vitePreloadErrorMessage": "Uygulamanın yeni bir sürümü yayınlandı. Yeniden yüklemek ister misiniz?\nEğer yüklemezseniz, uygulamanın bazı bölümleri beklenildiği gibi çalışmayabilir.\nİlerlemenizi kaydettikten sonra yeniden yüklemek için çekinmeyin.",
-    "vitePreloadErrorTitle": "Yeni Sürüm Mevcut",
     "volume": "Ses",
     "warning": "Uyarı",
-    "workflow": "İş Akışı"
+    "workflow": "İş Akışı",
+    "you": "Sen"
   },
   "graphCanvasMenu": {
     "fitView": "Görünüme Sığdır",
@@ -1259,8 +1262,10 @@
     }
   },
   "manager": {
+    "actions": "Eylemler",
     "allMissingNodesInstalled": "Tüm eksik düğümler başarıyla yüklendi",
     "applyChanges": "Değişiklikleri Uygula",
+    "basicInfo": "Temel Bilgiler",
     "changingVersion": "Sürüm {from} sürümünden {to} sürümüne değiştiriliyor",
     "clickToFinishSetup": "Kurulumu tamamlamak için tıklayın",
     "conflicts": {
@@ -1323,12 +1328,24 @@
     "license": "Lisans",
     "loadingVersions": "Sürümler yükleniyor...",
     "mixedSelectionMessage": "Karışık seçim üzerinde toplu işlem yapılamaz",
+    "nav": {
+      "allExtensions": "Tüm Eklentiler",
+      "allInWorkflow": "Tümü: {workflowName}",
+      "allInstalled": "Tümü yüklü",
+      "conflicting": "Çakışan",
+      "inWorkflowSection": "İŞ AKIŞINDA",
+      "installedSection": "YÜKLÜ",
+      "missingNodes": "Eksik Düğümler",
+      "notInstalled": "Yüklü Değil",
+      "updatesAvailable": "Güncellemeler Mevcut"
+    },
     "nightlyVersion": "Gecelik",
     "noDescription": "Açıklama yok",
     "noNodesFound": "Düğüm bulunamadı",
     "noNodesFoundDescription": "Paketin düğümleri ya ayrıştırılamadı ya da paket yalnızca bir ön uç uzantısı ve herhangi bir düğüme sahip değil.",
     "noResultsFound": "Aramanızla eşleşen sonuç bulunamadı.",
     "nodePack": "Düğüm Paketi",
+    "nodePackInfo": "Düğüm Paketi Bilgisi",
     "notAvailable": "Mevcut Değil",
     "packsSelected": "paket seçildi",
     "repository": "Depo",
@@ -1336,6 +1353,7 @@
     "restartingBackend": "Değişiklikleri uygulamak için arka uç yeniden başlatılıyor...",
     "searchPlaceholder": "Ara",
     "selectVersion": "Sürüm Seç",
+    "selected": "Seçildi",
     "sort": {
       "created": "En Yeni",
       "downloads": "En Popüler",
@@ -1668,10 +1686,12 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1682,6 +1702,7 @@
     "Runway": "Runway",
     "Sora": "Sora",
     "Stability AI": "Stability AI",
+    "Tencent": "Tencent",
     "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
@@ -1897,6 +1918,7 @@
     },
     "groupSettings": "Grup Ayarları",
     "groups": "Gruplar",
+    "hideAdvancedInputsButton": "Gelişmiş girişleri gizle",
     "hideInput": "Girdiyi gizle",
     "info": "Bilgi",
     "inputs": "GİRİŞLER",
@@ -2129,6 +2151,7 @@
     "NodeLibrary": "Düğüm Kütüphanesi",
     "Nodes 2_0": "Nodes 2.0",
     "Notification Preferences": "Bildirim Tercihleri",
+    "Other": "Diğer",
     "PLY": "PLY",
     "PlanCredits": "Plan & Krediler",
     "Pointer": "İşaretçi",
@@ -2148,7 +2171,8 @@
     "Vue Nodes": "Vue Düğümleri",
     "VueNodes": "Vue Düğümleri",
     "Window": "Pencere",
-    "Workflow": "İş Akışı"
+    "Workflow": "İş Akışı",
+    "Workspace": "Çalışma Alanı"
   },
   "shape": {
     "CARD": "Kart",
@@ -2242,6 +2266,7 @@
       "filterBy": "Filtrele",
       "filterCurrentWorkflow": "Mevcut iş akışı",
       "filterJobs": "İşleri filtrele",
+      "inlineTotalLabel": "Toplam",
       "interruptAll": "Tüm çalışan işleri durdur",
       "jobQueue": "İş Kuyruğu",
       "jobsCompleted": "{count} iş tamamlandı | {count} iş tamamlandı",
@@ -2288,6 +2313,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Alt Grafik adı",
+    "cannotDeleteGlobal": "Yüklü şablonlar silinemez",
     "confirmDelete": "Bu işlem taslağı kütüphanenizden kalıcı olarak kaldıracaktır",
     "confirmDeleteTitle": "Taslak silinsin mi?",
     "hidden": "Gizli / iç içe parametreler",
@@ -2315,9 +2341,15 @@
     "beta": "BETA",
     "billedMonthly": "Aylık faturalandırılır",
     "billedYearly": "{total} Yıllık faturalandırılır",
+    "billingComingSoon": {
+      "message": "Takım faturalandırması yakında geliyor. Çalışma alanınız için koltuk başına fiyatlandırma ile bir plana abone olabileceksiniz. Güncellemeler için bizi takip edin.",
+      "title": "Yakında"
+    },
+    "cancelSubscription": "Aboneliği İptal Et",
     "changeTo": "{plan} planına geç",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudLogo": "Comfy Cloud Logosu",
+    "contactOwnerToSubscribe": "Abone olmak için çalışma alanı sahibiyle iletişime geçin",
     "contactUs": "Bize ulaşın",
     "creditsRemainingThisMonth": "Bu ay kalan krediler",
     "creditsRemainingThisYear": "Bu yıl kalan krediler",
@@ -2330,6 +2362,7 @@
     "haveQuestions": "Sorularınız mı var veya kurumsal çözüm mü arıyorsunuz?",
     "invoiceHistory": "Fatura geçmişi",
     "learnMore": "Daha fazla bilgi edinin",
+    "managePayment": "Ödemeyi Yönet",
     "managePlan": "Planı yönet",
     "manageSubscription": "Aboneliği yönet",
     "maxDuration": {
@@ -2365,6 +2398,7 @@
     "subscribeToComfyCloud": "Comfy Cloud'a Abone Ol",
     "subscribeToRun": "Abone Ol",
     "subscribeToRunFull": "Çalıştırmaya Abone Ol",
+    "subscriptionRequiredMessage": "Üyelerin Bulut'ta iş akışlarını çalıştırabilmesi için abonelik gereklidir",
     "tierNameYearly": "{name} Yıllık",
     "tiers": {
       "creator": {
@@ -2396,6 +2430,7 @@
     "viewMoreDetails": "Daha fazla detay görüntüle",
     "viewMoreDetailsPlans": "Planlar ve fiyatlandırma hakkında daha fazla detay",
     "viewUsageHistory": "Kullanım geçmişini görüntüle",
+    "workspaceNotSubscribed": "Bu çalışma alanı bir aboneliğe sahip değil",
     "yearly": "Yıllık",
     "yearlyCreditsLabel": "Toplam yıllık krediler",
     "yearlyDiscount": "%20 İNDİRİM",
@@ -2497,6 +2532,7 @@
     "failedToLoadModel": "3B model yüklenemedi",
     "failedToPurchaseCredits": "Kredi satın alınamadı: {error}",
     "failedToQueue": "Kuyruğa alınamadı",
+    "failedToSaveDraft": "Çalışma taslağı kaydedilemedi",
     "failedToToggleCamera": "Kamera açılıp kapatılamadı",
     "failedToToggleGrid": "Izgara açılıp kapatılamadı",
     "failedToUpdateBackgroundColor": "Arka plan rengi güncellenemedi",
@@ -2545,7 +2581,8 @@
     "notSet": "Ayarlanmadı",
     "provider": "Giriş Sağlayıcı",
     "title": "Kullanıcı Ayarları",
-    "updatePassword": "Şifreyi Güncelle"
+    "updatePassword": "Şifreyi Güncelle",
+    "workspaceSettings": "Çalışma alanı ayarları"
   },
   "validation": {
     "descriptionRequired": "Açıklama gerekli",
@@ -2636,6 +2673,9 @@
     "saveWorkflow": "İş akışını kaydet"
   },
   "workspace": {
+    "addedToWorkspace": "{workspaceName} çalışma alanına eklendiniz",
+    "inviteAccepted": "Davet kabul edildi",
+    "inviteFailed": "Davet kabul edilemedi",
     "unsavedChanges": {
       "message": "Kaydedilmemiş değişiklikleriniz var. Bunları iptal edip çalışma alanlarını değiştirmek istiyor musunuz?",
       "title": "Kaydedilmemiş Değişiklikler"
@@ -2649,6 +2689,128 @@
       "tokenExchangeFailed": "Çalışma alanı ile kimlik doğrulama başarısız oldu: {error}",
       "workspaceNotFound": "Çalışma alanı bulunamadı"
     }
+  },
+  "workspacePanel": {
+    "createWorkspaceDialog": {
+      "create": "Oluştur",
+      "message": "Çalışma alanları, üyelerin tek bir kredi havuzunu paylaşmasını sağlar. Oluşturduktan sonra sahibi olacaksınız.",
+      "nameLabel": "Çalışma alanı adı*",
+      "namePlaceholder": "Çalışma alanı adını girin",
+      "title": "Yeni bir çalışma alanı oluştur"
+    },
+    "dashboard": {
+      "placeholder": "Çalışma alanı kontrol paneli ayarları"
+    },
+    "deleteDialog": {
+      "message": "Kullanılmamış krediler veya kaydedilmemiş varlıklar kaybolacak. Bu işlem geri alınamaz.",
+      "messageWithName": "\"{name}\" silinsin mi? Kullanılmamış krediler veya kaydedilmemiş varlıklar kaybolacak. Bu işlem geri alınamaz.",
+      "title": "Bu çalışma alanı silinsin mi?"
+    },
+    "editWorkspaceDialog": {
+      "nameLabel": "Çalışma alanı adı",
+      "save": "Kaydet",
+      "title": "Çalışma alanı detaylarını düzenle"
+    },
+    "invite": "Davet Et",
+    "inviteLimitReached": "Maksimum 50 üye sınırına ulaştınız",
+    "inviteMember": "Üye Davet Et",
+    "inviteMemberDialog": {
+      "createLink": "Bağlantı oluştur",
+      "linkCopied": "Kopyalandı",
+      "linkCopyFailed": "Bağlantı kopyalanamadı",
+      "linkStep": {
+        "copyLink": "Bağlantıyı Kopyala",
+        "done": "Tamamlandı",
+        "message": "Hesaplarının bu e-posta adresini kullandığından emin olun.",
+        "title": "Bu bağlantıyı kişiye gönderin"
+      },
+      "message": "Birine göndermek için paylaşılabilir bir davet bağlantısı oluştur",
+      "placeholder": "Kişinin e-posta adresini girin",
+      "title": "Bu çalışma alanına birini davet et"
+    },
+    "leaveDialog": {
+      "leave": "Ayrıl",
+      "message": "Çalışma alanı sahibiyle iletişime geçmedikçe tekrar katılamazsınız.",
+      "title": "Bu çalışma alanından ayrılsın mı?"
+    },
+    "members": {
+      "actions": {
+        "copyLink": "Davet bağlantısını kopyala",
+        "removeMember": "Üyeyi kaldır",
+        "revokeInvite": "Daveti geri al"
+      },
+      "columns": {
+        "expiryDate": "Son kullanma tarihi",
+        "inviteDate": "Davet tarihi",
+        "joinDate": "Katılma tarihi"
+      },
+      "createNewWorkspace": "yeni bir tane oluşturun.",
+      "membersCount": "{count}/50 Üye",
+      "noInvites": "Bekleyen davet yok",
+      "noMembers": "Üye yok",
+      "pendingInvitesCount": "{count} bekleyen davet | {count} bekleyen davet",
+      "personalWorkspaceMessage": "Şu anda kişisel çalışma alanınıza başka üyeler davet edemezsiniz. Bir çalışma alanına üye eklemek için,",
+      "tabs": {
+        "active": "Aktif",
+        "pendingCount": "Bekliyor ({count})"
+      }
+    },
+    "menu": {
+      "deleteWorkspace": "Çalışma Alanını Sil",
+      "deleteWorkspaceDisabledTooltip": "Önce çalışma alanınızın aktif aboneliğini iptal edin",
+      "editWorkspace": "Çalışma alanı detaylarını düzenle",
+      "leaveWorkspace": "Çalışma Alanından Ayrıl"
+    },
+    "removeMemberDialog": {
+      "error": "Üye kaldırılamadı",
+      "message": "Bu üye çalışma alanınızdan kaldırılacak. Kullandıkları krediler iade edilmeyecek.",
+      "remove": "Üyeyi kaldır",
+      "success": "Üye kaldırıldı",
+      "title": "Bu üye kaldırılsın mı?"
+    },
+    "revokeInviteDialog": {
+      "message": "Bu üye artık çalışma alanınıza katılamayacak. Davet bağlantısı geçersiz olacak.",
+      "revoke": "Davet Etme",
+      "title": "Bu kişiyi davet etme?"
+    },
+    "tabs": {
+      "dashboard": "Kontrol Paneli",
+      "membersCount": "Üyeler ({count})",
+      "planCredits": "Plan & Kredi"
+    },
+    "toast": {
+      "failedToCreateWorkspace": "Çalışma alanı oluşturulamadı",
+      "failedToDeleteWorkspace": "Çalışma alanı silinemedi",
+      "failedToFetchWorkspaces": "Çalışma alanları yüklenemedi",
+      "failedToLeaveWorkspace": "Çalışma alanından ayrılamadı",
+      "failedToUpdateWorkspace": "Çalışma alanı güncellenemedi",
+      "workspaceCreated": {
+        "message": "Bir plana abone olun, ekip arkadaşlarınızı davet edin ve iş birliğine başlayın.",
+        "subscribe": "Abone Ol",
+        "title": "Çalışma alanı oluşturuldu"
+      },
+      "workspaceDeleted": {
+        "message": "Çalışma alanı kalıcı olarak silindi.",
+        "title": "Çalışma alanı silindi"
+      },
+      "workspaceLeft": {
+        "message": "Çalışma alanından ayrıldınız.",
+        "title": "Çalışma alanından ayrıldınız"
+      },
+      "workspaceUpdated": {
+        "message": "Çalışma alanı detayları kaydedildi.",
+        "title": "Çalışma alanı güncellendi"
+      }
+    }
+  },
+  "workspaceSwitcher": {
+    "createWorkspace": "Yeni çalışma alanı oluştur",
+    "maxWorkspacesReached": "Yalnızca 10 çalışma alanına sahip olabilirsiniz. Yeni bir tane oluşturmak için birini silin.",
+    "personal": "Kişisel",
+    "roleMember": "Üye",
+    "roleOwner": "Sahip",
+    "subscribe": "Abone Ol",
+    "switchWorkspace": "Çalışma alanı değiştir"
   },
   "zoomControls": {
     "hideMinimap": "Mini Haritayı Gizle",

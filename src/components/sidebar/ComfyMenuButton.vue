@@ -219,7 +219,7 @@ const extraMenuItems = computed(() => [
   {
     key: 'settings',
     label: t('g.settings'),
-    icon: 'mdi mdi-cog-outline',
+    icon: 'icon-[lucide--settings]',
     command: () => {
       telemetry?.trackUiButtonClicked({
         button_id: 'sidebar_settings_menu_opened'
@@ -230,7 +230,7 @@ const extraMenuItems = computed(() => [
   {
     key: 'manage-extensions',
     label: t('menu.manageExtensions'),
-    icon: 'mdi mdi-puzzle-outline',
+    icon: 'icon-[lucide--puzzle]',
     command: showManageExtensions
   }
 ])

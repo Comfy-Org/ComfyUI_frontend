@@ -1,6 +1,6 @@
 import type { VueWrapper } from '@vue/test-utils'
 import { mount } from '@vue/test-utils'
-import { createPinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
@@ -32,7 +32,7 @@ describe('GridSkeleton', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createPinia(), i18n],
+        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
         stubs: {
           PackCardSkeleton: true
         }

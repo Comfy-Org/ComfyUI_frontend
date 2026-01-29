@@ -12,12 +12,18 @@
         :class="
           cn(
             'flex items-center gap-1 rounded-full hover:bg-interface-button-hover-surface justify-center',
-            compact && 'size-full aspect-square'
+            compact && 'size-full '
           )
         "
       >
+        <Skeleton
+          v-if="showWorkspaceSkeleton"
+          shape="circle"
+          width="32px"
+          height="32px"
+        />
         <WorkspaceProfilePic
-          v-if="showWorkspaceIcon"
+          v-else-if="showWorkspaceIcon"
           :workspace-name="workspaceName"
           :class="compact && 'size-full'"
         />
@@ -27,7 +33,7 @@
           :class="compact && 'size-full'"
         />
 
-        <i v-if="showArrow" class="icon-[lucide--chevron-down] size-3 px-1" />
+        <i v-if="showArrow" class="icon-[lucide--chevron-down] size-4 px-1" />
       </div>
     </Button>
 
@@ -40,13 +46,16 @@
         }
       }"
     >
-      <!-- Workspace mode: workspace-aware popover -->
+      <!-- Workspace mode: workspace-aware popover (only when ready) -->
       <CurrentUserPopoverWorkspace
-        v-if="teamWorkspacesEnabled"
+        v-if="teamWorkspacesEnabled && initState === 'ready'"
         @close="closePopover"
       />
       <!-- Legacy mode: original popover -->
-      <CurrentUserPopover v-else @close="closePopover" />
+      <CurrentUserPopover
+        v-else-if="!teamWorkspacesEnabled"
+        @close="closePopover"
+      />
     </Popover>
   </div>
 </template>
@@ -54,6 +63,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
+import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -85,12 +95,20 @@ const photoURL = computed<string | undefined>(
   () => userPhotoUrl.value ?? undefined
 )
 
-const showWorkspaceIcon = computed(() => isCloud && teamWorkspacesEnabled.value)
+const { workspaceName: teamWorkspaceName, initState } = storeToRefs(
+  useTeamWorkspaceStore()
+)
+
+const showWorkspaceSkeleton = computed(
+  () => isCloud && teamWorkspacesEnabled.value && initState.value === 'loading'
+)
+const showWorkspaceIcon = computed(
+  () => isCloud && teamWorkspacesEnabled.value && initState.value === 'ready'
+)
 
 const workspaceName = computed(() => {
   if (!showWorkspaceIcon.value) return ''
-  const { workspaceName } = storeToRefs(useTeamWorkspaceStore())
-  return workspaceName.value
+  return teamWorkspaceName.value
 })
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)

@@ -13,10 +13,7 @@
           severity="danger"
         />
       </template>
-      <template
-        v-if="nodeDef.name.startsWith(useSubgraphStore().typePrefix)"
-        #actions
-      >
+      <template v-if="isUserBlueprint" #actions>
         <Button
           variant="destructive"
           size="icon-sm"
@@ -128,8 +125,18 @@ const editBlueprint = async () => {
   await useSubgraphStore().editBlueprint(props.node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const subgraphStore = useSubgraphStore()
+const isUserBlueprint = computed(() => {
+  const name = nodeDef.value.name
+  if (!name.startsWith(subgraphStore.typePrefix)) return false
+  return !subgraphStore.isGlobalBlueprint(
+    name.slice(subgraphStore.typePrefix.length)
+  )
+})
 const menuItems = computed<MenuItem[]>(() => {
-  const items: MenuItem[] = [
+  if (!isUserBlueprint.value) return []
+
+  return [
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
@@ -137,15 +144,14 @@ const menuItems = computed<MenuItem[]>(() => {
       command: deleteBlueprint
     }
   ]
-  return items
 })
 function handleContextMenu(event: Event) {
-  if (!nodeDef.value.name.startsWith(useSubgraphStore().typePrefix)) return
+  if (!isUserBlueprint.value) return
   menu.value?.show(event)
 }
 function deleteBlueprint() {
   if (!props.node.data) return
-  void useSubgraphStore().deleteBlueprint(props.node.data.name)
+  void subgraphStore.deleteBlueprint(props.node.data.name)
 }
 
 const nodePreviewStyle = ref<CSSProperties>({

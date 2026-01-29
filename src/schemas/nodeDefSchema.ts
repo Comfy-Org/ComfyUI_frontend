@@ -257,6 +257,7 @@ export const zComfyNodeDef = z.object({
   python_module: z.string(),
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
+  dev_only: z.boolean().optional(),
   /**
    * Whether the node is an API node. Running API nodes requires login to
    * Comfy Org account.

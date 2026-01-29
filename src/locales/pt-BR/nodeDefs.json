@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "Edite imagens usando modelos ByteDance via API com base em um prompt",
-    "display_name": "ByteDance Edição de Imagem",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "guidance_scale": {
-        "name": "guidance_scale",
-        "tooltip": "Um valor mais alto faz a imagem seguir o prompt mais de perto"
-      },
-      "image": {
-        "name": "image",
-        "tooltip": "A imagem base para editar"
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Instrução para editar a imagem"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed a ser usada para a geração"
-      },
-      "watermark": {
-        "name": "watermark",
-        "tooltip": "Se deve adicionar uma marca d'água \"Gerado por IA\" à imagem"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "Gere imagens usando modelos ByteDance via API com base em um prompt",
     "display_name": "ByteDance Imagem",
@@ -2095,14 +2058,16 @@
       "choice": {
         "name": "escolha"
       },
-      "option0": {
-      }
+      "index": {},
+      "option1": {}
     },
-    "outputs": {
-      "0": {
+    "outputs": [
+      null,
+      {
+        "name": "ÍNDICE",
         "tooltip": null
       }
-    }
+    ]
   },
   "DiffControlNetLoader": {
     "display_name": "Carregar Modelo ControlNet (diff)",
@@ -3420,6 +3385,142 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "Modifique uma imagem existente com base em um prompt de texto",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "Número de imagens editadas a serem geradas"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "Gere imagens usando Grok com base em um prompt de texto",
+    "display_name": "Grok Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "Número de imagens a serem geradas"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "Edite um vídeo existente com base em um prompt de texto.",
+    "display_name": "Grok Video Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do vídeo desejado."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "A duração máxima suportada é de 8,7 segundos e o tamanho máximo do arquivo é 50MB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "Gere vídeo a partir de um prompt ou de uma imagem",
+    "display_name": "Grok Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "A proporção do vídeo de saída."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "A duração do vídeo de saída em segundos."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do vídeo desejado."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "A resolução do vídeo de saída."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -6250,8 +6351,7 @@
   "Load3D": {
     "display_name": "Carregar 3D & Animação",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "altura"
       },
@@ -6261,10 +6361,8 @@
       "model_file": {
         "name": "arquivo_do_modelo"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "largura"
       }
@@ -6359,13 +6457,11 @@
     "description": "Carregue uma imagem da pasta de saída. Quando o botão de atualizar for clicado, o nó irá atualizar a lista de imagens e selecionar automaticamente a primeira imagem, facilitando a iteração.",
     "display_name": "Carregar Imagem (dos Resultados)",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "imagem"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "escolher arquivo para enviar"
       }
@@ -6464,6 +6560,60 @@
       },
       "1": {
         "tooltip": "O modelo CLIP modificado."
+      }
+    }
+  },
+  "LoraLoaderBypass": {
+    "description": "Aplicar LoRA no modo bypass. Diferente do LoRA regular, isso não modifica os pesos do modelo – em vez disso, injeta o cálculo do LoRA durante a passagem direta. Útil para cenários de treinamento.",
+    "display_name": "Carregar LoRA (Bypass) (Para depuração)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "O modelo CLIP ao qual o LoRA será aplicado."
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "O nome do LoRA."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "O modelo de difusão ao qual o LoRA será aplicado."
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "Quão fortemente modificar o modelo CLIP. Este valor pode ser negativo."
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "Quão fortemente modificar o modelo de difusão. Este valor pode ser negativo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo de difusão modificado."
+      },
+      "1": {
+        "tooltip": "O modelo CLIP modificado."
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "Aplicar LoRA no modo bypass. Diferente do LoRA regular, isso não modifica os pesos do modelo – em vez disso, injeta o cálculo do LoRA durante a passagem direta. Útil para cenários de treinamento.",
+    "display_name": "Carregar LoRA (Bypass, Apenas Modelo) (para depuração)",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "model"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "O modelo de difusão modificado."
       }
     }
   },
@@ -6827,6 +6977,126 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente do seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "description": "Reilumine uma imagem com ajustes de iluminação e transferência de luz baseada em referência opcional.",
+    "display_name": "Magnific Reiluminar Imagem",
+    "inputs": {
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "Opções de ajuste fino para controle avançado de iluminação."
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "Modifica o fundo com base no prompt/referência."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "A imagem a ser reiluminada."
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "Restringe a liberdade de geração para se aproximar mais do original."
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "Intensidade da aplicação da transferência de luz."
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "Mantém a textura e os detalhes finos do original."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Orientação descritiva para iluminação. Suporta notação de ênfase (1-1.4)."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Imagem de referência opcional para transferir a iluminação."
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "Preferência de estilo de saída."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "Realce de pele para retratos com múltiplos modos de processamento.",
+    "display_name": "Magnific Realce de Pele em Imagem",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "A imagem de retrato a ser realçada."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "Modo de processamento: criativo para realce artístico, fiel para preservar a aparência original, flexível para otimização direcionada."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "Nível de intensidade de nitidez."
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "Nível de intensidade de granulação inteligente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "Transfira o estilo de uma imagem de referência para sua imagem de entrada.",
+    "display_name": "Transferência de Estilo de Imagem Magnific",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "Seleção do mecanismo de processamento."
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "Quando desativado, cada geração pode introduzir um grau de aleatoriedade, levando a resultados mais diversos."
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "Tipo de transferência de estilo."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "A imagem para aplicar a transferência de estilo."
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "Ativar modo retrato para aprimoramentos faciais."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "A imagem de referência da qual extrair o estilo."
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "Mantém a estrutura da imagem original."
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "Porcentagem da intensidade do estilo."
       }
     },
     "outputs": {
@@ -10451,10 +10721,8 @@
   "PreviewAny": {
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "source"
       }
@@ -11287,19 +11555,28 @@
     }
   },
   "ResizeImageMaskNode": {
+    "description": "Redimensione uma imagem ou mask usando vários métodos de escala.",
     "display_name": "Redimensionar Imagem/Máscara",
     "inputs": {
       "input": {
         "name": "entrada"
       },
       "resize_type": {
-        "name": "tipo_de_redimensionamento"
+        "name": "tipo_de_redimensionamento",
+        "tooltip": "Selecione como redimensionar: por dimensões exatas, fator de escala, correspondendo a outra imagem, etc."
       },
-      "resize_type_multiplier": {
-        "name": "multiplicador"
+      "resize_type_crop": {
+        "name": "cortar"
+      },
+      "resize_type_height": {
+        "name": "altura"
+      },
+      "resize_type_width": {
+        "name": "largura"
       },
       "scale_method": {
-        "name": "método_de_escala"
+        "name": "método_de_escala",
+        "tooltip": "Algoritmo de interpolação. 'area' é melhor para reduzir, 'lanczos' para aumentar, 'nearest-exact' para pixel art."
       }
     },
     "outputs": {
@@ -13444,6 +13721,84 @@
       }
     }
   },
+  "TencentImageToModelNode": {
+    "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "face_count": {
+        "name": "número_de_faces"
+      },
+      "generate_type": {
+        "name": "tipo_de_geração"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "image_back": {
+        "name": "imagem_traseira"
+      },
+      "image_left": {
+        "name": "imagem_esquerda"
+      },
+      "image_right": {
+        "name": "imagem_direita"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "A opção LowPoly não está disponível para o modelo `3.1`."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      }
+    }
+  },
+  "TencentTextToModelNode": {
+    "display_name": "Hunyuan3D: Texto para Modelo (Pro)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "face_count": {
+        "name": "número_de_faces"
+      },
+      "generate_type": {
+        "name": "tipo_de_geração"
+      },
+      "generate_type_pbr": {
+        "name": "pbr"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "A opção LowPoly não está disponível para o modelo `3.1`."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Suporta até 1024 caracteres."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
     "inputs": {
@@ -13778,6 +14133,10 @@
         "name": "modo_bucket",
         "tooltip": "Ativar modo de bucket de resolução. Quando ativado, espera latents pré-bucketados do nó ResolutionBucket."
       },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "Ativar modo bypass para treinamento. Quando ativado, os adaptadores são aplicados via hooks de encaminhamento em vez de modificação de pesos. Útil para modelos quantizados onde os pesos não podem ser modificados diretamente."
+      },
       "control_after_generate": {
         "name": "controlar após gerar"
       },
@@ -13850,10 +14209,6 @@
       "2": {
         "name": "mapa_de_perda",
         "tooltip": "Histórico de perda"
-      },
-      "3": {
-        "name": "passos",
-        "tooltip": "Total de passos de treinamento"
       }
     }
   },
@@ -15748,6 +16103,79 @@
       }
     }
   },
+  "WanInfiniteTalkToVideo": {
+    "display_name": "WanInfiniteTalkToVideo",
+    "inputs": {
+      "audio_encoder_output_1": {
+        "name": "saída do codificador de áudio 1"
+      },
+      "audio_scale": {
+        "name": "escala de áudio"
+      },
+      "clip_vision_output": {
+        "name": "saída do clip vision"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração"
+      },
+      "mode": {
+        "name": "modo"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_patch": {
+        "name": "patch do modelo"
+      },
+      "motion_frame_count": {
+        "name": "quantidade de quadros de movimento",
+        "tooltip": "Número de quadros anteriores a serem usados como contexto de movimento."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "previous_frames": {
+        "name": "quadros anteriores"
+      },
+      "start_image": {
+        "name": "imagem inicial"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "3": {
+        "name": "latente",
+        "tooltip": null
+      },
+      "4": {
+        "name": "imagem recortada",
+        "tooltip": null
+      }
+    }
+  },
   "WanMoveConcatTrack": {
     "display_name": "WanMoveConcatTrack",
     "inputs": {
@@ -16313,8 +16741,7 @@
       "image": {
         "name": "imagem"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "largura"
       }

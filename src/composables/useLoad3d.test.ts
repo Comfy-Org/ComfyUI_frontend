@@ -1,11 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, shallowRef } from 'vue'
 
 import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { Size } from '@/lib/litegraph/src/interfaces'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
+import {
+  createMockCanvasPointerEvent,
+  createMockLGraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/extensions/core/load3d/Load3d', () => ({
   default: vi.fn()
@@ -36,15 +44,15 @@ vi.mock('@/i18n', () => ({
 }))
 
 describe('useLoad3d', () => {
-  let mockLoad3d: any
-  let mockNode: any
-  let mockToastStore: any
+  let mockLoad3d: Partial<Load3d>
+  let mockNode: LGraphNode
+  let mockToastStore: ReturnType<typeof useToastStore>
 
   beforeEach(() => {
     vi.clearAllMocks()
     nodeToLoad3dMap.clear()
 
-    mockNode = {
+    mockNode = createMockLGraphNode({
       properties: {
         'Scene Config': {
           showGrid: true,
@@ -68,18 +76,21 @@ describe('useLoad3d', () => {
         'Resource Folder': ''
       },
       widgets: [
-        { name: 'width', value: 512 },
-        { name: 'height', value: 512 }
+        { name: 'width', value: 512, type: 'number' } as IWidget,
+        { name: 'height', value: 512, type: 'number' } as IWidget
       ],
       graph: {
         setDirtyCanvas: vi.fn()
-      },
+      } as Partial<LGraph> as LGraph,
       flags: {},
-      onMouseEnter: null,
-      onMouseLeave: null,
-      onResize: null,
-      onDrawBackground: null
-    }
+      onMouseEnter: undefined,
+      onMouseLeave: undefined,
+      onResize: undefined,
+      onDrawBackground: undefined
+    })
+
+    const mockCanvas = document.createElement('canvas')
+    mockCanvas.hidden = false
 
     mockLoad3d = {
       toggleGrid: vi.fn(),
@@ -114,19 +125,20 @@ describe('useLoad3d', () => {
       removeEventListener: vi.fn(),
       remove: vi.fn(),
       renderer: {
-        domElement: {
-          hidden: false
-        }
-      }
+        domElement: mockCanvas
+      } as Partial<Load3d['renderer']> as Load3d['renderer']
     }
 
-    vi.mocked(Load3d).mockImplementation(function () {
+    vi.mocked(Load3d).mockImplementation(function (this: Load3d) {
       Object.assign(this, mockLoad3d)
+      return this
     })
 
     mockToastStore = {
       addAlert: vi.fn()
-    }
+    } as Partial<ReturnType<typeof useToastStore>> as ReturnType<
+      typeof useToastStore
+    >
     vi.mocked(useToastStore).mockReturnValue(mockToastStore)
   })
 
@@ -208,14 +220,14 @@ describe('useLoad3d', () => {
       expect(mockNode.onDrawBackground).toBeDefined()
 
       // Test the handlers
-      mockNode.onMouseEnter()
+      mockNode.onMouseEnter?.(createMockCanvasPointerEvent(0, 0))
       expect(mockLoad3d.refreshViewport).toHaveBeenCalled()
       expect(mockLoad3d.updateStatusMouseOnNode).toHaveBeenCalledWith(true)
 
-      mockNode.onMouseLeave()
+      mockNode.onMouseLeave?.(createMockCanvasPointerEvent(0, 0))
       expect(mockLoad3d.updateStatusMouseOnNode).toHaveBeenCalledWith(false)
 
-      mockNode.onResize()
+      mockNode.onResize?.([512, 512] as Size)
       expect(mockLoad3d.handleResize).toHaveBeenCalled()
     })
 
@@ -226,13 +238,17 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
 
       mockNode.flags.collapsed = true
-      mockNode.onDrawBackground()
+      mockNode.onDrawBackground?.({} as CanvasRenderingContext2D)
 
-      expect(mockLoad3d.renderer.domElement.hidden).toBe(true)
+      expect(mockLoad3d.renderer!.domElement.hidden).toBe(true)
     })
 
     it('should load model if model_file widget exists', async () => {
-      mockNode.widgets.push({ name: 'model_file', value: 'test.glb' })
+      mockNode.widgets!.push({
+        name: 'model_file',
+        value: 'test.glb',
+        type: 'text'
+      } as IWidget)
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
         'subfolder',
         'test.glb'
@@ -255,8 +271,12 @@ describe('useLoad3d', () => {
     })
 
     it('should restore camera state after loading model', async () => {
-      mockNode.widgets.push({ name: 'model_file', value: 'test.glb' })
-      mockNode.properties['Camera Config'].state = {
+      mockNode.widgets!.push({
+        name: 'model_file',
+        value: 'test.glb',
+        type: 'text'
+      } as IWidget)
+      ;(mockNode.properties!['Camera Config'] as { state: unknown }).state = {
         position: { x: 1, y: 2, z: 3 },
         target: { x: 0, y: 0, z: 0 }
       }
@@ -312,13 +332,13 @@ describe('useLoad3d', () => {
     it('should handle missing container or node', async () => {
       const composable = useLoad3d(mockNode)
 
-      await composable.initializeLoad3d(null as any)
+      await composable.initializeLoad3d(null!)
 
       expect(Load3d).not.toHaveBeenCalled()
     })
 
     it('should accept ref as parameter', () => {
-      const nodeRef = ref(mockNode)
+      const nodeRef = shallowRef<LGraphNode | null>(mockNode)
       const composable = useLoad3d(nodeRef)
 
       expect(composable.sceneConfig.value.backgroundColor).toBe('#000000')
@@ -370,9 +390,9 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      mockLoad3d.toggleGrid.mockClear()
-      mockLoad3d.setBackgroundColor.mockClear()
-      mockLoad3d.setBackgroundImage.mockClear()
+      vi.mocked(mockLoad3d.toggleGrid!).mockClear()
+      vi.mocked(mockLoad3d.setBackgroundColor!).mockClear()
+      vi.mocked(mockLoad3d.setBackgroundImage!).mockClear()
 
       composable.sceneConfig.value = {
         showGrid: false,
@@ -403,8 +423,8 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
       await nextTick()
 
-      mockLoad3d.setUpDirection.mockClear()
-      mockLoad3d.setMaterialMode.mockClear()
+      vi.mocked(mockLoad3d.setUpDirection!).mockClear()
+      vi.mocked(mockLoad3d.setMaterialMode!).mockClear()
 
       composable.modelConfig.value.upDirection = '+y'
       composable.modelConfig.value.materialMode = 'wireframe'
@@ -426,8 +446,8 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
       await nextTick()
 
-      mockLoad3d.toggleCamera.mockClear()
-      mockLoad3d.setFOV.mockClear()
+      vi.mocked(mockLoad3d.toggleCamera!).mockClear()
+      vi.mocked(mockLoad3d.setFOV!).mockClear()
 
       composable.cameraConfig.value.cameraType = 'orthographic'
       composable.cameraConfig.value.fov = 90
@@ -449,7 +469,7 @@ describe('useLoad3d', () => {
       await composable.initializeLoad3d(containerRef)
       await nextTick()
 
-      mockLoad3d.setLightIntensity.mockClear()
+      vi.mocked(mockLoad3d.setLightIntensity!).mockClear()
 
       composable.lightConfig.value.intensity = 10
       await nextTick()
@@ -589,7 +609,7 @@ describe('useLoad3d', () => {
     })
 
     it('should use resource folder for upload', async () => {
-      mockNode.properties['Resource Folder'] = 'subfolder'
+      mockNode.properties!['Resource Folder'] = 'subfolder'
       vi.mocked(Load3dUtils.uploadFile).mockResolvedValue('uploaded-image.jpg')
 
       const composable = useLoad3d(mockNode)
@@ -641,7 +661,9 @@ describe('useLoad3d', () => {
     })
 
     it('should handle export errors', async () => {
-      mockLoad3d.exportModel.mockRejectedValueOnce(new Error('Export failed'))
+      vi.mocked(mockLoad3d.exportModel!).mockRejectedValueOnce(
+        new Error('Export failed')
+      )
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -719,12 +741,12 @@ describe('useLoad3d', () => {
     })
 
     it('should handle materialModeChange event', async () => {
-      let materialModeHandler: any
+      let materialModeHandler: ((mode: string) => void) | undefined
 
-      mockLoad3d.addEventListener.mockImplementation(
-        (event: string, handler: any) => {
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
           if (event === 'materialModeChange') {
-            materialModeHandler = handler
+            materialModeHandler = handler as (mode: string) => void
           }
         }
       )
@@ -734,21 +756,21 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      materialModeHandler('wireframe')
+      materialModeHandler?.('wireframe')
 
       expect(composable.modelConfig.value.materialMode).toBe('wireframe')
     })
 
     it('should handle loading events', async () => {
-      let modelLoadingStartHandler: any
-      let modelLoadingEndHandler: any
+      let modelLoadingStartHandler: (() => void) | undefined
+      let modelLoadingEndHandler: (() => void) | undefined
 
-      mockLoad3d.addEventListener.mockImplementation(
-        (event: string, handler: any) => {
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
           if (event === 'modelLoadingStart') {
-            modelLoadingStartHandler = handler
+            modelLoadingStartHandler = handler as () => void
           } else if (event === 'modelLoadingEnd') {
-            modelLoadingEndHandler = handler
+            modelLoadingEndHandler = handler as () => void
           }
         }
       )
@@ -758,22 +780,22 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      modelLoadingStartHandler()
+      modelLoadingStartHandler?.()
       expect(composable.loading.value).toBe(true)
       expect(composable.loadingMessage.value).toBe('load3d.loadingModel')
 
-      modelLoadingEndHandler()
+      modelLoadingEndHandler?.()
       expect(composable.loading.value).toBe(false)
       expect(composable.loadingMessage.value).toBe('')
     })
 
     it('should handle recordingStatusChange event', async () => {
-      let recordingStatusHandler: any
+      let recordingStatusHandler: ((status: boolean) => void) | undefined
 
-      mockLoad3d.addEventListener.mockImplementation(
-        (event: string, handler: any) => {
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
           if (event === 'recordingStatusChange') {
-            recordingStatusHandler = handler
+            recordingStatusHandler = handler as (status: boolean) => void
           }
         }
       )
@@ -783,7 +805,7 @@ describe('useLoad3d', () => {
 
       await composable.initializeLoad3d(containerRef)
 
-      recordingStatusHandler(false)
+      recordingStatusHandler?.(false)
 
       expect(composable.isRecording.value).toBe(false)
       expect(composable.recordingDuration.value).toBe(10)
@@ -814,10 +836,11 @@ describe('useLoad3d', () => {
 
   describe('getModelUrl', () => {
     it('should handle http URLs directly', async () => {
-      mockNode.widgets.push({
+      mockNode.widgets!.push({
         name: 'model_file',
-        value: 'http://example.com/model.glb'
-      })
+        value: 'http://example.com/model.glb',
+        type: 'text'
+      } as IWidget)
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -830,7 +853,11 @@ describe('useLoad3d', () => {
     })
 
     it('should construct URL for local files', async () => {
-      mockNode.widgets.push({ name: 'model_file', value: 'models/test.glb' })
+      mockNode.widgets!.push({
+        name: 'model_file',
+        value: 'models/test.glb',
+        type: 'text'
+      } as IWidget)
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
         'models',
         'test.glb'
@@ -860,7 +887,9 @@ describe('useLoad3d', () => {
     })
 
     it('should use output type for preview mode', async () => {
-      mockNode.widgets = [{ name: 'model_file', value: 'test.glb' }] // No width/height widgets
+      mockNode.widgets = [
+        { name: 'model_file', value: 'test.glb', type: 'text' } as IWidget
+      ] // No width/height widgets
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'test.glb'])
       vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
         '/api/view/test.glb'
@@ -894,10 +923,10 @@ describe('useLoad3d', () => {
     })
 
     it('should handle missing configurations', async () => {
-      delete mockNode.properties['Scene Config']
-      delete mockNode.properties['Model Config']
-      delete mockNode.properties['Camera Config']
-      delete mockNode.properties['Light Config']
+      delete mockNode.properties!['Scene Config']
+      delete mockNode.properties!['Model Config']
+      delete mockNode.properties!['Camera Config']
+      delete mockNode.properties!['Light Config']
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -909,7 +938,11 @@ describe('useLoad3d', () => {
     })
 
     it('should handle background image with existing config', async () => {
-      mockNode.properties['Scene Config'].backgroundImage = 'existing.jpg'
+      ;(
+        mockNode.properties!['Scene Config'] as {
+          backgroundImage: string
+        }
+      ).backgroundImage = 'existing.jpg'
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')

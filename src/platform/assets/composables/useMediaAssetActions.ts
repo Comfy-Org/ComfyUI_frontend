@@ -134,71 +134,6 @@ export function useMediaAssetActions() {
     }
   }
 
-  /**
-   * Show confirmation dialog and delete asset if confirmed
-   * @param asset The asset to delete
-   * @returns true if the asset was deleted, false otherwise
-   */
-  const confirmDelete = async (asset: AssetItem): Promise<boolean> => {
-    const assetType = getAssetType(asset)
-
-    return new Promise((resolve) => {
-      dialogStore.showDialog({
-        key: 'delete-asset-confirmation',
-        title: t('mediaAsset.deleteAssetTitle'),
-        component: ConfirmationDialogContent,
-        props: {
-          message: t('mediaAsset.deleteAssetDescription'),
-          type: 'delete',
-          itemList: [asset.name],
-          onConfirm: async () => {
-            const success = await deleteAsset(asset, assetType)
-            resolve(success)
-          },
-          onCancel: () => {
-            resolve(false)
-          }
-        }
-      })
-    })
-  }
-
-  const deleteAsset = async (asset: AssetItem, assetType: string) => {
-    const assetsStore = useAssetsStore()
-
-    try {
-      // Perform the deletion
-      await deleteAssetApi(asset, assetType)
-
-      // Update the appropriate store based on asset type
-      if (assetType === 'output') {
-        await assetsStore.updateHistory()
-      } else {
-        await assetsStore.updateInputs()
-      }
-
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.assetDeletedSuccessfully'),
-        life: 2000
-      })
-      return true
-    } catch (error) {
-      console.error('Failed to delete asset:', error)
-      const errorMessage = error instanceof Error ? error.message : ''
-      const isCloudWarning = errorMessage.includes('Cloud')
-
-      toast.add({
-        severity: isCloudWarning ? 'warn' : 'error',
-        summary: isCloudWarning ? t('g.warning') : t('g.error'),
-        detail: errorMessage || t('mediaAsset.failedToDeleteAsset'),
-        life: 3000
-      })
-      return false
-    }
-  }
-
   const copyJobId = async (asset?: AssetItem) => {
     const targetAsset = asset ?? mediaContext?.asset.value
     if (!targetAsset) return
@@ -581,30 +516,44 @@ export function useMediaAssetActions() {
   }
 
   /**
-   * Delete multiple assets with confirmation dialog
-   * @param assets Array of assets to delete
+   * Show confirmation dialog and delete asset(s) if confirmed
+   * @param assets Single asset or array of assets to delete
+   * @returns true if user confirmed and deletion was attempted, false if cancelled
    */
-  const deleteMultipleAssets = async (assets: AssetItem[]) => {
-    if (!assets || assets.length === 0) return
+  const deleteAssets = async (
+    assets: AssetItem | AssetItem[]
+  ): Promise<boolean> => {
+    const assetArray = Array.isArray(assets) ? assets : [assets]
+    if (assetArray.length === 0) return false
 
     const assetsStore = useAssetsStore()
+    const isSingle = assetArray.length === 1
 
-    return new Promise<void>((resolve) => {
+    return new Promise((resolve) => {
       dialogStore.showDialog({
-        key: 'delete-multiple-assets-confirmation',
-        title: t('mediaAsset.deleteSelectedTitle'),
+        key: 'delete-assets-confirmation',
+        title: isSingle
+          ? t('mediaAsset.deleteAssetTitle')
+          : t('mediaAsset.deleteSelectedTitle'),
         component: ConfirmationDialogContent,
         props: {
-          message: t('mediaAsset.deleteSelectedDescription', {
-            count: assets.length
-          }),
+          message: isSingle
+            ? t('mediaAsset.deleteAssetDescription')
+            : t('mediaAsset.deleteSelectedDescription', {
+                count: assetArray.length
+              }),
           type: 'delete',
-          itemList: assets.map((asset) => asset.name),
+          itemList: assetArray.map((asset) => asset.name),
           onConfirm: async () => {
+            // Show loading overlay for all assets being deleted
+            assetArray.forEach((asset) =>
+              assetsStore.setAssetDeleting(asset.id, true)
+            )
+
             try {
               // Delete all assets using Promise.allSettled to track individual results
               const results = await Promise.allSettled(
-                assets.map((asset) =>
+                assetArray.map((asset) =>
                   deleteAssetApi(asset, getAssetType(asset))
                 )
               )
@@ -618,16 +567,16 @@ export function useMediaAssetActions() {
               // Log failed deletions for debugging
               failed.forEach((result, index) => {
                 console.warn(
-                  `Failed to delete asset ${assets[index].name}:`,
+                  `Failed to delete asset ${assetArray[index].name}:`,
                   result.reason
                 )
               })
 
               // Update stores after deletions
-              const hasOutputAssets = assets.some(
+              const hasOutputAssets = assetArray.some(
                 (a) => getAssetType(a) === 'output'
               )
-              const hasInputAssets = assets.some(
+              const hasInputAssets = assetArray.some(
                 (a) => getAssetType(a) === 'input'
               )
 
@@ -640,25 +589,27 @@ export function useMediaAssetActions() {
 
               // Show appropriate feedback based on results
               if (failed.length === 0) {
-                // All succeeded
                 toast.add({
                   severity: 'success',
                   summary: t('g.success'),
-                  detail: t('mediaAsset.selection.assetsDeletedSuccessfully', {
-                    count: succeeded
-                  }),
+                  detail: isSingle
+                    ? t('mediaAsset.assetDeletedSuccessfully')
+                    : t('mediaAsset.selection.assetsDeletedSuccessfully', {
+                        count: succeeded
+                      }),
                   life: 2000
                 })
               } else if (succeeded === 0) {
-                // All failed
                 toast.add({
                   severity: 'error',
                   summary: t('g.error'),
-                  detail: t('mediaAsset.selection.failedToDeleteAssets'),
+                  detail: isSingle
+                    ? t('mediaAsset.failedToDeleteAsset')
+                    : t('mediaAsset.selection.failedToDeleteAssets'),
                   life: 3000
                 })
               } else {
-                // Partial success
+                // Partial success (only possible with multiple assets)
                 toast.add({
                   severity: 'warn',
                   summary: t('g.warning'),
@@ -674,15 +625,22 @@ export function useMediaAssetActions() {
               toast.add({
                 severity: 'error',
                 summary: t('g.error'),
-                detail: t('mediaAsset.selection.failedToDeleteAssets'),
+                detail: isSingle
+                  ? t('mediaAsset.failedToDeleteAsset')
+                  : t('mediaAsset.selection.failedToDeleteAssets'),
                 life: 3000
               })
+            } finally {
+              // Hide loading overlay for all assets
+              assetArray.forEach((asset) =>
+                assetsStore.setAssetDeleting(asset.id, false)
+              )
             }
 
-            resolve()
+            resolve(true)
           },
           onCancel: () => {
-            resolve()
+            resolve(false)
           }
         }
       })
@@ -692,9 +650,7 @@ export function useMediaAssetActions() {
   return {
     downloadAsset,
     downloadMultipleAssets,
-    confirmDelete,
-    deleteAsset,
-    deleteMultipleAssets,
+    deleteAssets,
     copyJobId,
     addWorkflow,
     addMultipleToWorkflow,
