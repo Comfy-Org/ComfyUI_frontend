@@ -21,7 +21,8 @@ const {
   ),
   mockTelemetry: {
     trackSubscription: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn()
+    trackMonthlySubscriptionCancelled: vi.fn(),
+    trackSubscriptionPurchase: vi.fn()
   },
   mockUserId: { value: 'user-123' }
 }))
@@ -111,8 +112,8 @@ describe('useSubscription', () => {
     mockIsLoggedIn.value = false
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
+    mockTelemetry.trackSubscriptionPurchase.mockReset()
     mockUserId.value = 'user-123'
-    window.dataLayer = []
     window.__CONFIG__ = {
       subscription_required: true
     } as typeof window.__CONFIG__
@@ -242,7 +243,6 @@ describe('useSubscription', () => {
     })
 
     it('pushes purchase event after a pending subscription completes', async () => {
-      window.dataLayer = []
       localStorage.setItem(
         'pending_subscription_purchase',
         JSON.stringify({
@@ -268,25 +268,26 @@ describe('useSubscription', () => {
 
       await fetchStatus()
 
-      expect(window.dataLayer).toHaveLength(1)
-      expect(window.dataLayer?.[0]).toMatchObject({
-        event: 'purchase',
-        transaction_id: 'sub_123',
-        currency: 'USD',
-        items: [
-          {
-            item_id: 'monthly_creator',
-            item_variant: 'monthly',
-            item_category: 'subscription',
-            quantity: 1
-          }
-        ]
-      })
+      expect(mockTelemetry.trackSubscriptionPurchase).toHaveBeenCalledTimes(1)
+      expect(mockTelemetry.trackSubscriptionPurchase).toHaveBeenCalledWith(
+        expect.objectContaining({
+          transaction_id: 'sub_123',
+          currency: 'USD',
+          value: expect.any(Number),
+          items: [
+            expect.objectContaining({
+              item_id: 'monthly_creator',
+              item_variant: 'monthly',
+              item_category: 'subscription',
+              quantity: 1
+            })
+          ]
+        })
+      )
       expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
     })
 
     it('ignores pending purchase when user does not match', async () => {
-      window.dataLayer = []
       localStorage.setItem(
         'pending_subscription_purchase',
         JSON.stringify({
@@ -313,7 +314,7 @@ describe('useSubscription', () => {
 
       await fetchStatus()
 
-      expect(window.dataLayer).toHaveLength(0)
+      expect(mockTelemetry.trackSubscriptionPurchase).not.toHaveBeenCalled()
       expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
     })
 

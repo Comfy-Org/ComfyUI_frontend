@@ -20,6 +20,7 @@ import type { AuditLog } from '@/services/customerEventsService'
 export interface AuthMetadata {
   method?: 'email' | 'google' | 'github'
   is_new_user?: boolean
+  user_id_hash?: string
   referrer_url?: string
   utm_source?: string
   utm_medium?: string
@@ -278,6 +279,22 @@ export interface PageViewMetadata {
   [key: string]: unknown
 }
 
+export interface SubscriptionPurchaseItem {
+  item_id: string
+  item_name: string
+  item_category: string
+  item_variant: string
+  price: number
+  quantity: number
+}
+
+export interface SubscriptionPurchaseMetadata extends Record<string, unknown> {
+  transaction_id: string
+  value: number
+  currency: string
+  items: SubscriptionPurchaseItem[]
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
@@ -292,6 +309,7 @@ export interface TelemetryProvider {
   trackSubscription?(event: 'modal_opened' | 'subscribe_clicked'): void
   trackMonthlySubscriptionSucceeded?(): void
   trackMonthlySubscriptionCancelled?(): void
+  trackSubscriptionPurchase?(metadata: SubscriptionPurchaseMetadata): void
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void

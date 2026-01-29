@@ -1,6 +1,7 @@
 import type {
   AuthMetadata,
   PageViewMetadata,
+  SubscriptionPurchaseMetadata,
   TelemetryProvider
 } from '../../types'
 
@@ -66,22 +67,17 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    if (metadata.is_new_user) {
-      this.pushEvent('sign_up', {
-        method: metadata.method
-      })
-    } else {
-      this.pushEvent('login', {
-        method: metadata.method
-      })
+    const basePayload = {
+      method: metadata.method,
+      ...(metadata.user_id_hash ? { user_id: metadata.user_id_hash } : {})
     }
-  }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.pushEvent('purchase', {
-      currency: 'USD',
-      items: [{ item_name: 'Monthly Subscription' }]
-    })
+    if (metadata.is_new_user) {
+      this.pushEvent('sign_up', basePayload)
+      return
+    }
+
+    this.pushEvent('login', basePayload)
   }
 
   trackApiCreditTopupSucceeded(): void {
@@ -89,5 +85,9 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       currency: 'USD',
       items: [{ item_name: 'API Credits' }]
     })
+  }
+
+  trackSubscriptionPurchase(metadata: SubscriptionPurchaseMetadata): void {
+    this.pushEvent('purchase', metadata)
   }
 }

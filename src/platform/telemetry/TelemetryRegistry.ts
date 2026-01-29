@@ -14,6 +14,7 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
+  SubscriptionPurchaseMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -42,157 +43,178 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.providers.push(provider)
   }
 
+  private dispatch(action: (provider: TelemetryProvider) => void): void {
+    this.providers.forEach((provider) => {
+      try {
+        action(provider)
+      } catch (error) {
+        console.error('[Telemetry] Provider dispatch failed', error)
+      }
+    })
+  }
+
   trackSignupOpened(): void {
-    this.providers.forEach((p) => p.trackSignupOpened?.())
+    this.dispatch((provider) => provider.trackSignupOpened?.())
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    this.providers.forEach((p) => p.trackAuth?.(metadata))
+    this.dispatch((provider) => provider.trackAuth?.(metadata))
   }
 
   trackUserLoggedIn(): void {
-    this.providers.forEach((p) => p.trackUserLoggedIn?.())
+    this.dispatch((provider) => provider.trackUserLoggedIn?.())
   }
 
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void {
-    this.providers.forEach((p) => p.trackSubscription?.(event))
+    this.dispatch((provider) => provider.trackSubscription?.(event))
   }
 
   trackMonthlySubscriptionSucceeded(): void {
-    this.providers.forEach((p) => p.trackMonthlySubscriptionSucceeded?.())
+    this.dispatch((provider) => provider.trackMonthlySubscriptionSucceeded?.())
   }
 
   trackMonthlySubscriptionCancelled(): void {
-    this.providers.forEach((p) => p.trackMonthlySubscriptionCancelled?.())
+    this.dispatch((provider) => provider.trackMonthlySubscriptionCancelled?.())
+  }
+
+  trackSubscriptionPurchase(metadata: SubscriptionPurchaseMetadata): void {
+    this.dispatch((provider) => provider.trackSubscriptionPurchase?.(metadata))
   }
 
   trackAddApiCreditButtonClicked(): void {
-    this.providers.forEach((p) => p.trackAddApiCreditButtonClicked?.())
+    this.dispatch((provider) => provider.trackAddApiCreditButtonClicked?.())
   }
 
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
-    this.providers.forEach((p) =>
-      p.trackApiCreditTopupButtonPurchaseClicked?.(amount)
+    this.dispatch((provider) =>
+      provider.trackApiCreditTopupButtonPurchaseClicked?.(amount)
     )
   }
 
   trackApiCreditTopupSucceeded(): void {
-    this.providers.forEach((p) => p.trackApiCreditTopupSucceeded?.())
+    this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
   }
 
   trackRunButton(options?: {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource
   }): void {
-    this.providers.forEach((p) => p.trackRunButton?.(options))
+    this.dispatch((provider) => provider.trackRunButton?.(options))
   }
 
   startTopupTracking(): void {
-    this.providers.forEach((p) => p.startTopupTracking?.())
+    this.dispatch((provider) => provider.startTopupTracking?.())
   }
 
   checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return this.providers.some(
-      (p) => p.checkForCompletedTopup?.(events) ?? false
-    )
+    return this.providers.some((provider) => {
+      try {
+        return provider.checkForCompletedTopup?.(events) ?? false
+      } catch (error) {
+        console.error('[Telemetry] Provider dispatch failed', error)
+        return false
+      }
+    })
   }
 
   clearTopupTracking(): void {
-    this.providers.forEach((p) => p.clearTopupTracking?.())
+    this.dispatch((provider) => provider.clearTopupTracking?.())
   }
 
   trackSurvey(
     stage: 'opened' | 'submitted',
     responses?: SurveyResponses
   ): void {
-    this.providers.forEach((p) => p.trackSurvey?.(stage, responses))
+    this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
   }
 
   trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
-    this.providers.forEach((p) => p.trackEmailVerification?.(stage))
+    this.dispatch((provider) => provider.trackEmailVerification?.(stage))
   }
 
   trackTemplate(metadata: TemplateMetadata): void {
-    this.providers.forEach((p) => p.trackTemplate?.(metadata))
+    this.dispatch((provider) => provider.trackTemplate?.(metadata))
   }
 
   trackTemplateLibraryOpened(metadata: TemplateLibraryMetadata): void {
-    this.providers.forEach((p) => p.trackTemplateLibraryOpened?.(metadata))
+    this.dispatch((provider) => provider.trackTemplateLibraryOpened?.(metadata))
   }
 
   trackTemplateLibraryClosed(metadata: TemplateLibraryClosedMetadata): void {
-    this.providers.forEach((p) => p.trackTemplateLibraryClosed?.(metadata))
+    this.dispatch((provider) => provider.trackTemplateLibraryClosed?.(metadata))
   }
 
   trackWorkflowImported(metadata: WorkflowImportMetadata): void {
-    this.providers.forEach((p) => p.trackWorkflowImported?.(metadata))
+    this.dispatch((provider) => provider.trackWorkflowImported?.(metadata))
   }
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
-    this.providers.forEach((p) => p.trackWorkflowOpened?.(metadata))
+    this.dispatch((provider) => provider.trackWorkflowOpened?.(metadata))
   }
 
   trackEnterLinear(metadata: EnterLinearMetadata): void {
-    this.providers.forEach((p) => p.trackEnterLinear?.(metadata))
+    this.dispatch((provider) => provider.trackEnterLinear?.(metadata))
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
-    this.providers.forEach((p) => p.trackPageVisibilityChanged?.(metadata))
+    this.dispatch((provider) => provider.trackPageVisibilityChanged?.(metadata))
   }
 
   trackTabCount(metadata: TabCountMetadata): void {
-    this.providers.forEach((p) => p.trackTabCount?.(metadata))
+    this.dispatch((provider) => provider.trackTabCount?.(metadata))
   }
 
   trackNodeSearch(metadata: NodeSearchMetadata): void {
-    this.providers.forEach((p) => p.trackNodeSearch?.(metadata))
+    this.dispatch((provider) => provider.trackNodeSearch?.(metadata))
   }
 
   trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void {
-    this.providers.forEach((p) => p.trackNodeSearchResultSelected?.(metadata))
+    this.dispatch((provider) =>
+      provider.trackNodeSearchResultSelected?.(metadata)
+    )
   }
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
-    this.providers.forEach((p) => p.trackTemplateFilterChanged?.(metadata))
+    this.dispatch((provider) => provider.trackTemplateFilterChanged?.(metadata))
   }
 
   trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void {
-    this.providers.forEach((p) => p.trackHelpCenterOpened?.(metadata))
+    this.dispatch((provider) => provider.trackHelpCenterOpened?.(metadata))
   }
 
   trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void {
-    this.providers.forEach((p) => p.trackHelpResourceClicked?.(metadata))
+    this.dispatch((provider) => provider.trackHelpResourceClicked?.(metadata))
   }
 
   trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void {
-    this.providers.forEach((p) => p.trackHelpCenterClosed?.(metadata))
+    this.dispatch((provider) => provider.trackHelpCenterClosed?.(metadata))
   }
 
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
-    this.providers.forEach((p) => p.trackWorkflowCreated?.(metadata))
+    this.dispatch((provider) => provider.trackWorkflowCreated?.(metadata))
   }
 
   trackWorkflowExecution(): void {
-    this.providers.forEach((p) => p.trackWorkflowExecution?.())
+    this.dispatch((provider) => provider.trackWorkflowExecution?.())
   }
 
   trackExecutionError(metadata: ExecutionErrorMetadata): void {
-    this.providers.forEach((p) => p.trackExecutionError?.(metadata))
+    this.dispatch((provider) => provider.trackExecutionError?.(metadata))
   }
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
-    this.providers.forEach((p) => p.trackExecutionSuccess?.(metadata))
+    this.dispatch((provider) => provider.trackExecutionSuccess?.(metadata))
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {
-    this.providers.forEach((p) => p.trackSettingChanged?.(metadata))
+    this.dispatch((provider) => provider.trackSettingChanged?.(metadata))
   }
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
-    this.providers.forEach((p) => p.trackUiButtonClicked?.(metadata))
+    this.dispatch((provider) => provider.trackUiButtonClicked?.(metadata))
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
-    this.providers.forEach((p) => p.trackPageView?.(pageName, properties))
+    this.dispatch((provider) => provider.trackPageView?.(pageName, properties))
   }
 }

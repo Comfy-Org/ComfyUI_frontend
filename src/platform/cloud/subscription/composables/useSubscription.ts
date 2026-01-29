@@ -8,6 +8,7 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { SubscriptionPurchaseMetadata } from '@/platform/telemetry/types'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
@@ -45,7 +46,8 @@ function useSubscriptionInternal() {
   const { reportError, accessBillingPortal } = useFirebaseAuthActions()
   const { showSubscriptionRequiredDialog } = useDialogService()
 
-  const { getFirebaseAuthHeader, userId } = useFirebaseAuthStore()
+  const firebaseAuthStore = useFirebaseAuthStore()
+  const { getFirebaseAuthHeader } = firebaseAuthStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -109,9 +111,11 @@ function useSubscriptionInternal() {
   ): void {
     if (!status?.is_active || !status.subscription_id) return
 
-    if (!userId) return
+    if (!firebaseAuthStore.userId) return
 
-    const pendingPurchase = getPendingSubscriptionPurchase(userId)
+    const pendingPurchase = getPendingSubscriptionPurchase(
+      firebaseAuthStore.userId
+    )
     if (!pendingPurchase) return
 
     const { tierKey, billingCycle } = pendingPurchase
@@ -122,24 +126,26 @@ function useSubscriptionInternal() {
       : baseName
     const unitPrice = getTierPrice(tierKey, isYearly)
     const value = isYearly && tierKey !== 'founder' ? unitPrice * 12 : unitPrice
-    if (typeof window !== 'undefined') {
-      window.dataLayer = window.dataLayer || []
-      window.dataLayer.push({
-        event: 'purchase',
-        transaction_id: status.subscription_id,
-        value,
-        currency: 'USD',
-        items: [
-          {
-            item_id: `${billingCycle}_${tierKey}`,
-            item_name: planName,
-            item_category: 'subscription',
-            item_variant: billingCycle,
-            price: value,
-            quantity: 1
-          }
-        ]
-      })
+    const metadata: SubscriptionPurchaseMetadata = {
+      transaction_id: status.subscription_id,
+      value,
+      currency: 'USD',
+      items: [
+        {
+          item_id: `${billingCycle}_${tierKey}`,
+          item_name: planName,
+          item_category: 'subscription',
+          item_variant: billingCycle,
+          price: value,
+          quantity: 1
+        }
+      ]
+    }
+
+    try {
+      telemetry?.trackSubscriptionPurchase(metadata)
+    } catch (error) {
+      console.error('Failed to track subscription purchase', error)
     }
 
     clearPendingSubscriptionPurchase()

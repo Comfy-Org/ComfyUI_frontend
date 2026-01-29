@@ -26,6 +26,7 @@ import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AuthMetadata } from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -81,17 +82,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
 
-  function pushDataLayerEvent(event: Record<string, unknown>): void {
-    if (!isCloud || typeof window === 'undefined') return
-
-    try {
-      window.dataLayer = window.dataLayer || []
-      window.dataLayer.push(event)
-    } catch (error) {
-      console.warn('Failed to push data layer event', error)
-    }
-  }
-
   async function hashSha256(value: string): Promise<string | undefined> {
     if (typeof crypto === 'undefined' || !crypto.subtle) return
     if (typeof TextEncoder === 'undefined') return
@@ -102,20 +92,25 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
       .join('')
   }
 
-  async function trackSignUp(method: 'email' | 'google' | 'github') {
-    if (!isCloud || typeof window === 'undefined') return
+  async function buildAuthMetadata(
+    method: 'email' | 'google' | 'github',
+    isNewUser: boolean,
+    userId?: string
+  ): Promise<AuthMetadata> {
+    const metadata: AuthMetadata = { method, is_new_user: isNewUser }
 
-    try {
-      const userId = currentUser.value?.uid
-      const hashedUserId = userId ? await hashSha256(userId) : undefined
-      pushDataLayerEvent({
-        event: 'sign_up',
-        method,
-        ...(hashedUserId ? { user_id: hashedUserId } : {})
-      })
-    } catch (error) {
-      console.warn('Failed to track sign up', error)
+    if (isNewUser && userId) {
+      try {
+        const userIdHash = await hashSha256(userId)
+        if (userIdHash) {
+          metadata.user_id_hash = userIdHash
+        }
+      } catch (error) {
+        console.warn('Failed to hash user id for telemetry', error)
+      }
     }
+
+    return metadata
   }
 
   // Providers
@@ -405,11 +400,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
-      useTelemetry()?.trackAuth({
-        method: 'email',
-        is_new_user: true
-      })
-      await trackSignUp('email')
+      const metadata = await buildAuthMetadata('email', true, result.user.uid)
+      useTelemetry()?.trackAuth(metadata)
     }
 
     return result
@@ -424,13 +416,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      useTelemetry()?.trackAuth({
-        method: 'google',
-        is_new_user: isNewUser
-      })
-      if (isNewUser) {
-        await trackSignUp('google')
-      }
+      const metadata = await buildAuthMetadata(
+        'google',
+        isNewUser,
+        result.user.uid
+      )
+      useTelemetry()?.trackAuth(metadata)
     }
 
     return result
@@ -445,13 +436,12 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      useTelemetry()?.trackAuth({
-        method: 'github',
-        is_new_user: isNewUser
-      })
-      if (isNewUser) {
-        await trackSignUp('github')
-      }
+      const metadata = await buildAuthMetadata(
+        'github',
+        isNewUser,
+        result.user.uid
+      )
+      useTelemetry()?.trackAuth(metadata)
     }
 
     return result
