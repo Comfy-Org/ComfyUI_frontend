@@ -539,5 +539,16 @@ describe('useModelToNodeStore', () => {
       expect(modelToNodeStore.getNodeProvider('')).toBeUndefined()
       expect(modelToNodeStore.getAllNodeProviders('')).toEqual([])
     })
+
+    it('should handle invalid input types gracefully', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(modelToNodeStore.getNodeProvider(null as any)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(undefined as any)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(123 as any)).toBeUndefined()
+      expect(modelToNodeStore.getAllNodeProviders(null as any)).toEqual([])
+      expect(modelToNodeStore.getAllNodeProviders(undefined as any)).toEqual([])
+    })
   })
 })

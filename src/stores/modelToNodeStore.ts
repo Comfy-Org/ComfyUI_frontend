@@ -81,6 +81,10 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   function findProvidersWithFallback(
     modelType: string
   ): ModelNodeProvider[] | undefined {
+    if (!modelType || typeof modelType !== 'string') {
+      return undefined
+    }
+
     const exactMatch = modelToNodeMap.value[modelType]
     if (exactMatch && exactMatch.length > 0) return exactMatch
 
