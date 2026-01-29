@@ -2165,6 +2165,14 @@ export class LGraph
     }
   }
 
+  /**
+   * Custom JSON serialization to prevent circular reference errors.
+   * Called automatically by JSON.stringify().
+   */
+  toJSON(): ISerialisedGraph {
+    return this.serialize()
+  }
+
   /** @returns The drag and scale state of the first attached canvas, otherwise `undefined`. */
   private _getDragAndScale(): DragAndScaleState | undefined {
     const ds = this.list_of_graphcanvas?.at(0)?.ds

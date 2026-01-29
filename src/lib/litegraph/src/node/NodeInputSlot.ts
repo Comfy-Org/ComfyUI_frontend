@@ -79,4 +79,12 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
     ctx.textAlign = textAlign
   }
+
+  override toJSON(): INodeInputSlot {
+    return {
+      ...super.toJSON(),
+      link: this.link,
+      widget: this.widget
+    }
+  }
 }

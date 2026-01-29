@@ -260,6 +260,25 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     ctx.lineWidth = originalLineWidth
   }
 
+  /**
+   * Custom JSON serialization to prevent circular reference errors.
+   * Returns only serializable slot properties without the node back-reference.
+   */
+  toJSON(): INodeSlot {
+    return {
+      name: this.name,
+      type: this.type,
+      label: this.label,
+      color_on: this.color_on,
+      color_off: this.color_off,
+      shape: this.shape,
+      dir: this.dir,
+      localized_name: this.localized_name,
+      pos: this.pos,
+      boundingRect: [...this.boundingRect] as [number, number, number, number]
+    }
+  }
+
   drawCollapsed(ctx: CanvasRenderingContext2D) {
     const [x, y] = this.collapsedPos
 

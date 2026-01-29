@@ -75,4 +75,12 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
     ctx.textAlign = textAlign
     ctx.strokeStyle = strokeStyle
   }
+
+  override toJSON(): INodeOutputSlot {
+    return {
+      ...super.toJSON(),
+      links: this.links,
+      slot_index: this.slot_index
+    }
+  }
 }

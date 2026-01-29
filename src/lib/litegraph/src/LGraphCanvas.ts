@@ -1909,7 +1909,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // TODO: classList.add
     element.className += ' lgraphcanvas'
-    element.data = this
+    Object.defineProperty(element, 'data', {
+      value: this,
+      writable: true,
+      configurable: true,
+      enumerable: false
+    })
 
     // Background canvas: To render objects behind nodes (background, links, groups)
     this.bgcanvas = document.createElement('canvas')
@@ -8658,5 +8663,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   repositionNodesVueMode(nodesToReposition: NewNodePosition[]) {
     const mutations = this.initLayoutMutations()
     this.applyNodePositionUpdates(nodesToReposition, mutations)
+  }
+
+  /**
+   * Custom JSON serialization to prevent circular reference errors.
+   * LGraphCanvas should not be serialized directly - serialize the graph instead.
+   */
+  toJSON(): { ds: { scale: number; offset: [number, number] } } {
+    return {
+      ds: {
+        scale: this.ds.scale,
+        offset: [...this.ds.offset] as [number, number]
+      }
+    }
   }
 }
