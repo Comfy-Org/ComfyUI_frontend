@@ -1,3 +1,5 @@
+import { toValue } from 'vue'
+
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
   calculateInputSlotPosFromSlot,
@@ -2076,7 +2078,13 @@ export class LGraphNode
    * checks if a point is inside the shape of a node
    */
   isPointInside(x: number, y: number): boolean {
-    return isInRect(x, y, this.boundingRect)
+    if (isInRect(x, y, this.boundingRect)) return true
+
+    for (const badge of this.badges.map(toValue).filter((b) => b.onClick)) {
+      if (isInRect(x - this.pos[0], y - this.pos[1], badge.boundingRect))
+        return true
+    }
+    return false
   }
 
   /**
