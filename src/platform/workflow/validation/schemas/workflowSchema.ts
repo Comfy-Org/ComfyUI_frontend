@@ -394,6 +394,7 @@ interface SubgraphDefinitionBase<
   id: string
   revision: number
   name: string
+  category?: string
 
   inputNode: T extends ComfyWorkflow1BaseInput
     ? z.input<typeof zExportedSubgraphIONode>
@@ -425,6 +426,7 @@ const zSubgraphDefinition = zComfyWorkflow1
     id: z.string().uuid(),
     revision: z.number(),
     name: z.string(),
+    category: z.string().optional(),
     inputNode: zExportedSubgraphIONode,
     outputNode: zExportedSubgraphIONode,
 

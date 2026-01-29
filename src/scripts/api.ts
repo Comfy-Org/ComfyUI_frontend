@@ -231,7 +231,10 @@ type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
 
 export type GlobalSubgraphData = {
   name: string
-  info: { node_pack: string }
+  info: {
+    node_pack: string
+    category?: string
+  }
   data: string | Promise<string>
 }
 

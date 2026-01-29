@@ -1,6 +1,7 @@
 import { FirebaseError } from 'firebase/app'
 import * as firebaseAuth from 'firebase/auth'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
@@ -153,7 +154,7 @@ describe('useFirebaseAuthStore', () => {
     })
 
     // Initialize Pinia
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useFirebaseAuthStore()
 
     // Reset and set up getIdToken mock
@@ -175,7 +176,7 @@ describe('useFirebaseAuthStore', () => {
 
       vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(mockAuth as any)
 
-      setActivePinia(createPinia())
+      setActivePinia(createTestingPinia({ stubActions: false }))
       store = useFirebaseAuthStore()
     })
 

@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -36,7 +37,7 @@ describe('usePacksSelection', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    const pinia = createPinia()
+    const pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
 
     managerStore = useComfyManagerStore()
