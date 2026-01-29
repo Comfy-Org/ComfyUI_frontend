@@ -1,5 +1,5 @@
 # Description: Automated weekly documentation accuracy check and update via Claude
-name: "Weekly Documentation Check"
+name: 'Weekly Documentation Check'
 
 permissions:
   contents: write

@@ -2,6 +2,7 @@ import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
 import { useRemoteWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useRemoteWidget'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -616,7 +617,6 @@ describe('useRemoteWidget', () => {
     })
 
     it('should register event listener when enabled', async () => {
-      const { api } = await import('@/scripts/api')
       const addEventListenerSpy = vi.spyOn(api, 'addEventListener')
 
       const mockNode = createMockLGraphNode({
@@ -642,7 +642,6 @@ describe('useRemoteWidget', () => {
     })
 
     it('should refresh widget when workflow completes successfully', async () => {
-      const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
@@ -681,7 +680,6 @@ describe('useRemoteWidget', () => {
     })
 
     it('should not refresh when toggle is disabled', async () => {
-      const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
@@ -714,7 +712,6 @@ describe('useRemoteWidget', () => {
     })
 
     it('should cleanup event listener on node removal', async () => {
-      const { api } = await import('@/scripts/api')
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {

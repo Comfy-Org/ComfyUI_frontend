@@ -30,7 +30,6 @@ interface Window {
       badge?: string
     }
   }
-  dataLayer?: Array<Record<string, unknown>>
 }
 
 interface Navigator {

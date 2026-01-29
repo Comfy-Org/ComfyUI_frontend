@@ -107,6 +107,7 @@
     "modelUploaded": "Modelo importado com sucesso.",
     "noAssetsFound": "Nenhum ativo encontrado",
     "noModelsInFolder": "Nenhum {type} disponível nesta pasta",
+    "noResultsCanImport": "Tente ajustar sua busca ou filtros.\nVocê também pode adicionar modelos usando o botão \"Importar\" acima.",
     "noValidSourceDetected": "Nenhuma fonte de importação válida detectada",
     "notSureLeaveAsIs": "Não tem certeza? Deixe como está",
     "onlyCivitaiUrlsSupported": "Apenas URLs do Civitai são suportadas",
@@ -1260,8 +1261,10 @@
     }
   },
   "manager": {
+    "actions": "Ações",
     "allMissingNodesInstalled": "Todos os nodes ausentes foram instalados com sucesso",
     "applyChanges": "Aplicar Alterações",
+    "basicInfo": "Informações Básicas",
     "changingVersion": "Alterando versão de {from} para pt-BR",
     "clickToFinishSetup": "Clique",
     "conflicts": {
@@ -1324,12 +1327,24 @@
     "license": "Licença",
     "loadingVersions": "Carregando versões...",
     "mixedSelectionMessage": "Não é possível realizar ação em massa em seleção mista",
+    "nav": {
+      "allExtensions": "Todas as Extensões",
+      "allInWorkflow": "Todos em: {workflowName}",
+      "allInstalled": "Todos Instalados",
+      "conflicting": "Conflitante",
+      "inWorkflowSection": "NO FLUXO DE TRABALHO",
+      "installedSection": "INSTALADO",
+      "missingNodes": "Nós Ausentes",
+      "notInstalled": "Não Instalado",
+      "updatesAvailable": "Atualizações Disponíveis"
+    },
     "nightlyVersion": "Noturna",
     "noDescription": "Nenhuma descrição disponível",
     "noNodesFound": "Nenhum node encontrado",
     "noNodesFoundDescription": "Os nodes do pacote não puderam ser analisados ou o pacote é apenas uma extensão de frontend e não possui nodes.",
     "noResultsFound": "Nenhum resultado encontrado para sua busca.",
     "nodePack": "Node Pack",
+    "nodePackInfo": "Informações do Pacote de Nós",
     "notAvailable": "Não Disponível",
     "packsSelected": "pacotes selecionados",
     "repository": "Repositório",
@@ -1337,6 +1352,7 @@
     "restartingBackend": "Reiniciando backend para aplicar as alterações...",
     "searchPlaceholder": "Buscar",
     "selectVersion": "Selecionar Versão",
+    "selected": "Selecionado",
     "sort": {
       "created": "Mais Novos",
       "downloads": "Mais Populares",

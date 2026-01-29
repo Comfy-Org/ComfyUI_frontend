@@ -1,62 +1,110 @@
 <template>
   <template v-if="nodePack">
-    <div class="relative z-40 flex h-full flex-col overflow-hidden">
-      <div class="top-0 z-10 w-full px-6 pt-6">
-        <InfoPanelHeader
-          :node-packs="[nodePack]"
-          :has-conflict="hasCompatibilityIssues"
-        >
-          <template v-if="canTryNightlyUpdate" #install-button>
-            <div class="flex w-full justify-center gap-2">
-              <PackTryUpdateButton :node-pack="nodePack" size="md" />
-              <PackUninstallButton :node-packs="[nodePack]" size="md" />
-            </div>
+    <div
+      ref="scrollContainer"
+      class="flex h-full flex-col overflow-y-auto scrollbar-custom"
+    >
+      <PropertiesAccordionItem v-if="!importFailed" :class="accordionClass">
+        <template #label>
+          <span class="text-xs uppercase font-inter">
+            {{ t('manager.actions') }}
+          </span>
+        </template>
+        <div class="flex flex-col gap-1 px-4">
+          <template v-if="canTryNightlyUpdate">
+            <PackTryUpdateButton :node-pack="nodePack" size="md" />
+            <PackUninstallButton :node-packs="[nodePack]" size="md" />
           </template>
-        </InfoPanelHeader>
-      </div>
-      <div
-        ref="scrollContainer"
-        class="scrollbar-hide flex-1 overflow-y-auto p-6 pt-2 text-sm"
-      >
-        <div class="mb-6">
-          <MetadataRow
-            v-if="!importFailed && isPackInstalled(nodePack.id)"
-            :label="t('manager.filter.enabled')"
-            class="flex"
-            style="align-items: center"
-          >
-            <PackEnableToggle
-              :node-pack="nodePack"
-              :has-conflict="hasCompatibilityIssues"
+          <template v-else-if="isUpdateAvailable">
+            <PackUpdateButton :node-packs="[nodePack]" size="md" />
+            <PackUninstallButton :node-packs="[nodePack]" size="md" />
+          </template>
+          <template v-else-if="isAllInstalled">
+            <PackUninstallButton :node-packs="[nodePack]" size="md" />
+          </template>
+          <template v-else>
+            <PackInstallButton
+              :node-packs="[nodePack]"
+              size="md"
+              :has-conflict="hasCompatibilityIssues || hasConflictInfo"
+              :conflict-info="conflictInfo"
             />
-          </MetadataRow>
-          <MetadataRow
-            v-for="item in infoItems"
-            v-show="item.value !== undefined && item.value !== null"
-            :key="item.key"
-            :label="item.label"
-            :value="item.value"
-          />
-          <MetadataRow :label="t('g.status')">
-            <PackStatusMessage
-              :status-type="
-                nodePack.status as components['schemas']['NodeVersionStatus']
-              "
-              :has-compatibility-issues="hasCompatibilityIssues"
-            />
-          </MetadataRow>
-          <MetadataRow :label="t('manager.version')">
-            <PackVersionBadge :node-pack="nodePack" :is-selected="true" />
-          </MetadataRow>
+          </template>
         </div>
-        <div class="mb-6 overflow-hidden">
-          <InfoTabs
+      </PropertiesAccordionItem>
+
+      <PropertiesAccordionItem :class="accordionClass">
+        <template #label>
+          <span class="text-xs uppercase font-inter">
+            {{ t('manager.basicInfo') }}
+          </span>
+        </template>
+        <ModelInfoField :label="t('g.name')">
+          <span class="text-muted-foreground">{{ nodePack.name }}</span>
+        </ModelInfoField>
+        <ModelInfoField
+          v-if="!importFailed && isPackInstalled(nodePack.id)"
+          :label="t('manager.filter.enabled')"
+        >
+          <PackEnableToggle
             :node-pack="nodePack"
-            :has-compatibility-issues="hasCompatibilityIssues"
-            :conflict-result="conflictResult"
+            :has-conflict="hasCompatibilityIssues"
           />
+        </ModelInfoField>
+        <ModelInfoField
+          v-for="item in infoItems"
+          v-show="item.value !== undefined && item.value !== null"
+          :key="item.key"
+          :label="item.label"
+        >
+          <span class="text-muted-foreground">{{ item.value }}</span>
+        </ModelInfoField>
+        <ModelInfoField :label="t('g.status')">
+          <PackStatusMessage
+            :status-type="
+              nodePack.status as components['schemas']['NodeVersionStatus']
+            "
+            :has-compatibility-issues="hasCompatibilityIssues"
+          />
+        </ModelInfoField>
+        <ModelInfoField :label="t('manager.version')">
+          <PackVersionBadge :node-pack="nodePack" :is-selected="true" />
+        </ModelInfoField>
+      </PropertiesAccordionItem>
+
+      <PropertiesAccordionItem :class="accordionClass">
+        <template #label>
+          <span class="text-xs uppercase font-inter">
+            {{ t('g.description') }}
+          </span>
+        </template>
+        <DescriptionTabPanel :node-pack="nodePack" />
+      </PropertiesAccordionItem>
+
+      <PropertiesAccordionItem
+        v-if="hasCompatibilityIssues"
+        :class="accordionClass"
+      >
+        <template #label>
+          <span class="text-xs uppercase font-inter">
+            ⚠️ {{ importFailed ? t('g.error') : t('g.warning') }}
+          </span>
+        </template>
+        <div class="px-4 py-2">
+          <WarningTabPanel :conflict-result="conflictResult" />
         </div>
-      </div>
+      </PropertiesAccordionItem>
+
+      <PropertiesAccordionItem :class="accordionClass">
+        <template #label>
+          <span class="text-xs uppercase font-inter">
+            {{ t('g.nodes') }}
+          </span>
+        </template>
+        <div class="px-4 py-2">
+          <NodesTabPanel :node-pack="nodePack" :node-names="nodeNames" />
+        </div>
+      </PropertiesAccordionItem>
     </div>
   </template>
   <template v-else>
@@ -67,26 +115,34 @@
 </template>
 
 <script setup lang="ts">
-import { useScroll, whenever } from '@vueuse/core'
+import { whenever } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import type { components } from '@/types/comfyRegistryTypes'
+import { cn } from '@/utils/tailwindUtil'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'
+import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackTryUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackTryUpdateButton.vue'
 import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
-import InfoPanelHeader from '@/workbench/extensions/manager/components/manager/infoPanel/InfoPanelHeader.vue'
-import InfoTabs from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTabs.vue'
-import MetadataRow from '@/workbench/extensions/manager/components/manager/infoPanel/MetadataRow.vue'
+import PackUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackUpdateButton.vue'
+import DescriptionTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue'
+import NodesTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/NodesTabPanel.vue'
+import WarningTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/WarningTabPanel.vue'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
 import { IsInstallingKey } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type {
+  ConflictDetail,
+  ConflictDetectionResult
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 
 interface InfoItem {
@@ -101,7 +157,12 @@ const { nodePack } = defineProps<{
 
 const scrollContainer = ref<HTMLElement | null>(null)
 
-const { isPackInstalled } = useComfyManagerStore()
+const accordionClass = cn(
+  'bg-modal-panel-background border-t border-border-default'
+)
+
+const managerStore = useComfyManagerStore()
+const { isPackInstalled } = managerStore
 const isInstalled = computed(() => isPackInstalled(nodePack.id))
 const isInstalling = ref(false)
 provide(IsInstallingKey, isInstalling)
@@ -109,9 +170,20 @@ whenever(isInstalled, () => {
   isInstalling.value = false
 })
 
-const { canTryNightlyUpdate } = usePackUpdateStatus(() => nodePack)
+const { canTryNightlyUpdate, isUpdateAvailable } = usePackUpdateStatus(
+  () => nodePack
+)
+
+const isAllInstalled = computed(() => isPackInstalled(nodePack.id))
 
 const { checkNodeCompatibility } = useConflictDetection()
+
+const conflictInfo = computed<ConflictDetail[]>(() => {
+  const compatibility = checkNodeCompatibility(nodePack)
+  return compatibility.conflicts ?? []
+})
+
+const hasConflictInfo = computed(() => conflictInfo.value.length > 0)
 const { getConflictsForPackageByID } = useConflictDetectionStore()
 
 const { t, d, n } = useI18n()
@@ -152,6 +224,12 @@ provide(ImportFailedKey, {
   showImportFailedDialog
 })
 
+const nodeNames = computed(() => {
+  // @ts-expect-error comfy_nodes is an Algolia-specific field
+  const { comfy_nodes } = nodePack
+  return comfy_nodes ?? []
+})
+
 const infoItems = computed<InfoItem[]>(() => [
   {
     key: 'publisher',
@@ -174,20 +252,11 @@ const infoItems = computed<InfoItem[]>(() => [
   }
 ])
 
-const { y } = useScroll(scrollContainer, {
-  eventListenerOptions: {
-    passive: true
-  }
-})
-const onNodePackChange = () => {
-  y.value = 0
-}
-
 whenever(
   () => nodePack.id,
   (nodePackId, oldNodePackId) => {
-    if (nodePackId !== oldNodePackId) {
-      onNodePackChange()
+    if (nodePackId !== oldNodePackId && scrollContainer.value) {
+      scrollContainer.value.scrollTop = 0
     }
   },
   { immediate: true }

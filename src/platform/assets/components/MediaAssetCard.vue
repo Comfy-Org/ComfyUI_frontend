@@ -48,6 +48,10 @@
         @image-loaded="handleImageLoaded"
       />
 
+      <LoadingOverlay :loading="isDeleting">
+        <i class="icon-[lucide--trash-2] size-5" />
+      </LoadingOverlay>
+
       <!-- Action buttons overlay (top-left) -->
       <div
         v-if="showActionsOverlay"
@@ -130,7 +134,9 @@ import { useElementHover } from '@vueuse/core'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@/components/button/IconGroup.vue'
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
   formatSize,
@@ -166,6 +172,13 @@ const { asset, loading, selected, showOutputCount, outputCount } = defineProps<{
   showOutputCount?: boolean
   outputCount?: number
 }>()
+
+const assetsStore = useAssetsStore()
+
+// Get deletion state from store
+const isDeleting = computed(() =>
+  asset ? assetsStore.isAssetDeleting(asset.id) : false
+)
 
 const emit = defineEmits<{
   click: []
@@ -252,7 +265,7 @@ const metaInfo = computed(() => {
 })
 
 const showActionsOverlay = computed(() => {
-  if (loading || !asset) return false
+  if (loading || !asset || isDeleting.value) return false
   return isHovered.value || selected || isVideoPlaying.value
 })
 

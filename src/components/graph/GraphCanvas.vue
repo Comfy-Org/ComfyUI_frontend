@@ -149,7 +149,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { newUserService } from '@/services/newUserService'
+import { useNewUserService } from '@/services/useNewUserService'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -457,11 +457,9 @@ onMounted(async () => {
   // Register core settings immediately after settings are ready
   CORE_SETTINGS.forEach(settingStore.addSetting)
 
-  // Wait for both i18n and newUserService in parallel
-  // (newUserService only needs settings, not i18n)
   await Promise.all([
     until(() => isI18nReady.value || !!i18nError.value).toBe(true),
-    newUserService().initializeIfNewUser(settingStore)
+    useNewUserService().initializeIfNewUser()
   ])
   if (i18nError.value) {
     console.warn(
@@ -502,19 +500,9 @@ onMounted(async () => {
   await workflowPersistence.loadTemplateFromUrlIfPresent()
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
-  // Uses watch because feature flags load asynchronously - flag may be false initially
-  // then become true once remoteConfig or websocket features are loaded
-  if (inviteUrlLoader) {
-    const stopWatching = watch(
-      () => flags.teamWorkspacesEnabled,
-      async (enabled) => {
-        if (enabled) {
-          stopWatching()
-          await inviteUrlLoader.loadInviteFromUrl()
-        }
-      },
-      { immediate: true }
-    )
+  // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
+  if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
+    await inviteUrlLoader.loadInviteFromUrl()
   }
 
   // Initialize release store to fetch releases from comfy-api (fire-and-forget)

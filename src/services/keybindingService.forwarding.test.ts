@@ -133,12 +133,13 @@ describe('keybindingService - Event Forwarding', () => {
 
     const event = createTestKeyboardEvent('Delete')
 
-    await keybindingService.keybindHandler(event)
-
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
-
-    // Restore processKey for other tests
-    vi.mocked(app.canvas).processKey = originalProcessKey
+    try {
+      await keybindingService.keybindHandler(event)
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    } finally {
+      // Restore processKey for other tests
+      vi.mocked(app.canvas).processKey = originalProcessKey
+    }
   })
 
   it('should not forward Delete key when canvas is not available', async () => {
@@ -148,12 +149,13 @@ describe('keybindingService - Event Forwarding', () => {
 
     const event = createTestKeyboardEvent('Delete')
 
-    await keybindingService.keybindHandler(event)
-
-    expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
-
-    // Restore canvas for other tests
-    vi.mocked(app).canvas = originalCanvas
+    try {
+      await keybindingService.keybindHandler(event)
+      expect(vi.mocked(useCommandStore().execute)).not.toHaveBeenCalled()
+    } finally {
+      // Restore canvas for other tests
+      vi.mocked(app).canvas = originalCanvas
+    }
   })
 
   it('should not forward non-canvas keys', async () => {

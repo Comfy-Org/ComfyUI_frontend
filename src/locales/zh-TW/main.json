@@ -107,6 +107,7 @@
     "modelUploaded": "模型匯入成功。",
     "noAssetsFound": "找不到資產",
     "noModelsInFolder": "此資料夾中沒有可用的 {type}",
+    "noResultsCanImport": "請嘗試調整搜尋或篩選條件。\n你也可以使用上方的「匯入」按鈕新增模型。",
     "noValidSourceDetected": "未偵測到有效的匯入來源",
     "notSureLeaveAsIs": "不確定？請保持原樣",
     "onlyCivitaiUrlsSupported": "僅支援 Civitai 的網址",
@@ -1260,8 +1261,10 @@
     }
   },
   "manager": {
+    "actions": "操作",
     "allMissingNodesInstalled": "所有缺少的節點已成功安裝",
     "applyChanges": "套用變更",
+    "basicInfo": "基本資訊",
     "changingVersion": "正在將版本從 {from} 變更為 {to}",
     "clickToFinishSetup": "點擊",
     "conflicts": {
@@ -1324,12 +1327,24 @@
     "license": "授權條款",
     "loadingVersions": "正在載入版本...",
     "mixedSelectionMessage": "無法對混合選取執行批次操作",
+    "nav": {
+      "allExtensions": "所有擴充功能",
+      "allInWorkflow": "全部於：{workflowName}",
+      "allInstalled": "全部已安裝",
+      "conflicting": "有衝突",
+      "inWorkflowSection": "工作流程中",
+      "installedSection": "已安裝",
+      "missingNodes": "缺少節點",
+      "notInstalled": "未安裝",
+      "updatesAvailable": "有可用更新"
+    },
     "nightlyVersion": "每夜建置版",
     "noDescription": "沒有可用的說明",
     "noNodesFound": "找不到任何節點",
     "noNodesFoundDescription": "此套件的節點無法解析，或此套件僅為前端擴充功能，沒有任何節點。",
     "noResultsFound": "找不到符合搜尋條件的結果。",
     "nodePack": "節點包",
+    "nodePackInfo": "節點包資訊",
     "notAvailable": "不可用",
     "packsSelected": "已選擇套件",
     "repository": "儲存庫",
@@ -1337,6 +1352,7 @@
     "restartingBackend": "正在重新啟動後端以套用變更...",
     "searchPlaceholder": "搜尋",
     "selectVersion": "選擇版本",
+    "selected": "已選取",
     "sort": {
       "created": "最新上架",
       "downloads": "最受歡迎",

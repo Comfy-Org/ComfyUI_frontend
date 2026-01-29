@@ -26,7 +26,6 @@ import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { pushDataLayerEvent as pushDataLayerEventBase } from '@/platform/telemetry/gtm'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -81,42 +80,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const lastTokenUserId = ref<string | null>(null)
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
-
-  function pushDataLayerEvent(event: Record<string, unknown>): void {
-    if (!isCloud || typeof window === 'undefined') return
-
-    try {
-      pushDataLayerEventBase(event)
-    } catch (error) {
-      console.warn('Failed to push data layer event', error)
-    }
-  }
-
-  async function hashSha256(value: string): Promise<string | undefined> {
-    if (typeof crypto === 'undefined' || !crypto.subtle) return
-    if (typeof TextEncoder === 'undefined') return
-    const data = new TextEncoder().encode(value)
-    const hash = await crypto.subtle.digest('SHA-256', data)
-    return Array.from(new Uint8Array(hash))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-  }
-
-  async function trackSignUp(method: 'email' | 'google' | 'github') {
-    if (!isCloud || typeof window === 'undefined') return
-
-    try {
-      const userId = currentUser.value?.uid
-      const hashedUserId = userId ? await hashSha256(userId) : undefined
-      pushDataLayerEvent({
-        event: 'sign_up',
-        method,
-        ...(hashedUserId ? { user_id: hashedUserId } : {})
-      })
-    } catch (error) {
-      console.warn('Failed to track sign up', error)
-    }
-  }
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
@@ -247,6 +210,31 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const getFirebaseAuthHeader = async (): Promise<AuthHeader | null> => {
     const token = await getIdToken()
     return token ? { Authorization: `Bearer ${token}` } : null
+  }
+
+  /**
+   * Returns the raw auth token (not wrapped in a header object).
+   * Priority: workspace token > Firebase token.
+   * Use this for WebSocket connections and backend node auth.
+   */
+  const getAuthToken = async (): Promise<string | undefined> => {
+    if (flags.teamWorkspacesEnabled) {
+      const workspaceToken = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.TOKEN
+      )
+      const expiresAt = sessionStorage.getItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT
+      )
+
+      if (workspaceToken && expiresAt) {
+        const expiryTime = parseInt(expiresAt, 10)
+        if (Date.now() < expiryTime) {
+          return workspaceToken
+        }
+      }
+    }
+
+    return await getIdToken()
   }
 
   const fetchBalance = async (): Promise<GetCustomerBalanceResponse | null> => {
@@ -384,7 +372,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         method: 'email',
         is_new_user: true
       })
-      await trackSignUp('email')
     }
 
     return result
@@ -403,9 +390,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         method: 'google',
         is_new_user: isNewUser
       })
-      if (isNewUser) {
-        await trackSignUp('google')
-      }
     }
 
     return result
@@ -424,9 +408,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
         method: 'github',
         is_new_user: isNewUser
       })
-      if (isNewUser) {
-        await trackSignUp('github')
-      }
     }
 
     return result
@@ -557,6 +538,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     updatePassword: _updatePassword,
     deleteAccount: _deleteAccount,
     getAuthHeader,
-    getFirebaseAuthHeader
+    getFirebaseAuthHeader,
+    getAuthToken
   }
 })
