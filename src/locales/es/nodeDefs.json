@@ -3384,6 +3384,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "Modifica una imagen existente según una indicación de texto",
+    "display_name": "Edición de imagen Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "number_of_images": {
+        "name": "número de imágenes",
+        "tooltip": "Cantidad de imágenes editadas a generar"
+      },
+      "prompt": {
+        "name": "indicación",
+        "tooltip": "La indicación de texto utilizada para generar la imagen"
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "Genera imágenes usando Grok a partir de una indicación de texto",
+    "display_name": "Imagen Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "relación de aspecto"
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "number_of_images": {
+        "name": "número de imágenes",
+        "tooltip": "Cantidad de imágenes a generar"
+      },
+      "prompt": {
+        "name": "indicación",
+        "tooltip": "La indicación de texto utilizada para generar la imagen"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "Edita un video existente según una indicación de texto.",
+    "display_name": "Edición de video Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "prompt": {
+        "name": "indicación",
+        "tooltip": "Descripción en texto del video deseado."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "La duración máxima admitida es de 8,7 segundos y el tamaño máximo de archivo es de 50MB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "Genera video a partir de una indicación o una imagen",
+    "display_name": "Video Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "relación de aspecto",
+        "tooltip": "La relación de aspecto del video de salida."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "duration": {
+        "name": "duración",
+        "tooltip": "La duración del video de salida en segundos."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "prompt": {
+        "name": "indicación",
+        "tooltip": "Descripción en texto del video deseado."
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "La resolución del video de salida."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "GrowMask",
     "inputs": {

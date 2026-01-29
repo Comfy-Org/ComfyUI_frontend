@@ -3384,6 +3384,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 이미지를 수정합니다",
+    "display_name": "Grok 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "이미지 개수",
+        "tooltip": "생성할 편집된 이미지의 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "텍스트 프롬프트를 기반으로 Grok을 사용해 이미지를 생성합니다",
+    "display_name": "Grok 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "이미지 개수",
+        "tooltip": "생성할 이미지의 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 비디오를 편집합니다.",
+    "display_name": "Grok 비디오 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "최대 지원 길이는 8.7초, 파일 크기는 50MB입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "프롬프트 또는 이미지를 통해 비디오를 생성합니다",
+    "display_name": "Grok 비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "출력 비디오의 종횡비입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이",
+        "tooltip": "출력 비디오의 길이(초)입니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 비디오의 해상도입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "마스크 확장",
     "inputs": {

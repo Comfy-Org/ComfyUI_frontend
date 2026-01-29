@@ -3384,6 +3384,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "根據文字提示修改現有圖像",
+    "display_name": "Grok 圖像編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "要生成的編輯圖像數量"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用於生成圖像的文字提示"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "根據文字提示使用 Grok 生成圖像",
+    "display_name": "Grok 圖像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "要生成的圖像數量"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用於生成圖像的文字提示"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "根據文字提示編輯現有影片。",
+    "display_name": "Grok 影片編輯",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "所需影片的文字描述。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "最大支援長度為 8.7 秒且檔案大小為 50MB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "從提示或圖像生成影片",
+    "display_name": "Grok 影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "輸出影片的長寬比。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "輸出影片的長度（秒）。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "所需影片的文字描述。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "輸出影片的解析度。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "GrowMask",
     "inputs": {
