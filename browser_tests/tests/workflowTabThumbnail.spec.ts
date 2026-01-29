@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage';
-import type { ComfyPage } from '../fixtures/ComfyPage';
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
