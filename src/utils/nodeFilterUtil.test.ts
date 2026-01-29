@@ -71,11 +71,11 @@ describe('nodeFilterUtil', () => {
     })
 
     it('should handle nodes with undefined output_node', () => {
-      class MockNodeWithOtherData extends LGraphNode {
-        static override nodeData = { someOtherProperty: true }
+      class MockNodeWithEmptyData extends LGraphNode {
+        static override nodeData = {}
       }
 
-      const node = new MockNodeWithOtherData('')
+      const node = new MockNodeWithEmptyData('')
       node.id = 1
 
       const result = filterOutputNodes([node])

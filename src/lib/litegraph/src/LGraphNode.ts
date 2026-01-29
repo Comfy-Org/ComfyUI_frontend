@@ -237,7 +237,9 @@ export class LGraphNode
     dev_only?: boolean
     deprecated?: boolean
     experimental?: boolean
-    [key: string]: unknown
+    output_node?: boolean
+    api_node?: boolean
+    name?: string
   }
 
   static resizeHandleSize = 15

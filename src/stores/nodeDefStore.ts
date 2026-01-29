@@ -1,9 +1,10 @@
 import axios from 'axios'
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
@@ -17,6 +18,7 @@ import type {
   ComfyOutputTypesSpec as ComfyOutputSpecV1,
   PriceBadge
 } from '@/schemas/nodeDefSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
@@ -302,12 +304,26 @@ export interface NodeDefFilter {
 }
 
 export const useNodeDefStore = defineStore('nodeDef', () => {
+  const settingStore = useSettingStore()
+
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
-  const showDevOnly = ref(false)
+  const showDevOnly = computed(() => settingStore.get('Comfy.DevMode'))
   const nodeDefFilters = ref<NodeDefFilter[]>([])
+
+  // Update skip_list on all registered node types when dev mode changes
+  // This ensures LiteGraph's getNodeTypesCategories/getNodeTypesInCategory
+  // correctly filter dev-only nodes from the right-click context menu
+  watchEffect(() => {
+    const devModeEnabled = showDevOnly.value
+    for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
+      if (nodeType.nodeData?.dev_only) {
+        nodeType.skip_list = !devModeEnabled
+      }
+    }
+  })
 
   const nodeDefs = computed(() => {
     const subgraphStore = useSubgraphStore()
