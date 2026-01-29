@@ -167,25 +167,30 @@ describe('useCoreCommands', () => {
     return {
       get: vi.fn().mockReturnValue(getReturnValue),
       addSetting: vi.fn(),
-      loadSettingValues: vi.fn(),
+      load: vi.fn(),
       set: vi.fn(),
       exists: vi.fn(),
       getDefaultValue: vi.fn(),
+      isReady: true,
+      isLoading: false,
+      error: undefined,
       settingValues: {},
       settingsById: {},
       $id: 'setting',
       $state: {
         settingValues: {},
-        settingsById: {}
+        settingsById: {},
+        isReady: true,
+        isLoading: false,
+        error: undefined
       },
       $patch: vi.fn(),
       $reset: vi.fn(),
       $subscribe: vi.fn(),
       $onAction: vi.fn(),
       $dispose: vi.fn(),
-      _customProperties: new Set(),
-      _p: {}
-    } as ReturnType<typeof useSettingStore>
+      _customProperties: new Set()
+    } satisfies ReturnType<typeof useSettingStore>
   }
 
   beforeEach(() => {

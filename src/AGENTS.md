@@ -17,6 +17,7 @@
 - Clear public interfaces
 - Restrict extension access
 - Clean up subscriptions
+- Only expose state/actions that are used externally; keep internal state private
 
 ## General Guidelines
 

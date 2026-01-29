@@ -1,10 +1,23 @@
 import { mount } from '@vue/test-utils'
+import { computed } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ActiveJobCard from './ActiveMediaAssetCard.vue'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
+
+vi.mock('@/composables/queue/useJobActions', () => ({
+  useJobActions: () => ({
+    cancelAction: {
+      icon: 'icon-[lucide--x]',
+      label: 'Cancel',
+      variant: 'destructive'
+    },
+    canCancelJob: computed(() => false),
+    runCancelJob: vi.fn()
+  })
+}))
 
 vi.mock('@/composables/useProgressBarBackground', () => ({
   useProgressBarBackground: () => ({

@@ -1,5 +1,5 @@
 # Description: Generates and updates translations for core ComfyUI components using OpenAI
-name: "i18n: Update Core"
+name: 'i18n: Update Core'
 
 on:
   # Manual dispatch for urgent translation updates
@@ -41,7 +41,7 @@ jobs:
         env:
           PLAYWRIGHT_TEST_URL: http://localhost:5173
       - name: Update translations
-        run: pnpm locale
+        run: pnpm locale && pnpm format
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       - name: Commit updated locales

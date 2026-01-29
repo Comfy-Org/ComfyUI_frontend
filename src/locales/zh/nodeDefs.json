@@ -447,43 +447,6 @@
       }
     }
   },
-  "ByteDanceImageEditNode": {
-    "description": "通过基于提示的API使用字节跳动模型编辑图像",
-    "display_name": "字节跳动图片编辑",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "guidance_scale": {
-        "name": "引导尺度",
-        "tooltip": "数值越高，图像越紧密地遵循提示"
-      },
-      "image": {
-        "name": "图片",
-        "tooltip": "要编辑的基础图像"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示",
-        "tooltip": "编辑图像的指令"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "用于生成的种子"
-      },
-      "watermark": {
-        "name": "水印",
-        "tooltip": "是否在图像上添加“AI生成”水印"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "ByteDanceImageNode": {
     "description": "通过基于提示的API使用字节跳动模型生成图像",
     "display_name": "字节跳动图片",
@@ -2095,10 +2058,8 @@
       "choice": {
         "name": "选择"
       },
-      "index": {
-      },
-      "option1": {
-      }
+      "index": {},
+      "option1": {}
     },
     "outputs": [
       null,
@@ -6254,8 +6215,7 @@
   "Load3D": {
     "display_name": "加载3D",
     "inputs": {
-      "clear": {
-      },
+      "clear": {},
       "height": {
         "name": "高度"
       },
@@ -6265,10 +6225,8 @@
       "model_file": {
         "name": "模型文件"
       },
-      "upload 3d model": {
-      },
-      "upload extra resources": {
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "宽度"
       }
@@ -6363,13 +6321,11 @@
     "description": "从输出文件夹加载图像。当点击刷新按钮时，节点将更新图像列表并自动选择第一张图像，便于轻松迭代。",
     "display_name": "加载图像（来自输出）",
     "inputs": {
-      "Auto-refresh after generation": {
-      },
+      "Auto-refresh after generation": {},
       "image": {
         "name": "图像"
       },
-      "refresh": {
-      },
+      "refresh": {},
       "upload": {
         "name": "选择文件上传"
       }
@@ -6468,6 +6424,60 @@
       },
       "1": {
         "tooltip": "修改后的CLIP模型。"
+      }
+    }
+  },
+  "LoraLoaderBypass": {
+    "description": "以旁路模式应用LoRA。与常规LoRA不同，此方式不会修改模型权重——而是在前向传播时注入LoRA计算。适用于训练场景。",
+    "display_name": "加载LoRA（旁路）（用于调试）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "将应用LoRA的CLIP模型。"
+      },
+      "lora_name": {
+        "name": "lora_name",
+        "tooltip": "LoRA的名称。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "将应用LoRA的扩散模型。"
+      },
+      "strength_clip": {
+        "name": "strength_clip",
+        "tooltip": "对CLIP模型的修改强度。该值可以为负数。"
+      },
+      "strength_model": {
+        "name": "strength_model",
+        "tooltip": "对扩散模型的修改强度。该值可以为负数。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已修改的扩散模型。"
+      },
+      "1": {
+        "tooltip": "已修改的CLIP模型。"
+      }
+    }
+  },
+  "LoraLoaderBypassModelOnly": {
+    "description": "以旁路模式应用LoRA。与常规LoRA不同，此方式不会修改模型权重——而是在前向传播时注入LoRA计算。适用于训练场景。",
+    "display_name": "加载LoRA（旁路，仅模型）（用于调试）",
+    "inputs": {
+      "lora_name": {
+        "name": "lora_name"
+      },
+      "model": {
+        "name": "model"
+      },
+      "strength_model": {
+        "name": "strength_model"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "已修改的扩散模型。"
       }
     }
   },
@@ -6831,6 +6841,126 @@
       "seed": {
         "name": "种子",
         "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageRelightNode": {
+    "description": "通过光照调整和可选的参考光照迁移对图像进行重光照。",
+    "display_name": "Magnific图像重光照",
+    "inputs": {
+      "advanced_settings": {
+        "name": "advanced_settings",
+        "tooltip": "高级光照控制的微调选项。"
+      },
+      "change_background": {
+        "name": "change_background",
+        "tooltip": "根据提示/参考修改背景。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "需要重光照的图像。"
+      },
+      "interpolate_from_original": {
+        "name": "interpolate_from_original",
+        "tooltip": "限制生成自由度，更贴近原图。"
+      },
+      "light_transfer_strength": {
+        "name": "light_transfer_strength",
+        "tooltip": "光照迁移应用强度。"
+      },
+      "preserve_details": {
+        "name": "preserve_details",
+        "tooltip": "保留原图的纹理和细节。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "光照描述性引导。支持强调符号（1-1.4）。"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "可选的参考图像，用于迁移光照。"
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "风格化输出偏好。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageSkinEnhancerNode": {
+    "description": "用于人像的美肤增强，支持多种处理模式。",
+    "display_name": "Magnific图像美肤增强",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "需要增强的人像图像。"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "处理模式：creative为艺术增强，faithful为保留原貌，flexible为定向优化。"
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "锐化强度等级。"
+      },
+      "smart_grain": {
+        "name": "smart_grain",
+        "tooltip": "智能颗粒强度等级。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MagnificImageStyleTransferNode": {
+    "description": "将参考图像的风格迁移到你的输入图像上。",
+    "display_name": "Magnific 图像风格迁移",
+    "inputs": {
+      "engine": {
+        "name": "engine",
+        "tooltip": "处理引擎选择。"
+      },
+      "fixed_generation": {
+        "name": "fixed_generation",
+        "tooltip": "禁用时，每次生成都会引入一定的随机性，从而产生更多样化的结果。"
+      },
+      "flavor": {
+        "name": "flavor",
+        "tooltip": "风格迁移风格类型。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "要进行风格迁移的图像。"
+      },
+      "portrait_mode": {
+        "name": "portrait_mode",
+        "tooltip": "启用人像模式以增强面部效果。"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "用于提取风格的参考图像。"
+      },
+      "structure_strength": {
+        "name": "structure_strength",
+        "tooltip": "保持原始图像结构。"
+      },
+      "style_strength": {
+        "name": "style_strength",
+        "tooltip": "风格强度百分比。"
       }
     },
     "outputs": {
@@ -10455,10 +10585,8 @@
   "PreviewAny": {
     "display_name": "预览任意",
     "inputs": {
-      "preview": {
-      },
-      "previewMode": {
-      },
+      "preview": {},
+      "previewMode": {},
       "source": {
         "name": "源"
       }
@@ -13869,6 +13997,10 @@
         "name": "bucket模式",
         "tooltip": "启用分辨率 bucket 模式。开启后会先使用 分辨率Bucket 节点处理 Latent。"
       },
+      "bypass_mode": {
+        "name": "bypass_mode",
+        "tooltip": "为训练启用旁路模式。启用后，适配器通过前向钩子应用，而不是直接修改权重。适用于权重无法直接修改的量化模型。"
+      },
       "control_after_generate": {
         "name": "生成后控制"
       },
@@ -13941,10 +14073,6 @@
       "2": {
         "name": "损失",
         "tooltip": "损失历史图"
-      },
-      "3": {
-        "name": "步数",
-        "tooltip": "总训练步数"
       }
     }
   },
@@ -16477,8 +16605,7 @@
       "image": {
         "name": "图像"
       },
-      "waiting for camera___": {
-      },
+      "waiting for camera___": {},
       "width": {
         "name": "宽度"
       }

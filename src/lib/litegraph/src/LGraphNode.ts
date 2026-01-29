@@ -233,6 +233,14 @@ export class LGraphNode
   static description?: string
   static filter?: string
   static skip_list?: boolean
+  static nodeData?: {
+    dev_only?: boolean
+    deprecated?: boolean
+    experimental?: boolean
+    output_node?: boolean
+    api_node?: boolean
+    name?: string
+  }
 
   static resizeHandleSize = 15
   static resizeEdgeSize = 5
@@ -785,6 +793,7 @@ export class LGraphNode
     if (this.graph) {
       this.graph._version++
     }
+    if (info.id === -1) info.id = this.id
     for (const j in info) {
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container

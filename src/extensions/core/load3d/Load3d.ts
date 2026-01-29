@@ -55,6 +55,7 @@ class Load3d {
   private rightMouseMoved: boolean = false
   private readonly dragThreshold: number = 5
   private contextMenuAbortController: AbortController | null = null
+  private resizeObserver: ResizeObserver | null = null
 
   constructor(container: Element | HTMLElement, options: Load3DOptions = {}) {
     this.clock = new THREE.Clock()
@@ -145,6 +146,7 @@ class Load3d {
     this.STATUS_MOUSE_ON_VIEWER = false
 
     this.initContextMenu()
+    this.initResizeObserver(container)
 
     this.handleResize()
     this.startAnimation()
@@ -152,6 +154,16 @@ class Load3d {
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  private initResizeObserver(container: Element | HTMLElement): void {
+    if (typeof ResizeObserver === 'undefined') return
+
+    this.resizeObserver?.disconnect()
+    this.resizeObserver = new ResizeObserver(() => {
+      this.handleResize()
+    })
+    this.resizeObserver.observe(container)
   }
 
   /**
@@ -512,7 +524,6 @@ class Load3d {
     this.viewHelperManager.recreateViewHelper()
 
     this.handleResize()
-    this.forceRender()
   }
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
@@ -574,7 +585,6 @@ class Load3d {
     }
 
     this.handleResize()
-    this.forceRender()
 
     this.loadingPromise = null
   }
@@ -608,7 +618,6 @@ class Load3d {
     this.targetHeight = height
     this.targetAspectRatio = width / height
     this.handleResize()
-    this.forceRender()
   }
 
   addEventListener<T>(event: string, callback: EventCallback<T>): void {
@@ -621,7 +630,6 @@ class Load3d {
 
   refreshViewport(): void {
     this.handleResize()
-    this.forceRender()
   }
 
   handleResize(): void {
@@ -809,6 +817,11 @@ class Load3d {
   }
 
   public remove(): void {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect()
+      this.resizeObserver = null
+    }
+
     if (this.contextMenuAbortController) {
       this.contextMenuAbortController.abort()
       this.contextMenuAbortController = null

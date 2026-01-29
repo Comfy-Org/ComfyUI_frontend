@@ -11,10 +11,25 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-global.fetch = vi.fn()
+vi.stubGlobal('fetch', vi.fn())
 
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
+
+  function mockSuccessResponse(config = mockConfig) {
+    return {
+      ok: true,
+      json: async () => config
+    } as Response
+  }
+
+  function mockErrorResponse(status: number, statusText: string) {
+    return {
+      ok: false,
+      status,
+      statusText
+    } as Response
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -24,10 +39,7 @@ describe('refreshRemoteConfig', () => {
 
   describe('with auth (default)', () => {
     it('uses api.fetchApi when useAuth is true', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue({
-        ok: true,
-        json: async () => mockConfig
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: true })
 
@@ -40,10 +52,7 @@ describe('refreshRemoteConfig', () => {
     })
 
     it('uses api.fetchApi by default', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue({
-        ok: true,
-        json: async () => mockConfig
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValue(mockSuccessResponse())
 
       await refreshRemoteConfig()
 
@@ -54,10 +63,7 @@ describe('refreshRemoteConfig', () => {
 
   describe('without auth', () => {
     it('uses raw fetch when useAuth is false', async () => {
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => mockConfig
-      } as Response)
+      vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
 
       await refreshRemoteConfig({ useAuth: false })
 
@@ -72,11 +78,9 @@ describe('refreshRemoteConfig', () => {
 
   describe('error handling', () => {
     it('clears config on 401 response', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue({
-        ok: false,
-        status: 401,
-        statusText: 'Unauthorized'
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockErrorResponse(401, 'Unauthorized')
+      )
 
       await refreshRemoteConfig()
 
@@ -85,11 +89,9 @@ describe('refreshRemoteConfig', () => {
     })
 
     it('clears config on 403 response', async () => {
-      vi.mocked(api.fetchApi).mockResolvedValue({
-        ok: false,
-        status: 403,
-        statusText: 'Forbidden'
-      } as Response)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockErrorResponse(403, 'Forbidden')
+      )
 
       await refreshRemoteConfig()
 
@@ -104,6 +106,21 @@ describe('refreshRemoteConfig', () => {
 
       expect(remoteConfig.value).toEqual({})
       expect(window.__CONFIG__).toEqual({})
+    })
+
+    it('preserves config on 500 response', async () => {
+      const existingConfig = { subscription_required: true }
+      remoteConfig.value = existingConfig
+      window.__CONFIG__ = existingConfig
+
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockErrorResponse(500, 'Internal Server Error')
+      )
+
+      await refreshRemoteConfig()
+
+      expect(remoteConfig.value).toEqual(existingConfig)
+      expect(window.__CONFIG__).toEqual(existingConfig)
     })
   })
 })

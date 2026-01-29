@@ -5,14 +5,8 @@
     {
       "id": 3,
       "type": "KSampler",
-      "pos": [
-        37,
-        98
-      ],
-      "size": [
-        315,
-        262
-      ],
+      "pos": [37, 98],
+      "size": [315, 262],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -65,12 +59,7 @@
     {
       "id": 1,
       "title": "Group",
-      "bounding": [
-        23,
-        23,
-        900,
-        825
-      ],
+      "bounding": [23, 23, 900, 825],
       "color": "#3f789e",
       "font_size": 24,
       "flags": {}
@@ -80,10 +69,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

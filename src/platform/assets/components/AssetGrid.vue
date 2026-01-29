@@ -21,7 +21,7 @@
       <h3 class="mb-2 text-lg font-medium">
         {{ emptyTitle ?? $t('assetBrowser.noAssetsFound') }}
       </h3>
-      <p class="text-sm">
+      <p class="text-sm whitespace-pre-wrap text-center">
         {{ emptyMessage ?? $t('assetBrowser.tryAdjustingFilters') }}
       </p>
     </div>
