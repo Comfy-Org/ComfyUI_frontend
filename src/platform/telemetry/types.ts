@@ -279,7 +279,7 @@ export interface PageViewMetadata {
   [key: string]: unknown
 }
 
-export interface SubscriptionPurchaseItem {
+interface SubscriptionPurchaseItem {
   item_id: string
   item_name: string
   item_category: string
