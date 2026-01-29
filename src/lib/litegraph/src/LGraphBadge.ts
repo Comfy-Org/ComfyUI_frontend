@@ -34,7 +34,7 @@ export class LGraphBadge {
   xOffset: number
   yOffset: number
 
-  _boundingRect: [number, number, number, number] = [0, 0, 0, 0]
+  readonly _boundingRect: [number, number, number, number] = [0, 0, 0, 0]
   get boundingRect(): ReadOnlyRect {
     return this._boundingRect
   }
