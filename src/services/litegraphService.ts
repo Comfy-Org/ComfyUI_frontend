@@ -29,6 +29,7 @@ import type {
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -70,6 +71,49 @@ export interface HasInitialMinSize {
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
+
+export function getExtraOptionsForWidget(
+  node: LGraphNode,
+  widget: IBaseWidget
+) {
+  const options: IContextMenuValue[] = []
+  const input = node.inputs.find((inp) => inp.widget?.name === widget.name)
+
+  if (input) {
+    options.unshift({
+      content: `${t('contextMenu.RenameWidget')}: ${widget.label ?? widget.name}`,
+      callback: async () => {
+        const newLabel = await useDialogService().prompt({
+          title: t('g.rename'),
+          message: t('g.enterNewName') + ':',
+          defaultValue: widget.label,
+          placeholder: widget.name
+        })
+        if (newLabel === null) return
+        widget.label = newLabel || undefined
+        input.label = newLabel || undefined
+        widget.callback?.(widget.value)
+        useCanvasStore().canvas?.setDirty(true)
+      }
+    })
+  }
+
+  const favoritedWidgetsStore = useFavoritedWidgetsStore()
+  const isFavorited = favoritedWidgetsStore.isFavorited(node, widget.name)
+  options.unshift({
+    content: isFavorited
+      ? `${t('contextMenu.UnfavoriteWidget')}: ${widget.label ?? widget.name}`
+      : `${t('contextMenu.FavoriteWidget')}: ${widget.label ?? widget.name}`,
+    callback: () => {
+      favoritedWidgetsStore.toggleFavorite(node, widget.name)
+    }
+  })
+
+  if (node.graph && !node.graph.isRootGraph) {
+    addWidgetPromotionOptions(options, widget, node)
+  }
+  return options
+}
 
 /**
  * Service that augments litegraph with ComfyUI specific functionality.
@@ -671,47 +715,8 @@ export const useLitegraphService = () => {
       }
       const [x, y] = canvas.graph_mouse
       const overWidget = this.getWidgetOnPos(x, y, true)
-      if (overWidget) {
-        const input = this.inputs.find(
-          (inp) => inp.widget?.name === overWidget.name
-        )
-
-        if (input) {
-          options.unshift({
-            content: `${t('contextMenu.RenameWidget')}: ${overWidget.label ?? overWidget.name}`,
-            callback: async () => {
-              const newLabel = await useDialogService().prompt({
-                title: t('g.rename'),
-                message: t('g.enterNewName') + ':',
-                defaultValue: overWidget.label,
-                placeholder: overWidget.name
-              })
-              if (newLabel === null) return
-              overWidget.label = newLabel || undefined
-              input.label = newLabel || undefined
-              useCanvasStore().canvas?.setDirty(true)
-            }
-          })
-        }
-
-        const favoritedWidgetsStore = useFavoritedWidgetsStore()
-        const isFavorited = favoritedWidgetsStore.isFavorited(
-          this,
-          overWidget.name
-        )
-        options.unshift({
-          content: isFavorited
-            ? `${t('contextMenu.UnfavoriteWidget')}: ${overWidget.label ?? overWidget.name}`
-            : `${t('contextMenu.FavoriteWidget')}: ${overWidget.label ?? overWidget.name}`,
-          callback: () => {
-            favoritedWidgetsStore.toggleFavorite(this, overWidget.name)
-          }
-        })
-
-        if (this.graph && !this.graph.isRootGraph) {
-          addWidgetPromotionOptions(options, overWidget, this)
-        }
-      }
+      if (overWidget)
+        options.unshift(...getExtraOptionsForWidget(this, overWidget))
       return []
     }
   }
@@ -923,6 +928,7 @@ export const useLitegraphService = () => {
     addNodeOnGraph,
     addNodeInput,
     getCanvasCenter,
+    getExtraOptionsForWidget,
     goToNode,
     resetView,
     fitView,

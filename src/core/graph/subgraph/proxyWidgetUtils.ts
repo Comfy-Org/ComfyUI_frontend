@@ -105,6 +105,7 @@ export function addWidgetPromotionOptions(
       content: `Promote Widget: ${widget.label ?? widget.name}`,
       callback: () => {
         promoteWidget(node, widget, promotableParents)
+        widget.callback?.(widget.value)
       }
     })
   else {
@@ -112,6 +113,7 @@ export function addWidgetPromotionOptions(
       content: `Un-Promote Widget: ${widget.label ?? widget.name}`,
       callback: () => {
         demoteWidget(node, widget, parents)
+        widget.callback?.(widget.value)
       }
     })
   }
