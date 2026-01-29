@@ -6,6 +6,7 @@ import {
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { startSubscriptionPurchaseTracking } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -35,7 +36,7 @@ export async function performSubscriptionCheckout(
 ): Promise<void> {
   if (!isCloud) return
 
-  const { getFirebaseAuthHeader } = useFirebaseAuthStore()
+  const { getFirebaseAuthHeader, userId } = useFirebaseAuthStore()
   const authHeader = await getFirebaseAuthHeader()
 
   if (!authHeader) {
@@ -78,6 +79,9 @@ export async function performSubscriptionCheckout(
   const data = await response.json()
 
   if (data.checkout_url) {
+    if (userId) {
+      startSubscriptionPurchaseTracking(tierKey, currentBillingCycle, userId)
+    }
     if (openInNewTab) {
       window.open(data.checkout_url, '_blank')
     } else {
