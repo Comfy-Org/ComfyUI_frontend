@@ -110,13 +110,19 @@ async function createMockNode(overrides?: {
     widgets: { value: [widget], writable: true }
   })
 }
-function createMockNodeProvider() {
+function createMockNodeProvider(
+  overrides: {
+    nodeDef?: { name: string; display_name: string }
+    key?: string
+  } = {}
+) {
   return {
     nodeDef: {
       name: 'CheckpointLoaderSimple',
-      display_name: 'Load Checkpoint'
+      display_name: 'Load Checkpoint',
+      ...overrides.nodeDef
     },
-    key: 'ckpt_name'
+    key: overrides.key ?? 'ckpt_name'
   }
 }
 /**
@@ -269,6 +275,24 @@ describe('createModelNodeFromAsset', () => {
       expect(result.success).toBe(true)
       expect(mockSubgraph.add).toHaveBeenCalledWith(mockNode)
       expect(vi.mocked(app).canvas.graph!.add).not.toHaveBeenCalled()
+    })
+    it('should succeed when provider has empty key (auto-load nodes)', async () => {
+      const asset = createMockAsset({
+        tags: ['models', 'chatterbox/chatterbox_vc'],
+        user_metadata: { filename: 'chatterbox_vc_model.pt' }
+      })
+      const mockNode = await createMockNode({ hasWidgets: false })
+      const nodeProvider = createMockNodeProvider({
+        nodeDef: {
+          name: 'FL_ChatterboxVC',
+          display_name: 'FL Chatterbox VC'
+        },
+        key: ''
+      })
+      await setupMocks({ createdNode: mockNode, nodeProvider })
+      const result = createModelNodeFromAsset(asset)
+      expect(result.success).toBe(true)
+      expect(vi.mocked(app).canvas.graph!.add).toHaveBeenCalledWith(mockNode)
     })
   })
   describe('when asset data is incomplete or invalid', () => {
