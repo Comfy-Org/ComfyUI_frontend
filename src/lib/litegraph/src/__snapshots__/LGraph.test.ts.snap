@@ -36,7 +36,15 @@ LGraph {
   "_links": Map {},
   "_nodes": [
     LGraphNode {
+      "_boundingRect": Rectangle [
+        0,
+        0,
+        0,
+        0,
+      ],
       "_collapsed_width": undefined,
+      "_concreteInputs": [],
+      "_concreteOutputs": [],
       "_level": undefined,
       "_pos": Float64Array [
         10,
@@ -49,6 +57,12 @@ LGraph {
         60,
       ],
       "_relative_id": undefined,
+      "_renderArea": Rectangle [
+        0,
+        0,
+        0,
+        0,
+      ],
       "_shape": undefined,
       "_size": Float64Array [
         140,
@@ -108,7 +122,15 @@ LGraph {
   ],
   "_nodes_by_id": {
     "1": LGraphNode {
+      "_boundingRect": Rectangle [
+        0,
+        0,
+        0,
+        0,
+      ],
       "_collapsed_width": undefined,
+      "_concreteInputs": [],
+      "_concreteOutputs": [],
       "_level": undefined,
       "_pos": Float64Array [
         10,
@@ -121,6 +143,12 @@ LGraph {
         60,
       ],
       "_relative_id": undefined,
+      "_renderArea": Rectangle [
+        0,
+        0,
+        0,
+        0,
+      ],
       "_shape": undefined,
       "_size": Float64Array [
         140,
@@ -181,7 +209,15 @@ LGraph {
   "_nodes_executable": [],
   "_nodes_in_order": [
     LGraphNode {
+      "_boundingRect": Rectangle [
+        0,
+        0,
+        0,
+        0,
+      ],
       "_collapsed_width": undefined,
+      "_concreteInputs": [],
+      "_concreteOutputs": [],
       "_level": undefined,
       "_pos": Float64Array [
         10,
@@ -194,6 +230,12 @@ LGraph {
         60,
       ],
       "_relative_id": undefined,
+      "_renderArea": Rectangle [
+        0,
+        0,
+        0,
+        0,
+      ],
       "_shape": undefined,
       "_size": Float64Array [
         140,
