@@ -186,7 +186,7 @@ export const useExtensionService = () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
             }
 
-            const result = await ext[method](...args)
+            const result = await ext[method](...args, app)
 
             // Clear current extension after setup
             if (method === 'setup') {
