@@ -74,7 +74,7 @@ export const useExtensionService = () => {
       // getCustomWidgets.
       void (async () => {
         if (extension.getCustomWidgets) {
-          const widgets = await extension.getCustomWidgets()
+          const widgets = await extension.getCustomWidgets(app)
           useWidgetStore().registerCustomWidgets(widgets)
         }
       })()
@@ -83,7 +83,7 @@ export const useExtensionService = () => {
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
       const handleUserResolved = wrapWithErrorHandlingAsync(
-        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user),
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
         (error) => {
           console.error('[Extension Auth Hook Error]', {
             extension: extension.name,

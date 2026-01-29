@@ -154,7 +154,7 @@ export interface ComfyExtension {
    * Allows the extension to add custom widgets
    * @returns An array of {[widget name]: widget data}
    */
-  getCustomWidgets?(): Promise<Widgets> | Widgets
+  getCustomWidgets?(app: ComfyApp): Promise<Widgets> | Widgets
 
   /**
    * Allows the extension to add additional commands to the selection toolbox
@@ -245,7 +245,7 @@ export interface ComfyExtension {
    * Extensions can register at any time and will receive the latest value immediately.
    * This is an experimental API and may be changed or removed in the future.
    */
-  onAuthUserResolved?(user: AuthUserInfo): Promise<void> | void
+  onAuthUserResolved?(user: AuthUserInfo, app: ComfyApp): Promise<void> | void
 
   /**
    * Fired whenever the auth token is refreshed.
