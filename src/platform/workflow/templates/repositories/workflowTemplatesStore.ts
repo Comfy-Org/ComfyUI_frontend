@@ -515,15 +515,7 @@ export const useWorkflowTemplatesStore = defineStore(
 
     function getLogoUrl(provider: string): string {
       const logoPath = logoIndex.value[provider]
-      if (
-        !logoPath ||
-        logoPath.includes('..') ||
-        logoPath.startsWith('/') ||
-        !logoPath.startsWith('logo/') ||
-        !/\.(png|svg|jpg|jpeg)$/i.test(logoPath)
-      ) {
-        return ''
-      }
+      if (!logoPath) return ''
       return api.fileURL(`/templates/${logoPath}`)
     }
 
