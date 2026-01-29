@@ -20,13 +20,13 @@ jobs:
       dist_tag: ${{ steps.dist.outputs.dist_tag }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
           persist-credentials: false
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '24.x'
 
@@ -71,7 +71,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout merge commit
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 2
