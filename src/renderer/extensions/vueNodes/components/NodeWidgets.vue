@@ -30,6 +30,7 @@
           (!widget.simplified.options?.advanced || showAdvanced)
         "
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
+        :data-widget-name="widget.name"
       >
         <!-- Widget Input Slot Dot -->
         <div
