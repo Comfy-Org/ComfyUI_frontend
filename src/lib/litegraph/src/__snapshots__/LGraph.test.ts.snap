@@ -32,6 +32,7 @@ LGraph {
     },
   ],
   "_input_nodes": undefined,
+  "_lastFloatingLinkId": 0,
   "_last_trigger_time": undefined,
   "_links": Map {},
   "_nodes": [
