@@ -919,8 +919,7 @@ export class ComfyApp {
     const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
-      nodeDefArray,
-      this
+      nodeDefArray
     )
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }

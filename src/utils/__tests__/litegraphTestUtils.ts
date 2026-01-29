@@ -211,7 +211,7 @@ export function createMockFileList(files: File[]): FileList {
  * The ChangeTracker requires a proper ComfyWorkflowJSON structure
  */
 export function createMockChangeTracker(
-  overrides: Record<string, unknown> = {}
+  overrides: Partial<ChangeTracker> = {}
 ): ChangeTracker {
   const partial = {
     activeState: {

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CORE_KEYBINDINGS } from '@/constants/coreKeybindings'
 import { useKeybindingService } from '@/services/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
+import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
   KeyComboImpl,
@@ -38,10 +39,13 @@ describe('keybindingService - Escape key handling', () => {
     mockCommandExecute = vi.fn()
     commandStore.execute = mockCommandExecute
 
-    // Reset dialog store mock to empty
+    // Reset dialog store mock to empty - only mock the properties we need for testing
     vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: []
-    } as any)
+      dialogStack: [],
+      // Add other required properties as undefined/default values to satisfy the type
+      // but they won't be used in these tests
+      ...({} as Omit<ReturnType<typeof useDialogStore>, 'dialogStack'>)
+    })
 
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
@@ -179,8 +183,10 @@ describe('keybindingService - Escape key handling', () => {
   it('should not execute Escape keybinding when dialogs are open', async () => {
     // Mock dialog store to have open dialogs
     vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: [{ key: 'test-dialog' }]
-    } as any)
+      dialogStack: [{ key: 'test-dialog' } as DialogInstance],
+      // Add other required properties as undefined/default values to satisfy the type
+      ...({} as Omit<ReturnType<typeof useDialogStore>, 'dialogStack'>)
+    })
 
     // Re-create keybinding service to pick up new mock
     keybindingService = useKeybindingService()
