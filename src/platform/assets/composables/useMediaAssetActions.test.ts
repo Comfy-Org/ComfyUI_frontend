@@ -293,6 +293,8 @@ describe('useMediaAssetActions', () => {
 
       await actions.deleteAssets(modelAsset)
 
+      // Only 'checkpoints' has providers; 'models' tag should not trigger invalidation
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledTimes(1)
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
         'checkpoints'
       )
