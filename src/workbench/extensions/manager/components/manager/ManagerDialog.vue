@@ -130,16 +130,8 @@
       </div>
       <NoResultsPlaceholder
         v-else-if="displayPacks.length === 0"
-        :title="
-          comfyManagerStore.error
-            ? $t('manager.errorConnecting')
-            : $t('manager.noResultsFound')
-        "
-        :message="
-          comfyManagerStore.error
-            ? $t('manager.tryAgainLater')
-            : $t('manager.tryDifferentSearch')
-        "
+        :title="emptyStateTitle"
+        :message="emptyStateMessage"
       />
       <div v-else class="h-full w-full" @click="handleGridContainerClick">
         <VirtualGrid
@@ -397,6 +389,40 @@ const isUpdateAvailableTab = computed(
 const isMissingTab = computed(
   () => selectedTab.value?.id === ManagerTab.Missing
 )
+
+// Map of tab IDs to their empty state i18n key suffixes
+const tabEmptyStateKeys: Partial<Record<ManagerTab, string>> = {
+  [ManagerTab.AllInstalled]: 'allInstalled',
+  [ManagerTab.UpdateAvailable]: 'updateAvailable',
+  [ManagerTab.Conflicting]: 'conflicting',
+  [ManagerTab.Workflow]: 'workflow',
+  [ManagerTab.Missing]: 'missing'
+}
+
+// Empty state messages based on current tab and search state
+const emptyStateTitle = computed(() => {
+  if (comfyManagerStore.error) return t('manager.errorConnecting')
+  if (searchQuery.value) return t('manager.noResultsFound')
+
+  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
+
+  return emptyStateKey
+    ? t(`manager.emptyState.${emptyStateKey}.title`)
+    : t('manager.noResultsFound')
+})
+
+const emptyStateMessage = computed(() => {
+  if (comfyManagerStore.error) return t('manager.tryAgainLater')
+  if (searchQuery.value) return t('manager.tryDifferentSearch')
+
+  const tabId = selectedTab.value?.id as ManagerTab | undefined
+  const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
+
+  return emptyStateKey
+    ? t(`manager.emptyState.${emptyStateKey}.message`)
+    : t('manager.tryDifferentSearch')
+})
 
 const onClickWarningLink = () => {
   window.open(
