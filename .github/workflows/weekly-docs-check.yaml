@@ -49,7 +49,7 @@ jobs:
           fi
 
       - name: Run Claude Documentation Review
-        uses: anthropics/claude-code-action@2817c54db8f44f3a0485d57292566bf07d428a25 # v1.0.37
+        uses: anthropics/claude-code-action@ff34ce0ff04a470bd3fa56c1ef391c8f1c19f8e9 # v1.0.38
         with:
           prompt: |
             Is all documentation still 100% accurate?
