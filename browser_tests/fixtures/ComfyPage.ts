@@ -5,7 +5,7 @@ import * as fs from 'fs'
 
 import type { LGraphNode, LGraph } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
-import type { KeyCombo } from '../../src/schemas/keyBindingSchema'
+import type { KeyCombo } from '../../src/platform/keybindings'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
