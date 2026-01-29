@@ -920,7 +920,7 @@ export class ComfyApp {
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
       nodeDefArray,
-      this
+      app
     )
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
@@ -1294,7 +1294,7 @@ export class ComfyApp {
         }
       }
 
-      useExtensionService().invokeExtensions('loadedGraphNode', node)
+      useExtensionService().invokeExtensions('loadedGraphNode', node, app)
     })
 
     if (missingNodeTypes.length && showMissingNodesDialog) {

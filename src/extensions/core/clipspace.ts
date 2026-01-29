@@ -187,7 +187,7 @@ export class ClipspaceDialog extends ComfyDialog {
 
 app.registerExtension({
   name: 'Comfy.Clipspace',
-  init(app) {
+  init() {
     app.openClipspace = function () {
       if (!ClipspaceDialog.instance) {
         ClipspaceDialog.instance = new ClipspaceDialog()
