@@ -60,7 +60,7 @@ const mockGraph = {
 
 describe('useSubgraphStore', () => {
   let store: ReturnType<typeof useSubgraphStore>
-  const mockFetch = async (
+  async function mockFetch(
     filenames: Record<string, unknown>,
     globalSubgraphs: Record<
       string,
@@ -70,7 +70,7 @@ describe('useSubgraphStore', () => {
         data: string
       }
     > = {}
-  ) => {
+  ) {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
       Object.keys(filenames).map((filename) => ({
         path: filename,
