@@ -32,13 +32,11 @@ for (const file of files) {
   const extension = extname(file).toLowerCase()
   if (ignoredExtensions.has(extension)) continue
 
-  const content = (await readFile(file)).toString('utf8')
-  const hits = telemetryPatterns
-    .map((pattern) => {
-      const match = content.match(pattern.regex)
-      return match ? { label: pattern.label, match: match[0] } : null
-    })
-    .filter((hit): hit is { label: string; match: string } => hit !== null)
+  const content = await readFile(file, 'utf8')
+  const hits = telemetryPatterns.flatMap((pattern) => {
+    const match = content.match(pattern.regex)
+    return match ? [{ label: pattern.label, match: match[0] }] : []
+  })
 
   if (hits.length > 0) {
     violations.push({ file, hits })
