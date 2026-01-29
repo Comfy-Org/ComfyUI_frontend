@@ -3389,6 +3389,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "Modifique uma imagem existente com base em um prompt de texto",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "Número de imagens editadas a serem geradas"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "Gere imagens usando Grok com base em um prompt de texto",
+    "display_name": "Grok Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "Número de imagens a serem geradas"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "O prompt de texto usado para gerar a imagem"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "Edite um vídeo existente com base em um prompt de texto.",
+    "display_name": "Grok Video Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do vídeo desejado."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "A duração máxima suportada é de 8,7 segundos e o tamanho máximo do arquivo é 50MB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "Gere vídeo a partir de um prompt ou de uma imagem",
+    "display_name": "Grok Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "A proporção do vídeo de saída."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "A duração do vídeo de saída em segundos."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descrição em texto do vídeo desejado."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "A resolução do vídeo de saída."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "Expandir Máscara",
     "inputs": {

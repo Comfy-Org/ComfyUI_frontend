@@ -3389,6 +3389,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
+    "display_name": "ویرایش تصویر Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "number_of_images": {
+        "name": "تعداد تصاویر",
+        "tooltip": "تعداد تصاویر ویرایش‌شده برای تولید"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "تولید تصویر با استفاده از Grok بر اساس یک متن راهنما",
+    "display_name": "تصویر Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "number_of_images": {
+        "name": "تعداد تصاویر",
+        "tooltip": "تعداد تصاویر برای تولید"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "ویرایش یک ویدیوی موجود بر اساس یک متن راهنما.",
+    "display_name": "ویرایش ویدیو Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی از ویدیوی مورد نظر."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "حداکثر مدت زمان پشتیبانی‌شده ۸.۷ ثانیه و حجم فایل ۵۰ مگابایت است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "تولید ویدیو از یک راهنما یا تصویر",
+    "display_name": "ویدیو Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد",
+        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان",
+        "tooltip": "مدت زمان ویدیوی خروجی بر حسب ثانیه."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی از ویدیوی مورد نظر."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح ویدیوی خروجی."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "گسترش ماسک",
     "inputs": {

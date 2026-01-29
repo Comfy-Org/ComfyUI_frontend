@@ -3384,6 +3384,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "テキストプロンプトに基づいて既存の画像を編集します",
+    "display_name": "Grok画像編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "生成画像数",
+        "tooltip": "生成する編集済み画像の数"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成に使用するテキストプロンプト"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "テキストプロンプトに基づいてGrokで画像を生成します",
+    "display_name": "Grok画像生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "生成画像数",
+        "tooltip": "生成する画像の数"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成に使用するテキストプロンプト"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "テキストプロンプトに基づいて既存の動画を編集します。",
+    "display_name": "Grok動画編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望する動画のテキスト説明。"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "最大対応時間は8.7秒、ファイルサイズは50MBまでです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "プロンプトまたは画像から動画を生成します",
+    "display_name": "Grok動画生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "出力動画のアスペクト比。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "再生時間",
+        "tooltip": "出力動画の長さ（秒単位）。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "希望する動画のテキスト説明。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力動画の解像度。"
+      },
+      "seed": {
+        "name": "シード値",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシード値に関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "マスクを拡大",
     "inputs": {

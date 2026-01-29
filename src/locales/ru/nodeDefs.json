@@ -3384,6 +3384,142 @@
       }
     }
   },
+  "GrokImageEditNode": {
+    "description": "Изменить существующее изображение на основе текстового запроса",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "Количество редактируемых изображений для генерации"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "Генерировать изображения с помощью Grok на основе текстового запроса",
+    "display_name": "Grok Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "Количество изображений для генерации"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовый запрос, используемый для генерации изображения"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "Редактировать существующее видео на основе текстового запроса.",
+    "display_name": "Grok Video Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Максимальная поддерживаемая длительность — 8,7 секунд и размер файла 50 МБ."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "Генерировать видео по запросу или изображению",
+    "display_name": "Grok Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Соотношение сторон выходного видео."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "Длительность выходного видео в секундах."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание желаемого видео."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Разрешение выходного видео."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GrowMask": {
     "display_name": "Увеличить маску",
     "inputs": {
