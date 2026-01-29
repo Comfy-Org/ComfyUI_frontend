@@ -68,7 +68,10 @@ function createMockConfig(overrides = {}): RemoteWidgetConfig {
 const createMockOptions = (inputOverrides = {}) => ({
   remoteConfig: createMockConfig(inputOverrides),
   defaultValue: DEFAULT_VALUE,
-  node: createMockLGraphNode(),
+  node: createMockLGraphNode({
+    addWidget: vi.fn(() => createMockWidget()),
+    onRemoved: undefined
+  }),
   widget: createMockWidget()
 })
 
