@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
@@ -114,7 +115,7 @@ vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
 }))
 
 describe('useConflictDetection', () => {
-  let pinia: ReturnType<typeof createPinia>
+  let pinia: ReturnType<typeof createTestingPinia>
 
   const mockComfyManagerService = {
     getImportFailInfoBulk: vi.fn(),
@@ -221,7 +222,7 @@ describe('useConflictDetection', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    pinia = createPinia()
+    pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
 
     // Setup mocks

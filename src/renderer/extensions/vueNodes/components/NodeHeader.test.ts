@@ -1,5 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { describe, expect, it, vi } from 'vitest'
@@ -29,7 +30,7 @@ const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
 })
 
 const setupMockStores = () => {
-  const pinia = createPinia()
+  const pinia = createTestingPinia({ stubActions: false })
   setActivePinia(pinia)
 
   const settingStore = useSettingStore()
