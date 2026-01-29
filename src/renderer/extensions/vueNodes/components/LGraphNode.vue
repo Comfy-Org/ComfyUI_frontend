@@ -150,7 +150,9 @@
       v-if="!isCollapsed && nodeData.resizable !== false"
       role="button"
       :aria-label="t('g.resizeFromBottomRight')"
-      :class="cn(baseResizeHandleClasses, '-right-1 -bottom-1 cursor-se-resize')"
+      :class="
+        cn(baseResizeHandleClasses, '-right-1 -bottom-1 cursor-se-resize')
+      "
       @pointerdown.stop="handleResizePointerDown"
     />
   </div>
