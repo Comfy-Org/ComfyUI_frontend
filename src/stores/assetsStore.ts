@@ -308,7 +308,10 @@ export const useAssetsStore = defineStore('assets', () => {
         })
       }
 
-      function isStale(category: string, state: ModelPaginationState): boolean {
+      function isStale(
+        category: string,
+        state: ModelPaginationState
+      ): boolean {
         const committed = modelStateByCategory.value.get(category)
         const pending = pendingRequestByCategory.get(category)
         return committed !== state && pending !== state
@@ -379,20 +382,11 @@ export const useAssetsStore = defineStore('assets', () => {
        * Internal helper to fetch and cache assets for a category.
        * Loads first batch immediately, then progressively loads remaining batches.
        * Keeps existing data visible until new data is successfully fetched.
-       *
-       * Concurrent calls for the same category are short-circuited: if a request
-       * is already in progress (tracked via pendingRequestByCategory), subsequent
-       * calls return immediately to avoid redundant work.
        */
       async function updateModelsForCategory(
         category: string,
         fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
       ): Promise<void> {
-        // Short-circuit if a request for this category is already in progress
-        if (pendingRequestByCategory.has(category)) {
-          return
-        }
-
         const existingState = modelStateByCategory.value.get(category)
         const state = createState(existingState?.assets)
 
@@ -402,8 +396,6 @@ export const useAssetsStore = defineStore('assets', () => {
         if (hasExistingData) {
           pendingRequestByCategory.set(category, state)
         } else {
-          // Also track in pending map for initial loads to prevent concurrent calls
-          pendingRequestByCategory.set(category, state)
           modelStateByCategory.value.set(category, state)
         }
 
@@ -463,7 +455,6 @@ export const useAssetsStore = defineStore('assets', () => {
             state.assets.delete(id)
           }
           assetsArrayCache.delete(category)
-          pendingRequestByCategory.delete(category)
         }
 
         await loadBatches()
@@ -519,13 +510,12 @@ export const useAssetsStore = defineStore('assets', () => {
         cacheKey?: string
       ) {
         const category = cacheKey ? resolveCategory(cacheKey) : undefined
-        if (cacheKey && !category) return
-
         const categoriesToCheck = category
           ? [category]
           : Array.from(modelStateByCategory.value.keys())
 
         for (const cat of categoriesToCheck) {
+          if (!cat) continue
           const state = modelStateByCategory.value.get(cat)
           if (!state?.assets) continue
 
