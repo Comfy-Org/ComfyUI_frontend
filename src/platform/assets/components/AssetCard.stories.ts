@@ -10,7 +10,7 @@ const createAssetData = (
   overrides: Partial<AssetDisplayItem> = {}
 ): AssetDisplayItem => ({
   ...baseAsset,
-  description:
+  secondaryText:
     'High-quality realistic images with perfect detail and natural lighting effects for professional photography',
   badges: [
     { label: 'checkpoints', type: 'type' },
@@ -131,20 +131,21 @@ export const EdgeCases: Story = {
         // Default case for comparison
         createAssetData({
           name: 'Complete Data',
-          description: 'Asset with all data present for comparison'
+          secondaryText: 'Asset with all data present for comparison'
         }),
         // No badges
         createAssetData({
           id: 'no-badges',
           name: 'No Badges',
-          description: 'Testing graceful handling when badges are not provided',
+          secondaryText:
+            'Testing graceful handling when badges are not provided',
           badges: []
         }),
         // No stars
         createAssetData({
           id: 'no-stars',
           name: 'No Stars',
-          description: 'Testing missing stars data gracefully',
+          secondaryText: 'Testing missing stars data gracefully',
           stats: {
             downloadCount: '1.8k',
             formattedDate: '3/15/25'
@@ -154,7 +155,7 @@ export const EdgeCases: Story = {
         createAssetData({
           id: 'no-downloads',
           name: 'No Downloads',
-          description: 'Testing missing downloads data gracefully',
+          secondaryText: 'Testing missing downloads data gracefully',
           stats: {
             stars: '4.2k',
             formattedDate: '3/15/25'
@@ -164,7 +165,7 @@ export const EdgeCases: Story = {
         createAssetData({
           id: 'no-date',
           name: 'No Date',
-          description: 'Testing missing date data gracefully',
+          secondaryText: 'Testing missing date data gracefully',
           stats: {
             stars: '4.2k',
             downloadCount: '1.8k'
@@ -174,21 +175,21 @@ export const EdgeCases: Story = {
         createAssetData({
           id: 'no-stats',
           name: 'No Stats',
-          description: 'Testing when all stats are missing',
+          secondaryText: 'Testing when all stats are missing',
           stats: {}
         }),
-        // Long description
+        // Long secondaryText
         createAssetData({
           id: 'long-desc',
           name: 'Long Description',
-          description:
+          secondaryText:
             'This is a very long description that should demonstrate how the component handles text overflow and truncation with ellipsis. The description continues with even more content to ensure we test the 2-line clamp behavior properly and see how it renders when there is significantly more text than can fit in the allocated space.'
         }),
         // Minimal data
         createAssetData({
           id: 'minimal',
           name: 'Minimal',
-          description: 'Basic model',
+          secondaryText: 'Basic model',
           tags: ['models'],
           badges: [],
           stats: {}
