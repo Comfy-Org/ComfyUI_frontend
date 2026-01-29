@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraphData,
+  createTestSubgraphNode
+} from './subgraph/__fixtures__/subgraphHelpers'
 
 import { test } from './__fixtures__/testExtensions'
 
@@ -203,6 +207,70 @@ describe('Graph Clearing and Callbacks', () => {
 
     // Verify nodes were actually removed
     expect(graph.nodes.length).toBe(0)
+  })
+})
+
+describe('Subgraph Definition Garbage Collection', () => {
+  function createSubgraphWithNodes(rootGraph: LGraph, nodeCount: number) {
+    const subgraph = rootGraph.createSubgraph(createTestSubgraphData())
+
+    const innerNodes: LGraphNode[] = []
+    for (let i = 0; i < nodeCount; i++) {
+      const node = new LGraphNode(`Inner Node ${i}`)
+      subgraph.add(node)
+      innerNodes.push(node)
+    }
+
+    return { subgraph, innerNodes }
+  }
+
+  it('removing SubgraphNode fires onRemoved for inner nodes', () => {
+    const rootGraph = new LGraph()
+    const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 2)
+    const removedNodeIds = new Set<string>()
+
+    for (const node of innerNodes) {
+      node.onRemoved = () => removedNodeIds.add(String(node.id))
+    }
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    expect(subgraph.nodes.length).toBe(2)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(removedNodeIds.size).toBe(2)
+  })
+
+  it('removing SubgraphNode fires onNodeRemoved callback', () => {
+    const rootGraph = new LGraph()
+    const { subgraph } = createSubgraphWithNodes(rootGraph, 2)
+    const graphRemovedNodeIds = new Set<string>()
+
+    subgraph.onNodeRemoved = (node) => graphRemovedNodeIds.add(String(node.id))
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(graphRemovedNodeIds.size).toBe(2)
+  })
+
+  it('subgraph definition is removed when SubgraphNode is removed', () => {
+    const rootGraph = new LGraph()
+    const { subgraph } = createSubgraphWithNodes(rootGraph, 1)
+    const subgraphId = subgraph.id
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
+    rootGraph.add(subgraphNode)
+
+    expect(rootGraph.subgraphs.has(subgraphId)).toBe(true)
+
+    rootGraph.remove(subgraphNode)
+
+    expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
   })
 })
 

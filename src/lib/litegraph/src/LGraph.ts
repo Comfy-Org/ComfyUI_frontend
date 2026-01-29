@@ -992,6 +992,16 @@ export class LGraph
       }
     }
 
+    // Subgraph cleanup (use local const to avoid type narrowing affecting node.graph assignment)
+    const subgraphNode = node.isSubgraphNode() ? node : null
+    if (subgraphNode) {
+      for (const innerNode of subgraphNode.subgraph.nodes) {
+        innerNode.onRemoved?.()
+        subgraphNode.subgraph.onNodeRemoved?.(innerNode)
+      }
+      this.rootGraph.subgraphs.delete(subgraphNode.subgraph.id)
+    }
+
     // callback
     node.onRemoved?.()
 
