@@ -64,6 +64,7 @@ export function toggleNodeOptions(event: Event) {
  * @param event - The trigger event (must be MouseEvent for position)
  */
 export function showNodeOptions(event: MouseEvent) {
+  hoveredWidgetName.value = undefined
   const target = event.target
   if (target instanceof HTMLElement) {
     const widgetEl = target.closest('.lg-node-widget')
