@@ -136,7 +136,7 @@ export const useAssetsStore = defineStore('assets', () => {
    * Fetch history assets with pagination support
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
-  const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
+  async function fetchHistoryAssets(loadMore = false): Promise<AssetItem[]> {
     // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
@@ -203,7 +203,7 @@ export const useAssetsStore = defineStore('assets', () => {
   /**
    * Initial load of history assets
    */
-  const updateHistory = async () => {
+  async function updateHistory() {
     historyLoading.value = true
     historyError.value = null
     try {
@@ -224,7 +224,7 @@ export const useAssetsStore = defineStore('assets', () => {
   /**
    * Load more history items (infinite scroll)
    */
-  const loadMoreHistory = async () => {
+  async function loadMoreHistory() {
     // Guard: prevent concurrent loads and check if more items available
     if (!hasMoreHistory.value || isLoadingMore.value) return
 
@@ -283,293 +283,278 @@ export const useAssetsStore = defineStore('assets', () => {
    * Used by multiple loader nodes to avoid duplicate fetches
    * Cloud-only feature - empty Maps in desktop builds
    */
-  const getModelState = () => {
-    if (isCloud) {
-      const modelStateByKey = ref(new Map<string, ModelPaginationState>())
+  function getModelState() {
+    const modelStateByKey = ref(new Map<string, ModelPaginationState>())
 
-      const assetsArrayCache = new Map<
-        string,
-        { source: Map<string, AssetItem>; array: AssetItem[] }
-      >()
+    const assetsArrayCache = new Map<
+      string,
+      { source: Map<string, AssetItem>; array: AssetItem[] }
+    >()
 
-      const pendingRequestByKey = new Map<string, ModelPaginationState>()
+    const pendingRequestByKey = new Map<string, ModelPaginationState>()
 
-      function createState(
-        existingAssets?: Map<string, AssetItem>
-      ): ModelPaginationState {
-        const assets = new Map(existingAssets)
-        return reactive({
-          assets,
-          offset: 0,
-          hasMore: true,
-          isLoading: true
-        })
+    function createState(
+      existingAssets?: Map<string, AssetItem>
+    ): ModelPaginationState {
+      const assets = new Map(existingAssets)
+      return reactive({
+        assets,
+        offset: 0,
+        hasMore: true,
+        isLoading: true
+      })
+    }
+
+    function isStale(key: string, state: ModelPaginationState): boolean {
+      const committed = modelStateByKey.value.get(key)
+      const pending = pendingRequestByKey.get(key)
+      return committed !== state && pending !== state
+    }
+
+    const EMPTY_ASSETS: AssetItem[] = []
+
+    function getAssets(key: string): AssetItem[] {
+      const state = modelStateByKey.value.get(key)
+      const assetsMap = state?.assets
+      if (!assetsMap) return EMPTY_ASSETS
+
+      const cached = assetsArrayCache.get(key)
+      if (cached && cached.source === assetsMap) {
+        return cached.array
       }
 
-      function isStale(key: string, state: ModelPaginationState): boolean {
-        const committed = modelStateByKey.value.get(key)
-        const pending = pendingRequestByKey.get(key)
-        return committed !== state && pending !== state
+      const array = Array.from(assetsMap.values())
+      assetsArrayCache.set(key, { source: assetsMap, array })
+      return array
+    }
+
+    function isLoading(key: string): boolean {
+      return modelStateByKey.value.get(key)?.isLoading ?? false
+    }
+
+    function getError(key: string): Error | undefined {
+      return modelStateByKey.value.get(key)?.error
+    }
+
+    function hasMore(key: string): boolean {
+      return modelStateByKey.value.get(key)?.hasMore ?? false
+    }
+
+    function hasAssetKey(key: string): boolean {
+      return modelStateByKey.value.has(key)
+    }
+
+    /**
+     * Internal helper to fetch and cache assets with a given key and fetcher.
+     * Loads first batch immediately, then progressively loads remaining batches.
+     * Keeps existing data visible until new data is successfully fetched.
+     */
+    async function updateModelsForKey(
+      key: string,
+      fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
+    ): Promise<void> {
+      const existingState = modelStateByKey.value.get(key)
+      const state = createState(existingState?.assets)
+
+      const seenIds = new Set<string>()
+
+      const hasExistingData = modelStateByKey.value.has(key)
+      if (hasExistingData) {
+        pendingRequestByKey.set(key, state)
+      } else {
+        modelStateByKey.value.set(key, state)
       }
 
-      const EMPTY_ASSETS: AssetItem[] = []
+      async function loadBatches(): Promise<void> {
+        while (state.hasMore) {
+          try {
+            const newAssets = await fetcher({
+              limit: MODEL_BATCH_SIZE,
+              offset: state.offset
+            })
 
-      function getAssets(key: string): AssetItem[] {
-        const state = modelStateByKey.value.get(key)
-        const assetsMap = state?.assets
-        if (!assetsMap) return EMPTY_ASSETS
+            if (isStale(key, state)) return
 
-        const cached = assetsArrayCache.get(key)
-        if (cached && cached.source === assetsMap) {
-          return cached.array
-        }
-
-        const array = Array.from(assetsMap.values())
-        assetsArrayCache.set(key, { source: assetsMap, array })
-        return array
-      }
-
-      function isLoading(key: string): boolean {
-        return modelStateByKey.value.get(key)?.isLoading ?? false
-      }
-
-      function getError(key: string): Error | undefined {
-        return modelStateByKey.value.get(key)?.error
-      }
-
-      function hasMore(key: string): boolean {
-        return modelStateByKey.value.get(key)?.hasMore ?? false
-      }
-
-      function hasAssetKey(key: string): boolean {
-        return modelStateByKey.value.has(key)
-      }
-
-      /**
-       * Internal helper to fetch and cache assets with a given key and fetcher.
-       * Loads first batch immediately, then progressively loads remaining batches.
-       * Keeps existing data visible until new data is successfully fetched.
-       */
-      async function updateModelsForKey(
-        key: string,
-        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
-      ): Promise<void> {
-        const existingState = modelStateByKey.value.get(key)
-        const state = createState(existingState?.assets)
-
-        const seenIds = new Set<string>()
-
-        const hasExistingData = modelStateByKey.value.has(key)
-        if (hasExistingData) {
-          pendingRequestByKey.set(key, state)
-        } else {
-          modelStateByKey.value.set(key, state)
-        }
-
-        async function loadBatches(): Promise<void> {
-          while (state.hasMore) {
-            try {
-              const newAssets = await fetcher({
-                limit: MODEL_BATCH_SIZE,
-                offset: state.offset
-              })
-
-              if (isStale(key, state)) return
-
-              const isFirstBatch = state.offset === 0
-              if (isFirstBatch) {
-                assetsArrayCache.delete(key)
-                if (hasExistingData) {
-                  pendingRequestByKey.delete(key)
-                  modelStateByKey.value.set(key, state)
-                }
+            const isFirstBatch = state.offset === 0
+            if (isFirstBatch) {
+              assetsArrayCache.delete(key)
+              if (hasExistingData) {
+                pendingRequestByKey.delete(key)
+                modelStateByKey.value.set(key, state)
               }
-
-              // Merge new assets into existing map and track seen IDs
-              for (const asset of newAssets) {
-                seenIds.add(asset.id)
-                state.assets.set(asset.id, asset)
-              }
-              state.assets = new Map(state.assets)
-
-              state.offset += newAssets.length
-              state.hasMore = newAssets.length === MODEL_BATCH_SIZE
-
-              if (isFirstBatch) {
-                state.isLoading = false
-              }
-
-              if (state.hasMore) {
-                await new Promise((resolve) => setTimeout(resolve, 50))
-              }
-            } catch (err) {
-              if (isStale(key, state)) return
-              console.error(`Error loading batch for ${key}:`, err)
-
-              state.error = err instanceof Error ? err : new Error(String(err))
-              state.hasMore = false
-              state.isLoading = false
-              pendingRequestByKey.delete(key)
-
-              return
             }
-          }
 
-          const staleIds = [...state.assets.keys()].filter(
-            (id) => !seenIds.has(id)
-          )
-          for (const id of staleIds) {
-            state.assets.delete(id)
+            // Merge new assets into existing map and track seen IDs
+            for (const asset of newAssets) {
+              seenIds.add(asset.id)
+              state.assets.set(asset.id, asset)
+            }
+            state.assets = new Map(state.assets)
+
+            state.offset += newAssets.length
+            state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+
+            if (isFirstBatch) {
+              state.isLoading = false
+            }
+
+            if (state.hasMore) {
+              await new Promise((resolve) => setTimeout(resolve, 50))
+            }
+          } catch (err) {
+            if (isStale(key, state)) return
+            console.error(`Error loading batch for ${key}:`, err)
+
+            state.error = err instanceof Error ? err : new Error(String(err))
+            state.hasMore = false
+            state.isLoading = false
+            pendingRequestByKey.delete(key)
+
+            return
           }
+        }
+
+        const staleIds = [...state.assets.keys()].filter(
+          (id) => !seenIds.has(id)
+        )
+        for (const id of staleIds) {
+          state.assets.delete(id)
+        }
+        assetsArrayCache.delete(key)
+      }
+
+      await loadBatches()
+    }
+
+    /**
+     * Fetch and cache model assets for a specific node type
+     * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
+     */
+    async function updateModelsForNodeType(nodeType: string): Promise<void> {
+      await updateModelsForKey(nodeType, (opts) =>
+        assetService.getAssetsForNodeType(nodeType, opts)
+      )
+    }
+
+    /**
+     * Fetch and cache model assets for a specific tag
+     * @param tag The tag to fetch assets for (e.g., 'models')
+     */
+    async function updateModelsForTag(tag: string): Promise<void> {
+      const key = `tag:${tag}`
+      await updateModelsForKey(key, (opts) =>
+        assetService.getAssetsByTag(tag, true, opts)
+      )
+    }
+
+    /**
+     * Optimistically update an asset in the cache
+     * @param assetId The asset ID to update
+     * @param updates Partial asset data to merge
+     * @param cacheKey Optional cache key to target (nodeType or 'tag:xxx')
+     */
+    function updateAssetInCache(
+      assetId: string,
+      updates: Partial<AssetItem>,
+      cacheKey?: string
+    ) {
+      const keysToCheck = cacheKey
+        ? [cacheKey]
+        : Array.from(modelStateByKey.value.keys())
+
+      for (const key of keysToCheck) {
+        const state = modelStateByKey.value.get(key)
+        if (!state?.assets) continue
+
+        const existingAsset = state.assets.get(assetId)
+        if (existingAsset) {
+          const updatedAsset = { ...existingAsset, ...updates }
+          state.assets.set(assetId, updatedAsset)
           assetsArrayCache.delete(key)
+          if (cacheKey) return
         }
-
-        await loadBatches()
-      }
-
-      /**
-       * Fetch and cache model assets for a specific node type
-       * @param nodeType The node type to fetch assets for (e.g., 'CheckpointLoaderSimple')
-       */
-      async function updateModelsForNodeType(nodeType: string): Promise<void> {
-        await updateModelsForKey(nodeType, (opts) =>
-          assetService.getAssetsForNodeType(nodeType, opts)
-        )
-      }
-
-      /**
-       * Fetch and cache model assets for a specific tag
-       * @param tag The tag to fetch assets for (e.g., 'models')
-       */
-      async function updateModelsForTag(tag: string): Promise<void> {
-        const key = `tag:${tag}`
-        await updateModelsForKey(key, (opts) =>
-          assetService.getAssetsByTag(tag, true, opts)
-        )
-      }
-
-      /**
-       * Optimistically update an asset in the cache
-       * @param assetId The asset ID to update
-       * @param updates Partial asset data to merge
-       * @param cacheKey Optional cache key to target (nodeType or 'tag:xxx')
-       */
-      function updateAssetInCache(
-        assetId: string,
-        updates: Partial<AssetItem>,
-        cacheKey?: string
-      ) {
-        const keysToCheck = cacheKey
-          ? [cacheKey]
-          : Array.from(modelStateByKey.value.keys())
-
-        for (const key of keysToCheck) {
-          const state = modelStateByKey.value.get(key)
-          if (!state?.assets) continue
-
-          const existingAsset = state.assets.get(assetId)
-          if (existingAsset) {
-            const updatedAsset = { ...existingAsset, ...updates }
-            state.assets.set(assetId, updatedAsset)
-            assetsArrayCache.delete(key)
-            if (cacheKey) return
-          }
-        }
-      }
-
-      /**
-       * Update asset metadata with optimistic cache update
-       * @param asset The asset to update
-       * @param userMetadata The user_metadata to save
-       * @param cacheKey Optional cache key to target for optimistic update
-       */
-      async function updateAssetMetadata(
-        asset: AssetItem,
-        userMetadata: Record<string, unknown>,
-        cacheKey?: string
-      ) {
-        const originalMetadata = asset.user_metadata
-        updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
-
-        try {
-          const updatedAsset = await assetService.updateAsset(asset.id, {
-            user_metadata: userMetadata
-          })
-          updateAssetInCache(asset.id, updatedAsset, cacheKey)
-        } catch (error) {
-          console.error('Failed to update asset metadata:', error)
-          updateAssetInCache(
-            asset.id,
-            { user_metadata: originalMetadata },
-            cacheKey
-          )
-        }
-      }
-
-      /**
-       * Update asset tags using add/remove endpoints
-       * @param asset The asset to update (used to read current tags)
-       * @param newTags The desired tags array
-       * @param cacheKey Optional cache key to target for optimistic update
-       */
-      async function updateAssetTags(
-        asset: AssetItem,
-        newTags: string[],
-        cacheKey?: string
-      ) {
-        const originalTags = asset.tags
-        const tagsToAdd = difference(newTags, originalTags)
-        const tagsToRemove = difference(originalTags, newTags)
-
-        if (tagsToAdd.length === 0 && tagsToRemove.length === 0) return
-
-        updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
-
-        try {
-          const removeResult =
-            tagsToRemove.length > 0
-              ? await assetService.removeAssetTags(asset.id, tagsToRemove)
-              : undefined
-
-          const addResult =
-            tagsToAdd.length > 0
-              ? await assetService.addAssetTags(asset.id, tagsToAdd)
-              : undefined
-
-          const finalTags = (addResult ?? removeResult)?.total_tags
-          if (finalTags) {
-            updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
-          }
-        } catch (error) {
-          console.error('Failed to update asset tags:', error)
-          updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
-        }
-      }
-
-      return {
-        getAssets,
-        isLoading,
-        getError,
-        hasMore,
-        hasAssetKey,
-        updateModelsForNodeType,
-        updateModelsForTag,
-        updateAssetMetadata,
-        updateAssetTags
       }
     }
 
-    const emptyAssets: AssetItem[] = []
+    /**
+     * Update asset metadata with optimistic cache update
+     * @param asset The asset to update
+     * @param userMetadata The user_metadata to save
+     * @param cacheKey Optional cache key to target for optimistic update
+     */
+    async function updateAssetMetadata(
+      asset: AssetItem,
+      userMetadata: Record<string, unknown>,
+      cacheKey?: string
+    ) {
+      const originalMetadata = asset.user_metadata
+      updateAssetInCache(asset.id, { user_metadata: userMetadata }, cacheKey)
+
+      try {
+        const updatedAsset = await assetService.updateAsset(asset.id, {
+          user_metadata: userMetadata
+        })
+        updateAssetInCache(asset.id, updatedAsset, cacheKey)
+      } catch (error) {
+        console.error('Failed to update asset metadata:', error)
+        updateAssetInCache(
+          asset.id,
+          { user_metadata: originalMetadata },
+          cacheKey
+        )
+      }
+    }
+
+    /**
+     * Update asset tags using add/remove endpoints
+     * @param asset The asset to update (used to read current tags)
+     * @param newTags The desired tags array
+     * @param cacheKey Optional cache key to target for optimistic update
+     */
+    async function updateAssetTags(
+      asset: AssetItem,
+      newTags: string[],
+      cacheKey?: string
+    ) {
+      const originalTags = asset.tags
+      const tagsToAdd = difference(newTags, originalTags)
+      const tagsToRemove = difference(originalTags, newTags)
+
+      if (tagsToAdd.length === 0 && tagsToRemove.length === 0) return
+
+      updateAssetInCache(asset.id, { tags: newTags }, cacheKey)
+
+      try {
+        const removeResult =
+          tagsToRemove.length > 0
+            ? await assetService.removeAssetTags(asset.id, tagsToRemove)
+            : undefined
+
+        const addResult =
+          tagsToAdd.length > 0
+            ? await assetService.addAssetTags(asset.id, tagsToAdd)
+            : undefined
+
+        const finalTags = (addResult ?? removeResult)?.total_tags
+        if (finalTags) {
+          updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
+        }
+      } catch (error) {
+        console.error('Failed to update asset tags:', error)
+        updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
+      }
+    }
+
     return {
-      getAssets: () => emptyAssets,
-      isLoading: () => false,
-      getError: () => undefined,
-      hasMore: () => false,
-      hasAssetKey: () => false,
-      updateModelsForNodeType: async () => {},
-      updateModelsForTag: async () => {},
-      updateAssetMetadata: async () => {},
-      updateAssetTags: async () => {}
+      getAssets,
+      isLoading,
+      getError,
+      hasMore,
+      hasAssetKey,
+      updateModelsForNodeType,
+      updateModelsForTag,
+      updateAssetMetadata,
+      updateAssetTags
     }
   }
 

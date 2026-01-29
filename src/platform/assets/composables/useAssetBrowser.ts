@@ -156,8 +156,8 @@ export function useAssetBrowser(
 
   const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
-      .filter((asset) => asset.tags[0] === 'models')
-      .map((asset) => asset.tags[1])
+      .filter((asset) => asset.tags.includes('models'))
+      .map((asset) => asset.tags.find((tag) => tag !== 'models'))
       .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
       .map((tag) => tag.split('/')[0])
 
