@@ -308,10 +308,7 @@ export const useAssetsStore = defineStore('assets', () => {
         })
       }
 
-      function isStale(
-        category: string,
-        state: ModelPaginationState
-      ): boolean {
+      function isStale(category: string, state: ModelPaginationState): boolean {
         const committed = modelStateByCategory.value.get(category)
         const pending = pendingRequestByCategory.get(category)
         return committed !== state && pending !== state
