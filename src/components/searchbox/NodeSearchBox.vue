@@ -13,20 +13,12 @@
       />
     </div>
 
-    <Button
-      variant="secondary"
-      :aria-label="$t('g.addNodeFilterCondition')"
-      class="filter-button z-10"
-      @click="nodeSearchFilterVisible = true"
-    >
-      <i class="pi pi-filter" />
-    </Button>
     <Dialog
       v-model:visible="nodeSearchFilterVisible"
       class="min-w-96"
       dismissable-mask
       modal
-      @hide="reFocusInput"
+      @hide="nextTick(() => inputRef?.focus())"
     >
       <template #header>
         <h3>{{ $t('g.addNodeFilterCondition') }}</h3>
@@ -36,57 +28,84 @@
       </div>
     </Dialog>
 
-    <AutoCompletePlus
-      ref="autoCompletePlus"
-      :model-value="filters"
-      class="comfy-vue-node-search-box z-10 grow"
-      scroll-height="40vh"
-      :placeholder="placeholder"
-      :input-id="inputId"
-      append-to="self"
-      :suggestions="suggestions"
-      :delay="100"
-      :loading="!nodeFrequencyStore.isLoaded"
-      complete-on-focus
-      auto-option-focus
-      force-selection
-      multiple
-      option-label="display_name"
-      @complete="search($event.query)"
-      @option-select="onAddNode($event.value)"
-      @focused-option-changed="setHoverSuggestion($event)"
-    >
-      <template #option="{ option }">
-        <NodeSearchItem :node-def="option" :current-query="currentQuery" />
-      </template>
-      <!-- FilterAndValue -->
-      <template #chip="{ value }">
-        <SearchFilterChip
-          v-if="value.filterDef && value.value"
+    <div class="comfy-vue-node-search-box z-10 grow">
+      <div
+        class="flex w-full items-center bg-base-background rounded-lg py-1 px-4 border-primary-background border"
+      >
+        <Button
+          variant="secondary"
+          :aria-label="$t('g.addNodeFilterCondition')"
+          class="filter-button z-10 absolute -left-10"
+          @click="nodeSearchFilterVisible = true"
+        >
+          <i class="pi pi-filter" />
+        </Button>
+        <template
+          v-for="value in filters"
           :key="`${value.filterDef.id}-${value.value}`"
-          :text="value.value"
-          :badge="value.filterDef.invokeSequence.toUpperCase()"
-          :badge-class="value.filterDef.invokeSequence + '-badge'"
-          @remove="
-            onRemoveFilter(
-              $event,
-              value as FuseFilterWithValue<ComfyNodeDefImpl, string>
-            )
-          "
+        >
+          <SearchFilterChip
+            v-if="value.filterDef && value.value"
+            :text="value.value"
+            :badge="value.filterDef.invokeSequence.toUpperCase()"
+            :badge-class="value.filterDef.invokeSequence + '-badge'"
+            @remove="
+              onRemoveFilter(
+                $event,
+                value as FuseFilterWithValue<ComfyNodeDefImpl, string>
+              )
+            "
+          />
+        </template>
+        <input
+          ref="inputRef"
+          v-model="currentQuery"
+          class="text-base h-5 bg-transparent border-0 focus:outline-0 flex-1"
+          type="text"
+          autofocus
+          :placeholder="t('g.searchNodes') + '...'"
+          @keydown.enter.prevent="onAddNode(hoveredSuggestion)"
+          @keydown.down.prevent="updateIndexBy(1)"
+          @keydown.up.prevent="updateIndexBy(-1)"
         />
-      </template>
-    </AutoCompletePlus>
+      </div>
+      <div
+        v-bind="containerProps"
+        class="bg-comfy-menu-bg p-1 rounded-lg border-border-subtle border max-h-150"
+      >
+        <div v-bind="wrapperProps" class="comfy-autocomplete-list">
+          <NodeSearchItem
+            v-for="{ data: option, index } in virtualList"
+            :key="index"
+            :class="
+              cn(
+                'p-1 rounded-sm',
+                hoveredIndex === index && 'bg-secondary-background-hover'
+              )
+            "
+            :node-def="option"
+            :current-query="debouncedQuery"
+            @click="onAddNode(option)"
+            @pointerover="hoveredIndex = index"
+          />
+        </div>
+        <div
+          v-if="suggestions.length === 0"
+          class="p-1"
+          v-text="t('g.noResultsFound')"
+        />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { debounce } from 'es-toolkit/compat'
+import { refDebounced, useVirtualList } from '@vueuse/core'
 import Dialog from 'primevue/dialog'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NodePreview from '@/components/node/NodePreview.vue'
-import AutoCompletePlus from '@/components/primevueOverride/AutoCompletePlus.vue'
 import NodeSearchFilter from '@/components/searchbox/NodeSearchFilter.vue'
 import NodeSearchItem from '@/components/searchbox/NodeSearchItem.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -95,6 +114,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 import SearchFilterChip from '../common/SearchFilterChip.vue'
 
@@ -111,68 +131,52 @@ const { filters, searchLimit = 64 } = defineProps<{
   searchLimit?: number
 }>()
 
-const autoCompletePlus = ref()
 const nodeSearchFilterVisible = ref(false)
-const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
-const suggestions = ref<ComfyNodeDefImpl[]>([])
-const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
-const placeholder = computed(() => {
-  return filters.length === 0 ? t('g.searchNodes') + '...' : ''
-})
+const debouncedQuery = refDebounced(currentQuery, 100, { maxWait: 400 })
+const inputRef = useTemplateRef('inputRef')
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()
 
-// Debounced search tracking (500ms as per implementation plan)
-const debouncedTrackSearch = debounce((query: string) => {
+watchEffect(() => {
+  const query = debouncedQuery.value
   if (query.trim()) {
     telemetry?.trackNodeSearch({ query })
   }
-}, 500)
+})
 
-const search = (query: string) => {
+const suggestions = computed(() => {
+  const query = debouncedQuery.value
   const queryIsEmpty = query === '' && filters.length === 0
-  currentQuery.value = query
-  suggestions.value = queryIsEmpty
+
+  return queryIsEmpty
     ? nodeFrequencyStore.topNodeDefs
     : [
         ...nodeDefStore.nodeSearchService.searchNode(query, filters, {
           limit: searchLimit
         })
       ]
+})
 
-  // Track search queries with debounce
-  debouncedTrackSearch(query)
-}
+const {
+  list: virtualList,
+  containerProps,
+  wrapperProps
+} = useVirtualList(suggestions, { itemHeight: 40 })
 
 const emit = defineEmits(['addFilter', 'removeFilter', 'addNode'])
 
 // Track node selection and emit addNode event
-const onAddNode = (nodeDef: ComfyNodeDefImpl) => {
+const onAddNode = (nodeDef?: ComfyNodeDefImpl) => {
+  if (!nodeDef) return
   telemetry?.trackNodeSearchResultSelected({
     node_type: nodeDef.name,
-    last_query: currentQuery.value
+    last_query: debouncedQuery.value
   })
   emit('addNode', nodeDef)
 }
 
-let inputElement: HTMLInputElement | null = null
-const reFocusInput = async () => {
-  inputElement ??= document.getElementById(inputId) as HTMLInputElement
-  if (inputElement) {
-    inputElement.blur()
-    await nextTick(() => inputElement?.focus())
-  }
-}
-
-onMounted(() => {
-  inputElement ??= document.getElementById(inputId) as HTMLInputElement
-  if (inputElement) inputElement.focus()
-  autoCompletePlus.value.hide = () => search('')
-  search('')
-  autoCompletePlus.value.show()
-})
 const onAddFilter = (
   filterAndValue: FuseFilterWithValue<ComfyNodeDefImpl, string>
 ) => {
@@ -186,14 +190,16 @@ const onRemoveFilter = async (
   event.stopPropagation()
   event.preventDefault()
   emit('removeFilter', filterAndValue)
-  await reFocusInput()
+  inputRef.value?.focus()
 }
-const setHoverSuggestion = (index: number) => {
-  if (index === -1) {
-    hoveredSuggestion.value = null
-    return
-  }
-  const value = suggestions.value[index]
-  hoveredSuggestion.value = value
+const hoveredIndex = ref<number>()
+const hoveredSuggestion = computed(() =>
+  hoveredIndex.value ? suggestions.value[hoveredIndex.value] : undefined
+)
+function updateIndexBy(delta: number) {
+  hoveredIndex.value = Math.max(
+    0,
+    Math.min(suggestions.value.length, (hoveredIndex.value ?? 0) + delta)
+  )
 }
 </script>

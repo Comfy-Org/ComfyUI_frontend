@@ -44,7 +44,7 @@ export class ComfyNodeSearchBox {
       '.comfy-vue-node-search-container input[type="text"]'
     )
     this.dropdown = page.locator(
-      '.comfy-vue-node-search-container .p-autocomplete-list'
+      '.comfy-vue-node-search-container .comfy-autocomplete-list'
     )
     this.filterSelectionPanel = new ComfyNodeSearchFilterSelectionPanel(page)
   }
@@ -61,7 +61,7 @@ export class ComfyNodeSearchBox {
     await this.input.fill(nodeName)
     await this.dropdown.waitFor({ state: 'visible' })
     await this.dropdown
-      .locator('li')
+      .locator('.option-container')
       .nth(options?.suggestionIndex || 0)
       .click()
   }
