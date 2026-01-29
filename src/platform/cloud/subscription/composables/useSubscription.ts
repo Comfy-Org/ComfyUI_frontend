@@ -7,7 +7,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import { pushDataLayerEvent, useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
@@ -122,22 +122,25 @@ function useSubscriptionInternal() {
       : baseName
     const unitPrice = getTierPrice(tierKey, isYearly)
     const value = isYearly && tierKey !== 'founder' ? unitPrice * 12 : unitPrice
-    pushDataLayerEvent({
-      event: 'purchase',
-      transaction_id: status.subscription_id,
-      value,
-      currency: 'USD',
-      items: [
-        {
-          item_id: `${billingCycle}_${tierKey}`,
-          item_name: planName,
-          item_category: 'subscription',
-          item_variant: billingCycle,
-          price: value,
-          quantity: 1
-        }
-      ]
-    })
+    if (typeof window !== 'undefined') {
+      window.dataLayer = window.dataLayer || []
+      window.dataLayer.push({
+        event: 'purchase',
+        transaction_id: status.subscription_id,
+        value,
+        currency: 'USD',
+        items: [
+          {
+            item_id: `${billingCycle}_${tierKey}`,
+            item_name: planName,
+            item_category: 'subscription',
+            item_variant: billingCycle,
+            price: value,
+            quantity: 1
+          }
+        ]
+      })
+    }
 
     clearPendingSubscriptionPurchase()
   }

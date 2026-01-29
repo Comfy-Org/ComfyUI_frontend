@@ -9,7 +9,6 @@ const {
   mockAccessBillingPortal,
   mockShowSubscriptionRequiredDialog,
   mockGetAuthHeader,
-  mockPushDataLayerEvent,
   mockTelemetry,
   mockUserId
 } = vi.hoisted(() => ({
@@ -20,7 +19,6 @@ const {
   mockGetAuthHeader: vi.fn(() =>
     Promise.resolve({ Authorization: 'Bearer test-token' })
   ),
-  mockPushDataLayerEvent: vi.fn(),
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionCancelled: vi.fn()
@@ -50,7 +48,6 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  pushDataLayerEvent: mockPushDataLayerEvent,
   useTelemetry: vi.fn(() => mockTelemetry)
 }))
 
@@ -114,12 +111,8 @@ describe('useSubscription', () => {
     mockIsLoggedIn.value = false
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
-    mockPushDataLayerEvent.mockReset()
     mockUserId.value = 'user-123'
-    mockPushDataLayerEvent.mockImplementation((event) => {
-      const dataLayer = window.dataLayer ?? (window.dataLayer = [])
-      dataLayer.push(event)
-    })
+    window.dataLayer = []
     window.__CONFIG__ = {
       subscription_required: true
     } as typeof window.__CONFIG__

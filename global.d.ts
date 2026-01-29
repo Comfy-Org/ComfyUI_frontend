@@ -8,6 +8,7 @@ declare const __USE_PROD_CONFIG__: boolean
 interface Window {
   __CONFIG__: {
     mixpanel_token?: string
+    gtm_id?: string
     require_whitelist?: boolean
     subscription_required?: boolean
     max_upload_size?: number
