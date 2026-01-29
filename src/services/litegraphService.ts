@@ -261,7 +261,7 @@ export const useLitegraphService = () => {
       static comfyClass: string
       static override title: string
       static override category: string
-      static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+      static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       _initialMinSize = { width: 1, height: 1 }
 
@@ -394,7 +394,7 @@ export const useLitegraphService = () => {
       static comfyClass: string
       static override title: string
       static override category: string
-      static nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
+      static override nodeData: ComfyNodeDefV1 & ComfyNodeDefV2
 
       _initialMinSize = { width: 1, height: 1 }
 
@@ -496,6 +496,13 @@ export const useLitegraphService = () => {
     // because `registerNodeType` will overwrite the assignments.
     node.category = nodeDef.category
     node.title = nodeDef.display_name || nodeDef.name
+
+    // Set skip_list for dev-only nodes based on current DevMode setting
+    // This ensures nodes registered after initial load respect the current setting
+    if (nodeDef.dev_only) {
+      const settingStore = useSettingStore()
+      node.skip_list = !settingStore.get('Comfy.DevMode')
+    }
   }
 
   /**
