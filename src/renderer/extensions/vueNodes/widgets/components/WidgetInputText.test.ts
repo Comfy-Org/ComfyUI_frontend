@@ -3,7 +3,7 @@ import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import type { InputTextProps } from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -175,6 +175,54 @@ describe('WidgetInputText Value Binding', () => {
       const emitted = wrapper.emitted('update:modelValue')
       expect(emitted).toBeDefined()
       expect(emitted![0]).toContain(unicodeText)
+    })
+  })
+
+  describe('Pointer Event Propagation', () => {
+    it('stops pointerdown propagation to prevent node drag during text selection', async () => {
+      const widget = createMockWidget('test text')
+      const wrapper = mountComponent(widget, 'test text')
+
+      const input = wrapper.find('input[type="text"]')
+      expect(input.exists()).toBe(true)
+
+      const parentPointerdownHandler = vi.fn()
+      const wrapperEl = wrapper.element as HTMLElement
+      wrapperEl.addEventListener('pointerdown', parentPointerdownHandler)
+
+      await input.trigger('pointerdown')
+
+      expect(parentPointerdownHandler).not.toHaveBeenCalled()
+    })
+
+    it('stops pointermove propagation during text selection', async () => {
+      const widget = createMockWidget('test text')
+      const wrapper = mountComponent(widget, 'test text')
+
+      const input = wrapper.find('input[type="text"]')
+
+      const parentPointermoveHandler = vi.fn()
+      const wrapperEl = wrapper.element as HTMLElement
+      wrapperEl.addEventListener('pointermove', parentPointermoveHandler)
+
+      await input.trigger('pointermove')
+
+      expect(parentPointermoveHandler).not.toHaveBeenCalled()
+    })
+
+    it('stops pointerup propagation after text selection', async () => {
+      const widget = createMockWidget('test text')
+      const wrapper = mountComponent(widget, 'test text')
+
+      const input = wrapper.find('input[type="text"]')
+
+      const parentPointerupHandler = vi.fn()
+      const wrapperEl = wrapper.element as HTMLElement
+      wrapperEl.addEventListener('pointerup', parentPointerupHandler)
+
+      await input.trigger('pointerup')
+
+      expect(parentPointerupHandler).not.toHaveBeenCalled()
     })
   })
 })

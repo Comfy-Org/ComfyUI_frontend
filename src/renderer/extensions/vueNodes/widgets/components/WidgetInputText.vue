@@ -7,6 +7,9 @@
       :aria-label="widget.name"
       size="small"
       :pt="{ root: 'truncate min-w-[4ch]' }"
+      @pointerdown.capture.stop
+      @pointermove.capture.stop
+      @pointerup.capture.stop
     />
   </WidgetLayoutField>
 </template>
