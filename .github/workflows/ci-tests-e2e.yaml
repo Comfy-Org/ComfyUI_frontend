@@ -22,6 +22,8 @@ jobs:
         uses: ./.github/actions/setup-frontend
         with:
           include_build_step: true
+        env:
+          IS_NIGHTLY: 'true'
 
       # Upload only built dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
