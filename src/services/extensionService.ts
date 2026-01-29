@@ -11,6 +11,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@/types/authTypes'
+import { app } from '@/scripts/app'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
@@ -151,7 +152,7 @@ export const useExtensionService = () => {
     for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
         try {
-          results.push(ext[method](...args))
+          results.push(ext[method](...args, app))
         } catch (error) {
           console.error(
             `Error calling extension '${ext.name}' method '${method}'`,
@@ -172,11 +173,9 @@ export const useExtensionService = () => {
    * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensionsAsync = async <
-    T extends FunctionPropertyNames<ComfyExtension>
-  >(
-    method: T,
-    ...args: Parameters<ComfyExtension[T]>
+  const invokeExtensionsAsync = async (
+    method: keyof ComfyExtension,
+    ...args: unknown[]
   ) => {
     return await Promise.all(
       extensionStore.enabledExtensions.map(async (ext) => {

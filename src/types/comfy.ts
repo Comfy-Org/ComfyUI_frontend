@@ -7,6 +7,7 @@ import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/schemas/keyBindingSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { AuthUserInfo } from '@/types/authTypes'
@@ -134,16 +135,19 @@ export interface ComfyExtension {
   /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
    */
-  init?(): Promise<void> | void
+  init?(app: ComfyApp): Promise<void> | void
   /**
    * Allows any additional setup, called after the application is fully set up and running
    */
-  setup?(): Promise<void> | void
+  setup?(app: ComfyApp): Promise<void> | void
   /**
    * Called before nodes are registered with the graph
    * @param defs The collection of node definitions, add custom ones or edit existing ones
    */
-  addCustomNodeDefs?(defs: Record<string, ComfyNodeDef>): Promise<void> | void
+  addCustomNodeDefs?(
+    defs: Record<string, ComfyNodeDef>,
+    app: ComfyApp
+  ): Promise<void> | void
   // TODO(huchenlei): We should deprecate the async return value of
   // getCustomWidgets.
   /**
@@ -177,10 +181,12 @@ export interface ComfyExtension {
    * Allows the extension to add additional handling to the node before it is registered with **LGraph**
    * @param nodeType The node class (not an instance)
    * @param nodeData The original node object info config object
+   * @param app The app instance
    */
   beforeRegisterNodeDef?(
     nodeType: typeof LGraphNode,
-    nodeData: ComfyNodeDef
+    nodeData: ComfyNodeDef,
+    app: ComfyApp
   ): Promise<void> | void
 
   /**
@@ -188,43 +194,50 @@ export interface ComfyExtension {
    * Modifications is expected to be made in place.
    *
    * @param defs The node definitions
+   * @param app The app instance
    */
-  beforeRegisterVueAppNodeDefs?(defs: ComfyNodeDef[]): void
+  beforeRegisterVueAppNodeDefs?(defs: ComfyNodeDef[], app: ComfyApp): void
 
   /**
    * Allows the extension to register additional nodes with LGraph after standard nodes are added.
    * Custom node classes should extend **LGraphNode**.
    */
-  registerCustomNodes?(): Promise<void> | void
+  registerCustomNodes?(app: ComfyApp): Promise<void> | void
   /**
    * Allows the extension to modify a node that has been reloaded onto the graph.
    * If you break something in the backend and want to patch workflows in the frontend
    * This is the place to do this
    * @param node The node that has been loaded
+   * @param app The app instance
    */
-  loadedGraphNode?(node: LGraphNode): void
+  loadedGraphNode?(node: LGraphNode, app: ComfyApp): void
   /**
    * Allows the extension to run code after the constructor of the node
    * @param node The node that has been created
+   * @param app The app instance
    */
-  nodeCreated?(node: LGraphNode): void
+  nodeCreated?(node: LGraphNode, app: ComfyApp): void
 
   /**
    * Allows the extension to modify the graph data before it is configured.
    * @param graphData The graph data
    * @param missingNodeTypes The missing node types
+   * @param app The app instance
    */
   beforeConfigureGraph?(
     graphData: ComfyWorkflowJSON,
-    missingNodeTypes: MissingNodeType[]
+    missingNodeTypes: MissingNodeType[],
+    app: ComfyApp
   ): Promise<void> | void
 
   /**
    * Allows the extension to run code after the graph is configured.
    * @param missingNodeTypes The missing node types
+   * @param app The app instance
    */
   afterConfigureGraph?(
-    missingNodeTypes: MissingNodeType[]
+    missingNodeTypes: MissingNodeType[],
+    app: ComfyApp
   ): Promise<void> | void
 
   /**
