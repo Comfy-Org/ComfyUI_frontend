@@ -581,14 +581,19 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(assets.map((a) => a.id)).toContain('new-asset')
     })
 
-    it('should return cached array on subsequent getAssets calls', () => {
+    it('should return cached array on subsequent getAssets calls', async () => {
       const store = useAssetsStore()
-      const nodeType = 'TestLoader'
+      const nodeType = 'CheckpointLoaderSimple'
+      const assets = [createMockAsset('cache-test-1')]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType(nodeType)
 
       const firstCall = store.getAssets(nodeType)
       const secondCall = store.getAssets(nodeType)
 
       expect(secondCall).toBe(firstCall)
+      expect(firstCall).toHaveLength(1)
     })
   })
 

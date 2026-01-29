@@ -507,12 +507,13 @@ export const useAssetsStore = defineStore('assets', () => {
         cacheKey?: string
       ) {
         const category = cacheKey ? resolveCategory(cacheKey) : undefined
+        if (cacheKey && !category) return
+
         const categoriesToCheck = category
           ? [category]
           : Array.from(modelStateByCategory.value.keys())
 
         for (const cat of categoriesToCheck) {
-          if (!cat) continue
           const state = modelStateByCategory.value.get(cat)
           if (!state?.assets) continue
 
