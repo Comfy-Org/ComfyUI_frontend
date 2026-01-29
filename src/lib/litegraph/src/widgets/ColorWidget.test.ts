@@ -24,7 +24,7 @@ function createMockWidgetConfig(
 function createMockCanvas(): LGraphCanvasType {
   return {
     setDirty: vi.fn()
-  } as unknown as LGraphCanvasType
+  } as Partial<LGraphCanvasType> as LGraphCanvasType
 }
 
 function createMockEvent(clientX = 100, clientY = 200): CanvasPointerEvent {
