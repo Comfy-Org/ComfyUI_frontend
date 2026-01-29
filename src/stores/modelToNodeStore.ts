@@ -90,7 +90,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     const fallback = modelToNodeMap.value[topLevel]
 
     if (fallback && fallback.length > 0) return fallback
-    
+
     return undefined
   }
 
