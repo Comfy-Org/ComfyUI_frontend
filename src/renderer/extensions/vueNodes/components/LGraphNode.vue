@@ -150,7 +150,7 @@
       v-if="!isCollapsed && nodeData.resizable !== false"
       role="button"
       :aria-label="t('g.resizeFromBottomRight')"
-      :class="cn(baseResizeHandleClasses, 'right-0 bottom-0 cursor-se-resize')"
+      :class="cn(baseResizeHandleClasses, '-right-1 -bottom-1 cursor-se-resize')"
       @pointerdown.stop="handleResizePointerDown"
     />
   </div>
@@ -344,7 +344,7 @@ function initSizeStyles() {
 }
 
 const baseResizeHandleClasses =
-  'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const MIN_NODE_WIDTH = 225
 
