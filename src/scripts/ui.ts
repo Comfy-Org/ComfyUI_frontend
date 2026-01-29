@@ -339,7 +339,7 @@ class ComfyList {
   hide() {
     this.element.style.display = 'none'
     // @ts-expect-error fixme ts strict error
-    this.button.textContent = 'View ' + this.#text
+    this.button.textContent = 'View ' + this._text
   }
 
   toggle() {
