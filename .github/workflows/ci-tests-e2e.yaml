@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
@@ -25,7 +25,7 @@ jobs:
 
       # Upload only built dist/ (containerized test jobs will pnpm install without cache)
       - name: Upload built frontend
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: frontend-dist
           path: dist/
@@ -51,9 +51,9 @@ jobs:
         shardTotal: [8]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Download built frontend
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: frontend-dist
           path: dist/
@@ -72,7 +72,7 @@ jobs:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
       - name: Upload blob report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{ !cancelled() }}
         with:
           name: blob-report-chromium-${{ matrix.shardIndex }}
@@ -98,9 +98,9 @@ jobs:
         browser: [chromium-2x, chromium-0.5x, mobile-chrome]
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
       - name: Download built frontend
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: frontend-dist
           path: dist/
@@ -128,7 +128,7 @@ jobs:
           pnpm exec playwright merge-reports --reporter=json ./blob-report
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: playwright-report-${{ matrix.browser }}
@@ -141,16 +141,13 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ !cancelled() }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
         with:
           version: 10
 
       - name: Download blob reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: ./all-blob-reports
           pattern: blob-report-chromium-*
@@ -165,7 +162,7 @@ jobs:
           pnpm dlx @playwright/test merge-reports --reporter=json ./all-blob-reports
 
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report-chromium
           path: ./playwright-report/
@@ -183,7 +180,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Get start time
         id: start-time
@@ -210,10 +207,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download all playwright reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           pattern: playwright-report-*
           path: reports

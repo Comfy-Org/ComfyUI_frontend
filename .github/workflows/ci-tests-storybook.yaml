@@ -14,7 +14,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Post starting comment
         env:
@@ -36,21 +36,10 @@ jobs:
       workflow-url: ${{ steps.workflow-url.outputs.url }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Build Storybook
         run: pnpm build-storybook
@@ -69,7 +58,7 @@ jobs:
 
       - name: Upload Storybook build
         if: success() && github.event.pull_request.head.repo.fork == false
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: storybook-static
           path: storybook-static/
@@ -86,27 +75,16 @@ jobs:
       chromatic-storybook-url: ${{ steps.chromatic.outputs.storybookUrl }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Required for Chromatic baseline
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Build Storybook and run Chromatic
         id: chromatic
-        uses: chromaui/action@latest
+        uses: chromaui/action@07791f8243f4cb2698bf4d00426baf4b2d1cb7e0 # v13.3.5
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           buildScriptName: build-storybook
@@ -136,11 +114,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Download Storybook build
         if: needs.storybook-build.outputs.conclusion == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: storybook-static
           path: storybook-static
@@ -170,7 +148,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Update comment with Chromatic URLs
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const buildUrl = '${{ needs.chromatic-deployment.outputs.chromatic-build-url }}';
