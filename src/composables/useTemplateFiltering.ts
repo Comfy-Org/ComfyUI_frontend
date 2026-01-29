@@ -119,7 +119,7 @@ export function useTemplateFiltering(
     )
   })
 
-  const debouncedSearchQuery = refThrottled(searchQuery, 50)
+  const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
   const filteredBySearch = computed(() => {
     if (!debouncedSearchQuery.value.trim()) {
