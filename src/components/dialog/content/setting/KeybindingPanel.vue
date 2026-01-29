@@ -197,24 +197,20 @@ const currentEditingCommand = ref<ICommandData | null>(null)
 const keybindingInput = ref()
 
 const existingKeybindingOnCombo = computed<KeybindingImpl | null>(() => {
-  if (!currentEditingCommand.value) {
-    return null
-  }
-
-  // If the new keybinding is the same as the current editing command, then don't show the error
   if (
-    currentEditingCommand.value.keybinding?.combo?.equals(
-      newBindingKeyCombo.value
-    )
+    !editDialogVisible.value ||
+    !currentEditingCommand.value ||
+    !newBindingKeyCombo.value
   ) {
     return null
   }
 
-  if (!newBindingKeyCombo.value) {
+  const existing = keybindingStore.getKeybinding(newBindingKeyCombo.value)
+  if (!existing || existing.commandId === currentEditingCommand.value.id) {
     return null
   }
 
-  return keybindingStore.getKeybinding(newBindingKeyCombo.value)
+  return existing
 })
 
 function editKeybinding(commandData: ICommandData) {
@@ -265,17 +261,14 @@ function cancelEdit() {
 async function saveKeybinding() {
   if (!currentEditingCommand.value || !newBindingKeyCombo.value) return
 
-  // Capture values before closing dialog
-  const commandId = currentEditingCommand.value.id
-  const combo = newBindingKeyCombo.value
-
-  // Close dialog FIRST to prevent warning flash during store update
-  cancelEdit()
-
-  // Update store after dialog is closed
   const updated = keybindingStore.updateKeybindingOnCommand(
-    new KeybindingImpl({ commandId, combo })
+    new KeybindingImpl({
+      commandId: currentEditingCommand.value.id,
+      combo: newBindingKeyCombo.value
+    })
   )
+
+  cancelEdit()
 
   if (updated) {
     await keybindingService.persistUserKeybindings()
