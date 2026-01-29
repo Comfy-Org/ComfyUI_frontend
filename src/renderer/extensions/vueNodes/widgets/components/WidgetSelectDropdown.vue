@@ -85,14 +85,15 @@ const selectedSet = ref<Set<SelectedKey>>(new Set())
 
 /**
  * Transforms a value using getOptionLabel if available.
- * Falls back to the original value if getOptionLabel is not provided or throws an error.
+ * Falls back to the original value if getOptionLabel is not provided,
+ * returns undefined/null, or throws an error.
  */
 function getDisplayLabel(value: string): string {
   const getOptionLabel = props.widget.options?.getOptionLabel
   if (!getOptionLabel) return value
 
   try {
-    return getOptionLabel(value)
+    return getOptionLabel(value) || value
   } catch (e) {
     console.error('Failed to map value:', e)
     return value
@@ -146,11 +147,69 @@ const outputItems = computed<DropdownItem[]>(() => {
   }))
 })
 
+/**
+ * Creates a fallback item for the current modelValue when it doesn't exist
+ * in the available items list. This handles cases like template-loaded nodes
+ * where the saved value may not exist in the current server environment.
+ * Works for both local mode (inputItems/outputItems) and cloud mode (assetData).
+ */
+const missingValueItem = computed<DropdownItem | undefined>(() => {
+  const currentValue = modelValue.value
+  if (!currentValue) return undefined
+
+  // Check in cloud mode assets
+  if (props.isAssetMode && assetData) {
+    const existsInAssets = assetData.dropdownItems.value.some(
+      (item) => item.name === currentValue
+    )
+    if (existsInAssets) return undefined
+
+    return {
+      id: `missing-${currentValue}`,
+      mediaSrc: '',
+      name: currentValue,
+      label: getDisplayLabel(currentValue),
+      metadata: ''
+    }
+  }
+
+  // Check in local mode inputs/outputs
+  const existsInInputs = inputItems.value.some(
+    (item) => item.name === currentValue
+  )
+  const existsInOutputs = outputItems.value.some(
+    (item) => item.name === currentValue
+  )
+
+  if (existsInInputs || existsInOutputs) return undefined
+
+  const isOutput = currentValue.endsWith(' [output]')
+  const strippedValue = isOutput
+    ? currentValue.replace(' [output]', '')
+    : currentValue
+
+  return {
+    id: `missing-${currentValue}`,
+    mediaSrc: getMediaUrl(strippedValue, isOutput ? 'output' : 'input'),
+    name: currentValue,
+    label: getDisplayLabel(currentValue),
+    metadata: ''
+  }
+})
+
 const allItems = computed<DropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
-    return assetData.dropdownItems.value
+    const items = assetData.dropdownItems.value
+    if (missingValueItem.value) {
+      return [missingValueItem.value, ...items]
+    }
+    return items
   }
-  return [...inputItems.value, ...outputItems.value]
+  return [
+    ...(missingValueItem.value ? [missingValueItem.value] : []),
+    ...inputItems.value,
+    ...outputItems.value
+  ]
 })
 
 const dropdownItems = computed<DropdownItem[]>(() => {
@@ -165,7 +224,7 @@ const dropdownItems = computed<DropdownItem[]>(() => {
       return outputItems.value
     case 'all':
     default:
-      return [...inputItems.value, ...outputItems.value]
+      return allItems.value
   }
 })
 
