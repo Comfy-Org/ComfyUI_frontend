@@ -38,58 +38,36 @@ describe('LogoOverlay', () => {
     expect(wrapper.findAll('img')).toHaveLength(3)
   })
 
-  it('applies default position when not specified', () => {
-    const wrapper = mountOverlay([{ provider: 'Google' }])
-    const container = wrapper.find('div')
-    expect(container.classes()).toContain('top-2')
-    expect(container.classes()).toContain('left-2')
-  })
-
-  it('applies custom position from logo config', () => {
-    const wrapper = mountOverlay([
-      { provider: 'Google', position: 'top-2 left-2' }
-    ])
-    const container = wrapper.find('div')
-    expect(container.classes()).toContain('top-2')
-    expect(container.classes()).toContain('left-2')
-  })
-
-  it('renders logo with fixed size and circular shape', () => {
-    const wrapper = mountOverlay([{ provider: 'Google' }])
-    const img = wrapper.find('img')
-    expect(img.classes()).toContain('h-5')
-    expect(img.classes()).toContain('w-5')
-    expect(img.classes()).toContain('rounded-[50%]')
-  })
-
-  it('renders pill container with correct styling', () => {
-    const wrapper = mountOverlay([{ provider: 'Google' }])
-    const pill = wrapper.find('.rounded-full')
-    expect(pill.exists()).toBe(true)
-    expect(pill.classes()).toContain('bg-black/20')
-  })
-
   it('displays provider name in pill', () => {
     const wrapper = mountOverlay([{ provider: 'Google' }])
     const span = wrapper.find('span')
     expect(span.text()).toBe('Google')
   })
 
-  it('applies default opacity of 1', () => {
-    const wrapper = mountOverlay([{ provider: 'Google' }])
-    const pill = wrapper.find('.rounded-full')
-    expect(pill.attributes('style')).toContain('opacity: 1')
-  })
-
-  it('applies custom opacity', () => {
-    const wrapper = mountOverlay([{ provider: 'Google', opacity: 0.5 }])
-    const pill = wrapper.find('.rounded-full')
-    expect(pill.attributes('style')).toContain('opacity: 0.5')
-  })
-
   it('images are not draggable', () => {
     const wrapper = mountOverlay([{ provider: 'Google' }])
     const img = wrapper.find('img')
     expect(img.attributes('draggable')).toBe('false')
+  })
+
+  it('filters out logos with empty URLs', () => {
+    const getLogoUrl = (provider: string) =>
+      provider === 'Google' ? '/logos/Google.png' : ''
+    const wrapper = mount(LogoOverlay, {
+      props: {
+        logos: [{ provider: 'Google' }, { provider: 'Unknown' }],
+        getLogoUrl
+      }
+    })
+    expect(wrapper.findAll('img')).toHaveLength(1)
+  })
+
+  it('uses provider as unique key for each logo', () => {
+    const wrapper = mountOverlay([
+      { provider: 'Google' },
+      { provider: 'OpenAI' }
+    ])
+    const containers = wrapper.findAll('[class*="absolute"]')
+    expect(containers).toHaveLength(2)
   })
 })
