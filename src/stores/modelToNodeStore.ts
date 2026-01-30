@@ -9,7 +9,7 @@ export class ModelNodeProvider {
   /** The node definition to use for this model. */
   public nodeDef: ComfyNodeDefImpl
 
-  /** The node input key for where to inside the model name. */
+  /** The node input key for where to insert the model name. */
   public key: string
 
   constructor(nodeDef: ComfyNodeDefImpl, key: string) {
@@ -74,22 +74,50 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   }
 
   /**
+   * Find providers for modelType with hierarchical fallback.
+   * Tries exact match first, then falls back to top-level segment (e.g., "parent/child" → "parent").
+   * Note: Only falls back one level; "a/b/c" tries "a/b/c" then "a", not "a/b".
+   */
+  function findProvidersWithFallback(
+    modelType: string
+  ): ModelNodeProvider[] | undefined {
+    if (!modelType || typeof modelType !== 'string') {
+      return undefined
+    }
+
+    const exactMatch = modelToNodeMap.value[modelType]
+    if (exactMatch && exactMatch.length > 0) return exactMatch
+
+    const topLevel = modelType.split('/')[0]
+    if (topLevel === modelType) return undefined
+
+    const fallback = modelToNodeMap.value[topLevel]
+
+    if (fallback && fallback.length > 0) return fallback
+
+    return undefined
+  }
+
+  /**
    * Get the node provider for the given model type name.
+   * Supports hierarchical lookups: if "parent/child" has no match, falls back to "parent".
    * @param modelType The name of the model type to get the node provider for.
    * @returns The node provider for the given model type name.
    */
   function getNodeProvider(modelType: string): ModelNodeProvider | undefined {
     registerDefaults()
-    return modelToNodeMap.value[modelType]?.[0]
+    return findProvidersWithFallback(modelType)?.[0]
   }
+
   /**
    * Get the list of all valid node providers for the given model type name.
+   * Supports hierarchical lookups: if "parent/child" has no match, falls back to "parent".
    * @param modelType The name of the model type to get the node providers for.
    * @returns The list of all valid node providers for the given model type name.
    */
   function getAllNodeProviders(modelType: string): ModelNodeProvider[] {
     registerDefaults()
-    return modelToNodeMap.value[modelType] ?? []
+    return findProvidersWithFallback(modelType) ?? []
   }
   /**
    * Register a node provider for the given model type name.
@@ -153,6 +181,17 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
       'ADE_AnimateDiffLoRALoader',
       'name'
     )
+
+    // Chatterbox TTS nodes: empty key means the node auto-loads models without
+    // a widget selector (createModelNodeFromAsset skips widget assignment)
+    quickRegister('chatterbox/chatterbox', 'FL_ChatterboxTTS', '')
+    quickRegister('chatterbox/chatterbox_turbo', 'FL_ChatterboxTurboTTS', '')
+    quickRegister(
+      'chatterbox/chatterbox_multilingual',
+      'FL_ChatterboxMultilingualTTS',
+      ''
+    )
+    quickRegister('chatterbox/chatterbox_vc', 'FL_ChatterboxVC', '')
   }
 
   return {

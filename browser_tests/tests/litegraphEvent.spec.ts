@@ -14,7 +14,7 @@ function listenForEvent(): Promise<Event> {
   })
 }
 
-test.describe('Canvas Event', () => {
+test.describe('Canvas Event', { tag: '@canvas' }, () => {
   test('Emit litegraph:canvas empty-release', async ({ comfyPage }) => {
     const eventPromise = comfyPage.page.evaluate(listenForEvent)
     const disconnectPromise = comfyPage.disconnectEdge()

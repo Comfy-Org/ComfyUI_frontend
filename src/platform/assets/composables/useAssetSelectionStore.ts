@@ -22,14 +22,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
   }
 
   function setSelection(assetIds: string[]) {
-    // Only update if there's an actual change to prevent unnecessary re-renders
-    const newSet = new Set(assetIds)
-    if (
-      newSet.size !== selectedAssetIds.value.size ||
-      !assetIds.every((id) => selectedAssetIds.value.has(id))
-    ) {
-      selectedAssetIds.value = newSet
-    }
+    selectedAssetIds.value = new Set(assetIds)
   }
 
   function clearSelection() {
