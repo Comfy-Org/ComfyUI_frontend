@@ -183,7 +183,7 @@ describe('useSubgraphNavigationStore', () => {
     expect(navigationStore.exportState()).toEqual(['subgraph-1'])
 
     // Clear canvas.subgraph and trigger update (simulating navigating back to root)
-    app.canvas.subgraph = null!
+    app.canvas.subgraph = undefined
     workflowStore.updateActiveGraph()
 
     // Wait for Vue's reactivity to process the change
