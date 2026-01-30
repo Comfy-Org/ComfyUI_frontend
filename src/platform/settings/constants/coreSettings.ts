@@ -1178,7 +1178,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Replaces the floating job queue panel with an equivalent job queue embedded in the Assets side panel. You can disable this to return to the floating panel layout.',
-    defaultValue: true,
+    defaultValue: false,
     experimental: true
   },
   {
