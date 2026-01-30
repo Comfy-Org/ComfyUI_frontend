@@ -549,6 +549,12 @@ const showAdvancedState = customRef((track, trigger) => {
   }
 })
 
+const hasVideoInput = computed(() => {
+  return (
+    lgraphNode.value?.inputs?.some((input) => input.type === 'VIDEO') ?? false
+  )
+})
+
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
@@ -558,13 +564,9 @@ const nodeMedia = computed(() => {
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
 
-  // Determine media type from previewMediaType or fallback to input slot types
-  // Note: Despite the field name "images", videos are also included in outputs
-  // TODO: fix the backend to return videos using the videos key instead of the images key
-  const hasVideoInput = node.inputs?.some((input) => input.type === 'VIDEO')
   const type =
     node.previewMediaType === 'video' ||
-    (!node.previewMediaType && hasVideoInput)
+    (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
       : 'image'
 
