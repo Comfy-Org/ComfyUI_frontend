@@ -6,7 +6,7 @@ import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
-  OptionId,
+  FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
@@ -26,13 +26,18 @@ defineProps<{
   updateKey?: MaybeRefOrGetter<unknown>
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
+  showBaseModelFilter?: boolean
+  baseModelOptions?: FilterOption[]
 }>()
 
 const layoutMode = defineModel<LayoutMode>('layoutMode')
 const searchQuery = defineModel<string>('searchQuery')
-const sortSelected = defineModel<OptionId>('sortSelected')
+const sortSelected = defineModel<string>('sortSelected')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
   default: 'all'
+})
+const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
+  default: new Set()
 })
 
 const actionButtonStyle = cn(
@@ -80,6 +85,26 @@ function closeOwnershipPopover() {
 function handleOwnershipSelected(item: OwnershipFilterOption) {
   ownershipSelected.value = item.id
   closeOwnershipPopover()
+}
+
+const baseModelPopoverRef = useTemplateRef('baseModelPopoverRef')
+const baseModelTriggerRef = useTemplateRef('baseModelTriggerRef')
+const isBaseModelPopoverOpen = ref(false)
+
+function toggleBaseModelPopover(event: Event) {
+  if (!baseModelPopoverRef.value || !baseModelTriggerRef.value) return
+  isBaseModelPopoverOpen.value = !isBaseModelPopoverOpen.value
+  baseModelPopoverRef.value.toggle(event, baseModelTriggerRef.value)
+}
+
+function toggleBaseModelSelection(item: FilterOption) {
+  const current = baseModelSelected.value
+  if (current.has(item.id)) {
+    current.delete(item.id)
+  } else {
+    current.add(item.id)
+  }
+  baseModelSelected.value = new Set(current)
 }
 </script>
 
@@ -223,6 +248,73 @@ function handleOwnershipSelected(item: OwnershipFilterOption) {
           <span>{{ item.name }}</span>
           <i
             v-if="ownershipSelected === item.id"
+            class="icon-[lucide--check] size-4"
+          />
+        </button>
+      </div>
+    </Popover>
+
+    <button
+      v-if="showBaseModelFilter && baseModelOptions?.length"
+      ref="baseModelTriggerRef"
+      :aria-label="t('assetBrowser.baseModel')"
+      :title="t('assetBrowser.baseModel')"
+      :class="
+        cn(
+          resetInputStyle,
+          actionButtonStyle,
+          'relative w-8 flex justify-center items-center cursor-pointer',
+          'hover:outline-component-node-widget-background-highlighted',
+          'active:!scale-95'
+        )
+      "
+      @click="toggleBaseModelPopover"
+    >
+      <div
+        v-if="baseModelSelected.size > 0"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+      />
+      <i class="icon-[comfy--ai-model] size-4" />
+    </button>
+    <Popover
+      ref="baseModelPopoverRef"
+      :dismissable="true"
+      :close-on-escape="true"
+      unstyled
+      :pt="{
+        root: {
+          class: 'absolute z-50'
+        },
+        content: {
+          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
+        }
+      }"
+      @hide="isBaseModelPopoverOpen = false"
+    >
+      <div
+        :class="
+          cn(
+            'flex flex-col gap-2 p-2 min-w-32',
+            'bg-component-node-background',
+            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
+          )
+        "
+      >
+        <button
+          v-for="item of baseModelOptions"
+          :key="item.id"
+          :class="
+            cn(
+              resetInputStyle,
+              'flex justify-between items-center h-6 cursor-pointer',
+              'hover:!text-blue-500'
+            )
+          "
+          @click="toggleBaseModelSelection(item)"
+        >
+          <span>{{ item.name }}</span>
+          <i
+            v-if="baseModelSelected.has(item.id)"
             class="icon-[lucide--check] size-4"
           />
         </button>

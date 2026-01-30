@@ -1,6 +1,5 @@
 import type { ComputedRef, InjectionKey } from 'vue'
 
-import type { OptionId } from '@/platform/assets/types/filterTypes'
 import type { AssetKind } from '@/types/widgetTypes'
 
 /**
@@ -8,7 +7,7 @@ import type { AssetKind } from '@/types/widgetTypes'
  * Both AssetItem (from cloud API) and local file items satisfy this contract.
  */
 export interface FormDropdownItem {
-  id: OptionId
+  id: string
   /** Display name shown in the dropdown */
   name: string
   /** Original/alternate label (e.g., original filename) */
@@ -17,9 +16,11 @@ export interface FormDropdownItem {
   preview_url?: string
   /** Whether the item is immutable (public model) - used for ownership filtering */
   is_immutable?: boolean
+  /** Base models this item is compatible with - used for base model filtering */
+  base_models?: string[]
 }
 
-export interface SortOption<TId extends OptionId = OptionId> {
+export interface SortOption<TId extends string = string> {
   id: TId
   name: string
   sorter: (ctx: { items: readonly FormDropdownItem[] }) => FormDropdownItem[]

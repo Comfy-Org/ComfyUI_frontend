@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { OptionId } from '@/platform/assets/types/filterTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 import { WidgetInputBaseClass } from '../../layout'
@@ -11,7 +10,7 @@ interface Props {
   isOpen?: boolean
   placeholder?: string
   items: FormDropdownItem[]
-  selected: Set<OptionId>
+  selected: Set<string>
   maxSelectable: number
   uploadable: boolean
   disabled: boolean

@@ -7,7 +7,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
   FilterOption,
-  OptionId,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
@@ -33,8 +32,10 @@ interface Props {
   sortOptions?: SortOption[]
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
+  showBaseModelFilter?: boolean
+  baseModelOptions?: FilterOption[]
   isSelected?: (
-    selected: Set<OptionId>,
+    selected: Set<string>,
     item: FormDropdownItem,
     index: number
   ) => boolean
@@ -56,11 +57,11 @@ const props = withDefaults(defineProps<Props>(), {
   searcher: defaultSearcher
 })
 
-const selected = defineModel<Set<OptionId>>('selected', {
+const selected = defineModel<Set<string>>('selected', {
   default: new Set()
 })
-const filterSelected = defineModel<OptionId>('filterSelected', { default: '' })
-const sortSelected = defineModel<OptionId>('sortSelected', {
+const filterSelected = defineModel<string>('filterSelected', { default: '' })
+const sortSelected = defineModel<string>('sortSelected', {
   default: 'default'
 })
 const layoutMode = defineModel<LayoutMode>('layoutMode', {
@@ -70,6 +71,9 @@ const files = defineModel<File[]>('files', { default: [] })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
   default: 'all'
+})
+const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
+  default: new Set()
 })
 
 const toastStore = useToastStore()
@@ -210,10 +214,13 @@ async function customSearcher(
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
         v-model:ownership-selected="ownershipSelected"
+        v-model:base-model-selected="baseModelSelected"
         :filter-options
         :sort-options
         :show-ownership-filter
         :ownership-options
+        :show-base-model-filter
+        :base-model-options
         :disabled
         :searcher="customSearcher"
         :items="sortedItems"

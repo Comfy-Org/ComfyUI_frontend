@@ -5,7 +5,6 @@ import { cn } from '@/utils/tailwindUtil'
 
 import type {
   FilterOption,
-  OptionId,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
@@ -27,6 +26,8 @@ interface Props {
   updateKey?: MaybeRefOrGetter<unknown>
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
+  showBaseModelFilter?: boolean
+  baseModelOptions?: FilterOption[]
 }
 
 defineProps<Props>()
@@ -34,11 +35,12 @@ const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
 }>()
 
-const filterSelected = defineModel<OptionId>('filterSelected')
+const filterSelected = defineModel<string>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
-const sortSelected = defineModel<OptionId>('sortSelected')
+const sortSelected = defineModel<string>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
+const baseModelSelected = defineModel<Set<string>>('baseModelSelected')
 </script>
 
 <template>
@@ -55,11 +57,14 @@ const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
       v-model:sort-selected="sortSelected"
       v-model:search-query="searchQuery"
       v-model:ownership-selected="ownershipSelected"
+      v-model:base-model-selected="baseModelSelected"
       :sort-options
       :searcher
       :update-key
       :show-ownership-filter
       :ownership-options
+      :show-base-model-filter
+      :base-model-options
     />
     <div class="relative flex h-full mt-2 overflow-y-scroll">
       <div
