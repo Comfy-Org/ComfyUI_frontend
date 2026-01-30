@@ -22,7 +22,11 @@ const EXPECTED_DEFAULT_TYPES = [
   'audio_encoders',
   'model_patches',
   'animatediff_models',
-  'animatediff_motion_lora'
+  'animatediff_motion_lora',
+  'chatterbox/chatterbox',
+  'chatterbox/chatterbox_turbo',
+  'chatterbox/chatterbox_multilingual',
+  'chatterbox/chatterbox_vc'
 ] as const
 
 type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
@@ -60,7 +64,11 @@ const MOCK_NODE_NAMES = [
   'AudioEncoderLoader',
   'ModelPatchLoader',
   'ADE_LoadAnimateDiffModel',
-  'ADE_AnimateDiffLoRALoader'
+  'ADE_AnimateDiffLoRALoader',
+  'FL_ChatterboxTTS',
+  'FL_ChatterboxTurboTTS',
+  'FL_ChatterboxMultilingualTTS',
+  'FL_ChatterboxVC'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -134,6 +142,36 @@ describe('useModelToNodeStore', () => {
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
       expect(provider).toBeDefined()
     })
+
+    it('should fallback to top-level folder for hierarchical model types', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const provider = modelToNodeStore.getNodeProvider('checkpoints/subfolder')
+      expect(provider).toBeDefined()
+      expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
+    })
+
+    it('should return undefined for hierarchical type with unregistered top-level', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(
+        modelToNodeStore.getNodeProvider('UnknownType/subfolder')
+      ).toBeUndefined()
+    })
+
+    it('should return provider for chatterbox nodes with empty key', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const provider = modelToNodeStore.getNodeProvider(
+        'chatterbox/chatterbox_vc'
+      )
+      expect(provider).toBeDefined()
+      expect(provider?.nodeDef?.name).toBe('FL_ChatterboxVC')
+      expect(provider?.key).toBe('')
+    })
   })
 
   describe('getAllNodeProviders', () => {
@@ -182,6 +220,17 @@ describe('useModelToNodeStore', () => {
 
       const providers = modelToNodeStore.getAllNodeProviders('checkpoints')
       expect(providers.length).toBeGreaterThan(0)
+    })
+
+    it('should fallback to top-level folder for hierarchical model types', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      const providers = modelToNodeStore.getAllNodeProviders(
+        'checkpoints/subfolder'
+      )
+      expect(providers).toHaveLength(2)
+      expect(providers[0].nodeDef.name).toBe('CheckpointLoaderSimple')
     })
   })
 
@@ -489,6 +538,17 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       expect(modelToNodeStore.getNodeProvider('')).toBeUndefined()
       expect(modelToNodeStore.getAllNodeProviders('')).toEqual([])
+    })
+
+    it('should handle invalid input types gracefully', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(modelToNodeStore.getNodeProvider(null as any)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(undefined as any)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(123 as any)).toBeUndefined()
+      expect(modelToNodeStore.getAllNodeProviders(null as any)).toEqual([])
+      expect(modelToNodeStore.getAllNodeProviders(undefined as any)).toEqual([])
     })
   })
 })
