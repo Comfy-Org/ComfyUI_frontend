@@ -45,19 +45,13 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <div class="relative">
-          <InputText
-            v-model="url"
-            autofocus
-            :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
-            class="w-full border-0 bg-secondary-background p-4 pr-10"
-            data-attr="upload-model-step1-url-input"
-          />
-          <i
-            v-if="isValidUrl"
-            class="icon-[lucide--circle-check-big] absolute top-1/2 right-3 size-5 -translate-y-1/2 text-green-500"
-          />
-        </div>
+        <InputText
+          v-model="url"
+          autofocus
+          :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
+          class="w-full border-0 bg-secondary-background p-4"
+          data-attr="upload-model-step1-url-input"
+        />
         <p v-if="error" class="text-sm text-error">
           {{ error }}
         </p>
@@ -84,9 +78,6 @@ import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
-import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
-import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 
 const { flags } = useFeatureFlags()
 
@@ -102,14 +93,6 @@ const emit = defineEmits<{
 const url = computed({
   get: () => props.modelValue,
   set: (value: string) => emit('update:modelValue', value)
-})
-
-const importSources = [civitaiImportSource, huggingfaceImportSource]
-
-const isValidUrl = computed(() => {
-  const trimmedUrl = url.value.trim()
-  if (!trimmedUrl) return false
-  return importSources.some((source) => validateSourceUrl(trimmedUrl, source))
 })
 
 const civitaiIcon = '/assets/images/civitai.svg'
