@@ -53,11 +53,7 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
 
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
-const IS_NIGHTLY =
-  process.env.IS_NIGHTLY === 'true' ||
-  (process.env.IS_NIGHTLY !== 'false' &&
-    process.env.CI === 'true' &&
-    process.env.GITHUB_REF_NAME === 'main')
+const IS_NIGHTLY = process.env.IS_NIGHTLY === 'true'
 
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
