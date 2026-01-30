@@ -10,8 +10,17 @@ import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
+  IWidgetAssetOptions,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
+import {
+  assetFilenameSchema,
+  assetItemSchema
+} from '@/platform/assets/schemas/assetSchema'
+import { assetService } from '@/platform/assets/services/assetService'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import { isCloud } from '@/platform/distribution/types'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
@@ -19,10 +28,10 @@ import {
   addValueControlWidgets,
   isValidWidgetType
 } from '@/scripts/widgets'
+import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
@@ -228,6 +237,20 @@ export class PrimitiveNode extends LGraphNode {
     // Store current size as addWidget resizes the node
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
+
+    // Cloud: Use asset widget for model-eligible inputs
+    if (isCloud && type === 'COMBO') {
+      const isEligible = assetService.isAssetBrowserEligible(
+        node.comfyClass,
+        widgetName
+      )
+      if (isEligible) {
+        widget = this.#createAssetWidget(node, widgetName, inputData)
+        this.#finalizeWidget(widget, oldWidth, oldHeight, recreating)
+        return
+      }
+    }
+
     if (isValidWidgetType(type)) {
       widget = (ComfyWidgets[type](this, 'value', inputData, app) || {}).widget
     } else {
@@ -277,20 +300,84 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
-    // When our value changes, update other widgets to reflect our changes
-    // e.g. so LoadImage shows correct image
+    this.#finalizeWidget(widget, oldWidth, oldHeight, recreating)
+  }
+
+  #createAssetWidget(
+    targetNode: LGraphNode,
+    widgetName: string,
+    inputData: InputSpec
+  ): IBaseWidget {
+    const defaultValue = inputData[1]?.default as string | undefined
+    const assetBrowserDialog = useAssetBrowserDialog()
+
+    const openModal = async (widget: IBaseWidget) => {
+      await assetBrowserDialog.show({
+        nodeType: targetNode.comfyClass ?? '',
+        inputName: widgetName,
+        currentValue: widget.value as string,
+        onAssetSelected: (asset) => {
+          const validatedAsset = assetItemSchema.safeParse(asset)
+          if (!validatedAsset.success) {
+            console.error('Invalid asset item:', validatedAsset.error.errors)
+            return
+          }
+
+          const filename = getAssetFilename(validatedAsset.data)
+          const validatedFilename = assetFilenameSchema.safeParse(filename)
+          if (!validatedFilename.success) {
+            console.error(
+              'Invalid asset filename:',
+              validatedFilename.error.errors
+            )
+            return
+          }
+
+          const oldValue = widget.value
+          widget.value = validatedFilename.data
+          widget.callback?.(
+            widget.value,
+            app.canvas,
+            this,
+            app.canvas.graph_mouse,
+            {} as CanvasPointerEvent
+          )
+          this.onWidgetChanged?.(
+            widget.name,
+            validatedFilename.data,
+            oldValue,
+            widget
+          )
+        }
+      })
+    }
+
+    const options: IWidgetAssetOptions = { openModal }
+    return this.addWidget(
+      'asset',
+      'value',
+      defaultValue ?? '',
+      () => {},
+      options
+    )
+  }
+
+  #finalizeWidget(
+    widget: IBaseWidget,
+    oldWidth: number,
+    oldHeight: number,
+    recreating: boolean
+  ) {
     widget.callback = useChainCallback(widget.callback, () => {
       this.applyToGraph()
     })
 
-    // Use the biggest dimensions in case the widgets caused the node to grow
     this.setSize([
       Math.max(this.size[0], oldWidth),
       Math.max(this.size[1], oldHeight)
     ])
 
     if (!recreating) {
-      // Grow our node more if required
       const sz = this.computeSize()
       if (this.size[0] < sz[0]) {
         this.size[0] = sz[0]
