@@ -5,7 +5,6 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
 import type {
   FilterOption,
   OptionId
@@ -14,10 +13,10 @@ import type {
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import { defaultSearcher, getDefaultSortOptions } from './shared'
-import type { LayoutMode, SortOption } from './types'
+import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: AssetDropdownItem[]
+  items: FormDropdownItem[]
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -32,14 +31,14 @@ interface Props {
   sortOptions?: SortOption[]
   isSelected?: (
     selected: Set<OptionId>,
-    item: AssetDropdownItem,
+    item: FormDropdownItem,
     index: number
   ) => boolean
   searcher?: (
     query: string,
-    items: AssetDropdownItem[],
+    items: FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<AssetDropdownItem[]>
+  ) => Promise<FormDropdownItem[]>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -79,7 +78,7 @@ const maxSelectable = computed(() => {
 
 const itemsKey = computed(() => props.items.map((item) => item.id).join('|'))
 
-const filteredItems = ref<AssetDropdownItem[]>([])
+const filteredItems = ref<FormDropdownItem[]>([])
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = props.sortOptions.find(
@@ -98,7 +97,7 @@ const sortedItems = computed(() => {
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
 
-function internalIsSelected(item: AssetDropdownItem, index: number): boolean {
+function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return props.isSelected?.(selected.value, item, index) ?? false
 }
 
@@ -127,7 +126,7 @@ function handleFileChange(event: Event) {
   input.value = ''
 }
 
-function handleSelection(item: AssetDropdownItem, index: number) {
+function handleSelection(item: FormDropdownItem, index: number) {
   if (props.disabled) return
   const sel = selected.value
   if (internalIsSelected(item, index)) {

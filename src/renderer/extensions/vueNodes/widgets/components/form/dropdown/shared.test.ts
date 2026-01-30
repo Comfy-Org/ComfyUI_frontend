@@ -1,20 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
-import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
-
 import { defaultSearcher, getDefaultSortOptions } from './shared'
+import type { FormDropdownItem } from './types'
 
-function createItem(name: string, label?: string): AssetDropdownItem {
+function createItem(name: string, label?: string): FormDropdownItem {
   return {
     id: name,
-    previewUrl: '',
+    preview_url: '',
     name,
     label
   }
 }
 
 describe('defaultSearcher', () => {
-  const items: AssetDropdownItem[] = [
+  const items: FormDropdownItem[] = [
     createItem('apple.png'),
     createItem('banana.jpg'),
     createItem('cherry.gif')

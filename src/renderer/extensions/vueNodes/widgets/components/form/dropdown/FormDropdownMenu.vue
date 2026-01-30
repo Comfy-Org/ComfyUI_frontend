@@ -3,7 +3,6 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
-import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
 import type {
   FilterOption,
   OptionId
@@ -12,11 +11,11 @@ import type {
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type { LayoutMode, SortOption } from './types'
+import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: AssetDropdownItem[]
-  isSelected: (item: AssetDropdownItem, index: number) => boolean
+  items: FormDropdownItem[]
+  isSelected: (item: FormDropdownItem, index: number) => boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
   searcher?: (
@@ -28,7 +27,7 @@ interface Props {
 
 defineProps<Props>()
 const emit = defineEmits<{
-  (e: 'item-click', item: AssetDropdownItem, index: number): void
+  (e: 'item-click', item: FormDropdownItem, index: number): void
 }>()
 
 // Define models for two-way binding
@@ -90,7 +89,7 @@ const searchQuery = defineModel<string>('searchQuery')
           :key="item.id"
           :index="index"
           :selected="isSelected(item, index)"
-          :preview-url="item.previewUrl"
+          :preview-url="item.preview_url ?? ''"
           :name="item.name"
           :label="item.label"
           :layout="layoutMode"

@@ -2,8 +2,6 @@ import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
-import { toAssetDropdownItem } from '@/platform/assets/utils/assetDropdownUtils'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -48,10 +46,6 @@ export function useAssetWidgetData(
       return resolvedType ? (assetsStore.getError(resolvedType) ?? null) : null
     })
 
-    const dropdownItems = computed<AssetDropdownItem[]>(() => {
-      return (assets.value ?? []).map(toAssetDropdownItem)
-    })
-
     watch(
       () => toValue(nodeType),
       async (currentNodeType) => {
@@ -72,7 +66,6 @@ export function useAssetWidgetData(
     return {
       category,
       assets,
-      dropdownItems,
       isLoading,
       error
     }
@@ -80,8 +73,7 @@ export function useAssetWidgetData(
 
   return {
     category: computed(() => undefined),
-    assets: computed(() => []),
-    dropdownItems: computed(() => []),
+    assets: computed<AssetItem[]>(() => []),
     isLoading: computed(() => false),
     error: computed(() => null)
   }

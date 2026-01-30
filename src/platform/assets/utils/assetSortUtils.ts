@@ -7,7 +7,7 @@ import type { AssetSortOption } from '../types/filterTypes'
 
 /**
  * Minimal interface for sortable items
- * Works with both AssetItem and AssetDropdownItem
+ * Works with both AssetItem and FormDropdownItem
  */
 export interface SortableItem {
   name: string
