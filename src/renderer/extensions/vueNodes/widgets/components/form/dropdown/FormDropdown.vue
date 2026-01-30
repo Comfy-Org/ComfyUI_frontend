@@ -129,7 +129,6 @@ function handleFileChange(event: Event) {
   if (input.files) {
     files.value = Array.from(input.files)
   }
-  // Clear the input value to allow re-selecting the same file
   input.value = ''
 }
 

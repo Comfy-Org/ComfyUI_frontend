@@ -51,7 +51,6 @@ const theButtonStyle = computed(() =>
       })
     "
   >
-    <!-- Dropdown -->
     <button
       :class="
         cn(
@@ -83,7 +82,6 @@ const theButtonStyle = computed(() =>
         "
       />
     </button>
-    <!-- Open File -->
     <label
       v-if="uploadable"
       :class="

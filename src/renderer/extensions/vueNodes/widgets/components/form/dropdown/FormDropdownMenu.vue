@@ -34,27 +34,22 @@ const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
 }>()
 
-// Define models for two-way binding
 const filterSelected = defineModel<OptionId>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
 const sortSelected = defineModel<OptionId>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
-
-// Handle item selection
 </script>
 
 <template>
   <div
     class="flex max-h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline outline-offset-[-1px] outline-node-component-border"
   >
-    <!-- Filter -->
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
       v-model:filter-selected="filterSelected"
       :filter-options="filterOptions"
     />
-    <!-- Actions -->
     <FormDropdownMenuActions
       v-model:layout-mode="layoutMode"
       v-model:sort-selected="sortSelected"
@@ -66,7 +61,6 @@ const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
       :show-ownership-filter="showOwnershipFilter"
       :ownership-options="ownershipOptions"
     />
-    <!-- List -->
     <div class="relative flex h-full mt-2 overflow-y-scroll">
       <div
         :class="
@@ -91,7 +85,6 @@ const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
             class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
           />
         </div>
-        <!-- Item -->
         <FormDropdownMenuItem
           v-for="(item, index) in items"
           :key="item.id"

@@ -344,7 +344,6 @@ function updateSelectedItems(selectedItems: Set<OptionId>) {
   modelValue.value = name
 }
 
-// Upload file function (copied from useNodeImageUpload.ts)
 const uploadFile = async (
   file: File,
   isPasted: boolean = false,
@@ -376,7 +375,6 @@ const uploadFile = async (
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
 }
 
-// Handle multiple file uploads
 const uploadFiles = async (files: File[]): Promise<string[]> => {
   const folder = props.uploadFolder ?? 'input'
   const uploadPromises = files.map((file) =>

@@ -17,7 +17,6 @@ const filterSelected = defineModel<OptionId>('filterSelected')
 
 const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 
-// TODO: Add real check to differentiate between the Model dialogs and Load Image
 const singleFilterOption = computed(() => filterOptions.length === 1)
 </script>
 

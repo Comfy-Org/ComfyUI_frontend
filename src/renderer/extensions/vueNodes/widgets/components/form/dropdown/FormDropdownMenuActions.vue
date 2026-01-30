@@ -117,7 +117,6 @@ function handleOwnershipSelected(item: OwnershipFilterOption) {
       />
       <i class="icon-[lucide--arrow-up-down] size-4" />
     </button>
-    <!-- Sort Popover -->
     <Popover
       ref="sortPopoverRef"
       :dismissable="true"
@@ -163,7 +162,6 @@ function handleOwnershipSelected(item: OwnershipFilterOption) {
       </div>
     </Popover>
 
-    <!-- Ownership Filter -->
     <button
       v-if="showOwnershipFilter && ownershipOptions?.length"
       ref="ownershipTriggerRef"
@@ -185,7 +183,6 @@ function handleOwnershipSelected(item: OwnershipFilterOption) {
       />
       <i class="icon-[lucide--user] size-4" />
     </button>
-    <!-- Ownership Popover -->
     <Popover
       ref="ownershipPopoverRef"
       :dismissable="true"
@@ -231,7 +228,6 @@ function handleOwnershipSelected(item: OwnershipFilterOption) {
       </div>
     </Popover>
 
-    <!-- Layout Switch -->
     <div
       :class="
         cn(
