@@ -88,7 +88,7 @@ function handleOwnershipSelected(item: OwnershipFilterOption) {
     <FormSearchInput
       v-model="searchQuery"
       :searcher
-      :update-key="updateKey"
+      :update-key
       :class="
         cn(
           actionButtonStyle,

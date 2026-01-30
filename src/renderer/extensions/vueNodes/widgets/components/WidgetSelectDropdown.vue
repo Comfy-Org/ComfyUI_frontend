@@ -439,11 +439,11 @@ function getMediaUrl(
       :items="dropdownItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
-      :uploadable="uploadable"
+      :uploadable
       :accept="acceptTypes"
-      :filter-options="filterOptions"
-      :show-ownership-filter="showOwnershipFilter"
-      :ownership-options="ownershipOptions"
+      :filter-options
+      :show-ownership-filter
+      :ownership-options
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"

@@ -176,15 +176,15 @@ async function customSearcher(
 <template>
   <div ref="triggerRef">
     <FormDropdownInput
-      :files="files"
-      :is-open="isOpen"
-      :placeholder="placeholder"
-      :items="items"
-      :max-selectable="maxSelectable"
-      :selected="selected"
-      :uploadable="uploadable"
-      :disabled="disabled"
-      :accept="accept"
+      :files
+      :is-open
+      :placeholder
+      :items
+      :max-selectable
+      :selected
+      :uploadable
+      :disabled
+      :accept
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
@@ -209,15 +209,15 @@ async function customSearcher(
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
         v-model:ownership-selected="ownershipSelected"
-        :filter-options="filterOptions"
-        :sort-options="sortOptions"
-        :show-ownership-filter="showOwnershipFilter"
-        :ownership-options="ownershipOptions"
-        :disabled="disabled"
+        :filter-options
+        :sort-options
+        :show-ownership-filter
+        :ownership-options
+        :disabled
         :searcher="customSearcher"
         :items="sortedItems"
         :is-selected="internalIsSelected"
-        :max-selectable="maxSelectable"
+        :max-selectable
         :update-key="itemsKey"
         @close="closeDropdown"
         @item-click="handleSelection"

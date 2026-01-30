@@ -48,18 +48,18 @@ const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
       v-model:filter-selected="filterSelected"
-      :filter-options="filterOptions"
+      :filter-options
     />
     <FormDropdownMenuActions
       v-model:layout-mode="layoutMode"
       v-model:sort-selected="sortSelected"
       v-model:search-query="searchQuery"
       v-model:ownership-selected="ownershipSelected"
-      :sort-options="sortOptions"
+      :sort-options
       :searcher
-      :update-key="updateKey"
-      :show-ownership-filter="showOwnershipFilter"
-      :ownership-options="ownershipOptions"
+      :update-key
+      :show-ownership-filter
+      :ownership-options
     />
     <div class="relative flex h-full mt-2 overflow-y-scroll">
       <div
