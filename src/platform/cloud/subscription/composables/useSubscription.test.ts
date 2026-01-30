@@ -94,7 +94,9 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: vi.fn(() => ({
     getFirebaseAuthHeader: mockGetAuthHeader,
-    userId: mockUserId.value
+    get userId() {
+      return mockUserId.value
+    }
   })),
   FirebaseAuthStoreError: class extends Error {}
 }))
