@@ -7,7 +7,9 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
   FilterOption,
-  OptionId
+  OptionId,
+  OwnershipFilterOption,
+  OwnershipOption
 } from '@/platform/assets/types/filterTypes'
 
 import FormDropdownInput from './FormDropdownInput.vue'
@@ -29,6 +31,8 @@ interface Props {
   accept?: string
   filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
+  showOwnershipFilter?: boolean
+  ownershipOptions?: OwnershipFilterOption[]
   isSelected?: (
     selected: Set<OptionId>,
     item: FormDropdownItem,
@@ -64,6 +68,9 @@ const layoutMode = defineModel<LayoutMode>('layoutMode', {
 })
 const files = defineModel<File[]>('files', { default: [] })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
+const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
+  default: 'all'
+})
 
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
@@ -202,8 +209,11 @@ async function customSearcher(
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
         v-model:search-query="searchQuery"
+        v-model:ownership-selected="ownershipSelected"
         :filter-options="filterOptions"
         :sort-options="sortOptions"
+        :show-ownership-filter="showOwnershipFilter"
+        :ownership-options="ownershipOptions"
         :disabled="disabled"
         :searcher="customSearcher"
         :items="sortedItems"

@@ -12,7 +12,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import type {
   FilterOption,
-  OptionId
+  OptionId,
+  OwnershipOption
 } from '@/platform/assets/types/filterTypes'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type {
@@ -86,6 +87,17 @@ const filterOptions = computed<FilterOption[]>(() => {
     { id: 'outputs', name: 'Outputs' }
   ]
 })
+
+const ownershipSelected = ref<OwnershipOption>('all')
+const showOwnershipFilter = computed(() => props.isAssetMode)
+const ownershipOptions = computed(() => [
+  { id: 'all' as const, name: t('assetBrowser.ownershipAll') },
+  { id: 'my-models' as const, name: t('assetBrowser.ownershipMyModels') },
+  {
+    id: 'public-models' as const,
+    name: t('assetBrowser.ownershipPublicModels')
+  }
+])
 
 const selectedSet = ref<Set<OptionId>>(new Set())
 
@@ -209,16 +221,26 @@ const assetItems = computed<FormDropdownItem[]>(() => {
     id: asset.id,
     name: getAssetFilename(asset),
     label: getAssetDisplayName(asset),
-    preview_url: asset.preview_url
+    preview_url: asset.preview_url,
+    is_immutable: asset.is_immutable
   }))
+})
+
+/**
+ * Filters asset items by ownership selection.
+ */
+const ownershipFilteredAssetItems = computed<FormDropdownItem[]>(() => {
+  if (ownershipSelected.value === 'all') return assetItems.value
+  const isPublic = ownershipSelected.value === 'public-models'
+  return assetItems.value.filter((item) => item.is_immutable === isPublic)
 })
 
 const allItems = computed<FormDropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
     if (missingValueItem.value) {
-      return [missingValueItem.value, ...assetItems.value]
+      return [missingValueItem.value, ...ownershipFilteredAssetItems.value]
     }
-    return assetItems.value
+    return ownershipFilteredAssetItems.value
   }
   return [
     ...(missingValueItem.value ? [missingValueItem.value] : []),
@@ -415,12 +437,15 @@ function getMediaUrl(
       v-model:selected="selectedSet"
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
+      v-model:ownership-selected="ownershipSelected"
       :items="dropdownItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
       :uploadable="uploadable"
       :accept="acceptTypes"
       :filter-options="filterOptions"
+      :show-ownership-filter="showOwnershipFilter"
+      :ownership-options="ownershipOptions"
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"

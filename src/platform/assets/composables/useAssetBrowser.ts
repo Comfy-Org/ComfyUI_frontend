@@ -103,6 +103,7 @@ export function useAssetBrowser(
 
   const selectedOwnership = computed<OwnershipOption>(() => {
     if (selectedNavItem.value === 'imported') return 'my-models'
+    if (selectedNavItem.value === 'all') return 'all'
     return filters.value.ownership
   })
 

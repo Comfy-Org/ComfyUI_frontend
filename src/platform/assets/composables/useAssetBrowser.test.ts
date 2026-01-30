@@ -501,19 +501,28 @@ describe('useAssetBrowser', () => {
 
     it('filters by ownership via filter bar - my-models', async () => {
       const assets = [
-        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'my-model.safetensors',
+          is_immutable: false,
+          tags: ['models', 'checkpoints']
+        }),
         createApiAsset({
           name: 'public-model.safetensors',
-          is_immutable: true
+          is_immutable: true,
+          tags: ['models', 'checkpoints']
         }),
         createApiAsset({
           name: 'another-my-model.safetensors',
-          is_immutable: false
+          is_immutable: false,
+          tags: ['models', 'checkpoints']
         })
       ]
 
-      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+      const { selectedNavItem, updateFilters, filteredAssets } =
+        useAssetBrowser(ref(assets))
 
+      // Must select a specific category for ownership filter to apply
+      selectedNavItem.value = 'checkpoints'
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
@@ -530,19 +539,28 @@ describe('useAssetBrowser', () => {
 
     it('filters by ownership via filter bar - public-models', async () => {
       const assets = [
-        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'my-model.safetensors',
+          is_immutable: false,
+          tags: ['models', 'loras']
+        }),
         createApiAsset({
           name: 'public-model.safetensors',
-          is_immutable: true
+          is_immutable: true,
+          tags: ['models', 'loras']
         }),
         createApiAsset({
           name: 'another-public-model.safetensors',
-          is_immutable: true
+          is_immutable: true,
+          tags: ['models', 'loras']
         })
       ]
 
-      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+      const { selectedNavItem, updateFilters, filteredAssets } =
+        useAssetBrowser(ref(assets))
 
+      // Must select a specific category for ownership filter to apply
+      selectedNavItem.value = 'loras'
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
@@ -559,16 +577,23 @@ describe('useAssetBrowser', () => {
 
     it('nav imported selection overrides filter bar ownership', async () => {
       const assets = [
-        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'my-model.safetensors',
+          is_immutable: false,
+          tags: ['models', 'checkpoints']
+        }),
         createApiAsset({
           name: 'public-model.safetensors',
-          is_immutable: true
+          is_immutable: true,
+          tags: ['models', 'checkpoints']
         })
       ]
 
       const { selectedNavItem, updateFilters, filteredAssets } =
         useAssetBrowser(ref(assets))
 
+      // Must select a specific category for ownership filter to apply
+      selectedNavItem.value = 'checkpoints'
       // Set filter bar to public-models
       updateFilters({
         sortBy: 'name-asc',

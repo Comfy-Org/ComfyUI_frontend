@@ -5,7 +5,9 @@ import { cn } from '@/utils/tailwindUtil'
 
 import type {
   FilterOption,
-  OptionId
+  OptionId,
+  OwnershipFilterOption,
+  OwnershipOption
 } from '@/platform/assets/types/filterTypes'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
@@ -23,6 +25,8 @@ interface Props {
     onCleanup: (cleanupFn: () => void) => void
   ) => Promise<void>
   updateKey?: MaybeRefOrGetter<unknown>
+  showOwnershipFilter?: boolean
+  ownershipOptions?: OwnershipFilterOption[]
 }
 
 defineProps<Props>()
@@ -35,6 +39,7 @@ const filterSelected = defineModel<OptionId>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
 const sortSelected = defineModel<OptionId>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
+const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
 
 // Handle item selection
 </script>
@@ -54,9 +59,12 @@ const searchQuery = defineModel<string>('searchQuery')
       v-model:layout-mode="layoutMode"
       v-model:sort-selected="sortSelected"
       v-model:search-query="searchQuery"
+      v-model:ownership-selected="ownershipSelected"
       :sort-options="sortOptions"
       :searcher
       :update-key="updateKey"
+      :show-ownership-filter="showOwnershipFilter"
+      :ownership-options="ownershipOptions"
     />
     <!-- List -->
     <div class="relative flex h-full mt-2 overflow-y-scroll">

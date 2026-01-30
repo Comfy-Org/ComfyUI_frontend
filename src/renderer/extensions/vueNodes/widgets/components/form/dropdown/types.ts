@@ -15,6 +15,8 @@ export interface FormDropdownItem {
   label?: string
   /** Preview image/video URL */
   preview_url?: string
+  /** Whether the item is immutable (public model) - used for ownership filtering */
+  is_immutable?: boolean
 }
 
 export interface SortOption<TId extends OptionId = OptionId> {

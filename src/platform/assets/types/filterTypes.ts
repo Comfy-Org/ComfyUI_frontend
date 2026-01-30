@@ -26,6 +26,14 @@ export interface FilterOption {
 export type OwnershipOption = 'all' | 'my-models' | 'public-models'
 
 /**
+ * Ownership filter option for dropdowns/selects
+ */
+export interface OwnershipFilterOption {
+  id: OwnershipOption
+  name: string
+}
+
+/**
  * Sort options for asset lists
  * - 'default': Preserve original order (no sorting)
  * - 'recent': Sort by created_at descending
