@@ -2,7 +2,6 @@ import { markRaw } from 'vue'
 
 import { t } from '@/i18n'
 import type { ChangeTracker } from '@/scripts/changeTracker'
-import { useDialogService } from '@/services/dialogService'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -139,6 +138,7 @@ export class ComfyWorkflow extends UserFile {
   }
 
   async promptSave(): Promise<string | null> {
+    const { useDialogService } = await import('@/services/dialogService')
     return await useDialogService().prompt({
       title: t('workflowService.saveWorkflow'),
       message: t('workflowService.enterFilename') + ':',
