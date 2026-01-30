@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
+import type { OptionId } from '@/platform/assets/types/filterTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 import { WidgetInputBaseClass } from '../../layout'
-import type { DropdownItem, SelectedKey } from './types'
 
 interface Props {
   isOpen?: boolean
   placeholder?: string
-  items: DropdownItem[]
-  selected: Set<SelectedKey>
+  items: AssetDropdownItem[]
+  selected: Set<OptionId>
   maxSelectable: number
   uploadable: boolean
   disabled: boolean

@@ -4,10 +4,11 @@ import type { MaybeRefOrGetter } from 'vue'
 import Popover from 'primevue/popover'
 import { ref, useTemplateRef } from 'vue'
 
+import type { OptionId } from '@/platform/assets/types/filterTypes'
 import { cn } from '@/utils/tailwindUtil'
 
 import FormSearchInput from '../FormSearchInput.vue'
-import type { LayoutMode, OptionId, SortOption } from './types'
+import type { LayoutMode, SortOption } from './types'
 
 defineProps<{
   searcher?: (

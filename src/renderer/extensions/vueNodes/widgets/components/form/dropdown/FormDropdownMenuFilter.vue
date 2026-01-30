@@ -3,9 +3,11 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
+import type {
+  FilterOption,
+  OptionId
+} from '@/platform/assets/types/filterTypes'
 import { cn } from '@/utils/tailwindUtil'
-
-import type { FilterOption, OptionId } from './types'
 
 const { filterOptions } = defineProps<{
   filterOptions: FilterOption[]

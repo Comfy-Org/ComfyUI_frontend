@@ -1,9 +1,13 @@
+import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
 import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 
-import type { DropdownItem, SortOption } from './types'
+import type { SortOption } from './types'
 
-export async function defaultSearcher(query: string, items: DropdownItem[]) {
+export async function defaultSearcher(
+  query: string,
+  items: AssetDropdownItem[]
+) {
   if (query.trim() === '') return items
   const words = query.trim().toLowerCase().split(' ')
   return items.filter((item) => {

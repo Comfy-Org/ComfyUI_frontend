@@ -5,15 +5,15 @@ import PrimeVue from 'primevue/config'
 import type { ComponentPublicInstance } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { DropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 
 interface WidgetSelectDropdownInstance extends ComponentPublicInstance {
-  inputItems: DropdownItem[]
-  outputItems: DropdownItem[]
+  inputItems: AssetDropdownItem[]
+  outputItems: AssetDropdownItem[]
   updateSelectedItems: (selectedSet: Set<string>) => void
 }
 
@@ -231,7 +231,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
       // The missing value should be accessible via dropdownItems when filter is 'all' (default)
       const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
+        wrapper.vm as unknown as { dropdownItems: AssetDropdownItem[] }
       ).dropdownItems
       expect(
         dropdownItems.some((item) => item.name === 'template_image.png')
@@ -248,7 +248,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
       const vmWithFilter = wrapper.vm as unknown as {
         filterSelected: string
-        dropdownItems: DropdownItem[]
+        dropdownItems: AssetDropdownItem[]
       }
 
       vmWithFilter.filterSelected = 'inputs'
@@ -269,8 +269,8 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
       const vmWithFilter = wrapper.vm as unknown as {
         filterSelected: string
-        dropdownItems: DropdownItem[]
-        outputItems: DropdownItem[]
+        dropdownItems: AssetDropdownItem[]
+        outputItems: AssetDropdownItem[]
       }
 
       vmWithFilter.filterSelected = 'outputs'
@@ -290,7 +290,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       const wrapper = mountComponent(widget, 'img_001.png')
 
       const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
+        wrapper.vm as unknown as { dropdownItems: AssetDropdownItem[] }
       ).dropdownItems
       expect(dropdownItems).toHaveLength(2)
       expect(
@@ -305,7 +305,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       const wrapper = mountComponent(widget, undefined)
 
       const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
+        wrapper.vm as unknown as { dropdownItems: AssetDropdownItem[] }
       ).dropdownItems
       expect(dropdownItems).toHaveLength(2)
       expect(

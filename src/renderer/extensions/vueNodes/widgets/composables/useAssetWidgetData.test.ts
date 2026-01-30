@@ -104,7 +104,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     expect(item.id).toBe('asset-1')
     expect(item.name).toBe('models/beautiful_model.safetensors')
     expect(item.label).toBe('Beautiful Model')
-    expect(item.mediaSrc).toBe('/api/preview/asset-1')
+    expect(item.previewUrl).toBe('/api/preview/asset-1')
   })
 
   it('handles API errors gracefully', async () => {

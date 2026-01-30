@@ -6,13 +6,13 @@ import { useTransformCompatOverlayProps } from '@/composables/useTransformCompat
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
-import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
 import type {
-  DropdownItem,
   FilterOption,
-  LayoutMode,
-  SelectedKey
-} from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+  OptionId
+} from '@/platform/assets/types/filterTypes'
+import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types';
+import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types';
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import type { ResultItemType } from '@/schemas/apiSchema'
@@ -81,7 +81,7 @@ const filterOptions = computed<FilterOption[]>(() => {
   ]
 })
 
-const selectedSet = ref<Set<SelectedKey>>(new Set())
+const selectedSet = ref<Set<OptionId>>(new Set())
 
 /**
  * Transforms a value using getOptionLabel if available.
@@ -100,7 +100,7 @@ function getDisplayLabel(value: string): string {
   }
 }
 
-const inputItems = computed<DropdownItem[]>(() => {
+const inputItems = computed<AssetDropdownItem[]>(() => {
   const values = props.widget.options?.values || []
 
   if (!Array.isArray(values)) {
@@ -109,13 +109,12 @@ const inputItems = computed<DropdownItem[]>(() => {
 
   return values.map((value: string, index: number) => ({
     id: `input-${index}`,
-    mediaSrc: getMediaUrl(value, 'input'),
+    previewUrl: getMediaUrl(value, 'input'),
     name: value,
-    label: getDisplayLabel(value),
-    metadata: ''
+    label: getDisplayLabel(value)
   }))
 })
-const outputItems = computed<DropdownItem[]>(() => {
+const outputItems = computed<AssetDropdownItem[]>(() => {
   if (!['image', 'video'].includes(props.assetKind ?? '')) return []
 
   const outputs = new Set<string>()
@@ -140,10 +139,9 @@ const outputItems = computed<DropdownItem[]>(() => {
 
   return Array.from(outputs).map((output) => ({
     id: `output-${output}`,
-    mediaSrc: getMediaUrl(output.replace(' [output]', ''), 'output'),
+    previewUrl: getMediaUrl(output.replace(' [output]', ''), 'output'),
     name: output,
-    label: getDisplayLabel(output),
-    metadata: ''
+    label: getDisplayLabel(output)
   }))
 })
 
@@ -153,7 +151,7 @@ const outputItems = computed<DropdownItem[]>(() => {
  * where the saved value may not exist in the current server environment.
  * Works for both local mode (inputItems/outputItems) and cloud mode (assetData).
  */
-const missingValueItem = computed<DropdownItem | undefined>(() => {
+const missingValueItem = computed<AssetDropdownItem | undefined>(() => {
   const currentValue = modelValue.value
   if (!currentValue) return undefined
 
@@ -166,10 +164,9 @@ const missingValueItem = computed<DropdownItem | undefined>(() => {
 
     return {
       id: `missing-${currentValue}`,
-      mediaSrc: '',
+      previewUrl: '',
       name: currentValue,
-      label: getDisplayLabel(currentValue),
-      metadata: ''
+      label: getDisplayLabel(currentValue)
     }
   }
 
@@ -190,14 +187,13 @@ const missingValueItem = computed<DropdownItem | undefined>(() => {
 
   return {
     id: `missing-${currentValue}`,
-    mediaSrc: getMediaUrl(strippedValue, isOutput ? 'output' : 'input'),
+    previewUrl: getMediaUrl(strippedValue, isOutput ? 'output' : 'input'),
     name: currentValue,
-    label: getDisplayLabel(currentValue),
-    metadata: ''
+    label: getDisplayLabel(currentValue)
   }
 })
 
-const allItems = computed<DropdownItem[]>(() => {
+const allItems = computed<AssetDropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
     const items = assetData.dropdownItems.value
     if (missingValueItem.value) {
@@ -212,7 +208,7 @@ const allItems = computed<DropdownItem[]>(() => {
   ]
 })
 
-const dropdownItems = computed<DropdownItem[]>(() => {
+const dropdownItems = computed<AssetDropdownItem[]>(() => {
   if (props.isAssetMode) {
     return allItems.value
   }
@@ -290,8 +286,8 @@ watch(
   { immediate: true }
 )
 
-function updateSelectedItems(selectedItems: Set<SelectedKey>) {
-  let id: SelectedKey | undefined = undefined
+function updateSelectedItems(selectedItems: Set<OptionId>) {
+  let id: OptionId | undefined = undefined
   if (selectedItems.size > 0) {
     id = selectedItems.values().next().value!
   }

@@ -5,20 +5,19 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
+import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
+import type {
+  FilterOption,
+  OptionId
+} from '@/platform/assets/types/filterTypes'
+
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import { defaultSearcher, getDefaultSortOptions } from './shared'
-import type {
-  DropdownItem,
-  FilterOption,
-  LayoutMode,
-  OptionId,
-  SelectedKey,
-  SortOption
-} from './types'
+import type { LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: DropdownItem[]
+  items: AssetDropdownItem[]
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -32,15 +31,15 @@ interface Props {
   filterOptions?: FilterOption[]
   sortOptions?: SortOption[]
   isSelected?: (
-    selected: Set<SelectedKey>,
-    item: DropdownItem,
+    selected: Set<OptionId>,
+    item: AssetDropdownItem,
     index: number
   ) => boolean
   searcher?: (
     query: string,
-    items: DropdownItem[],
+    items: AssetDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<DropdownItem[]>
+  ) => Promise<AssetDropdownItem[]>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -54,7 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
   searcher: defaultSearcher
 })
 
-const selected = defineModel<Set<SelectedKey>>('selected', {
+const selected = defineModel<Set<OptionId>>('selected', {
   default: new Set()
 })
 const filterSelected = defineModel<OptionId>('filterSelected', { default: '' })
@@ -80,7 +79,7 @@ const maxSelectable = computed(() => {
 
 const itemsKey = computed(() => props.items.map((item) => item.id).join('|'))
 
-const filteredItems = ref<DropdownItem[]>([])
+const filteredItems = ref<AssetDropdownItem[]>([])
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = props.sortOptions.find(
@@ -99,7 +98,7 @@ const sortedItems = computed(() => {
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
 
-function internalIsSelected(item: DropdownItem, index: number): boolean {
+function internalIsSelected(item: AssetDropdownItem, index: number): boolean {
   return props.isSelected?.(selected.value, item, index) ?? false
 }
 
@@ -128,7 +127,7 @@ function handleFileChange(event: Event) {
   input.value = ''
 }
 
-function handleSelection(item: DropdownItem, index: number) {
+function handleSelection(item: AssetDropdownItem, index: number) {
   if (props.disabled) return
   const sel = selected.value
   if (internalIsSelected(item, index)) {

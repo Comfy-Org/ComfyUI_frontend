@@ -1,27 +1,13 @@
 import type { ComputedRef, InjectionKey } from 'vue'
 
-import type {
-  FilterOption,
-  OptionId
-} from '@/platform/assets/types/filterTypes'
+import type { AssetDropdownItem } from '@/platform/assets/types/assetDropdownTypes'
+import type { OptionId } from '@/platform/assets/types/filterTypes'
 import type { AssetKind } from '@/types/widgetTypes'
-
-export type { FilterOption, OptionId }
-
-export type SelectedKey = OptionId
-
-export interface DropdownItem {
-  id: SelectedKey
-  mediaSrc: string // URL for image, video, or other media
-  name: string
-  label?: string
-  metadata: string
-}
 
 export interface SortOption<TId extends OptionId = OptionId> {
   id: TId
   name: string
-  sorter: (ctx: { items: readonly DropdownItem[] }) => DropdownItem[]
+  sorter: (ctx: { items: readonly AssetDropdownItem[] }) => AssetDropdownItem[]
 }
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'
