@@ -28,8 +28,8 @@ import {
 import { generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
-import { ComfyWorkflow } from './comfyWorkflow';
-import type { LoadedComfyWorkflow } from './comfyWorkflow';
+import { ComfyWorkflow } from './comfyWorkflow'
+import type { LoadedComfyWorkflow } from './comfyWorkflow'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
 
 /**
