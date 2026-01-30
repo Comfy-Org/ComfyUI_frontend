@@ -28,13 +28,17 @@ const raf = createRafBatch(() => {
 
 function scheduleSlotLayoutSync(nodeId: string) {
   pendingNodes.add(nodeId)
+  // Re-assert pending flag for late mounts (Vue components mounting after
+  // flushScheduledSlotLayoutSync was called synchronously in onConfigure)
+  layoutStore.setPendingSlotSync(true)
   raf.schedule()
 }
 
 export function flushScheduledSlotLayoutSync() {
   if (pendingNodes.size === 0) {
-    // Even if no pending nodes, clear the flag (e.g., graph with no nodes)
-    layoutStore.setPendingSlotSync(false)
+    // No pending nodes - don't clear the flag here as late mounts may still
+    // call scheduleSlotLayoutSync. The RAF callback will clear it after
+    // processing actual nodes.
     return
   }
   const conv = useSharedCanvasPositionConversion()
