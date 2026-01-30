@@ -63,7 +63,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override widgets: IBaseWidget[] = []
 
   /** Manages lifecycle of all subgraph event listeners */
-  #eventAbortController = new AbortController()
+  private _eventAbortController = new AbortController()
 
   constructor(
     /** The (sub)graph that contains this subgraph instance. */
@@ -76,7 +76,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     // Update this node when the subgraph input / output slots are changed
     const subgraphEvents = this.subgraph.events
-    const { signal } = this.#eventAbortController
+    const { signal } = this._eventAbortController
 
     subgraphEvents.addEventListener(
       'input-added',
@@ -89,12 +89,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
           const widget = inputNode?.widgets?.find?.((w) => w.name == name)
           if (widget)
-            this.#setWidget(subgraphInput, existingInput, widget, input?.widget)
+            this._setWidget(subgraphInput, existingInput, widget, input?.widget)
           return
         }
         const input = this.addInput(name, type)
 
-        this.#addSubgraphInputListeners(subgraphInput, input)
+        this._addSubgraphInputListeners(subgraphInput, input)
       },
       { signal }
     )
@@ -179,7 +179,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  #addSubgraphInputListeners(
+  private _addSubgraphInputListeners(
     subgraphInput: SubgraphInput,
     input: INodeInputSlot & Partial<ISubgraphInput>
   ) {
@@ -201,7 +201,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         if (!widget) return
 
         const widgetLocator = e.detail.input.widget
-        this.#setWidget(subgraphInput, input, widget, widgetLocator)
+        this._setWidget(subgraphInput, input, widget, widgetLocator)
       },
       { signal }
     )
@@ -288,7 +288,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         continue
       }
 
-      this.#addSubgraphInputListeners(subgraphInput, input)
+      this._addSubgraphInputListeners(subgraphInput, input)
 
       // Find the first widget that this slot is connected to
       for (const linkId of subgraphInput.linkIds) {
@@ -318,13 +318,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const widget = inputNode.getWidgetFromSlot(targetInput)
         if (!widget) continue
 
-        this.#setWidget(subgraphInput, input, widget, targetInput.widget)
+        this._setWidget(subgraphInput, input, widget, targetInput.widget)
         break
       }
     }
   }
 
-  #setWidget(
+  private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
     widget: Readonly<IBaseWidget>,
@@ -553,7 +553,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override onRemoved(): void {
     // Clean up all subgraph event listeners
-    this.#eventAbortController.abort()
+    this._eventAbortController.abort()
 
     // Clean up all promoted widgets
     for (const widget of this.widgets) {
