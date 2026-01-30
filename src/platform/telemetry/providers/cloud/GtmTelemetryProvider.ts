@@ -80,13 +80,6 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('login', basePayload)
   }
 
-  trackApiCreditTopupSucceeded(): void {
-    this.pushEvent('purchase', {
-      currency: 'USD',
-      items: [{ item_name: 'API Credits' }]
-    })
-  }
-
   trackSubscriptionPurchase(metadata: SubscriptionPurchaseMetadata): void {
     this.pushEvent('purchase', metadata)
   }
