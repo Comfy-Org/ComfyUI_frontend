@@ -507,6 +507,7 @@ export default defineConfig({
       !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
     ),
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
+    __GTM_ID__: JSON.stringify(DISTRIBUTION === 'cloud' ? 'GTM-NP9JM6K7' : ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
