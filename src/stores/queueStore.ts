@@ -475,6 +475,8 @@ export const useQueueStore = defineStore('queue', () => {
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
+  let updateRequestId = 0
+
   const tasks = computed<TaskItemImpl[]>(
     () =>
       [
@@ -498,12 +500,15 @@ export const useQueueStore = defineStore('queue', () => {
   )
 
   const update = async () => {
+    const requestId = ++updateRequestId
     isLoading.value = true
     try {
       const [queue, history] = await Promise.all([
         api.getQueue(),
         api.getHistory(maxHistoryItems.value)
       ])
+
+      if (requestId !== updateRequestId) return
 
       // API returns pre-sorted data (sort_by=create_time&order=desc)
       runningTasks.value = queue.Running.map((job) => new TaskItemImpl(job))
@@ -545,7 +550,9 @@ export const useQueueStore = defineStore('queue', () => {
         return existing
       })
     } finally {
-      isLoading.value = false
+      if (requestId === updateRequestId) {
+        isLoading.value = false
+      }
     }
   }
 

@@ -802,4 +802,100 @@ describe('useQueueStore', () => {
       expect(mockGetHistory).toHaveBeenCalled()
     })
   })
+
+  describe('update deduplication', () => {
+    it('should discard stale responses when newer request completes first', async () => {
+      let resolveFirst: (value: {
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }) => void
+      let resolveSecond: (value: {
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }) => void
+
+      const firstQueuePromise = new Promise<{
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }>((resolve) => {
+        resolveFirst = resolve
+      })
+      const secondQueuePromise = new Promise<{
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }>((resolve) => {
+        resolveSecond = resolve
+      })
+
+      mockGetHistory.mockResolvedValue([])
+
+      mockGetQueue
+        .mockReturnValueOnce(firstQueuePromise)
+        .mockReturnValueOnce(secondQueuePromise)
+
+      const firstUpdate = store.update()
+      const secondUpdate = store.update()
+
+      resolveSecond!({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      await secondUpdate
+
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.pendingTasks[0].promptId).toBe('new-job')
+
+      resolveFirst!({
+        Running: [],
+        Pending: [createPendingJob(1, 'stale-job')]
+      })
+      await firstUpdate
+
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.pendingTasks[0].promptId).toBe('new-job')
+    })
+
+    it('should set isLoading to false only for the latest request', async () => {
+      let resolveFirst: (value: {
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }) => void
+      let resolveSecond: (value: {
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }) => void
+
+      const firstQueuePromise = new Promise<{
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }>((resolve) => {
+        resolveFirst = resolve
+      })
+      const secondQueuePromise = new Promise<{
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }>((resolve) => {
+        resolveSecond = resolve
+      })
+
+      mockGetHistory.mockResolvedValue([])
+
+      mockGetQueue
+        .mockReturnValueOnce(firstQueuePromise)
+        .mockReturnValueOnce(secondQueuePromise)
+
+      const firstUpdate = store.update()
+      expect(store.isLoading).toBe(true)
+
+      const secondUpdate = store.update()
+      expect(store.isLoading).toBe(true)
+
+      resolveSecond!({ Running: [], Pending: [] })
+      await secondUpdate
+
+      expect(store.isLoading).toBe(false)
+
+      resolveFirst!({ Running: [], Pending: [] })
+      await firstUpdate
+
+      expect(store.isLoading).toBe(false)
+    })
+  })
 })
