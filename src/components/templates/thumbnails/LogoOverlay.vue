@@ -1,25 +1,33 @@
 <template>
   <div
     v-for="logo in validLogos"
-    :key="logo.provider"
+    :key="logo.key"
     :class="
       cn('pointer-events-none absolute z-10', logo.position ?? defaultPosition)
     "
   >
     <div
-      v-show="!failedLogos.has(logo.provider)"
-      class="flex items-center gap-1.5 rounded-full bg-black/20 px-2 py-1"
-      :style="{ opacity: logo.opacity ?? 1 }"
+      v-show="!hasAllFailed(logo.providers)"
+      class="flex items-center gap-1.5 rounded-full bg-black/20 py-1 pr-2"
+      :style="{ opacity: logo.opacity ?? 0.85 }"
     >
-      <img
-        :src="logo.url"
-        :alt="logo.provider"
-        class="h-5 w-5 rounded-[50%]"
-        draggable="false"
-        @error="onImageError(logo.provider)"
-      />
+      <div class="flex items-center" :style="{ marginLeft: '2px' }">
+        <img
+          v-for="(provider, providerIndex) in logo.providers"
+          :key="provider"
+          :src="logo.urls[providerIndex]"
+          :alt="provider"
+          class="h-6 w-6 rounded-full border-2 border-white object-cover"
+          :class="{ relative: providerIndex > 0 }"
+          :style="
+            providerIndex > 0 ? { marginLeft: `${logo.gap ?? -6}px` } : {}
+          "
+          draggable="false"
+          @error="onImageError(provider)"
+        />
+      </div>
       <span class="text-sm font-medium text-white">
-        {{ logo.provider }}
+        {{ logo.label }}
       </span>
     </div>
   </div>
@@ -43,16 +51,48 @@ const {
 
 const failedLogos = ref(new Set<string>())
 
-const onImageError = (provider: string) => {
+function onImageError(provider: string) {
   failedLogos.value = new Set([...failedLogos.value, provider])
 }
 
-const validLogos = computed(() =>
-  logos
-    .map((logo) => ({
-      ...logo,
-      url: getLogoUrl(logo.provider)
-    }))
-    .filter((logo) => logo.url)
-)
+function hasAllFailed(providers: string[]): boolean {
+  return providers.every((p) => failedLogos.value.has(p))
+}
+
+interface ValidatedLogo {
+  key: string
+  providers: string[]
+  urls: string[]
+  label: string
+  position: string | undefined
+  opacity: number | undefined
+  gap: number | undefined
+}
+
+const validLogos = computed<ValidatedLogo[]>(() => {
+  const result: ValidatedLogo[] = []
+
+  logos.forEach((logo, index) => {
+    const providers = Array.isArray(logo.provider)
+      ? logo.provider
+      : [logo.provider]
+    const urls = providers.map((p) => getLogoUrl(p))
+    const validProviders = providers.filter((_, i) => urls[i])
+    const validUrls = urls.filter((url) => url)
+
+    if (validProviders.length === 0) return
+
+    result.push({
+      key: validProviders.join('-') || `logo-${index}`,
+      providers: validProviders,
+      urls: validUrls,
+      label: logo.label ?? validProviders.join(' & '),
+      position: logo.position,
+      opacity: logo.opacity,
+      gap: logo.gap
+    })
+  })
+
+  return result
+})
 </script>

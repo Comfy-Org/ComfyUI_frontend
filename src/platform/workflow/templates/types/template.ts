@@ -1,11 +1,13 @@
 export interface LogoInfo {
-  /** Provider name matching index_logo.json */
-  provider: string
+  /** Provider name(s) matching index_logo.json. String for single, array for stacked logos. */
+  provider: string | string[]
+  /** Custom label text. If omitted, defaults to provider names joined with " & " */
+  label?: string
+  /** Gap between stacked logos in pixels. Negative for overlap effect. Default: -6 */
+  gap?: number
   /** Tailwind positioning classes */
   position?: string
-  /** Size: 'sm' (24px), 'md' (32px), 'lg' (48px) */
-  size?: 'sm' | 'md' | 'lg'
-  /** Opacity 0-1, default 0.9 */
+  /** Opacity 0-1, default 0.85 */
   opacity?: number
 }
 
