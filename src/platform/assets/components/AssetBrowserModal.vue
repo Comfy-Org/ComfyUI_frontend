@@ -51,7 +51,7 @@
     <template #contentFilter>
       <AssetFilterBar
         :assets="categoryFilteredAssets"
-        :show-ownership-filter="!shouldShowLeftPanel"
+        :show-ownership-filter
         @filter-change="updateFilters"
         @click.self="focusedAsset = null"
       />
@@ -210,6 +210,12 @@ const displayTitle = computed(() => {
 const shouldShowLeftPanel = computed(() => {
   return props.showLeftPanel ?? true
 })
+
+const showOwnershipFilter = computed(
+  () =>
+    !shouldShowLeftPanel.value ||
+    (selectedNavItem.value !== 'all' && selectedNavItem.value !== 'imported')
+)
 
 const emptyMessage = computed(() => {
   if (!isImportedSelected.value) {
