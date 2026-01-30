@@ -183,6 +183,14 @@ export function useSlotElementTracking(options: {
         // Register slot
         const slotKey = getSlotKey(nodeId, index, type === 'input')
 
+        // Defensive cleanup: remove stale entry if it exists with different element
+        // This handles edge cases where Vue component reuse prevents proper unmount
+        const existingEntry = node.slots.get(slotKey)
+        if (existingEntry && existingEntry.el !== el) {
+          delete existingEntry.el.dataset.slotKey
+          layoutStore.deleteSlotLayout(slotKey)
+        }
+
         el.dataset.slotKey = slotKey
         node.slots.set(slotKey, { el, index, type })
 
