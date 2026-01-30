@@ -64,12 +64,11 @@ describe('LogoOverlay', () => {
     expect(wrapper.findAll('img')).toHaveLength(1)
   })
 
-  it('uses provider as unique key for each logo', () => {
+  it('renders one logo per unique provider', () => {
     const wrapper = mountOverlay([
       { provider: 'Google' },
       { provider: 'OpenAI' }
     ])
-    const containers = wrapper.findAll('[class*="absolute"]')
-    expect(containers).toHaveLength(2)
+    expect(wrapper.findAll('img')).toHaveLength(2)
   })
 })
