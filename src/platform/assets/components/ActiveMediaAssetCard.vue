@@ -39,16 +39,16 @@
           class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
         />
       </div>
-      <!-- Cancel button overlay -->
+      <!-- Cancel/Delete button overlay -->
       <Button
-        v-if="hovered && canCancelJob"
+        v-if="hovered && showActionButton"
         variant="destructive"
         size="icon"
-        :aria-label="cancelAction.label"
+        :aria-label="activeAction.label"
         class="absolute top-2 right-2"
-        @click.stop="runCancelJob()"
+        @click.stop="runActiveAction()"
       >
-        <i :class="cancelAction.icon" />
+        <i :class="activeAction.icon" />
       </Button>
     </div>
 
@@ -90,7 +90,28 @@ const { job } = defineProps<{ job: JobListItem }>()
 const { t } = useI18n()
 const hovered = ref(false)
 
-const { cancelAction, canCancelJob, runCancelJob } = useJobActions(() => job)
+const {
+  cancelAction,
+  canCancelJob,
+  runCancelJob,
+  deleteAction,
+  canDeleteJob,
+  runDeleteJob
+} = useJobActions(() => job)
+
+const showActionButton = computed(
+  () => canCancelJob.value || canDeleteJob.value
+)
+const activeAction = computed(() =>
+  canCancelJob.value ? cancelAction : deleteAction
+)
+const runActiveAction = () => {
+  if (canCancelJob.value) {
+    runCancelJob()
+  } else if (canDeleteJob.value) {
+    runDeleteJob()
+  }
+}
 
 const { progressBarPrimaryClass, hasProgressPercent, progressPercentStyle } =
   useProgressBarBackground()

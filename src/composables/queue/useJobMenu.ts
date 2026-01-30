@@ -216,10 +216,11 @@ export function useJobMenu(
     }
   }
 
-  const removeFailedJob = async () => {
-    const task = currentMenuItem()?.taskRef as TaskItemImpl | undefined
-    if (!task) return
-    await queueStore.delete(task)
+  const removeFailedJob = async (task?: TaskItemImpl | null) => {
+    const target =
+      task ?? (currentMenuItem()?.taskRef as TaskItemImpl | undefined)
+    if (!target) return
+    await queueStore.delete(target)
   }
 
   const jobMenuOpenWorkflowLabel = computed(() =>
@@ -365,6 +366,7 @@ export function useJobMenu(
     jobMenuEntries,
     openJobWorkflow,
     copyJobId,
-    cancelJob
+    cancelJob,
+    removeFailedJob
   }
 }
