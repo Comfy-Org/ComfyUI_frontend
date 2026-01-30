@@ -1,13 +1,13 @@
 declare const __COMFYUI_FRONTEND_VERSION__: string
 declare const __SENTRY_ENABLED__: boolean
 declare const __SENTRY_DSN__: string
-declare const __GTM_ID__: string
 declare const __ALGOLIA_APP_ID__: string
 declare const __ALGOLIA_API_KEY__: string
 declare const __USE_PROD_CONFIG__: boolean
 
 interface Window {
   __CONFIG__: {
+    gtm_container_id?: string
     mixpanel_token?: string
     require_whitelist?: boolean
     subscription_required?: boolean
