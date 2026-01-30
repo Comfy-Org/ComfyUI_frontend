@@ -1,4 +1,4 @@
-import { refThrottled, watchDebounced } from '@vueuse/core'
+import { refDebounced, watchDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 import { computed, ref, watch } from 'vue'
@@ -119,7 +119,7 @@ export function useTemplateFiltering(
     )
   })
 
-  const debouncedSearchQuery = refThrottled(searchQuery, 50)
+  const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
   const filteredBySearch = computed(() => {
     if (!debouncedSearchQuery.value.trim()) {
