@@ -5,7 +5,9 @@ import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 
 describe('LogoOverlay', () => {
-  const mockGetLogoUrl = (provider: string) => `/logos/${provider}.png`
+  function mockGetLogoUrl(provider: string) {
+    return `/logos/${provider}.png`
+  }
 
   const mountOverlay = (logos: LogoInfo[], props = {}) => {
     return mount(LogoOverlay, {
