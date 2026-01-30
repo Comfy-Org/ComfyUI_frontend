@@ -199,5 +199,28 @@ describe('useCanvasInteractions', () => {
 
       document.body.removeChild(captureElement)
     })
+
+    it('should forward ctrl+wheel to canvas when capture element IS focused in standard mode', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('standard')
+
+      const captureElement = document.createElement('div')
+      captureElement.setAttribute('data-capture-wheel', 'true')
+      const textarea = document.createElement('textarea')
+      captureElement.appendChild(textarea)
+      document.body.appendChild(captureElement)
+      textarea.focus()
+
+      const { handleWheel } = useCanvasInteractions()
+      const mockEvent = createMockWheelEvent(true)
+      Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+
+      document.body.removeChild(captureElement)
+    })
   })
 })

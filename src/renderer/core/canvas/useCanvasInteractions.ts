@@ -41,13 +41,16 @@ export function useCanvasInteractions() {
     return !!(captureElement && active && captureElement.contains(active))
   }
 
+  const shouldForwardWheelEvent = (event: WheelEvent): boolean =>
+    !wheelCapturedByFocusedElement(event) ||
+    (isStandardNavMode.value && (event.ctrlKey || event.metaKey))
+
   /**
    * Handles wheel events from UI components that should be forwarded to canvas
    * when appropriate (e.g., Ctrl+wheel for zoom in standard mode)
    */
   const handleWheel = (event: WheelEvent) => {
-    // If a wheel-capturing widget is focused, let it consume the wheel event
-    if (wheelCapturedByFocusedElement(event)) return
+    if (!shouldForwardWheelEvent(event)) return
 
     // In standard mode, Ctrl+wheel should go to canvas for zoom
     if (isStandardNavMode.value && (event.ctrlKey || event.metaKey)) {
@@ -97,8 +100,7 @@ export function useCanvasInteractions() {
     event: WheelEvent | PointerEvent | MouseEvent
   ) => {
     // Honor wheel capture only when the element is focused
-    if (event instanceof WheelEvent && wheelCapturedByFocusedElement(event))
-      return
+    if (event instanceof WheelEvent && !shouldForwardWheelEvent(event)) return
 
     const canvasEl = app.canvas?.canvas
     if (!canvasEl) return
