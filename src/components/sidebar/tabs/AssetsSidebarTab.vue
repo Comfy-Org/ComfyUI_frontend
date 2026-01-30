@@ -53,7 +53,7 @@
         :show-generation-time-sort="activeTab === 'output'"
       />
       <div
-        v-if="isQueuePanelV2Enabled"
+        v-if="isQueuePanelV2Enabled && !isInFolderView"
         class="flex items-center justify-between px-2 py-2 2xl:px-4"
       >
         <span class="text-sm text-muted-foreground">
@@ -112,6 +112,7 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
+          :is-in-folder-view="isInFolderView"
           :asset-type="activeTab"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
