@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-full flex-col">
     <div
-      v-if="activeJobItems.length"
+      v-if="isQueuePanelV2Enabled && activeJobItems.length"
       class="flex max-h-[50%] scrollbar-custom flex-col gap-2 overflow-y-auto px-2"
     >
       <AssetsListItem
@@ -133,6 +133,7 @@ import {
 } from '@/utils/formatUtil'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { cn } from '@/utils/tailwindUtil'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const {
   assets,
@@ -154,6 +155,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
+const settingStore = useSettingStore()
+
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
 const hoveredJobId = ref<string | null>(null)
 const hoveredAssetId = ref<string | null>(null)
 
