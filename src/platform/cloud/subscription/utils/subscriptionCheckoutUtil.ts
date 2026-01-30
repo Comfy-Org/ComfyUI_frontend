@@ -6,8 +6,8 @@ import {
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { startSubscriptionPurchaseTracking } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker';
-import type { SubscriptionStatusSnapshot } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker';
+import { startSubscriptionPurchaseTracking } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
+import type { SubscriptionStatusSnapshot } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
