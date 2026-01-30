@@ -1,8 +1,8 @@
 import {
-  type ComfyPage,
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../../../../fixtures/ComfyPage'
+import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import type { Position } from '../../../../fixtures/types'
 
 test.describe('Vue Node Moving', () => {
@@ -29,39 +29,47 @@ test.describe('Vue Node Moving', () => {
     expect(diffY).toBeGreaterThan(0)
   }
 
-  test('should allow moving nodes by dragging', async ({ comfyPage }) => {
-    const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await comfyPage.dragAndDrop(loadCheckpointHeaderPos, {
-      x: 256,
-      y: 256
-    })
+  test(
+    'should allow moving nodes by dragging',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const loadCheckpointHeaderPos =
+        await getLoadCheckpointHeaderPos(comfyPage)
+      await comfyPage.dragAndDrop(loadCheckpointHeaderPos, {
+        x: 256,
+        y: 256
+      })
 
-    const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
+      const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+      await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
 
-    await expect(comfyPage.canvas).toHaveScreenshot('vue-node-moved-node.png')
-  })
+      await expect(comfyPage.canvas).toHaveScreenshot('vue-node-moved-node.png')
+    }
+  )
 
-  test('@mobile should allow moving nodes by dragging on touch devices', async ({
-    comfyPage
-  }) => {
-    // Disable minimap (gets in way of the node on small screens)
-    await comfyPage.setSetting('Comfy.Minimap.Visible', false)
+  test(
+    '@mobile should allow moving nodes by dragging on touch devices',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      // Disable minimap (gets in way of the node on small screens)
+      await comfyPage.setSetting('Comfy.Minimap.Visible', false)
 
-    const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await comfyPage.panWithTouch(
-      {
-        x: 64,
-        y: 64
-      },
-      loadCheckpointHeaderPos
-    )
+      const loadCheckpointHeaderPos =
+        await getLoadCheckpointHeaderPos(comfyPage)
+      await comfyPage.panWithTouch(
+        {
+          x: 64,
+          y: 64
+        },
+        loadCheckpointHeaderPos
+      )
 
-    const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
-    await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
+      const newHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
+      await expectPosChanged(loadCheckpointHeaderPos, newHeaderPos)
 
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'vue-node-moved-node-touch.png'
-    )
-  })
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-node-moved-node-touch.png'
+      )
+    }
+  )
 })

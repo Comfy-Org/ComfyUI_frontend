@@ -7,7 +7,7 @@ import { webSocketFixture } from '../fixtures/ws.ts'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-test.describe('Actionbar', () => {
+test.describe('Actionbar', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
