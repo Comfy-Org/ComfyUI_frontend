@@ -597,9 +597,14 @@ const enterFolderView = async (asset: AssetItem) => {
   folderPromptId.value = promptId
   folderExecutionTime.value = executionTimeInSeconds
 
-  const folderItems = await resolveOutputAssetItems(metadata, {
-    createdAt: asset.created_at
-  })
+  let folderItems: AssetItem[] = []
+  try {
+    folderItems = await resolveOutputAssetItems(metadata, {
+      createdAt: asset.created_at
+    })
+  } catch (error) {
+    console.error('Failed to resolve outputs for folder view:', error)
+  }
 
   if (folderItems.length === 0) {
     console.warn('No outputs available for folder view')

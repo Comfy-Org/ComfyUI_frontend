@@ -72,7 +72,7 @@ describe('useOutputStacks', () => {
       expect.objectContaining({ promptId: 'prompt-1' }),
       {
         createdAt: parent.created_at,
-        excludeOutputKey: parent.name
+        excludeOutputKey: 'node-1-outputs-parent.png'
       }
     )
     expect(isStackExpanded(parent)).toBe(true)

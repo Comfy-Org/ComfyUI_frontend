@@ -107,10 +107,16 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
     if (!metadata) {
       return []
     }
+
+    const excludeOutputKey =
+      metadata.nodeId && metadata.subfolder
+        ? `${metadata.nodeId}-${metadata.subfolder}-${asset.name}`
+        : undefined
+
     try {
       return await resolveOutputAssetItems(metadata, {
         createdAt: asset.created_at,
-        excludeOutputKey: asset.name
+        excludeOutputKey
       })
     } catch (error) {
       console.error('Failed to resolve stack children:', error)
