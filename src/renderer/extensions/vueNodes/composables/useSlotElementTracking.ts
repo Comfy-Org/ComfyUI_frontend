@@ -12,6 +12,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import {
   isPointEqual,
@@ -39,6 +40,7 @@ export function flushScheduledSlotLayoutSync() {
     // No pending nodes and no RAF scheduled - clear the flag to avoid
     // permanently suppressing link rendering (e.g., workflows without Vue nodes)
     layoutStore.setPendingSlotSync(false)
+    app.canvas?.setDirty(true, true)
     return
   }
   const conv = useSharedCanvasPositionConversion()
@@ -48,6 +50,8 @@ export function flushScheduledSlotLayoutSync() {
   }
   // Clear the pending sync flag - slots are now synced
   layoutStore.setPendingSlotSync(false)
+  // Trigger canvas redraw now that links can render with correct positions
+  app.canvas?.setDirty(true, true)
 }
 
 export function syncNodeSlotLayoutsFromDOM(
