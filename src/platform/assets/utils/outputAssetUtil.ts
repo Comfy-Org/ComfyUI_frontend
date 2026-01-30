@@ -20,6 +20,12 @@ type ResolveOutputAssetItemsOptions = {
   excludeOutputKey?: string
 }
 
+type OutputKeyParts = {
+  nodeId?: string | number | null
+  subfolder?: string | null
+  filename?: string | null
+}
+
 function shouldLoadFullOutputs(
   outputCount: OutputAssetMetadata['outputCount'],
   outputsLength: number
@@ -31,8 +37,16 @@ function shouldLoadFullOutputs(
   )
 }
 
-function getOutputKey(output: ResultItemImpl): string {
-  return `${output.nodeId}-${output.subfolder}-${output.filename}`
+export function getOutputKey({
+  nodeId,
+  subfolder,
+  filename
+}: OutputKeyParts): string | null {
+  if (!nodeId || !subfolder || !filename) {
+    return null
+  }
+
+  return `${nodeId}-${subfolder}-${filename}`
 }
 
 function mapOutputsToAssetItems({
@@ -45,12 +59,14 @@ function mapOutputsToAssetItems({
 }: OutputAssetMapOptions): AssetItem[] {
   const createdAtValue = createdAt ?? new Date().toISOString()
 
-  return outputs
-    .filter(
-      (output) => output.filename && getOutputKey(output) !== excludeOutputKey
-    )
-    .map((output) => ({
-      id: `${promptId}-${getOutputKey(output)}`,
+  return outputs.reduce<AssetItem[]>((items, output) => {
+    const outputKey = getOutputKey(output)
+    if (!output.filename || !outputKey || outputKey === excludeOutputKey) {
+      return items
+    }
+
+    items.push({
+      id: `${promptId}-${outputKey}`,
       name: output.filename,
       size: 0,
       created_at: createdAtValue,
@@ -63,7 +79,10 @@ function mapOutputsToAssetItems({
         executionTimeInSeconds,
         workflow
       }
-    }))
+    })
+
+    return items
+  }, [])
 }
 
 export async function resolveOutputAssetItems(

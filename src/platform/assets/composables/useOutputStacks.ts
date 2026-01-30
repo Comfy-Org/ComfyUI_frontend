@@ -3,7 +3,10 @@ import type { Ref } from 'vue'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import {
+  getOutputKey,
+  resolveOutputAssetItems
+} from '@/platform/assets/utils/outputAssetUtil'
 
 export type OutputStackListItem = {
   key: string
@@ -109,9 +112,11 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
     }
 
     const excludeOutputKey =
-      metadata.nodeId && metadata.subfolder
-        ? `${metadata.nodeId}-${metadata.subfolder}-${asset.name}`
-        : undefined
+      getOutputKey({
+        nodeId: metadata.nodeId,
+        subfolder: metadata.subfolder,
+        filename: asset.name
+      }) ?? undefined
 
     try {
       return await resolveOutputAssetItems(metadata, {
