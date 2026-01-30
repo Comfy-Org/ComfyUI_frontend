@@ -5,8 +5,8 @@ import { isSubgraphIoNode } from '@/utils/typeGuardUtil'
 
 type NodeConstructor = { comfyClass?: string }
 
-function createMockNode(constructor?: NodeConstructor): LGraphNode {
-  return { constructor } as Partial<LGraphNode> as LGraphNode
+function createMockNode(nodeConstructor?: NodeConstructor): LGraphNode {
+  return { constructor: nodeConstructor } as Partial<LGraphNode> as LGraphNode
 }
 
 describe('typeGuardUtil', () => {

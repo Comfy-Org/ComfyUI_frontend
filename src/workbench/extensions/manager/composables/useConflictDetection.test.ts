@@ -7,8 +7,8 @@ import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment';
-import type { ConflictAcknowledgmentState } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment';
+import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import type { ConflictAcknowledgmentState } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -162,14 +162,22 @@ describe('useConflictDetection', () => {
   let mockConflictedPackages: ConflictDetectionResult[] = []
 
   const mockConflictStore = {
-    hasConflicts: mockConflictedPackages.some((p) => p.has_conflict),
-    conflictedPackages: mockConflictedPackages,
-    bannedPackages: mockConflictedPackages.filter((p) =>
-      p.conflicts?.some((c) => c.type === 'banned')
-    ),
-    securityPendingPackages: mockConflictedPackages.filter((p) =>
-      p.conflicts?.some((c) => c.type === 'pending')
-    ),
+    get hasConflicts() {
+      return mockConflictedPackages.some((p) => p.has_conflict)
+    },
+    get conflictedPackages() {
+      return mockConflictedPackages
+    },
+    get bannedPackages() {
+      return mockConflictedPackages.filter((p) =>
+        p.conflicts?.some((c) => c.type === 'banned')
+      )
+    },
+    get securityPendingPackages() {
+      return mockConflictedPackages.filter((p) =>
+        p.conflicts?.some((c) => c.type === 'pending')
+      )
+    },
     setConflictedPackages: vi.fn(),
     clearConflicts: vi.fn()
   } as Partial<ReturnType<typeof useConflictDetectionStore>> as ReturnType<
