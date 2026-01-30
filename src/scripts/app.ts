@@ -1119,25 +1119,32 @@ export class ComfyApp {
         return
       }
       for (let n of nodes) {
-        // Patch T2IAdapterLoader to ControlNetLoader since they are the same node now
-        if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
-        if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage' //typo fix
-        if (n.type == 'SDV_img2vid_Conditioning')
-          n.type = 'SVD_img2vid_Conditioning' //typo fix
-        if (n.type == 'Load3DAnimation') n.type = 'Load3D' // Animation node merged into Load3D
-        if (n.type == 'Preview3DAnimation') n.type = 'Preview3D' // Animation node merged into Load3D
+        // TODO: Remove hardcoded patches after node replacement API is implemented
+        // if (n.type == 'T2IAdapterLoader') n.type = 'ControlNetLoader'
+        // if (n.type == 'ConditioningAverage ') n.type = 'ConditioningAverage'
+        // if (n.type == 'SDV_img2vid_Conditioning') n.type = 'SVD_img2vid_Conditioning'
+        // if (n.type == 'Load3DAnimation') n.type = 'Load3D'
+        // if (n.type == 'Preview3DAnimation') n.type = 'Preview3D'
 
         // Find missing node types
         if (!(n.type in LiteGraph.registered_node_types)) {
-          // Include context about subgraph location if applicable
-          if (path) {
-            missingNodeTypes.push({
-              type: n.type,
-              hint: `in subgraph '${path}'`
-            })
-          } else {
-            missingNodeTypes.push(n.type)
-          }
+          const nodeReplacementStore = useNodeReplacementStore()
+          const replacement = nodeReplacementStore.getReplacementFor(n.type)
+
+          // TODO: Remove debug log
+          console.log('[MissingNode]', n.type, {
+            isReplaceable: replacement !== null,
+            replacement,
+            allReplacements: nodeReplacementStore.replacements
+          })
+
+          missingNodeTypes.push({
+            type: n.type,
+            ...(path && { hint: `in subgraph '${path}'` }),
+            isReplaceable: replacement !== null,
+            replacement: replacement ?? undefined
+          })
+
           n.type = sanitizeNodeName(n.type)
         }
 

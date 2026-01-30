@@ -3,6 +3,7 @@ import type {
   Positionable
 } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Keybinding } from '@/platform/keybindings/types'
@@ -93,6 +94,8 @@ export type MissingNodeType =
         text: string
         callback: () => void
       }
+      isReplaceable?: boolean
+      replacement?: NodeReplacement
     }
 
 export interface ComfyExtension {
