@@ -486,7 +486,7 @@ watch(
   { immediate: true }
 )
 
-const handleAssetSelect = (asset: AssetItem, assets?: AssetItem[]) => {
+function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
   handleAssetClick(asset, index, assetList)
