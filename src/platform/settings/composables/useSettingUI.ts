@@ -169,6 +169,21 @@ export function useSettingUI(
     () => teamWorkspacesEnabled.value && isLoggedIn.value
   )
 
+  const secretsPanel: SettingPanelItem = {
+    node: {
+      key: 'secrets',
+      label: 'Secrets',
+      children: []
+    },
+    component: defineAsyncComponent(
+      () => import('@/platform/secrets/components/SecretsPanel.vue')
+    )
+  }
+
+  const shouldShowSecretsPanel = computed(
+    () => flags.userSecretsEnabled && isLoggedIn.value
+  )
+
   const keybindingPanel: SettingPanelItem = {
     node: {
       key: 'keybinding',
@@ -208,6 +223,7 @@ export function useSettingUI(
       creditsPanel,
       userPanel,
       ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
+      ...(shouldShowSecretsPanel.value ? [secretsPanel] : []),
       keybindingPanel,
       extensionPanel,
       ...(isElectron() ? [serverConfigPanel] : []),
@@ -246,6 +262,7 @@ export function useSettingUI(
       label: 'Workspace',
       children: [
         ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
+        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
@@ -285,6 +302,7 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
+        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         shouldShowPlanCreditsPanel.value &&
         subscriptionPanel

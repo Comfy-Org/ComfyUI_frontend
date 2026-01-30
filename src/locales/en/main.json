@@ -1332,7 +1332,8 @@
     "Execution": "Execution",
     "PLY": "PLY",
     "Workspace": "Workspace",
-    "Other": "Other"
+    "Other": "Other",
+    "Secrets": "Secrets"
   },
   "serverConfigItems": {
     "listen": {
@@ -2861,5 +2862,31 @@
     "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
     "hideSubgraph": "Hide Subgraph Nodes",
     "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search"
+  },
+  "secrets": {
+    "title": "API Keys & Secrets",
+    "description": "Securely store API keys for third-party services like HuggingFace and Civitai.",
+    "addSecret": "Add Secret",
+    "editSecret": "Edit Secret",
+    "noSecrets": "No secrets stored. Add your first API key to get started.",
+    "name": "Name",
+    "namePlaceholder": "e.g., My HuggingFace Token",
+    "provider": "Provider",
+    "providerHint": "Optional. Selecting a provider enables automatic token usage.",
+    "secretValue": "Secret Value",
+    "secretValuePlaceholder": "Enter your API key",
+    "secretValueHint": "This value will be encrypted and cannot be viewed again.",
+    "editNotice": "To change the secret value, delete this secret and create a new one.",
+    "createdAt": "Created {date}",
+    "lastUsed": "Last used {date}",
+    "deleteConfirmTitle": "Delete Secret",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "errors": {
+      "nameRequired": "Name is required",
+      "nameTooLong": "Name must be 255 characters or less",
+      "secretValueRequired": "Secret value is required",
+      "duplicateName": "A secret with this name already exists",
+      "duplicateProvider": "A secret for this provider already exists"
+    }
   }
 }
