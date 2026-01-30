@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Record Audio Node', () => {
+test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
   test('should add a record audio node and take a screenshot', async ({
     comfyPage
   }) => {

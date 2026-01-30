@@ -13,7 +13,7 @@ import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
 
 app.registerExtension({
   name: 'Comfy.RerouteNode',
-  registerCustomNodes(app) {
+  registerCustomNodes() {
     interface RerouteNode extends LGraphNode {
       __outputType?: string | number
     }

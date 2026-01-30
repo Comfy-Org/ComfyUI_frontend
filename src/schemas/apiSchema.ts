@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { LinkMarkerShape } from '@/lib/litegraph/src/litegraph'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
-import { zKeybinding } from '@/schemas/keyBindingSchema'
+import { zKeybinding } from '@/platform/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 

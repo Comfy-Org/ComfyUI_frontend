@@ -123,7 +123,6 @@ The following table lists ALL 46 store instances in the system as of 2025-09-01:
 | graphStore.ts                | useCanvasStore                | Manages the graph canvas state and interactions         | Core       |
 | helpCenterStore.ts           | useHelpCenterStore            | Manages help center visibility and state                | UI         |
 | imagePreviewStore.ts         | useNodeOutputStore            | Manages node outputs and execution results              | Media      |
-| keybindingStore.ts           | useKeybindingStore            | Manages keyboard shortcuts                              | Input      |
 | maintenanceTaskStore.ts      | useMaintenanceTaskStore       | Handles system maintenance tasks                        | System     |
 | menuItemStore.ts             | useMenuItemStore              | Handles menu items and their state                      | UI         |
 | modelStore.ts                | useModelStore                 | Manages AI models information                           | Models     |

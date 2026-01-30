@@ -1,8 +1,9 @@
 import { expect } from '@playwright/test'
 
-import { type ComfyPage, comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 
-test.describe('Workflow Tab Thumbnails', () => {
+test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.Workflow.WorkflowTabsPosition', 'Topbar')

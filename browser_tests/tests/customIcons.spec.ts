@@ -22,7 +22,7 @@ async function verifyCustomIconSvg(iconElement: Locator) {
   expect(decodedSvg).toContain("<svg xmlns='http://www.w3.org/2000/svg'")
 }
 
-test.describe('Custom Icons', () => {
+test.describe('Custom Icons', { tag: '@settings' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })

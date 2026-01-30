@@ -1,9 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { GlobalSubgraphData } from '@/scripts/api'
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -14,6 +14,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestingPinia } from '@pinia/testing'
 
 // Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
 vi.mock('@/platform/telemetry', () => ({
@@ -96,10 +97,18 @@ describe('useSubgraphStore', () => {
     const graph = subgraphNode.graph
     graph.add(subgraphNode)
     vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
-    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
-      nodes: [subgraphNode.serialize()],
-      subgraphs: [subgraph.serialize() as any]
-    }))
+    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
+      const serializedSubgraph = {
+        ...subgraph.serialize(),
+        links: [],
+        groups: [],
+        version: 1
+      } as Partial<ExportedSubgraph> as ExportedSubgraph
+      return {
+        nodes: [subgraphNode.serialize()],
+        subgraphs: [serializedSubgraph]
+      }
+    })
     //mock saving of file
     vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200,
