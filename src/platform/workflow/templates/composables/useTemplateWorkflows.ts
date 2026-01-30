@@ -166,13 +166,6 @@ export function useTemplateWorkflows() {
     }
   }
 
-  /**
-   * Gets logo URL for a provider name
-   */
-  const getLogoUrl = (provider: string): string => {
-    return workflowTemplatesStore.getLogoUrl(provider)
-  }
-
   return {
     // State
     selectedTemplate,
@@ -190,6 +183,6 @@ export function useTemplateWorkflows() {
     getTemplateTitle,
     getTemplateDescription,
     loadWorkflowTemplate,
-    getLogoUrl
+    getLogoUrl: workflowTemplatesStore.getLogoUrl
   }
 }
