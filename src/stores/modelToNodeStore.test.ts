@@ -239,7 +239,7 @@ describe('useModelToNodeStore', () => {
     it('should not register provider when nodeDef is undefined', () => {
       const modelToNodeStore = useModelToNodeStore()
       const providerWithoutNodeDef = new ModelNodeProvider(
-        undefined as any,
+        undefined!,
         'custom_key'
       )
 
@@ -507,15 +507,11 @@ describe('useModelToNodeStore', () => {
       modelToNodeStore.registerDefaults()
 
       // These should not throw but return undefined
+      expect(modelToNodeStore.getCategoryForNodeType(null!)).toBeUndefined()
       expect(
-        modelToNodeStore.getCategoryForNodeType(null as any)
+        modelToNodeStore.getCategoryForNodeType(undefined!)
       ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType(undefined as any)
-      ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType(123 as any)
-      ).toBeUndefined()
+      expect(modelToNodeStore.getCategoryForNodeType('123')).toBeUndefined()
     })
 
     it('should be case-sensitive for node type matching', () => {
