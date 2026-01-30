@@ -767,7 +767,7 @@ useIntersectionObserver(loadTrigger, () => {
 // Reset pagination when filters change
 watch(
   [
-    searchQuery,
+    filteredTemplates,
     selectedNavItem,
     sortBy,
     selectedModels,
