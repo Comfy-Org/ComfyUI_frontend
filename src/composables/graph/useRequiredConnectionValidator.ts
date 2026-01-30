@@ -32,9 +32,8 @@ export function useRequiredConnectionValidator(): void {
 
       for (const inputName of Object.keys(nodeDef.input.required)) {
         const slot = node.inputs?.find((s) => s.name === inputName)
-        if (!slot) continue
 
-        const hasConnection = slot.link !== null && slot.link !== undefined
+        const hasConnection = slot?.link !== null && slot?.link !== undefined
         const hasWidgetValue = hasWidgetValueForInput(node, inputName)
 
         if (!hasConnection && !hasWidgetValue) {

@@ -135,7 +135,6 @@ export const useGraphErrorStateStore = defineStore('graphErrorState', () => {
     version,
     errorsByKey,
     keysByNode,
-    keysBySource,
     execute,
     getErrorsForNode,
     hasErrorsForNode,
