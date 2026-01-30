@@ -104,7 +104,7 @@ describe('sortAssets', () => {
       const items = [
         createItem('no-date'),
         createItem('has-date', { created_at: '2024-01-01T00:00:00Z' }),
-        createItem('null-date', { created_at: null as unknown as string })
+        createItem('undefined-date', { created_at: undefined })
       ]
       const result = sortAssets(items, 'recent')
       expect(result[0].name).toBe('has-date')

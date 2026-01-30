@@ -176,7 +176,7 @@ const missingValueItem = computed<FormDropdownItem | undefined>(() => {
   // Check in cloud mode assets
   if (props.isAssetMode && assetData) {
     const existsInAssets = assetData.assets.value.some(
-      (asset) => asset.name === currentValue
+      (asset) => getAssetFilename(asset) === currentValue
     )
     if (existsInAssets) return undefined
 
@@ -398,9 +398,9 @@ async function handleFilesUpdate(files: File[]) {
 
     // 2. Update widget options to include new files
     // This simulates what addToComboValues does but for SimplifiedWidget
-    if (props.widget.options?.values) {
+    const values = props.widget.options?.values
+    if (Array.isArray(values)) {
       uploadedPaths.forEach((path) => {
-        const values = props.widget.options!.values as string[]
         if (!values.includes(path)) {
           values.push(path)
         }

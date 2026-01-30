@@ -125,11 +125,12 @@ const closeDropdown = () => {
 
 function handleFileChange(event: Event) {
   if (props.disabled) return
-  const input = event.target as HTMLInputElement
-  if (input.files) {
-    files.value = Array.from(input.files)
+  const target = event.target
+  if (!(target instanceof HTMLInputElement)) return
+  if (target.files) {
+    files.value = Array.from(target.files)
   }
-  input.value = ''
+  target.value = ''
 }
 
 function handleSelection(item: FormDropdownItem, index: number) {

@@ -148,6 +148,7 @@ describe('AssetFilterBar', () => {
       expect(finalState.fileFormats).toEqual(['ckpt', 'safetensors'])
       expect(finalState.baseModels).toEqual(['sdxl'])
       expect(finalState.sortBy).toBe('name-desc')
+      expect(finalState.ownership).toBe('all')
     })
 
     it('ensures AssetFilterState interface compliance', async () => {

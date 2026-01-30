@@ -165,6 +165,7 @@ function handleOwnershipSelected(item: OwnershipFilterOption) {
     <button
       v-if="showOwnershipFilter && ownershipOptions?.length"
       ref="ownershipTriggerRef"
+      :aria-label="t('assetBrowser.ownership')"
       :title="t('assetBrowser.ownership')"
       :class="
         cn(

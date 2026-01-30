@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 
@@ -31,7 +32,7 @@ function createSortOption(
 
 export function getDefaultSortOptions(): SortOption<AssetSortOption>[] {
   return [
-    createSortOption('default', 'Default'),
-    createSortOption('name-asc', 'A-Z')
+    createSortOption('default', t('assetBrowser.sortDefault')),
+    createSortOption('name-asc', t('assetBrowser.sortAZ'))
   ]
 }
