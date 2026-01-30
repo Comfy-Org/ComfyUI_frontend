@@ -1,11 +1,18 @@
+import type { NodeReplacementResponse } from './types'
+
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { fetchNodeReplacements } from './nodeReplacementService'
 import { useNodeReplacementStore } from './nodeReplacementStore'
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn()
+}))
+
+vi.mock('./nodeReplacementService', () => ({
+  fetchNodeReplacements: vi.fn()
 }))
 
 function mockSettingStore(enabled: boolean) {
@@ -19,13 +26,18 @@ function mockSettingStore(enabled: boolean) {
   })
 }
 
+function createStore(enabled = true) {
+  setActivePinia(createPinia())
+  mockSettingStore(enabled)
+  return useNodeReplacementStore()
+}
+
 describe('useNodeReplacementStore', () => {
   let store: ReturnType<typeof useNodeReplacementStore>
 
   beforeEach(() => {
-    setActivePinia(createPinia())
-    mockSettingStore(true)
-    store = useNodeReplacementStore()
+    vi.clearAllMocks()
+    store = createStore(true)
   })
 
   it('should initialize with empty replacements', () => {
@@ -89,7 +101,7 @@ describe('useNodeReplacementStore', () => {
     })
 
     it('should return null when feature is disabled', () => {
-      mockSettingStore(false)
+      store = createStore(false)
       store.replacements = {
         OldNode: [
           {
@@ -140,7 +152,7 @@ describe('useNodeReplacementStore', () => {
     })
 
     it('should return false when feature is disabled', () => {
-      mockSettingStore(false)
+      store = createStore(false)
       store.replacements = {
         OldNode: [
           {
@@ -159,13 +171,70 @@ describe('useNodeReplacementStore', () => {
 
   describe('isEnabled', () => {
     it('should return true when setting is enabled', () => {
-      mockSettingStore(true)
-      expect(store.isEnabled()).toBe(true)
+      expect(store.isEnabled).toBe(true)
     })
 
     it('should return false when setting is disabled', () => {
-      mockSettingStore(false)
-      expect(store.isEnabled()).toBe(false)
+      store = createStore(false)
+      expect(store.isEnabled).toBe(false)
+    })
+  })
+
+  describe('load', () => {
+    const mockReplacements: NodeReplacementResponse = {
+      OldNode: [
+        {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        }
+      ]
+    }
+
+    beforeEach(() => {
+      vi.mocked(fetchNodeReplacements).mockReset()
+    })
+
+    it('should fetch and assign replacements on successful load', async () => {
+      vi.mocked(fetchNodeReplacements).mockResolvedValue(mockReplacements)
+      store = createStore()
+
+      await store.load()
+
+      expect(fetchNodeReplacements).toHaveBeenCalledOnce()
+      expect(store.replacements).toEqual(mockReplacements)
+      expect(store.isLoaded).toBe(true)
+    })
+
+    it('should log error but not throw when fetch fails', async () => {
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const error = new Error('Network error')
+      vi.mocked(fetchNodeReplacements).mockRejectedValue(error)
+      store = createStore()
+
+      await expect(store.load()).resolves.toBeUndefined()
+
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to load node replacements:',
+        error
+      )
+      expect(store.isLoaded).toBe(false)
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('should not re-fetch when called twice', async () => {
+      vi.mocked(fetchNodeReplacements).mockResolvedValue(mockReplacements)
+      store = createStore()
+
+      await store.load()
+      await store.load()
+
+      expect(fetchNodeReplacements).toHaveBeenCalledOnce()
     })
   })
 })

@@ -1,14 +1,18 @@
 import type { NodeReplacement, NodeReplacementResponse } from './types'
 
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { fetchNodeReplacements } from './nodeReplacementService'
 
 export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
+  const settingStore = useSettingStore()
   const replacements = ref<NodeReplacementResponse>({})
   const isLoaded = ref(false)
+  const isEnabled = computed(() =>
+    settingStore.get('Comfy.NodeReplacement.Enabled')
+  )
 
   async function load() {
     if (isLoaded.value) return
@@ -21,17 +25,13 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     }
   }
 
-  function isEnabled(): boolean {
-    return useSettingStore().get('Comfy.NodeReplacement.Enabled')
-  }
-
   function getReplacementFor(nodeType: string): NodeReplacement | null {
-    if (!isEnabled()) return null
+    if (!isEnabled.value) return null
     return replacements.value[nodeType]?.[0] ?? null
   }
 
   function hasReplacement(nodeType: string): boolean {
-    if (!isEnabled()) return false
+    if (!isEnabled.value) return false
     return !!replacements.value[nodeType]?.length
   }
 
