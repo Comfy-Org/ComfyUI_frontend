@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
 
       # Setup playwright environment
       - name: Setup ComfyUI Frontend
