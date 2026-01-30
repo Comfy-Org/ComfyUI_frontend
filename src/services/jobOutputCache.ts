@@ -81,7 +81,7 @@ function getPreviewableOutputs(outputs?: TaskOutput): ResultItemImpl[] {
   if (!outputs) return []
   const resultItems = Object.entries(outputs).flatMap(([nodeId, nodeOutputs]) =>
     Object.entries(nodeOutputs)
-      .filter(([mediaType, items]) => mediaType !== 'animated' && items)
+      .filter(([mediaType, _]) => mediaType !== 'animated')
       .flatMap(([mediaType, items]) => {
         if (!Array.isArray(items)) {
           return []
