@@ -37,8 +37,15 @@ function scheduleSlotLayoutSync(nodeId: string) {
 
 export function flushScheduledSlotLayoutSync() {
   if (pendingNodes.size === 0) {
-    // No pending nodes and no RAF scheduled - clear the flag to avoid
-    // permanently suppressing link rendering (e.g., workflows without Vue nodes)
+    // No pending nodes - check if we should wait for Vue components to mount
+    const graph = app.canvas?.graph
+    const hasNodes = graph && graph._nodes && graph._nodes.length > 0
+    if (hasNodes) {
+      // Graph has nodes but Vue hasn't mounted them yet - keep flag set
+      // so late mounts can re-assert it via scheduleSlotLayoutSync()
+      return
+    }
+    // No nodes in graph - safe to clear the flag (no Vue components will mount)
     layoutStore.setPendingSlotSync(false)
     app.canvas?.setDirty(true, true)
     return
