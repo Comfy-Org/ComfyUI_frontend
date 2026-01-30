@@ -99,7 +99,7 @@
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
             @click.stop="emit('select-asset', item.asset, selectableAssets)"
-            @stack-toggle="toggleStack(item.asset)"
+            @stack-toggle="void toggleStack(item.asset)"
           >
             <template v-if="hoveredAssetId === item.asset.id" #actions>
               <Button
@@ -156,7 +156,7 @@ const {
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
-  toggleStack: (asset: AssetItem) => void
+  toggleStack: (asset: AssetItem) => Promise<void>
   assetType?: 'input' | 'output'
 }>()
 
