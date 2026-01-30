@@ -15,6 +15,7 @@ import type {
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
@@ -232,14 +233,18 @@ export class PrimitiveNode extends LGraphNode {
     const [oldWidth, oldHeight] = this.size
     let widget: IBaseWidget
 
-    // Cloud: Use asset widget for model-eligible inputs
+    // Cloud: Use asset widget for model-eligible inputs when asset API is enabled
     if (isCloud && type === 'COMBO') {
+      const settingStore = useSettingStore()
+      const isUsingAssetAPI = settingStore.get('Comfy.Assets.UseAssetAPI')
       const isEligible = assetService.isAssetBrowserEligible(
         node.comfyClass,
         widgetName
       )
-      if (isEligible) {
+      if (isUsingAssetAPI && isEligible) {
         widget = this._createAssetWidget(node, widgetName, inputData)
+        const theirWidget = node.widgets?.find((w) => w.name === widgetName)
+        if (theirWidget) widget.value = theirWidget.value
         this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
         return
       }
