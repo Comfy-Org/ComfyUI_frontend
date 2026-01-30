@@ -26,7 +26,9 @@ describe('uploadService', () => {
         })
       }
 
-      vi.mocked(api.fetchApi).mockResolvedValue(mockResponse as any)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockResponse as Partial<Response> as Response
+      )
 
       const result = await uploadMedia({ source: mockFile })
 
@@ -46,7 +48,9 @@ describe('uploadService', () => {
         })
       }
 
-      vi.mocked(api.fetchApi).mockResolvedValue(mockResponse as any)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockResponse as Partial<Response> as Response
+      )
 
       const result = await uploadMedia({ source: mockBlob })
 
@@ -68,7 +72,9 @@ describe('uploadService', () => {
         })
       }
 
-      vi.mocked(api.fetchApi).mockResolvedValue(mockResponse as any)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockResponse as Partial<Response> as Response
+      )
 
       try {
         const result = await uploadMedia({ source: dataURL })
@@ -94,7 +100,9 @@ describe('uploadService', () => {
         json: vi.fn().mockResolvedValue({ name: 'test.png' })
       }
 
-      vi.mocked(api.fetchApi).mockResolvedValue(mockResponse as any)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockResponse as Partial<Response> as Response
+      )
 
       await uploadMedia(
         { source: mockFile },
@@ -131,7 +139,9 @@ describe('uploadService', () => {
         statusText: 'Internal Server Error'
       }
 
-      vi.mocked(api.fetchApi).mockResolvedValue(mockResponse as any)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockResponse as Partial<Response> as Response
+      )
 
       const result = await uploadMedia({ source: mockFile })
 
@@ -157,7 +167,9 @@ describe('uploadService', () => {
         json: vi.fn().mockResolvedValue({ name: 'mask.png' })
       }
 
-      vi.mocked(api.fetchApi).mockResolvedValue(mockResponse as any)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        mockResponse as Partial<Response> as Response
+      )
 
       const originalRef = {
         filename: 'original.png',
@@ -194,8 +206,8 @@ describe('uploadService', () => {
       }
 
       vi.mocked(api.fetchApi)
-        .mockResolvedValueOnce(mockResponse1 as any)
-        .mockResolvedValueOnce(mockResponse2 as any)
+        .mockResolvedValueOnce(mockResponse1 as Partial<Response> as Response)
+        .mockResolvedValueOnce(mockResponse2 as Partial<Response> as Response)
 
       const results = await uploadMediaBatch(
         mockFiles.map((source) => ({ source }))
