@@ -8,7 +8,7 @@ type Pattern = {
 }
 
 const distDir = resolve('dist')
-const ignoredExtensions = new Set(['.map', '.svg'])
+const allowedExtensions = new Set(['.html', '.js', '.map', '.ts'])
 const telemetryPatterns: Pattern[] = [
   { label: 'GTM container', regex: /GTM-[A-Z0-9]+/i },
   { label: 'GTM script', regex: /gtm\.js/i },
@@ -30,7 +30,7 @@ const violations: Array<{
 
 for (const file of files) {
   const extension = extname(file).toLowerCase()
-  if (ignoredExtensions.has(extension)) continue
+  if (!allowedExtensions.has(extension)) continue
 
   const content = await readFile(file, 'utf8')
   const hits = telemetryPatterns.flatMap((pattern) => {
