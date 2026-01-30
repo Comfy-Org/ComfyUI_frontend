@@ -10,16 +10,10 @@ import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   IBaseWidget,
-  IWidgetAssetOptions,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import {
-  assetFilenameSchema,
-  assetItemSchema
-} from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
@@ -245,8 +239,8 @@ export class PrimitiveNode extends LGraphNode {
         widgetName
       )
       if (isEligible) {
-        widget = this.#createAssetWidget(node, widgetName, inputData)
-        this.#finalizeWidget(widget, oldWidth, oldHeight, recreating)
+        widget = this._createAssetWidget(node, widgetName, inputData)
+        this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
         return
       }
     }
@@ -300,69 +294,34 @@ export class PrimitiveNode extends LGraphNode {
       }
     }
 
-    this.#finalizeWidget(widget, oldWidth, oldHeight, recreating)
+    this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
   }
 
-  #createAssetWidget(
+  private _createAssetWidget(
     targetNode: LGraphNode,
-    widgetName: string,
+    _widgetName: string,
     inputData: InputSpec
   ): IBaseWidget {
     const defaultValue = inputData[1]?.default as string | undefined
-    const assetBrowserDialog = useAssetBrowserDialog()
-
-    const openModal = async (widget: IBaseWidget) => {
-      await assetBrowserDialog.show({
-        nodeType: targetNode.comfyClass ?? '',
-        inputName: widgetName,
-        currentValue: widget.value as string,
-        onAssetSelected: (asset) => {
-          const validatedAsset = assetItemSchema.safeParse(asset)
-          if (!validatedAsset.success) {
-            console.error('Invalid asset item:', validatedAsset.error.errors)
-            return
-          }
-
-          const filename = getAssetFilename(validatedAsset.data)
-          const validatedFilename = assetFilenameSchema.safeParse(filename)
-          if (!validatedFilename.success) {
-            console.error(
-              'Invalid asset filename:',
-              validatedFilename.error.errors
-            )
-            return
-          }
-
-          const oldValue = widget.value
-          widget.value = validatedFilename.data
-          widget.callback?.(
-            widget.value,
-            app.canvas,
-            this,
-            app.canvas.graph_mouse,
-            {} as CanvasPointerEvent
-          )
-          this.onWidgetChanged?.(
-            widget.name,
-            validatedFilename.data,
-            oldValue,
-            widget
-          )
-        }
-      })
-    }
-
-    const options: IWidgetAssetOptions = { openModal }
-    return this.addWidget(
-      'asset',
-      'value',
-      defaultValue ?? '',
-      () => {},
-      options
-    )
+    return createAssetWidget({
+      node: this,
+      widgetName: 'value',
+      nodeTypeForBrowser: targetNode.comfyClass ?? '',
+      defaultValue,
+      onValueChange: (widget, newValue, oldValue) => {
+        widget.callback?.(
+          widget.value,
+          app.canvas,
+          this,
+          app.canvas.graph_mouse,
+          {} as CanvasPointerEvent
+        )
+        this.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
+      }
+    })
   }
 
-  #finalizeWidget(
+  private _finalizeWidget(
     widget: IBaseWidget,
     oldWidth: number,
     oldHeight: number,

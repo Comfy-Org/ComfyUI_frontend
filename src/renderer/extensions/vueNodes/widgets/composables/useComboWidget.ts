@@ -3,18 +3,10 @@ import { ref } from 'vue'
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { isAssetWidget, isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetAssetOptions
-} from '@/lib/litegraph/src/types/widgets'
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import {
-  assetFilenameSchema,
-  assetItemSchema
-} from '@/platform/assets/schemas/assetSchema'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import { isComboWidget } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
+import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
@@ -90,71 +82,20 @@ const addMultiSelectWidget = (
   return widget
 }
 
-const createAssetBrowserWidget = (
+function createAssetBrowserWidget(
   node: LGraphNode,
   inputSpec: ComboInputSpec,
   defaultValue: string | undefined
-): IBaseWidget => {
-  const currentValue = defaultValue
-  const displayLabel = currentValue ?? t('widgets.selectModel')
-  const assetBrowserDialog = useAssetBrowserDialog()
-
-  async function openModal(widget: IBaseWidget) {
-    if (!isAssetWidget(widget)) {
-      throw new Error(`Expected asset widget but received ${widget.type}`)
+): IBaseWidget {
+  return createAssetWidget({
+    node,
+    widgetName: inputSpec.name,
+    nodeTypeForBrowser: node.comfyClass ?? '',
+    defaultValue,
+    onValueChange: (widget, newValue, oldValue) => {
+      node.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
     }
-    await assetBrowserDialog.show({
-      nodeType: node.comfyClass || '',
-      inputName: inputSpec.name,
-      currentValue: widget.value,
-      onAssetSelected: (asset) => {
-        const validatedAsset = assetItemSchema.safeParse(asset)
-
-        if (!validatedAsset.success) {
-          console.error(
-            'Invalid asset item:',
-            validatedAsset.error.errors,
-            'Received:',
-            asset
-          )
-          return
-        }
-
-        const filename = getAssetFilename(validatedAsset.data)
-        const validatedFilename = assetFilenameSchema.safeParse(filename)
-
-        if (!validatedFilename.success) {
-          console.error(
-            'Invalid asset filename:',
-            validatedFilename.error.errors,
-            'for asset:',
-            validatedAsset.data.id
-          )
-          return
-        }
-
-        const oldValue = widget.value
-        widget.value = validatedFilename.data
-        node.onWidgetChanged?.(
-          widget.name,
-          validatedFilename.data,
-          oldValue,
-          widget
-        )
-      }
-    })
-  }
-  const options: IWidgetAssetOptions = { openModal }
-
-  const widget = node.addWidget(
-    'asset',
-    inputSpec.name,
-    displayLabel,
-    () => undefined,
-    options
-  )
-
-  return widget
+  })
 }
 
 const createInputMappingWidget = (
