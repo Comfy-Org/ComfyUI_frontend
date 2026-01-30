@@ -14,20 +14,29 @@ describe('useComfyRegistrySearchProvider', () => {
   const mockListAllPacksCall = vi.fn()
   const mockListAllPacksClear = vi.fn()
 
+  const createMockStore = (
+    params: Partial<typeof useComfyRegistryStore> = {}
+  ) => {
+    return {
+      search: {
+        call: mockSearchCall,
+        clear: mockSearchClear,
+        cancel: vi.fn()
+      },
+      listAllPacks: {
+        call: vi.mocked(() => Promise.resolve(null)),
+        clear: mockListAllPacksClear,
+        cancel: vi.fn()
+      },
+      ...params
+    } as Partial<typeof useComfyRegistryStore> as typeof useComfyRegistryStore
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
 
     // Setup store mock
-    vi.mocked(useComfyRegistryStore).mockReturnValue({
-      search: {
-        call: mockSearchCall,
-        clear: mockSearchClear
-      },
-      listAllPacks: {
-        call: mockListAllPacksCall,
-        clear: mockListAllPacksClear
-      }
-    } as any)
+    vi.mocked(useComfyRegistryStore).mockImplementation(createMockStore())
   })
 
   describe('searchPacks', () => {

@@ -3,10 +3,15 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+
+const { mockSetDirty } = vi.hoisted(() => ({
+  mockSetDirty: vi.fn()
+}))
 
 vi.mock('@/scripts/app', () => {
   const mockCanvas = {
@@ -19,7 +24,7 @@ vi.mock('@/scripts/app', () => {
         offset: [0, 0]
       }
     },
-    setDirty: vi.fn()
+    setDirty: mockSetDirty
   }
 
   return {
@@ -38,12 +43,12 @@ vi.mock('@/scripts/app', () => {
 // Mock canvasStore
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
-    getCanvas: () => (app as any).canvas
+    getCanvas: () => app.canvas
   })
 }))
 
 // Get reference to mock canvas
-const mockCanvas = app.canvas as any
+const mockCanvas = app.canvas
 
 describe('useSubgraphNavigationStore - Viewport Persistence', () => {
   beforeEach(() => {
@@ -53,7 +58,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
     mockCanvas.ds.offset = [0, 0]
     mockCanvas.ds.state.scale = 1
     mockCanvas.ds.state.offset = [0, 0]
-    mockCanvas.setDirty.mockClear()
+    mockSetDirty.mockClear()
   })
 
   describe('saveViewport', () => {
@@ -99,7 +104,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       // Mock being in a subgraph
       const mockSubgraph = { id: 'sub-456' }
-      workflowStore.activeSubgraph = mockSubgraph as any
+      workflowStore.activeSubgraph = mockSubgraph as Subgraph
 
       // Set viewport state
       mockCanvas.ds.state.scale = 3
@@ -159,7 +164,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       // Reset canvas
       mockCanvas.ds.scale = 1
       mockCanvas.ds.offset = [0, 0]
-      mockCanvas.setDirty.mockClear()
+      mockSetDirty.mockClear()
 
       // Try to restore non-existent viewport
       navigationStore.restoreViewport('non-existent')
@@ -167,7 +172,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       // Canvas should not change
       expect(mockCanvas.ds.scale).toBe(1)
       expect(mockCanvas.ds.offset).toEqual([0, 0])
-      expect(mockCanvas.setDirty).not.toHaveBeenCalled()
+      expect(mockSetDirty).not.toHaveBeenCalled()
     })
   })
 
@@ -182,7 +187,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
         nodes: [],
         subgraphs: new Map(),
         getNodeById: vi.fn()
-      }
+      } as Partial<LGraph> as LGraph
       const subgraph1 = {
         id: 'sub1',
         rootGraph: mockRootGraph,
@@ -195,7 +200,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       mockCanvas.ds.state.offset = [100, 100]
 
       // Navigate to subgraph
-      workflowStore.activeSubgraph = subgraph1 as any
+      workflowStore.activeSubgraph = subgraph1 as Partial<Subgraph> as Subgraph
       await nextTick()
 
       // Root viewport should have been saved automatically
@@ -240,10 +245,14 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       const workflow1 = { path: 'workflow1.json' } as ComfyWorkflow
       const workflow2 = { path: 'workflow2.json' } as ComfyWorkflow
 
-      workflowStore.activeWorkflow = workflow1 as any
+      workflowStore.activeWorkflow = workflow1 as ReturnType<
+        typeof useWorkflowStore
+      >['activeWorkflow']
       await nextTick()
 
-      workflowStore.activeWorkflow = workflow2 as any
+      workflowStore.activeWorkflow = workflow2 as ReturnType<
+        typeof useWorkflowStore
+      >['activeWorkflow']
       await nextTick()
 
       // Cache should be preserved (LRU will manage memory)

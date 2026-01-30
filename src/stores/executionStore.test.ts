@@ -1,7 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 
@@ -11,6 +9,8 @@ const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { createTestingPinia } from '@pinia/testing'
 
 // Mock the workflowStore
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
@@ -72,12 +72,11 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
         nodes: []
       }
 
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         id: 123,
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
-      } as any
-
+      })
       // Mock app.rootGraph.getNodeById to return the mock node
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
@@ -178,11 +177,11 @@ describe('useExecutionStore - Node Error Lookups', () => {
         nodes: []
       }
 
-      const mockNode = {
+      const mockNode = createMockLGraphNode({
         id: 123,
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
-      } as any
+      })
 
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 

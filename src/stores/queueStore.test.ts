@@ -38,7 +38,11 @@ function createHistoryJob(createTime: number, id: string): JobListItem {
 
 const createTaskOutput = (
   nodeId: string = 'node-1',
-  images: any[] = []
+  images: {
+    type?: 'output' | 'input' | 'temp'
+    filename?: string
+    subfolder?: string
+  }[] = []
 ): TaskOutput => ({
   [nodeId]: {
     images
@@ -490,7 +494,7 @@ describe('useQueueStore', () => {
     it('should recreate TaskItemImpl when outputs_count changes', async () => {
       // Initial load without outputs_count
       const jobWithoutOutputsCount = createHistoryJob(10, 'job-1')
-      delete (jobWithoutOutputsCount as any).outputs_count
+      delete jobWithoutOutputsCount.outputs_count
 
       mockGetQueue.mockResolvedValue({ Running: [], Pending: [] })
       mockGetHistory.mockResolvedValue([jobWithoutOutputsCount])
