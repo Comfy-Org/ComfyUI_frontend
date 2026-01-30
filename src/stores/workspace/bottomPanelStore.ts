@@ -2,10 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
-import {
-  useCommandTerminalTab,
-  useLogsTerminalTab
-} from '@/composables/bottomPanelTabs/useTerminalTabs'
+
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
@@ -121,10 +118,15 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     })
   }
 
-  const registerCoreBottomPanelTabs = () => {
-    registerBottomPanelTab(useLogsTerminalTab())
-    if (isElectron()) {
-      registerBottomPanelTab(useCommandTerminalTab())
+  const registerCoreBottomPanelTabs = async () => {
+    // Use __DISTRIBUTION__ directly for proper dead code elimination
+    if (__DISTRIBUTION__ !== 'cloud') {
+      const { useLogsTerminalTab, useCommandTerminalTab } =
+        await import('@/composables/bottomPanelTabs/useTerminalTabs')
+      registerBottomPanelTab(useLogsTerminalTab())
+      if (isElectron()) {
+        registerBottomPanelTab(useCommandTerminalTab())
+      }
     }
     useShortcutsTab().forEach(registerBottomPanelTab)
   }

@@ -1,3 +1,4 @@
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
@@ -108,6 +109,12 @@ export function useKeybindingService() {
 
   function registerCoreKeybindings() {
     for (const keybinding of CORE_KEYBINDINGS) {
+      if (
+        isCloud &&
+        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
+      ) {
+        continue
+      }
       keybindingStore.addDefaultKeybinding(new KeybindingImpl(keybinding))
     }
   }

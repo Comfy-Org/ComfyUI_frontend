@@ -8,6 +8,7 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
+
 import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { t } from '@/i18n'
 import {
