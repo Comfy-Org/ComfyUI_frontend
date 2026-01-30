@@ -36,7 +36,7 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-// Mock modelToNodeStore with proper node providers
+// Mock modelToNodeStore with proper node providers and category lookups
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({
     getAllNodeProviders: vi.fn((category: string) => {
@@ -56,8 +56,17 @@ vi.mock('@/stores/modelToNodeStore', () => ({
       }
       return providers[category] ?? []
     }),
+    getCategoryForNodeType: vi.fn((nodeType: string) => {
+      const nodeToCategory: Record<string, string> = {
+        CheckpointLoaderSimple: 'checkpoints',
+        ImageOnlyCheckpointLoader: 'checkpoints',
+        LoraLoader: 'loras',
+        LoraLoaderModelOnly: 'loras',
+        VAELoader: 'vae'
+      }
+      return nodeToCategory[nodeType]
+    }),
     getNodeProvider: vi.fn(),
-    getCategoryForNodeType: vi.fn(),
     registerDefaults: vi.fn()
   })
 }))
@@ -572,51 +581,70 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(assets.map((a) => a.id)).toContain('new-asset')
     })
 
-    it('should return cached array on subsequent getAssets calls', () => {
+    it('should return cached array on subsequent getAssets calls', async () => {
       const store = useAssetsStore()
-      const nodeType = 'TestLoader'
+      const nodeType = 'CheckpointLoaderSimple'
+      const assets = [createMockAsset('cache-test-1')]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType(nodeType)
 
       const firstCall = store.getAssets(nodeType)
       const secondCall = store.getAssets(nodeType)
 
       expect(secondCall).toBe(firstCall)
+      expect(firstCall).toHaveLength(1)
     })
   })
 
   describe('concurrent request handling', () => {
-    it('should discard stale request when newer request starts', async () => {
+    it('should short-circuit concurrent calls to prevent duplicate work', async () => {
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
       const firstBatch = Array.from({ length: 5 }, (_, i) =>
         createMockAsset(`first-${i}`)
       )
-      const secondBatch = Array.from({ length: 10 }, (_, i) =>
-        createMockAsset(`second-${i}`)
-      )
 
-      let resolveFirst: (value: ReturnType<typeof createMockAsset>[]) => void
-      const firstPromise = new Promise<ReturnType<typeof createMockAsset>[]>(
-        (resolve) => {
-          resolveFirst = resolve
-        }
-      )
-      let callCount = 0
-      vi.mocked(assetService.getAssetsForNodeType).mockImplementation(
-        async () => {
-          callCount++
-          return callCount === 1 ? firstPromise : secondBatch
-        }
-      )
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(firstBatch)
 
+      // Start two concurrent requests for the same category
       const firstRequest = store.updateModelsForNodeType(nodeType)
       const secondRequest = store.updateModelsForNodeType(nodeType)
-      resolveFirst!(firstBatch)
       await Promise.all([firstRequest, secondRequest])
 
-      expect(store.getAssets(nodeType)).toHaveLength(10)
+      // Second request should be short-circuited, only one API call made
       expect(
-        store.getAssets(nodeType).every((a) => a.id.startsWith('second-'))
-      ).toBe(true)
+        vi.mocked(assetService.getAssetsForNodeType)
+      ).toHaveBeenCalledTimes(1)
+      expect(store.getAssets(nodeType)).toHaveLength(5)
+    })
+
+    it('should allow new request after previous completes', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const firstBatch = [createMockAsset('first-1')]
+      const secondBatch = [
+        createMockAsset('second-1'),
+        createMockAsset('second-2')
+      ]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        firstBatch
+      )
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getAssets(nodeType)).toHaveLength(1)
+
+      // After first completes, a new request should work
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        secondBatch
+      )
+      store.invalidateCategory('checkpoints')
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.getAssets(nodeType)).toHaveLength(2)
+      expect(
+        vi.mocked(assetService.getAssetsForNodeType)
+      ).toHaveBeenCalledTimes(2)
     })
   })
 
@@ -641,80 +669,86 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
   })
 
-  describe('invalidateModelsForCategory', () => {
-    it('should invalidate model cache for all node types providing a category', async () => {
+  describe('category-keyed cache', () => {
+    it('should share cache between node types of the same category', async () => {
       const store = useAssetsStore()
-      const nodeType = 'CheckpointLoaderSimple'
+      const assets = [createMockAsset('shared-1'), createMockAsset('shared-2')]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        createMockAsset('existing-1'),
-        createMockAsset('existing-2')
-      ])
-      await store.updateModelsForNodeType(nodeType)
-      expect(store.getAssets(nodeType)).toHaveLength(2)
-
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        createMockAsset('existing-1')
-      ])
-
-      await store.invalidateModelsForCategory('checkpoints')
-
-      expect(store.getAssets(nodeType)).toHaveLength(1)
-    })
-
-    it('should invalidate multiple node types for same category', async () => {
-      const store = useAssetsStore()
-
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([
-        createMockAsset('asset-1')
-      ])
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
 
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
-      await store.updateModelsForNodeType('ImageOnlyCheckpointLoader')
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
-
-      await store.invalidateModelsForCategory('checkpoints')
-
-      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(0)
-      expect(store.getAssets('ImageOnlyCheckpointLoader')).toHaveLength(0)
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
+      expect(store.getAssets('ImageOnlyCheckpointLoader')).toHaveLength(2)
+      expect(
+        vi.mocked(assetService.getAssetsForNodeType)
+      ).toHaveBeenCalledTimes(1)
     })
 
-    it('should also invalidate tag-based caches', async () => {
+    it('should return empty array for unknown node types', () => {
       const store = useAssetsStore()
+      expect(store.getAssets('UnknownNodeType')).toEqual([])
+    })
 
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([
-        createMockAsset('tag-asset-1')
-      ])
-
-      await store.updateModelsForTag('checkpoints')
-      expect(store.getAssets('tag:checkpoints')).toHaveLength(1)
-
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValueOnce([])
-
-      await store.invalidateModelsForCategory('checkpoints')
-
-      expect(store.getAssets('tag:checkpoints')).toHaveLength(0)
+    it('should not fetch for unknown node types', async () => {
+      const store = useAssetsStore()
+      await store.updateModelsForNodeType('UnknownNodeType')
+      expect(
+        vi.mocked(assetService.getAssetsForNodeType)
+      ).not.toHaveBeenCalled()
     })
   })
 
-  describe('removeAssetFromCache', () => {
-    it('should remove specific asset from node type cache', async () => {
+  describe('invalidateCategory', () => {
+    it('should clear cache for a category', async () => {
       const store = useAssetsStore()
-      const nodeType = 'LoraLoader'
+      const assets = [createMockAsset('asset-1'), createMockAsset('asset-2')]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce([
-        createMockAsset('lora-1'),
-        createMockAsset('lora-2'),
-        createMockAsset('lora-3')
-      ])
-      await store.updateModelsForNodeType(nodeType)
-      expect(store.getAssets(nodeType)).toHaveLength(3)
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+      expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
 
-      store.removeAssetFromCache('lora-2', 'loras')
+      store.invalidateCategory('checkpoints')
 
-      expect(store.getAssets(nodeType)).toHaveLength(2)
-      expect(store.getAssets(nodeType).map((a) => a.id)).not.toContain('lora-2')
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+      expect(store.hasAssetKey('CheckpointLoaderSimple')).toBe(false)
+    })
+
+    it('should allow refetch after invalidation', async () => {
+      const store = useAssetsStore()
+      const initialAssets = [createMockAsset('initial-1')]
+      const refreshedAssets = [
+        createMockAsset('refreshed-1'),
+        createMockAsset('refreshed-2')
+      ]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        initialAssets
+      )
+      await store.updateModelsForNodeType('LoraLoader')
+      expect(store.getAssets('LoraLoader')).toHaveLength(1)
+
+      store.invalidateCategory('loras')
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
+        refreshedAssets
+      )
+      await store.updateModelsForNodeType('LoraLoader')
+
+      expect(store.getAssets('LoraLoader')).toHaveLength(2)
+    })
+
+    it('should invalidate tag-based caches', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('tag-asset-1')]
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(assets)
+      await store.updateModelsForTag('models')
+      expect(store.getAssets('tag:models')).toHaveLength(1)
+
+      store.invalidateCategory('tag:models')
+
+      expect(store.getAssets('tag:models')).toEqual([])
     })
   })
 })
