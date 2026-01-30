@@ -181,10 +181,12 @@ function useSubscriptionInternal() {
       ]
     }
 
-    try {
-      telemetry?.trackSubscriptionPurchase(metadata)
-    } catch (error) {
-      console.error('Failed to track subscription purchase', error)
+    if (isCloud) {
+      try {
+        telemetry?.trackSubscriptionPurchase(metadata)
+      } catch (error) {
+        console.error('Failed to track subscription purchase', error)
+      }
     }
 
     clearPendingSubscriptionPurchase()

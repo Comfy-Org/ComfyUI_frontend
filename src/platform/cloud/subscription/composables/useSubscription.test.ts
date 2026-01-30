@@ -10,9 +10,11 @@ const {
   mockShowSubscriptionRequiredDialog,
   mockGetAuthHeader,
   mockTelemetry,
-  mockUserId
+  mockUserId,
+  mockIsCloud
 } = vi.hoisted(() => ({
   mockIsLoggedIn: { value: false },
+  mockIsCloud: { value: true },
   mockReportError: vi.fn(),
   mockAccessBillingPortal: vi.fn(),
   mockShowSubscriptionRequiredDialog: vi.fn(),
@@ -78,7 +80,9 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
 vi.mock('@/services/dialogService', () => ({
@@ -114,6 +118,7 @@ describe('useSubscription', () => {
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
     mockTelemetry.trackSubscriptionPurchase.mockReset()
     mockUserId.value = 'user-123'
+    mockIsCloud.value = true
     window.__CONFIG__ = {
       subscription_required: true
     } as typeof window.__CONFIG__
@@ -287,6 +292,40 @@ describe('useSubscription', () => {
           ]
         })
       )
+      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
+    })
+
+    it('skips purchase tracking outside cloud distribution', async () => {
+      localStorage.setItem(
+        'pending_subscription_purchase',
+        JSON.stringify({
+          firebaseUid: 'user-123',
+          tierKey: 'creator',
+          billingCycle: 'monthly',
+          timestamp: Date.now(),
+          previous_status: {
+            is_active: false
+          }
+        })
+      )
+
+      mockIsCloud.value = false
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_123',
+          subscription_tier: 'CREATOR',
+          subscription_duration: 'MONTHLY'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+
+      expect(mockTelemetry.trackSubscriptionPurchase).not.toHaveBeenCalled()
       expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
     })
 
