@@ -89,6 +89,7 @@ const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
 const emit = defineEmits<{
   (event: 'update:progressTarget', target: HTMLElement | null): void
 }>()
+
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
 const { t } = useI18n()
