@@ -249,7 +249,10 @@ describe('useSubscription', () => {
           firebaseUid: 'user-123',
           tierKey: 'creator',
           billingCycle: 'monthly',
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          previous_status: {
+            is_active: false
+          }
         })
       )
 
@@ -294,11 +297,50 @@ describe('useSubscription', () => {
           firebaseUid: 'user-123',
           tierKey: 'creator',
           billingCycle: 'monthly',
-          timestamp: Date.now()
+          timestamp: Date.now(),
+          previous_status: {
+            is_active: false
+          }
         })
       )
 
       mockUserId.value = 'user-456'
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          is_active: true,
+          subscription_id: 'sub_123',
+          subscription_tier: 'CREATOR',
+          subscription_duration: 'MONTHLY'
+        })
+      } as Response)
+
+      mockIsLoggedIn.value = true
+      const { fetchStatus } = useSubscriptionWithScope()
+
+      await fetchStatus()
+
+      expect(mockTelemetry.trackSubscriptionPurchase).not.toHaveBeenCalled()
+      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
+    })
+
+    it('skips purchase when subscription was already active and unchanged', async () => {
+      localStorage.setItem(
+        'pending_subscription_purchase',
+        JSON.stringify({
+          firebaseUid: 'user-123',
+          tierKey: 'creator',
+          billingCycle: 'monthly',
+          timestamp: Date.now(),
+          previous_status: {
+            is_active: true,
+            subscription_id: 'sub_123',
+            subscription_tier: 'CREATOR',
+            subscription_duration: 'MONTHLY'
+          }
+        })
+      )
+
       vi.mocked(global.fetch).mockResolvedValue({
         ok: true,
         json: async () => ({

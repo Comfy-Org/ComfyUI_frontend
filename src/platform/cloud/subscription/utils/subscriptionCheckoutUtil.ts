@@ -6,7 +6,8 @@ import {
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { startSubscriptionPurchaseTracking } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
+import { startSubscriptionPurchaseTracking } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker';
+import type { SubscriptionStatusSnapshot } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker';
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -32,7 +33,8 @@ const getCheckoutTier = (
 export async function performSubscriptionCheckout(
   tierKey: TierKey,
   currentBillingCycle: BillingCycle,
-  openInNewTab: boolean = true
+  openInNewTab: boolean = true,
+  previousStatus?: SubscriptionStatusSnapshot
 ): Promise<void> {
   if (!isCloud) return
 
@@ -80,7 +82,12 @@ export async function performSubscriptionCheckout(
 
   if (data.checkout_url) {
     if (userId) {
-      startSubscriptionPurchaseTracking(tierKey, currentBillingCycle, userId)
+      startSubscriptionPurchaseTracking(
+        tierKey,
+        currentBillingCycle,
+        userId,
+        previousStatus
+      )
     }
     if (openInNewTab) {
       window.open(data.checkout_url, '_blank')

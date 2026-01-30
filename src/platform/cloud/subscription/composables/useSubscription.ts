@@ -118,6 +118,45 @@ function useSubscriptionInternal() {
     )
     if (!pendingPurchase) return
 
+    const statusTierKey = status.subscription_tier
+      ? TIER_TO_KEY[status.subscription_tier]
+      : null
+    const statusBillingCycle =
+      status.subscription_duration === 'ANNUAL'
+        ? 'yearly'
+        : status.subscription_duration === 'MONTHLY'
+          ? 'monthly'
+          : null
+
+    if (
+      statusTierKey &&
+      statusBillingCycle &&
+      (statusTierKey !== pendingPurchase.tierKey ||
+        statusBillingCycle !== pendingPurchase.billingCycle)
+    ) {
+      clearPendingSubscriptionPurchase()
+      return
+    }
+
+    const previousStatus = pendingPurchase.previous_status
+    const wasActive = previousStatus?.is_active
+    const hasSubscriptionIdChange =
+      previousStatus?.subscription_id !== undefined &&
+      previousStatus.subscription_id !== status.subscription_id
+    const hasTierChange =
+      previousStatus?.subscription_tier !== undefined &&
+      previousStatus.subscription_tier !== status.subscription_tier
+    const hasDurationChange =
+      previousStatus?.subscription_duration !== undefined &&
+      previousStatus.subscription_duration !== status.subscription_duration
+    const hasSubscriptionChange =
+      hasSubscriptionIdChange || hasTierChange || hasDurationChange
+
+    if (wasActive !== false && !hasSubscriptionChange) {
+      clearPendingSubscriptionPurchase()
+      return
+    }
+
     const { tierKey, billingCycle } = pendingPurchase
     const isYearly = billingCycle === 'yearly'
     const baseName = t(`subscription.tiers.${tierKey}.name`)
