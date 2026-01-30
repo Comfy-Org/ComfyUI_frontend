@@ -46,6 +46,7 @@ import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
 import { useGraphErrorState } from '@/composables/graph/useGraphErrorState'
+import { useRequiredConnectionValidator } from '@/composables/graph/useRequiredConnectionValidator'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -87,6 +88,7 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
 useGraphErrorState()
+useRequiredConnectionValidator()
 
 const { t } = useI18n()
 const toast = useToast()
