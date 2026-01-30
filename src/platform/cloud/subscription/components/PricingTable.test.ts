@@ -22,7 +22,8 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     subscriptionTier: computed(() => mockSubscriptionTier.value),
-    isYearlySubscription: computed(() => mockIsYearlySubscription.value)
+    isYearlySubscription: computed(() => mockIsYearlySubscription.value),
+    subscriptionStatus: ref(null)
   })
 }))
 

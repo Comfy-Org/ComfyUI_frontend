@@ -40,7 +40,8 @@ vi.mock('@/composables/useErrorHandling', () => ({
 
 const subscriptionMocks = vi.hoisted(() => ({
   isActiveSubscription: { value: false },
-  isInitialized: { value: true }
+  isInitialized: { value: true },
+  subscriptionStatus: { value: null }
 }))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
@@ -125,7 +126,8 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      false,
+      undefined
     )
 
     // Shows loading affordances
@@ -156,7 +158,8 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockPerformSubscriptionCheckout).toHaveBeenCalledWith(
       'creator',
       'monthly',
-      false
+      false,
+      undefined
     )
   })
 })
