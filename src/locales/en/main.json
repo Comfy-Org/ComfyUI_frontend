@@ -2598,6 +2598,8 @@
     "upgradeToUnlockFeature": "Upgrade to unlock this feature",
     "upload": "Import",
     "uploadFailed": "Import failed",
+    "apiKeyHint": "Importing private or gated models? {link}.",
+    "apiKeyHintLink": "Add your API keys in Settings",
     "uploadingModel": "Importing model...",
     "uploadModel": "Import",
     "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",

@@ -131,7 +131,7 @@ const loading = ref(false)
 const apiErrorCode = ref<SecretErrorCode | null>(null)
 const apiErrorMessage = ref<string | null>(null)
 
-const PROVIDER_NONE = '__none__'
+const PROVIDER_NONE = '__none__' as const
 
 const form = reactive({
   name: '',
@@ -144,16 +144,22 @@ const errors = reactive({
   secretValue: ''
 })
 
-const providerOptions = computed(() => [
+const providerOptions = computed<
+  {
+    label: string
+    value: SecretProvider | typeof PROVIDER_NONE
+    disabled: boolean
+  }[]
+>(() => [
   { label: t('g.none'), value: PROVIDER_NONE, disabled: false },
   {
     label: 'HuggingFace',
-    value: 'huggingface',
+    value: 'huggingface' as const,
     disabled: existingProviders.includes('huggingface')
   },
   {
     label: 'Civitai',
-    value: 'civitai',
+    value: 'civitai' as const,
     disabled: existingProviders.includes('civitai')
   }
 ])

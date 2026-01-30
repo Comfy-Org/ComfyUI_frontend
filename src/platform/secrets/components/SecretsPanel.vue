@@ -1,18 +1,25 @@
 <template>
   <TabPanel value="Secrets" class="h-full">
     <div class="flex h-full flex-col">
-      <div class="mb-4 flex items-center justify-between">
-        <div>
-          <h2 class="text-2xl font-bold">{{ $t('secrets.title') }}</h2>
-          <p class="mt-1 text-sm text-muted">{{ $t('secrets.description') }}</p>
-        </div>
+      <div>
+        <h2 class="text-2xl font-bold">{{ $t('secrets.title') }}</h2>
+        <p class="mt-1 text-sm text-muted">{{ $t('secrets.description') }}</p>
+        <p class="mt-1 text-sm text-muted">
+          {{ $t('secrets.descriptionUsage') }}
+        </p>
+      </div>
+
+      <Divider class="my-4" />
+
+      <div class="flex items-center justify-between my-4">
+        <h3 class="text-lg font-semibold my-0">
+          {{ $t('secrets.modelProviders') }}
+        </h3>
         <Button @click="openCreateDialog">
           <i class="pi pi-plus mr-1" />
           {{ $t('secrets.addSecret') }}
         </Button>
       </div>
-
-      <Divider class="mb-4" />
 
       <div v-if="loading" class="flex items-center justify-center py-8">
         <ProgressSpinner class="h-8 w-8" />

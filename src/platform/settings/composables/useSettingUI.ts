@@ -30,6 +30,7 @@ export function useSettingUI(
     | 'credits'
     | 'subscription'
     | 'workspace'
+    | 'secrets'
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()

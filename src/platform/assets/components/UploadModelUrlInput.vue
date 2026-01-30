@@ -67,8 +67,24 @@
       </div>
     </div>
 
-    <div class="text-sm text-muted">
-      {{ $t('assetBrowser.uploadModelHelpFooterText') }}
+    <div class="flex flex-col gap-6 text-sm text-muted-foreground">
+      <div v-if="showSecretsHint">
+        <i18n-t keypath="assetBrowser.apiKeyHint" tag="span">
+          <template #link>
+            <Button
+              variant="textonly"
+              size="unset"
+              class="text-muted-foreground underline p-0"
+              @click="openSecretsSettings"
+            >
+              {{ $t('assetBrowser.apiKeyHintLink') }}
+            </Button>
+          </template>
+        </i18n-t>
+      </div>
+      <div>
+        {{ $t('assetBrowser.uploadModelHelpFooterText') }}
+      </div>
     </div>
   </div>
 </template>
@@ -77,9 +93,18 @@
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDialogService } from '@/services/dialogService'
 
 const { flags } = useFeatureFlags()
+const dialogService = useDialogService()
+
+const showSecretsHint = computed(() => flags.userSecretsEnabled)
+
+function openSecretsSettings() {
+  dialogService.showSettingsDialog('secrets')
+}
 
 const props = defineProps<{
   modelValue: string

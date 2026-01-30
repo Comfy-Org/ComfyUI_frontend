@@ -67,16 +67,41 @@
           </a>
         </template>
       </i18n-t>
+
+      <div v-if="showSecretsHint" class="text-sm text-muted">
+        <i18n-t keypath="assetBrowser.apiKeyHint" tag="span">
+          <template #link>
+            <Button
+              variant="textonly"
+              size="unset"
+              class="text-muted underline p-0"
+              @click="openSecretsSettings"
+            >
+              {{ $t('assetBrowser.apiKeyHintLink') }}
+            </Button>
+          </template>
+        </i18n-t>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import InputText from 'primevue/inputtext'
+import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDialogService } from '@/services/dialogService'
 
 const { flags } = useFeatureFlags()
+const dialogService = useDialogService()
+
+const showSecretsHint = computed(() => flags.userSecretsEnabled)
+
+function openSecretsSettings() {
+  dialogService.showSettingsDialog('secrets')
+}
 
 defineProps<{
   error?: string
