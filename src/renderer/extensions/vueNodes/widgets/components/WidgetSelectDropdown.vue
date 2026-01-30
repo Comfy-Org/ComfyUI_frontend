@@ -4,7 +4,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
-import { uploadMedia } from '@/platform/assets/services/uploadService'
+import { uploadMediaBatch } from '@/platform/assets/services/uploadService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -307,29 +307,30 @@ function updateSelectedItems(selectedItems: Set<SelectedKey>) {
   modelValue.value = name
 }
 
-// Handle multiple file uploads using shared uploadMedia service
+// Handle multiple file uploads using shared uploadMediaBatch service
 const uploadFiles = async (files: File[]): Promise<string[]> => {
   const folder = props.uploadFolder ?? 'input'
   const assetsStore = useAssetsStore()
 
-  const uploadPromises = files.map(async (file) => {
-    const result = await uploadMedia({ source: file }, { type: folder })
+  const results = await uploadMediaBatch(
+    files.map((file) => ({ source: file })),
+    { type: folder }
+  )
 
-    if (!result.success) {
-      toastStore.addAlert(result.error || 'Upload failed')
-      return null
-    }
+  // Report failed uploads
+  const failedUploads = results.filter((r) => !r.success)
+  for (const failed of failedUploads) {
+    toastStore.addAlert(failed.error || t('toastMessages.uploadFailed'))
+  }
 
-    // Update AssetsStore when uploading to input folder
-    if (folder === 'input') {
-      await assetsStore.updateInputs()
-    }
+  // Update AssetsStore once after all uploads complete (not per-file)
+  const successfulPaths = results.filter((r) => r.success).map((r) => r.path)
 
-    return result.path
-  })
+  if (folder === 'input' && successfulPaths.length > 0) {
+    await assetsStore.updateInputs()
+  }
 
-  const results = await Promise.all(uploadPromises)
-  return results.filter((path): path is string => path !== null)
+  return successfulPaths
 }
 
 async function handleFilesUpdate(files: File[]) {
@@ -340,7 +341,7 @@ async function handleFilesUpdate(files: File[]) {
     const uploadedPaths = await uploadFiles(files)
 
     if (uploadedPaths.length === 0) {
-      toastStore.addAlert('File upload failed')
+      toastStore.addAlert(t('toastMessages.uploadFailed'))
       return
     }
 
