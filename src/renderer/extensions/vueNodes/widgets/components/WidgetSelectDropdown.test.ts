@@ -152,6 +152,50 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       expect(consoleErrorSpy).toHaveBeenCalled()
       consoleErrorSpy.mockRestore()
     })
+
+    it('falls back to original value when label mapping returns empty string', () => {
+      const getOptionLabel = vi.fn((value: string | null) => {
+        if (value === 'photo_abc.jpg') {
+          return ''
+        }
+        return `Labeled: ${value}`
+      })
+
+      const widget = createMockWidget('img_001.png', {
+        getOptionLabel
+      })
+      const wrapper = mountComponent(widget, 'img_001.png')
+
+      const inputItems = wrapper.vm.inputItems
+      expect(inputItems[0].name).toBe('img_001.png')
+      expect(inputItems[0].label).toBe('Labeled: img_001.png')
+      expect(inputItems[1].name).toBe('photo_abc.jpg')
+      expect(inputItems[1].label).toBe('photo_abc.jpg')
+      expect(inputItems[2].name).toBe('hash789.png')
+      expect(inputItems[2].label).toBe('Labeled: hash789.png')
+    })
+
+    it('falls back to original value when label mapping returns undefined', () => {
+      const getOptionLabel = vi.fn((value: string | null) => {
+        if (value === 'hash789.png') {
+          return undefined as unknown as string
+        }
+        return `Labeled: ${value}`
+      })
+
+      const widget = createMockWidget('img_001.png', {
+        getOptionLabel
+      })
+      const wrapper = mountComponent(widget, 'img_001.png')
+
+      const inputItems = wrapper.vm.inputItems
+      expect(inputItems[0].name).toBe('img_001.png')
+      expect(inputItems[0].label).toBe('Labeled: img_001.png')
+      expect(inputItems[1].name).toBe('photo_abc.jpg')
+      expect(inputItems[1].label).toBe('Labeled: photo_abc.jpg')
+      expect(inputItems[2].name).toBe('hash789.png')
+      expect(inputItems[2].label).toBe('hash789.png')
+    })
   })
 
   describe('output items with custom label mapping', () => {
@@ -169,6 +213,104 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       const outputItems = wrapper.vm.outputItems
       expect(outputItems).toBeDefined()
       expect(Array.isArray(outputItems)).toBe(true)
+    })
+  })
+
+  describe('missing value handling for template-loaded nodes', () => {
+    it('creates a fallback item in "all" filter when modelValue is not in available items', () => {
+      const widget = createMockWidget('template_image.png', {
+        values: ['img_001.png', 'photo_abc.jpg']
+      })
+      const wrapper = mountComponent(widget, 'template_image.png')
+
+      const inputItems = wrapper.vm.inputItems
+      expect(inputItems).toHaveLength(2)
+      expect(
+        inputItems.some((item) => item.name === 'template_image.png')
+      ).toBe(false)
+
+      // The missing value should be accessible via dropdownItems when filter is 'all' (default)
+      const dropdownItems = (
+        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
+      ).dropdownItems
+      expect(
+        dropdownItems.some((item) => item.name === 'template_image.png')
+      ).toBe(true)
+      expect(dropdownItems[0].name).toBe('template_image.png')
+      expect(dropdownItems[0].id).toBe('missing-template_image.png')
+    })
+
+    it('does not include fallback item when filter is "inputs"', async () => {
+      const widget = createMockWidget('template_image.png', {
+        values: ['img_001.png', 'photo_abc.jpg']
+      })
+      const wrapper = mountComponent(widget, 'template_image.png')
+
+      const vmWithFilter = wrapper.vm as unknown as {
+        filterSelected: string
+        dropdownItems: DropdownItem[]
+      }
+
+      vmWithFilter.filterSelected = 'inputs'
+      await wrapper.vm.$nextTick()
+
+      const dropdownItems = vmWithFilter.dropdownItems
+      expect(dropdownItems).toHaveLength(2)
+      expect(
+        dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
+      ).toBe(true)
+    })
+
+    it('does not include fallback item when filter is "outputs"', async () => {
+      const widget = createMockWidget('template_image.png', {
+        values: ['img_001.png', 'photo_abc.jpg']
+      })
+      const wrapper = mountComponent(widget, 'template_image.png')
+
+      const vmWithFilter = wrapper.vm as unknown as {
+        filterSelected: string
+        dropdownItems: DropdownItem[]
+        outputItems: DropdownItem[]
+      }
+
+      vmWithFilter.filterSelected = 'outputs'
+      await wrapper.vm.$nextTick()
+
+      const dropdownItems = vmWithFilter.dropdownItems
+      expect(dropdownItems).toHaveLength(wrapper.vm.outputItems.length)
+      expect(
+        dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
+      ).toBe(true)
+    })
+
+    it('does not create a fallback item when modelValue exists in available items', () => {
+      const widget = createMockWidget('img_001.png', {
+        values: ['img_001.png', 'photo_abc.jpg']
+      })
+      const wrapper = mountComponent(widget, 'img_001.png')
+
+      const dropdownItems = (
+        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
+      ).dropdownItems
+      expect(dropdownItems).toHaveLength(2)
+      expect(
+        dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
+      ).toBe(true)
+    })
+
+    it('does not create a fallback item when modelValue is undefined', () => {
+      const widget = createMockWidget(undefined as unknown as string, {
+        values: ['img_001.png', 'photo_abc.jpg']
+      })
+      const wrapper = mountComponent(widget, undefined)
+
+      const dropdownItems = (
+        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
+      ).dropdownItems
+      expect(dropdownItems).toHaveLength(2)
+      expect(
+        dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
+      ).toBe(true)
     })
   })
 })
