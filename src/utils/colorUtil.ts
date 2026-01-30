@@ -1,4 +1,4 @@
-import { memoize } from 'es-toolkit/compat'
+import { memoize } from "es-toolkit/compat";
 
 type RGB = { r: number; g: number; b: number }
 export interface HSB {
