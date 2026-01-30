@@ -216,6 +216,26 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('sams', 'SAMLoader', 'model_name')
     quickRegister('ultralytics', 'UltralyticsDetectorProvider', 'model_name')
 
+    // IP-Adapter models
+    quickRegister('ipadapter', 'IPAdapterModelLoader', 'ipadapter_file')
+
+    // Segformer clothing/fashion segmentation models
+    quickRegister(
+      'segformer_b2_clothes',
+      'LayerMask: SegformerClothesPipelineLoader',
+      'model'
+    )
+    quickRegister(
+      'segformer_b3_clothes',
+      'LayerMask: SegformerClothesPipelineLoader',
+      'model'
+    )
+    quickRegister(
+      'segformer_b3_fashion',
+      'LayerMask: SegformerFashionPipelineLoader',
+      'model'
+    )
+
     // Other specialized models
     quickRegister('nlf', 'LoadNLFModel', 'nlf_model')
   }
