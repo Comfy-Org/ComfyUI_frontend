@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNodeDefImpl} from '@/stores/nodeDefStore';
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
-import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks';
-import type { WorkflowPack } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks';
+import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
+import type { WorkflowPack } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
