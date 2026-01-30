@@ -8,8 +8,6 @@ files:
 
 # Actions that don't need SHA pinning (official GitHub actions are trusted)
 ignore_actions:
-  - name: actions/create-github-app-token
-    ref: v2
   - name: actions/cache
     ref: v5
   - name: actions/checkout

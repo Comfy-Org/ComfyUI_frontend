@@ -15,17 +15,10 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && startsWith(github.head_ref, 'version-bump-'))
     runs-on: ubuntu-latest
     steps:
-      - name: Generate GitHub App Token
-        id: app-token
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ vars.COMFY_APP_ID }}
-          private-key: ${{ secrets.COMFY_APP_PRIVATE_KEY }}
-
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ secrets.PR_GH_TOKEN }}
 
       # Setup playwright environment
       - name: Setup ComfyUI Frontend
