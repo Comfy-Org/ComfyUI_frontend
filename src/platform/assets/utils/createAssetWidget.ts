@@ -9,6 +9,7 @@ import {
   assetFilenameSchema,
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 
 interface CreateAssetWidgetParams {
@@ -45,6 +46,8 @@ export function createAssetWidget(
   const assetBrowserDialog = useAssetBrowserDialog()
 
   async function openModal(widget: IBaseWidget) {
+    const toastStore = useToastStore()
+
     await assetBrowserDialog.show({
       nodeType: nodeTypeForBrowser,
       inputName: widgetName,
@@ -59,6 +62,12 @@ export function createAssetWidget(
             'Received:',
             asset
           )
+          toastStore.add({
+            severity: 'error',
+            summary: t('assetBrowser.invalidAsset'),
+            detail: t('assetBrowser.invalidAssetDetail'),
+            life: 5000
+          })
           return
         }
 
@@ -72,6 +81,12 @@ export function createAssetWidget(
             'for asset:',
             validatedAsset.data.id
           )
+          toastStore.add({
+            severity: 'error',
+            summary: t('assetBrowser.invalidFilename'),
+            detail: t('assetBrowser.invalidFilenameDetail'),
+            life: 5000
+          })
           return
         }
 
