@@ -35,10 +35,30 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+const mockShowDialog = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({
-    showDialog: vi.fn()
+    showDialog: mockShowDialog
   })
+}))
+
+const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
+const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
+const mockUpdateHistory = vi.hoisted(() => vi.fn())
+const mockUpdateInputs = vi.hoisted(() => vi.fn())
+const mockHasCategory = vi.hoisted(() => vi.fn())
+vi.mock('@/stores/assetsStore', () => ({
+  useAssetsStore: () => ({
+    setAssetDeleting: mockSetAssetDeleting,
+    updateHistory: mockUpdateHistory,
+    updateInputs: mockUpdateInputs,
+    invalidateModelsForCategory: mockInvalidateModelsForCategory,
+    hasCategory: mockHasCategory
+  })
+}))
+
+vi.mock('@/stores/modelToNodeStore', () => ({
+  useModelToNodeStore: () => ({})
 }))
 
 vi.mock('@/composables/useCopyToClipboard', () => ({
@@ -93,12 +113,31 @@ vi.mock('@/utils/typeGuardUtil', () => ({
   isResultItemType: vi.fn().mockReturnValue(true)
 }))
 
+const mockGetAssetType = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/assets/utils/assetTypeUtil', () => ({
-  getAssetType: vi.fn().mockReturnValue('input')
+  getAssetType: mockGetAssetType
 }))
 
 vi.mock('../schemas/assetMetadataSchema', () => ({
   getOutputAssetMetadata: vi.fn().mockReturnValue(null)
+}))
+
+const mockDeleteAsset = vi.hoisted(() => vi.fn())
+vi.mock('../services/assetService', () => ({
+  assetService: {
+    deleteAsset: mockDeleteAsset
+  }
+}))
+
+vi.mock('@/scripts/api', () => ({
+  api: {
+    deleteItem: vi.fn(),
+    apiURL: vi.fn((path: string) => `http://localhost:8188/api${path}`),
+    internalURL: vi.fn((path: string) => `http://localhost:8188${path}`),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    user: 'test-user'
+  }
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -216,6 +255,116 @@ describe('useMediaAssetActions', () => {
         expect(capturedFilenames.values).not.toContain('file1.jpeg')
         expect(capturedFilenames.values).not.toContain('file2.jpeg')
       })
+    })
+  })
+
+  describe('deleteAssets - model cache invalidation', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      mockGetAssetType.mockReturnValue('input')
+      mockDeleteAsset.mockResolvedValue(undefined)
+      mockInvalidateModelsForCategory.mockClear()
+      mockSetAssetDeleting.mockClear()
+      mockUpdateHistory.mockClear()
+      mockUpdateInputs.mockClear()
+      mockHasCategory.mockClear()
+      // By default, hasCategory returns true for model categories
+      mockHasCategory.mockImplementation(
+        (tag: string) => tag === 'checkpoints' || tag === 'loras'
+      )
+    })
+
+    it('should invalidate model cache when deleting a model asset', async () => {
+      const actions = useMediaAssetActions()
+
+      const modelAsset = createMockAsset({
+        id: 'checkpoint-1',
+        name: 'model.safetensors',
+        tags: ['models', 'checkpoints']
+      })
+
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+
+      await actions.deleteAssets(modelAsset)
+
+      // Only 'checkpoints' exists in cache; 'models' is excluded
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledTimes(1)
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
+        'checkpoints'
+      )
+    })
+
+    it('should invalidate multiple categories for multiple assets', async () => {
+      const actions = useMediaAssetActions()
+
+      const assets = [
+        createMockAsset({ id: '1', tags: ['models', 'checkpoints'] }),
+        createMockAsset({ id: '2', tags: ['models', 'loras'] })
+      ]
+
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+
+      await actions.deleteAssets(assets)
+
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
+        'checkpoints'
+      )
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith('loras')
+    })
+
+    it('should not invalidate model cache for non-model assets', async () => {
+      const actions = useMediaAssetActions()
+
+      const inputAsset = createMockAsset({
+        id: 'input-1',
+        name: 'image.png',
+        tags: ['input']
+      })
+
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+
+      await actions.deleteAssets(inputAsset)
+
+      // 'input' tag is excluded, so no cache invalidation
+      expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
+    })
+
+    it('should only invalidate categories that exist in cache', async () => {
+      const actions = useMediaAssetActions()
+
+      // hasCategory returns false for 'unknown-category'
+      mockHasCategory.mockImplementation((tag: string) => tag === 'checkpoints')
+
+      const assets = [
+        createMockAsset({ id: '1', tags: ['models', 'checkpoints'] }),
+        createMockAsset({ id: '2', tags: ['models', 'unknown-category'] })
+      ]
+
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+
+      await actions.deleteAssets(assets)
+
+      // Only checkpoints should be invalidated (unknown-category not in cache)
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledTimes(1)
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
+        'checkpoints'
+      )
     })
   })
 })

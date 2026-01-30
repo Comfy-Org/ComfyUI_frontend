@@ -587,6 +587,25 @@ export function useMediaAssetActions() {
                 await assetsStore.updateInputs()
               }
 
+              // Invalidate model caches for affected categories
+              const modelCategories = new Set<string>()
+              const excludedTags = ['models', 'input', 'output']
+
+              for (const asset of assetArray) {
+                for (const tag of asset.tags ?? []) {
+                  if (excludedTags.includes(tag)) continue
+                  if (assetsStore.hasCategory(tag)) {
+                    modelCategories.add(tag)
+                  }
+                }
+              }
+
+              await Promise.allSettled(
+                [...modelCategories].map((category) =>
+                  assetsStore.invalidateModelsForCategory(category)
+                )
+              )
+
               // Show appropriate feedback based on results
               if (failed.length === 0) {
                 toast.add({

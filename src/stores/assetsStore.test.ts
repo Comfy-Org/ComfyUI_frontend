@@ -507,12 +507,12 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     mockIsCloud.value = false
   })
 
-  const createMockAsset = (id: string) => ({
+  const createMockAsset = (id: string, tags: string[] = ['models']) => ({
     id,
     name: `asset-${id}`,
     size: 100,
     created_at: new Date().toISOString(),
-    tags: ['models'],
+    tags,
     preview_url: `http://test.com/${id}`
   })
 
@@ -749,6 +749,50 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       store.invalidateCategory('tag:models')
 
       expect(store.getAssets('tag:models')).toEqual([])
+    })
+  })
+
+  describe('hasCategory', () => {
+    it('should return true for loaded categories', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(store.hasCategory('checkpoints')).toBe(true)
+    })
+
+    it('should return true for tag-based category when tag: prefix is not used', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsByTag).mockResolvedValue(assets)
+      await store.updateModelsForTag('models')
+
+      // hasCategory('models') checks for both 'models' and 'tag:models'
+      expect(store.hasCategory('models')).toBe(true)
+    })
+
+    it('should return false for unloaded categories', () => {
+      const store = useAssetsStore()
+
+      expect(store.hasCategory('checkpoints')).toBe(false)
+      expect(store.hasCategory('unknown-category')).toBe(false)
+    })
+
+    it('should return false after category is invalidated', async () => {
+      const store = useAssetsStore()
+      const assets = [createMockAsset('asset-1')]
+
+      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue(assets)
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
+
+      expect(store.hasCategory('checkpoints')).toBe(true)
+
+      store.invalidateCategory('checkpoints')
+
+      expect(store.hasCategory('checkpoints')).toBe(false)
     })
   })
 })
