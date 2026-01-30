@@ -5,7 +5,7 @@ import {
 
 const CREATE_GROUP_HOTKEY = 'Control+g'
 
-test.describe('Vue Node Groups', () => {
+test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setSetting('Comfy.Minimap.ShowGroups', true)

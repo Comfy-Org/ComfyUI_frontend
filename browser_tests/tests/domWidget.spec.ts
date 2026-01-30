@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('DOM Widget', () => {
+test.describe('DOM Widget', { tag: '@widget' }, () => {
   test('Collapsed multiline textarea is not visible', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/collapsed_multiline')
     const textareaWidget = comfyPage.page.locator('.comfy-multiline-input')
@@ -29,12 +29,16 @@ test.describe('DOM Widget', () => {
     await expect(lastMultiline).not.toBeVisible()
   })
 
-  test('Position update when entering focus mode', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.executeCommand('Workspace.ToggleFocusMode')
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
-  })
+  test(
+    'Position update when entering focus mode',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.executeCommand('Workspace.ToggleFocusMode')
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
+    }
+  )
 
   // No DOM widget should be created by creation of interim LGraphNode objects.
   test('Copy node with DOM widget by dragging + alt', async ({ comfyPage }) => {

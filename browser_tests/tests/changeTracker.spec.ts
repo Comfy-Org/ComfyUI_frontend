@@ -19,7 +19,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Change Tracker', () => {
+test.describe('Change Tracker', { tag: '@workflow' }, () => {
   test.describe('Undo/Redo', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')

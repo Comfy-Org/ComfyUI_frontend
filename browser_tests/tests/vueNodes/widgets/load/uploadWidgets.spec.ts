@@ -9,13 +9,17 @@ test.describe('Vue Upload Widgets', () => {
     await comfyPage.vueNodes.waitForNodes()
   })
 
-  test('should hide canvas-only upload buttons', async ({ comfyPage }) => {
-    await comfyPage.setup()
-    await comfyPage.loadWorkflow('widgets/all_load_widgets')
-    await comfyPage.vueNodes.waitForNodes()
+  test(
+    'should hide canvas-only upload buttons',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.setup()
+      await comfyPage.loadWorkflow('widgets/all_load_widgets')
+      await comfyPage.vueNodes.waitForNodes()
 
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'vue-nodes-upload-widgets.png'
-    )
-  })
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'vue-nodes-upload-widgets.png'
+      )
+    }
+  )
 })

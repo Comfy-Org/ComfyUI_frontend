@@ -13,7 +13,7 @@ async function checkTemplateFileExists(
   return response.ok()
 }
 
-test.describe('Templates', () => {
+test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.Workflow.ShowMissingModelsWarning', false)
@@ -207,109 +207,114 @@ test.describe('Templates', () => {
     await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })
 
-  test('template cards descriptions adjust height dynamically', async ({
-    comfyPage
-  }) => {
-    // Setup test by intercepting templates response to inject cards with varying description lengths
-    await comfyPage.page.route('**/templates/index.json', async (route, _) => {
-      const response = [
-        {
-          moduleName: 'default',
-          title: 'Test Templates',
-          type: 'image',
-          templates: [
+  test(
+    'template cards descriptions adjust height dynamically',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      // Setup test by intercepting templates response to inject cards with varying description lengths
+      await comfyPage.page.route(
+        '**/templates/index.json',
+        async (route, _) => {
+          const response = [
             {
-              name: 'short-description',
-              title: 'Short Description',
-              mediaType: 'image',
-              mediaSubtype: 'webp',
-              description: 'This is a short description.'
-            },
-            {
-              name: 'medium-description',
-              title: 'Medium Description',
-              mediaType: 'image',
-              mediaSubtype: 'webp',
-              description:
-                'This is a medium length description that should take up two lines on most displays.'
-            },
-            {
-              name: 'long-description',
-              title: 'Long Description',
-              mediaType: 'image',
-              mediaSubtype: 'webp',
-              description:
-                'This is a much longer description that should definitely wrap to multiple lines. It contains enough text to demonstrate how the cards handle varying amounts of content while maintaining a consistent layout grid.'
+              moduleName: 'default',
+              title: 'Test Templates',
+              type: 'image',
+              templates: [
+                {
+                  name: 'short-description',
+                  title: 'Short Description',
+                  mediaType: 'image',
+                  mediaSubtype: 'webp',
+                  description: 'This is a short description.'
+                },
+                {
+                  name: 'medium-description',
+                  title: 'Medium Description',
+                  mediaType: 'image',
+                  mediaSubtype: 'webp',
+                  description:
+                    'This is a medium length description that should take up two lines on most displays.'
+                },
+                {
+                  name: 'long-description',
+                  title: 'Long Description',
+                  mediaType: 'image',
+                  mediaSubtype: 'webp',
+                  description:
+                    'This is a much longer description that should definitely wrap to multiple lines. It contains enough text to demonstrate how the cards handle varying amounts of content while maintaining a consistent layout grid.'
+                }
+              ]
             }
           ]
+          await route.fulfill({
+            status: 200,
+            body: JSON.stringify(response),
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store'
+            }
+          })
         }
-      ]
-      await route.fulfill({
-        status: 200,
-        body: JSON.stringify(response),
-        headers: {
-          'Content-Type': 'application/json',
+      )
+
+      // Mock the thumbnail images to avoid 404s
+      await comfyPage.page.route('**/templates/**.webp', async (route) => {
+        const headers = {
+          'Content-Type': 'image/webp',
           'Cache-Control': 'no-store'
         }
+        await route.fulfill({
+          status: 200,
+          path: 'browser_tests/assets/example.webp',
+          headers
+        })
       })
-    })
 
-    // Mock the thumbnail images to avoid 404s
-    await comfyPage.page.route('**/templates/**.webp', async (route) => {
-      const headers = {
-        'Content-Type': 'image/webp',
-        'Cache-Control': 'no-store'
-      }
-      await route.fulfill({
-        status: 200,
-        path: 'browser_tests/assets/example.webp',
-        headers
-      })
-    })
+      // Open templates dialog
+      await comfyPage.executeCommand('Comfy.BrowseTemplates')
+      await expect(comfyPage.templates.content).toBeVisible()
 
-    // Open templates dialog
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
-    await expect(comfyPage.templates.content).toBeVisible()
+      // Wait for cards to load
+      await expect(
+        comfyPage.page.locator(
+          '[data-testid="template-workflow-short-description"]'
+        )
+      ).toBeVisible({ timeout: 5000 })
 
-    // Wait for cards to load
-    await expect(
-      comfyPage.page.locator(
+      // Verify all three cards with different descriptions are visible
+      const shortDescCard = comfyPage.page.locator(
         '[data-testid="template-workflow-short-description"]'
       )
-    ).toBeVisible({ timeout: 5000 })
+      const mediumDescCard = comfyPage.page.locator(
+        '[data-testid="template-workflow-medium-description"]'
+      )
+      const longDescCard = comfyPage.page.locator(
+        '[data-testid="template-workflow-long-description"]'
+      )
 
-    // Verify all three cards with different descriptions are visible
-    const shortDescCard = comfyPage.page.locator(
-      '[data-testid="template-workflow-short-description"]'
-    )
-    const mediumDescCard = comfyPage.page.locator(
-      '[data-testid="template-workflow-medium-description"]'
-    )
-    const longDescCard = comfyPage.page.locator(
-      '[data-testid="template-workflow-long-description"]'
-    )
+      await expect(shortDescCard).toBeVisible()
+      await expect(mediumDescCard).toBeVisible()
+      await expect(longDescCard).toBeVisible()
 
-    await expect(shortDescCard).toBeVisible()
-    await expect(mediumDescCard).toBeVisible()
-    await expect(longDescCard).toBeVisible()
+      // Verify descriptions are visible and have line-clamp class
+      // The description is in a p tag with text-muted class
+      const shortDesc = shortDescCard.locator('p.text-muted.line-clamp-2')
+      const mediumDesc = mediumDescCard.locator('p.text-muted.line-clamp-2')
+      const longDesc = longDescCard.locator('p.text-muted.line-clamp-2')
 
-    // Verify descriptions are visible and have line-clamp class
-    // The description is in a p tag with text-muted class
-    const shortDesc = shortDescCard.locator('p.text-muted.line-clamp-2')
-    const mediumDesc = mediumDescCard.locator('p.text-muted.line-clamp-2')
-    const longDesc = longDescCard.locator('p.text-muted.line-clamp-2')
+      await expect(shortDesc).toContainText('short description')
+      await expect(mediumDesc).toContainText('medium length description')
+      await expect(longDesc).toContainText('much longer description')
 
-    await expect(shortDesc).toContainText('short description')
-    await expect(mediumDesc).toContainText('medium length description')
-    await expect(longDesc).toContainText('much longer description')
-
-    // Verify grid layout maintains consistency
-    const templateGrid = comfyPage.page.locator(
-      '[data-testid="template-workflows-content"]'
-    )
-    await expect(templateGrid).toBeVisible()
-    await expect(templateGrid).toHaveScreenshot(
-      'template-grid-varying-content.png'
-    )
-  })
+      // Verify grid layout maintains consistency
+      const templateGrid = comfyPage.page.locator(
+        '[data-testid="template-workflows-content"]'
+      )
+      await expect(templateGrid).toBeVisible()
+      await expect(templateGrid).toHaveScreenshot(
+        'template-grid-varying-content.png'
+      )
+    }
+  )
 })

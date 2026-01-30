@@ -3,7 +3,7 @@ import {
   comfyPageFixture as test
 } from '../../../fixtures/ComfyPage'
 
-test.describe('Vue Node Custom Colors', () => {
+test.describe('Vue Node Custom Colors', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)

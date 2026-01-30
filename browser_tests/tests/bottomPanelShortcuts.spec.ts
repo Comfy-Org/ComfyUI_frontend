@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
-test.describe('Bottom Panel Shortcuts', () => {
+test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
   })
