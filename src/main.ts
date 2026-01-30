@@ -32,7 +32,7 @@ if (isCloud) {
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
 
-  const { initTelemetry } = await import('@/platform/telemetry')
+  const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
 }
 
