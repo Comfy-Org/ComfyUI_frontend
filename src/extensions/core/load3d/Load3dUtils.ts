@@ -42,7 +42,9 @@ class Load3dUtils {
     )
 
     if (!result.success || !result.response) {
-      const err = `Error uploading temp file: ${result.error}`
+      const err = t('toastMessages.tempUploadFailed', {
+        error: result.error || ''
+      })
       useToastStore().addAlert(err)
       throw new Error(err)
     }

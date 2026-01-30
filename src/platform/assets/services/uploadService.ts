@@ -51,7 +51,7 @@ async function convertToFile(
 
   // dataURL string
   if (!isDataURL(source)) {
-    throw new Error(`Invalid data URL: ${source.substring(0, 50)}...`)
+    throw new Error('Invalid data URL')
   }
 
   try {
