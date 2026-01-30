@@ -59,6 +59,18 @@ describe.skip('SubgraphNode Construction', () => {
     expect(subgraphNode.rootGraph).toBe(parentGraph.rootGraph)
   })
 
+  it('should throw NullGraphError when accessing rootGraph after removal', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const parentGraph = subgraphNode.graph!
+    parentGraph.add(subgraphNode)
+
+    parentGraph.remove(subgraphNode)
+
+    expect(() => subgraphNode.rootGraph).toThrow()
+    expect(subgraphNode.graph).toBeNull()
+  })
+
   subgraphTest(
     'should synchronize slots with subgraph definition',
     ({ subgraphWithNode }) => {

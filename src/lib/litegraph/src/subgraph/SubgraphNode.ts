@@ -51,7 +51,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override graph: GraphOrSubgraph | null
 
   get rootGraph(): LGraph {
-    if (!this.graph) throw new NullGraphError()
+    if (!this.graph)
+      throw new NullGraphError(`SubgraphNode ${this.id} has no graph`)
     return this.graph.rootGraph
   }
 
