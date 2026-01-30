@@ -14,7 +14,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -588,15 +587,13 @@ export function useMediaAssetActions() {
               }
 
               // Invalidate model caches for affected categories
-              const modelToNodeStore = useModelToNodeStore()
               const modelCategories = new Set<string>()
               const excludedTags = ['models', 'input', 'output']
 
               for (const asset of assetArray) {
                 for (const tag of asset.tags ?? []) {
                   if (excludedTags.includes(tag)) continue
-                  const providers = modelToNodeStore.getAllNodeProviders(tag)
-                  if (providers.length > 0) {
+                  if (assetsStore.hasCategory(tag)) {
                     modelCategories.add(tag)
                   }
                 }

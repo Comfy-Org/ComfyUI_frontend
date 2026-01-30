@@ -376,6 +376,18 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       /**
+       * Check if a category exists in the cache.
+       * Checks both direct category keys and tag-prefixed keys.
+       * @param category The category to check (e.g., 'checkpoints', 'loras')
+       */
+      function hasCategory(category: string): boolean {
+        return (
+          modelStateByCategory.value.has(category) ||
+          modelStateByCategory.value.has(`tag:${category}`)
+        )
+      }
+
+      /**
        * Internal helper to fetch and cache assets for a category.
        * Loads first batch immediately, then progressively loads remaining batches.
        * Keeps existing data visible until new data is successfully fetched.
@@ -633,23 +645,16 @@ export const useAssetsStore = defineStore('assets', () => {
       }
 
       /**
-       * Remove a specific asset from all caches for a given category
-       * Used for optimistic updates after asset deletion
+       * Remove a specific asset from a category's cache.
+       * Used for optimistic updates after asset deletion.
        * @param assetId The asset ID to remove
        * @param category The model category (e.g., 'loras')
        */
       function removeAssetFromCache(assetId: string, category: string): void {
-        const providers = modelToNodeStore.getAllNodeProviders(category)
-
-        for (const provider of providers) {
-          const nodeType = provider.nodeDef?.name
-          if (!nodeType) continue
-
-          const state = modelStateByKey.value.get(nodeType)
-          if (!state) continue
-
+        const state = modelStateByCategory.value.get(category)
+        if (state) {
           state.assets.delete(assetId)
-          assetsArrayCache.delete(nodeType)
+          assetsArrayCache.delete(category)
         }
 
         assetsArrayCache.delete(`tag:${category}`)
@@ -662,6 +667,7 @@ export const useAssetsStore = defineStore('assets', () => {
         getError,
         hasMore,
         hasAssetKey,
+        hasCategory,
         updateModelsForNodeType,
         updateModelsForTag,
         invalidateCategory,
@@ -679,6 +685,7 @@ export const useAssetsStore = defineStore('assets', () => {
       getError: () => undefined,
       hasMore: () => false,
       hasAssetKey: () => false,
+      hasCategory: () => false,
       updateModelsForNodeType: async () => {},
       invalidateCategory: () => {},
       updateModelsForTag: async () => {},
@@ -695,6 +702,7 @@ export const useAssetsStore = defineStore('assets', () => {
     getError,
     hasMore,
     hasAssetKey,
+    hasCategory,
     updateModelsForNodeType,
     updateModelsForTag,
     invalidateCategory,
@@ -772,6 +780,7 @@ export const useAssetsStore = defineStore('assets', () => {
     getError,
     hasMore,
     hasAssetKey,
+    hasCategory,
 
     // Model assets - actions
     updateModelsForNodeType,

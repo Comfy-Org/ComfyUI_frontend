@@ -46,12 +46,14 @@ const mockInvalidateModelsForCategory = vi.hoisted(() => vi.fn())
 const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockUpdateHistory = vi.hoisted(() => vi.fn())
 const mockUpdateInputs = vi.hoisted(() => vi.fn())
+const mockHasCategory = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     setAssetDeleting: mockSetAssetDeleting,
     updateHistory: mockUpdateHistory,
     updateInputs: mockUpdateInputs,
-    invalidateModelsForCategory: mockInvalidateModelsForCategory
+    invalidateModelsForCategory: mockInvalidateModelsForCategory,
+    hasCategory: mockHasCategory
   })
 }))
 
@@ -274,6 +276,11 @@ describe('useMediaAssetActions', () => {
       mockSetAssetDeleting.mockClear()
       mockUpdateHistory.mockClear()
       mockUpdateInputs.mockClear()
+      mockHasCategory.mockClear()
+      // By default, hasCategory returns true for model categories
+      mockHasCategory.mockImplementation(
+        (tag: string) => tag === 'checkpoints' || tag === 'loras'
+      )
     })
 
     it('should invalidate model cache when deleting a model asset', async () => {
@@ -293,7 +300,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.deleteAssets(modelAsset)
 
-      // Only 'checkpoints' has providers; 'models' tag should not trigger invalidation
+      // Only 'checkpoints' exists in cache; 'models' is excluded
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledTimes(1)
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
         'checkpoints'
@@ -339,7 +346,34 @@ describe('useMediaAssetActions', () => {
 
       await actions.deleteAssets(inputAsset)
 
+      // 'input' tag is excluded, so no cache invalidation
       expect(mockInvalidateModelsForCategory).not.toHaveBeenCalled()
+    })
+
+    it('should only invalidate categories that exist in cache', async () => {
+      const actions = useMediaAssetActions()
+
+      // hasCategory returns false for 'unknown-category'
+      mockHasCategory.mockImplementation((tag: string) => tag === 'checkpoints')
+
+      const assets = [
+        createMockAsset({ id: '1', tags: ['models', 'checkpoints'] }),
+        createMockAsset({ id: '2', tags: ['models', 'unknown-category'] })
+      ]
+
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: () => Promise<void> } }) => {
+          void props.onConfirm()
+        }
+      )
+
+      await actions.deleteAssets(assets)
+
+      // Only checkpoints should be invalidated (unknown-category not in cache)
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledTimes(1)
+      expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
+        'checkpoints'
+      )
     })
   })
 })
