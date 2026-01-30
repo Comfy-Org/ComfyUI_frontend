@@ -45,6 +45,7 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import GlobalToast from '@/components/toast/GlobalToast.vue'
 import RerouteMigrationToast from '@/components/toast/RerouteMigrationToast.vue'
+import { useGraphErrorState } from '@/composables/graph/useGraphErrorState'
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -85,6 +86,7 @@ import ManagerProgressToast from '@/workbench/extensions/manager/components/Mana
 setupAutoQueueHandler()
 useProgressFavicon()
 useBrowserTabTitle()
+useGraphErrorState()
 
 const { t } = useI18n()
 const toast = useToast()

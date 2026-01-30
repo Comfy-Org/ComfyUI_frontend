@@ -29,10 +29,11 @@ import type {
 } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useGraphErrorStateStore } from '@/stores/graphErrorStateStore'
+import type { GraphError } from '@/stores/graphErrorStateStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { forEachNode, getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 interface QueuedPrompt {
   /**
@@ -584,59 +585,47 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   /**
-   * Update node and slot error flags when validation errors change.
-   * Propagates errors up subgraph chains.
+   * Sync backend validation errors to centralized graph error store.
+   * The store handles flag updates and subgraph propagation.
    */
   watch(lastNodeErrors, () => {
-    if (!app.rootGraph) return
+    const errorStore = useGraphErrorStateStore()
 
-    // Clear all error flags
-    forEachNode(app.rootGraph, (node) => {
-      node.has_errors = false
-      if (node.inputs) {
-        for (const slot of node.inputs) {
-          slot.hasErrors = false
-        }
-      }
-    })
+    if (!lastNodeErrors.value) {
+      errorStore.execute({ type: 'CLEAR_SOURCE', source: 'backend' })
+      return
+    }
 
-    if (!lastNodeErrors.value) return
+    const errors: GraphError[] = []
 
-    // Set error flags on nodes and slots
     for (const [executionId, nodeError] of Object.entries(
       lastNodeErrors.value
     )) {
-      const node = getNodeByExecutionId(app.rootGraph, executionId)
-      if (!node) continue
+      const locatorId = executionIdToNodeLocatorId(executionId)
+      if (!locatorId) continue
 
-      node.has_errors = true
+      errors.push({
+        key: `backend:node:${locatorId}`,
+        source: 'backend',
+        target: { kind: 'node', nodeId: locatorId },
+        message: nodeError.errors[0]?.message
+      })
 
-      // Mark input slots with errors
-      if (node.inputs) {
-        for (const error of nodeError.errors) {
-          const slotName = error.extra_info?.input_name
-          if (!slotName) continue
-
-          const slot = node.inputs.find((s) => s.name === slotName)
-          if (slot) {
-            slot.hasErrors = true
-          }
-        }
-      }
-
-      // Propagate errors to parent subgraph nodes
-      const parts = executionId.split(':')
-      for (let i = parts.length - 1; i > 0; i--) {
-        const parentExecutionId = parts.slice(0, i).join(':')
-        const parentNode = getNodeByExecutionId(
-          app.rootGraph,
-          parentExecutionId
-        )
-        if (parentNode) {
-          parentNode.has_errors = true
+      for (const error of nodeError.errors) {
+        const slotName = error.extra_info?.input_name
+        if (slotName) {
+          errors.push({
+            key: `backend:slot:${locatorId}:${slotName}`,
+            source: 'backend',
+            target: { kind: 'slot', nodeId: locatorId, slotName },
+            code: 'VALIDATION_ERROR',
+            message: error.message
+          })
         }
       }
     }
+
+    errorStore.execute({ type: 'REPLACE_SOURCE', source: 'backend', errors })
   })
 
   return {
