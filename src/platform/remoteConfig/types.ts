@@ -27,7 +27,6 @@ type FirebaseRuntimeConfig = {
  */
 export type RemoteConfig = {
   mixpanel_token?: string
-  gtm_id?: string
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
