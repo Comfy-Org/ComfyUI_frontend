@@ -198,10 +198,18 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('SEEDVR2', 'SeedVR2LoadDiTModel', 'model')
 
     // Depth estimation models
-    quickRegister('depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model')
+    quickRegister(
+      'depthanything',
+      'DownloadAndLoadDepthAnythingV2Model',
+      'model'
+    )
 
     // Latent upscaling models
-    quickRegister('latent_upscale_models', 'LatentUpscaleModelLoader', 'model_name')
+    quickRegister(
+      'latent_upscale_models',
+      'LatentUpscaleModelLoader',
+      'model_name'
+    )
 
     // Segmentation models
     quickRegister('sam2', 'DownloadAndLoadSAM2Model', 'model')
