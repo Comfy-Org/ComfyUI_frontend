@@ -17,10 +17,18 @@ jobs:
   lint-and-format:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.COMFY_APP_ID }}
+          private-key: ${{ secrets.COMFY_APP_PRIVATE_KEY }}
+
       - name: Checkout PR
         uses: actions/checkout@v6
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
