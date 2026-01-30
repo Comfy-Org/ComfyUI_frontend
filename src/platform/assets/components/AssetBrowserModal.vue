@@ -51,6 +51,7 @@
     <template #contentFilter>
       <AssetFilterBar
         :assets="categoryFilteredAssets"
+        :show-ownership-filter="!shouldShowLeftPanel"
         @filter-change="updateFilters"
         @click.self="focusedAsset = null"
       />

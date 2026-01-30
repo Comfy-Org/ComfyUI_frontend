@@ -295,7 +295,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: ['safetensors'],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -330,7 +331,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: ['SDXL']
+        baseModels: ['SDXL'],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -384,7 +386,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -408,7 +411,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'recent',
         fileFormats: [],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -440,7 +444,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -492,6 +497,96 @@ describe('useAssetBrowser', () => {
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(3)
+    })
+
+    it('filters by ownership via filter bar - my-models', async () => {
+      const assets = [
+        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true
+        }),
+        createApiAsset({
+          name: 'another-my-model.safetensors',
+          is_immutable: false
+        })
+      ]
+
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'my-models'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(2)
+      expect(filteredAssets.value.every((asset) => !asset.is_immutable)).toBe(
+        true
+      )
+    })
+
+    it('filters by ownership via filter bar - public-models', async () => {
+      const assets = [
+        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true
+        }),
+        createApiAsset({
+          name: 'another-public-model.safetensors',
+          is_immutable: true
+        })
+      ]
+
+      const { updateFilters, filteredAssets } = useAssetBrowser(ref(assets))
+
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'public-models'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(2)
+      expect(filteredAssets.value.every((asset) => asset.is_immutable)).toBe(
+        true
+      )
+    })
+
+    it('nav imported selection overrides filter bar ownership', async () => {
+      const assets = [
+        createApiAsset({ name: 'my-model.safetensors', is_immutable: false }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true
+        })
+      ]
+
+      const { selectedNavItem, updateFilters, filteredAssets } =
+        useAssetBrowser(ref(assets))
+
+      // Set filter bar to public-models
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'public-models'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(1)
+      expect(filteredAssets.value[0].is_immutable).toBe(true)
+
+      // Nav selection to 'imported' should override filter bar
+      selectedNavItem.value = 'imported'
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(1)
+      expect(filteredAssets.value[0].is_immutable).toBe(false)
     })
   })
 

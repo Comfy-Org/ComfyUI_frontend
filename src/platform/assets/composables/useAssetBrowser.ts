@@ -5,7 +5,10 @@ import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import { storeToRefs } from 'pinia'
 
 import { d, t } from '@/i18n'
-import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
+import type {
+  FilterState,
+  OwnershipOption
+} from '@/platform/assets/components/AssetFilterBar.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetBaseModels,
@@ -14,8 +17,6 @@ import {
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
-
-type OwnershipOption = 'all' | 'my-models' | 'public-models'
 
 type NavId = 'all' | 'imported' | (string & {})
 
@@ -96,12 +97,13 @@ export function useAssetBrowser(
   const filters = ref<FilterState>({
     sortBy: 'recent',
     fileFormats: [],
-    baseModels: []
+    baseModels: [],
+    ownership: 'all'
   })
 
   const selectedOwnership = computed<OwnershipOption>(() => {
     if (selectedNavItem.value === 'imported') return 'my-models'
-    return 'all'
+    return filters.value.ownership
   })
 
   const selectedCategory = computed(() => {
