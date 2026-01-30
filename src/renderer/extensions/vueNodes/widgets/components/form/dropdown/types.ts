@@ -1,8 +1,13 @@
 import type { ComputedRef, InjectionKey } from 'vue'
 
+import type {
+  FilterOption,
+  OptionId
+} from '@/platform/assets/types/filterTypes'
 import type { AssetKind } from '@/types/widgetTypes'
 
-export type OptionId = string | number | symbol
+export type { FilterOption, OptionId }
+
 export type SelectedKey = OptionId
 
 export interface DropdownItem {
@@ -12,15 +17,11 @@ export interface DropdownItem {
   label?: string
   metadata: string
 }
-export interface SortOption {
-  id: OptionId
+
+export interface SortOption<TId extends OptionId = OptionId> {
+  id: TId
   name: string
   sorter: (ctx: { items: readonly DropdownItem[] }) => DropdownItem[]
-}
-
-export interface FilterOption {
-  id: OptionId
-  name: string
 }
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'

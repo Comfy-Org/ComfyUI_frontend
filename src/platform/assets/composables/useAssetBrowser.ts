@@ -6,15 +6,15 @@ import { storeToRefs } from 'pinia'
 
 import { d, t } from '@/i18n'
 import type {
-  FilterState,
+  AssetFilterState,
   OwnershipOption
-} from '@/platform/assets/components/AssetFilterBar.vue'
+} from '@/platform/assets/types/filterTypes'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetBaseModels,
-  getAssetDisplayName,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
@@ -94,7 +94,7 @@ export function useAssetBrowser(
   // State
   const searchQuery = ref('')
   const selectedNavItem = ref<NavId>('all')
-  const filters = ref<FilterState>({
+  const filters = ref<AssetFilterState>({
     sortBy: 'recent',
     fileFormats: [],
     baseModels: [],
@@ -263,27 +263,13 @@ export function useAssetBrowser(
       .filter(filterByBaseModels(filters.value.baseModels))
       .filter(filterByOwnership(selectedOwnership.value))
 
-    const sortedAssets = [...filtered]
-    sortedAssets.sort((a, b) => {
-      switch (filters.value.sortBy) {
-        case 'name-desc':
-          return getAssetDisplayName(b).localeCompare(getAssetDisplayName(a))
-        case 'recent':
-          return (
-            new Date(b.created_at ?? 0).getTime() -
-            new Date(a.created_at ?? 0).getTime()
-          )
-        case 'name-asc':
-        default:
-          return getAssetDisplayName(a).localeCompare(getAssetDisplayName(b))
-      }
-    })
+    const sortedAssets = sortAssets(filtered, filters.value.sortBy)
 
     // Transform to display format
     return sortedAssets.map(transformAssetForDisplay)
   })
 
-  function updateFilters(newFilters: FilterState) {
+  function updateFilters(newFilters: AssetFilterState) {
     filters.value = { ...newFilters }
   }
 

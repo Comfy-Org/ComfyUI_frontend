@@ -1,3 +1,6 @@
+import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
+import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+
 import type { DropdownItem, SortOption } from './types'
 
 export async function defaultSearcher(query: string, items: DropdownItem[]) {
@@ -9,25 +12,23 @@ export async function defaultSearcher(query: string, items: DropdownItem[]) {
   })
 }
 
-export function getDefaultSortOptions(): SortOption[] {
+/**
+ * Create a SortOption that delegates to the shared sortAssets utility
+ */
+function createSortOption(
+  id: AssetSortOption,
+  name: string
+): SortOption<AssetSortOption> {
+  return {
+    id,
+    name,
+    sorter: ({ items }) => sortAssets(items, id)
+  }
+}
+
+export function getDefaultSortOptions(): SortOption<AssetSortOption>[] {
   return [
-    {
-      name: 'Default',
-      id: 'default',
-      sorter: ({ items }) => items.slice()
-    },
-    {
-      name: 'A-Z',
-      id: 'a-z',
-      sorter: ({ items }) =>
-        items.slice().sort((a, b) => {
-          const aLabel = a.label ?? a.name
-          const bLabel = b.label ?? b.name
-          return aLabel.localeCompare(bLabel, undefined, {
-            numeric: true,
-            sensitivity: 'base'
-          })
-        })
-    }
+    createSortOption('default', 'Default'),
+    createSortOption('name-asc', 'A-Z')
   ]
 }

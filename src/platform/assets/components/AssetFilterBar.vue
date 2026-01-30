@@ -64,11 +64,13 @@ import SingleSelect from '@/components/input/SingleSelect.vue'
 import type { SelectOption } from '@/components/input/types'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetFilterState,
+  AssetSortOption,
+  OwnershipOption
+} from '@/platform/assets/types/filterTypes'
 
 const { t } = useI18n()
-
-type SortOption = 'recent' | 'name-asc' | 'name-desc'
-export type OwnershipOption = 'all' | 'my-models' | 'public-models'
 
 const sortOptions = computed(() => [
   { name: t('assetBrowser.sortRecent'), value: 'recent' as const },
@@ -85,13 +87,6 @@ const ownershipOptions = computed(() => [
   }
 ])
 
-export interface FilterState {
-  fileFormats: string[]
-  baseModels: string[]
-  sortBy: SortOption
-  ownership: OwnershipOption
-}
-
 const { assets = [], showOwnershipFilter = false } = defineProps<{
   assets?: AssetItem[]
   showOwnershipFilter?: boolean
@@ -99,7 +94,7 @@ const { assets = [], showOwnershipFilter = false } = defineProps<{
 
 const fileFormats = ref<SelectOption[]>([])
 const baseModels = ref<SelectOption[]>([])
-const sortBy = ref<SortOption>('recent')
+const sortBy = ref<AssetSortOption>('recent')
 const ownership = ref<OwnershipOption>('all')
 
 const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
@@ -107,7 +102,7 @@ const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
 )
 
 const emit = defineEmits<{
-  filterChange: [filters: FilterState]
+  filterChange: [filters: AssetFilterState]
 }>()
 
 function handleFilterChange() {

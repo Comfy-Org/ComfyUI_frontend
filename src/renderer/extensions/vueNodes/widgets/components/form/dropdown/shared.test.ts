@@ -74,7 +74,7 @@ describe('getDefaultSortOptions', () => {
   })
 
   describe('A-Z sorter', () => {
-    const azSorter = sortOptions.find((o) => o.id === 'a-z')!.sorter
+    const azSorter = sortOptions.find((o) => o.id === 'name-asc')!.sorter
 
     it('sorts items alphabetically by name', () => {
       const items = [
