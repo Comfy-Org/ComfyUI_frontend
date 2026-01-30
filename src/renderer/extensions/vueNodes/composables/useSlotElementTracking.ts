@@ -36,9 +36,9 @@ function scheduleSlotLayoutSync(nodeId: string) {
 
 export function flushScheduledSlotLayoutSync() {
   if (pendingNodes.size === 0) {
-    // No pending nodes - don't clear the flag here as late mounts may still
-    // call scheduleSlotLayoutSync. The RAF callback will clear it after
-    // processing actual nodes.
+    // No pending nodes and no RAF scheduled - clear the flag to avoid
+    // permanently suppressing link rendering (e.g., workflows without Vue nodes)
+    layoutStore.setPendingSlotSync(false)
     return
   }
   const conv = useSharedCanvasPositionConversion()
