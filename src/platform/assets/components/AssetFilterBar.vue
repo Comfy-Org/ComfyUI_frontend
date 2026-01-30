@@ -7,16 +7,6 @@
       class="flex gap-4 items-center"
       data-component-id="asset-filter-bar-left"
     >
-      <SingleSelect
-        v-if="showOwnershipFilter"
-        v-model="ownership"
-        :label="$t('assetBrowser.ownership')"
-        :options="ownershipOptions"
-        class="min-w-32"
-        data-component-id="asset-filter-ownership"
-        @update:model-value="handleFilterChange"
-      />
-
       <MultiSelect
         v-if="availableFileFormats.length > 0"
         v-model="fileFormats"
@@ -34,6 +24,16 @@
         :options="availableBaseModels"
         class="min-w-32"
         data-component-id="asset-filter-base-models"
+        @update:model-value="handleFilterChange"
+      />
+
+      <SingleSelect
+        v-if="showOwnershipFilter"
+        v-model="ownership"
+        :label="$t('assetBrowser.ownership')"
+        :options="ownershipOptions"
+        class="min-w-32"
+        data-component-id="asset-filter-ownership"
         @update:model-value="handleFilterChange"
       />
     </div>
