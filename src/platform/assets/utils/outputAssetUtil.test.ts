@@ -120,4 +120,34 @@ describe('resolveOutputAssetItems', () => {
       'preview.png'
     ])
   })
+
+  it('keeps root outputs with empty subfolders', async () => {
+    const output = createOutput({
+      filename: 'root.png',
+      nodeId: '1',
+      subfolder: '',
+      url: 'https://example.com/root.png'
+    })
+    const metadata: OutputAssetMetadata = {
+      promptId: 'prompt-root',
+      nodeId: '1',
+      subfolder: '',
+      outputCount: 1,
+      allOutputs: [output]
+    }
+
+    const results = await resolveOutputAssetItems(metadata)
+
+    expect(mocks.getJobDetail).not.toHaveBeenCalled()
+    expect(results).toHaveLength(1)
+    const [asset] = results
+    if (!asset) {
+      throw new Error('Expected a root output asset')
+    }
+    expect(asset.id).toBe('prompt-root-1--root.png')
+    if (!asset.user_metadata) {
+      throw new Error('Expected output metadata')
+    }
+    expect(asset.user_metadata.subfolder).toBe('')
+  })
 })

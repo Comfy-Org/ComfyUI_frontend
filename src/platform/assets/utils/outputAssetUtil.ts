@@ -42,7 +42,7 @@ export function getOutputKey({
   subfolder,
   filename
 }: OutputKeyParts): string | null {
-  if (nodeId == null || !subfolder || !filename) {
+  if (nodeId == null || subfolder == null || !filename) {
     return null
   }
 
