@@ -159,10 +159,10 @@ function useSubscriptionInternal() {
 
     const { tierKey, billingCycle } = pendingPurchase
     const isYearly = billingCycle === 'yearly'
-    const baseName = t(`subscription.tiers.${tierKey}.name`)
-    const planName = isYearly
-      ? t('subscription.tierNameYearly', { name: baseName })
-      : baseName
+    const itemId = `${billingCycle}_${tierKey}`
+    const itemName = `${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'} ${
+      tierKey.charAt(0).toUpperCase() + tierKey.slice(1)
+    }`
     const unitPrice = getTierPrice(tierKey, isYearly)
     const value = isYearly && tierKey !== 'founder' ? unitPrice * 12 : unitPrice
     const metadata: SubscriptionPurchaseMetadata = {
@@ -171,8 +171,8 @@ function useSubscriptionInternal() {
       currency: 'USD',
       items: [
         {
-          item_id: `${billingCycle}_${tierKey}`,
-          item_name: planName,
+          item_id: itemId,
+          item_name: itemName,
           item_category: 'subscription',
           item_variant: billingCycle,
           price: value,
