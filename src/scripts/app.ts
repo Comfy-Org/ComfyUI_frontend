@@ -1394,10 +1394,40 @@ export class ComfyApp {
               } catch (error) {}
             }
           } catch (error: unknown) {
-            useDialogService().showErrorDialog(error, {
-              title: t('errorDialog.promptExecutionError'),
-              reportType: 'promptExecutionError'
-            })
+            if (
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object' &&
+              error.response.error?.type === 'missing_node_type'
+            ) {
+              const extraInfo = (error.response.error.extra_info ?? {}) as {
+                class_type?: string | null
+                node_title?: string | null
+                node_id?: string
+              }
+              const classType = extraInfo.class_type ?? 'Unknown'
+              const nodeTitle = extraInfo.node_title ?? classType
+              const nodeId = extraInfo.node_id
+              const hint = (() => {
+                if (nodeTitle !== classType && nodeId) {
+                  return `"${nodeTitle}" (Node ID #${nodeId})`
+                } else if (nodeTitle !== classType) {
+                  return `"${nodeTitle}"`
+                } else if (nodeId) {
+                  return `Node ID #${nodeId}`
+                }
+                return undefined
+              })()
+              const missingNodeType: MissingNodeType = {
+                type: classType,
+                ...(hint && { hint })
+              }
+              this.showMissingNodesError([missingNodeType])
+            } else {
+              useDialogService().showErrorDialog(error, {
+                title: t('errorDialog.promptExecutionError'),
+                reportType: 'promptExecutionError'
+              })
+            }
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
