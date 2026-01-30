@@ -1,6 +1,7 @@
 {
   "g": {
     "user": "User",
+    "you": "You",
     "currentUser": "Current user",
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
@@ -10,10 +11,13 @@
     "downloadVideo": "Download video",
     "editOrMaskImage": "Edit or mask image",
     "editImage": "Edit image",
+    "decrement": "Decrement",
     "deleteImage": "Delete image",
     "deleteAudioFile": "Delete audio file",
+    "increment": "Increment",
     "removeImage": "Remove image",
     "removeVideo": "Remove video",
+    "removeTag": "Remove tag",
     "chart": "Chart",
     "chartLowercase": "chart",
     "file": "file",
@@ -40,8 +44,6 @@
     "comfy": "Comfy",
     "refresh": "Refresh",
     "refreshNode": "Refresh Node",
-    "vitePreloadErrorTitle": "New Version Available",
-    "vitePreloadErrorMessage": "A new version of the app has been released. Would you like to reload?\nIf not, some parts of the app might not work as expected.\nFeel free to decline and save your progress before reloading.",
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
@@ -71,6 +73,7 @@
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
+    "more": "More",
     "loading": "Loading",
     "loadingPanel": "Loading {panel} panel...",
     "preview": "PREVIEW",
@@ -84,6 +87,7 @@
     "reportIssueTooltip": "Submit the error report to Comfy Org",
     "reportSent": "Report Submitted",
     "copyToClipboard": "Copy to Clipboard",
+    "copyAll": "Copy All",
     "openNewIssue": "Open New Issue",
     "showReport": "Show Report",
     "imageFailedToLoad": "Image failed to load",
@@ -96,6 +100,12 @@
     "no": "No",
     "cancel": "Cancel",
     "close": "Close",
+    "closeDialog": "Close dialog",
+    "showLeftPanel": "Show left panel",
+    "hideLeftPanel": "Hide left panel",
+    "showRightPanel": "Show right panel",
+    "hideRightPanel": "Hide right panel",
+    "or": "or",
     "pressKeysForNewBinding": "Press keys for new binding",
     "defaultBanner": "default banner",
     "enableOrDisablePack": "Enable or disable pack",
@@ -104,31 +114,42 @@
     "dropYourFileOr": "Drop your file or",
     "back": "Back",
     "next": "Next",
+    "submit": "Submit",
     "install": "Install",
     "installing": "Installing",
     "overwrite": "Overwrite",
     "customize": "Customize",
     "experimental": "BETA",
     "deprecated": "DEPR",
+    "devOnly": "DEV",
     "loadWorkflow": "Load Workflow",
     "goToNode": "Go to Node",
     "setAsBackground": "Set as Background",
     "customBackground": "Custom Background",
     "settings": "Settings",
     "searchWorkflows": "Search Workflows",
+    "scrollLeft": "Scroll Left",
+    "scrollRight": "Scroll Right",
     "searchSettings": "Search Settings",
     "searchNodes": "Search Nodes",
     "searchModels": "Search Models",
     "searchKeybindings": "Search Keybindings",
     "searchExtensions": "Search Extensions",
     "search": "Search",
+    "searchPlaceholder": "Search...",
     "noResultsFound": "No Results Found",
+    "noResults": "No Results",
     "searchFailedMessage": "We couldn't find any settings matching your search. Try adjusting your search terms.",
     "noTasksFound": "No Tasks Found",
     "noTasksFoundMessage": "There are no tasks in the queue.",
     "newFolder": "New Folder",
     "enableAll": "Enable All",
     "disableAll": "Disable All",
+    "enableSelected": "Enable Selected",
+    "disableSelected": "Disable Selected",
+    "disableThirdParty": "Disable Third-Party",
+    "core": "Core",
+    "custom": "Custom",
     "command": "Command",
     "keybinding": "Keybinding",
     "upload": "Upload",
@@ -143,6 +164,7 @@
     "choose_file_to_upload": "choose file to upload",
     "capture": "capture",
     "nodes": "Nodes",
+    "nodesCount": "{count} nodes | {count} node | {count} nodes",
     "community": "Community",
     "all": "All",
     "versionMismatchWarning": "Version Compatibility Warning",
@@ -163,13 +185,23 @@
     "source": "Source",
     "filter": "Filter",
     "apply": "Apply",
+    "use": "Use",
     "enabled": "Enabled",
     "installed": "Installed",
     "restart": "Restart",
     "missing": "Missing",
     "inProgress": "In progress",
     "completed": "Completed",
+    "downloading": "Downloading",
     "interrupted": "Interrupted",
+    "queued": "Queued",
+    "running": "Running",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "job": "Job",
+    "asset": "{count} assets | {count} asset | {count} assets",
+    "untitled": "Untitled",
+    "emDash": "—",
     "enabling": "Enabling {id}",
     "disabling": "Disabling {id}",
     "updating": "Updating {id}",
@@ -184,6 +216,15 @@
     "copy": "Copy",
     "copyJobId": "Copy Job ID",
     "copied": "Copied",
+    "relativeTime": {
+      "now": "now",
+      "yearsAgo": "{count}y ago",
+      "monthsAgo": "{count}mo ago",
+      "weeksAgo": "{count}w ago",
+      "daysAgo": "{count}d ago",
+      "hoursAgo": "{count}h ago",
+      "minutesAgo": "{count}min ago"
+    },
     "jobIdCopied": "Job ID copied to clipboard",
     "failedToCopyJobId": "Failed to copy job ID",
     "imageUrl": "Image URL",
@@ -204,7 +245,6 @@
     "noAudioRecorded": "No audio recorded",
     "nodesRunning": "nodes running",
     "duplicate": "Duplicate",
-    "copied": "Copied",
     "itemsCopiedToClipboard": "Items copied to clipboard",
     "selectItemsToCopy": "Select items to copy",
     "nothingToCopy": "Nothing to copy",
@@ -227,6 +267,7 @@
     "frameNodes": "Frame Nodes",
     "listening": "Listening...",
     "ready": "Ready",
+    "playPause": "Play/Pause",
     "playRecording": "Play Recording",
     "playing": "Playing",
     "stopPlayback": "Stop Playback",
@@ -235,10 +276,17 @@
     "halfSpeed": "0.5x",
     "1x": "1x",
     "2x": "2x",
-    "beta": "BETA"
+    "beta": "BETA",
+    "nightly": "NIGHTLY",
+    "profile": "Profile",
+    "noItems": "No items"
   },
   "manager": {
-    "title": "Custom Nodes Manager",
+    "title": "Nodes Manager",
+    "nodePackInfo": "Node Pack Info",
+    "basicInfo": "Basic Info",
+    "actions": "Actions",
+    "selected": "Selected",
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
@@ -252,6 +300,17 @@
     "changingVersion": "Changing version from {from} to {to}",
     "dependencies": "Dependencies",
     "inWorkflow": "In Workflow",
+    "nav": {
+      "allExtensions": "All Extensions",
+      "notInstalled": "Not Installed",
+      "installedSection": "INSTALLED",
+      "allInstalled": "All installed",
+      "updatesAvailable": "Updates Available",
+      "conflicting": "Conflicting",
+      "inWorkflowSection": "IN WORKFLOW",
+      "allInWorkflow": "All in: {workflowName}",
+      "missingNodes": "Missing Nodes"
+    },
     "infoPanelEmpty": "Click an item to see the info",
     "applyChanges": "Apply Changes",
     "restartToApplyChanges": "To apply changes, please restart ComfyUI",
@@ -267,6 +326,8 @@
     "uninstall": "Uninstall",
     "uninstalling": "Uninstalling {id}",
     "update": "Update",
+    "tryUpdate": "Try Update",
+    "tryUpdateTooltip": "Pull latest changes from repository. Nightly versions may have updates that cannot be detected automatically.",
     "uninstallSelected": "Uninstall Selected",
     "updateSelected": "Update Selected",
     "updateAll": "Update All",
@@ -282,6 +343,28 @@
     "errorConnecting": "Error connecting to the Comfy Node Registry.",
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
+    "emptyState": {
+      "allInstalled": {
+        "title": "No Extensions Installed",
+        "message": "You haven't installed any extensions yet."
+      },
+      "updateAvailable": {
+        "title": "All Up to Date",
+        "message": "All your extensions are up to date."
+      },
+      "conflicting": {
+        "title": "No Conflicts Detected",
+        "message": "All your extensions are compatible."
+      },
+      "workflow": {
+        "title": "No Extensions in Workflow",
+        "message": "This workflow doesn't use any extension nodes."
+      },
+      "missing": {
+        "title": "No Missing Nodes",
+        "message": "All required nodes are installed."
+      }
+    },
     "tryAgainLater": "Please try again later.",
     "gettingInfo": "Getting info...",
     "nodePack": "Node Pack",
@@ -290,7 +373,7 @@
     "lastUpdated": "Last Updated",
     "noDescription": "No description available",
     "installSelected": "Install Selected",
-    "installAllMissingNodes": "Install All Missing Nodes",
+    "installAllMissingNodes": "Install All",
     "allMissingNodesInstalled": "All missing nodes have been successfully installed",
     "packsSelected": "packs selected",
     "mixedSelectionMessage": "Cannot perform bulk action on mixed selection",
@@ -345,6 +428,10 @@
       "warningTooltip": "This package may have compatibility issues with your current environment"
     }
   },
+  "importFailed": {
+    "title": "Import Failed",
+    "copyError": "Copy Error"
+  },
   "issueReport": {
     "helpFix": "Help Fix This"
   },
@@ -395,6 +482,9 @@
     "Copy Image": "Copy Image",
     "Save Image": "Save Image",
     "Rename": "Rename",
+    "RenameWidget": "Rename Widget",
+    "FavoriteWidget": "Favorite Widget",
+    "UnfavoriteWidget": "Unfavorite Widget",
     "Copy": "Copy",
     "Duplicate": "Duplicate",
     "Paste": "Paste",
@@ -420,7 +510,8 @@
     "Horizontal": "Horizontal",
     "Vertical": "Vertical",
     "new": "new",
-    "deprecated": "deprecated"
+    "deprecated": "deprecated",
+    "Extensions": "Extensions"
   },
   "icon": {
     "bookmark": "Bookmark",
@@ -447,6 +538,7 @@
   "notSupported": {
     "title": "Your device is not supported",
     "message": "Only following devices are supported:",
+    "illustrationAlt": "Sad girl illustration",
     "learnMore": "Learn More",
     "reportIssue": "Report Issue",
     "supportedDevices": {
@@ -473,10 +565,12 @@
       "title": "Choose your hardware setup",
       "recommended": "RECOMMENDED",
       "nvidiaSubtitle": "NVIDIA CUDA",
+      "amdSubtitle": "AMD ROCm™",
       "cpuSubtitle": "CPU Mode",
       "manualSubtitle": "Manual Setup",
       "appleMetalDescription": "Leverages your Mac's GPU for faster speed and a better overall experience",
       "nvidiaDescription": "Use your NVIDIA GPU with CUDA acceleration for the best performance.",
+      "amdDescription": "Use your AMD GPU with ROCm™ acceleration for the best performance.",
       "cpuDescription": "Use CPU mode for compatibility when GPU acceleration is not available",
       "manualDescription": "Configure ComfyUI manually for advanced setups or unsupported hardware"
     },
@@ -497,6 +591,8 @@
     "cannotWrite": "Unable to write to the selected path",
     "insufficientFreeSpace": "Insufficient space - minimum free space",
     "isOneDrive": "OneDrive is not supported. Please install ComfyUI in another location.",
+    "insideAppInstallDir": "This folder is inside the ComfyUI Desktop application bundle and will be deleted during updates. Choose a directory outside the install folder, such as Documents/ComfyUI.",
+    "insideUpdaterCache": "This folder is inside the ComfyUI updater cache, which is cleared on every update. Select a different location for your data.",
     "nonDefaultDrive": "Please install ComfyUI on your system drive (eg. C:\\). Drives with different file systems may cause unpredicable issues. Models and other files can be stored on other drives after installation.",
     "parentMissing": "Path does not exist - create the containing directory first",
     "unhandledError": "Unknown error",
@@ -600,7 +696,9 @@
   "serverConfig": {
     "modifiedConfigs": "You have modified the following server configurations. Restart to apply changes.",
     "revertChanges": "Revert Changes",
-    "restart": "Restart"
+    "restart": "Restart",
+    "restartRequiredToastSummary": "Restart required",
+    "restartRequiredToastDetail": "Restart the app to apply server configuration changes."
   },
   "shape": {
     "default": "Default",
@@ -611,6 +709,7 @@
     "box": "Box"
   },
   "sideToolbar": {
+    "sidebar": "Sidebar",
     "themeToggle": "Toggle Theme",
     "helpCenter": "Help Center",
     "logout": "Logout",
@@ -619,8 +718,20 @@
     "workflows": "Workflows",
     "templates": "Templates",
     "assets": "Assets",
-    "mediaAssets": "Media Assets",
+    "mediaAssets": {
+      "title": "Media Assets",
+      "sortNewestFirst": "Newest first",
+      "sortOldestFirst": "Oldest first",
+      "sortLongestFirst": "Generation time (longest first)",
+      "sortFastestFirst": "Generation time (fastest first)",
+      "filterImage": "Image",
+      "filterVideo": "Video",
+      "filterAudio": "Audio",
+      "filter3D": "3D",
+      "filterText": "Text"
+    },
     "backToAssets": "Back to all assets",
+    "searchAssets": "Search Assets",
     "labels": {
       "queue": "Queue",
       "nodes": "Nodes",
@@ -636,6 +747,9 @@
     "noFilesFound": "No files found",
     "noImportedFiles": "No imported files found",
     "noGeneratedFiles": "No generated files found",
+    "generatedAssetsHeader": "Generated assets",
+    "importedAssetsHeader": "Imported assets",
+    "activeJobStatus": "Active job: {status}",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -661,17 +775,45 @@
     },
     "modelLibrary": "Model Library",
     "downloads": "Downloads",
-    "queueTab": {
-      "showFlatList": "Show Flat List",
-      "backToAllTasks": "Back to All Tasks",
-      "containImagePreview": "Fill Image Preview",
-      "coverImagePreview": "Fit Image Preview",
-      "clearPendingTasks": "Clear Pending Tasks",
-      "filter": "Filter Outputs",
-      "filters": {
-        "hideCached": "Hide Cached",
-        "hideCanceled": "Hide Canceled"
-      }
+    "queueProgressOverlay": {
+      "title": "Queue Progress",
+      "total": "Total: {percent}",
+      "colonPercent": ": {percent}",
+      "inlineTotalLabel": "Total",
+      "currentNode": "Current node:",
+      "viewAllJobs": "View all jobs",
+      "viewList": "List view",
+      "viewGrid": "Grid view",
+      "running": "running",
+      "preview": "Preview",
+      "interruptAll": "Interrupt all running jobs",
+      "moreOptions": "More options",
+      "showAssets": "Show assets",
+      "showAssetsPanel": "Show assets panel",
+      "queuedSuffix": "queued",
+      "clearQueued": "Clear queued",
+      "clearHistory": "Clear job queue history",
+      "filterJobs": "Filter jobs",
+      "filterBy": "Filter by",
+      "filterAllWorkflows": "All workflows",
+      "filterCurrentWorkflow": "Current workflow",
+      "sortJobs": "Sort jobs",
+      "sortBy": "Sort by",
+      "activeJobs": "{count} active job | {count} active jobs",
+      "activeJobsShort": "{count} active | {count} active",
+      "activeJobsSuffix": "active jobs",
+      "jobQueue": "Job Queue",
+      "expandCollapsedQueue": "Expand job queue",
+      "viewJobHistory": "View job history",
+      "noActiveJobs": "No active jobs",
+      "stubClipTextEncode": "CLIP Text Encode:",
+      "jobsCompleted": "{count} job completed | {count} jobs completed",
+      "jobsFailed": "{count} job failed | {count} jobs failed",
+      "cancelJobTooltip": "Cancel job",
+      "clearQueueTooltip": "Clear queue",
+      "clearHistoryDialogTitle": "Clear your job queue history?",
+      "clearHistoryDialogDescription": "All the finished or failed jobs below will be removed from this Job queue panel.",
+      "clearHistoryDialogAssetsNote": "Assets generated by these jobs won’t be deleted and can always be viewed from the assets panel."
     },
     "workflowTab": {
       "confirmDeleteTitle": "Delete workflow?",
@@ -692,9 +834,10 @@
     }
   },
   "helpCenter": {
+    "feedback": "Give Feedback",
     "docs": "Docs",
     "github": "Github",
-    "helpFeedback": "Help & Feedback",
+    "help": "Help & Support",
     "managerExtension": "Manager Extension",
     "more": "More...",
     "whatsNew": "What's New?",
@@ -705,13 +848,20 @@
     "updateAvailable": "Update",
     "desktopUserGuide": "Desktop User Guide",
     "openDevTools": "Open Dev Tools",
-    "reinstall": "Re-Install"
+    "reinstall": "Re-Install",
+    "updateComfyUI": "Update ComfyUI",
+    "updateComfyUIStarted": "Update Started",
+    "updateComfyUIStartedDetail": "ComfyUI update has been queued. Please wait...",
+    "updateComfyUISuccess": "Update Complete",
+    "updateComfyUISuccessDetail": "ComfyUI has been updated. Rebooting...",
+    "updateComfyUIFailed": "Failed to update ComfyUI. Please try again."
   },
   "releaseToast": {
-    "newVersionAvailable": "New Version Available!",
-    "whatsNew": "What's New?",
+    "newVersionAvailable": "New update is out!",
+    "whatsNew": "See what's new",
     "skip": "Skip",
-    "update": "Update"
+    "update": "Update",
+    "description": "Check out the latest improvements and features in this update."
   },
   "menu": {
     "hideMenu": "Hide Menu",
@@ -727,6 +877,7 @@
     "onChangeTooltip": "The workflow will be queued once a change is made",
     "runWorkflow": "Run workflow (Shift to queue at front)",
     "runWorkflowFront": "Run workflow (Queue at front)",
+    "runWorkflowDisabled": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow.",
     "run": "Run",
     "execute": "Execute",
     "interrupt": "Cancel current run",
@@ -739,8 +890,10 @@
     "dark": "Dark",
     "light": "Light",
     "manageExtensions": "Manage Extensions",
+    "customNodesManager": "Custom Nodes Manager",
     "settings": "Settings",
     "help": "Help",
+    "helpAndFeedback": "Help & Feedback",
     "queue": "Queue Panel"
   },
   "tabMenu": {
@@ -787,7 +940,7 @@
     "noResultsHint": "Try adjusting your search or filters",
     "allTemplates": "All Templates",
     "modelFilter": "Model Filter",
-    "useCaseFilter": "Use Case",
+    "useCaseFilter": "Tasks",
     "licenseFilter": "License",
     "modelsSelected": "{count} Models",
     "useCasesSelected": "{count} Use Cases",
@@ -796,6 +949,7 @@
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",
+      "popular": "Popular",
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
@@ -863,7 +1017,8 @@
     "showAll": "Show all",
     "hidden": "Hidden / nested parameters",
     "hideAll": "Hide all",
-    "showRecommended": "Show recommended widgets"
+    "showRecommended": "Show recommended widgets",
+    "cannotDeleteGlobal": "Cannot delete installed blueprints"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
@@ -874,29 +1029,47 @@
     "cancelled": "Cancelled"
   },
   "maskEditor": {
-    "Invert": "Invert",
-    "Clear": "Clear",
-    "Brush Settings": "Brush Settings",
-    "Brush Shape": "Brush Shape",
-    "Thickness": "Thickness",
-    "Opacity": "Opacity",
-    "Hardness": "Hardness",
-    "Smoothing Precision": "Smoothing Precision",
-    "Reset to Default": "Reset to Default",
-    "Paint Bucket Settings": "Paint Bucket Settings",
-    "Tolerance": "Tolerance",
-    "Fill Opacity": "Fill Opacity",
-    "Color Select Settings": "Color Select Settings",
-    "Selection Opacity": "Selection Opacity",
-    "Live Preview": "Live Preview",
-    "Apply to Whole Image": "Apply to Whole Image",
-    "Method": "Method",
-    "Stop at mask": "Stop at mask",
-    "Mask Tolerance": "Mask Tolerance",
-    "Layers": "Layers",
-    "Mask Layer": "Mask Layer",
-    "Mask Opacity": "Mask Opacity",
-    "Image Layer": "Image Layer"
+    "title": "Mask Editor",
+    "invert": "Invert",
+    "clear": "Clear",
+    "undo": "Undo",
+    "redo": "Redo",
+    "rotateLeft": "Rotate Left",
+    "rotateRight": "Rotate Right",
+    "mirrorHorizontal": "Mirror Horizontal",
+    "mirrorVertical": "Mirror Vertical",
+    "clickToResetZoom": "Click to reset zoom",
+    "brushSettings": "Brush Settings",
+    "brushShape": "Brush Shape",
+    "colorSelector": "Color Selector",
+    "thickness": "Thickness",
+    "opacity": "Opacity",
+    "hardness": "Hardness",
+    "stepSize": "Step Size",
+    "smoothingPrecision": "Smoothing Precision",
+    "resetToDefault": "Reset to Default",
+    "paintBucketSettings": "Paint Bucket Settings",
+    "tolerance": "Tolerance",
+    "fillOpacity": "Fill Opacity",
+    "colorSelectSettings": "Color Select Settings",
+    "selectionOpacity": "Selection Opacity",
+    "livePreview": "Live Preview",
+    "applyToWholeImage": "Apply to Whole Image",
+    "method": "Method",
+    "stopAtMask": "Stop at mask",
+    "maskTolerance": "Mask Tolerance",
+    "layers": "Layers",
+    "maskLayer": "Mask Layer",
+    "maskOpacity": "Mask Opacity",
+    "imageLayer": "Image Layer",
+    "maskBlendingOptions": "Mask Blending Options",
+    "paintLayer": "Paint Layer",
+    "baseImageLayer": "Base Image Layer",
+    "activateLayer": "Activate Layer",
+    "baseLayerPreview": "Base layer preview",
+    "black": "Black",
+    "white": "White",
+    "negative": "Negative"
   },
   "commands": {
     "runWorkflow": "Run workflow",
@@ -916,6 +1089,58 @@
     "settings": "Settings",
     "help": "Help",
     "queue": "Queue Panel"
+  },
+  "queue": {
+    "initializingAlmostReady": "Initializing - Almost ready",
+    "inQueue": "In queue...",
+    "jobAddedToQueue": "Job added to queue",
+    "completedIn": "Finished in {duration}",
+    "jobMenu": {
+      "openAsWorkflowNewTab": "Open as workflow in new tab",
+      "openWorkflowNewTab": "Open workflow in new tab",
+      "copyJobId": "Copy job ID",
+      "cancelJob": "Cancel job",
+      "inspectAsset": "Inspect asset",
+      "addToCurrentWorkflow": "Add to current workflow",
+      "download": "Download",
+      "exportWorkflow": "Export workflow",
+      "delete": "Delete",
+      "deleteAsset": "Delete asset",
+      "removeJob": "Remove job",
+      "copyErrorMessage": "Copy error message",
+      "reportError": "Report error"
+    },
+    "toggleJobHistory": "Toggle Job History",
+    "jobHistory": "Job History",
+    "jobList": {
+      "undated": "Undated",
+      "sortMostRecent": "Most recent",
+      "sortTotalGenerationTime": "Total generation time (longest first)",
+      "sortComputeHoursUsed": "Compute hours used (most first)"
+    },
+    "jobDetails": {
+      "header": "Job Details",
+      "workflow": "Workflow",
+      "jobId": "Job ID",
+      "queuedAt": "Queued at",
+      "queuePosition": "Queue position",
+      "timeElapsed": "Time elapsed",
+      "estimatedStartIn": "Estimated to start in",
+      "estimatedFinishIn": "Estimated to finish in",
+      "generatedOn": "Generated on",
+      "totalGenerationTime": "Total generation time",
+      "computeHoursUsed": "Compute hours used",
+      "failedAfter": "Failed after",
+      "errorMessage": "Error message",
+      "report": "Report",
+      "queuePositionValue": "~{count} job ahead of yours | ~{count} jobs ahead of yours",
+      "eta": {
+        "seconds": "~{count} second | ~{count} seconds",
+        "secondsRange": "~{lo}-{hi} seconds",
+        "minutes": "~{count} minute | ~{count} minutes",
+        "minutesRange": "~{lo}-{hi} minutes"
+      }
+    }
   },
   "menuLabels": {
     "File": "File",
@@ -986,10 +1211,14 @@
     "Manager Menu (Legacy)": "Manager Menu (Legacy)",
     "Install Missing Custom Nodes": "Install Missing Custom Nodes",
     "Check for Custom Node Updates": "Check for Custom Node Updates",
-    "Toggle the Custom Nodes Manager Progress Bar": "Toggle the Custom Nodes Manager Progress Bar",
     "Decrease Brush Size in MaskEditor": "Decrease Brush Size in MaskEditor",
     "Increase Brush Size in MaskEditor": "Increase Brush Size in MaskEditor",
+    "Open Color Picker in MaskEditor": "Open Color Picker in MaskEditor",
+    "Mirror Horizontal in MaskEditor": "Mirror Horizontal in MaskEditor",
+    "Mirror Vertical in MaskEditor": "Mirror Vertical in MaskEditor",
     "Open Mask Editor for Selected Node": "Open Mask Editor for Selected Node",
+    "Rotate Left in MaskEditor": "Rotate Left in MaskEditor",
+    "Rotate Right in MaskEditor": "Rotate Right in MaskEditor",
     "Unload Models": "Unload Models",
     "Unload Models and Execution Cache": "Unload Models and Execution Cache",
     "New": "New",
@@ -997,22 +1226,26 @@
     "Manager": "Manager",
     "Open": "Open",
     "Publish": "Publish",
+    "Job History": "Job History",
     "Queue Prompt": "Queue Prompt",
     "Queue Prompt (Front)": "Queue Prompt (Front)",
     "Queue Selected Output Nodes": "Queue Selected Output Nodes",
     "Redo": "Redo",
     "Refresh Node Definitions": "Refresh Node Definitions",
+    "Rename": "Rename",
     "Save": "Save",
     "Save As": "Save As",
     "Show Settings Dialog": "Show Settings Dialog",
     "Experimental: Enable AssetAPI": "Experimental: Enable AssetAPI",
     "Canvas Performance": "Canvas Performance",
     "Help Center": "Help Center",
+    "Toggle Simple Mode": "Toggle Simple Mode",
+    "Toggle Queue Panel V2": "Toggle Queue Panel V2",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
     "Open Sign In Dialog": "Open Sign In Dialog",
     "Sign Out": "Sign Out",
-    "Experimental: Enable Vue Nodes": "Experimental: Enable Vue Nodes",
+    "Experimental: Enable Nodes 2_0": "Experimental: Enable Nodes 2.0",
     "Close Current Workflow": "Close Current Workflow",
     "Next Opened Workflow": "Next Opened Workflow",
     "Previous Opened Workflow": "Previous Opened Workflow",
@@ -1027,7 +1260,6 @@
     "Assets": "Assets",
     "Model Library": "Model Library",
     "Node Library": "Node Library",
-    "Queue Panel": "Queue Panel",
     "Workflows": "Workflows"
   },
   "desktopMenu": {
@@ -1058,7 +1290,6 @@
     "Locale": "Locale",
     "Mask Editor": "Mask Editor",
     "BrushAdjustment": "Brush Adjustment",
-    "NewEditor": "New Editor",
     "ModelLibrary": "Model Library",
     "NodeLibrary": "Node Library",
     "Node Search Box": "Node Search Box",
@@ -1089,10 +1320,15 @@
     "API Nodes": "API Nodes",
     "Notification Preferences": "Notification Preferences",
     "3DViewer": "3DViewer",
-    "Vue Nodes": "Vue Nodes",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
-    "VueNodes": "Vue Nodes"
+    "Vue Nodes": "Nodes 2.0",
+    "VueNodes": "Nodes 2.0",
+    "Nodes 2_0": "Nodes 2.0",
+    "Execution": "Execution",
+    "PLY": "PLY",
+    "Workspace": "Workspace",
+    "Other": "Other"
   },
   "serverConfigItems": {
     "listen": {
@@ -1199,6 +1435,10 @@
     "disable-metadata": {
       "name": "Disable saving prompt metadata in files."
     },
+    "enable-manager-legacy-ui": {
+      "name": "Use legacy Manager UI",
+      "tooltip": "Uses the legacy ComfyUI-Manager UI instead of the new UI."
+    },
     "disable-all-custom-nodes": {
       "name": "Disable loading all custom nodes."
     },
@@ -1227,16 +1467,21 @@
     "_for_testing": "_for_testing",
     "custom_sampling": "custom_sampling",
     "noise": "noise",
+    "dataset": "dataset",
+    "text": "text",
+    "image": "image",
     "sampling": "sampling",
     "schedulers": "schedulers",
     "audio": "audio",
     "conditioning": "conditioning",
     "loaders": "loaders",
     "guiders": "guiders",
+    "latent": "latent",
+    "mask": "mask",
     "api node": "api node",
+    "Bria": "Bria",
     "video": "video",
     "ByteDance": "ByteDance",
-    "image": "image",
     "preprocessors": "preprocessors",
     "utils": "utils",
     "string": "string",
@@ -1247,29 +1492,30 @@
     "chroma_radiance": "chroma_radiance",
     "attention_experiments": "attention_experiments",
     "flux": "flux",
+    "kandinsky5": "kandinsky5",
     "hooks": "hooks",
     "combine": "combine",
+    "logic": "logic",
     "cond single": "cond single",
     "context": "context",
     "controlnet": "controlnet",
     "inpaint": "inpaint",
     "scheduling": "scheduling",
     "create": "create",
-    "mask": "mask",
     "deprecated": "deprecated",
     "debug": "debug",
     "model": "model",
-    "latent": "latent",
     "3d": "3d",
     "ltxv": "ltxv",
+    "qwen": "qwen",
     "sd3": "sd3",
     "unet": "unet",
     "sigmas": "sigmas",
     "BFL": "BFL",
     "Gemini": "Gemini",
-    "text": "text",
-    "gligen": "gligen",
     "video_models": "video_models",
+    "gligen": "gligen",
+    "Grok": "Grok",
     "sd": "sd",
     "Ideogram": "Ideogram",
     "postprocessing": "postprocessing",
@@ -1285,6 +1531,8 @@
     "lotus": "lotus",
     "LTXV": "LTXV",
     "Luma": "Luma",
+    "Magnific": "Magnific",
+    "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
     "Moonvalley Marey": "Moonvalley Marey",
@@ -1292,10 +1540,8 @@
     "Sora": "Sora",
     "cond pair": "cond pair",
     "photomaker": "photomaker",
-    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "primitive": "primitive",
-    "qwen": "qwen",
     "Recraft": "Recraft",
     "edit_models": "edit_models",
     "Rodin": "Rodin",
@@ -1309,11 +1555,16 @@
     "stable_cascade": "stable_cascade",
     "3d_models": "3d_models",
     "style_model": "style_model",
+    "Tencent": "Tencent",
+    "Topaz": "Topaz",
     "Tripo": "Tripo",
     "Veo": "Veo",
     "Vidu": "Vidu",
+    "": "",
     "camera": "camera",
-    "Wan": "Wan"
+    "Wan": "Wan",
+    "WaveSpeed": "WaveSpeed",
+    "zimage": "zimage"
   },
   "dataTypes": {
     "*": "*",
@@ -1327,6 +1578,9 @@
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
     "COMBO": "COMBO",
+    "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
+    "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
+    "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "CONDITIONING",
     "CONTROL_NET": "CONTROL_NET",
     "FLOAT": "FLOAT",
@@ -1337,11 +1591,12 @@
     "HOOK_KEYFRAMES": "HOOK_KEYFRAMES",
     "HOOKS": "HOOKS",
     "IMAGE": "IMAGE",
+    "IMAGECOMPARE": "IMAGECOMPARE",
     "INT": "INT",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "LATENT_OPERATION",
+    "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD_3D": "LOAD_3D",
-    "LOAD_3D_ANIMATION": "LOAD_3D_ANIMATION",
     "LOAD3D_CAMERA": "LOAD3D_CAMERA",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
@@ -1349,6 +1604,8 @@
     "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
+    "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
+    "MESHY_TASK_ID": "MESHY_TASK_ID",
     "MODEL": "MODEL",
     "MODEL_PATCH": "MODEL_PATCH",
     "MODEL_TASK_ID": "MODEL_TASK_ID",
@@ -1368,6 +1625,7 @@
     "STYLE_MODEL": "STYLE_MODEL",
     "SVG": "SVG",
     "TIMESTEPS_RANGE": "TIMESTEPS_RANGE",
+    "TRACKS": "TRACKS",
     "UPSCALE_MODEL": "UPSCALE_MODEL",
     "VAE": "VAE",
     "VIDEO": "VIDEO",
@@ -1393,6 +1651,14 @@
       "taskFailed": "Task failed to run.",
       "cannotContinue": "Unable to continue - errors remain",
       "defaultDescription": "An error occurred while running a maintenance task."
+    },
+    "unsafeMigration": {
+      "title": "Unsafe install location detected",
+      "generic": "Your current ComfyUI base path is in a location that may be deleted or modified during updates. To avoid data loss, move it to a safe folder.",
+      "appInstallDir": "Your base path is inside the ComfyUI Desktop application bundle. This folder may be deleted or overwritten during updates. Choose a directory outside the install folder, such as Documents/ComfyUI.",
+      "updaterCache": "Your base path is inside the ComfyUI updater cache, which is cleared on each update. Choose a different location for your data.",
+      "oneDrive": "Your base path is on OneDrive, which can cause sync issues and accidental data loss. Choose a local folder that is not managed by OneDrive.",
+      "action": "Use the \"Base path\" maintenance task below to move ComfyUI to a safe location."
     }
   },
   "missingModelsDialog": {
@@ -1400,19 +1666,17 @@
     "missingModels": "Missing Models",
     "missingModelsMessage": "When loading the graph, the following models were not found"
   },
-  "loadWorkflowWarning": {
-    "missingNodesTitle": "Some Nodes Are Missing",
-    "missingNodesDescription": "When loading the graph, the following node types were not found.\nThis may also happen if your installed version is lower and that node type can’t be found.",
-    "outdatedVersion": "Some nodes require a newer version of ComfyUI (current: {version}). Please update to use all nodes.",
-    "outdatedVersionGeneric": "Some nodes require a newer version of ComfyUI. Please update to use all nodes.",
-    "coreNodesFromVersion": "Requires ComfyUI {version}:"
-  },
   "versionMismatchWarning": {
     "title": "Version Compatibility Warning",
     "frontendOutdated": "Frontend version {frontendVersion} is outdated. Backend requires version {requiredVersion} or higher.",
     "frontendNewer": "Frontend version {frontendVersion} may not be compatible with backend version {backendVersion}.",
     "updateFrontend": "Update Frontend",
     "dismiss": "Dismiss"
+  },
+  "loadWorkflowWarning": {
+    "outdatedVersion": "This workflow was created with a newer version of ComfyUI ({version}). Some nodes may not work correctly.",
+    "outdatedVersionGeneric": "This workflow was created with a newer version of ComfyUI. Some nodes may not work correctly.",
+    "coreNodesFromVersion": "Core nodes from version {version}:"
   },
   "errorDialog": {
     "defaultTitle": "An error occurred",
@@ -1445,6 +1709,9 @@
     "errorMessage": "Failed to copy to clipboard",
     "errorNotSupported": "Clipboard API not supported in your browser"
   },
+  "imageCompare": {
+    "noImages": "No images to compare"
+  },
   "load3d": {
     "switchCamera": "Switch Camera",
     "showGrid": "Show Grid",
@@ -1459,6 +1726,7 @@
     "loadingModel": "Loading 3D Model...",
     "upDirection": "Up Direction",
     "materialMode": "Material Mode",
+    "showSkeleton": "Show Skeleton",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
@@ -1475,6 +1743,7 @@
       "normal": "Normal",
       "wireframe": "Wireframe",
       "original": "Original",
+      "pointCloud": "Point Cloud",
       "depth": "Depth",
       "lineart": "Lineart"
     },
@@ -1507,10 +1776,22 @@
     "unsupportedFileType": "Unsupported file type (supports .gltf, .glb, .obj, .fbx, .stl)",
     "uploadingModel": "Uploading 3D model..."
   },
+  "imageCrop": {
+    "loading": "Loading...",
+    "noInputImage": "No input image connected",
+    "cropPreviewAlt": "Crop preview"
+  },
+  "boundingBox": {
+    "x": "X",
+    "y": "Y",
+    "width": "Width",
+    "height": "Height"
+  },
   "toastMessages": {
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
+    "failedToSaveDraft": "Failed to save workflow draft",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
@@ -1525,6 +1806,7 @@
     "pleaseSelectNodesToGroup": "Please select the nodes (or other groups) to create a group for",
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
+    "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
@@ -1536,6 +1818,7 @@
     "noTemplatesToExport": "No templates to export",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
+    "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
     "userNotAuthenticated": "User not authenticated",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
     "failedToCreateCustomer": "Failed to create customer: {error}",
@@ -1720,26 +2003,61 @@
       "maxAmount": "(Max. $1,000 USD)",
       "buyNow": "Buy now",
       "seeDetails": "See details",
-      "topUp": "Top Up"
+      "topUp": "Top Up",
+      "addMoreCredits": "Add more credits",
+      "addMoreCreditsToRun": "Add more credits to run",
+      "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
+      "creditsDescription": "Credits are used to run workflows or partner nodes.",
+      "howManyCredits": "How many credits would you like to add?",
+      "usdAmount": "${amount}",
+      "videosEstimate": "~{count} videos*",
+      "templateNote": "*Generated with Wan Fun Control template",
+      "buy": "Buy",
+      "purchaseError": "Purchase Failed",
+      "purchaseErrorDetail": "Failed to purchase credits: {error}",
+      "unknownError": "An unknown error occurred",
+      "viewPricing": "View pricing details",
+      "youPay": "Amount (USD)",
+      "youGet": "Credits",
+      "buyCredits": "Continue to payment",
+      "minimumPurchase": "${amount} minimum ({credits} credits)",
+      "maximumAmount": "${amount} max.",
+      "minRequired": "{credits} credits minimum",
+      "maxAllowed": "{credits} credits maximum.",
+      "creditsPerDollar": "credits per dollar",
+      "amountToPayLabel": "Amount to pay in dollars",
+      "creditsToReceiveLabel": "Credits to receive",
+      "selectAmount": "Select amount",
+      "needMore": "Need more?",
+      "contactUs": "Contact us"
     },
+    "creditsAvailable": "Credits available",
+    "refreshes": "Refreshes {date}",
     "eventType": "Event Type",
     "details": "Details",
     "time": "Time",
     "additionalInfo": "Additional Info",
     "model": "Model",
     "added": "Added",
-    "accountInitialized": "Account initialized"
+    "accountInitialized": "Account initialized",
+    "unified": {
+      "message": "Credits have been unified",
+      "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n\nYour existing Partner node balance has been converted into credits."
+    }
   },
   "subscription": {
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
+    "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
-    "perMonth": "USD / month",
+    "perMonth": "/ month",
+    "usdPerMonth": "USD / mo",
     "renewsDate": "Renews {date}",
-    "refreshesOn": "Refreshes to ${monthlyCreditBonusUsd} on {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
+    "managePayment": "Manage Payment",
+    "cancelSubscription": "Cancel Subscription",
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
     "totalCredits": "Total credits",
@@ -1750,15 +2068,40 @@
     "monthlyBonusDescription": "Monthly credit bonus",
     "prepaidDescription": "Pre-paid credits",
     "prepaidCreditsInfo": "Pre-paid credits expire after 1 year from purchase date.",
+    "creditsRemainingThisMonth": "Included (Refills {date})",
+    "creditsRemainingThisYear": "Included (Refills {date})",
+    "creditsYouveAdded": "Additional",
+    "monthlyCreditsInfo": "These credits refresh monthly and don't roll over",
+    "viewMoreDetailsPlans": "View more details about plans & pricing",
     "nextBillingCycle": "next billing cycle",
     "yourPlanIncludes": "Your plan includes:",
     "viewMoreDetails": "View more details",
     "learnMore": "Learn more",
+    "billedMonthly": "Billed monthly",
+    "billedYearly": "{total} Billed yearly",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "tierNameYearly": "{name} Yearly",
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
       "benefit1": "$10 in monthly credits for Partner Nodes — top up when needed",
       "benefit2": "Up to 30 min runtime per job"
+    },
+    "yearlyDiscount": "20% DISCOUNT",
+    "tiers": {
+      "founder": {
+        "name": "Founder's Edition"
+      },
+      "standard": {
+        "name": "Standard"
+      },
+      "creator": {
+        "name": "Creator"
+      },
+      "pro": {
+        "name": "Pro"
+      }
     },
     "required": {
       "title": "Subscribe to",
@@ -1769,15 +2112,176 @@
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeNow": "Subscribe Now",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
-    "partnerNodesCredits": "Partner Nodes pricing table"
+    "workspaceNotSubscribed": "This workspace is not on a subscription",
+    "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
+    "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
+    "description": "Choose the best plan for you",
+    "haveQuestions": "Have questions or wondering about enterprise?",
+    "contactUs": "Contact us",
+    "viewEnterprise": "View enterprise",
+    "partnerNodesCredits": "Partner nodes pricing",
+    "plansAndPricing": "Plans & pricing",
+    "managePlan": "Manage plan",
+    "upgrade": "UPGRADE",
+    "mostPopular": "Most popular",
+    "currentPlan": "Current Plan",
+    "subscribeTo": "Subscribe to {plan}",
+    "monthlyCreditsLabel": "Monthly credits",
+    "yearlyCreditsLabel": "Total yearly credits",
+    "maxDurationLabel": "Max run duration",
+    "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
+    "addCreditsLabel": "Add more credits whenever",
+    "customLoRAsLabel": "Import your own LoRAs",
+    "videoEstimateLabel": "Approx. amount of 5s videos generated with Wan 2.2 Image-to-Video template",
+    "videoEstimateHelp": "More details on this template",
+    "videoEstimateExplanation": "These estimates are based on the Wan 2.2 Image-to-Video template using default settings (5 seconds, 640x640, 16fps, 4-step sampling).",
+    "videoEstimateTryTemplate": "Try this template",
+    "videoTemplateBasedCredits": "Videos generated with Wan 2.2 Image to Video",
+    "upgradePlan": "Upgrade Plan",
+    "upgradeTo": "Upgrade to {plan}",
+    "changeTo": "Change to {plan}",
+    "maxDuration": {
+      "standard": "30 min",
+      "creator": "30 min",
+      "pro": "1 hr",
+      "founder": "30 min"
+    },
+    "billingComingSoon": {
+      "title": "Coming Soon",
+      "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
+    }
   },
   "userSettings": {
-    "title": "User Settings",
+    "title": "My Account Settings",
+    "accountSettings": "Account settings",
+    "workspaceSettings": "Workspace settings",
     "name": "Name",
     "email": "Email",
     "provider": "Sign-in Provider",
     "notSet": "Not set",
     "updatePassword": "Update Password"
+  },
+  "workspacePanel": {
+    "invite": "Invite",
+    "inviteMember": "Invite member",
+    "inviteLimitReached": "You've reached the maximum of 50 members",
+    "tabs": {
+      "dashboard": "Dashboard",
+      "planCredits": "Plan & Credits",
+      "membersCount": "Members ({count})"
+    },
+    "dashboard": {
+      "placeholder": "Dashboard workspace settings"
+    },
+    "members": {
+      "membersCount": "{count}/50 Members",
+      "pendingInvitesCount": "{count} pending invite | {count} pending invites",
+      "tabs": {
+        "active": "Active",
+        "pendingCount": "Pending ({count})"
+      },
+      "columns": {
+        "inviteDate": "Invite date",
+        "expiryDate": "Expiry date",
+        "joinDate": "Join date"
+      },
+      "actions": {
+        "copyLink": "Copy invite link",
+        "revokeInvite": "Revoke invite",
+        "removeMember": "Remove member"
+      },
+      "noInvites": "No pending invites",
+      "noMembers": "No members",
+      "personalWorkspaceMessage": "You can't invite other members to your personal workspace right now. To add members to a workspace,",
+      "createNewWorkspace": "create a new one."
+    },
+    "menu": {
+      "editWorkspace": "Edit workspace details",
+      "leaveWorkspace": "Leave Workspace",
+      "deleteWorkspace": "Delete Workspace",
+      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+    },
+    "editWorkspaceDialog": {
+      "title": "Edit workspace details",
+      "nameLabel": "Workspace name",
+      "save": "Save"
+    },
+    "leaveDialog": {
+      "title": "Leave this workspace?",
+      "message": "You won't be able to join again unless you contact the workspace owner.",
+      "leave": "Leave"
+    },
+    "deleteDialog": {
+      "title": "Delete this workspace?",
+      "message": "Any unused credits or unsaved assets will be lost. This action cannot be undone.",
+      "messageWithName": "Delete \"{name}\"? Any unused credits or unsaved assets will be lost. This action cannot be undone."
+    },
+    "removeMemberDialog": {
+      "title": "Remove this member?",
+      "message": "This member will be removed from your workspace. Credits they've used will not be refunded.",
+      "remove": "Remove member",
+      "success": "Member removed",
+      "error": "Failed to remove member"
+    },
+    "revokeInviteDialog": {
+      "title": "Uninvite this person?",
+      "message": "This member won't be able to join your workspace anymore. Their invite link will be invalidated.",
+      "revoke": "Uninvite"
+    },
+    "inviteMemberDialog": {
+      "title": "Invite a person to this workspace",
+      "message": "Create a shareable invite link to send to someone",
+      "placeholder": "Enter the person's email",
+      "createLink": "Create link",
+      "linkStep": {
+        "title": "Send this link to the person",
+        "message": "Make sure their account uses this email.",
+        "copyLink": "Copy Link",
+        "done": "Done"
+      },
+      "linkCopied": "Copied",
+      "linkCopyFailed": "Failed to copy link"
+    },
+    "createWorkspaceDialog": {
+      "title": "Create a new workspace",
+      "message": "Workspaces let members share a single credits pool. You'll become the owner after creating this.",
+      "nameLabel": "Workspace name*",
+      "namePlaceholder": "Enter workspace name",
+      "create": "Create"
+    },
+    "toast": {
+      "workspaceCreated": {
+        "title": "Workspace created",
+        "message": "Subscribe to a plan, invite teammates, and start collaborating.",
+        "subscribe": "Subscribe"
+      },
+      "workspaceUpdated": {
+        "title": "Workspace updated",
+        "message": "Workspace details have been saved."
+      },
+      "workspaceDeleted": {
+        "title": "Workspace deleted",
+        "message": "The workspace has been permanently deleted."
+      },
+      "workspaceLeft": {
+        "title": "Left workspace",
+        "message": "You have left the workspace."
+      },
+      "failedToUpdateWorkspace": "Failed to update workspace",
+      "failedToCreateWorkspace": "Failed to create workspace",
+      "failedToDeleteWorkspace": "Failed to delete workspace",
+      "failedToLeaveWorkspace": "Failed to leave workspace",
+      "failedToFetchWorkspaces": "Failed to load workspaces"
+    }
+  },
+  "workspaceSwitcher": {
+    "switchWorkspace": "Switch workspace",
+    "subscribe": "Subscribe",
+    "personal": "Personal",
+    "roleOwner": "Owner",
+    "roleMember": "Member",
+    "createWorkspace": "Create new workspace",
+    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -1788,14 +2292,8 @@
     "Bypass Group Nodes": "Bypass Group Nodes",
     "Set Group Nodes to Always": "Set Group Nodes to Always"
   },
-  "chatHistory": {
-    "cancelEdit": "Cancel",
-    "editTooltip": "Edit message",
-    "cancelEditTooltip": "Cancel edit",
-    "copiedTooltip": "Copied",
-    "copyTooltip": "Copy message to clipboard"
-  },
   "widgets": {
+    "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "uploadSelect": {
       "placeholder": "Select...",
@@ -1804,6 +2302,26 @@
       "placeholderVideo": "Select video...",
       "placeholderModel": "Select model...",
       "placeholderUnknown": "Select media..."
+    },
+    "valueControl": {
+      "header": {
+        "prefix": "Automatically update the value",
+        "after": "AFTER",
+        "before": "BEFORE",
+        "postfix": "running the workflow:"
+      },
+      "linkToGlobal": "Link to",
+      "linkToGlobalSeed": "Global Value",
+      "linkToGlobalDesc": "Unique value linked to the Global Value's control setting",
+      "randomize": "Randomize Value",
+      "randomizeDesc": "Shuffles the value randomly after each generation",
+      "increment": "Increment Value",
+      "incrementDesc": "Adds 1 to value or selects the next option",
+      "decrement": "Decrement Value",
+      "decrementDesc": "Subtracts 1 from value or selects the previous option",
+      "fixed": "Fixed Value",
+      "fixedDesc": "Leaves value unchanged",
+      "editSettings": "Edit control settings"
     }
   },
   "widgetFileUpload": {
@@ -1820,6 +2338,7 @@
   },
   "whatsNewPopup": {
     "learnMore": "Learn more",
+    "later": "Later",
     "noReleaseNotes": "No release notes available."
   },
   "breadcrumbsMenu": {
@@ -1827,7 +2346,8 @@
     "clearWorkflow": "Clear Workflow",
     "deleteWorkflow": "Delete Workflow",
     "deleteBlueprint": "Delete Blueprint",
-    "enterNewName": "Enter new name"
+    "enterNewName": "Enter new name",
+    "missingNodesWarning": "Workflow contains unsupported nodes (highlighted red)."
   },
   "shortcuts": {
     "shortcuts": "Shortcuts",
@@ -1852,6 +2372,7 @@
     "renderErrorState": "Render Error State"
   },
   "cloudOnboarding": {
+    "skipToCloudApp": "Skip to the cloud app",
     "survey": {
       "title": "Cloud Survey",
       "placeholder": "Survey questions placeholder",
@@ -1974,34 +2495,147 @@
   "cloudSurvey_steps_industry": "What's your primary industry?",
   "cloudSurvey_steps_making": "What do you plan on making?",
   "assetBrowser": {
-    "assets": "Assets",
-    "checkpoints": "Checkpoints",
-    "browseAssets": "Browse Assets",
-    "noAssetsFound": "No assets found",
-    "tryAdjustingFilters": "Try adjusting your search or filters",
-    "loadingModels": "Loading {type}...",
-    "connectionError": "Please check your connection and try again",
-    "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
-    "noModelsInFolder": "No {type} available in this folder",
-    "searchAssetsPlaceholder": "Type to search...",
-    "uploadModel": "Upload model",
-    "allModels": "All Models",
     "allCategory": "All {category}",
-    "unknown": "Unknown",
-    "fileFormats": "File formats",
+    "allModels": "All Models",
+    "byType": "By type",
+    "emptyImported": {
+      "canImport": "No imported models yet. Click \"Import\" to add your own.",
+      "restricted": "Personal models are only available at Creator tier and above."
+    },
+    "noResultsCanImport": "Try adjusting your search or filters.\nYou can also add models using the \"Import\" button above.",
+    "imported": "Imported",
+    "assetCollection": "Asset collection",
+    "assets": "Assets",
     "baseModels": "Base models",
-    "sortBy": "Sort by",
+    "browseAssets": "Browse Assets",
+    "checkpoints": "Checkpoints",
+    "civitaiLinkExample": "{example} {link}",
+    "civitaiLinkExampleStrong": "Example:",
+    "civitaiLinkExampleUrl": "https://civitai.com/models/10706/luisap-z-image-and-qwen-pixel-art-refiner?modelVersionId=2225295",
+    "civitaiLinkLabel": "Civitai model {download} link",
+    "civitaiLinkLabelDownload": "download",
+    "civitaiLinkPlaceholder": "Paste link here",
+    "confirmModelDetails": "Confirm Model Details",
+    "connectionError": "Please check your connection and try again",
+    "errorFileTooLarge": "File exceeds the maximum allowed size limit",
+    "errorFormatNotAllowed": "Only SafeTensor format is allowed",
+    "errorModelTypeNotSupported": "This model type is not supported",
+    "errorUnknown": "An unexpected error occurred",
+    "errorUnsafePickleScan": "CivitAI detected potentially unsafe code in this file",
+    "errorUnsafeVirusScan": "CivitAI detected malware or suspicious content in this file",
+    "errorUploadFailed": "Failed to import asset. Please try again.",
+    "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
+    "fileFormats": "File formats",
+    "fileName": "File Name",
+    "fileSize": "File Size",
+    "filterBy": "Filter by",
+    "findInLibrary": "Find it in the {type} section of the models library.",
+    "finish": "Finish",
+    "importAnother": "Import Another",
+    "genericLinkPlaceholder": "Paste link here",
+    "jobId": "Job ID",
+    "loadingModels": "Loading {type}...",
+    "maxFileSize": "Max file size: {size}",
+    "maxFileSizeValue": "1 GB",
+    "modelAssociatedWithLink": "The model associated with the link you provided:",
+    "modelName": "Model Name",
+    "modelNamePlaceholder": "Enter a name for this model",
+    "modelTypeSelectorLabel": "What type of model is this?",
+    "modelTypeSelectorPlaceholder": "Select model type",
+    "modelUploaded": "Model successfully imported.",
+    "noAssetsFound": "No assets found",
+    "noModelsInFolder": "No {type} available in this folder",
+    "notSureLeaveAsIs": "Not sure? Just leave this as is",
+    "noValidSourceDetected": "No valid import source detected",
+    "onlyCivitaiUrlsSupported": "Only Civitai URLs are supported",
+    "ownership": "Ownership",
+    "ownershipAll": "All",
+    "ownershipMyModels": "My models",
+    "ownershipPublicModels": "Public models",
+    "processingModel": "Download started",
+    "processingModelDescription": "You can close this dialog. The download will continue in the background.",
+    "providerCivitai": "Civitai",
+    "providerHuggingFace": "Hugging Face",
+    "selectFrameworks": "Select Frameworks",
+    "selectModelType": "Select model type",
+    "selectProjects": "Select Projects",
     "sortAZ": "A-Z",
-    "sortZA": "Z-A",
-    "sortRecent": "Recent",
+    "sortBy": "Sort by",
+    "sortingType": "Sorting Type",
     "sortPopular": "Popular",
+    "sortRecent": "Recent",
+    "sortZA": "Z-A",
+    "tags": "Tags",
+    "tagsHelp": "Separate tags with commas",
+    "tagsPlaceholder": "e.g., models, checkpoint",
+    "tryAdjustingFilters": "Try adjusting your search or filters",
+    "unknown": "Unknown",
+    "unsupportedUrlSource": "This URL is not supported. Use a direct model link from {sources}. See the how-to videos below for help.",
+    "upgradeFeatureDescription": "This feature is only available with Creator or Pro plans.",
+    "upgradeToUnlockFeature": "Upgrade to unlock this feature",
+    "upload": "Import",
+    "uploadFailed": "Import failed",
+    "uploadingModel": "Importing model...",
+    "uploadModel": "Import",
+    "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
+    "uploadModelDescription1Generic": "Paste a model download link to add it to your library.",
+    "uploadModelDescription2": "Only links from {link} are supported at the moment",
+    "uploadModelDescription2Generic": "Only URLs from the following providers are supported:",
+    "uploadModelDescription2Link": "https://civitai.com/models",
+    "uploadModelDescription3": "Max file size: {size}",
+    "uploadModelFailedToRetrieveMetadata": "Failed to retrieve metadata. Please check the link and try again.",
+    "uploadModelFromCivitai": "Import a model from Civitai",
+    "uploadModelGeneric": "Import a model",
+    "uploadModelHelpFooterText": "Need help finding the URLs? Click on a provider below to see a how-to video.",
+    "uploadModelHelpVideo": "Upload Model Help Video",
+    "uploadModelHowDoIFindThis": "How do I find this?",
+    "uploadSuccess": "Model imported successfully!",
     "ariaLabel": {
       "assetCard": "{name} - {type} asset",
       "loadingAsset": "Loading asset"
     },
+    "modelInfo": {
+      "title": "Model Info",
+      "selectModelPrompt": "Select a model to see its information",
+      "basicInfo": "Basic Info",
+      "displayName": "Display Name",
+      "editDisplayName": "Edit display name",
+      "fileName": "File Name",
+      "source": "Source",
+      "viewOnSource": "View on {source}",
+      "modelTagging": "Model Tagging",
+      "modelType": "Model Type",
+      "selectModelType": "Select model type...",
+      "compatibleBaseModels": "Compatible Base Models",
+      "addBaseModel": "Add base model...",
+      "baseModelUnknown": "Base model unknown",
+      "additionalTags": "Additional Tags",
+      "addTag": "Add tag...",
+      "noAdditionalTags": "No additional tags",
+      "modelDescription": "Model Description",
+      "triggerPhrases": "Trigger Phrases",
+      "description": "Description",
+      "descriptionNotSet": "No description set",
+      "descriptionPlaceholder": "Add a description for this model..."
+    },
     "media": {
       "threeDModelPlaceholder": "3D Model",
       "audioPlaceholder": "Audio"
+    },
+    "deletion": {
+      "header": "Delete this model?",
+      "body": "This model will be permanently removed from your library.",
+      "inProgress": "Deleting {assetName}...",
+      "complete": "{assetName} has been deleted.",
+      "failed": "{assetName} could not be deleted."
+    },
+    "download": {
+      "complete": "Download complete",
+      "failed": "Download failed",
+      "inProgress": "Downloading {assetName}..."
+    },
+    "rename": {
+      "failed": "Could not rename asset."
     }
   },
   "mediaAsset": {
@@ -2012,6 +2646,19 @@
     "assetDeletedSuccessfully": "Asset deleted successfully",
     "deletingImportedFilesCloudOnly": "Deleting imported files is only supported in cloud version",
     "failedToDeleteAsset": "Failed to delete asset",
+    "actions": {
+      "inspect": "Inspect asset",
+      "more": "More options",
+      "zoom": "Zoom in",
+      "moreOptions": "More options",
+      "seeMoreOutputs": "See more outputs",
+      "insertAsNodeInWorkflow": "Insert as node in workflow",
+      "download": "Download",
+      "openWorkflow": "Open as workflow in new tab",
+      "exportWorkflow": "Export workflow",
+      "copyJobId": "Copy job ID",
+      "delete": "Delete"
+    },
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",
       "jobIdCopyFailed": "Failed to copy Job ID",
@@ -2020,14 +2667,39 @@
     },
     "selection": {
       "selectedCount": "Assets Selected: {count}",
+      "multipleSelectedAssets": "Multiple assets selected",
       "deselectAll": "Deselect all",
       "downloadSelected": "Download",
+      "downloadSelectedAll": "Download all",
       "deleteSelected": "Delete",
+      "deleteSelectedAll": "Delete all",
+      "insertAllAssetsAsNodes": "Insert all assets as nodes",
+      "openWorkflowAll": "Open all workflows",
+      "exportWorkflowAll": "Export all workflows",
       "downloadStarted": "Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file(s)",
       "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
-      "failedToDeleteAssets": "Failed to delete selected assets"
-    }
+      "failedToDeleteAssets": "Failed to delete selected assets",
+      "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
+      "nodesAddedToWorkflow": "{count} node(s) added to workflow",
+      "failedToAddNodes": "Failed to add nodes to workflow",
+      "partialAddNodesSuccess": "{succeeded} added successfully, {failed} failed",
+      "workflowsOpened": "{count} workflow(s) opened in new tabs",
+      "noWorkflowsFound": "No workflow data found in selected assets",
+      "partialWorkflowsOpened": "{succeeded} workflow(s) opened, {failed} failed",
+      "workflowsExported": "{count} workflow(s) exported successfully",
+      "noWorkflowsToExport": "No workflow data found to export",
+      "partialWorkflowsExported": "{succeeded} exported successfully, {failed} failed"
+    },
+    "noJobIdFound": "No job ID found for this asset",
+    "unsupportedFileType": "Unsupported file type for loader node",
+    "nodeTypeNotFound": "Node type {nodeType} not found",
+    "failedToCreateNode": "Failed to create node",
+    "nodeAddedToWorkflow": "{nodeType} node added to workflow",
+    "noWorkflowDataFound": "No workflow data found in this asset",
+    "workflowOpenedInNewTab": "Workflow opened in new tab",
+    "failedToExportWorkflow": "Failed to export workflow",
+    "workflowExportedSuccessfully": "Workflow exported successfully"
   },
   "actionbar": {
     "dockToTop": "Dock to top",
@@ -2043,25 +2715,140 @@
       }
     }
   },
-  "vueNodesMigration": {
-    "message": "Prefer the classic node design?",
-    "button": "Open Settings"
-  },
   "vueNodesBanner": {
-    "message": "Nodes just got a new look and feel",
+    "title": "Introducing Nodes 2.0",
+    "desc": "– More flexible workflows, powerful new widgets, built for extensibility",
     "tryItOut": "Try it out"
   },
-  "cloud": {
-    "missingNodes": {
+  "vueNodesMigration": {
+    "message": "Prefer the legacy design?",
+    "button": "Switch back"
+  },
+  "vueNodesMigrationMainMenu": {
+    "message": "Switch back to Nodes 2.0 anytime from the main menu."
+  },
+  "linearMode": {
+    "linearMode": "Simple Mode",
+    "beta": "Simple Mode in Beta - Feedback",
+    "graphMode": "Graph Mode",
+    "dragAndDropImage": "Click to browse or drag an image",
+    "runCount": "Run count:",
+    "rerun": "Rerun",
+    "reuseParameters": "Reuse Parameters",
+    "downloadAll": "Download All"
+  },
+  "missingNodes": {
+    "cloud": {
       "title": "These nodes aren't available on Comfy Cloud yet",
       "description": "This workflow uses custom nodes that aren't supported in the Cloud version yet.",
       "priorityMessage": "We've automatically flagged these nodes so we can prioritize adding them.",
-      "missingNodes": "Missing Nodes",
       "replacementInstruction": "In the meantime, replace these nodes (highlighted red on the canvas) with supported ones if possible, or try a different workflow.",
       "learnMore": "Learn more",
-      "gotIt": "Ok, got it",
-      "cannotRun": "Workflow contains unsupported nodes (highlighted red). Remove these to run the workflow. "
+      "gotIt": "Ok, got it"
+    },
+    "oss": {
+      "title": "This workflow has missing nodes",
+      "description": "This workflow uses custom nodes you haven't installed yet.",
+      "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
+    }
+  },
+  "rightSidePanel": {
+    "togglePanel": "Toggle properties panel",
+    "noSelection": "Select a node to see its properties and info.",
+    "workflowOverview": "Workflow Overview",
+    "title": "No item(s) selected | 1 item selected | {count} items selected",
+    "parameters": "Parameters",
+    "nodes": "Nodes",
+    "info": "Info",
+    "color": "Node color",
+    "pinned": "Pinned",
+    "bypass": "Bypass",
+    "normal": "Normal",
+    "mute": "Mute",
+    "inputs": "INPUTS",
+    "inputsNone": "NO INPUTS",
+    "inputsNoneTooltip": "Node has no inputs",
+    "advancedInputs": "ADVANCED INPUTS",
+    "showAdvancedInputsButton": "Show advanced inputs",
+    "properties": "Properties",
+    "nodeState": "Node state",
+    "settings": "Settings",
+    "addFavorite": "Favorite",
+    "removeFavorite": "Unfavorite",
+    "hideInput": "Hide input",
+    "showInput": "Show input",
+    "locateNode": "Locate node on canvas",
+    "favorites": "FAVORITED INPUTS",
+    "favoritesNone": "NO FAVORITED INPUTS",
+    "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
+    "globalSettings": {
+      "title": "Global Settings",
+      "searchPlaceholder": "Search quick settings...",
+      "nodes": "NODES",
+      "canvas": "CANVAS",
+      "connectionLinks": "CONNECTION LINKS",
+      "showAdvanced": "Show advanced parameters",
+      "showAdvancedTooltip": "This is an important setting that when set to TRUE, reveals all advanced parameters for nodes",
+      "showInfoBadges": "Show info badges",
+      "showToolbox": "Show toolbox on selection",
+      "nodes2": "Nodes 2.0",
+      "gridSpacing": "Grid spacing",
+      "snapNodesToGrid": "Snap nodes to grid",
+      "linkShape": "Link shape",
+      "showConnectedLinks": "Show connected links",
+      "viewAllSettings": "View all settings"
+    },
+    "groupSettings": "Group Settings",
+    "groups": "Groups",
+    "favoritesNoneDesc": "Inputs you favorite will show up here",
+    "noneSearchDesc": "No items match your search",
+    "nodesNoneDesc": "NO NODES",
+    "fallbackGroupTitle": "Group",
+    "fallbackNodeTitle": "Node",
+    "hideAdvancedInputsButton": "Hide advanced inputs"
+  },
+  "help": {
+    "recentReleases": "Recent releases",
+    "helpCenterMenu": "Help Center Menu"
+  },
+  "progressToast": {
+    "importingModels": "Importing Models",
+    "downloadingModel": "Downloading model...",
+    "downloadsFailed": "{count} downloads failed | {count} download failed | {count} downloads failed",
+    "allDownloadsCompleted": "All downloads completed",
+    "noImportsInQueue": "No {filter} in queue",
+    "failed": "Failed",
+    "finished": "Finished",
+    "pending": "Pending",
+    "progressCount": "{completed} of {total}",
+    "filter": {
+      "all": "All",
+      "completed": "Completed",
+      "failed": "Failed"
+    }
+  },
+  "workspace": {
+    "unsavedChanges": {
+      "title": "Unsaved Changes",
+      "message": "You have unsaved changes. Do you want to discard them and switch workspaces?"
+    },
+    "inviteAccepted": "Invite Accepted",
+    "addedToWorkspace": "You have been added to {workspaceName}",
+    "inviteFailed": "Failed to Accept Invite"
+  },
+  "workspaceAuth": {
+    "errors": {
+      "notAuthenticated": "You must be logged in to access workspaces",
+      "invalidFirebaseToken": "Authentication failed. Please try logging in again.",
+      "accessDenied": "You do not have access to this workspace",
+      "workspaceNotFound": "Workspace not found",
+      "tokenExchangeFailed": "Failed to authenticate with workspace: {error}"
+    }
+  },
+  "nightly": {
+    "badge": {
+      "label": "Preview Version",
+      "tooltip": "You are using a nightly version of ComfyUI. Please use the feedback button to share your thoughts about these features."
     }
   }
 }
-

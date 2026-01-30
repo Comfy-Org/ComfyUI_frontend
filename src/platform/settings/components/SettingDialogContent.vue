@@ -1,14 +1,28 @@
 <template>
-  <div class="settings-container">
-    <ScrollPanel class="settings-sidebar w-48 shrink-0 p-2 2xl:w-64">
-      <SearchBox
-        v-model:model-value="searchQuery"
-        class="settings-search-box mb-2 w-full"
-        :placeholder="$t('g.searchSettings') + '...'"
-        :debounce-time="128"
-        autofocus
-        @search="handleSearch"
-      />
+  <div
+    :class="
+      teamWorkspacesEnabled
+        ? 'flex h-full w-full overflow-auto flex-col md:flex-row'
+        : 'settings-container'
+    "
+  >
+    <ScrollPanel
+      :class="
+        teamWorkspacesEnabled
+          ? 'w-full md:w-64 md:min-w-64 md:max-w-64 shrink-0 p-2'
+          : 'settings-sidebar w-48 shrink-0 p-2 2xl:w-64'
+      "
+    >
+      <div :class="teamWorkspacesEnabled ? 'px-4' : ''">
+        <SearchBox
+          v-model:model-value="searchQuery"
+          class="settings-search-box mb-2 w-full"
+          :placeholder="$t('g.searchSettings') + '...'"
+          :debounce-time="128"
+          autofocus
+          @search="handleSearch"
+        />
+      </div>
       <Listbox
         v-model="activeCategory"
         :options="groupedMenuTreeNodes"
@@ -20,16 +34,40 @@
           (option: SettingTreeNode) =>
             !queryIsEmpty && !searchResultsCategories.has(option.label ?? '')
         "
-        class="w-full border-none"
+        :class="
+          teamWorkspacesEnabled
+            ? 'w-full border-none bg-transparent'
+            : 'w-full border-none'
+        "
       >
-        <template #optiongroup>
+        <!-- Workspace mode: custom group headers -->
+        <template v-if="teamWorkspacesEnabled" #optiongroup="{ option }">
+          <h3 class="text-xs font-semibold uppercase text-muted m-0 pt-6 pb-2">
+            {{ option.translatedLabel ?? option.label }}
+          </h3>
+        </template>
+        <!-- Legacy mode: divider between groups -->
+        <template v-else #optiongroup>
           <Divider class="my-0" />
+        </template>
+        <!-- Workspace mode: custom workspace item -->
+        <template v-if="teamWorkspacesEnabled" #option="{ option }">
+          <WorkspaceSidebarItem v-if="option.key === 'workspace'" />
+          <span v-else>{{ option.translatedLabel }}</span>
         </template>
       </Listbox>
     </ScrollPanel>
     <Divider layout="vertical" class="mx-1 hidden md:flex 2xl:mx-4" />
     <Divider layout="horizontal" class="flex md:hidden" />
-    <Tabs :value="tabValue" :lazy="true" class="settings-content h-full w-full">
+    <Tabs
+      :value="tabValue"
+      :lazy="true"
+      :class="
+        teamWorkspacesEnabled
+          ? 'h-full flex-1 overflow-auto scrollbar-custom'
+          : 'settings-content h-full w-full'
+      "
+    >
       <TabPanels class="settings-tab-panels h-full w-full pr-0">
         <PanelTemplate value="Search Results">
           <SettingsPanel :setting-groups="searchResults" />
@@ -48,7 +86,7 @@
         </PanelTemplate>
 
         <Suspense v-for="panel in panels" :key="panel.node.key">
-          <component :is="panel.component" />
+          <component :is="panel.component" v-bind="panel.props" />
           <template #fallback>
             <div>{{ $t('g.loadingPanel', { panel: panel.node.label }) }}</div>
           </template>
@@ -69,7 +107,10 @@ import { computed, watch } from 'vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
+import WorkspaceSidebarItem from '@/components/dialog/content/setting/WorkspaceSidebarItem.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
@@ -86,7 +127,14 @@ const { defaultPanel } = defineProps<{
     | 'server-config'
     | 'user'
     | 'credits'
+    | 'subscription'
+    | 'workspace'
 }>()
+
+const { flags } = useFeatureFlags()
+const teamWorkspacesEnabled = computed(
+  () => isCloud && flags.teamWorkspacesEnabled
+)
 
 const {
   activeCategory,
@@ -107,10 +155,17 @@ const {
 
 const authActions = useFirebaseAuthActions()
 
+// Get max sortOrder from settings in a group
+const getGroupSortOrder = (group: SettingTreeNode): number =>
+  Math.max(0, ...flattenTree<SettingParams>(group).map((s) => s.sortOrder ?? 0))
+
 // Sort groups for a category
 const sortedGroups = (category: SettingTreeNode): ISettingGroup[] => {
   return [...(category.children ?? [])]
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .sort((a, b) => {
+      const orderDiff = getGroupSortOrder(b) - getGroupSortOrder(a)
+      return orderDiff !== 0 ? orderDiff : a.label.localeCompare(b.label)
+    })
     .map((group) => ({
       label: group.label,
       settings: flattenTree<SettingParams>(group).sort((a, b) => {
@@ -155,6 +210,7 @@ watch(activeCategory, (_, oldValue) => {
 </style>
 
 <style scoped>
+/* Legacy mode styles (when teamWorkspacesEnabled is false) */
 .settings-container {
   display: flex;
   height: 70vh;
@@ -183,7 +239,7 @@ watch(activeCategory, (_, oldValue) => {
   }
 }
 
-/* Hide the first group separator */
+/* Hide the first group separator in legacy mode */
 .settings-sidebar :deep(.p-listbox-option-group:nth-child(1)) {
   display: none;
 }

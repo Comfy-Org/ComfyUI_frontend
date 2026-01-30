@@ -1,8 +1,10 @@
 import axios from 'axios'
 import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 
+import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type {
@@ -13,8 +15,10 @@ import type {
 import type {
   ComfyInputsSpec as ComfyInputSpecV1,
   ComfyNodeDef as ComfyNodeDefV1,
-  ComfyOutputTypesSpec as ComfyOutputSpecV1
+  ComfyOutputTypesSpec as ComfyOutputSpecV1,
+  PriceBadge
 } from '@/schemas/nodeDefSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
@@ -39,6 +43,7 @@ export class ComfyNodeDefImpl
   readonly help: string
   readonly deprecated: boolean
   readonly experimental: boolean
+  readonly dev_only: boolean
   readonly output_node: boolean
   readonly api_node: boolean
   /**
@@ -65,6 +70,12 @@ export class ComfyNodeDefImpl
    * Order of inputs for each category (required, optional, hidden)
    */
   readonly input_order?: Record<string, string[]>
+  /**
+   * Price badge definition for API nodes.
+   * Contains a JSONata expression to calculate pricing based on widget values
+   * and input connectivity.
+   */
+  readonly price_badge?: PriceBadge
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
@@ -125,6 +136,7 @@ export class ComfyNodeDefImpl
     this.deprecated = obj.deprecated ?? obj.category === ''
     this.experimental =
       obj.experimental ?? obj.category.startsWith('_for_testing')
+    this.dev_only = obj.dev_only ?? false
     this.output_node = obj.output_node
     this.api_node = !!obj.api_node
     this.input = obj.input ?? {}
@@ -133,6 +145,7 @@ export class ComfyNodeDefImpl
     this.output_name = obj.output_name
     this.output_tooltips = obj.output_tooltips
     this.input_order = obj.input_order
+    this.price_badge = obj.price_badge
 
     // Initialize V2 fields
     const defV2 = transformNodeDefV1ToV2(obj)
@@ -165,6 +178,7 @@ export class ComfyNodeDefImpl
   get nodeLifeCycleBadgeText(): string {
     if (this.deprecated) return '[DEPR]'
     if (this.experimental) return '[BETA]'
+    if (this.dev_only) return '[DEV]'
     return ''
   }
 }
@@ -198,7 +212,10 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     name: 'Note',
     display_name: 'Note',
     category: 'utils',
-    input: { required: {}, optional: {} },
+    input: {
+      required: { text: ['STRING', { multiline: true }] },
+      optional: {}
+    },
     output: [],
     output_name: [],
     output_is_list: [],
@@ -210,7 +227,10 @@ export const SYSTEM_NODE_DEFS: Record<string, ComfyNodeDefV1> = {
     name: 'MarkdownNote',
     display_name: 'Markdown Note',
     category: 'utils',
-    input: { required: {}, optional: {} },
+    input: {
+      required: { text: ['STRING', { multiline: true }] },
+      optional: {}
+    },
     output: [],
     output_name: [],
     output_is_list: [],
@@ -284,17 +304,33 @@ export interface NodeDefFilter {
 }
 
 export const useNodeDefStore = defineStore('nodeDef', () => {
+  const settingStore = useSettingStore()
+
   const nodeDefsByName = ref<Record<string, ComfyNodeDefImpl>>({})
   const nodeDefsByDisplayName = ref<Record<string, ComfyNodeDefImpl>>({})
   const showDeprecated = ref(false)
   const showExperimental = ref(false)
+  const showDevOnly = computed(() => settingStore.get('Comfy.DevMode'))
   const nodeDefFilters = ref<NodeDefFilter[]>([])
+
+  // Update skip_list on all registered node types when dev mode changes
+  // This ensures LiteGraph's getNodeTypesCategories/getNodeTypesInCategory
+  // correctly filter dev-only nodes from the right-click context menu
+  watchEffect(() => {
+    const devModeEnabled = showDevOnly.value
+    for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
+      if (nodeType.nodeData?.dev_only) {
+        nodeType.skip_list = !devModeEnabled
+      }
+    }
+  })
 
   const nodeDefs = computed(() => {
     const subgraphStore = useSubgraphStore()
+    // Blueprints first for discoverability in the node library sidebar
     return [
-      ...Object.values(nodeDefsByName.value),
-      ...subgraphStore.subgraphBlueprints
+      ...subgraphStore.subgraphBlueprints,
+      ...Object.values(nodeDefsByName.value)
     ]
   })
   const nodeDataTypes = computed(() => {
@@ -352,10 +388,21 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     node: LGraphNode,
     widgetName: string
   ): InputSpecV2 | undefined {
-    const nodeDef = fromLGraphNode(node)
-    if (!nodeDef) return undefined
+    if (!node.isSubgraphNode()) {
+      const nodeDef = fromLGraphNode(node)
+      if (!nodeDef) return undefined
 
-    return nodeDef.inputs[widgetName]
+      return nodeDef.inputs[widgetName]
+    }
+    const widget = node.widgets?.find((w) => w.name === widgetName)
+    //TODO: resolve spec for linked
+    if (!widget || !isProxyWidget(widget)) return undefined
+
+    const { nodeId, widgetName: subWidgetName } = widget._overlay
+    const subNode = node.subgraph.getNodeById(nodeId)
+    if (!subNode) return undefined
+
+    return getInputSpecForWidget(subNode, subWidgetName)
   }
 
   /**
@@ -395,6 +442,14 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
       predicate: (nodeDef) => showExperimental.value || !nodeDef.experimental
     })
 
+    // Dev-only nodes filter
+    registerNodeDefFilter({
+      id: 'core.dev_only',
+      name: 'Hide Dev-Only Nodes',
+      description: 'Hides nodes marked as dev-only unless dev mode is enabled',
+      predicate: (nodeDef) => showDevOnly.value || !nodeDef.dev_only
+    })
+
     // Subgraph nodes filter
     // Filter out litegraph typed subgraphs, saved blueprints are added in separately
     registerNodeDefFilter({
@@ -419,6 +474,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     nodeDefsByDisplayName,
     showDeprecated,
     showExperimental,
+    showDevOnly,
     nodeDefFilters,
 
     nodeDefs,

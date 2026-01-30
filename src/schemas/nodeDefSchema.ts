@@ -14,10 +14,6 @@ const zRemoteWidgetConfig = z.object({
   timeout: z.number().gte(0).optional(),
   max_retries: z.number().gte(0).optional()
 })
-const zWidgetTemplate = z.object({
-  template_id: z.string(),
-  allowed_types: z.string().optional()
-})
 const zMultiSelectOption = z.object({
   placeholder: z.string().optional(),
   chip: z.boolean().optional()
@@ -27,12 +23,13 @@ export const zBaseInputOptions = z
   .object({
     default: z.any().optional(),
     defaultInput: z.boolean().optional(),
+    display_name: z.string().optional(),
     forceInput: z.boolean().optional(),
     tooltip: z.string().optional(),
+    socketless: z.boolean().optional(),
     hidden: z.boolean().optional(),
     advanced: z.boolean().optional(),
     widgetType: z.string().optional(),
-    template: zWidgetTemplate.optional(),
     /** Backend-only properties. */
     rawLink: z.boolean().optional(),
     lazy: z.boolean().optional()
@@ -200,6 +197,50 @@ const zComfyOutputTypesSpec = z.array(
   z.union([zComfyNodeDataType, zComfyComboOutput])
 )
 
+/**
+ * Widget dependency with type information.
+ * Provides strong type enforcement for JSONata evaluation context.
+ */
+const zWidgetDependency = z.object({
+  name: z.string(),
+  type: z.string()
+})
+
+export type WidgetDependency = z.infer<typeof zWidgetDependency>
+
+/**
+ * Schema for price badge depends_on field.
+ * Specifies which widgets and inputs the pricing expression depends on.
+ * Widgets must be specified as objects with name and type.
+ */
+const zPriceBadgeDepends = z.object({
+  widgets: z.array(zWidgetDependency).optional().default([]),
+  inputs: z.array(z.string()).optional().default([]),
+  /**
+   * Autogrow input group names to track.
+   * For each group, the count of connected inputs will be available in the
+   * JSONata context as `g.<groupName>`.
+   * Example: `input_groups: ["reference_videos"]` makes `g.reference_videos`
+   * available with the count of connected inputs like `reference_videos.character1`, etc.
+   */
+  input_groups: z.array(z.string()).optional().default([])
+})
+
+/**
+ * Schema for price badge definition.
+ * Used to calculate and display pricing information for API nodes.
+ * The `expr` field contains a JSONata expression that returns a PricingResult.
+ */
+const zPriceBadge = z.object({
+  engine: z.literal('jsonata').optional().default('jsonata'),
+  depends_on: zPriceBadgeDepends
+    .optional()
+    .default({ widgets: [], inputs: [], input_groups: [] }),
+  expr: z.string()
+})
+
+export type PriceBadge = z.infer<typeof zPriceBadge>
+
 export const zComfyNodeDef = z.object({
   input: zComfyInputsSpec.optional(),
   output: zComfyOutputTypesSpec.optional(),
@@ -216,6 +257,7 @@ export const zComfyNodeDef = z.object({
   python_module: z.string(),
   deprecated: z.boolean().optional(),
   experimental: z.boolean().optional(),
+  dev_only: z.boolean().optional(),
   /**
    * Whether the node is an API node. Running API nodes requires login to
    * Comfy Org account.
@@ -227,8 +269,43 @@ export const zComfyNodeDef = z.object({
    * Used to ensure consistent widget ordering regardless of JSON serialization.
    * Keys are 'required', 'optional', etc., values are arrays of input names.
    */
-  input_order: z.record(z.array(z.string())).optional()
+  input_order: z.record(z.array(z.string())).optional(),
+  /**
+   * Alternative names for search. Useful for synonyms, abbreviations,
+   * or old names after renaming a node.
+   */
+  search_aliases: z.array(z.string()).optional(),
+  /**
+   * Price badge definition for API nodes.
+   * Contains a JSONata expression to calculate pricing based on widget values
+   * and input connectivity.
+   */
+  price_badge: zPriceBadge.optional()
 })
+
+export const zAutogrowOptions = z.object({
+  ...zBaseInputOptions.shape,
+  template: z.object({
+    input: zComfyInputsSpec,
+    names: z.array(z.string()).optional(),
+    max: z.number().optional(),
+    //Backend defines as mandatory with min 1, Frontend is more forgiving
+    min: z.number().optional(),
+    prefix: z.string().optional()
+  })
+})
+
+export const zDynamicComboInputSpec = z.tuple([
+  z.literal('COMFY_DYNAMICCOMBO_V3'),
+  zBaseInputOptions.extend({
+    options: z.array(
+      z.object({
+        inputs: zComfyInputsSpec,
+        key: z.string()
+      })
+    )
+  })
+])
 
 // `/object_info`
 export type ComfyInputsSpec = z.infer<typeof zComfyInputsSpec>
@@ -246,7 +323,7 @@ export type ComboInputSpecV2 = z.infer<typeof zComboInputSpecV2>
 export type InputSpec = z.infer<typeof zInputSpec>
 
 export function validateComfyNodeDef(
-  data: any,
+  data: unknown,
   onError: (error: string) => void = console.warn
 ): ComfyNodeDef | null {
   const result = zComfyNodeDef.safeParse(data)

@@ -57,11 +57,11 @@ runs:
           package.json)
             LINKS_VALUE=$(printf '%s\n%s' \
               'PyPI|https://pypi.org/project/comfyui-frontend-package/{{version}}/' \
-              'npm types|https://npm.im/@comfyorg/comfyui-frontend-types@{{version}}')
+              'npm types|https://www.npmjs.com/package/@comfyorg/comfyui-frontend-types/v/{{version}}')
             ;;
           apps/desktop-ui/package.json)
             MARKER='desktop-release-summary'
-            LINKS_VALUE='npm desktop UI|https://npm.im/@comfyorg/desktop-ui@{{version}}'
+            LINKS_VALUE='npm desktop UI|https://www.npmjs.com/package/@comfyorg/desktop-ui/v/{{version}}'
             ;;
         esac
 
@@ -74,7 +74,7 @@ runs:
           echo "<!--$MARKER:$DIFF_PREFIX$NEW_VERSION-->"
           echo "$MESSAGE"
           echo ""
-          echo "- $DIFF_LABEL: [$DIFF_PREFIX$PREV_VERSION...$DIFF_PREFIX$NEW_VERSION]($DIFF_URL)"
+          echo "- $DIFF_LABEL: [\`$DIFF_PREFIX$PREV_VERSION...$DIFF_PREFIX$NEW_VERSION\`]($DIFF_URL)"
 
           while IFS= read -r RAW_LINE; do
             LINE=$(echo "$RAW_LINE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
@@ -87,7 +87,7 @@ runs:
             URL_TEMPLATE=${LINE#*|}
             URL=${URL_TEMPLATE//\{\{version\}\}/$NEW_VERSION}
             URL=${URL//\{\{prev_version\}\}/$PREV_VERSION}
-            echo "- $LABEL: $URL"
+            echo "- $LABEL: [\`$NEW_VERSION\`]($URL)"
           done <<< "$LINKS_VALUE"
 
           echo ""
@@ -104,14 +104,14 @@ runs:
 
     - name: Find existing comment
       id: find
-      uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad
+      uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad # v4.0.0
       with:
         issue-number: ${{ inputs.issue-number || github.event.pull_request.number }}
         comment-author: github-actions[bot]
         body-includes: ${{ steps.build.outputs.marker_search }}
 
     - name: Post or update comment
-      uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9
+      uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9 # v5.0.0
       with:
         issue-number: ${{ inputs.issue-number || github.event.pull_request.number }}
         comment-id: ${{ steps.find.outputs.comment-id }}

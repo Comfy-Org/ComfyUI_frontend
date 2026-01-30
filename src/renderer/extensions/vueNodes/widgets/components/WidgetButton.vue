@@ -1,21 +1,23 @@
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="widget.name" class="text-secondary text-sm">{{
-      widget.name
-    }}</label>
     <Button
+      class="text-base-foreground w-full border-0 bg-component-node-widget-background p-2"
+      :aria-label="widget.label"
+      size="sm"
+      variant="textonly"
       v-bind="filteredProps"
-      :aria-label="widget.name || widget.label"
-      size="small"
       @click="handleClick"
-    />
+    >
+      {{ widget.label ?? widget.name }}
+      <i v-if="widget.options?.iconClass" :class="widget.options.iconClass" />
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   BADGE_EXCLUDED_PROPS,

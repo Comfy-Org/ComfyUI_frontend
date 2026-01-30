@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Combo text widget', () => {
+test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Truncates text when resized', async ({ comfyPage }) => {
     await comfyPage.resizeLoadCheckpointNode(0.2, 1)
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -79,7 +79,7 @@ test.describe('Combo text widget', () => {
   })
 })
 
-test.describe('Boolean widget', () => {
+test.describe('Boolean widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can toggle', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/boolean_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('boolean_widget.png')
@@ -92,10 +92,9 @@ test.describe('Boolean widget', () => {
   })
 })
 
-test.describe('Slider widget', () => {
+test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/simple_slider')
-    await comfyPage.page.waitForTimeout(300)
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
 
@@ -114,10 +113,9 @@ test.describe('Slider widget', () => {
   })
 })
 
-test.describe('Number widget', () => {
+test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/seed_widget')
-    await comfyPage.page.waitForTimeout(300)
 
     const node = (await comfyPage.getFirstNodeRef())!
     const widget = await node.getWidget(0)
@@ -136,23 +134,28 @@ test.describe('Number widget', () => {
   })
 })
 
-test.describe('Dynamic widget manipulation', () => {
-  test('Auto expand node when widget is added dynamically', async ({
-    comfyPage
-  }) => {
-    await comfyPage.loadWorkflow('nodes/single_ksampler')
-    await comfyPage.page.waitForTimeout(300)
+test.describe(
+  'Dynamic widget manipulation',
+  { tag: ['@screenshot', '@widget'] },
+  () => {
+    test('Auto expand node when widget is added dynamically', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('nodes/single_ksampler')
 
-    await comfyPage.page.evaluate(() => {
-      window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
-      window['graph'].setDirtyCanvas(true, true)
+      await comfyPage.page.evaluate(() => {
+        window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
+        window['graph'].setDirtyCanvas(true, true)
+      })
+
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'ksampler_widget_added.png'
+      )
     })
+  }
+)
 
-    await expect(comfyPage.canvas).toHaveScreenshot('ksampler_widget_added.png')
-  })
-})
-
-test.describe('Image widget', () => {
+test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can load image', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_image_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png')
@@ -197,7 +200,10 @@ test.describe('Image widget', () => {
     const comboEntry = comfyPage.page.getByRole('menuitem', {
       name: 'image32x32.webp'
     })
-    await comboEntry.click({ noWaitAfter: true })
+    await comboEntry.click()
+
+    // Stabilization for the image swap
+    await comfyPage.nextFrame()
 
     // Expect the image preview to change automatically
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -208,118 +214,131 @@ test.describe('Image widget', () => {
     const filename = await fileComboWidget.getValue()
     expect(filename).toBe('image32x32.webp')
   })
-})
-
-test.describe('Animated image widget', () => {
-  // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3718
-  test.skip('Shows preview of uploaded animated image', async ({
+  test('Displays buttons when viewing single image of batch', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('widgets/load_animated_webp')
+    const [x, y] = await comfyPage.page.evaluate(() => {
+      const src =
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='768' height='512' viewBox='0 0 1 1'%3E%3Crect width='1' height='1' stroke='black'/%3E%3C/svg%3E"
+      const image1 = new Image()
+      image1.src = src
+      const image2 = new Image()
+      image2.src = src
+      const targetNode = graph.nodes[6]
+      targetNode.imgs = [image1, image2]
+      targetNode.imageIndex = 1
+      app.canvas.setDirty(true)
 
-    // Get position of the load animated webp node
-    const nodes = await comfyPage.getNodeRefsByType(
-      'DevToolsLoadAnimatedImageTest'
-    )
-    const loadAnimatedWebpNode = nodes[0]
-    const { x, y } = await loadAnimatedWebpNode.getPosition()
-
-    // Drag and drop image file onto the load animated webp node
-    await comfyPage.dragAndDropFile('animated_webp.webp', {
-      dropPosition: { x, y }
+      const x = targetNode.pos[0] + targetNode.size[0] - 41
+      const y = targetNode.pos[1] + targetNode.widgets.at(-1).last_y + 30
+      return app.canvasPosToClientPos([x, y])
     })
 
-    // Expect the image preview to change automatically
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'animated_image_preview_drag_and_dropped.png'
-    )
-
-    // Wait for animation to go to next frame
-    await comfyPage.page.waitForTimeout(512)
-
-    // Move mouse and click on canvas to trigger render
-    await comfyPage.page.mouse.click(64, 64)
-
-    // Expect the image preview to change to the next frame of the animation
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'animated_image_preview_drag_and_dropped_next_frame.png'
-    )
-  })
-
-  test('Can drag-and-drop animated webp image', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/load_animated_webp')
-
-    // Get position of the load animated webp node
-    const nodes = await comfyPage.getNodeRefsByType(
-      'DevToolsLoadAnimatedImageTest'
-    )
-    const loadAnimatedWebpNode = nodes[0]
-    const { x, y } = await loadAnimatedWebpNode.getPosition()
-
-    // Drag and drop image file onto the load animated webp node
-    await comfyPage.dragAndDropFile('animated_webp.webp', {
-      dropPosition: { x, y }
-    })
-    await comfyPage.page.waitForTimeout(200)
-
-    // Expect the filename combo value to be updated
-    const fileComboWidget = await loadAnimatedWebpNode.getWidget(0)
-    const filename = await fileComboWidget.getValue()
-    expect(filename).toContain('animated_webp.webp')
-  })
-
-  // FIXME: This test keeps flip-flopping because it relies on animated webp timing,
-  // which is inherently unreliable in CI environments. The test asset is an animated
-  // webp with 2 frames, and the test depends on animation frame timing to verify that
-  // animated webp images are properly displayed (as opposed to being treated as static webp).
-  // While the underlying functionality works (animated webp are correctly distinguished
-  // from static webp), the test is flaky due to timing dependencies with webp animation frames.
-  test.fixme('Can preview saved animated webp image', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/save_animated_webp')
-
-    // Get position of the load animated webp node
-    const loadNodes = await comfyPage.getNodeRefsByType(
-      'DevToolsLoadAnimatedImageTest'
-    )
-    const loadAnimatedWebpNode = loadNodes[0]
-    const { x, y } = await loadAnimatedWebpNode.getPosition()
-
-    // Drag and drop image file onto the load animated webp node
-    await comfyPage.dragAndDropFile('animated_webp.webp', {
-      dropPosition: { x, y }
-    })
-    await comfyPage.nextFrame()
-
-    // Get the SaveAnimatedWEBP node
-    const saveNodes = await comfyPage.getNodeRefsByType('SaveAnimatedWEBP')
-    const saveAnimatedWebpNode = saveNodes[0]
-    if (!saveAnimatedWebpNode)
-      throw new Error('SaveAnimatedWEBP node not found')
-
-    // Simulate the graph executing
-    await comfyPage.page.evaluate(
-      ([loadId, saveId]) => {
-        // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
-        window['app'].nodeOutputs[saveId] = window['app'].nodeOutputs[loadId]
-      },
-      [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
-    )
-    await comfyPage.nextFrame()
-
-    // Wait for animation to go to next frame
-    await comfyPage.page.waitForTimeout(512)
-
-    // Move mouse and click on canvas to trigger render
-    await comfyPage.page.mouse.click(64, 64)
-
-    // Expect the SaveAnimatedWEBP node to have an output preview
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'animated_image_preview_saved_webp.png'
+    const clip = { x, y, width: 35, height: 35 }
+    await expect(comfyPage.page).toHaveScreenshot(
+      'image_preview_close_button.png',
+      { clip }
     )
   })
 })
 
-test.describe('Load audio widget', () => {
+test.describe(
+  'Animated image widget',
+  { tag: ['@screenshot', '@widget'] },
+  () => {
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3718
+    test.skip('Shows preview of uploaded animated image', async ({
+      comfyPage
+    }) => {
+      await comfyPage.loadWorkflow('widgets/load_animated_webp')
+
+      // Get position of the load animated webp node
+      const nodes = await comfyPage.getNodeRefsByType(
+        'DevToolsLoadAnimatedImageTest'
+      )
+      const loadAnimatedWebpNode = nodes[0]
+      const { x, y } = await loadAnimatedWebpNode.getPosition()
+
+      // Drag and drop image file onto the load animated webp node
+      await comfyPage.dragAndDropFile('animated_webp.webp', {
+        dropPosition: { x, y }
+      })
+
+      // Expect the image preview to change automatically
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'animated_image_preview_drag_and_dropped.png'
+      )
+
+      // Move mouse and click on canvas to trigger render
+      await comfyPage.page.mouse.click(64, 64)
+
+      // Expect the image preview to change to the next frame of the animation
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'animated_image_preview_drag_and_dropped_next_frame.png'
+      )
+    })
+
+    test('Can drag-and-drop animated webp image', async ({ comfyPage }) => {
+      await comfyPage.loadWorkflow('widgets/load_animated_webp')
+
+      // Get position of the load animated webp node
+      const nodes = await comfyPage.getNodeRefsByType(
+        'DevToolsLoadAnimatedImageTest'
+      )
+      const loadAnimatedWebpNode = nodes[0]
+      const { x, y } = await loadAnimatedWebpNode.getPosition()
+
+      // Drag and drop image file onto the load animated webp node
+      await comfyPage.dragAndDropFile('animated_webp.webp', {
+        dropPosition: { x, y },
+        waitForUpload: true
+      })
+
+      // Expect the filename combo value to be updated
+      const fileComboWidget = await loadAnimatedWebpNode.getWidget(0)
+      const filename = await fileComboWidget.getValue()
+      expect(filename).toContain('animated_webp.webp')
+    })
+
+    test('Can preview saved animated webp image', async ({ comfyPage }) => {
+      await comfyPage.loadWorkflow('widgets/save_animated_webp')
+
+      // Get position of the load animated webp node
+      const loadNodes = await comfyPage.getNodeRefsByType(
+        'DevToolsLoadAnimatedImageTest'
+      )
+      const loadAnimatedWebpNode = loadNodes[0]
+      const { x, y } = await loadAnimatedWebpNode.getPosition()
+
+      // Drag and drop image file onto the load animated webp node
+      await comfyPage.dragAndDropFile('animated_webp.webp', {
+        dropPosition: { x, y }
+      })
+      await comfyPage.nextFrame()
+
+      // Get the SaveAnimatedWEBP node
+      const saveNodes = await comfyPage.getNodeRefsByType('SaveAnimatedWEBP')
+      const saveAnimatedWebpNode = saveNodes[0]
+      if (!saveAnimatedWebpNode)
+        throw new Error('SaveAnimatedWEBP node not found')
+
+      // Simulate the graph executing
+      await comfyPage.page.evaluate(
+        ([loadId, saveId]) => {
+          // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
+          window['app'].nodeOutputs[saveId] = window['app'].nodeOutputs[loadId]
+          app.canvas.setDirty(true)
+        },
+        [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
+      )
+      await expect(
+        comfyPage.page.locator('.dom-widget').locator('img')
+      ).toHaveCount(2)
+    })
+  }
+)
+
+test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can load audio', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/load_audio_widget')
     // Wait for the audio widget to be rendered in the DOM
@@ -329,7 +348,7 @@ test.describe('Load audio widget', () => {
   })
 })
 
-test.describe('Unserialized widgets', () => {
+test.describe('Unserialized widgets', { tag: '@widget' }, () => {
   test('Unserialized widgets values do not mark graph as modified', async ({
     comfyPage
   }) => {

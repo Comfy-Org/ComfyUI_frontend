@@ -52,7 +52,9 @@
       "flags": {},
       "order": 1,
       "mode": 0,
-      "outputs": [{ "name": "LATENT", "type": "LATENT", "links": [2], "slot_index": 0 }],
+      "outputs": [
+        { "name": "LATENT", "type": "LATENT", "links": [2], "slot_index": 0 }
+      ],
       "properties": {},
       "widgets_values": [512, 512, 1]
     },
@@ -70,7 +72,9 @@
         { "name": "negative", "type": "CONDITIONING", "link": 6 },
         { "name": "latent_image", "type": "LATENT", "link": 2 }
       ],
-      "outputs": [{ "name": "LATENT", "type": "LATENT", "links": [7], "slot_index": 0 }],
+      "outputs": [
+        { "name": "LATENT", "type": "LATENT", "links": [7], "slot_index": 0 }
+      ],
       "properties": {},
       "widgets_values": [156680208700286, true, 20, 8, "euler", "normal", 1]
     },
@@ -86,7 +90,9 @@
         { "name": "samples", "type": "LATENT", "link": 7 },
         { "name": "vae", "type": "VAE", "link": 8 }
       ],
-      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [9], "slot_index": 0 }],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "links": [9], "slot_index": 0 }
+      ],
       "properties": {}
     },
     {

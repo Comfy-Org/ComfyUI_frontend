@@ -39,11 +39,7 @@
       "properties": {
         "Node name for S&R": "DevToolsNodeWithForceInput"
       },
-      "widgets_values": [
-        0,
-        1,
-        0
-      ]
+      "widgets_values": [0, 1, 0]
     }
   ],
   "links": [],
@@ -52,10 +48,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        0,
-        0
-      ]
+      "offset": [0, 0]
     }
   },
   "version": 0.4

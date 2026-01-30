@@ -23,7 +23,7 @@ export class InputIndicators implements Disposable {
   colour1 = '#ff5f00'
   colour2 = '#00ff7c'
   colour3 = '#dea7ff'
-  fontString = 'bold 12px Arial'
+  fontString = 'bold 12px Inter, sans-serif'
   // #endregion
 
   // #region state
@@ -51,11 +51,11 @@ export class InputIndicators implements Disposable {
     const element = canvas.canvas
     const options = { capture: true, signal } satisfies AddEventListenerOptions
 
-    element.addEventListener('pointerdown', this.#onPointerDownOrMove, options)
-    element.addEventListener('pointermove', this.#onPointerDownOrMove, options)
-    element.addEventListener('pointerup', this.#onPointerUp, options)
-    element.addEventListener('keydown', this.#onKeyDownOrUp, options)
-    document.addEventListener('keyup', this.#onKeyDownOrUp, options)
+    element.addEventListener('pointerdown', this._onPointerDownOrMove, options)
+    element.addEventListener('pointermove', this._onPointerDownOrMove, options)
+    element.addEventListener('pointerup', this._onPointerUp, options)
+    element.addEventListener('keydown', this._onKeyDownOrUp, options)
+    document.addEventListener('keyup', this._onKeyDownOrUp, options)
 
     const origDrawFrontCanvas = canvas.drawFrontCanvas.bind(canvas)
     signal.addEventListener('abort', () => {
@@ -68,7 +68,7 @@ export class InputIndicators implements Disposable {
     }
   }
 
-  #onPointerDownOrMove = this.onPointerDownOrMove.bind(this)
+  private _onPointerDownOrMove = this.onPointerDownOrMove.bind(this)
   onPointerDownOrMove(e: MouseEvent): void {
     this.mouse0Down = (e.buttons & 1) === 1
     this.mouse1Down = (e.buttons & 4) === 4
@@ -80,14 +80,14 @@ export class InputIndicators implements Disposable {
     this.canvas.setDirty(true)
   }
 
-  #onPointerUp = this.onPointerUp.bind(this)
+  private _onPointerUp = this.onPointerUp.bind(this)
   onPointerUp(): void {
     this.mouse0Down = false
     this.mouse1Down = false
     this.mouse2Down = false
   }
 
-  #onKeyDownOrUp = this.onKeyDownOrUp.bind(this)
+  private _onKeyDownOrUp = this.onKeyDownOrUp.bind(this)
   onKeyDownOrUp(e: KeyboardEvent): void {
     this.ctrlDown = e.ctrlKey
     this.altDown = e.altKey

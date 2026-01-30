@@ -1,12 +1,12 @@
-name: "CI: Python Validation"
-description: "Validates Python code in tools/devtools directory"
+# Description: Validates Python code in tools/devtools directory
+name: 'CI: Python Validation'
 
 on:
   pull_request:
     paths:
       - 'tools/devtools/**'
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'tools/devtools/**'
 
@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 

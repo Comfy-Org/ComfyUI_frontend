@@ -10,6 +10,7 @@ import type { ComputedRef, Ref } from 'vue'
 export enum LayoutSource {
   Canvas = 'canvas',
   Vue = 'vue',
+  DOM = 'dom',
   External = 'external'
 }
 

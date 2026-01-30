@@ -11,9 +11,9 @@ interface SpatialBounds {
   height: number
 }
 
-interface PositionedNode {
-  pos: ArrayLike<number>
-  size: ArrayLike<number>
+export interface PositionedNode {
+  pos: [number, number]
+  size: [number, number]
 }
 
 /**

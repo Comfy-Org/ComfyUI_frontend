@@ -8,12 +8,33 @@
  * - Avoiding vendor lock-in for native apps
  *
  * This module is tree-shaken in OSS builds.
- * Used for initial config load in main.ts and polling in the extension.
  */
 
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { RemoteConfig } from './types'
+
+/**
+ * Load state for remote configuration.
+ * - 'unloaded': No config loaded yet
+ * - 'anonymous': Config loaded without auth (bootstrap)
+ * - 'authenticated': Config loaded with auth (user-specific flags available)
+ * - 'error': Failed to load config
+ */
+type RemoteConfigState = 'unloaded' | 'anonymous' | 'authenticated' | 'error'
+
+/**
+ * Current load state of remote configuration
+ */
+export const remoteConfigState = ref<RemoteConfigState>('unloaded')
+
+/**
+ * Whether the authenticated config has been loaded.
+ * Use this to gate access to user-specific feature flags like teamWorkspacesEnabled.
+ */
+export const isAuthenticatedConfigLoaded = computed(
+  () => remoteConfigState.value === 'authenticated'
+)
 
 /**
  * Reactive remote configuration
@@ -28,27 +49,4 @@ export function configValueOrDefault<K extends keyof RemoteConfig>(
 ): NonNullable<RemoteConfig[K]> {
   const configValue = remoteConfig[key]
   return configValue || defaultValue
-}
-
-/**
- * Loads remote configuration from the backend /api/features endpoint
- * and updates the reactive remoteConfig ref
- */
-export async function loadRemoteConfig(): Promise<void> {
-  try {
-    const response = await fetch('/api/features', { cache: 'no-store' })
-    if (response.ok) {
-      const config = await response.json()
-      window.__CONFIG__ = config
-      remoteConfig.value = config
-    } else {
-      console.warn('Failed to load remote config:', response.statusText)
-      window.__CONFIG__ = {}
-      remoteConfig.value = {}
-    }
-  } catch (error) {
-    console.error('Failed to fetch remote config:', error)
-    window.__CONFIG__ = {}
-    remoteConfig.value = {}
-  }
 }

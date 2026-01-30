@@ -155,7 +155,6 @@ describe('useCanvasInteractions', () => {
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
-
     it('should forward wheel events to canvas when capture element is NOT focused', () => {
       const { get } = useSettingStore()
       vi.mocked(get).mockReturnValue('legacy')

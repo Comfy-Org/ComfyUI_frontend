@@ -11,6 +11,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
+import type { BillingPortalTargetTier } from '@/stores/firebaseAuthStore'
 import { usdToMicros } from '@/utils/formatUtil'
 
 /**
@@ -102,8 +103,11 @@ export const useFirebaseAuthActions = () => {
     window.open(response.checkout_url, '_blank')
   }, reportError)
 
-  const accessBillingPortal = wrapWithErrorHandlingAsync(async () => {
-    const response = await authStore.accessBillingPortal()
+  const accessBillingPortal = wrapWithErrorHandlingAsync<
+    [targetTier?: BillingPortalTargetTier, openInNewTab?: boolean],
+    void
+  >(async (targetTier, openInNewTab = true) => {
+    const response = await authStore.accessBillingPortal(targetTier)
     if (!response.billing_portal_url) {
       throw new Error(
         t('toastMessages.failedToAccessBillingPortal', {
@@ -111,7 +115,11 @@ export const useFirebaseAuthActions = () => {
         })
       )
     }
-    window.open(response.billing_portal_url, '_blank')
+    if (openInNewTab) {
+      window.open(response.billing_portal_url, '_blank')
+    } else {
+      globalThis.location.href = response.billing_portal_url
+    }
   }, reportError)
 
   const fetchBalance = wrapWithErrorHandlingAsync(async () => {

@@ -14,6 +14,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -60,6 +61,7 @@ const trackingConfigs: Map<string, ElementTrackingConfig> = new Map([
 
 // Single ResizeObserver instance for all Vue elements
 const resizeObserver = new ResizeObserver((entries) => {
+  if (useCanvasStore().linearMode) return
   // Canvas is ready when this code runs; no defensive guards needed.
   const conv = useSharedCanvasPositionConversion()
   // Group updates by type, then flush via each config's handler
@@ -105,7 +107,7 @@ const resizeObserver = new ResizeObserver((entries) => {
       x: topLeftCanvas.x,
       y: topLeftCanvas.y + LiteGraph.NODE_TITLE_HEIGHT,
       width: Math.max(0, width),
-      height: Math.max(0, height - LiteGraph.NODE_TITLE_HEIGHT)
+      height: Math.max(0, height)
     }
 
     let updates = updatesByType.get(elementType)
@@ -121,8 +123,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     }
   }
 
-  // Set source to Vue before processing DOM-driven updates
-  layoutStore.setSource(LayoutSource.Vue)
+  layoutStore.setSource(LayoutSource.DOM)
 
   // Flush per-type
   for (const [type, updates] of updatesByType) {

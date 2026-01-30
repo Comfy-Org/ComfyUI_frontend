@@ -1,4 +1,3 @@
-import Fuse from 'fuse.js'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -6,7 +5,7 @@ import { i18n, st } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
-import { getCategoryIcon } from '@/utils/categoryIcons'
+import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import type {
@@ -237,25 +236,17 @@ export const useWorkflowTemplatesStore = defineStore(
         }
       )
 
-      return allTemplates
-    })
+      // TODO: Temporary filtering of custom node templates on local installations
+      // Future: Add UX that allows local users to opt-in to templates with custom nodes,
+      // potentially conditional on whether they have those specific custom nodes installed.
+      // This would provide better template discovery while respecting local user workflows.
+      const filteredTemplates = isCloud
+        ? allTemplates
+        : allTemplates.filter(
+            (template) => !template.requiresCustomNodes?.length
+          )
 
-    /**
-     * Fuse.js instance for advanced template searching and filtering
-     */
-    const templateFuse = computed(() => {
-      const fuseOptions = {
-        keys: [
-          { name: 'searchableText', weight: 0.4 },
-          { name: 'title', weight: 0.3 },
-          { name: 'name', weight: 0.2 },
-          { name: 'tags', weight: 0.1 }
-        ],
-        threshold: 0.3,
-        includeScore: true
-      }
-
-      return new Fuse(enhancedTemplates.value, fuseOptions)
+      return filteredTemplates
     })
 
     /**
@@ -266,9 +257,18 @@ export const useWorkflowTemplatesStore = defineStore(
         return enhancedTemplates.value
       }
 
-      if (categoryId === 'basics') {
+      if (categoryId.startsWith('basics-')) {
         // Filter for templates from categories marked as essential
-        return enhancedTemplates.value.filter((t) => t.isEssential)
+        return enhancedTemplates.value.filter(
+          (t) =>
+            t.isEssential &&
+            t.category?.toLowerCase().replace(/\s+/g, '-') ===
+              categoryId.replace('basics-', '')
+        )
+      }
+
+      if (categoryId === 'popular') {
+        return enhancedTemplates.value
       }
 
       if (categoryId === 'partner-nodes') {
@@ -323,21 +323,34 @@ export const useWorkflowTemplatesStore = defineStore(
         icon: getCategoryIcon('all')
       })
 
-      // 2. Basics (isEssential categories) - always second if it exists
-      let gettingStartedText = 'Getting Started'
-      const essentialCat = coreTemplates.value.find(
+      // 1.5. Popular categories
+
+      items.push({
+        id: 'popular',
+        label: st('templateWorkflows.category.Popular', 'Popular'),
+        icon: 'icon-[lucide--flame]'
+      })
+
+      // 2. Basics (isEssential categories) - always beneath All Templates if they exist
+      const essentialCats = coreTemplates.value.filter(
         (cat) => cat.isEssential && cat.templates.length > 0
       )
-      const hasEssentialCategories = Boolean(essentialCat)
 
-      if (essentialCat) {
-        gettingStartedText = essentialCat.title
-      }
-      if (hasEssentialCategories) {
-        items.push({
-          id: 'basics',
-          label: gettingStartedText,
-          icon: 'icon-[lucide--graduation-cap]'
+      if (essentialCats.length > 0) {
+        essentialCats.forEach((essentialCat) => {
+          const categoryIcon = essentialCat.icon
+          const categoryTitle = essentialCat.title ?? 'Getting Started'
+          const categoryId = generateCategoryId('basics', essentialCat.title)
+          items.push({
+            id: categoryId,
+            label: st(
+              `templateWorkflows.category.${normalizeI18nKey(categoryTitle)}`,
+              categoryTitle
+            ),
+            icon:
+              categoryIcon ||
+              getCategoryIcon(essentialCat.type || 'getting-started')
+          })
         })
       }
 
@@ -366,7 +379,7 @@ export const useWorkflowTemplatesStore = defineStore(
           const group = categoryGroups.get(categoryGroup)!
 
           // Generate unique ID for this category
-          const categoryId = `${categoryGroup.toLowerCase().replace(/\s+/g, '-')}-${category.title.toLowerCase().replace(/\s+/g, '-')}`
+          const categoryId = generateCategoryId(categoryGroup, category.title)
 
           // Store the filter mapping
           categoryFilters.value.set(categoryId, {
@@ -516,7 +529,6 @@ export const useWorkflowTemplatesStore = defineStore(
       groupedTemplates,
       navGroupedTemplates,
       enhancedTemplates,
-      templateFuse,
       filterTemplatesByCategory,
       isLoaded,
       loadWorkflowTemplates,

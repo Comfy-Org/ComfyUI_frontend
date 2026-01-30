@@ -2,18 +2,37 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
+import { storeToRefs } from 'pinia'
 
 import { d, t } from '@/i18n'
 import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
-  getAssetBaseModel,
-  getAssetDescription
+  getAssetBaseModels,
+  getAssetDisplayName,
+  getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import type { NavGroupData, NavItemData } from '@/types/navTypes'
+
+type OwnershipOption = 'all' | 'my-models' | 'public-models'
+
+type NavId = 'all' | 'imported' | (string & {})
 
 function filterByCategory(category: string) {
   return (asset: AssetItem) => {
-    return category === 'all' || asset.tags.includes(category)
+    if (category === 'all') return true
+
+    // Check if any tag matches the category (for exact matches)
+    if (asset.tags.includes(category)) return true
+
+    // Check if any tag's top-level folder matches the category
+    return asset.tags.some((tag) => {
+      if (typeof tag === 'string' && tag.includes('/')) {
+        return tag.split('/')[0] === category
+      }
+      return false
+    })
   }
 }
 
@@ -30,8 +49,17 @@ function filterByBaseModels(models: string[]) {
   return (asset: AssetItem) => {
     if (models.length === 0) return true
     const modelSet = new Set(models)
-    const baseModel = getAssetBaseModel(asset)
-    return baseModel ? modelSet.has(baseModel) : false
+    const assetBaseModels = getAssetBaseModels(asset)
+    return assetBaseModels.some((model) => modelSet.has(model))
+  }
+}
+
+function filterByOwnership(ownership: OwnershipOption) {
+  return (asset: AssetItem) => {
+    if (ownership === 'all') return true
+    if (ownership === 'my-models') return asset.is_immutable === false
+    if (ownership === 'public-models') return asset.is_immutable === true
+    return true
   }
 }
 
@@ -42,7 +70,7 @@ type AssetBadge = {
 
 // Display properties for transformed assets
 export interface AssetDisplayItem extends AssetItem {
-  description: string
+  secondaryText: string
   badges: AssetBadge[]
   stats: {
     formattedDate?: string
@@ -59,87 +87,136 @@ export function useAssetBrowser(
   assetsSource: Ref<AssetItem[] | undefined> = ref<AssetItem[] | undefined>([])
 ) {
   const assets = computed<AssetItem[]>(() => assetsSource.value ?? [])
+  const assetDownloadStore = useAssetDownloadStore()
+  const { sessionDownloadCount } = storeToRefs(assetDownloadStore)
+
   // State
   const searchQuery = ref('')
-  const selectedCategory = ref('all')
+  const selectedNavItem = ref<NavId>('all')
   const filters = ref<FilterState>({
-    sortBy: 'name-asc',
+    sortBy: 'recent',
     fileFormats: [],
     baseModels: []
   })
 
+  const selectedOwnership = computed<OwnershipOption>(() => {
+    if (selectedNavItem.value === 'imported') return 'my-models'
+    return 'all'
+  })
+
+  const selectedCategory = computed(() => {
+    if (
+      selectedNavItem.value === 'all' ||
+      selectedNavItem.value === 'imported'
+    ) {
+      return 'all'
+    }
+    return selectedNavItem.value
+  })
+
   // Transform API asset to display asset
   function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
-    // Extract description from metadata or create from tags
-    const typeTag = asset.tags.find((tag) => tag !== 'models')
-    const description =
-      getAssetDescription(asset) ||
-      `${typeTag || t('assetBrowser.unknown')} model`
+    const secondaryText = getAssetFilename(asset)
 
-    // Create badges from tags and metadata
     const badges: AssetBadge[] = []
 
+    const typeTag = asset.tags.find((tag) => tag !== 'models')
     // Type badge from non-root tag
     if (typeTag) {
-      badges.push({ label: typeTag, type: 'type' })
+      // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
+      const badgeLabel = typeTag.includes('/')
+        ? typeTag.substring(typeTag.indexOf('/') + 1)
+        : typeTag
+
+      badges.push({ label: badgeLabel, type: 'type' })
     }
 
-    // Base model badge from metadata
-    const baseModel = getAssetBaseModel(asset)
-    if (baseModel) {
-      badges.push({
-        label: baseModel,
-        type: 'base'
-      })
+    // Base model badges from metadata
+    const baseModels = getAssetBaseModels(asset)
+    for (const model of baseModels) {
+      badges.push({ label: model, type: 'base' })
     }
 
     // Create display stats from API data
     const stats = {
-      formattedDate: d(new Date(asset.created_at), { dateStyle: 'short' }),
+      formattedDate: asset.created_at
+        ? d(new Date(asset.created_at), { dateStyle: 'short' })
+        : undefined,
       downloadCount: undefined, // Not available in API
       stars: undefined // Not available in API
     }
 
     return {
       ...asset,
-      description,
+      secondaryText,
       badges,
       stats
     }
   }
 
-  const availableCategories = computed(() => {
+  const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
       .filter((asset) => asset.tags[0] === 'models')
       .map((asset) => asset.tags[1])
       .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
+      .map((tag) => tag.split('/')[0])
 
-    const uniqueCategories = Array.from(new Set(categories))
+    return Array.from(new Set(categories))
       .sort()
       .map((category) => ({
         id: category,
         label: category.charAt(0).toUpperCase() + category.slice(1),
-        icon: 'icon-[lucide--package]'
+        icon: 'icon-[lucide--folder]'
       }))
+  })
 
-    return [
+  const navItems = computed<(NavItemData | NavGroupData)[]>(() => {
+    const quickFilters: NavItemData[] = [
       {
         id: 'all',
         label: t('assetBrowser.allModels'),
-        icon: 'icon-[lucide--folder]'
+        icon: 'icon-[lucide--list]'
       },
-      ...uniqueCategories
+      {
+        id: 'imported',
+        label: t('assetBrowser.imported'),
+        icon: 'icon-[lucide--folder-input]',
+        badge:
+          sessionDownloadCount.value > 0
+            ? sessionDownloadCount.value
+            : undefined
+      }
+    ]
+
+    if (typeCategories.value.length === 0) {
+      return quickFilters
+    }
+
+    return [
+      ...quickFilters,
+      {
+        title: t('assetBrowser.byType'),
+        items: typeCategories.value,
+        collapsible: false
+      }
     ]
   })
 
-  // Compute content title from selected category
+  const isImportedSelected = computed(
+    () => selectedNavItem.value === 'imported'
+  )
+
+  // Compute content title from selected nav item
   const contentTitle = computed(() => {
-    if (selectedCategory.value === 'all') {
+    if (selectedNavItem.value === 'all') {
       return t('assetBrowser.allModels')
     }
+    if (selectedNavItem.value === 'imported') {
+      return t('assetBrowser.imported')
+    }
 
-    const category = availableCategories.value.find(
-      (cat) => cat.id === selectedCategory.value
+    const category = typeCategories.value.find(
+      (cat) => cat.id === selectedNavItem.value
     )
     return category?.label || t('assetBrowser.assets')
   })
@@ -153,7 +230,13 @@ export function useAssetBrowser(
     fuseOptions: {
       keys: [
         { name: 'name', weight: 0.4 },
-        { name: 'tags', weight: 0.3 }
+        { name: 'tags', weight: 0.3 },
+        { name: 'user_metadata.name', weight: 0.4 },
+        { name: 'user_metadata.additional_tags', weight: 0.3 },
+        { name: 'user_metadata.trained_words', weight: 0.3 },
+        { name: 'user_metadata.user_description', weight: 0.3 },
+        { name: 'metadata.name', weight: 0.4 },
+        { name: 'metadata.trained_words', weight: 0.3 }
       ],
       threshold: 0.4, // Higher threshold for typo tolerance (0.0 = exact, 1.0 = match all)
       ignoreLocation: true, // Search anywhere in the string, not just at the beginning
@@ -176,21 +259,21 @@ export function useAssetBrowser(
     const filtered = searchFiltered.value
       .filter(filterByFileFormats(filters.value.fileFormats))
       .filter(filterByBaseModels(filters.value.baseModels))
+      .filter(filterByOwnership(selectedOwnership.value))
 
     const sortedAssets = [...filtered]
     sortedAssets.sort((a, b) => {
       switch (filters.value.sortBy) {
         case 'name-desc':
-          return b.name.localeCompare(a.name)
+          return getAssetDisplayName(b).localeCompare(getAssetDisplayName(a))
         case 'recent':
           return (
-            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+            new Date(b.created_at ?? 0).getTime() -
+            new Date(a.created_at ?? 0).getTime()
           )
-        case 'popular':
-          return a.name.localeCompare(b.name)
         case 'name-asc':
         default:
-          return a.name.localeCompare(b.name)
+          return getAssetDisplayName(a).localeCompare(getAssetDisplayName(b))
       }
     })
 
@@ -204,11 +287,13 @@ export function useAssetBrowser(
 
   return {
     searchQuery,
+    selectedNavItem,
     selectedCategory,
-    availableCategories,
+    navItems,
     contentTitle,
     categoryFilteredAssets,
     filteredAssets,
+    isImportedSelected,
     updateFilters
   }
 }

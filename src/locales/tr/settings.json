@@ -29,16 +29,31 @@
     "name": "Tuval arka plan resmi",
     "tooltip": "Tuval arka planı için resim URL'si. Çıktılar panelindeki bir resme sağ tıklayıp \"Arka Plan Olarak Ayarla\"yı seçerek kullanabilir veya yükleme düğmesini kullanarak kendi resminizi yükleyebilirsiniz."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "Sol Fare Tıklama Davranışı",
+    "options": {
+      "Panning": "Kaydırma",
+      "Select": "Seç"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "Fare Tekerleği Kaydırma",
+    "options": {
+      "Panning": "Kaydırma",
+      "Zoom in/out": "Yakınlaştır/Uzaklaştır"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "Tuval Gezinme Modu",
     "options": {
+      "Custom": "Özel",
       "Drag Navigation": "Sürükleyerek Gezinme",
-      "Standard (New)": "Standart (Yeni)",
-      "Custom": "Özel"
+      "Standard (New)": "Standart (Yeni)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "Seçim araç kutusunu göster"
+    "name": "Seçim araç kutusunu göster",
+    "tooltip": "Düğümler seçildiğinde, yaygın işlemlere hızlı erişim sağlayan bir araç çubuğu gösterir."
   },
   "Comfy_ConfirmClear": {
     "name": "İş akışını temizlerken onay iste"
@@ -65,6 +80,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "İş akışlarında tuval konumunu ve yakınlaştırma seviyesini kaydet ve geri yükle"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "Canlı önizleme yöntemi",
+    "options": {
+      "auto": "otomatik",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "hiçbiri",
+      "taesd": "taesd"
+    },
+    "tooltip": "Görüntü oluşturma sırasında canlı önizleme yöntemi. \"default\" sunucu CLI ayarını kullanır."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "Ondalık sayı widget yuvarlama ondalık basamakları [0 = otomatik].",
     "tooltip": "(sayfanın yeniden yüklenmesini gerektirir)"
@@ -85,6 +111,10 @@
       "Circle": "Daire",
       "None": "Yok"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "Canlı seçim",
+    "tooltip": "Etkinleştirildiğinde, seçim dikdörtgenini sürüklerken düğümler gerçek zamanlı olarak seçilir/seçimi kaldırılır; diğer tasarım araçlarına benzer şekilde çalışır."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "Tuval yakınlaştırma hızı"
@@ -118,7 +148,8 @@
       "Linear": "Doğrusal",
       "Spline": "Eğri",
       "Straight": "Düz"
-    }
+    },
+    "tooltip": "Tuvaldeki düğümler arasındaki bağlantı çizgilerinin görünümünü ve görünürlüğünü kontrol eder."
   },
   "Comfy_Load3D_3DViewerEnable": {
     "name": "3D Görüntüleyiciyi Etkinleştir (Beta)",
@@ -152,6 +183,15 @@
     "name": "Minimum Işık Yoğunluğu",
     "tooltip": "3D sahneler için izin verilen minimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D widget'ta aydınlatma ayarlanırken ayarlanabilecek alt parlaklık sınırını tanımlar."
   },
+  "Comfy_Load3D_PLYEngine": {
+    "name": "PLY Motoru",
+    "options": {
+      "fastply": "fastply",
+      "sparkjs": "sparkjs",
+      "threejs": "threejs"
+    },
+    "tooltip": "PLY dosyalarını yüklemek için motoru seçin. \"threejs\" yerel Three.js PLYLoader'ı kullanır (mesh PLY dosyaları için en iyisi). \"fastply\" ASCII nokta bulutu PLY dosyaları için optimize edilmiş bir yükleyici kullanır. \"sparkjs\" ise 3D Gaussian Splatting PLY dosyaları için Spark.js kullanır."
+  },
   "Comfy_Load3D_ShowGrid": {
     "name": "Başlangıç Izgara Görünürlüğü",
     "tooltip": "Yeni bir 3D widget oluşturulduğunda ızgaranın varsayılan olarak görünür olup olmadığını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
@@ -166,10 +206,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "Fırça ayarını baskın eksene kilitle",
     "tooltip": "Etkinleştirildiğinde, fırça ayarları yalnızca daha fazla hareket ettiğiniz yöne bağlı olarak boyutu VEYA sertliği etkileyecektir"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "Yeni maske düzenleyiciyi kullan",
-    "tooltip": "Yeni maske düzenleyici arayüzüne geç"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "Tüm model klasörlerini otomatik olarak yükle",
@@ -238,6 +274,10 @@
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "Görüntü önizlemesinin altında genişlik × yüksekliği göster"
   },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "Tüm düğümlerde gelişmiş araçları her zaman göster",
+    "tooltip": "Etkinleştirildiğinde, gelişmiş araçlar tüm düğümlerde ayrı ayrı genişletmeye gerek kalmadan her zaman görünür olur."
+  },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "Bağlantıyı otomatik olarak düğüm yuvasına yapıştır",
     "tooltip": "Bir bağlantıyı bir düğümün üzerine sürüklerken, bağlantı otomatik olarak düğüm üzerindeki uygun bir giriş yuvasına yapışır"
@@ -298,6 +338,10 @@
     "name": "Kuyruk geçmişi boyutu",
     "tooltip": "Kuyruk geçmişinde gösterilen maksimum görev sayısı."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "Varlıklar yan panelinde birleşik iş kuyruğunu kullan",
+    "tooltip": "Kayan iş kuyruğu panelini, Varlıklar yan paneline gömülü eşdeğer bir iş kuyruğu ile değiştirir. Kayan panel düzenine dönmek için bunu devre dışı bırakabilirsiniz."
+  },
   "Comfy_Sidebar_Location": {
     "name": "Kenar çubuğu konumu",
     "options": {
@@ -310,6 +354,13 @@
     "options": {
       "normal": "normal",
       "small": "küçük"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "Kenar Çubuğu Stili",
+    "options": {
+      "connected": "Bağlı",
+      "floating": "Yüzer"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -328,6 +379,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "Ağaç gezgini öğe dolgusu"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "Sekme Çubuğu Düzeni",
+    "options": {
+      "Default": "Varsayılan",
+      "Integrated": "Entegre"
+    },
+    "tooltip": "Sekme çubuğu düzenini kontrol eder. \"Entegre\" seçeneği, Yardım ve Kullanıcı kontrollerini sekme çubuğu alanına taşır."
+  },
   "Comfy_UseNewMenu": {
     "name": "Yeni menüyü kullan",
     "options": {
@@ -338,6 +397,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "İş akışlarını doğrula"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "Otomatik ölçeklendirme düzeni (Vue düğümleri)",
+    "tooltip": "Vue işlemeye geçerken düğüm konumlarını örtüşmeyi önlemek için otomatik olarak ölçeklendir"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "Modern Düğüm Tasarımı (Vue Düğümleri)",
+    "tooltip": "Modern: Gelişmiş etkileşim, yerel tarayıcı özellikleri ve güncellenmiş görsel tasarıma sahip DOM tabanlı işleme. Klasik: Geleneksel tuval işleme."
   },
   "Comfy_WidgetControlMode": {
     "name": "Widget kontrol modu",
@@ -376,6 +443,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "Mevcut bir alt grafik şablonunun üzerine yazmak için onay iste"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "Açılan iş akışları konumu",
     "options": {
@@ -406,38 +476,7 @@
     "tooltip": "Yeniden yönlendirme merkez noktasından bezier kontrol noktası ofseti"
   },
   "pysssss_SnapToGrid": {
-    "name": "Her zaman ızgaraya yapıştır"
-  },
-  "Comfy_Canvas_LeftMouseClickBehavior": {
-    "name": "Sol Fare Tıklama Davranışı",
-    "options": {
-      "Panning": "Kaydırma",
-      "Select": "Seç"
-    }
-  },
-  "Comfy_Canvas_MouseWheelScroll": {
-    "name": "Fare Tekerleği Kaydırma",
-    "options": {
-      "Panning": "Kaydırma",
-      "Zoom in/out": "Yakınlaştır/Uzaklaştır"
-    }
-  },
-  "Comfy_Sidebar_Style": {
-    "name": "Kenar Çubuğu Stili",
-    "options": {
-      "floating": "Yüzer",
-      "connected": "Bağlı"
-    }
-  },
-  "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "Otomatik ölçeklendirme düzeni (Vue düğümleri)",
-    "tooltip": "Vue işlemeye geçerken düğüm konumlarını örtüşmeyi önlemek için otomatik olarak ölçeklendir"
-  },
-  "Comfy_VueNodes_Enabled": {
-    "name": "Modern Düğüm Tasarımı (Vue Düğümleri)",
-    "tooltip": "Modern: Gelişmiş etkileşim, yerel tarayıcı özellikleri ve güncellenmiş görsel tasarıma sahip DOM tabanlı işleme. Klasik: Geleneksel tuval işleme."
-  },
-  "Comfy_Workflow_WarnBlueprintOverwrite": {
-    "name": "Mevcut bir alt grafik şablonunun üzerine yazmak için onay iste"
+    "name": "Her zaman ızgaraya yapıştır",
+    "tooltip": "Etkinleştirildiğinde, düğümler taşındığında veya yeniden boyutlandırıldığında otomatik olarak ızgaraya hizalanır."
   }
 }

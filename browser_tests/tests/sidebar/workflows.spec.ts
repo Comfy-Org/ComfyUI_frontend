@@ -104,10 +104,8 @@ test.describe('Workflows sidebar', () => {
     await tab.open()
     // Switch to the parent folder
     await tab.getPersistedItem('foo').click()
-    await comfyPage.page.waitForTimeout(300)
     // Switch to the nested workflow
     await tab.getPersistedItem('bar').click()
-    await comfyPage.page.waitForTimeout(300)
 
     const openedWorkflow = tab.getOpenedItem('foo/bar')
     await tab.renameWorkflow(openedWorkflow, 'foo/baz')
@@ -193,7 +191,6 @@ test.describe('Workflows sidebar', () => {
 
     await comfyPage.menu.topbar.saveWorkflowAs('workflow5.json')
     await comfyPage.confirmDialog.click('overwrite')
-    await comfyPage.page.waitForTimeout(200)
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow5.json'
     ])
@@ -228,7 +225,6 @@ test.describe('Workflows sidebar', () => {
 
     await topbar.saveWorkflowAs('workflow1.json')
     await comfyPage.confirmDialog.click('overwrite')
-    await comfyPage.page.waitForTimeout(200)
     // The old workflow1.json should be deleted and the new one should be saved.
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       'workflow2.json',
@@ -344,6 +340,11 @@ test.describe('Workflows sidebar', () => {
 
     await comfyPage.menu.workflowsTab.open()
 
+    // Wait for workflow to appear in Browse section after sync
+    const workflowItem =
+      comfyPage.menu.workflowsTab.getPersistedItem('workflow1.json')
+    await expect(workflowItem).toBeVisible({ timeout: 3000 })
+
     const nodeCount = await comfyPage.getGraphNodesCount()
 
     // Get the bounding box of the canvas element
@@ -362,8 +363,10 @@ test.describe('Workflows sidebar', () => {
       '#graph-canvas',
       { targetPosition }
     )
-    // Wait for the workflow to be inserted
-    await comfyPage.page.waitForTimeout(200)
-    expect(await comfyPage.getGraphNodesCount()).toBe(nodeCount * 2)
+
+    // Wait for nodes to be inserted after drag-drop with retryable assertion
+    await expect
+      .poll(() => comfyPage.getGraphNodesCount(), { timeout: 3000 })
+      .toBe(nodeCount * 2)
   })
 })

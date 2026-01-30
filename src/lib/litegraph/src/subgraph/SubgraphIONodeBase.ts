@@ -30,20 +30,20 @@ import type { SubgraphInput } from './SubgraphInput'
 import type { SubgraphOutput } from './SubgraphOutput'
 
 export abstract class SubgraphIONodeBase<
-    TSlot extends SubgraphInput | SubgraphOutput
-  >
+  TSlot extends SubgraphInput | SubgraphOutput
+>
   implements Positionable, Hoverable, Serialisable<ExportedSubgraphIONode>
 {
   static margin = 10
   static minWidth = 100
   static roundedRadius = 10
 
-  readonly #boundingRect: Rectangle = new Rectangle()
+  private readonly _boundingRect: Rectangle = new Rectangle()
 
   abstract readonly id: NodeId
 
   get boundingRect(): Rectangle {
-    return this.#boundingRect
+    return this._boundingRect
   }
 
   selected: boolean = false
@@ -181,7 +181,7 @@ export abstract class SubgraphIONodeBase<
   ): void {
     // Only allow renaming non-empty slots
     if (slot !== this.emptySlot) {
-      this.#promptForSlotRename(slot, event)
+      this._promptForSlotRename(slot, event)
     }
   }
 
@@ -191,14 +191,14 @@ export abstract class SubgraphIONodeBase<
    * @param event The event that triggered the context menu.
    */
   protected showSlotContextMenu(slot: TSlot, event: CanvasPointerEvent): void {
-    const options: (IContextMenuValue | null)[] = this.#getSlotMenuOptions(slot)
+    const options: (IContextMenuValue | null)[] = this._getSlotMenuOptions(slot)
     if (!(options.length > 0)) return
 
     new LiteGraph.ContextMenu(options, {
-      event: event as any,
+      event,
       title: slot.name || 'Subgraph Output',
       callback: (item: IContextMenuValue) => {
-        this.#onSlotMenuAction(item, slot, event)
+        this._onSlotMenuAction(item, slot, event)
       }
     })
   }
@@ -208,7 +208,7 @@ export abstract class SubgraphIONodeBase<
    * @param slot The slot to get the context menu options for.
    * @returns The context menu options.
    */
-  #getSlotMenuOptions(slot: TSlot): (IContextMenuValue | null)[] {
+  private _getSlotMenuOptions(slot: TSlot): (IContextMenuValue | null)[] {
     const options: (IContextMenuValue | null)[] = []
 
     // Disconnect option if slot has connections
@@ -239,7 +239,7 @@ export abstract class SubgraphIONodeBase<
    * @param slot The slot
    * @param event The event that triggered the context menu.
    */
-  #onSlotMenuAction(
+  private _onSlotMenuAction(
     selectedItem: IContextMenuValue,
     slot: TSlot,
     event: CanvasPointerEvent
@@ -260,7 +260,7 @@ export abstract class SubgraphIONodeBase<
       // Rename the slot
       case 'rename':
         if (slot !== this.emptySlot) {
-          this.#promptForSlotRename(slot, event)
+          this._promptForSlotRename(slot, event)
         }
         break
     }
@@ -273,7 +273,7 @@ export abstract class SubgraphIONodeBase<
    * @param slot The slot to rename.
    * @param event The event that triggered the rename.
    */
-  #promptForSlotRename(slot: TSlot, event: CanvasPointerEvent): void {
+  private _promptForSlotRename(slot: TSlot, event: CanvasPointerEvent): void {
     this.subgraph.canvasAction((c) =>
       c.prompt(
         'Slot name',
@@ -353,7 +353,7 @@ export abstract class SubgraphIONodeBase<
     editorAlpha?: number
   ): void {
     ctx.fillStyle = '#AAA'
-    ctx.font = '12px Arial'
+    ctx.font = '12px Inter, sans-serif'
     ctx.textBaseline = 'middle'
 
     for (const slot of this.allSlots) {
@@ -362,7 +362,7 @@ export abstract class SubgraphIONodeBase<
   }
 
   configure(data: ExportedSubgraphIONode): void {
-    this.#boundingRect.set(data.bounding)
+    this._boundingRect.set(data.bounding)
     this.pinned = data.pinned ?? false
   }
 

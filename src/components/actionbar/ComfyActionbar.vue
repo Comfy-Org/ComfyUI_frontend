@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-full items-center">
+  <div class="flex h-full items-center" :class="cn(!isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
       :class="actionbarClass"
@@ -10,7 +10,8 @@
     </div>
 
     <Panel
-      class="pointer-events-auto z-1000"
+      ref="panelRef"
+      class="pointer-events-auto"
       :style="style"
       :class="panelClass"
       :pt="{
@@ -18,20 +19,39 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none">
+      <div class="relative flex items-center select-none gap-2">
         <span
           ref="dragHandleRef"
           :class="
             cn(
-              'drag-handle cursor-grab w-3 h-max mr-2',
+              'drag-handle cursor-grab w-3 h-max',
               isDragging && 'cursor-grabbing'
             )
           "
         />
-
-        <ComfyRunButton />
+        <Suspense @resolve="comfyRunButtonResolved">
+          <ComfyRunButton />
+        </Suspense>
+        <Button
+          v-tooltip.bottom="cancelJobTooltipConfig"
+          variant="destructive"
+          size="icon"
+          :disabled="isExecutionIdle"
+          :aria-label="t('menu.interrupt')"
+          @click="cancelCurrentJob"
+        >
+          <i class="icon-[lucide--x] size-4" />
+        </Button>
       </div>
     </Panel>
+
+    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+      <QueueInlineProgress
+        :hidden="queueOverlayExpanded"
+        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
+        data-testid="queue-inline-progress"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -40,48 +60,62 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
+  unrefElement,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
+import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { t } from '@/i18n'
+import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useCommandStore } from '@/stores/commandStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
+const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
+  topMenuContainer?: HTMLElement | null
+  queueOverlayExpanded?: boolean
+}>()
+
+const emit = defineEmits<{
+  (event: 'update:progressTarget', target: HTMLElement | null): void
+}>()
+
 const settingsStore = useSettingStore()
+const commandStore = useCommandStore()
+const { t } = useI18n()
+const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
+const isQueuePanelV2Enabled = computed(() =>
+  settingsStore.get('Comfy.Queue.QPOV2')
+)
 
-const tabContainer = document.querySelector('.workflow-tabs-container')
-const panelRef = ref<HTMLElement | null>(null)
+const panelRef = ref<ComponentPublicInstance | null>(null)
+const panelElement = computed<HTMLElement | null>(() => {
+  const element = unrefElement(panelRef)
+  return element instanceof HTMLElement ? element : null
+})
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const {
-  x,
-  y,
-  style: style,
-  isDragging
-} = useDraggable(panelRef, {
+const { x, y, style, isDragging } = useDraggable(panelElement, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
-  containerElement: document.body,
-  onMove: (event) => {
-    // Prevent dragging the menu over the top of the tabs
-    const minY = tabContainer?.getBoundingClientRect().bottom ?? 40
-    if (event.y < minY) {
-      event.y = minY
-    }
-  }
+  containerElement: document.body
 })
 
 // Update storedPosition when x or y changes
@@ -95,11 +129,12 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  if (panelRef.value) {
+  const panel = panelElement.value
+  if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = panel.offsetWidth
+    const menuHeight = panel.offsetHeight
 
     if (menuWidth === 0 || menuHeight === 0) {
       return
@@ -126,7 +161,14 @@ const setInitialPosition = () => {
     }
   }
 }
-onMounted(setInitialPosition)
+
+//The ComfyRunButton is a dynamic import. Which means it will not be loaded onMount in this component.
+//So we must use suspense resolve to ensure that is has loaded and updated the DOM before calling setInitialPosition()
+async function comfyRunButtonResolved() {
+  await nextTick()
+  setInitialPosition()
+}
+
 watch(visible, async (newVisible) => {
   if (newVisible) {
     await nextTick(setInitialPosition)
@@ -168,11 +210,12 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  if (panelRef.value) {
+  const panel = panelElement.value
+  if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = panel.offsetWidth
+    const menuHeight = panel.offsetHeight
 
     // Calculate distances to all edges
     const distanceLeft = lastDragState.value.x
@@ -239,6 +282,19 @@ const onMouseLeaveDropZone = () => {
   }
 }
 
+const inlineProgressTarget = computed(() => {
+  if (!visible.value || !isQueuePanelV2Enabled.value) return null
+  if (isDocked.value) return topMenuContainer ?? null
+  return panelElement.value
+})
+watch(
+  panelElement,
+  (target) => {
+    emit('update:progressTarget', target)
+  },
+  { immediate: true }
+)
+
 // Handle drag state changes
 watch(isDragging, (dragging) => {
   if (dragging) {
@@ -255,21 +311,32 @@ watch(isDragging, (dragging) => {
     isMouseOverDropZone.value = false
   }
 })
+
+const cancelJobTooltipConfig = computed(() =>
+  buildTooltipConfig(t('menu.interrupt'))
+)
+
+const cancelCurrentJob = async () => {
+  if (isExecutionIdle.value) return
+  await commandStore.execute('Comfy.Interrupt')
+}
+
 const actionbarClass = computed(() =>
   cn(
-    'w-[265px] border-dashed border-blue-500 opacity-80',
+    'w-[200px] border-dashed border-blue-500 opacity-80',
     'm-1.5 flex items-center justify-center self-stretch',
     'rounded-md before:w-50 before:-ml-50 before:h-full',
+    'pointer-events-auto',
     isMouseOverDropZone.value &&
       'border-[3px] opacity-100 scale-105 shadow-[0_0_20px] shadow-blue-500'
   )
 )
 const panelClass = computed(() =>
   cn(
-    'actionbar pointer-events-auto z1000',
+    'actionbar pointer-events-auto z-1300',
     isDragging.value && 'select-none pointer-events-none',
     isDocked.value
-      ? 'p-0 static mr-2 border-none bg-transparent'
+      ? 'p-0 static border-none bg-transparent'
       : 'fixed shadow-interface'
   )
 )

@@ -1,60 +1,68 @@
 <template>
-  <div class="relative rounded-lg bg-smoke-700/30">
+  <div class="relative rounded-lg bg-backdrop/30">
     <div class="flex flex-col gap-2">
       <Button
-        class="p-button-rounded p-button-text"
-        :class="{
-          'p-button-danger': isRecording,
-          'recording-button-blink': isRecording
+        v-tooltip.right="{
+          value: isRecording
+            ? $t('load3d.stopRecording')
+            : $t('load3d.startRecording'),
+          showDelay: 300
         }"
+        size="icon"
+        variant="textonly"
+        :class="
+          cn(
+            'rounded-full',
+            isRecording && 'text-red-500 recording-button-blink'
+          )
+        "
+        :aria-label="
+          isRecording ? $t('load3d.stopRecording') : $t('load3d.startRecording')
+        "
         @click="toggleRecording"
       >
         <i
-          v-tooltip.right="{
-            value: isRecording
-              ? $t('load3d.stopRecording')
-              : $t('load3d.startRecording'),
-            showDelay: 300
-          }"
           :class="[
             'pi',
             isRecording ? 'pi-circle-fill' : 'pi-video',
-            'text-lg text-white'
+            'text-lg text-base-foreground'
           ]"
         />
       </Button>
 
       <Button
         v-if="hasRecording && !isRecording"
-        class="p-button-rounded p-button-text"
+        v-tooltip.right="{
+          value: $t('load3d.exportRecording'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="$t('load3d.exportRecording')"
         @click="handleExportRecording"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.exportRecording'),
-            showDelay: 300
-          }"
-          class="pi pi-download text-lg text-white"
-        />
+        <i class="pi pi-download text-lg text-base-foreground" />
       </Button>
 
       <Button
         v-if="hasRecording && !isRecording"
-        class="p-button-rounded p-button-text"
+        v-tooltip.right="{
+          value: $t('load3d.clearRecording'),
+          showDelay: 300
+        }"
+        size="icon"
+        variant="textonly"
+        class="rounded-full"
+        :aria-label="$t('load3d.clearRecording')"
         @click="handleClearRecording"
       >
-        <i
-          v-tooltip.right="{
-            value: $t('load3d.clearRecording'),
-            showDelay: 300
-          }"
-          class="pi pi-trash text-lg text-white"
-        />
+        <i class="pi pi-trash text-lg text-base-foreground" />
       </Button>
 
       <div
         v-if="recordingDuration && recordingDuration > 0 && !isRecording"
-        class="mt-1 text-center text-xs text-white"
+        class="mt-1 text-center text-xs text-base-foreground"
       >
         {{ formatDuration(recordingDuration) }}
       </div>
@@ -63,7 +71,8 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@/utils/tailwindUtil'
 
 const hasRecording = defineModel<boolean>('hasRecording')
 const isRecording = defineModel<boolean>('isRecording')
@@ -76,7 +85,7 @@ const emit = defineEmits<{
   (e: 'clearRecording'): void
 }>()
 
-const toggleRecording = () => {
+function toggleRecording() {
   if (isRecording.value) {
     emit('stopRecording')
   } else {
@@ -84,15 +93,15 @@ const toggleRecording = () => {
   }
 }
 
-const handleExportRecording = () => {
+function handleExportRecording() {
   emit('exportRecording')
 }
 
-const handleClearRecording = () => {
+function handleClearRecording() {
   emit('clearRecording')
 }
 
-const formatDuration = (seconds: number): string => {
+function formatDuration(seconds: number): string {
   const minutes = Math.floor(seconds / 60)
   const remainingSeconds = Math.floor(seconds % 60)
   return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`

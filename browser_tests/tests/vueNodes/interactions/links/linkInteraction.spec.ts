@@ -94,15 +94,15 @@ async function connectSlots(
   const fromLoc = slotLocator(page, from.nodeId, from.index, false)
   const toLoc = slotLocator(page, to.nodeId, to.index, true)
   await expectVisibleAll(fromLoc, toLoc)
-  await fromLoc.dragTo(toLoc)
+  await fromLoc.dragTo(toLoc, { force: true })
   await nextFrame()
 }
 
-test.describe('Vue Node Link Interaction', () => {
+test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
+    // await comfyPage.setup()
     await comfyPage.loadWorkflow('vueNodes/simple-triple')
     await comfyPage.vueNodes.waitForNodes()
     await fitToViewInstant(comfyPage)
@@ -183,7 +183,7 @@ test.describe('Vue Node Link Interaction', () => {
     const inputSlot = slotLocator(comfyPage.page, clipNode.id, 0, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
-    await outputSlot.dragTo(inputSlot)
+    await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
@@ -210,7 +210,7 @@ test.describe('Vue Node Link Interaction', () => {
     const inputSlot = slotLocator(comfyPage.page, samplerNode.id, 3, true)
     await expectVisibleAll(outputSlot, inputSlot)
 
-    await outputSlot.dragTo(inputSlot)
+    await outputSlot.dragTo(inputSlot, { force: true })
     await comfyPage.nextFrame()
 
     expect(await samplerOutput.getLinkCount()).toBe(0)
@@ -419,7 +419,7 @@ test.describe('Vue Node Link Interaction', () => {
     // This avoids relying on an exact path hit-test position.
     await comfyPage.page.evaluate(
       ([targetNodeId, targetSlot, clientPoint]) => {
-        const app = (window as any)['app']
+        const app = window['app']
         const graph = app?.canvas?.graph ?? app?.graph
         if (!graph) throw new Error('Graph not available')
         const node = graph.getNodeById(targetNodeId)
@@ -505,7 +505,7 @@ test.describe('Vue Node Link Interaction', () => {
     // This avoids relying on an exact path hit-test position.
     await comfyPage.page.evaluate(
       ([targetNodeId, targetSlot, clientPoint]) => {
-        const app = (window as any)['app']
+        const app = window['app']
         const graph = app?.canvas?.graph ?? app?.graph
         if (!graph) throw new Error('Graph not available')
         const node = graph.getNodeById(targetNodeId)
@@ -847,7 +847,7 @@ test.describe('Vue Node Link Interaction', () => {
         false
       )
 
-      const dropPos = { x: outputCenter.x + 180, y: outputCenter.y - 140 }
+      const dropPos = { x: outputCenter.x + 90, y: outputCenter.y - 70 }
 
       await comfyMouse.move(outputCenter)
       await comfyPage.page.keyboard.down('Shift')
@@ -897,7 +897,7 @@ test.describe('Vue Node Link Interaction', () => {
         0,
         false
       )
-      const dropPos = { x: outputCenter.x + 200, y: outputCenter.y - 120 }
+      const dropPos = { x: outputCenter.x + 200, y: outputCenter.y - 100 }
 
       await comfyMouse.move(outputCenter)
       await comfyPage.page.keyboard.down('Shift')
@@ -992,5 +992,52 @@ test.describe('Vue Node Link Interaction', () => {
       }
       expect(linked).toBe(true)
     })
+  })
+
+  test('Dragging from subgraph input connects to correct slot', async ({
+    comfyPage,
+    comfyMouse
+  }) => {
+    // Setup workflow with a KSampler node
+    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.waitForGraphNodes(0)
+    await comfyPage.executeCommand('Workspace.SearchBox.Toggle')
+    await comfyPage.nextFrame()
+    await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
+    await comfyPage.waitForGraphNodes(1)
+
+    // Convert the KSampler node to a subgraph
+    let ksamplerNode = (await comfyPage.getNodeRefsByType('KSampler'))?.[0]
+    await comfyPage.vueNodes.selectNode(String(ksamplerNode.id))
+    await comfyPage.executeCommand('Comfy.Graph.ConvertToSubgraph')
+
+    // Enter the subgraph
+    await comfyPage.vueNodes.enterSubgraph()
+    await fitToViewInstant(comfyPage)
+
+    // Get the KSampler node inside the subgraph
+    ksamplerNode = (await comfyPage.getNodeRefsByType('KSampler', true))?.[0]
+    const positiveInput = await ksamplerNode.getInput(1)
+    const negativeInput = await ksamplerNode.getInput(2)
+
+    const positiveInputPos = await getSlotCenter(
+      comfyPage.page,
+      ksamplerNode.id,
+      1,
+      true
+    )
+
+    const sourceSlot = await comfyPage.getSubgraphInputSlot()
+    const calculatedSourcePos = await sourceSlot.getOpenSlotPosition()
+
+    await comfyMouse.move(calculatedSourcePos)
+    await comfyMouse.drag(positiveInputPos)
+    await comfyMouse.drop()
+
+    // Verify connection went to the correct slot
+    const positiveLinks = await positiveInput.getLinkCount()
+    const negativeLinks = await negativeInput.getLinkCount()
+    expect(positiveLinks).toBe(1)
+    expect(negativeLinks).toBe(0)
   })
 })

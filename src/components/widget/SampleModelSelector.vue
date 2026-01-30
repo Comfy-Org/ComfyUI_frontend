@@ -17,43 +17,34 @@
 
     <template #header-right-area>
       <div class="flex gap-2">
-        <IconTextButton
-          type="primary"
-          :label="$t('g.upload')"
-          @click="() => {}"
-        >
-          <template #icon>
-            <i class="icon-[lucide--upload]" />
-          </template>
-        </IconTextButton>
+        <Button variant="primary" @click="() => {}">
+          <i class="icon-[lucide--upload]" />
+          <span>{{ $t('g.upload') }}</span>
+        </Button>
         <MoreButton>
           <template #default="{ close }">
-            <IconTextButton
-              type="secondary"
-              label="Settings"
+            <Button
+              variant="secondary"
               @click="
                 () => {
                   close()
                 }
               "
             >
-              <template #icon>
-                <i class="icon-[lucide--download]" />
-              </template>
-            </IconTextButton>
-            <IconTextButton
-              type="primary"
-              label="Profile"
+              <i class="icon-[lucide--download]" />
+              <span>{{ $t('g.settings') }}</span>
+            </Button>
+            <Button
+              variant="primary"
               @click="
                 () => {
                   close()
                 }
               "
             >
-              <template #icon>
-                <i class="icon-[lucide--scroll]" />
-              </template>
-            </IconTextButton>
+              <i class="icon-[lucide--scroll]" />
+              <span>{{ $t('g.profile') }}</span>
+            </Button>
           </template>
         </MoreButton>
       </div>
@@ -65,7 +56,7 @@
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
           class="w-[250px]"
-          label="Select Frameworks"
+          :label="$t('assetBrowser.selectFrameworks')"
           :options="frameworkOptions"
           :show-search-box="true"
           :show-selected-count="true"
@@ -73,12 +64,12 @@
         />
         <MultiSelect
           v-model="selectedProjects"
-          label="Select Projects"
+          :label="$t('assetBrowser.selectProjects')"
           :options="projectOptions"
         />
         <SingleSelect
           v-model="selectedSort"
-          label="Sorting Type"
+          :label="$t('assetBrowser.sortingType')"
           :options="sortOptions"
           class="w-[135px]"
         >
@@ -99,12 +90,13 @@
                 <div class="h-full w-full bg-blue-500"></div>
               </template>
               <template #top-right>
-                <IconButton
+                <Button
+                  size="icon"
                   class="!bg-white !text-neutral-900"
                   @click="() => {}"
                 >
                   <i class="icon-[lucide--info]" />
-                </IconButton>
+                </Button>
               </template>
               <template #bottom-right>
                 <SquareChip label="png" />
@@ -125,7 +117,7 @@
     </template>
 
     <template #rightPanel>
-      <RightSidePanel></RightSidePanel>
+      <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
     </template>
   </BaseModalLayout>
 </template>
@@ -133,19 +125,17 @@
 <script setup lang="ts">
 import { computed, provide, ref } from 'vue'
 
-import IconButton from '@/components/button/IconButton.vue'
-import IconTextButton from '@/components/button/IconTextButton.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
+import SearchBox from '@/components/common/SearchBox.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
-import SearchBox from '@/components/input/SearchBox.vue'
 import SingleSelect from '@/components/input/SingleSelect.vue'
+import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
-import RightSidePanel from '@/components/widget/panel/RightSidePanel.vue'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'

@@ -1,7 +1,7 @@
 import { useEventListener } from '@vueuse/core'
 
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
@@ -14,14 +14,61 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
   if (!match) return false
   try {
-    useCanvasStore()
-      .getCanvas()
-      ._deserializeItems(JSON.parse(atob(match)), {})
+    // Decode UTF-8 safe base64
+    const binaryString = atob(match)
+    const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
+    const decodedData = new TextDecoder().decode(bytes)
+    useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
     return true
   } catch (err) {
     console.error(err)
   }
   return false
+}
+
+function pasteItemsOnNode(
+  items: DataTransferItemList,
+  node: LGraphNode | null,
+  contentType: string
+): void {
+  if (!node) return
+
+  const filteredItems = Array.from(items).filter((item) =>
+    item.type.startsWith(contentType)
+  )
+
+  const blob = filteredItems[0]?.getAsFile()
+  if (!blob) return
+
+  node.pasteFile?.(blob)
+  node.pasteFiles?.(
+    Array.from(filteredItems)
+      .map((i) => i.getAsFile())
+      .filter((f) => f !== null)
+  )
+}
+
+export function pasteImageNode(
+  canvas: LGraphCanvas,
+  items: DataTransferItemList,
+  imageNode: LGraphNode | null = null
+): void {
+  const {
+    graph,
+    graph_mouse: [posX, posY]
+  } = canvas
+
+  if (!imageNode) {
+    // No image node selected: add a new one
+    const newNode = LiteGraph.createNode('LoadImage')
+    if (newNode) {
+      newNode.pos = [posX, posY]
+      imageNode = graph?.add(newNode) ?? null
+    }
+    graph?.change()
+  }
+
+  pasteItemsOnNode(items, imageNode, 'image')
 }
 
 /**
@@ -30,28 +77,6 @@ function pasteClipboardItems(data: DataTransfer): boolean {
 export const usePaste = () => {
   const workspaceStore = useWorkspaceStore()
   const canvasStore = useCanvasStore()
-
-  const pasteItemsOnNode = (
-    items: DataTransferItemList,
-    node: LGraphNode | null,
-    contentType: string
-  ) => {
-    if (!node) return
-
-    const filteredItems = Array.from(items).filter((item) =>
-      item.type.startsWith(contentType)
-    )
-
-    const blob = filteredItems[0]?.getAsFile()
-    if (!blob) return
-
-    node.pasteFile?.(blob)
-    node.pasteFiles?.(
-      Array.from(filteredItems)
-        .map((i) => i.getAsFile())
-        .filter((f) => f !== null)
-    )
-  }
 
   useEventListener(document, 'paste', async (e) => {
     if (shouldIgnoreCopyPaste(e.target)) {
@@ -78,8 +103,10 @@ export const usePaste = () => {
     const isVideoNodeSelected = isNodeSelected && isVideoNode(currentNode)
     const isAudioNodeSelected = isNodeSelected && isAudioNode(currentNode)
 
-    let imageNode: LGraphNode | null = isImageNodeSelected ? currentNode : null
     let audioNode: LGraphNode | null = isAudioNodeSelected ? currentNode : null
+    const imageNode: LGraphNode | null = isImageNodeSelected
+      ? currentNode
+      : null
     const videoNode: LGraphNode | null = isVideoNodeSelected
       ? currentNode
       : null
@@ -87,16 +114,7 @@ export const usePaste = () => {
     // Look for image paste data
     for (const item of items) {
       if (item.type.startsWith('image/')) {
-        if (!imageNode) {
-          // No image node selected: add a new one
-          const newNode = LiteGraph.createNode('LoadImage')
-          if (newNode) {
-            newNode.pos = [canvas.graph_mouse[0], canvas.graph_mouse[1]]
-            imageNode = graph?.add(newNode) ?? null
-          }
-          graph?.change()
-        }
-        pasteItemsOnNode(items, imageNode, 'image')
+        pasteImageNode(canvas as LGraphCanvas, items, imageNode)
         return
       } else if (item.type.startsWith('video/')) {
         if (!videoNode) {

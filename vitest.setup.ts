@@ -1,6 +1,13 @@
 import { vi } from 'vitest'
 import 'vue'
 
+// Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
+vi.mock('@sparkjsdev/spark', () => ({
+  SplatMesh: class SplatMesh {
+    constructor() {}
+  }
+}))
+
 // Augment Window interface for tests
 declare global {
   interface Window {
@@ -39,6 +46,7 @@ globalThis.__ALGOLIA_APP_ID__ = ''
 globalThis.__ALGOLIA_API_KEY__ = ''
 globalThis.__USE_PROD_CONFIG__ = false
 globalThis.__DISTRIBUTION__ = 'localhost'
+globalThis.__IS_NIGHTLY__ = false
 
 // Define runtime config for tests
 window.__CONFIG__ = {

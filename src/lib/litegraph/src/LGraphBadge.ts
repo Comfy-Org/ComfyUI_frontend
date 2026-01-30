@@ -1,3 +1,4 @@
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { LGraphIcon } from './LGraphIcon'
 import type { LGraphIconOptions } from './LGraphIcon'
 
@@ -15,6 +16,7 @@ export interface LGraphBadgeOptions {
   height?: number
   cornerRadius?: number
   iconOptions?: LGraphIconOptions
+  onClick?: (e: MouseEvent) => void
   xOffset?: number
   yOffset?: number
 }
@@ -28,8 +30,14 @@ export class LGraphBadge {
   height: number
   cornerRadius: number
   icon?: LGraphIcon
+  onClick?: (e: MouseEvent) => void
   xOffset: number
   yOffset: number
+
+  readonly _boundingRect: [number, number, number, number] = [0, 0, 0, 0]
+  get boundingRect(): ReadOnlyRect {
+    return this._boundingRect
+  }
 
   constructor({
     text,
@@ -40,6 +48,7 @@ export class LGraphBadge {
     height = 20,
     cornerRadius = 5,
     iconOptions,
+    onClick,
     xOffset = 0,
     yOffset = 0
   }: LGraphBadgeOptions) {
@@ -53,6 +62,7 @@ export class LGraphBadge {
     if (iconOptions) {
       this.icon = new LGraphIcon(iconOptions)
     }
+    this.onClick = onClick
     this.xOffset = xOffset
     this.yOffset = yOffset
   }
@@ -66,8 +76,12 @@ export class LGraphBadge {
     const { font } = ctx
     let iconWidth = 0
     if (this.icon) {
-      ctx.font = `${this.icon.fontSize}px '${this.icon.fontFamily}'`
-      iconWidth = ctx.measureText(this.icon.unicode).width + this.padding
+      if (this.icon.image) {
+        iconWidth = this.icon.size + this.padding
+      } else if (this.icon.unicode) {
+        ctx.font = `${this.icon.fontSize}px '${this.icon.fontFamily}'`
+        iconWidth = ctx.measureText(this.icon.unicode).width + this.padding
+      }
     }
     ctx.font = `${this.fontSize}px sans-serif`
     const textWidth = this.text ? ctx.measureText(this.text).width : 0
@@ -87,6 +101,8 @@ export class LGraphBadge {
     const badgeWidth = this.getWidth(ctx)
     const badgeX = 0
 
+    this._boundingRect.splice(0, 4, x, y, badgeWidth, this.height)
+
     // Draw badge background
     ctx.fillStyle = this.bgColor
     ctx.beginPath()
@@ -104,7 +120,8 @@ export class LGraphBadge {
     // Draw icon if present
     if (this.icon) {
       this.icon.draw(ctx, drawX, centerY)
-      drawX += this.icon.fontSize + this.padding / 2 + 4
+      const iconWidth = this.icon.image ? this.icon.size : this.icon.fontSize
+      drawX += iconWidth + this.padding / 2 + 4
     }
 
     // Draw badge text

@@ -81,7 +81,7 @@ export class DragAndScale {
    * Returns `true` if the current state has changed from the previous state.
    * @returns `true` if the current state has changed from the previous state, otherwise `false`.
    */
-  #stateHasChanged(): boolean {
+  private _stateHasChanged(): boolean {
     const current = this.state
     const previous = this.lastState
 
@@ -95,7 +95,7 @@ export class DragAndScale {
   computeVisibleArea(viewport: Rect | undefined): void {
     const { scale, offset, visible_area } = this
 
-    if (this.#stateHasChanged()) {
+    if (this._stateHasChanged()) {
       this.onChanged?.(scale, offset)
       copyState(this.state, this.lastState)
     }
@@ -192,8 +192,14 @@ export class DragAndScale {
     bounds: ReadOnlyRect,
     { zoom = 0.75 }: { zoom?: number } = {}
   ): void {
-    const cw = this.element.width / window.devicePixelRatio
-    const ch = this.element.height / window.devicePixelRatio
+    //If element hasn't initialized (browser tab is in background)
+    //it has a size of 300x150 and a more reasonable default is used instead.
+    const [width, height] =
+      this.element.width === 300 && this.element.height === 150
+        ? [1920, 1080]
+        : [this.element.width, this.element.height]
+    const cw = width / window.devicePixelRatio
+    const ch = height / window.devicePixelRatio
     let targetScale = this.scale
 
     if (zoom > 0) {

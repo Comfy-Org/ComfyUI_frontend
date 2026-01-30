@@ -1,8 +1,10 @@
 <template>
   <WidgetLayoutField :widget>
-    <Select
-      v-model="localValue"
+    <SelectPlus
+      v-model="modelValue"
       :invalid
+      :filter="selectOptions.length > 4"
+      auto-filter-focus
       :options="selectOptions"
       v-bind="combinedProps"
       :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
@@ -10,19 +12,22 @@
       size="small"
       :pt="{
         option: 'text-xs',
-        dropdownIcon: 'text-component-node-foreground-secondary'
+        dropdown: 'w-8',
+        label: cn('truncate min-w-[4ch]', $slots.default && 'mr-5'),
+        overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
-      @update:model-value="onChange"
     />
+    <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5 flex">
+      <slot />
+    </div>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import Select from 'primevue/select'
 import { computed } from 'vue'
 
-import { useWidgetValue } from '@/composables/graph/useWidgetValue'
+import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
@@ -34,21 +39,16 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const props = defineProps<{
-  widget: SimplifiedWidget<string | number | undefined>
-  modelValue: string | number | undefined
-}>()
+interface Props {
+  widget: SimplifiedWidget<string | undefined>
+}
 
-const emit = defineEmits<{
-  'update:modelValue': [value: string | number | undefined]
-}>()
+const props = defineProps<Props>()
 
-// Use the composable for consistent widget value handling
-const { localValue, onChange } = useWidgetValue({
-  widget: props.widget,
-  modelValue: props.modelValue,
-  defaultValue: props.widget.options?.values?.[0] || '',
-  emit
+const modelValue = defineModel<string | undefined>({
+  default(props: Props) {
+    return props.widget.options?.values?.[0] || ''
+  }
 })
 
 // Transform compatibility props for overlay positioning
@@ -65,12 +65,12 @@ const selectOptions = computed(() => {
   return []
 })
 const invalid = computed(
-  () => !!localValue.value && !selectOptions.value.includes(localValue.value)
+  () => !!modelValue.value && !selectOptions.value.includes(modelValue.value)
 )
 
 const combinedProps = computed(() => ({
   ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
   ...transformCompatProps.value,
-  ...(invalid.value ? { placeholder: `${localValue.value}` } : {})
+  ...(invalid.value ? { placeholder: `${modelValue.value}` } : {})
 }))
 </script>

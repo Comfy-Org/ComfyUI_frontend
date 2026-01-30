@@ -1,22 +1,30 @@
 <script setup lang="ts">
+import type { MaybeRefOrGetter } from 'vue'
+
 import Popover from 'primevue/popover'
 import { ref, useTemplateRef } from 'vue'
 
 import { cn } from '@/utils/tailwindUtil'
 
+import FormSearchInput from '../FormSearchInput.vue'
 import type { LayoutMode, OptionId, SortOption } from './types'
 
 defineProps<{
-  isQuerying: boolean
+  searcher?: (
+    query: string,
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<void>
   sortOptions: SortOption[]
+  updateKey?: MaybeRefOrGetter<unknown>
 }>()
 
 const layoutMode = defineModel<LayoutMode>('layoutMode')
 const searchQuery = defineModel<string>('searchQuery')
 const sortSelected = defineModel<OptionId>('sortSelected')
 
-const actionButtonStyle =
-  'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-sand-100 dark-theme:outline-neutral-700 transition-all duration-150'
+const actionButtonStyle = cn(
+  'h-8 bg-zinc-500/20 rounded-lg outline outline-1 outline-offset-[-1px] outline-node-component-border transition-all duration-150'
+)
 
 const resetInputStyle = 'bg-transparent border-0 outline-0 ring-0 text-left'
 
@@ -45,31 +53,19 @@ function handleSortSelected(item: SortOption) {
 
 <template>
   <div class="text-secondary flex gap-2 px-4">
-    <label
+    <FormSearchInput
+      v-model="searchQuery"
+      :searcher
+      :update-key="updateKey"
       :class="
         cn(
           actionButtonStyle,
-          'flex-1 flex px-2 items-center text-base leading-none cursor-text',
-          searchQuery?.trim() !== '' ? 'text-base-foreground' : '',
-          'hover:!outline-blue-500/80',
-          'focus-within:!outline-blue-500/80'
+          'hover:outline-component-node-widget-background-highlighted/80',
+          'focus-within:outline-component-node-widget-background-highlighted/80 focus-within:ring-0'
         )
       "
-    >
-      <i
-        v-if="isQuerying"
-        class="mr-2 icon-[lucide--loader-circle] size-4 animate-spin"
-      />
-      <i v-else class="mr-2 icon-[lucide--search] size-4" />
-      <input
-        v-model="searchQuery"
-        type="text"
-        :class="resetInputStyle"
-        placeholder="Search"
-      />
-    </label>
+    />
 
-    <!-- Sort Select -->
     <button
       ref="sortTriggerRef"
       :class="
@@ -77,7 +73,7 @@ function handleSortSelected(item: SortOption) {
           resetInputStyle,
           actionButtonStyle,
           'relative w-8 flex justify-center items-center cursor-pointer',
-          'hover:!outline-blue-500/80',
+          'hover:outline-component-node-widget-background-highlighted',
           'active:!scale-95'
         )
       "
@@ -85,7 +81,7 @@ function handleSortSelected(item: SortOption) {
     >
       <div
         v-if="sortSelected !== 'default'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-blue-500"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
       />
       <i class="icon-[lucide--arrow-up-down] size-4" />
     </button>
@@ -109,8 +105,8 @@ function handleSortSelected(item: SortOption) {
         :class="
           cn(
             'flex flex-col gap-2 p-2 min-w-32',
-            'bg-zinc-200 dark-theme:bg-charcoal-700',
-            'rounded-lg outline outline-offset-[-1px] outline-sand-200 dark-theme:outline-zinc-700'
+            'bg-component-node-background',
+            'rounded-lg outline outline-offset-[-1px] outline-component-node-border'
           )
         "
       >
@@ -140,7 +136,7 @@ function handleSortSelected(item: SortOption) {
       :class="
         cn(
           actionButtonStyle,
-          'flex justify-center items-center p-1 gap-1 hover:!outline-blue-500/80'
+          'flex justify-center items-center p-1 gap-1 hover:outline-component-node-widget-background-highlighted'
         )
       "
     >

@@ -36,9 +36,9 @@ body:
         3. Click Queue Prompt
         4. See error
       value: |
-        1. 
-        2. 
-        3. 
+        1.
+        2.
+        3.
     validations:
       required: true
 
@@ -60,7 +60,7 @@ body:
     attributes:
       label: ComfyUI Frontend Version
       description: Found in Settings > About (e.g., "1.3.45")
-      placeholder: "1.3.45"
+      placeholder: '1.3.45'
     validations:
       required: true
 

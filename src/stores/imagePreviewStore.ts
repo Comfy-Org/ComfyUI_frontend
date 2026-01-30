@@ -40,6 +40,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
+  const latestPreview = ref<string[]>([])
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
     scheduledRevoke[locator]?.stop()
@@ -129,6 +130,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
+    // Skip if outputs is null/undefined - preserve existing output
+    // This can happen when backend returns null for cached/deduplicated nodes
+    // (e.g., two LoadImage nodes selecting the same image)
+    if (outputs == null) return
+
     if (options.merge) {
       const existingOutput = app.nodeOutputs[nodeLocatorId]
       if (existingOutput && outputs) {
@@ -213,6 +219,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       scheduledRevoke[nodeLocatorId].stop()
       delete scheduledRevoke[nodeLocatorId]
     }
+    latestPreview.value = previewImages
     app.nodePreviewImages[nodeLocatorId] = previewImages
     nodePreviewImages.value[nodeLocatorId] = previewImages
   }
@@ -381,6 +388,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     // State
     nodeOutputs,
-    nodePreviewImages
+    nodePreviewImages,
+    latestPreview
   }
 })

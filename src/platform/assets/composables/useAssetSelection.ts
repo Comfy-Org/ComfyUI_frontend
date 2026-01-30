@@ -45,13 +45,9 @@ export function useAssetSelection() {
       const start = Math.min(selectionStore.lastSelectedIndex, index)
       const end = Math.max(selectionStore.lastSelectedIndex, index)
 
-      // Batch operation for better performance
+      // Select only the range from anchor to clicked item
       const rangeIds = allAssets.slice(start, end + 1).map((a) => a.id)
-      const existingIds = Array.from(selectionStore.selectedAssetIds)
-      const combinedIds = [...new Set([...existingIds, ...rangeIds])]
-
-      // Single update instead of multiple forEach operations
-      selectionStore.setSelection(combinedIds)
+      selectionStore.setSelection(rangeIds)
 
       // Don't update lastSelectedIndex for shift selection
       return
@@ -89,6 +85,22 @@ export function useAssetSelection() {
   }
 
   /**
+   * Get the output count for a single asset
+   * Same logic as in AssetsSidebarTab.vue
+   */
+  function getOutputCount(item: AssetItem): number {
+    const count = item.user_metadata?.outputCount
+    return typeof count === 'number' && count > 0 ? count : 1
+  }
+
+  /**
+   * Get the total output count for given assets
+   */
+  function getTotalOutputCount(assets: AssetItem[]): number {
+    return assets.reduce((sum, asset) => sum + getOutputCount(asset), 0)
+  }
+
+  /**
    * Activate key event listeners (when sidebar opens)
    */
   function activate() {
@@ -116,6 +128,8 @@ export function useAssetSelection() {
     selectAll,
     clearSelection: () => selectionStore.clearSelection(),
     getSelectedAssets,
+    getOutputCount,
+    getTotalOutputCount,
     reset: () => selectionStore.reset(),
 
     // Lifecycle management

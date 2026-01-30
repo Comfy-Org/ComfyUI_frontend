@@ -12,6 +12,8 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { AuditLog } from '@/services/customerEventsService'
+
 /**
  * Authentication metadata for sign-up tracking
  */
@@ -33,6 +35,13 @@ export interface SurveyResponses {
   industry?: string
   useCase?: string
   making?: string[]
+}
+
+export interface SurveyResponsesNormalized extends SurveyResponses {
+  industry_normalized?: string
+  industry_raw?: string
+  useCase_normalized?: string
+  useCase_raw?: string
 }
 
 /**
@@ -122,6 +131,10 @@ export interface WorkflowImportMetadata {
   open_source?: 'file_button' | 'file_drop' | 'template' | 'unknown'
 }
 
+export interface EnterLinearMetadata {
+  source?: string
+}
+
 /**
  * Workflow open metadata
  */
@@ -195,6 +208,8 @@ export interface TemplateFilterMetadata {
   selected_runs_on: string[]
   sort_by:
     | 'default'
+    | 'recommended'
+    | 'popular'
     | 'alphabetical'
     | 'newest'
     | 'vram-low-to-high'
@@ -265,6 +280,7 @@ export interface TelemetryProvider {
   // Subscription flow events
   trackSubscription(event: 'modal_opened' | 'subscribe_clicked'): void
   trackMonthlySubscriptionSucceeded(): void
+  trackMonthlySubscriptionCancelled(): void
   trackAddApiCreditButtonClicked(): void
   trackApiCreditTopupButtonPurchaseClicked(amount: number): void
   trackApiCreditTopupSucceeded(): void
@@ -275,7 +291,7 @@ export interface TelemetryProvider {
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking(): void
-  checkForCompletedTopup(events: any[] | undefined | null): boolean
+  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean
   clearTopupTracking(): void
 
   // Survey flow events
@@ -292,6 +308,7 @@ export interface TelemetryProvider {
   // Workflow management events
   trackWorkflowImported(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void
+  trackEnterLinear(metadata: EnterLinearMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void
@@ -344,6 +361,7 @@ export const TelemetryEvents = {
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
+  MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
@@ -366,6 +384,7 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
+  ENTER_LINEAR_MODE: 'app:toggle_linear_mode',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -407,6 +426,7 @@ export type ExecutionTriggerSource =
   | 'keybinding'
   | 'legacy_ui'
   | 'unknown'
+  | 'linear'
 
 /**
  * Union type for all possible telemetry event properties
@@ -434,3 +454,4 @@ export type TelemetryEventProperties =
   | HelpResourceClickedMetadata
   | HelpCenterClosedMetadata
   | WorkflowCreatedMetadata
+  | EnterLinearMetadata

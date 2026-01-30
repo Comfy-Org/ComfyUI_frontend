@@ -1,7 +1,7 @@
 <template>
   <div
     ref="container"
-    class="relative h-full w-full"
+    class="relative h-full w-full min-h-[200px]"
     data-capture-wheel="true"
     @pointerdown.stop
     @pointermove.stop
@@ -14,11 +14,7 @@
     @dragleave.stop="handleDragLeave"
     @drop.prevent.stop="handleDrop"
   >
-    <LoadingOverlay
-      ref="loadingOverlayRef"
-      :loading="loading"
-      :loading-message="loadingMessage"
-    />
+    <LoadingOverlay :loading="loading" :loading-message="loadingMessage" />
     <div
       v-if="!isPreview && isDragging"
       class="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
@@ -35,7 +31,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import LoadingOverlay from '@/components/load3d/LoadingOverlay.vue'
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 
 const props = defineProps<{
@@ -48,7 +44,6 @@ const props = defineProps<{
 }>()
 
 const container = ref<HTMLElement | null>(null)
-const loadingOverlayRef = ref<InstanceType<typeof LoadingOverlay> | null>(null)
 
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
   useLoad3dDrag({

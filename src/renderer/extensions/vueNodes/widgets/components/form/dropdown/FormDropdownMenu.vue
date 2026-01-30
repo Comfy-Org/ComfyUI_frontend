@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { MaybeRefOrGetter } from 'vue'
+
 import { cn } from '@/utils/tailwindUtil'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
@@ -15,9 +17,13 @@ import type {
 interface Props {
   items: DropdownItem[]
   isSelected: (item: DropdownItem, index: number) => boolean
-  isQuerying: boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
+  searcher?: (
+    query: string,
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<void>
+  updateKey?: MaybeRefOrGetter<unknown>
 }
 
 defineProps<Props>()
@@ -36,7 +42,7 @@ const searchQuery = defineModel<string>('searchQuery')
 
 <template>
   <div
-    class="flex max-h-[640px] w-103 flex-col rounded-lg bg-node-component-surface pt-4 outline outline-offset-[-1px] outline-node-component-border"
+    class="flex max-h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline outline-offset-[-1px] outline-node-component-border"
   >
     <!-- Filter -->
     <FormDropdownMenuFilter
@@ -50,7 +56,8 @@ const searchQuery = defineModel<string>('searchQuery')
       v-model:sort-selected="sortSelected"
       v-model:search-query="searchQuery"
       :sort-options="sortOptions"
-      :is-querying="isQuerying"
+      :searcher
+      :update-key="updateKey"
     />
     <!-- List -->
     <div class="relative flex h-full mt-2 overflow-y-scroll">
@@ -66,15 +73,14 @@ const searchQuery = defineModel<string>('searchQuery')
           )
         "
       >
-        <div
-          class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5 bg-gradient-to-b from-backdrop to-transparent"
-        />
+        <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
         <div
           v-if="items.length === 0"
-          class="absolute inset-0 flex items-center justify-center"
+          class="h-50 col-span-full flex items-center justify-center"
         >
           <i
-            title="No items"
+            :title="$t('g.noItems')"
+            :aria-label="$t('g.noItems')"
             class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
           />
         </div>
