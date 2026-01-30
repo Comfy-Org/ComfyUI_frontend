@@ -5,7 +5,7 @@ import {
 import type { ComfyPage } from '../../../../fixtures/ComfyPage'
 import { fitToViewInstant } from '../../../../helpers/fitToView'
 
-test.describe('Vue Node Bring to Front', () => {
+test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)

@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('LOD Threshold', () => {
+test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
   test('Should switch to low quality mode at correct zoom threshold', async ({
     comfyPage
   }) => {
@@ -149,53 +149,55 @@ test.describe('LOD Threshold', () => {
     expect(state.scale).toBeLessThan(0.2) // Very zoomed out
   })
 
-  test('Should show visual difference between LOD on and off', async ({
-    comfyPage
-  }) => {
-    // Load a workflow with text-heavy nodes for clear visual difference
-    await comfyPage.loadWorkflow('default')
+  test(
+    'Should show visual difference between LOD on and off',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      // Load a workflow with text-heavy nodes for clear visual difference
+      await comfyPage.loadWorkflow('default')
 
-    // Set zoom level clearly below the threshold to ensure LOD activates
-    const targetZoom = 0.4 // Well below default threshold of ~0.571
+      // Set zoom level clearly below the threshold to ensure LOD activates
+      const targetZoom = 0.4 // Well below default threshold of ~0.571
 
-    // Zoom to target level
-    await comfyPage.page.evaluate((zoom) => {
-      window['app'].canvas.ds.scale = zoom
-      window['app'].canvas.setDirty(true, true)
-    }, targetZoom)
-    await comfyPage.nextFrame()
+      // Zoom to target level
+      await comfyPage.page.evaluate((zoom) => {
+        window['app'].canvas.ds.scale = zoom
+        window['app'].canvas.setDirty(true, true)
+      }, targetZoom)
+      await comfyPage.nextFrame()
 
-    // Take snapshot with LOD active (default 8px setting)
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'lod-comparison-low-quality.png'
-    )
+      // Take snapshot with LOD active (default 8px setting)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'lod-comparison-low-quality.png'
+      )
 
-    const lowQualityState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
-      return {
-        lowQuality: canvas.low_quality,
-        scale: canvas.ds.scale
-      }
-    })
-    expect(lowQualityState.lowQuality).toBe(true)
+      const lowQualityState = await comfyPage.page.evaluate(() => {
+        const canvas = window['app'].canvas
+        return {
+          lowQuality: canvas.low_quality,
+          scale: canvas.ds.scale
+        }
+      })
+      expect(lowQualityState.lowQuality).toBe(true)
 
-    // Disable LOD to see high quality at same zoom
-    await comfyPage.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 0)
-    await comfyPage.nextFrame()
+      // Disable LOD to see high quality at same zoom
+      await comfyPage.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 0)
+      await comfyPage.nextFrame()
 
-    // Take snapshot with LOD disabled (full quality at same zoom)
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'lod-comparison-high-quality.png'
-    )
+      // Take snapshot with LOD disabled (full quality at same zoom)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'lod-comparison-high-quality.png'
+      )
 
-    const highQualityState = await comfyPage.page.evaluate(() => {
-      const canvas = window['app'].canvas
-      return {
-        lowQuality: canvas.low_quality,
-        scale: canvas.ds.scale
-      }
-    })
-    expect(highQualityState.lowQuality).toBe(false)
-    expect(highQualityState.scale).toBeCloseTo(targetZoom, 2)
-  })
+      const highQualityState = await comfyPage.page.evaluate(() => {
+        const canvas = window['app'].canvas
+        return {
+          lowQuality: canvas.low_quality,
+          scale: canvas.ds.scale
+        }
+      })
+      expect(highQualityState.lowQuality).toBe(false)
+      expect(highQualityState.scale).toBeCloseTo(targetZoom, 2)
+    }
+  )
 })
