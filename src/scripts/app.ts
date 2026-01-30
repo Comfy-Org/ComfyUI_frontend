@@ -121,7 +121,7 @@ type Clipspace = {
   widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
   imgs?: HTMLImageElement[] | null
   original_imgs?: HTMLImageElement[] | null
-  images?: any[] | null
+  images?: ResultItem[] | null
   selectedIndex: number
   img_paste_mode: string
   paintedIndex: number

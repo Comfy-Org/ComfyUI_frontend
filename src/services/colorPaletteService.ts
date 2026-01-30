@@ -173,7 +173,7 @@ export const useColorPaletteService = () => {
           )
           LiteGraph.NODE_DEFAULT_SHAPE = LiteGraph.ROUND_SHAPE
         } else {
-          ;(LiteGraph as any)[key] = value
+          Object.assign(LiteGraph, { [key]: value })
         }
       }
     }

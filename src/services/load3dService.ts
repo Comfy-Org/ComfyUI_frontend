@@ -7,6 +7,16 @@ import type Load3d from '@/extensions/core/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+// Type definitions for Load3D node
+interface SceneConfig {
+  backgroundImage?: string
+  [key: string]: unknown
+}
+
+interface Load3DNode extends LGraphNode {
+  syncLoad3dConfig?: () => void
+}
+
 const viewerInstances = new Map<NodeId, any>()
 
 export class Load3dService {
@@ -139,7 +149,9 @@ export class Load3dService {
       .getCurrentBackgroundInfo()
     if (sourceBackgroundInfo.type === 'image') {
       const sourceNode = this.getNodeByLoad3d(source)
-      const sceneConfig = sourceNode?.properties?.['Scene Config'] as any
+      const sceneConfig = sourceNode?.properties?.['Scene Config'] as
+        | SceneConfig
+        | undefined
       const backgroundPath = sceneConfig?.backgroundImage
       if (backgroundPath) {
         await target.setBackgroundImage(backgroundPath)
@@ -179,8 +191,9 @@ export class Load3dService {
       await viewer.applyChanges()
 
       // Sync configuration back to the node's UI
-      if ((node as any).syncLoad3dConfig) {
-        ;(node as any).syncLoad3dConfig()
+      const load3DNode = node as Load3DNode
+      if (load3DNode.syncLoad3dConfig) {
+        load3DNode.syncLoad3dConfig()
       }
     }
 

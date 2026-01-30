@@ -8,6 +8,7 @@ import {
   startTopupTracking as startTopupUtil
 } from '@/platform/telemetry/topupTracker'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { AuditLog } from '@/services/customerEventsService'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -261,7 +262,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     startTopupUtil()
   }
 
-  checkForCompletedTopup(events: any[] | undefined | null): boolean {
+  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
     return checkTopupUtil(events)
   }
 
