@@ -737,23 +737,26 @@ export class ComfyApp {
         layoutStore.setPendingSlotSync(true)
       }
 
-      fixLinkInputSlots(this)
+      try {
+        fixLinkInputSlots(this)
 
-      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      const r = onConfigure?.apply(this, args)
+        const r = onConfigure?.apply(this, args)
 
-      // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
+        // Fire after onConfigure, used by primitives to generate widget using input nodes config
+        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
 
-      // Flush pending slot layout syncs to fix link alignment after undo/redo
-      if (LiteGraph.vueNodesMode) {
-        flushScheduledSlotLayoutSync()
-        app.canvas?.setDirty(true, true)
+        return r
+      } finally {
+        // Flush pending slot layout syncs to fix link alignment after undo/redo
+        // Using finally ensures links aren't permanently suppressed if an error occurs
+        if (LiteGraph.vueNodesMode) {
+          flushScheduledSlotLayoutSync()
+          app.canvas?.setDirty(true, true)
+        }
       }
-
-      return r
     }
   }
 
