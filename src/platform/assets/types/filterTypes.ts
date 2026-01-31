@@ -4,16 +4,11 @@
  */
 
 /**
- * Generic option identifier type
- */
-export type OptionId = string
-
-/**
  * Generic filter/select option used across components
  * Compatible with both SelectOption (name/value) and FilterOption (id/name) patterns
  */
 export interface FilterOption {
-  id: OptionId
+  id: string
   name: string
 }
 

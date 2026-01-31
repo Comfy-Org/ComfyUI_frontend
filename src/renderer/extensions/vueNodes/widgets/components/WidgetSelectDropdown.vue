@@ -5,6 +5,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
 import {
+  getAssetBaseModels,
   getAssetDisplayName,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -12,7 +13,6 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import type {
   FilterOption,
-  OptionId,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
@@ -99,7 +99,22 @@ const ownershipOptions = computed(() => [
   }
 ])
 
-const selectedSet = ref<Set<OptionId>>(new Set())
+const baseModelSelected = ref<Set<string>>(new Set())
+const showBaseModelFilter = computed(() => props.isAssetMode)
+const baseModelOptions = computed<FilterOption[]>(() => {
+  if (!props.isAssetMode || !assetData) return []
+  const models = new Set<string>()
+  for (const asset of assetData.assets.value) {
+    for (const model of getAssetBaseModels(asset)) {
+      models.add(model)
+    }
+  }
+  return Array.from(models)
+    .sort()
+    .map((model) => ({ id: model, name: model }))
+})
+
+const selectedSet = ref<Set<string>>(new Set())
 
 /**
  * Transforms a value using getOptionLabel if available.
@@ -222,7 +237,8 @@ const assetItems = computed<FormDropdownItem[]>(() => {
     name: getAssetFilename(asset),
     label: getAssetDisplayName(asset),
     preview_url: asset.preview_url,
-    is_immutable: asset.is_immutable
+    is_immutable: asset.is_immutable,
+    base_models: getAssetBaseModels(asset)
   }))
 })
 
@@ -235,12 +251,23 @@ const ownershipFilteredAssetItems = computed<FormDropdownItem[]>(() => {
   return assetItems.value.filter((item) => item.is_immutable === isPublic)
 })
 
+/**
+ * Filters asset items by base model selection.
+ */
+const baseModelFilteredAssetItems = computed<FormDropdownItem[]>(() => {
+  if (baseModelSelected.value.size === 0)
+    return ownershipFilteredAssetItems.value
+  return ownershipFilteredAssetItems.value.filter((item) =>
+    item.base_models?.some((model) => baseModelSelected.value.has(model))
+  )
+})
+
 const allItems = computed<FormDropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {
     if (missingValueItem.value) {
-      return [missingValueItem.value, ...ownershipFilteredAssetItems.value]
+      return [missingValueItem.value, ...baseModelFilteredAssetItems.value]
     }
-    return ownershipFilteredAssetItems.value
+    return baseModelFilteredAssetItems.value
   }
   return [
     ...(missingValueItem.value ? [missingValueItem.value] : []),
@@ -327,8 +354,8 @@ watch(
   { immediate: true }
 )
 
-function updateSelectedItems(selectedItems: Set<OptionId>) {
-  let id: OptionId | undefined = undefined
+function updateSelectedItems(selectedItems: Set<string>) {
+  let id: string | undefined = undefined
   if (selectedItems.size > 0) {
     id = selectedItems.values().next().value!
   }
@@ -436,6 +463,7 @@ function getMediaUrl(
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
       v-model:ownership-selected="ownershipSelected"
+      v-model:base-model-selected="baseModelSelected"
       :items="dropdownItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
@@ -444,6 +472,8 @@ function getMediaUrl(
       :filter-options
       :show-ownership-filter
       :ownership-options
+      :show-base-model-filter
+      :base-model-options
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"
