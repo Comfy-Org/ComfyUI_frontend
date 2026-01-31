@@ -1,6 +1,7 @@
 <template>
   <nav
     ref="sideToolbarRef"
+    data-testid="side-toolbar"
     class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
     :class="{
       'small-sidebar': isSmall,

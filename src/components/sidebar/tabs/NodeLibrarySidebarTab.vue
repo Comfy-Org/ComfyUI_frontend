@@ -89,6 +89,7 @@
           <SearchBox
             ref="searchBoxRef"
             v-model:model-value="searchQuery"
+            data-testid="node-library-search"
             class="node-lib-search-box"
             :placeholder="$t('g.searchNodes') + '...'"
             filter-icon="pi pi-filter"
@@ -117,6 +118,7 @@
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
+            data-testid="node-library-tree"
             class="node-lib-tree-explorer"
             :root="renderedRoot"
           >
