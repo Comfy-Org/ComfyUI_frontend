@@ -70,6 +70,10 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import {
+  createMissingNodeTypeFromError,
+  type MissingNodeTypeExtraInfo
+} from '@/utils/missingNodeUtil'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
@@ -1399,28 +1403,9 @@ export class ComfyApp {
               typeof error.response.error === 'object' &&
               error.response.error?.type === 'missing_node_type'
             ) {
-              const extraInfo = (error.response.error.extra_info ?? {}) as {
-                class_type?: string | null
-                node_title?: string | null
-                node_id?: string
-              }
-              const classType = extraInfo.class_type ?? 'Unknown'
-              const nodeTitle = extraInfo.node_title ?? classType
-              const nodeId = extraInfo.node_id
-              const hint = (() => {
-                if (nodeTitle !== classType && nodeId) {
-                  return `"${nodeTitle}" (Node ID #${nodeId})`
-                } else if (nodeTitle !== classType) {
-                  return `"${nodeTitle}"`
-                } else if (nodeId) {
-                  return `Node ID #${nodeId}`
-                }
-                return undefined
-              })()
-              const missingNodeType: MissingNodeType = {
-                type: classType,
-                ...(hint && { hint })
-              }
+              const extraInfo = (error.response.error.extra_info ??
+                {}) as MissingNodeTypeExtraInfo
+              const missingNodeType = createMissingNodeTypeFromError(extraInfo)
               this.showMissingNodesError([missingNodeType])
             } else {
               useDialogService().showErrorDialog(error, {
