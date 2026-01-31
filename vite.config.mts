@@ -199,7 +199,17 @@ export default defineConfig({
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
-        ...cloudProxyConfig
+        ...cloudProxyConfig,
+        configure: (proxy) => {
+          const ignoreEconn = (err: NodeJS.ErrnoException) => {
+            if (err.code === 'ECONNRESET' || err.code === 'ECONNABORTED') return
+            console.error(err)
+          }
+          proxy.on('error', ignoreEconn)
+          proxy.on('proxyReqWs', (_proxyReq, _req, socket) => {
+            socket.on('error', ignoreEconn)
+          })
+        }
       },
 
       '/workflow_templates': {
