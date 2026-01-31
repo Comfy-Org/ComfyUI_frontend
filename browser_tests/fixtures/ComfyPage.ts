@@ -19,6 +19,7 @@ import {
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
+import { DefaultGraphPositions } from './constants/defaultGraphPositions'
 import type { Position, Size } from './types'
 import { NodeReference, SubgraphSlotReference } from './utils/litegraphUtils'
 
@@ -537,40 +538,28 @@ export class ComfyPage {
 
   async clickTextEncodeNode1() {
     await this.canvas.click({
-      position: {
-        x: 618,
-        y: 191
-      }
+      position: DefaultGraphPositions.textEncodeNode1
     })
     await this.nextFrame()
   }
 
   async clickTextEncodeNodeToggler() {
     await this.canvas.click({
-      position: {
-        x: 430,
-        y: 171
-      }
+      position: DefaultGraphPositions.textEncodeNodeToggler
     })
     await this.nextFrame()
   }
 
   async clickTextEncodeNode2() {
     await this.canvas.click({
-      position: {
-        x: 622,
-        y: 400
-      }
+      position: DefaultGraphPositions.textEncodeNode2
     })
     await this.nextFrame()
   }
 
   async clickEmptySpace() {
     await this.canvas.click({
-      position: {
-        x: 35,
-        y: 31
-      }
+      position: DefaultGraphPositions.emptySpaceClick
     })
     await this.nextFrame()
   }
@@ -733,27 +722,24 @@ export class ComfyPage {
 
   // Default graph positions
   get clipTextEncodeNode1InputSlot(): Position {
-    return { x: 427, y: 198 }
+    return DefaultGraphPositions.clipTextEncodeNode1InputSlot
   }
 
   get clipTextEncodeNode2InputSlot(): Position {
-    return { x: 422, y: 402 }
+    return DefaultGraphPositions.clipTextEncodeNode2InputSlot
   }
 
   // A point on input edge.
   get clipTextEncodeNode2InputLinkPath(): Position {
-    return {
-      x: 395,
-      y: 422
-    }
+    return DefaultGraphPositions.clipTextEncodeNode2InputLinkPath
   }
 
   get loadCheckpointNodeClipOutputSlot(): Position {
-    return { x: 332, y: 509 }
+    return DefaultGraphPositions.loadCheckpointNodeClipOutputSlot
   }
 
   get emptySpace(): Position {
-    return { x: 427, y: 98 }
+    return DefaultGraphPositions.emptySpace
   }
 
   get promptDialogInput() {
@@ -791,10 +777,7 @@ export class ComfyPage {
     // Adjust Empty Latent Image's width input.
     const page = this.page
     await page.locator('#graph-canvas').click({
-      position: {
-        x: 724,
-        y: 645
-      }
+      position: DefaultGraphPositions.emptyLatentWidgetClick
     })
     const dialogInput = page.locator('.graphdialog input[type="text"]')
     await dialogInput.click()
@@ -1491,17 +1474,9 @@ export class ComfyPage {
     percentY: number,
     revertAfter: boolean = false
   ) {
-    const ksamplerPos = {
-      x: 863,
-      y: 156
-    }
-    const ksamplerSize = {
-      width: 315,
-      height: 292
-    }
     return this.resizeNode(
-      ksamplerPos,
-      ksamplerSize,
+      DefaultGraphPositions.ksampler.pos,
+      DefaultGraphPositions.ksampler.size,
       percentX,
       percentY,
       revertAfter
@@ -1513,17 +1488,9 @@ export class ComfyPage {
     percentY: number,
     revertAfter: boolean = false
   ) {
-    const loadCheckpointPos = {
-      x: 26,
-      y: 444
-    }
-    const loadCheckpointSize = {
-      width: 315,
-      height: 127
-    }
     return this.resizeNode(
-      loadCheckpointPos,
-      loadCheckpointSize,
+      DefaultGraphPositions.loadCheckpoint.pos,
+      DefaultGraphPositions.loadCheckpoint.size,
       percentX,
       percentY,
       revertAfter
@@ -1535,17 +1502,9 @@ export class ComfyPage {
     percentY: number,
     revertAfter: boolean = false
   ) {
-    const emptyLatentPos = {
-      x: 473,
-      y: 579
-    }
-    const emptyLatentSize = {
-      width: 315,
-      height: 136
-    }
     return this.resizeNode(
-      emptyLatentPos,
-      emptyLatentSize,
+      DefaultGraphPositions.emptyLatent.pos,
+      DefaultGraphPositions.emptyLatent.size,
       percentX,
       percentY,
       revertAfter
