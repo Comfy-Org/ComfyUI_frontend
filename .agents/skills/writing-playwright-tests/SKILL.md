@@ -5,9 +5,15 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
 
 # Writing Playwright Tests for ComfyUI_frontend
 
-## Golden Rule
+## Golden Rules
 
-**ALWAYS look at existing tests first.** Search `browser_tests/` for similar patterns before writing new tests.
+1. **ALWAYS look at existing tests first.** Search `browser_tests/` for similar patterns before writing new tests.
+
+2. **Use premade JSON workflow assets** instead of building workflows programmatically at runtime.
+   - Assets live in `browser_tests/assets/`
+   - Load with `await comfyPage.loadWorkflow('feature/my_workflow')`
+   - More stable, faster, easier to debug
+   - See [testing/assets.md](testing/assets.md) for details
 
 ## Quick Reference
 
