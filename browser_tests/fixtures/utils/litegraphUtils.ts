@@ -312,6 +312,11 @@ export class NodeReference {
   async getFlags(): Promise<{ collapsed?: boolean; pinned?: boolean }> {
     return await this.getProperty('flags')
   }
+  async getTitlePosition(): Promise<Position> {
+    const nodePos = await this.getPosition()
+    const nodeSize = await this.getSize()
+    return { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
+  }
   async isPinned() {
     return !!(await this.getFlags()).pinned
   }

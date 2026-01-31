@@ -68,16 +68,16 @@ test.describe('Node search box', { tag: '@node' }, () => {
     async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('links/batch_move_links')
 
-      const outputSlot1Pos = {
-        x: 304,
-        y: 127
-      }
-      const emptySpacePos = {
-        x: 5,
-        y: 5
-      }
+      // Get the CLIP output slot (index 1) from the first CheckpointLoaderSimple node (id: 4)
+      const checkpointNode = await comfyPage.nodeOps.getNodeRefById(4)
+      const clipOutputSlot = await checkpointNode.getOutput(1)
+      const outputSlotPos = await clipOutputSlot.getPosition()
+
+      // Use a position in the empty canvas area (top-left corner)
+      const emptySpacePos = { x: 5, y: 5 }
+
       await comfyPage.page.keyboard.down('Shift')
-      await comfyPage.canvasOps.dragAndDrop(outputSlot1Pos, emptySpacePos)
+      await comfyPage.canvasOps.dragAndDrop(outputSlotPos, emptySpacePos)
       await comfyPage.page.keyboard.up('Shift')
 
       // Select the second item as the first item is always reroute

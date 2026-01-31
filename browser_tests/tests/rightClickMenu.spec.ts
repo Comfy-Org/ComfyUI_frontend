@@ -103,7 +103,11 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
     await comfyPage.nextFrame()
-    await comfyPage.canvasOps.dragAndDrop({ x: 621, y: 617 }, { x: 16, y: 16 })
+
+    // Get EmptyLatentImage node title position dynamically (for dragging)
+    const emptyLatentNode = await comfyPage.nodeOps.getNodeRefById(5)
+    const titlePos = await emptyLatentNode.getTitlePosition()
+    await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 16, y: 16 })
     await expect(comfyPage.canvas).toHaveScreenshot('node-pinned.png')
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -124,10 +128,11 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.rightClickEmptyLatentNode()
     await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
     await comfyPage.nextFrame()
-    await comfyPage.canvasOps.dragAndDrop(
-      { x: 496, y: 618 },
-      { x: 200, y: 590 }
-    )
+
+    // Get EmptyLatentImage node title position dynamically (for dragging)
+    const emptyLatentNode = await comfyPage.nodeOps.getNodeRefById(5)
+    const titlePos = await emptyLatentNode.getTitlePosition()
+    await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 200, y: 590 })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-unpinned-node-moved.png'
     )
