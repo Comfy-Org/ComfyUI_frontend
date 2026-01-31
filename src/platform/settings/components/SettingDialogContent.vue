@@ -1,5 +1,6 @@
 <template>
   <div
+    data-testid="settings-dialog"
     :class="
       teamWorkspacesEnabled
         ? 'flex h-full w-full overflow-auto flex-col md:flex-row'
@@ -50,10 +51,17 @@
         <template v-else #optiongroup>
           <Divider class="my-0" />
         </template>
-        <!-- Workspace mode: custom workspace item -->
-        <template v-if="teamWorkspacesEnabled" #option="{ option }">
-          <WorkspaceSidebarItem v-if="option.key === 'workspace'" />
-          <span v-else>{{ option.translatedLabel }}</span>
+        <!-- Custom option template with data-testid for stable test selectors -->
+        <template #option="{ option }">
+          <span
+            :data-testid="`settings-tab-${option.key}`"
+            class="settings-tab-option"
+          >
+            <WorkspaceSidebarItem
+              v-if="teamWorkspacesEnabled && option.key === 'workspace'"
+            />
+            <template v-else>{{ option.translatedLabel }}</template>
+          </span>
         </template>
       </Listbox>
     </ScrollPanel>
