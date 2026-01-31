@@ -1,5 +1,12 @@
 # Widget Patterns
 
+> **⚠️ LiteGraph Mode:** These patterns apply to the default LiteGraph canvas rendering where widgets are drawn on canvas. For Vue Nodes 2.0 (DOM-based widgets), see [vue-nodes.md](../features/vue-nodes.md#dom-based-widget-access).
+>
+> | Mode | Widget Access | Interaction Style |
+> |------|---------------|-------------------|
+> | LiteGraph | `node.getWidget('seed')` | `setValue()`, `getValue()`, canvas coordinates |
+> | Vue Nodes | `comfyPage.vueNodes.getWidgetByName()` | DOM locators, `click()`, `fill()` |
+
 ## Getting Widgets
 
 ```typescript
