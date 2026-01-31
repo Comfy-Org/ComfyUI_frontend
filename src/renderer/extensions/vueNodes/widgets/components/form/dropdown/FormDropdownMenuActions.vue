@@ -302,6 +302,15 @@ function toggleBaseModelSelection(item: FilterOption) {
             class="icon-[lucide--check] size-4"
           />
         </Button>
+        <span class="h-0 w-full border-b border-border-default" />
+        <Button
+          variant="textonly"
+          size="unset"
+          :class="cn('flex justify-between items-center h-6 text-left')"
+          @click="baseModelSelected = new Set()"
+        >
+          {{ t('g.clearFilters') }}
+        </Button>
       </div>
     </Popover>
 
