@@ -9,7 +9,7 @@ export class BaseDialog {
     testId?: string
   ) {
     this.root = testId ? page.getByTestId(testId) : page.locator('.p-dialog')
-    this.closeButton = this.root.locator('.p-dialog-close-button')
+    this.closeButton = this.root.getByRole('button', { name: 'Close' })
   }
 
   async isVisible(): Promise<boolean> {

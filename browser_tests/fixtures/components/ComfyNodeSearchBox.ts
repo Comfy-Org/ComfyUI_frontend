@@ -30,7 +30,7 @@ export class ComfyNodeSearchFilterSelectionPanel {
   async addFilter(filterValue: string, filterType: string) {
     await this.selectFilterType(filterType)
     await this.selectFilterValue(filterValue)
-    await this.page.locator('button:has-text("Add")').click()
+    await this.page.getByRole('button', { name: 'Add' }).click()
   }
 }
 

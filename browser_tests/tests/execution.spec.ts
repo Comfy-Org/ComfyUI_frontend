@@ -16,7 +16,10 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
 
       await comfyPage.executeCommand('Comfy.QueuePrompt')
       await expect(comfyPage.page.locator('.comfy-error-report')).toBeVisible()
-      await comfyPage.page.locator('.p-dialog-close-button').click()
+      await comfyPage.page
+        .locator('.p-dialog')
+        .getByRole('button', { name: 'Close' })
+        .click()
       await comfyPage.page.locator('.comfy-error-report').waitFor({
         state: 'hidden'
       })

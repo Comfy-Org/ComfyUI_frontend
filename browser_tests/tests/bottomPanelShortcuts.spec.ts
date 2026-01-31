@@ -13,7 +13,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
     // Click shortcuts toggle button in sidebar
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Shortcuts panel should now be visible
@@ -21,7 +21,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
     // Click toggle button again to hide
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Panel should be hidden again
@@ -31,7 +31,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should display essentials shortcuts tab', async ({ comfyPage }) => {
     // Open shortcuts panel
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Essentials tab should be visible and active by default
@@ -65,7 +65,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should display view controls shortcuts tab', async ({ comfyPage }) => {
     // Open shortcuts panel
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Click view controls tab
@@ -91,7 +91,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should switch between shortcuts tabs', async ({ comfyPage }) => {
     // Open shortcuts panel
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Essentials should be active initially
@@ -125,7 +125,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should display formatted keyboard shortcuts', async ({ comfyPage }) => {
     // Open shortcuts panel
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Wait for shortcuts to load
@@ -149,13 +149,13 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   }) => {
     // Open shortcuts panel first
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
     await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
 
     // Open terminal panel (should switch panels)
     await comfyPage.page
-      .locator('button[aria-label*="Toggle Bottom Panel"]')
+      .getByRole('button', { name: /Toggle Bottom Panel/i })
       .click()
 
     // Panel should still be visible but showing terminal content
@@ -163,7 +163,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
     // Switch back to shortcuts
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Should show shortcuts content again
@@ -175,7 +175,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should handle keyboard navigation', async ({ comfyPage }) => {
     // Open shortcuts panel
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Focus the first tab
@@ -203,13 +203,13 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   }) => {
     // Open shortcuts panel
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
     await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
 
     // Click shortcuts button again to close
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Panel should be hidden
@@ -221,7 +221,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   }) => {
     // Open shortcuts panel
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Should have 3-column grid layout
@@ -256,7 +256,7 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   }) => {
     // Open shortcuts panel
     await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
+      .getByRole('button', { name: /Keyboard Shortcuts/i })
       .click()
 
     // Manage shortcuts button should be visible

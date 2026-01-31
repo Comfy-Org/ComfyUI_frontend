@@ -88,7 +88,9 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       await ksamplerNode.hover()
 
       // Click the help button
-      const helpButton = ksamplerNode.locator('button:has(.pi-question)')
+      const helpButton = ksamplerNode.getByRole('button', {
+        name: /learn more/i
+      })
       await expect(helpButton).toBeVisible()
       await helpButton.click()
 
@@ -118,7 +120,9 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
         .filter({ hasText: 'KSampler' })
         .first()
       await ksamplerNode.hover()
-      const helpButton = ksamplerNode.locator('button:has(.pi-question)')
+      const helpButton = ksamplerNode.getByRole('button', {
+        name: /learn more/i
+      })
       await helpButton.click()
 
       // Verify help page is shown

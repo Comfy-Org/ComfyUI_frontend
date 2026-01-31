@@ -839,7 +839,10 @@ export class ComfyPage {
    * @deprecated Use dialog-specific close methods instead (e.g., settingDialog.close())
    */
   async closeDialog() {
-    await this.page.locator('.p-dialog-close-button').click({ force: true })
+    await this.page
+      .locator('.p-dialog')
+      .getByRole('button', { name: 'Close' })
+      .click({ force: true })
     await this.page.locator('.p-dialog').waitFor({ state: 'hidden' })
   }
 

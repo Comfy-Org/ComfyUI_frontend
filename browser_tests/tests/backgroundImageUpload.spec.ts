@@ -34,16 +34,18 @@ test.describe('Background Image Upload', () => {
     await expect(backgroundImageSetting).toBeVisible()
 
     // Verify the component has the expected elements using semantic selectors
-    const urlInput = backgroundImageSetting.locator('input[type="text"]')
+    const urlInput = backgroundImageSetting.getByRole('textbox')
     await expect(urlInput).toBeVisible()
     await expect(urlInput).toHaveAttribute('placeholder')
 
-    const uploadButton = backgroundImageSetting.locator(
-      'button:has(.pi-upload)'
-    )
+    const uploadButton = backgroundImageSetting.getByRole('button', {
+      name: /upload/i
+    })
     await expect(uploadButton).toBeVisible()
 
-    const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
+    const clearButton = backgroundImageSetting.getByRole('button', {
+      name: /clear/i
+    })
     await expect(clearButton).toBeVisible()
     await expect(clearButton).toBeDisabled() // Should be disabled when no image
   })
@@ -63,9 +65,9 @@ test.describe('Background Image Upload', () => {
       '#Comfy\\.Canvas\\.BackgroundImage'
     )
     // Click the upload button to trigger file input
-    const uploadButton = backgroundImageSetting.locator(
-      'button:has(.pi-upload)'
-    )
+    const uploadButton = backgroundImageSetting.getByRole('button', {
+      name: /upload/i
+    })
 
     // Set up file upload handler
     const fileChooserPromise = comfyPage.page.waitForEvent('filechooser')
@@ -76,11 +78,13 @@ test.describe('Background Image Upload', () => {
     await fileChooser.setFiles(comfyPage.assetPath('image32x32.webp'))
 
     // Verify the URL input now has an API URL
-    const urlInput = backgroundImageSetting.locator('input[type="text"]')
+    const urlInput = backgroundImageSetting.getByRole('textbox')
     await expect(urlInput).toHaveValue(/^\/api\/view\?.*subfolder=backgrounds/)
 
     // Verify clear button is now enabled
-    const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
+    const clearButton = backgroundImageSetting.getByRole('button', {
+      name: /clear/i
+    })
     await expect(clearButton).toBeEnabled()
 
     // Verify the setting value was actually set
@@ -107,14 +111,16 @@ test.describe('Background Image Upload', () => {
       '#Comfy\\.Canvas\\.BackgroundImage'
     )
     // Enter URL in the input field
-    const urlInput = backgroundImageSetting.locator('input[type="text"]')
+    const urlInput = backgroundImageSetting.getByRole('textbox')
     await urlInput.fill(testImageUrl)
 
     // Trigger blur event to ensure the value is set
     await urlInput.blur()
 
     // Verify clear button is now enabled
-    const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
+    const clearButton = backgroundImageSetting.getByRole('button', {
+      name: /clear/i
+    })
     await expect(clearButton).toBeEnabled()
 
     // Verify the setting value was updated
@@ -144,11 +150,13 @@ test.describe('Background Image Upload', () => {
       '#Comfy\\.Canvas\\.BackgroundImage'
     )
     // Verify the input has the test URL
-    const urlInput = backgroundImageSetting.locator('input[type="text"]')
+    const urlInput = backgroundImageSetting.getByRole('textbox')
     await expect(urlInput).toHaveValue(testImageUrl)
 
     // Verify clear button is enabled
-    const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
+    const clearButton = backgroundImageSetting.getByRole('button', {
+      name: /clear/i
+    })
     await expect(clearButton).toBeEnabled()
 
     // Click the clear button
@@ -182,9 +190,9 @@ test.describe('Background Image Upload', () => {
       '#Comfy\\.Canvas\\.BackgroundImage'
     )
     // Hover over upload button and verify tooltip appears
-    const uploadButton = backgroundImageSetting.locator(
-      'button:has(.pi-upload)'
-    )
+    const uploadButton = backgroundImageSetting.getByRole('button', {
+      name: /upload/i
+    })
     await uploadButton.hover()
 
     const uploadTooltip = comfyPage.page.locator('.p-tooltip:visible')
@@ -194,12 +202,14 @@ test.describe('Background Image Upload', () => {
     await comfyPage.page.locator('body').hover()
 
     // Set a background to enable clear button
-    const urlInput = backgroundImageSetting.locator('input[type="text"]')
+    const urlInput = backgroundImageSetting.getByRole('textbox')
     await urlInput.fill('https://example.com/test.png')
     await urlInput.blur()
 
     // Hover over clear button and verify tooltip appears
-    const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
+    const clearButton = backgroundImageSetting.getByRole('button', {
+      name: /clear/i
+    })
     await clearButton.hover()
 
     const clearTooltip = comfyPage.page.locator('.p-tooltip:visible')
@@ -220,8 +230,10 @@ test.describe('Background Image Upload', () => {
     const backgroundImageSetting = comfyPage.page.locator(
       '#Comfy\\.Canvas\\.BackgroundImage'
     )
-    const urlInput = backgroundImageSetting.locator('input[type="text"]')
-    const clearButton = backgroundImageSetting.locator('button:has(.pi-trash)')
+    const urlInput = backgroundImageSetting.getByRole('textbox')
+    const clearButton = backgroundImageSetting.getByRole('button', {
+      name: /clear/i
+    })
 
     // Initially clear button should be disabled
     await expect(clearButton).toBeDisabled()
