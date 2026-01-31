@@ -100,14 +100,6 @@ export class NodeOperationsHelper {
     await this.comfyPage.nextFrame()
   }
 
-  async select2Nodes(): Promise<void> {
-    await this.page.keyboard.down('Control')
-    await this.comfyPage.clickTextEncodeNode1()
-    await this.comfyPage.clickTextEncodeNode2()
-    await this.page.keyboard.up('Control')
-    await this.comfyPage.nextFrame()
-  }
-
   async resizeNode(
     nodePos: Position,
     nodeSize: Size,

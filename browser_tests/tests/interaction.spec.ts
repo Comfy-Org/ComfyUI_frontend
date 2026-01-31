@@ -402,7 +402,7 @@ test.describe('Node Interaction', () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.GroupSelectedNodes.Padding', 10)
-      await comfyPage.nodeOps.select2Nodes()
+      await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
       await comfyPage.page.keyboard.down('Control')
       await comfyPage.page.keyboard.press('KeyG')
       await comfyPage.page.keyboard.up('Control')
@@ -432,7 +432,7 @@ test.describe('Node Interaction', () => {
   )
 
   test('Can pin/unpin nodes', { tag: '@screenshot' }, async ({ comfyPage }) => {
-    await comfyPage.nodeOps.select2Nodes()
+    await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
     await comfyPage.executeCommand('Comfy.Canvas.ToggleSelectedNodes.Pin')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
@@ -445,7 +445,7 @@ test.describe('Node Interaction', () => {
     'Can bypass/unbypass nodes with keyboard shortcut',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      await comfyPage.nodeOps.select2Nodes()
+      await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
       await comfyPage.canvas.press('Control+b')
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('nodes-bypassed.png')

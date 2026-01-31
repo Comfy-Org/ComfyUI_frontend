@@ -34,7 +34,7 @@ test.describe(
     })
 
     test('Can convert to group node', async ({ comfyPage }) => {
-      await comfyPage.nodeOps.select2Nodes()
+      await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
       await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
       await comfyPage.canvasOps.rightClick()
       await comfyPage.clickContextMenuItem('Convert to Group Node (Deprecated)')
@@ -139,7 +139,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
   })
 
   test('Can pin/unpin selected nodes', async ({ comfyPage }) => {
-    await comfyPage.nodeOps.select2Nodes()
+    await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
     await comfyPage.page.keyboard.down('Control')
     await comfyPage.rightClickEmptyLatentNode()
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
