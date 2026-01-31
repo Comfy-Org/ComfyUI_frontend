@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
@@ -122,6 +123,26 @@ describe('LogoOverlay', () => {
       })
       expect(wrapper.findAll('img')).toHaveLength(1)
       expect(wrapper.find('span').text()).toBe('WaveSpeed')
+    })
+  })
+
+  describe('error handling', () => {
+    it('hides logo pill when all provider images fail to load', async () => {
+      const wrapper = mountOverlay([{ provider: 'Google' }])
+      const img = wrapper.find('[data-testid="logo-img"]')
+      await img.trigger('error')
+      await nextTick()
+      const pill = wrapper.find('[data-testid="logo-pill"]')
+      expect(pill.attributes('style')).toContain('display: none')
+    })
+
+    it('keeps logo visible when only some images fail in stacked logos', async () => {
+      const wrapper = mountOverlay([{ provider: ['Google', 'OpenAI'] }])
+      const images = wrapper.findAll('[data-testid="logo-img"]')
+      await images[0].trigger('error')
+      await nextTick()
+      const pill = wrapper.find('[data-testid="logo-pill"]')
+      expect(pill.attributes('style')).not.toContain('display: none')
     })
   })
 

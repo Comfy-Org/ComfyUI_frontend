@@ -12,7 +12,7 @@
       class="flex items-center gap-1.5 rounded-full bg-black/20 py-1 pr-2"
       :style="{ opacity: logo.opacity ?? 0.85 }"
     >
-      <div class="flex items-center" :style="{ marginLeft: '2px' }">
+      <div class="ml-0.5 flex items-center">
         <img
           v-for="(provider, providerIndex) in logo.providers"
           :key="provider"
