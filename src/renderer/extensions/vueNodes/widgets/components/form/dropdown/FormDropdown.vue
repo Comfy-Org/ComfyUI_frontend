@@ -58,7 +58,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const selected = defineModel<Set<string>>('selected', {
-  default: new Set()
+  default: () => new Set()
 })
 const filterSelected = defineModel<string>('filterSelected', { default: '' })
 const sortSelected = defineModel<string>('sortSelected', {
@@ -67,13 +67,13 @@ const sortSelected = defineModel<string>('sortSelected', {
 const layoutMode = defineModel<LayoutMode>('layoutMode', {
   default: 'grid'
 })
-const files = defineModel<File[]>('files', { default: [] })
+const files = defineModel<File[]>('files', { default: () => [] })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected', {
   default: 'all'
 })
 const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
-  default: new Set()
+  default: () => new Set()
 })
 
 const toastStore = useToastStore()

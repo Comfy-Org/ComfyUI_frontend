@@ -14,6 +14,8 @@ import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/compone
 interface WidgetSelectDropdownInstance extends ComponentPublicInstance {
   inputItems: FormDropdownItem[]
   outputItems: FormDropdownItem[]
+  dropdownItems: FormDropdownItem[]
+  filterSelected: string
   updateSelectedItems: (selectedSet: Set<string>) => void
 }
 
@@ -230,9 +232,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       ).toBe(false)
 
       // The missing value should be accessible via dropdownItems when filter is 'all' (default)
-      const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: FormDropdownItem[] }
-      ).dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(
         dropdownItems.some((item) => item.name === 'template_image.png')
       ).toBe(true)
@@ -246,15 +246,10 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       })
       const wrapper = mountComponent(widget, 'template_image.png')
 
-      const vmWithFilter = wrapper.vm as unknown as {
-        filterSelected: string
-        dropdownItems: FormDropdownItem[]
-      }
-
-      vmWithFilter.filterSelected = 'inputs'
+      wrapper.vm.filterSelected = 'inputs'
       await wrapper.vm.$nextTick()
 
-      const dropdownItems = vmWithFilter.dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(dropdownItems).toHaveLength(2)
       expect(
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
@@ -267,16 +262,10 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       })
       const wrapper = mountComponent(widget, 'template_image.png')
 
-      const vmWithFilter = wrapper.vm as unknown as {
-        filterSelected: string
-        dropdownItems: FormDropdownItem[]
-        outputItems: FormDropdownItem[]
-      }
-
-      vmWithFilter.filterSelected = 'outputs'
+      wrapper.vm.filterSelected = 'outputs'
       await wrapper.vm.$nextTick()
 
-      const dropdownItems = vmWithFilter.dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(dropdownItems).toHaveLength(wrapper.vm.outputItems.length)
       expect(
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
@@ -289,9 +278,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       })
       const wrapper = mountComponent(widget, 'img_001.png')
 
-      const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: FormDropdownItem[] }
-      ).dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(dropdownItems).toHaveLength(2)
       expect(
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
@@ -304,9 +291,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       })
       const wrapper = mountComponent(widget, undefined)
 
-      const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: FormDropdownItem[] }
-      ).dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(dropdownItems).toHaveLength(2)
       expect(
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
