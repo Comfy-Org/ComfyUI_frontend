@@ -9,7 +9,7 @@ test.describe(
       await comfyPage.setSetting('Comfy.ConfirmClear', false)
       await comfyPage.executeCommand('Comfy.ClearWorkflow')
       await expect(async () => {
-        expect(await comfyPage.getGraphNodesCount()).toBe(0)
+        expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
       }).toPass({ timeout: 256 })
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('mobile-empty-canvas.png')

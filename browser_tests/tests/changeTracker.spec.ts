@@ -37,7 +37,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       expect(await comfyPage.getUndoQueueSize()).toBe(0)
       expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
-      const node = (await comfyPage.getFirstNodeRef())!
+      const node = (await comfyPage.nodeOps.getFirstNodeRef())!
       await node.click('title')
       await node.click('collapse')
       await expect(node).toBeCollapsed()
@@ -68,7 +68,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
   test('Can group multiple change actions into a single transaction', async ({
     comfyPage
   }) => {
-    const node = (await comfyPage.getFirstNodeRef())!
+    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     expect(node).toBeTruthy()
     await expect(node).not.toBeCollapsed()
     await expect(node).not.toBeBypassed()
@@ -113,7 +113,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
   test('Can nest multiple change transactions without adding undo steps', async ({
     comfyPage
   }) => {
-    const node = (await comfyPage.getFirstNodeRef())!
+    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const bypassAndPin = async () => {
       await beforeChange(comfyPage)
       await comfyPage.ctrlB()
@@ -165,7 +165,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
   test('Ignores changes in workflow.ds', async ({ comfyPage }) => {
     expect(await comfyPage.getUndoQueueSize()).toBe(0)
-    await comfyPage.pan({ x: 10, y: 10 })
+    await comfyPage.canvasOps.pan({ x: 10, y: 10 })
     expect(await comfyPage.getUndoQueueSize()).toBe(0)
   })
 })

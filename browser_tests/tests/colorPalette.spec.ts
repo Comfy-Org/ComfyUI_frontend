@@ -273,7 +273,7 @@ test.describe(
       test.beforeEach(async ({ comfyPage }) => {
         await comfyPage.setSetting('Comfy.ColorPalette', 'light')
         await comfyPage.setSetting('Comfy.Node.Opacity', 0.3)
-        const node = await comfyPage.getFirstNodeRef()
+        const node = await comfyPage.nodeOps.getFirstNodeRef()
         await node?.clickContextMenuOption('Colors')
       })
 

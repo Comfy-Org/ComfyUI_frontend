@@ -17,8 +17,10 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   // to input.
   test('Can connect to widget', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('primitive/primitive_node_unconnected')
-    const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
-    const ksamplerNode: NodeReference = await comfyPage.getNodeRefById(2)
+    const primitiveNode: NodeReference =
+      await comfyPage.nodeOps.getNodeRefById(1)
+    const ksamplerNode: NodeReference =
+      await comfyPage.nodeOps.getNodeRefById(2)
     // Connect the output of the primitive node to the input of first widget of the ksampler node
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -30,8 +32,10 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     await comfyPage.loadWorkflow(
       'primitive/primitive_node_unconnected_dom_widget'
     )
-    const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
-    const clipEncoderNode: NodeReference = await comfyPage.getNodeRefById(2)
+    const primitiveNode: NodeReference =
+      await comfyPage.nodeOps.getNodeRefById(1)
+    const clipEncoderNode: NodeReference =
+      await comfyPage.nodeOps.getNodeRefById(2)
     await primitiveNode.connectWidget(0, clipEncoderNode, 0)
     await expect(comfyPage.canvas).toHaveScreenshot(
       'primitive_node_connected_dom_widget.png'
@@ -40,8 +44,10 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
 
   test('Can connect to static primitive node', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('primitive/static_primitive_unconnected')
-    const primitiveNode: NodeReference = await comfyPage.getNodeRefById(1)
-    const ksamplerNode: NodeReference = await comfyPage.getNodeRefById(2)
+    const primitiveNode: NodeReference =
+      await comfyPage.nodeOps.getNodeRefById(1)
+    const ksamplerNode: NodeReference =
+      await comfyPage.nodeOps.getNodeRefById(2)
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
     await expect(comfyPage.canvas).toHaveScreenshot(
       'static_primitive_connected.png'

@@ -12,7 +12,7 @@ test.describe(
   { tag: ['@screenshot', '@ui'] },
   () => {
     test('Can add node', async ({ comfyPage }) => {
-      await comfyPage.rightClickCanvas()
+      await comfyPage.canvasOps.rightClick()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
       await comfyPage.page.getByText('Add Node').click()
       await comfyPage.nextFrame()
@@ -24,7 +24,7 @@ test.describe(
     })
 
     test('Can add group', async ({ comfyPage }) => {
-      await comfyPage.rightClickCanvas()
+      await comfyPage.canvasOps.rightClick()
       await expect(comfyPage.canvas).toHaveScreenshot('right-click-menu.png')
       await comfyPage.page.getByText('Add Group', { exact: true }).click()
       await comfyPage.nextFrame()
@@ -34,9 +34,9 @@ test.describe(
     })
 
     test('Can convert to group node', async ({ comfyPage }) => {
-      await comfyPage.select2Nodes()
+      await comfyPage.nodeOps.select2Nodes()
       await expect(comfyPage.canvas).toHaveScreenshot('selected-2-nodes.png')
-      await comfyPage.rightClickCanvas()
+      await comfyPage.canvasOps.rightClick()
       await comfyPage.clickContextMenuItem('Convert to Group Node (Deprecated)')
       await comfyPage.promptDialogInput.fill('GroupNode2CLIP')
       await comfyPage.page.keyboard.press('Enter')
@@ -103,7 +103,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('right-click-node.png')
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
     await comfyPage.nextFrame()
-    await comfyPage.dragAndDrop({ x: 621, y: 617 }, { x: 16, y: 16 })
+    await comfyPage.canvasOps.dragAndDrop({ x: 621, y: 617 }, { x: 16, y: 16 })
     await expect(comfyPage.canvas).toHaveScreenshot('node-pinned.png')
     await comfyPage.rightClickEmptyLatentNode()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -124,14 +124,17 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.rightClickEmptyLatentNode()
     await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
     await comfyPage.nextFrame()
-    await comfyPage.dragAndDrop({ x: 496, y: 618 }, { x: 200, y: 590 })
+    await comfyPage.canvasOps.dragAndDrop(
+      { x: 496, y: 618 },
+      { x: 200, y: 590 }
+    )
     await expect(comfyPage.canvas).toHaveScreenshot(
       'right-click-unpinned-node-moved.png'
     )
   })
 
   test('Can pin/unpin selected nodes', async ({ comfyPage }) => {
-    await comfyPage.select2Nodes()
+    await comfyPage.nodeOps.select2Nodes()
     await comfyPage.page.keyboard.down('Control')
     await comfyPage.rightClickEmptyLatentNode()
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
@@ -147,8 +150,8 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
   })
 
   test('Can clone pinned nodes', async ({ comfyPage }) => {
-    const nodeCount = await comfyPage.getGraphNodesCount()
-    const node = (await comfyPage.getFirstNodeRef())!
+    const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     await node.clickContextMenuOption('Pin')
     await comfyPage.nextFrame()
     await node.click('title', { button: 'right' })
@@ -161,6 +164,6 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await cloneItem.click()
     await expect(cloneItem).toHaveCount(0)
     await comfyPage.nextFrame()
-    expect(await comfyPage.getGraphNodesCount()).toBe(nodeCount + 1)
+    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(nodeCount + 1)
   })
 })

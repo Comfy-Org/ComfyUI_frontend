@@ -83,7 +83,7 @@ test.describe('Boolean widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can toggle', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/boolean_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('boolean_widget.png')
-    const node = (await comfyPage.getFirstNodeRef())!
+    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const widget = await node.getWidget(0)
     await widget.click()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -95,7 +95,7 @@ test.describe('Boolean widget', { tag: ['@screenshot', '@widget'] }, () => {
 test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/simple_slider')
-    const node = (await comfyPage.getFirstNodeRef())!
+    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const widget = await node.getWidget(0)
 
     await comfyPage.page.evaluate(() => {
@@ -117,7 +117,7 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('widgets/seed_widget')
 
-    const node = (await comfyPage.getFirstNodeRef())!
+    const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const widget = await node.getWidget(0)
     await comfyPage.page.evaluate(() => {
       const widget = window['app'].graph.nodes[0].widgets[0]
@@ -165,7 +165,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     await comfyPage.loadWorkflow('widgets/load_image_widget')
 
     // Get position of the load image node
-    const nodes = await comfyPage.getNodeRefsByType('LoadImage')
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const loadImageNode = nodes[0]
     const { x, y } = await loadImageNode.getPosition()
 
@@ -189,7 +189,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     comfyPage
   }) => {
     await comfyPage.loadWorkflow('widgets/load_image_widget')
-    const nodes = await comfyPage.getNodeRefsByType('LoadImage')
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const loadImageNode = nodes[0]
 
     // Click the combo widget used to select the image filename
@@ -253,7 +253,7 @@ test.describe(
       await comfyPage.loadWorkflow('widgets/load_animated_webp')
 
       // Get position of the load animated webp node
-      const nodes = await comfyPage.getNodeRefsByType(
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType(
         'DevToolsLoadAnimatedImageTest'
       )
       const loadAnimatedWebpNode = nodes[0]
@@ -282,7 +282,7 @@ test.describe(
       await comfyPage.loadWorkflow('widgets/load_animated_webp')
 
       // Get position of the load animated webp node
-      const nodes = await comfyPage.getNodeRefsByType(
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType(
         'DevToolsLoadAnimatedImageTest'
       )
       const loadAnimatedWebpNode = nodes[0]
@@ -304,7 +304,7 @@ test.describe(
       await comfyPage.loadWorkflow('widgets/save_animated_webp')
 
       // Get position of the load animated webp node
-      const loadNodes = await comfyPage.getNodeRefsByType(
+      const loadNodes = await comfyPage.nodeOps.getNodeRefsByType(
         'DevToolsLoadAnimatedImageTest'
       )
       const loadAnimatedWebpNode = loadNodes[0]
@@ -317,7 +317,8 @@ test.describe(
       await comfyPage.nextFrame()
 
       // Get the SaveAnimatedWEBP node
-      const saveNodes = await comfyPage.getNodeRefsByType('SaveAnimatedWEBP')
+      const saveNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('SaveAnimatedWEBP')
       const saveAnimatedWebpNode = saveNodes[0]
       if (!saveAnimatedWebpNode)
         throw new Error('SaveAnimatedWEBP node not found')

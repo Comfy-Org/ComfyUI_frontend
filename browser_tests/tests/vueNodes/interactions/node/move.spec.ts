@@ -35,7 +35,7 @@ test.describe('Vue Node Moving', () => {
     async ({ comfyPage }) => {
       const loadCheckpointHeaderPos =
         await getLoadCheckpointHeaderPos(comfyPage)
-      await comfyPage.dragAndDrop(loadCheckpointHeaderPos, {
+      await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
         x: 256,
         y: 256
       })
@@ -56,7 +56,7 @@ test.describe('Vue Node Moving', () => {
 
       const loadCheckpointHeaderPos =
         await getLoadCheckpointHeaderPos(comfyPage)
-      await comfyPage.panWithTouch(
+      await comfyPage.canvasOps.panWithTouch(
         {
           x: 64,
           y: 64

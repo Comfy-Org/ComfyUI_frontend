@@ -74,7 +74,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
     await expect(async () => {
-      expect(await comfyPage.getGraphNodesCount()).toBe(0)
+      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
     }).toPass({ timeout: 250 })
 
     // Load a template
@@ -89,7 +89,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
 
     // Ensure we now have some nodes
     await expect(async () => {
-      expect(await comfyPage.getGraphNodesCount()).toBeGreaterThan(0)
+      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBeGreaterThan(0)
     }).toPass({ timeout: 250 })
   })
 

@@ -83,7 +83,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
   test('Delete key does not delete node when typing in Vue node widgets', async ({
     comfyPage
   }) => {
-    const initialNodeCount = await comfyPage.getGraphNodesCount()
+    const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
     // Find a text input widget in a Vue node
     const textWidget = comfyPage.page
@@ -98,7 +98,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     await textWidget.press('Delete')
 
     // Node count should remain the same
-    const finalNodeCount = await comfyPage.getGraphNodesCount()
+    const finalNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
     expect(finalNodeCount).toBe(initialNodeCount)
   })
 

@@ -29,7 +29,7 @@ test.describe('Canvas Event', { tag: '@canvas' }, () => {
 
   test('Emit litegraph:canvas empty-double-click', async ({ comfyPage }) => {
     const eventPromise = comfyPage.page.evaluate(listenForEvent)
-    const doubleClickPromise = comfyPage.doubleClickCanvas()
+    const doubleClickPromise = comfyPage.canvasOps.doubleClick()
     const event = await eventPromise
     await doubleClickPromise
 

@@ -3,8 +3,6 @@ import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
-import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
-import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/platform/keybindings'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
@@ -24,9 +22,10 @@ import { CanvasHelper } from './helpers/CanvasHelper'
 import { DebugHelper } from './helpers/DebugHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
-import type { Position, Size } from './types'
-import type { SubgraphSlotReference } from './utils/litegraphUtils'
-import type { NodeReference } from './utils/litegraphUtils'
+import type { Position } from './types'
+import type {
+  NodeReference
+} from './utils/litegraphUtils'
 
 dotenv.config()
 
@@ -231,16 +230,6 @@ export class ComfyPage {
     }
 
     return result
-  }
-
-  /** @deprecated Use this.nodeOps.getGraphNodesCount() instead */
-  async getGraphNodesCount(): Promise<number> {
-    return this.nodeOps.getGraphNodesCount()
-  }
-
-  /** @deprecated Use this.nodeOps.getSelectedGraphNodesCount() instead */
-  async getSelectedGraphNodesCount(): Promise<number> {
-    return this.nodeOps.getSelectedGraphNodesCount()
   }
 
   async setupWorkflowsDirectory(structure: FolderStructure) {
@@ -502,11 +491,6 @@ export class ComfyPage {
     })
   }
 
-  /** @deprecated Use this.canvasOps.resetView() instead */
-  async resetView() {
-    return this.canvasOps.resetView()
-  }
-
   async getToastErrorCount() {
     return await this.page
       .locator('.p-toast-message.p-toast-message-error')
@@ -562,11 +546,6 @@ export class ComfyPage {
 
   async clickEmptySpace() {
     return this.canvasOps.clickEmptySpace(DefaultGraphPositions.emptySpaceClick)
-  }
-
-  /** @deprecated Use this.canvasOps.dragAndDrop() instead */
-  async dragAndDrop(source: Position, target: Position) {
-    return this.canvasOps.dragAndDrop(source, target)
   }
 
   async dragAndDropExternalResource(
@@ -713,7 +692,7 @@ export class ComfyPage {
   }
 
   async dragNode2() {
-    await this.dragAndDrop({ x: 622, y: 400 }, { x: 622, y: 300 })
+    await this.canvasOps.dragAndDrop({ x: 622, y: 400 }, { x: 622, y: 300 })
     await this.nextFrame()
   }
 
@@ -751,7 +730,10 @@ export class ComfyPage {
   }
 
   async disconnectEdge() {
-    await this.dragAndDrop(this.clipTextEncodeNode1InputSlot, this.emptySpace)
+    await this.canvasOps.dragAndDrop(
+      this.clipTextEncodeNode1InputSlot,
+      this.emptySpace
+    )
   }
 
   async connectEdge(
@@ -767,7 +749,7 @@ export class ComfyPage {
       ? this.loadCheckpointNodeClipOutputSlot
       : this.clipTextEncodeNode1InputSlot
 
-    await this.dragAndDrop(start, end)
+    await this.canvasOps.dragAndDrop(start, end)
   }
 
   async adjustWidgetValue() {
@@ -783,26 +765,6 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  /** @deprecated Use this.canvasOps.zoom() instead */
-  async zoom(deltaY: number, steps: number = 1) {
-    return this.canvasOps.zoom(deltaY, steps)
-  }
-
-  /** @deprecated Use this.canvasOps.pan() instead */
-  async pan(offset: Position, safeSpot?: Position) {
-    return this.canvasOps.pan(offset, safeSpot)
-  }
-
-  /** @deprecated Use this.canvasOps.panWithTouch() instead */
-  async panWithTouch(offset: Position, safeSpot?: Position) {
-    return this.canvasOps.panWithTouch(offset, safeSpot)
-  }
-
-  /** @deprecated Use this.canvasOps.rightClick() instead */
-  async rightClickCanvas(x: number = 10, y: number = 10) {
-    return this.canvasOps.rightClick(x, y)
-  }
-
   async clickContextMenuItem(name: string): Promise<void> {
     await this.page.getByRole('menuitem', { name }).click()
     await this.nextFrame()
@@ -815,143 +777,6 @@ export class ComfyPage {
   async clickLitegraphContextMenuItem(name: string): Promise<void> {
     await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
     await this.nextFrame()
-  }
-
-  /** @deprecated Use this.subgraph.rightClickInputSlot() instead */
-  async rightClickSubgraphInputSlot(inputName?: string): Promise<void> {
-    return this.subgraph.rightClickInputSlot(inputName)
-  }
-
-  /** @deprecated Use this.subgraph.rightClickOutputSlot() instead */
-  async rightClickSubgraphOutputSlot(outputName?: string): Promise<void> {
-    return this.subgraph.rightClickOutputSlot(outputName)
-  }
-
-  /** @deprecated Use this.subgraph.doubleClickInputSlot() instead */
-  async doubleClickSubgraphInputSlot(inputName?: string): Promise<void> {
-    return this.subgraph.doubleClickInputSlot(inputName)
-  }
-
-  /** @deprecated Use this.subgraph.doubleClickOutputSlot() instead */
-  async doubleClickSubgraphOutputSlot(outputName?: string): Promise<void> {
-    return this.subgraph.doubleClickOutputSlot(outputName)
-  }
-
-  /** @deprecated Use this.subgraph.getInputSlot() instead */
-  async getSubgraphInputSlot(
-    slotName?: string
-  ): Promise<SubgraphSlotReference> {
-    return this.subgraph.getInputSlot(slotName)
-  }
-
-  /** @deprecated Use this.subgraph.getOutputSlot() instead */
-  async getSubgraphOutputSlot(
-    slotName?: string
-  ): Promise<SubgraphSlotReference> {
-    return this.subgraph.getOutputSlot(slotName)
-  }
-
-  /** @deprecated Use this.subgraph.connectToInput() instead */
-  async connectToSubgraphInput(
-    sourceNode: NodeReference,
-    sourceSlotIndex: number,
-    targetInputName?: string
-  ): Promise<void> {
-    return this.subgraph.connectToInput(
-      sourceNode,
-      sourceSlotIndex,
-      targetInputName
-    )
-  }
-
-  /** @deprecated Use this.subgraph.connectFromInput() instead */
-  async connectFromSubgraphInput(
-    targetNode: NodeReference,
-    targetSlotIndex: number,
-    sourceInputName?: string
-  ): Promise<void> {
-    return this.subgraph.connectFromInput(
-      targetNode,
-      targetSlotIndex,
-      sourceInputName
-    )
-  }
-
-  /** @deprecated Use this.subgraph.connectToOutput() instead */
-  async connectToSubgraphOutput(
-    sourceNode: NodeReference,
-    sourceSlotIndex: number,
-    targetOutputName?: string
-  ): Promise<void> {
-    return this.subgraph.connectToOutput(
-      sourceNode,
-      sourceSlotIndex,
-      targetOutputName
-    )
-  }
-
-  /** @deprecated Use this.subgraph.connectFromOutput() instead */
-  async connectFromSubgraphOutput(
-    targetNode: NodeReference,
-    targetSlotIndex: number,
-    sourceOutputName?: string
-  ): Promise<void> {
-    return this.subgraph.connectFromOutput(
-      targetNode,
-      targetSlotIndex,
-      sourceOutputName
-    )
-  }
-
-  /** @deprecated Use this.debug.addMarker() instead */
-  async debugAddMarker(
-    position: Position,
-    id: string = 'debug-marker'
-  ): Promise<void> {
-    return this.debug.addMarker(position, id)
-  }
-
-  /** @deprecated Use this.debug.removeMarkers() instead */
-  async debugRemoveMarkers(): Promise<void> {
-    return this.debug.removeMarkers()
-  }
-
-  /** @deprecated Use this.debug.attachScreenshot() instead */
-  async debugAttachScreenshot(
-    testInfo: any,
-    name: string,
-    options?: {
-      fullPage?: boolean
-      element?: 'canvas' | 'page'
-      markers?: Array<{ position: Position; id?: string }>
-    }
-  ): Promise<void> {
-    return this.debug.attachScreenshot(testInfo, name, options)
-  }
-
-  /** @deprecated Use this.canvasOps.doubleClick() instead */
-  async doubleClickCanvas() {
-    return this.canvasOps.doubleClick()
-  }
-
-  /** @deprecated Use this.debug.saveCanvasScreenshot() instead */
-  async debugSaveCanvasScreenshot(filename: string): Promise<void> {
-    return this.debug.saveCanvasScreenshot(filename)
-  }
-
-  /** @deprecated Use this.debug.getCanvasDataURL() instead */
-  async debugGetCanvasDataURL(): Promise<string> {
-    return this.debug.getCanvasDataURL()
-  }
-
-  /** @deprecated Use this.debug.showCanvasOverlay() instead */
-  async debugShowCanvasOverlay(): Promise<void> {
-    return this.debug.showCanvasOverlay()
-  }
-
-  /** @deprecated Use this.debug.hideCanvasOverlay() instead */
-  async debugHideCanvasOverlay(): Promise<void> {
-    return this.debug.hideCanvasOverlay()
   }
 
   async clickEmptyLatentNode() {
@@ -975,16 +800,6 @@ export class ComfyPage {
     })
     await this.page.mouse.move(10, 10)
     await this.nextFrame()
-  }
-
-  /** @deprecated Use this.nodeOps.selectNodes() instead */
-  async selectNodes(nodeTitles: string[]) {
-    return this.nodeOps.selectNodes(nodeTitles)
-  }
-
-  /** @deprecated Use this.nodeOps.select2Nodes() instead */
-  async select2Nodes() {
-    return this.nodeOps.select2Nodes()
   }
 
   async ctrlSend(keyToPress: string, locator: Locator | null = this.canvas) {
@@ -1035,29 +850,12 @@ export class ComfyPage {
     await this.page.locator('.p-dialog').waitFor({ state: 'hidden' })
   }
 
-  /** @deprecated Use this.nodeOps.resizeNode() instead */
-  async resizeNode(
-    nodePos: Position,
-    nodeSize: Size,
-    ratioX: number,
-    ratioY: number,
-    revertAfter: boolean = false
-  ) {
-    return this.nodeOps.resizeNode(
-      nodePos,
-      nodeSize,
-      ratioX,
-      ratioY,
-      revertAfter
-    )
-  }
-
   async resizeKsamplerNode(
     percentX: number,
     percentY: number,
     revertAfter: boolean = false
   ) {
-    return this.resizeNode(
+    return this.nodeOps.resizeNode(
       DefaultGraphPositions.ksampler.pos,
       DefaultGraphPositions.ksampler.size,
       percentX,
@@ -1071,7 +869,7 @@ export class ComfyPage {
     percentY: number,
     revertAfter: boolean = false
   ) {
-    return this.resizeNode(
+    return this.nodeOps.resizeNode(
       DefaultGraphPositions.loadCheckpoint.pos,
       DefaultGraphPositions.loadCheckpoint.size,
       percentX,
@@ -1085,7 +883,7 @@ export class ComfyPage {
     percentY: number,
     revertAfter: boolean = false
   ) {
-    return this.resizeNode(
+    return this.nodeOps.resizeNode(
       DefaultGraphPositions.emptyLatent.pos,
       DefaultGraphPositions.emptyLatent.size,
       percentX,
@@ -1107,57 +905,11 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
-  /** @deprecated Use this.nodeOps.convertAllNodesToGroupNode() instead */
-  async convertAllNodesToGroupNode(groupNodeName: string) {
-    return this.nodeOps.convertAllNodesToGroupNode(groupNodeName)
-  }
-
-  /** @deprecated Use this.canvasOps.convertOffsetToCanvas() instead */
-  async convertOffsetToCanvas(pos: [number, number]) {
-    return this.canvasOps.convertOffsetToCanvas(pos)
-  }
-
   /** Get number of DOM widgets on the canvas. */
   async getDOMWidgetCount() {
     return await this.page.locator('.dom-widget').count()
   }
 
-  /** @deprecated Use this.nodeOps.getNodeRefById() instead */
-  async getNodeRefById(id: NodeId) {
-    return this.nodeOps.getNodeRefById(id)
-  }
-
-  /** @deprecated Use this.nodeOps.getNodes() instead */
-  async getNodes(): Promise<LGraphNode[]> {
-    return this.nodeOps.getNodes()
-  }
-
-  /** @deprecated Use this.nodeOps.waitForGraphNodes() instead */
-  async waitForGraphNodes(count: number) {
-    return this.nodeOps.waitForGraphNodes(count)
-  }
-
-  /** @deprecated Use this.nodeOps.getNodeRefsByType() instead */
-  async getNodeRefsByType(
-    type: string,
-    includeSubgraph: boolean = false
-  ): Promise<NodeReference[]> {
-    return this.nodeOps.getNodeRefsByType(type, includeSubgraph)
-  }
-
-  /** @deprecated Use this.nodeOps.getNodeRefsByTitle() instead */
-  async getNodeRefsByTitle(title: string): Promise<NodeReference[]> {
-    return this.nodeOps.getNodeRefsByTitle(title)
-  }
-
-  /** @deprecated Use this.nodeOps.getFirstNodeRef() instead */
-  async getFirstNodeRef(): Promise<NodeReference | null> {
-    return this.nodeOps.getFirstNodeRef()
-  }
-  /** @deprecated Use this.canvasOps.moveMouseToEmptyArea() instead */
-  async moveMouseToEmptyArea() {
-    return this.canvasOps.moveMouseToEmptyArea()
-  }
   async getUndoQueueSize() {
     return this.page.evaluate(() => {
       const workflow = (window['app'].extensionManager as WorkspaceStore)
@@ -1233,7 +985,7 @@ export class ComfyPage {
     }, name)
     if (!screenPos) throw new Error(`Group "${name}" not found`)
 
-    await this.dragAndDrop(screenPos, {
+    await this.canvasOps.dragAndDrop(screenPos, {
       x: screenPos.x + deltaX,
       y: screenPos.y + deltaY
     })

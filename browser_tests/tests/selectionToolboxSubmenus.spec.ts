@@ -15,12 +15,13 @@ test.describe(
       await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
       await comfyPage.loadWorkflow('nodes/single_ksampler')
       await comfyPage.nextFrame()
-      await comfyPage.selectNodes(['KSampler'])
+      await comfyPage.nodeOps.selectNodes(['KSampler'])
       await comfyPage.nextFrame()
     })
 
     const openMoreOptions = async (comfyPage: ComfyPage) => {
-      const ksamplerNodes = await comfyPage.getNodeRefsByTitle('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       if (ksamplerNodes.length === 0) {
         throw new Error('No KSampler nodes found')
       }
@@ -30,7 +31,7 @@ test.describe(
       const viewportSize = comfyPage.page.viewportSize()
       const centerX = viewportSize.width / 3
       const centerY = viewportSize.height / 2
-      await comfyPage.dragAndDrop(
+      await comfyPage.canvasOps.dragAndDrop(
         { x: nodePos.x, y: nodePos.y },
         { x: centerX, y: centerY }
       )
@@ -85,7 +86,9 @@ test.describe(
     })
 
     test('changes node shape via Shape submenu', async ({ comfyPage }) => {
-      const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
       const initialShape = await nodeRef.getProperty<number>('shape')
 
       await openMoreOptions(comfyPage)
@@ -106,7 +109,9 @@ test.describe(
     test('changes node color via Color submenu swatch', async ({
       comfyPage
     }) => {
-      const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
       const initialColor = await nodeRef.getProperty<string | undefined>(
         'color'
       )
@@ -126,7 +131,9 @@ test.describe(
     })
 
     test('renames a node using Rename action', async ({ comfyPage }) => {
-      const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Rename', { exact: true })

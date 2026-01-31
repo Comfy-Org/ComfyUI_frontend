@@ -56,10 +56,10 @@ test.describe(
       comfyPage
     }) => {
       const loadCheckpointNode = (
-        await comfyPage.getNodeRefsByTitle('Load Checkpoint')
+        await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
       )[0]
       const clipEncodeNode = (
-        await comfyPage.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
+        await comfyPage.nodeOps.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
       )[0]
 
       const slot1 = await loadCheckpointNode.getOutput(1)
@@ -82,10 +82,10 @@ test.describe(
       comfyPage
     }) => {
       const loadCheckpointNode = (
-        await comfyPage.getNodeRefsByTitle('Load Checkpoint')
+        await comfyPage.nodeOps.getNodeRefsByTitle('Load Checkpoint')
       )[0]
       const clipEncodeNode = (
-        await comfyPage.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
+        await comfyPage.nodeOps.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
       )[0]
 
       const slot1 = await loadCheckpointNode.getOutput(1)

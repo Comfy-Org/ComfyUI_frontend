@@ -112,7 +112,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
     expect(samplerNode).toBeTruthy()
 
     const slot = slotLocator(comfyPage.page, samplerNode.id, 0, false)
@@ -142,8 +144,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   test('should create a link when dropping on a compatible slot', async ({
     comfyPage
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
-    const vaeNode = (await comfyPage.getNodeRefsByType('VAEDecode'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
+    const vaeNode = (await comfyPage.nodeOps.getNodeRefsByType('VAEDecode'))[0]
     expect(samplerNode && vaeNode).toBeTruthy()
 
     const samplerOutput = await samplerNode.getOutput(0)
@@ -172,8 +176,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   test('should not create a link when slot types are incompatible', async ({
     comfyPage
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
-    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
+    const clipNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+    )[0]
     expect(samplerNode && clipNode).toBeTruthy()
 
     const samplerOutput = await samplerNode.getOutput(0)
@@ -200,7 +208,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   test('should not create a link when dropping onto a slot on the same node', async ({
     comfyPage
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
     expect(samplerNode).toBeTruthy()
 
     const samplerOutput = await samplerNode.getOutput(0)
@@ -221,8 +231,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
-    const vaeNode = (await comfyPage.getNodeRefsByType('VAEDecode'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
+    const vaeNode = (await comfyPage.nodeOps.getNodeRefsByType('VAEDecode'))[0]
     expect(samplerNode && vaeNode).toBeTruthy()
     const samplerOutputCenter = await getSlotCenter(
       comfyPage.page,
@@ -258,8 +270,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
-    const vaeNode = (await comfyPage.getNodeRefsByType('VAEDecode'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
+    const vaeNode = (await comfyPage.nodeOps.getNodeRefsByType('VAEDecode'))[0]
     expect(samplerNode && vaeNode).toBeTruthy()
 
     const samplerOutput = await samplerNode.getOutput(0)
@@ -315,8 +329,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
-    const vaeNode = (await comfyPage.getNodeRefsByType('VAEDecode'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
+    const vaeNode = (await comfyPage.nodeOps.getNodeRefsByType('VAEDecode'))[0]
     expect(samplerNode && vaeNode).toBeTruthy()
 
     const samplerOutput = await samplerNode.getOutput(0)
@@ -398,8 +414,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
-    const vaeNode = (await comfyPage.getNodeRefsByType('VAEDecode'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
+    const vaeNode = (await comfyPage.nodeOps.getNodeRefsByType('VAEDecode'))[0]
 
     const samplerOutput = await samplerNode.getOutput(0)
     const vaeInput = await vaeNode.getInput(0)
@@ -483,8 +501,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
-    const vaeNode = (await comfyPage.getNodeRefsByType('VAEDecode'))[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
+    const vaeNode = (await comfyPage.nodeOps.getNodeRefsByType('VAEDecode'))[0]
     expect(samplerNode && vaeNode).toBeTruthy()
 
     const samplerOutput = await samplerNode.getOutput(0)
@@ -572,8 +592,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    const clipNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+    )[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
     expect(clipNode && samplerNode).toBeTruthy()
 
     // Step 1: Connect CLIP's only output (index 0) to KSampler's second input (index 1)
@@ -642,8 +666,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    const clipNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+    )[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
     expect(clipNode && samplerNode).toBeTruthy()
 
     const clipOutput = await clipNode.getOutput(0)
@@ -697,8 +725,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    const clipNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+    )[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
     expect(clipNode && samplerNode).toBeTruthy()
 
     // Start drag from CLIP output[0]
@@ -746,8 +778,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyPage,
     comfyMouse
   }) => {
-    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    const clipNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+    )[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
     expect(clipNode && samplerNode).toBeTruthy()
 
     // Drag from CLIP output[0] to KSampler input[2] (third slot) which is the
@@ -791,8 +827,12 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   test('should batch disconnect all links with ctrl+alt+click on slot', async ({
     comfyPage
   }) => {
-    const clipNode = (await comfyPage.getNodeRefsByType('CLIPTextEncode'))[0]
-    const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+    const clipNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+    )[0]
+    const samplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )[0]
     expect(clipNode && samplerNode).toBeTruthy()
 
     await connectSlots(
@@ -837,7 +877,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
         'context menu'
       )
 
-      const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+      const samplerNode = (
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      )[0]
       expect(samplerNode).toBeTruthy()
 
       const outputCenter = await getSlotCenter(
@@ -888,7 +930,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       )
       await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
 
-      const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+      const samplerNode = (
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      )[0]
       expect(samplerNode).toBeTruthy()
 
       const outputCenter = await getSlotCenter(
@@ -928,7 +972,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       expect(await samplerOutput.getLinkCount()).toBe(1)
 
       // One of the VAEDecode nodes should have an incoming link on input[0]
-      const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+      const vaeNodes = await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
       let linked = false
       for (const vae of vaeNodes) {
         const details = await getInputLinkDetails(comfyPage.page, vae.id, 0)
@@ -947,7 +991,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     }) => {
       await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
 
-      const samplerNode = (await comfyPage.getNodeRefsByType('KSampler'))[0]
+      const samplerNode = (
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+      )[0]
       expect(samplerNode).toBeTruthy()
 
       const outputCenter = await getSlotCenter(
@@ -980,7 +1026,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       const samplerOutput = await samplerNode.getOutput(0)
       expect(await samplerOutput.getLinkCount()).toBe(1)
 
-      const vaeNodes = await comfyPage.getNodeRefsByType('VAEDecode')
+      const vaeNodes = await comfyPage.nodeOps.getNodeRefsByType('VAEDecode')
       let linked = false
       for (const vae of vaeNodes) {
         const details = await getInputLinkDetails(comfyPage.page, vae.id, 0)
@@ -1007,7 +1053,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     await comfyPage.waitForGraphNodes(1)
 
     // Convert the KSampler node to a subgraph
-    let ksamplerNode = (await comfyPage.getNodeRefsByType('KSampler'))?.[0]
+    let ksamplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    )?.[0]
     await comfyPage.vueNodes.selectNode(String(ksamplerNode.id))
     await comfyPage.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
@@ -1016,7 +1064,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     await fitToViewInstant(comfyPage)
 
     // Get the KSampler node inside the subgraph
-    ksamplerNode = (await comfyPage.getNodeRefsByType('KSampler', true))?.[0]
+    ksamplerNode = (
+      await comfyPage.nodeOps.getNodeRefsByType('KSampler', true)
+    )?.[0]
     const positiveInput = await ksamplerNode.getInput(1)
     const negativeInput = await ksamplerNode.getInput(2)
 
@@ -1027,7 +1077,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       true
     )
 
-    const sourceSlot = await comfyPage.getSubgraphInputSlot()
+    const sourceSlot = await comfyPage.subgraph.getInputSlot()
     const calculatedSourcePos = await sourceSlot.getOpenSlotPosition()
 
     await comfyMouse.move(calculatedSourcePos)

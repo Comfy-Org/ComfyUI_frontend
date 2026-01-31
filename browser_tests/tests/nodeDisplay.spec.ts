@@ -36,7 +36,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('Only optional inputs', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/only_optional_inputs')
-    expect(await comfyPage.getGraphNodesCount()).toBe(1)
+    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.locator('.comfy-missing-nodes')
     ).not.toBeVisible()
@@ -48,7 +48,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   })
   test('Old workflow with converted input', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/old_workflow_converted_input')
-    const node = await comfyPage.getNodeRefById('1')
+    const node = await comfyPage.nodeOps.getNodeRefById('1')
     const inputs = await node.getProperty('inputs')
     const vaeInput = inputs.find((w) => w.name === 'vae')
     const convertedInput = inputs.find((w) => w.name === 'strength')
@@ -60,7 +60,7 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   })
   test('Renamed converted input', async ({ comfyPage }) => {
     await comfyPage.loadWorkflow('inputs/renamed_converted_widget')
-    const node = await comfyPage.getNodeRefById('3')
+    const node = await comfyPage.nodeOps.getNodeRefById('3')
     const inputs = await node.getProperty('inputs')
     const renamedInput = inputs.find((w) => w.name === 'breadth')
     expect(renamedInput).toBeUndefined()

@@ -32,7 +32,7 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     // Can't access private _lowQualityZoomThreshold directly
 
     // Zoom out just above threshold (should still be high quality)
-    await comfyPage.zoom(120, 5) // Zoom out 5 steps
+    await comfyPage.canvasOps.zoom(120, 5) // Zoom out 5 steps
     await comfyPage.nextFrame()
 
     const aboveThresholdState = await comfyPage.page.evaluate(() => {
@@ -49,7 +49,7 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     }
 
     // Zoom out more to trigger LOD (below threshold)
-    await comfyPage.zoom(120, 5) // Zoom out 5 more steps
+    await comfyPage.canvasOps.zoom(120, 5) // Zoom out 5 more steps
     await comfyPage.nextFrame()
 
     // Check that LOD is now active
@@ -65,7 +65,7 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     expect(zoomedOutState.lowQuality).toBe(true)
 
     // Zoom back in to disable LOD (above threshold)
-    await comfyPage.zoom(-120, 15) // Zoom in 15 steps
+    await comfyPage.canvasOps.zoom(-120, 15) // Zoom in 15 steps
     await comfyPage.nextFrame()
 
     // Check that LOD is now inactive
@@ -107,7 +107,7 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     expect(lodState).toBe(false)
 
     // Zoom out slightly to trigger LOD
-    await comfyPage.zoom(120, 1) // Zoom out 1 step
+    await comfyPage.canvasOps.zoom(120, 1) // Zoom out 1 step
     await comfyPage.nextFrame()
 
     const afterZoom = await comfyPage.page.evaluate(() => {
@@ -131,7 +131,7 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
     await comfyPage.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 0)
 
     // Zoom out significantly
-    await comfyPage.zoom(120, 20) // Zoom out 20 steps
+    await comfyPage.canvasOps.zoom(120, 20) // Zoom out 20 steps
     await comfyPage.nextFrame()
 
     // LOD should remain disabled even at very low zoom

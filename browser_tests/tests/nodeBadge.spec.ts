@@ -77,7 +77,7 @@ test.describe(
         await comfyPage.setSetting('Comfy.NodeBadge.NodeSourceBadgeMode', mode)
         await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', mode)
         await comfyPage.nextFrame()
-        await comfyPage.resetView()
+        await comfyPage.canvasOps.resetView()
         await expect(comfyPage.canvas).toHaveScreenshot(
           `node-badge-${mode}.png`
         )

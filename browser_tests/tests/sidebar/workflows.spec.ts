@@ -80,15 +80,17 @@ test.describe('Workflows sidebar', () => {
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
     await comfyPage.executeCommand('Comfy.LoadDefaultWorkflow')
-    const originalNodeCount = (await comfyPage.getNodes()).length
+    const originalNodeCount = (await comfyPage.nodeOps.getNodes()).length
 
     await tab.insertWorkflow(tab.getPersistedItem('workflow1.json'))
     await comfyPage.nextFrame()
-    expect((await comfyPage.getNodes()).length).toEqual(originalNodeCount + 1)
+    expect((await comfyPage.nodeOps.getNodes()).length).toEqual(
+      originalNodeCount + 1
+    )
 
     await tab.getPersistedItem('workflow1.json').click()
     await comfyPage.nextFrame()
-    expect((await comfyPage.getNodes()).length).toEqual(1)
+    expect((await comfyPage.nodeOps.getNodes()).length).toEqual(1)
   })
 
   test('Can rename nested workflow from opened workflow item', async ({
@@ -345,7 +347,7 @@ test.describe('Workflows sidebar', () => {
       comfyPage.menu.workflowsTab.getPersistedItem('workflow1.json')
     await expect(workflowItem).toBeVisible({ timeout: 3000 })
 
-    const nodeCount = await comfyPage.getGraphNodesCount()
+    const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
     // Get the bounding box of the canvas element
     const canvasBoundingBox = (await comfyPage.page
@@ -366,7 +368,7 @@ test.describe('Workflows sidebar', () => {
 
     // Wait for nodes to be inserted after drag-drop with retryable assertion
     await expect
-      .poll(() => comfyPage.getGraphNodesCount(), { timeout: 3000 })
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 3000 })
       .toBe(nodeCount * 2)
   })
 })

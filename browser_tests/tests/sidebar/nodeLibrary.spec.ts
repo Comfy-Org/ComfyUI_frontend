@@ -26,7 +26,7 @@ test.describe('Node library sidebar', () => {
     )
     expect(previewVisible).toBe(true)
 
-    const count = await comfyPage.getGraphNodesCount()
+    const count = await comfyPage.nodeOps.getGraphNodesCount()
     // Drag the node onto the canvas
     const canvasSelector = '#graph-canvas'
 
@@ -46,7 +46,7 @@ test.describe('Node library sidebar', () => {
     })
 
     // Verify the node is added to the canvas
-    expect(await comfyPage.getGraphNodesCount()).toBe(count + 1)
+    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(count + 1)
   })
 
   test('Bookmark node', async ({ comfyPage }) => {

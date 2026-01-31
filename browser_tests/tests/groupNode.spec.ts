@@ -18,7 +18,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
       libraryTab = comfyPage.menu.nodeLibraryTab
-      await comfyPage.convertAllNodesToGroupNode(groupNodeName)
+      await comfyPage.nodeOps.convertAllNodesToGroupNode(groupNodeName)
       await libraryTab.open()
     })
 
@@ -29,14 +29,16 @@ test.describe('Group Node', { tag: '@node' }, () => {
     test('Can be added to canvas using node library sidebar', async ({
       comfyPage
     }) => {
-      const initialNodeCount = await comfyPage.getGraphNodesCount()
+      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       // Add group node from node library sidebar
       await libraryTab.getFolder(groupNodeCategory).click()
       await libraryTab.getNode(groupNodeName).click()
 
       // Verify the node is added to the canvas
-      expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
+      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
+        initialNodeCount + 1
+      )
     })
 
     test('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
@@ -94,8 +96,8 @@ test.describe('Group Node', { tag: '@node' }, () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       const groupNodeName = 'DefautWorkflowGroupNode'
-      await comfyPage.convertAllNodesToGroupNode(groupNodeName)
-      await comfyPage.doubleClickCanvas()
+      await comfyPage.nodeOps.convertAllNodesToGroupNode(groupNodeName)
+      await comfyPage.canvasOps.doubleClick()
       await comfyPage.nextFrame()
       await comfyPage.searchBox.fillAndSelectFirstNode(groupNodeName)
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -106,7 +108,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
   test('Displays tooltip on title hover', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.EnableTooltips', true)
-    await comfyPage.convertAllNodesToGroupNode('Group Node')
+    await comfyPage.nodeOps.convertAllNodesToGroupNode('Group Node')
     await comfyPage.page.mouse.move(47, 173)
     await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
   })
@@ -115,8 +117,8 @@ test.describe('Group Node', { tag: '@node' }, () => {
     comfyPage
   }) => {
     const makeGroup = async (name, type1, type2) => {
-      const node1 = (await comfyPage.getNodeRefsByType(type1))[0]
-      const node2 = (await comfyPage.getNodeRefsByType(type2))[0]
+      const node1 = (await comfyPage.nodeOps.getNodeRefsByType(type1))[0]
+      const node2 = (await comfyPage.nodeOps.getNodeRefsByType(type2))[0]
       await node1.click('title')
       await node2.click('title', {
         modifiers: ['Shift']
@@ -178,7 +180,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     comfyPage
   }) => {
     const expectSingleNode = async (type: string) => {
-      const nodes = await comfyPage.getNodeRefsByType(type)
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType(type)
       expect(nodes).toHaveLength(1)
       return nodes[0]
     }
@@ -214,7 +216,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     comfyPage
   }) => {
     await comfyPage.loadWorkflow('groupnodes/legacy_group_node')
-    expect(await comfyPage.getGraphNodesCount()).toBe(1)
+    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.locator('.comfy-missing-nodes')
     ).not.toBeVisible()
@@ -246,9 +248,9 @@ test.describe('Group Node', { tag: '@node' }, () => {
       comfyPage: ComfyPage,
       expectedCount: number
     ) => {
-      expect(await comfyPage.getNodeRefsByType(GROUP_NODE_TYPE)).toHaveLength(
-        expectedCount
-      )
+      expect(
+        await comfyPage.nodeOps.getNodeRefsByType(GROUP_NODE_TYPE)
+      ).toHaveLength(expectedCount)
       expect(await isRegisteredLitegraph(comfyPage)).toBe(true)
       expect(await isRegisteredNodeDefStore(comfyPage)).toBe(true)
     }
@@ -256,7 +258,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.loadWorkflow(WORKFLOW_NAME)
-      groupNode = await comfyPage.getFirstNodeRef()
+      groupNode = await comfyPage.nodeOps.getFirstNodeRef()
       if (!groupNode)
         throw new Error(`Group node not found in workflow ${WORKFLOW_NAME}`)
       await groupNode.copy()

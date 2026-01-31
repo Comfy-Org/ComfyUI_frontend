@@ -45,7 +45,7 @@ test('Does not report warning on undo/redo', async ({ comfyPage }) => {
   await comfyPage.nextFrame()
 
   // Make a change to the graph
-  await comfyPage.doubleClickCanvas()
+  await comfyPage.canvasOps.doubleClick()
   await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
 
   // Undo and redo the change
@@ -362,7 +362,7 @@ test.describe('Signin dialog', () => {
   test('Paste content to signin dialog should not paste node on canvas', async ({
     comfyPage
   }) => {
-    const nodeNum = (await comfyPage.getNodes()).length
+    const nodeNum = (await comfyPage.nodeOps.getNodes()).length
     await comfyPage.clickEmptyLatentNode()
     await comfyPage.ctrlC()
 
@@ -381,6 +381,6 @@ test.describe('Signin dialog', () => {
     await input.press('Control+v')
     await expect(input).toHaveValue('test_password')
 
-    expect(await comfyPage.getNodes()).toHaveLength(nodeNum)
+    expect(await comfyPage.nodeOps.getNodes()).toHaveLength(nodeNum)
   })
 })

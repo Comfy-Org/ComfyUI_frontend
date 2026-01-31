@@ -280,7 +280,7 @@ export class NodeReference {
     return this.getProperty('type')
   }
   async getPosition(): Promise<Position> {
-    const pos = await this.comfyPage.convertOffsetToCanvas(
+    const pos = await this.comfyPage.canvasOps.convertOffsetToCanvas(
       await this.getProperty<[number, number]>('pos')
     )
     return {
@@ -370,7 +370,7 @@ export class NodeReference {
     })
     await this.comfyPage.nextFrame()
     if (moveMouseToEmptyArea) {
-      await this.comfyPage.moveMouseToEmptyArea()
+      await this.comfyPage.canvasOps.moveMouseToEmptyArea()
     }
   }
   async copy() {
@@ -418,7 +418,7 @@ export class NodeReference {
     await this.clickContextMenuOption('Convert to Group Node')
     await this.comfyPage.fillPromptDialog(groupNodeName)
     await this.comfyPage.nextFrame()
-    const nodes = await this.comfyPage.getNodeRefsByType(
+    const nodes = await this.comfyPage.nodeOps.getNodeRefsByType(
       `workflow>${groupNodeName}`
     )
     if (nodes.length !== 1) {
@@ -429,7 +429,8 @@ export class NodeReference {
   async convertToSubgraph() {
     await this.clickContextMenuOption('Convert to Subgraph')
     await this.comfyPage.nextFrame()
-    const nodes = await this.comfyPage.getNodeRefsByTitle('New Subgraph')
+    const nodes =
+      await this.comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
     if (nodes.length !== 1) {
       throw new Error(
         `Did not find single subgraph node (found=${nodes.length})`

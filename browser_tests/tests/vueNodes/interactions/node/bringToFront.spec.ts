@@ -61,7 +61,7 @@ test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
     if (!ksamplerHeader) throw new Error('KSampler header not found')
 
     // Drag KSampler on top of CLIP Text Encode
-    await comfyPage.dragAndDrop(
+    await comfyPage.canvasOps.dragAndDrop(
       { x: ksamplerHeader.x + 50, y: ksamplerHeader.y + 10 },
       clipCenter
     )
@@ -108,7 +108,7 @@ test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
     const vaeHeader = await comfyPage.page.getByText('VAE Decode').boundingBox()
     if (!vaeHeader) throw new Error('VAE Decode header not found')
 
-    await comfyPage.dragAndDrop(
+    await comfyPage.canvasOps.dragAndDrop(
       { x: vaeHeader.x + 50, y: vaeHeader.y + 10 },
       { x: clipCenter.x - 50, y: clipCenter.y }
     )

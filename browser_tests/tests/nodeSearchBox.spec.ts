@@ -15,7 +15,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
-    await comfyPage.doubleClickCanvas()
+    await comfyPage.canvasOps.doubleClick()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
   })
 
@@ -47,7 +47,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test('Can add node', { tag: '@screenshot' }, async ({ comfyPage }) => {
-    await comfyPage.doubleClickCanvas()
+    await comfyPage.canvasOps.doubleClick()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
     await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
     await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
@@ -77,7 +77,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
         y: 5
       }
       await comfyPage.page.keyboard.down('Shift')
-      await comfyPage.dragAndDrop(outputSlot1Pos, emptySpacePos)
+      await comfyPage.canvasOps.dragAndDrop(outputSlot1Pos, emptySpacePos)
       await comfyPage.page.keyboard.up('Shift')
 
       // Select the second item as the first item is always reroute
@@ -106,7 +106,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
 
   test('Has correct aria-labels on search results', async ({ comfyPage }) => {
     const node = 'Load Checkpoint'
-    await comfyPage.doubleClickCanvas()
+    await comfyPage.canvasOps.doubleClick()
     await comfyPage.searchBox.input.waitFor({ state: 'visible' })
     await comfyPage.searchBox.input.fill(node)
     await comfyPage.searchBox.dropdown.waitFor({ state: 'visible' })
@@ -149,7 +149,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     }
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.doubleClickCanvas()
+      await comfyPage.canvasOps.doubleClick()
     })
 
     test('Can add filter', async ({ comfyPage }) => {
@@ -241,7 +241,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
 
   test.describe('Input focus behavior', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.doubleClickCanvas()
+      await comfyPage.canvasOps.doubleClick()
     })
 
     test('focuses input after adding a filter', async ({ comfyPage }) => {

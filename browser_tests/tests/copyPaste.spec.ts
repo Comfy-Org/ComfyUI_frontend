@@ -103,7 +103,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can undo paste multiple nodes as single action', async ({
     comfyPage
   }) => {
-    const initialCount = await comfyPage.getGraphNodesCount()
+    const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
     expect(initialCount).toBeGreaterThan(1)
     await comfyPage.canvas.click()
     await comfyPage.ctrlA()
@@ -111,11 +111,11 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.ctrlC()
     await comfyPage.ctrlV()
 
-    const pasteCount = await comfyPage.getGraphNodesCount()
+    const pasteCount = await comfyPage.nodeOps.getGraphNodesCount()
     expect(pasteCount).toBe(initialCount * 2)
 
     await comfyPage.ctrlZ()
-    const undoCount = await comfyPage.getGraphNodesCount()
+    const undoCount = await comfyPage.nodeOps.getGraphNodesCount()
     expect(undoCount).toBe(initialCount)
   })
 })

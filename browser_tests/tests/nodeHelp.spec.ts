@@ -36,7 +36,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       await comfyPage.loadWorkflow('default')
 
       // Select a single node (KSampler) using node references
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       if (ksamplerNodes.length === 0) {
         throw new Error('No KSampler nodes found in the workflow')
       }
@@ -158,7 +159,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
 
       // Load workflow and select a node
       await comfyPage.loadWorkflow('default')
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       // Click help button
@@ -190,7 +192,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
 
       // Load workflow and select a node
       await comfyPage.loadWorkflow('default')
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       // Click help button
@@ -227,7 +230,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       })
 
       await comfyPage.loadWorkflow('default')
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
@@ -277,7 +281,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       })
 
       await comfyPage.loadWorkflow('default')
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
@@ -350,7 +355,7 @@ This is documentation for a custom node.
         return window['app']!.graph!.nodes.map((n) => n.id)
       })
       if (nodeRefs.length > 0) {
-        const firstNode = await comfyPage.getNodeRefById(nodeRefs[0])
+        const firstNode = await comfyPage.nodeOps.getNodeRefById(nodeRefs[0])
         await selectNodeWithPan(comfyPage, firstNode)
       }
 
@@ -394,7 +399,8 @@ This is documentation for a custom node.
       })
 
       await comfyPage.loadWorkflow('default')
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
@@ -463,7 +469,8 @@ This is English documentation.
       await comfyPage.setSetting('Comfy.Locale', 'ja')
 
       await comfyPage.loadWorkflow('default')
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
@@ -488,7 +495,8 @@ This is English documentation.
       })
 
       await comfyPage.loadWorkflow('default')
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
@@ -534,7 +542,8 @@ This is English documentation.
       await fitToViewInstant(comfyPage)
 
       // Select KSampler first
-      const ksamplerNodes = await comfyPage.getNodeRefsByType('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
 
       const helpButton = comfyPage.page.locator(
@@ -549,7 +558,7 @@ This is English documentation.
       await expect(helpPage).toContainText('This is KSampler documentation')
 
       // Now select Checkpoint Loader
-      const checkpointNodes = await comfyPage.getNodeRefsByType(
+      const checkpointNodes = await comfyPage.nodeOps.getNodeRefsByType(
         'CheckpointLoaderSimple'
       )
       await selectNodeWithPan(comfyPage, checkpointNodes[0])

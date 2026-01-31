@@ -325,7 +325,7 @@ test.describe('Topbar commands', () => {
         })
       })
 
-      await comfyPage.selectNodes(['CLIP Text Encode (Prompt)'])
+      await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
 
       // Click the command button in the selection toolbox
       const toolboxButton = comfyPage.page.locator(

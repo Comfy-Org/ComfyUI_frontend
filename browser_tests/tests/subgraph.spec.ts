@@ -54,13 +54,13 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can add input slots to subgraph', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await getSubgraphSlotCount(comfyPage, 'inputs')
-      const vaeEncodeNode = await comfyPage.getNodeRefById('2')
+      const vaeEncodeNode = await comfyPage.nodeOps.getNodeRefById('2')
 
-      await comfyPage.connectFromSubgraphInput(vaeEncodeNode, 0)
+      await comfyPage.subgraph.connectFromInput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
 
       const finalCount = await getSubgraphSlotCount(comfyPage, 'inputs')
@@ -70,13 +70,13 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can add output slots to subgraph', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await getSubgraphSlotCount(comfyPage, 'outputs')
-      const vaeEncodeNode = await comfyPage.getNodeRefById('2')
+      const vaeEncodeNode = await comfyPage.nodeOps.getNodeRefById('2')
 
-      await comfyPage.connectToSubgraphOutput(vaeEncodeNode, 0)
+      await comfyPage.subgraph.connectToOutput(vaeEncodeNode, 0)
       await comfyPage.nextFrame()
 
       const finalCount = await getSubgraphSlotCount(comfyPage, 'outputs')
@@ -86,13 +86,13 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can remove input slots from subgraph', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await getSubgraphSlotCount(comfyPage, 'inputs')
       expect(initialCount).toBeGreaterThan(0)
 
-      await comfyPage.rightClickSubgraphInputSlot()
+      await comfyPage.subgraph.rightClickInputSlot()
       await comfyPage.clickLitegraphContextMenuItem('Remove Slot')
 
       // Force re-render
@@ -106,13 +106,13 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can remove output slots from subgraph', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialCount = await getSubgraphSlotCount(comfyPage, 'outputs')
       expect(initialCount).toBeGreaterThan(0)
 
-      await comfyPage.rightClickSubgraphOutputSlot()
+      await comfyPage.subgraph.rightClickOutputSlot()
       await comfyPage.clickLitegraphContextMenuItem('Remove Slot')
 
       // Force re-render
@@ -126,7 +126,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can rename I/O slots', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
@@ -134,7 +134,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         return graph.inputs?.[0]?.label || null
       })
 
-      await comfyPage.rightClickSubgraphInputSlot(initialInputLabel)
+      await comfyPage.subgraph.rightClickInputSlot(initialInputLabel)
       await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
@@ -159,7 +159,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can rename input slots via double-click', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
@@ -167,7 +167,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         return graph.inputs?.[0]?.label || null
       })
 
-      await comfyPage.doubleClickSubgraphInputSlot(initialInputLabel)
+      await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel)
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
         state: 'visible'
@@ -191,7 +191,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can rename output slots via double-click', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialOutputLabel = await comfyPage.page.evaluate(() => {
@@ -199,7 +199,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         return graph.outputs?.[0]?.label || null
       })
 
-      await comfyPage.doubleClickSubgraphOutputSlot(initialOutputLabel)
+      await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel)
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
         state: 'visible'
@@ -226,7 +226,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
@@ -235,7 +235,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       })
 
       // Test that right-click still works for renaming
-      await comfyPage.rightClickSubgraphInputSlot(initialInputLabel)
+      await comfyPage.subgraph.rightClickInputSlot(initialInputLabel)
       await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
@@ -263,7 +263,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
@@ -349,12 +349,12 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.ctrlA()
       await comfyPage.nextFrame()
 
-      const node = await comfyPage.getNodeRefById('5')
+      const node = await comfyPage.nodeOps.getNodeRefById('5')
       await node.convertToSubgraph()
       await comfyPage.nextFrame()
 
       const subgraphNodes =
-        await comfyPage.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
+        await comfyPage.nodeOps.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
       expect(subgraphNodes.length).toBe(1)
 
       const finalNodeCount = await getGraphNodeCount(comfyPage)
@@ -364,7 +364,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can delete subgraph node', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       expect(await subgraphNode.exists()).toBe(true)
 
       const initialNodeCount = await getGraphNodeCount(comfyPage)
@@ -376,7 +376,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const finalNodeCount = await getGraphNodeCount(comfyPage)
       expect(finalNodeCount).toBe(initialNodeCount - 1)
 
-      const deletedNode = await comfyPage.getNodeRefById('2')
+      const deletedNode = await comfyPage.nodeOps.getNodeRefById('2')
       expect(await deletedNode.exists()).toBe(false)
     })
 
@@ -386,7 +386,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       }) => {
         await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-        const subgraphNode = await comfyPage.getNodeRefById('2')
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
 
         // Get position of subgraph node
         const subgraphPos = await subgraphNode.getPosition()
@@ -404,7 +404,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
         // Find all subgraph nodes
         const subgraphNodes =
-          await comfyPage.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
+          await comfyPage.nodeOps.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
 
         // Expect a second subgraph node to be created (2 total)
         expect(subgraphNodes.length).toBe(2)
@@ -415,7 +415,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       }) => {
         await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-        const subgraphNode = await comfyPage.getNodeRefById('2')
+        const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
 
         // Get position of subgraph node
         const subgraphPos = await subgraphNode.getPosition()
@@ -433,7 +433,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
         // Find all subgraph nodes and expect all unique IDs
         const subgraphNodes =
-          await comfyPage.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
+          await comfyPage.nodeOps.getNodeRefsByTitle(NEW_SUBGRAPH_TITLE)
 
         // Expect the second subgraph node to have a unique type
         const nodeType1 = await subgraphNodes[0].getType()
@@ -447,7 +447,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can copy and paste nodes in subgraph', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       const initialNodeCount = await getGraphNodeCount(comfyPage)
@@ -459,7 +459,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       expect(nodesInSubgraph).not.toBeNull()
 
-      const nodeToClone = await comfyPage.getNodeRefById(
+      const nodeToClone = await comfyPage.nodeOps.getNodeRefById(
         String(nodesInSubgraph)
       )
       await nodeToClone.click('title')
@@ -478,11 +478,11 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can undo and redo operations in subgraph', async ({ comfyPage }) => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
 
       // Add a node
-      await comfyPage.doubleClickCanvas()
+      await comfyPage.canvasOps.doubleClick()
       await comfyPage.searchBox.fillAndSelectFirstNode('Note')
       await comfyPage.nextFrame()
 
@@ -516,7 +516,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.loadWorkflow('subgraphs/nested-subgraph')
       await comfyPage.nextFrame()
 
-      const subgraphNode = await comfyPage.getNodeRefById('10')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('10')
       const nodePos = await subgraphNode.getPosition()
       const nodeSize = await subgraphNode.getSize()
 
@@ -575,7 +575,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await expect(parentTextarea).toBeVisible()
       await expect(parentTextarea).toHaveCount(1)
 
-      const subgraphNode = await comfyPage.getNodeRefById('11')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       expect(await subgraphNode.exists()).toBe(true)
 
       await subgraphNode.navigateIntoSubgraph()
@@ -605,7 +605,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const textarea = comfyPage.page.locator(SELECTORS.domWidget)
       await textarea.fill(TEST_WIDGET_CONTENT)
 
-      const subgraphNode = await comfyPage.getNodeRefById('11')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       await subgraphNode.navigateIntoSubgraph()
 
       const subgraphTextarea = comfyPage.page.locator(SELECTORS.domWidget)
@@ -630,7 +630,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         .count()
       expect(initialCount).toBe(1)
 
-      const subgraphNode = await comfyPage.getNodeRefById('11')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
 
       await subgraphNode.click('title')
       await comfyPage.page.keyboard.press('Delete')
@@ -656,12 +656,12 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         .count()
       expect(textareaCount).toBe(1)
 
-      const subgraphNode = await comfyPage.getNodeRefById('11')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
 
       // Navigate into subgraph (method now handles retries internally)
       await subgraphNode.navigateIntoSubgraph()
 
-      await comfyPage.rightClickSubgraphInputSlot('text')
+      await comfyPage.subgraph.rightClickInputSlot('text')
       await comfyPage.clickLitegraphContextMenuItem('Remove Slot')
 
       // Wait for breadcrumb to be visible
@@ -700,7 +700,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         .count()
       expect(parentCount).toBeGreaterThan(1)
 
-      const subgraphNode = await comfyPage.getNodeRefById('11')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('11')
       await subgraphNode.navigateIntoSubgraph()
 
       const subgraphCount = await comfyPage.page
@@ -757,7 +757,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.setup()
 
       // Navigate into subgraph
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
 
@@ -783,7 +783,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
       await comfyPage.nextFrame()
 
-      const subgraphNode = await comfyPage.getNodeRefById('2')
+      const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
       await subgraphNode.navigateIntoSubgraph()
       await comfyPage.page.waitForSelector(SELECTORS.breadcrumb)
 
