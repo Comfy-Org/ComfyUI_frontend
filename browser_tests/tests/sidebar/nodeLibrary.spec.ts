@@ -183,9 +183,8 @@ test.describe('Node library sidebar', () => {
     ])
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.getFolder('sampling').click()
-    await comfyPage.page
-      .locator(tab.nodeSelector('KSampler (Advanced)'))
-      .nth(1)
+    await tab
+      .getNodeInFolder('KSampler (Advanced)', 'sampling')
       .locator('.bookmark-button')
       .click()
     expect(

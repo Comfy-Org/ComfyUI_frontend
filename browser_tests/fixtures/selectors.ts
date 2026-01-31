@@ -27,7 +27,11 @@ export const TestIds = {
     about: 'about-panel'
   },
   topbar: {
-    queueButton: 'queue-button'
+    queueButton: 'queue-button',
+    saveButton: 'save-workflow-button'
+  },
+  nodeLibrary: {
+    bookmarksSection: 'node-library-bookmarks-section'
   }
 } as const
 
@@ -40,3 +44,4 @@ export type TestIdValue =
   | (typeof TestIds.canvas)[keyof typeof TestIds.canvas]
   | (typeof TestIds.dialogs)[keyof typeof TestIds.dialogs]
   | (typeof TestIds.topbar)[keyof typeof TestIds.topbar]
+  | (typeof TestIds.nodeLibrary)[keyof typeof TestIds.nodeLibrary]

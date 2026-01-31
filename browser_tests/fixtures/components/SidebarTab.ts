@@ -84,6 +84,20 @@ export class NodeLibrarySidebarTab extends SidebarTab {
       `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
     )
   }
+
+  nodeSelector(nodeName: string): string {
+    return `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
+  }
+
+  folderSelector(folderName: string): string {
+    return `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
+  }
+
+  getNodeInFolder(nodeName: string, folderName: string) {
+    return this.getFolder(folderName)
+      .locator('xpath=ancestor::li')
+      .locator(`[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`)
+  }
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {

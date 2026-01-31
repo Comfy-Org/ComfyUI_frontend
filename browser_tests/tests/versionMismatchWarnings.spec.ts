@@ -103,10 +103,9 @@ test.describe('Version Mismatch Warnings', { tag: '@slow' }, () => {
     await comfyPage.setup()
 
     // Locate the warning toast and dismiss it
-    const warningToast = comfyPage.page
-      .locator('div')
-      .filter({ hasText: 'Version Compatibility' })
-      .nth(3)
+    const warningToast = comfyPage.page.locator('.p-toast-message').filter({
+      hasText: 'Version Compatibility'
+    })
     await warningToast.waitFor({ state: 'visible' })
     const dismissButton = warningToast.getByRole('button', { name: 'Close' })
     await dismissButton.click()

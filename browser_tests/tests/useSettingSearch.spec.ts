@@ -109,19 +109,16 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     const settingsDialog = comfyPage.page.locator('.settings-container')
     await expect(settingsDialog).toBeVisible()
 
-    // Get categories and click on different ones
-    const categories = comfyPage.page.locator(
-      '.settings-sidebar .p-listbox-option'
+    // Click on a specific category (Appearance) to verify category switching
+    const appearanceCategory = comfyPage.page.getByTestId(
+      'settings-tab-Appearance'
     )
-    const categoryCount = await categories.count()
+    await appearanceCategory.click()
 
-    if (categoryCount > 1) {
-      // Click on the second category
-      await categories.nth(1).click()
-
-      // Verify the category is selected
-      await expect(categories.nth(1)).toHaveClass(/p-listbox-option-selected/)
-    }
+    // Verify the category is selected by checking if its parent option has the selected class
+    await expect(appearanceCategory.locator('xpath=ancestor::li')).toHaveClass(
+      /p-listbox-option-selected/
+    )
   })
 
   test('settings content area is visible', async ({ comfyPage }) => {

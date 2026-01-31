@@ -56,15 +56,11 @@ class ComfyMenu {
   public readonly sideToolbar: Locator
   public readonly propertiesPanel: ComfyPropertiesPanel
   public readonly themeToggleButton: Locator
-  public readonly saveButton: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
     this.themeToggleButton = page.getByTestId(TestIds.sidebar.themeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
-    this.saveButton = page
-      .locator('button[title="Save the current workflow"]')
-      .nth(0)
   }
 
   get buttons() {
@@ -202,7 +198,10 @@ export class ComfyPage {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.locator('.selection-toolbox')
-    this.widgetTextBox = page.getByPlaceholder('text').nth(1)
+    this.widgetTextBox = page
+      .locator('[data-node-id]')
+      .first()
+      .getByPlaceholder('text')
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.runButton = page
