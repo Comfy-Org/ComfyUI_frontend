@@ -3,14 +3,14 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../../../../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Vue Nodes - Delete Key Interaction', () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Enable Vue nodes rendering
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', false)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
     await comfyPage.setup()
   })
 
@@ -24,7 +24,7 @@ test.describe('Vue Nodes - Delete Key Interaction', () => {
     expect(initialNodeCount).toBeGreaterThan(0)
 
     // Select all Vue nodes
-    await comfyPage.ctrlA()
+    await comfyPage.keyboard.selectAll()
 
     // Verify all Vue nodes are selected
     const selectedCount = await comfyPage.vueNodes.getSelectedNodeCount()

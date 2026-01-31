@@ -3,12 +3,12 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('DOM Widget', { tag: '@widget' }, () => {
   test('Collapsed multiline textarea is not visible', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/collapsed_multiline')
+    await comfyPage.workflow.loadWorkflow('widgets/collapsed_multiline')
     const textareaWidget = comfyPage.page.locator('.comfy-multiline-input')
     await expect(textareaWidget).not.toBeVisible()
   })
@@ -33,7 +33,7 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     'Position update when entering focus mode',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.executeCommand('Workspace.ToggleFocusMode')
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
@@ -68,9 +68,9 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
       .first()
     await expect(textareaWidget).toBeVisible()
 
-    await comfyPage.setSetting('Comfy.Sidebar.Size', 'small')
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'left')
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'small')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'left')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.nextFrame()
 
     let oldPos: [number, number]
@@ -85,15 +85,15 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
 
     // --- test ---
 
-    await comfyPage.setSetting('Comfy.Sidebar.Size', 'normal')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'normal')
     await comfyPage.nextFrame()
     await checkBboxChange()
 
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'right')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
     await comfyPage.nextFrame()
     await checkBboxChange()
 
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Bottom')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Bottom')
     await comfyPage.nextFrame()
     await checkBboxChange()
   })

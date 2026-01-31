@@ -7,9 +7,9 @@ import { fitToViewInstant } from '../../../../helpers/fitToView'
 
 test.describe('Vue Node Bring to Front', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.loadWorkflow('vueNodes/simple-triple')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
     await comfyPage.vueNodes.waitForNodes()
     await fitToViewInstant(comfyPage)
   })

@@ -26,14 +26,14 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
 test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setup()
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.describe('Selection Toolbox', () => {
     test('Should open help menu for selected node', async ({ comfyPage }) => {
       // Load a workflow with a node
-      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.workflow.loadWorkflow('default')
 
       // Select a single node (KSampler) using node references
       const ksamplerNodes =
@@ -146,7 +146,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
 
   test.describe('Help Content', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
     })
 
     test('Should display loading state while fetching help', async ({
@@ -162,7 +162,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       })
 
       // Load workflow and select a node
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
@@ -195,7 +195,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       })
 
       // Load workflow and select a node
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
@@ -233,7 +233,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
         })
       })
 
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
@@ -284,7 +284,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
         })
       })
 
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
@@ -332,7 +332,7 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       comfyPage
     }) => {
       // First load workflow with custom node
-      await comfyPage.loadWorkflow('groupnodes/group_node_v1.3.3')
+      await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
 
       // Mock custom node documentation with fallback
       await comfyPage.page.route(
@@ -402,7 +402,7 @@ This is documentation for a custom node.
         })
       })
 
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
@@ -470,9 +470,9 @@ This is English documentation.
       })
 
       // Set locale to Japanese
-      await comfyPage.setSetting('Comfy.Locale', 'ja')
+      await comfyPage.settings.setSetting('Comfy.Locale', 'ja')
 
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
@@ -489,7 +489,7 @@ This is English documentation.
       await expect(helpPage).toContainText('これは日本語のドキュメントです')
 
       // Reset locale
-      await comfyPage.setSetting('Comfy.Locale', 'en')
+      await comfyPage.settings.setSetting('Comfy.Locale', 'en')
     })
 
     test('Should handle network errors gracefully', async ({ comfyPage }) => {
@@ -498,7 +498,7 @@ This is English documentation.
         await route.abort('failed')
       })
 
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])
@@ -542,7 +542,7 @@ This is English documentation.
         }
       )
 
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       await fitToViewInstant(comfyPage)
 
       // Select KSampler first

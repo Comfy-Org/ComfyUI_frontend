@@ -4,14 +4,20 @@ import {
 } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Node search box', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'search box')
-    await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.LinkRelease.Action',
+      'search box'
+    )
+    await comfyPage.settings.setSetting(
+      'Comfy.LinkRelease.ActionShift',
+      'search box'
+    )
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   })
 
   test(`Can trigger on empty canvas double click`, async ({ comfyPage }) => {
@@ -20,7 +26,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test(`Can trigger on group body double click`, async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('groups/single_group_only')
+    await comfyPage.workflow.loadWorkflow('groups/single_group_only')
     await comfyPage.page.mouse.dblclick(50, 50, { delay: 5 })
     await comfyPage.nextFrame()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
@@ -37,8 +43,8 @@ test.describe('Node search box', { tag: '@node' }, () => {
     // Start fresh to test new user behavior
     await comfyPage.setup({ clearStorage: true })
     // Simulate new user with 1.24.1+ installed version
-    await comfyPage.setSetting('Comfy.InstalledVersion', '1.24.1')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
     // Don't set LinkRelease settings explicitly to test versioned defaults
 
     await comfyPage.disconnectEdge()
@@ -66,7 +72,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     'Can auto link batch moved node',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('links/batch_move_links')
+      await comfyPage.workflow.loadWorkflow('links/batch_move_links')
 
       // Get the CLIP output slot (index 1) from the first CheckpointLoaderSimple node (id: 4)
       const checkpointNode = await comfyPage.nodeOps.getNodeRefById(4)
@@ -117,7 +123,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
 
   test('@mobile Can trigger on empty canvas tap', async ({ comfyPage }) => {
     await comfyPage.closeMenu()
-    await comfyPage.loadWorkflow('nodes/single_ksampler')
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const screenCenter = {
       x: 200,
       y: 400
@@ -259,9 +265,15 @@ test.describe('Node search box', { tag: '@node' }, () => {
 
 test.describe('Release context menu', { tag: '@node' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'context menu')
-    await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.LinkRelease.Action',
+      'context menu'
+    )
+    await comfyPage.settings.setSetting(
+      'Comfy.LinkRelease.ActionShift',
+      'search box'
+    )
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   })
 
   test(
@@ -289,7 +301,8 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     async ({ comfyPage, comfyMouse }) => {
       await comfyPage.disconnectEdge()
       await comfyMouse.move({ x: 10, y: 10 })
-      await comfyPage.clickContextMenuItem('Search')
+      await comfyPage.contextMenu.clickMenuItem('Search')
+      await comfyPage.nextFrame()
       await comfyPage.searchBox.fillAndSelectFirstNode('CLIP Prompt')
       await expect(comfyPage.canvas).toHaveScreenshot(
         'link-context-menu-search.png'
@@ -303,8 +316,8 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     // Start fresh to test existing user behavior
     await comfyPage.setup({ clearStorage: true })
     // Simulate existing user with pre-1.24.1 version
-    await comfyPage.setSetting('Comfy.InstalledVersion', '1.23.0')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.23.0')
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
     // Don't set LinkRelease settings explicitly to test versioned defaults
 
     await comfyPage.disconnectEdge()
@@ -319,10 +332,13 @@ test.describe('Release context menu', { tag: '@node' }, () => {
   }) => {
     // Start fresh and simulate new user who should get search box by default
     await comfyPage.setup({ clearStorage: true })
-    await comfyPage.setSetting('Comfy.InstalledVersion', '1.24.1')
+    await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
     // But explicitly set to context menu (overriding versioned default)
-    await comfyPage.setSetting('Comfy.LinkRelease.Action', 'context menu')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting(
+      'Comfy.LinkRelease.Action',
+      'context menu'
+    )
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
 
     await comfyPage.disconnectEdge()
     // Context menu should appear due to explicit setting, not search box

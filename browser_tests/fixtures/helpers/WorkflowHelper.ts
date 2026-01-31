@@ -72,7 +72,8 @@ export class WorkflowHelper {
 
     // Delete workflow
     await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
-    await this.comfyPage.clickContextMenuItem('Delete')
+    await this.comfyPage.contextMenu.clickMenuItem('Delete')
+    await this.comfyPage.nextFrame()
     await this.comfyPage.confirmDialog.delete.click()
 
     // Clear toast & close tab

@@ -3,18 +3,18 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Background Image Upload', () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Reset the background image setting before each test
-    await comfyPage.setSetting('Comfy.Canvas.BackgroundImage', '')
+    await comfyPage.settings.setSetting('Comfy.Canvas.BackgroundImage', '')
   })
 
   test.afterEach(async ({ comfyPage }) => {
     // Clean up background image setting after each test
-    await comfyPage.setSetting('Comfy.Canvas.BackgroundImage', '')
+    await comfyPage.settings.setSetting('Comfy.Canvas.BackgroundImage', '')
   })
 
   test('should show background image upload component in settings', async ({
@@ -88,7 +88,7 @@ test.describe('Background Image Upload', () => {
     await expect(clearButton).toBeEnabled()
 
     // Verify the setting value was actually set
-    const settingValue = await comfyPage.getSetting(
+    const settingValue = await comfyPage.settings.getSetting(
       'Comfy.Canvas.BackgroundImage'
     )
     expect(settingValue).toMatch(/^\/api\/view\?.*subfolder=backgrounds/)
@@ -124,7 +124,7 @@ test.describe('Background Image Upload', () => {
     await expect(clearButton).toBeEnabled()
 
     // Verify the setting value was updated
-    const settingValue = await comfyPage.getSetting(
+    const settingValue = await comfyPage.settings.getSetting(
       'Comfy.Canvas.BackgroundImage'
     )
     expect(settingValue).toBe(testImageUrl)
@@ -136,7 +136,10 @@ test.describe('Background Image Upload', () => {
     const testImageUrl = 'https://example.com/test-image.png'
 
     // First set a background image
-    await comfyPage.setSetting('Comfy.Canvas.BackgroundImage', testImageUrl)
+    await comfyPage.settings.setSetting(
+      'Comfy.Canvas.BackgroundImage',
+      testImageUrl
+    )
 
     // Open settings dialog
     await comfyPage.page.keyboard.press('Control+,')
@@ -169,7 +172,7 @@ test.describe('Background Image Upload', () => {
     await expect(clearButton).toBeDisabled()
 
     // Verify the setting value was cleared
-    const settingValue = await comfyPage.getSetting(
+    const settingValue = await comfyPage.settings.getSetting(
       'Comfy.Canvas.BackgroundImage'
     )
     expect(settingValue).toBe('')

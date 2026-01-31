@@ -4,12 +4,12 @@ import {
 } from '../../../../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Vue Node Selection', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 

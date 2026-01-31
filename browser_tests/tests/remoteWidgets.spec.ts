@@ -52,12 +52,12 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
   }
 
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test.describe('Loading options', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
         async (route, request) => {
@@ -89,7 +89,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       comfyPage
     }) => {
       const nodeName = 'Remote Widget Node'
-      await comfyPage.loadWorkflow('inputs/remote_widget')
+      await comfyPage.workflow.loadWorkflow('inputs/remote_widget')
 
       const node = await comfyPage.page.evaluate((name) => {
         return window['app'].graph.nodes.find((node) => node.title === name)
@@ -176,7 +176,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     test('refresh button is visible in selection toolbar when node is selected', async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
 
       const nodeName = 'Remote Widget Node'
       await addRemoteWidgetNode(comfyPage, nodeName)

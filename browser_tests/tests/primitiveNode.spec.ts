@@ -4,19 +4,21 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Can load with correct size', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('primitive/primitive_node')
+    await comfyPage.workflow.loadWorkflow('primitive/primitive_node')
     await expect(comfyPage.canvas).toHaveScreenshot('primitive_node.png')
   })
 
   // When link is dropped on widget, it should automatically convert the widget
   // to input.
   test('Can connect to widget', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('primitive/primitive_node_unconnected')
+    await comfyPage.workflow.loadWorkflow(
+      'primitive/primitive_node_unconnected'
+    )
     const primitiveNode: NodeReference =
       await comfyPage.nodeOps.getNodeRefById(1)
     const ksamplerNode: NodeReference =
@@ -29,7 +31,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   })
 
   test('Can connect to dom widget', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow(
+    await comfyPage.workflow.loadWorkflow(
       'primitive/primitive_node_unconnected_dom_widget'
     )
     const primitiveNode: NodeReference =
@@ -43,7 +45,9 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   })
 
   test('Can connect to static primitive node', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('primitive/static_primitive_unconnected')
+    await comfyPage.workflow.loadWorkflow(
+      'primitive/static_primitive_unconnected'
+    )
     const primitiveNode: NodeReference =
       await comfyPage.nodeOps.getNodeRefById(1)
     const ksamplerNode: NodeReference =
@@ -57,7 +61,7 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Report missing nodes when connect to missing node', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow(
+    await comfyPage.workflow.loadWorkflow(
       'primitive/primitive_node_connect_missing_node'
     )
     // Wait for the element with the .comfy-missing-nodes selector to be visible

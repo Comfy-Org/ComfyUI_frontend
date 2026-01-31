@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Menu', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test('Can register sidebar tab', async ({ comfyPage }) => {
@@ -30,11 +30,11 @@ test.describe('Menu', { tag: '@ui' }, () => {
 
   test.describe('Workflows topbar tabs', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting(
+      await comfyPage.settings.setSetting(
         'Comfy.Workflow.WorkflowTabsPosition',
         'Topbar'
       )
-      await comfyPage.setupWorkflowsDirectory({})
+      await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
     test('Can show opened workflows', async ({ comfyPage }) => {
@@ -214,7 +214,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await comfyPage.attachScreenshot('theme-menu-light-active')
 
       // Verify ColorPalette setting is set to "light"
-      expect(await comfyPage.getSetting('Comfy.ColorPalette')).toBe('light')
+      expect(await comfyPage.settings.getSetting('Comfy.ColorPalette')).toBe(
+        'light'
+      )
 
       // Close menu to see theme change
       await topbar.closeTopbarMenu()
@@ -238,7 +240,9 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await comfyPage.attachScreenshot('theme-menu-dark-active')
 
       // Verify ColorPalette setting is set to "dark"
-      expect(await comfyPage.getSetting('Comfy.ColorPalette')).toBe('dark')
+      expect(await comfyPage.settings.getSetting('Comfy.ColorPalette')).toBe(
+        'dark'
+      )
 
       // Close menu
       await topbar.closeTopbarMenu()
@@ -251,16 +255,20 @@ test.describe('Menu', { tag: '@ui' }, () => {
     test(`Can migrate deprecated menu positions (${position})`, async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', position)
-      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', position)
+      expect(await comfyPage.settings.getSetting('Comfy.UseNewMenu')).toBe(
+        'Top'
+      )
     })
 
     test(`Can migrate deprecated menu positions on initial load (${position})`, async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', position)
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', position)
       await comfyPage.setup()
-      expect(await comfyPage.getSetting('Comfy.UseNewMenu')).toBe('Top')
+      expect(await comfyPage.settings.getSetting('Comfy.UseNewMenu')).toBe(
+        'Top'
+      )
     })
   })
 })

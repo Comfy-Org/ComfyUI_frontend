@@ -5,7 +5,7 @@ import {
 
 test.describe('Vue Widget Reactivity', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
   test('Should display added widgets', async ({ comfyPage }) => {

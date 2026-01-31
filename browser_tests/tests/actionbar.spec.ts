@@ -9,7 +9,7 @@ const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 test.describe('Actionbar', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   /**

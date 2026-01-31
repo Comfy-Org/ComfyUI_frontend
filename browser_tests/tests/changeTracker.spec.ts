@@ -3,6 +3,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
@@ -16,14 +17,14 @@ async function afterChange(comfyPage: ComfyPage) {
 }
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Change Tracker', { tag: '@workflow' }, () => {
   test.describe('Undo/Redo', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-      await comfyPage.setupWorkflowsDirectory({})
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
     test('Can undo multiple operations', async ({ comfyPage }) => {
@@ -45,19 +46,19 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       expect(await comfyPage.getUndoQueueSize()).toBe(1)
       expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
-      await comfyPage.ctrlB()
+      await comfyPage.keyboard.bypass()
       await expect(node).toBeBypassed()
       expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
       expect(await comfyPage.getUndoQueueSize()).toBe(2)
       expect(await comfyPage.getRedoQueueSize()).toBe(0)
 
-      await comfyPage.ctrlZ()
+      await comfyPage.keyboard.undo()
       await expect(node).not.toBeBypassed()
       expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
       expect(await comfyPage.getUndoQueueSize()).toBe(1)
       expect(await comfyPage.getRedoQueueSize()).toBe(1)
 
-      await comfyPage.ctrlZ()
+      await comfyPage.keyboard.undo()
       await expect(node).not.toBeCollapsed()
       expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
       expect(await comfyPage.getUndoQueueSize()).toBe(0)
@@ -77,27 +78,29 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     // Bypass + collapse node
     await node.click('title')
     await node.click('collapse')
-    await comfyPage.ctrlB()
+    await comfyPage.keyboard.bypass()
     await expect(node).toBeCollapsed()
     await expect(node).toBeBypassed()
 
     // Undo, undo, ensure both changes undone
-    await comfyPage.ctrlZ()
+    await comfyPage.keyboard.undo()
     await expect(node).not.toBeBypassed()
     await expect(node).toBeCollapsed()
-    await comfyPage.ctrlZ()
+    await comfyPage.keyboard.undo()
     await expect(node).not.toBeBypassed()
     await expect(node).not.toBeCollapsed()
 
     // Prevent clicks registering a double-click
-    await comfyPage.clickEmptySpace()
+    await comfyPage.canvasOps.clickEmptySpace(
+      DefaultGraphPositions.emptySpaceClick
+    )
     await node.click('title')
 
     // Run again, but within a change transaction
     await beforeChange(comfyPage)
 
     await node.click('collapse')
-    await comfyPage.ctrlB()
+    await comfyPage.keyboard.bypass()
     await expect(node).toBeCollapsed()
     await expect(node).toBeBypassed()
 
@@ -105,7 +108,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     await afterChange(comfyPage)
 
     // Ensure undo reverts both changes
-    await comfyPage.ctrlZ()
+    await comfyPage.keyboard.undo()
     await expect(node).not.toBeBypassed()
     await expect(node).not.toBeCollapsed()
   })
@@ -116,7 +119,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const bypassAndPin = async () => {
       await beforeChange(comfyPage)
-      await comfyPage.ctrlB()
+      await comfyPage.keyboard.bypass()
       await expect(node).toBeBypassed()
       await comfyPage.page.keyboard.press('KeyP')
       await comfyPage.nextFrame()
@@ -142,12 +145,12 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
 
     await multipleChanges()
 
-    await comfyPage.ctrlZ()
+    await comfyPage.keyboard.undo()
     await expect(node).not.toBeBypassed()
     await expect(node).not.toBePinned()
     await expect(node).not.toBeCollapsed()
 
-    await comfyPage.ctrlY()
+    await comfyPage.keyboard.redo()
     await expect(node).toBeBypassed()
     await expect(node).toBePinned()
     await expect(node).toBeCollapsed()
@@ -159,7 +162,9 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       window['app'].graph.extra.foo = 'bar'
     })
     // Click empty space to trigger a change detection.
-    await comfyPage.clickEmptySpace()
+    await comfyPage.canvasOps.clickEmptySpace(
+      DefaultGraphPositions.emptySpaceClick
+    )
     expect(await comfyPage.getUndoQueueSize()).toBe(1)
   })
 

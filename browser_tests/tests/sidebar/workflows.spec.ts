@@ -4,8 +4,11 @@ import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
 
 test.describe('Workflows sidebar', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.Workflow.WorkflowTabsPosition', 'Sidebar')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Sidebar'
+    )
 
     // Open the sidebar
     const tab = comfyPage.menu.workflowsTab
@@ -13,7 +16,7 @@ test.describe('Workflows sidebar', () => {
   })
 
   test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.setupWorkflowsDirectory({})
+    await comfyPage.workflow.setupWorkflowsDirectory({})
   })
 
   test('Can create new blank workflow', async ({ comfyPage }) => {
@@ -30,7 +33,7 @@ test.describe('Workflows sidebar', () => {
   })
 
   test('Can show top level saved workflows', async ({ comfyPage }) => {
-    await comfyPage.setupWorkflowsDirectory({
+    await comfyPage.workflow.setupWorkflowsDirectory({
       'workflow1.json': 'default.json',
       'workflow2.json': 'default.json'
     })
@@ -73,7 +76,7 @@ test.describe('Workflows sidebar', () => {
   })
 
   test('Can open workflow after insert', async ({ comfyPage }) => {
-    await comfyPage.setupWorkflowsDirectory({
+    await comfyPage.workflow.setupWorkflowsDirectory({
       'workflow1.json': 'nodes/single_ksampler.json'
     })
 
@@ -96,7 +99,7 @@ test.describe('Workflows sidebar', () => {
   test('Can rename nested workflow from opened workflow item', async ({
     comfyPage
   }) => {
-    await comfyPage.setupWorkflowsDirectory({
+    await comfyPage.workflow.setupWorkflowsDirectory({
       foo: {
         'bar.json': 'default.json'
       }
@@ -136,7 +139,7 @@ test.describe('Workflows sidebar', () => {
   test('Exported workflow does not contain localized slot names', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('default')
+    await comfyPage.workflow.loadWorkflow('default')
     const exportedWorkflow = await comfyPage.getExportedWorkflow({
       api: false
     })
@@ -156,7 +159,7 @@ test.describe('Workflows sidebar', () => {
   test('Can export same workflow with different locales', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('default')
+    await comfyPage.workflow.loadWorkflow('default')
 
     // Setup download listener before triggering the export
     const downloadPromise = comfyPage.page.waitForEvent('download')
@@ -171,7 +174,7 @@ test.describe('Workflows sidebar', () => {
       api: false
     })
 
-    await comfyPage.setSetting('Comfy.Locale', 'zh')
+    await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
     await comfyPage.setup()
 
     const downloadedContentZh = await comfyPage.getExportedWorkflow({
@@ -240,8 +243,12 @@ test.describe('Workflows sidebar', () => {
   test('Does not report warning when switching between opened workflows', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('missing/missing_nodes')
-    await comfyPage.closeDialog()
+    await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+    await comfyPage.page
+      .locator('.p-dialog')
+      .getByRole('button', { name: 'Close' })
+      .click({ force: true })
+    await comfyPage.page.locator('.p-dialog').waitFor({ state: 'hidden' })
 
     // Load blank workflow
     await comfyPage.menu.workflowsTab.open()
@@ -280,7 +287,7 @@ test.describe('Workflows sidebar', () => {
   })
 
   test('Can delete workflows (confirm disabled)', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.Workflow.ConfirmDelete', false)
+    await comfyPage.settings.setSetting('Comfy.Workflow.ConfirmDelete', false)
 
     const { topbar, workflowsTab } = comfyPage.menu
 
@@ -290,7 +297,8 @@ test.describe('Workflows sidebar', () => {
 
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
     await comfyPage.nextFrame()
-    await comfyPage.clickContextMenuItem('Delete')
+    await comfyPage.contextMenu.clickMenuItem('Delete')
+    await comfyPage.nextFrame()
 
     await expect(workflowsTab.getOpenedItem(filename)).not.toBeVisible()
     expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
@@ -306,7 +314,8 @@ test.describe('Workflows sidebar', () => {
     expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([filename])
 
     await workflowsTab.getOpenedItem(filename).click({ button: 'right' })
-    await comfyPage.clickContextMenuItem('Delete')
+    await comfyPage.contextMenu.clickMenuItem('Delete')
+    await comfyPage.nextFrame()
 
     await comfyPage.confirmDialog.click('delete')
 
@@ -317,7 +326,7 @@ test.describe('Workflows sidebar', () => {
   })
 
   test('Can duplicate workflow from context menu', async ({ comfyPage }) => {
-    await comfyPage.setupWorkflowsDirectory({
+    await comfyPage.workflow.setupWorkflowsDirectory({
       'workflow1.json': 'default.json'
     })
 
@@ -327,7 +336,8 @@ test.describe('Workflows sidebar', () => {
     await workflowsTab
       .getPersistedItem('workflow1.json')
       .click({ button: 'right' })
-    await comfyPage.clickContextMenuItem('Duplicate')
+    await comfyPage.contextMenu.clickMenuItem('Duplicate')
+    await comfyPage.nextFrame()
 
     expect(await workflowsTab.getOpenedWorkflowNames()).toEqual([
       '*Unsaved Workflow.json',
@@ -336,7 +346,7 @@ test.describe('Workflows sidebar', () => {
   })
 
   test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {
-    await comfyPage.setupWorkflowsDirectory({
+    await comfyPage.workflow.setupWorkflowsDirectory({
       'workflow1.json': 'default.json'
     })
 

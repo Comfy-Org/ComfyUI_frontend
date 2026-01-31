@@ -1,9 +1,10 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
@@ -12,7 +13,9 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.disconnectEdge()
-      await comfyPage.clickEmptySpace()
+      await comfyPage.canvasOps.clickEmptySpace(
+        DefaultGraphPositions.emptySpaceClick
+      )
 
       await comfyPage.executeCommand('Comfy.QueuePrompt')
       await expect(comfyPage.page.locator('.comfy-error-report')).toBeVisible()
@@ -35,7 +38,7 @@ test.describe(
   { tag: ['@smoke', '@workflow'] },
   () => {
     test('Execute to selected output nodes', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('execution/partial_execution')
+      await comfyPage.workflow.loadWorkflow('execution/partial_execution')
       const input = await comfyPage.nodeOps.getNodeRefById(3)
       const output1 = await comfyPage.nodeOps.getNodeRefById(1)
       const output2 = await comfyPage.nodeOps.getNodeRefById(4)

@@ -28,7 +28,6 @@ import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SettingsHelper } from './helpers/SettingsHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
-import type { FolderStructure } from './helpers/WorkflowHelper'
 import type { Position } from './types'
 import type { NodeReference } from './utils/litegraphUtils'
 
@@ -228,14 +227,6 @@ export class ComfyPage {
     this.contextMenu = new ContextMenu(page)
   }
 
-  convertLeafToContent(structure: FolderStructure): FolderStructure {
-    return this.workflow.convertLeafToContent(structure)
-  }
-
-  async setupWorkflowsDirectory(structure: FolderStructure) {
-    return this.workflow.setupWorkflowsDirectory(structure)
-  }
-
   async setupUser(username: string) {
     const res = await this.request.get(`${this.url}/api/users`)
     if (res.status() !== 200)
@@ -384,14 +375,6 @@ export class ComfyPage {
     )
   }
 
-  async setSetting(settingId: string, settingValue: unknown): Promise<void> {
-    return this.settings.setSetting(settingId, settingValue)
-  }
-
-  async getSetting<T = unknown>(settingId: string): Promise<T> {
-    return this.settings.getSetting<T>(settingId)
-  }
-
   async goto() {
     await this.page.goto(this.url)
   }
@@ -404,17 +387,6 @@ export class ComfyPage {
 
   async delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
-  }
-
-  async loadWorkflow(workflowName: string) {
-    return this.workflow.loadWorkflow(workflowName)
-  }
-
-  async deleteWorkflow(
-    workflowName: string,
-    whenMissing: 'ignoreMissing' | 'throwIfMissing' = 'ignoreMissing'
-  ) {
-    return this.workflow.deleteWorkflow(workflowName, whenMissing)
   }
 
   /**
@@ -473,52 +445,6 @@ export class ComfyPage {
       .first()
       .waitFor({ state: 'hidden', timeout: 1000 })
       .catch(() => {})
-  }
-
-  /**
-   * @deprecated Use NodeReference pattern instead:
-   * ```
-   * const node = await comfyPage.nodeOps.getNodeRefByTitle('CLIP Text Encode (Prompt)');
-   * await node.click();
-   * ```
-   */
-  async clickTextEncodeNode1() {
-    await this.canvas.click({
-      position: DefaultGraphPositions.textEncodeNode1
-    })
-    await this.nextFrame()
-  }
-
-  /**
-   * @deprecated Use NodeReference pattern instead:
-   * ```
-   * const node = await comfyPage.nodeOps.getNodeRefByTitle('CLIP Text Encode (Prompt)');
-   * await node.clickToggler();
-   * ```
-   */
-  async clickTextEncodeNodeToggler() {
-    await this.canvas.click({
-      position: DefaultGraphPositions.textEncodeNodeToggler
-    })
-    await this.nextFrame()
-  }
-
-  /**
-   * @deprecated Use NodeReference pattern instead:
-   * ```
-   * const node = await comfyPage.nodeOps.getNodeRefByTitle('CLIP Text Encode (Prompt)');
-   * await node.click();
-   * ```
-   */
-  async clickTextEncodeNode2() {
-    await this.canvas.click({
-      position: DefaultGraphPositions.textEncodeNode2
-    })
-    await this.nextFrame()
-  }
-
-  async clickEmptySpace() {
-    return this.canvasOps.clickEmptySpace(DefaultGraphPositions.emptySpaceClick)
   }
 
   async dragAndDropExternalResource(
@@ -669,28 +595,6 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  // Default graph positions
-  get clipTextEncodeNode1InputSlot(): Position {
-    return DefaultGraphPositions.clipTextEncodeNode1InputSlot
-  }
-
-  get clipTextEncodeNode2InputSlot(): Position {
-    return DefaultGraphPositions.clipTextEncodeNode2InputSlot
-  }
-
-  // A point on input edge.
-  get clipTextEncodeNode2InputLinkPath(): Position {
-    return DefaultGraphPositions.clipTextEncodeNode2InputLinkPath
-  }
-
-  get loadCheckpointNodeClipOutputSlot(): Position {
-    return DefaultGraphPositions.loadCheckpointNodeClipOutputSlot
-  }
-
-  get emptySpace(): Position {
-    return DefaultGraphPositions.emptySpace
-  }
-
   get promptDialogInput() {
     return this.page.locator('.p-dialog-content input[type="text"]')
   }
@@ -704,8 +608,8 @@ export class ComfyPage {
 
   async disconnectEdge() {
     await this.canvasOps.dragAndDrop(
-      this.clipTextEncodeNode1InputSlot,
-      this.emptySpace
+      DefaultGraphPositions.clipTextEncodeNode1InputSlot,
+      DefaultGraphPositions.emptySpace
     )
   }
 
@@ -716,11 +620,11 @@ export class ComfyPage {
   ) {
     const { reverse = false } = options
     const start = reverse
-      ? this.clipTextEncodeNode1InputSlot
-      : this.loadCheckpointNodeClipOutputSlot
+      ? DefaultGraphPositions.clipTextEncodeNode1InputSlot
+      : DefaultGraphPositions.loadCheckpointNodeClipOutputSlot
     const end = reverse
-      ? this.loadCheckpointNodeClipOutputSlot
-      : this.clipTextEncodeNode1InputSlot
+      ? DefaultGraphPositions.loadCheckpointNodeClipOutputSlot
+      : DefaultGraphPositions.clipTextEncodeNode1InputSlot
 
     await this.canvasOps.dragAndDrop(start, end)
   }
@@ -738,153 +642,9 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  /**
-   * @deprecated Use `comfyPage.contextMenu.clickMenuItem(name)` instead.
-   */
-  async clickContextMenuItem(name: string): Promise<void> {
-    await this.contextMenu.clickMenuItem(name)
-    await this.nextFrame()
-  }
-
-  /**
-   * @deprecated Use `comfyPage.contextMenu.clickLitegraphMenuItem(name)` instead.
-   * Clicks on a litegraph context menu item (uses .litemenu-entry selector).
-   * Use this for canvas/node context menus, not PrimeVue menus.
-   */
-  async clickLitegraphContextMenuItem(name: string): Promise<void> {
-    await this.contextMenu.clickLitegraphMenuItem(name)
-    await this.nextFrame()
-  }
-
-  /**
-   * @deprecated Use NodeReference pattern instead:
-   * ```
-   * const node = await comfyPage.nodeOps.getNodeRefByTitle('Empty Latent Image');
-   * await node.click();
-   * ```
-   */
-  async clickEmptyLatentNode() {
-    await this.canvas.click({
-      position: {
-        x: 724,
-        y: 625
-      }
-    })
-    await this.page.mouse.move(10, 10)
-    await this.nextFrame()
-  }
-
-  /**
-   * @deprecated Use NodeReference pattern instead:
-   * ```
-   * const node = await comfyPage.nodeOps.getNodeRefByTitle('Empty Latent Image');
-   * await node.rightClick();
-   * ```
-   */
-  async rightClickEmptyLatentNode() {
-    await this.canvas.click({
-      position: {
-        x: 724,
-        y: 645
-      },
-      button: 'right'
-    })
-    await this.page.mouse.move(10, 10)
-    await this.nextFrame()
-  }
-
-  async ctrlSend(keyToPress: string, locator: Locator | null = this.canvas) {
-    await this.keyboard.ctrlSend(keyToPress, locator)
-  }
-
-  async ctrlA(locator?: Locator | null) {
-    await this.keyboard.selectAll(locator)
-  }
-
-  async ctrlB(locator?: Locator | null) {
-    await this.keyboard.bypass(locator)
-  }
-
-  async ctrlC(locator?: Locator | null) {
-    await this.clipboard.copy(locator)
-  }
-
-  async ctrlV(locator?: Locator | null) {
-    await this.clipboard.paste(locator)
-  }
-
-  async ctrlZ(locator?: Locator | null) {
-    await this.keyboard.undo(locator)
-  }
-
-  async ctrlY(locator?: Locator | null) {
-    await this.keyboard.redo(locator)
-  }
-
-  async ctrlArrowUp(locator?: Locator | null) {
-    await this.keyboard.moveUp(locator)
-  }
-
-  async ctrlArrowDown(locator?: Locator | null) {
-    await this.keyboard.moveDown(locator)
-  }
-
   async closeMenu() {
     await this.page.click('button.comfy-close-menu-btn')
     await this.nextFrame()
-  }
-
-  /**
-   * @deprecated Use dialog-specific close methods instead (e.g., settingDialog.close())
-   */
-  async closeDialog() {
-    await this.page
-      .locator('.p-dialog')
-      .getByRole('button', { name: 'Close' })
-      .click({ force: true })
-    await this.page.locator('.p-dialog').waitFor({ state: 'hidden' })
-  }
-
-  async resizeKsamplerNode(
-    percentX: number,
-    percentY: number,
-    revertAfter: boolean = false
-  ) {
-    return this.nodeOps.resizeNode(
-      DefaultGraphPositions.ksampler.pos,
-      DefaultGraphPositions.ksampler.size,
-      percentX,
-      percentY,
-      revertAfter
-    )
-  }
-
-  async resizeLoadCheckpointNode(
-    percentX: number,
-    percentY: number,
-    revertAfter: boolean = false
-  ) {
-    return this.nodeOps.resizeNode(
-      DefaultGraphPositions.loadCheckpoint.pos,
-      DefaultGraphPositions.loadCheckpoint.size,
-      percentX,
-      percentY,
-      revertAfter
-    )
-  }
-
-  async resizeEmptyLatentNode(
-    percentX: number,
-    percentY: number,
-    revertAfter: boolean = false
-  ) {
-    return this.nodeOps.resizeNode(
-      DefaultGraphPositions.emptyLatent.pos,
-      DefaultGraphPositions.emptyLatent.size,
-      percentX,
-      percentY,
-      revertAfter
-    )
   }
 
   async clickDialogButton(prompt: string, buttonText: string = 'Yes') {

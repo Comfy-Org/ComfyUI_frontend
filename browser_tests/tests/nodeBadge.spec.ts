@@ -3,9 +3,10 @@ import { expect } from '@playwright/test'
 import type { ComfyApp } from '../../src/scripts/app'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
@@ -73,9 +74,15 @@ test.describe(
     Object.values(NodeBadgeMode).forEach(async (mode) => {
       test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
         // Execution error workflow has both custom node and core node.
-        await comfyPage.loadWorkflow('nodes/execution_error')
-        await comfyPage.setSetting('Comfy.NodeBadge.NodeSourceBadgeMode', mode)
-        await comfyPage.setSetting('Comfy.NodeBadge.NodeIdBadgeMode', mode)
+        await comfyPage.workflow.loadWorkflow('nodes/execution_error')
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.NodeSourceBadgeMode',
+          mode
+        )
+        await comfyPage.settings.setSetting(
+          'Comfy.NodeBadge.NodeIdBadgeMode',
+          mode
+        )
         await comfyPage.nextFrame()
         await comfyPage.canvasOps.resetView()
         await expect(comfyPage.canvas).toHaveScreenshot(
@@ -93,14 +100,16 @@ test.describe(
     test('Can show node badge with unknown color palette', async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting(
+      await comfyPage.settings.setSetting(
         'Comfy.NodeBadge.NodeIdBadgeMode',
         NodeBadgeMode.ShowAll
       )
-      await comfyPage.setSetting('Comfy.ColorPalette', 'unknown')
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'unknown')
       await comfyPage.nextFrame()
       // Click empty space to trigger canvas re-render.
-      await comfyPage.clickEmptySpace()
+      await comfyPage.canvasOps.clickEmptySpace(
+        DefaultGraphPositions.emptySpaceClick
+      )
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-unknown-color-palette.png'
       )
@@ -109,14 +118,16 @@ test.describe(
     test('Can show node badge with light color palette', async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting(
+      await comfyPage.settings.setSetting(
         'Comfy.NodeBadge.NodeIdBadgeMode',
         NodeBadgeMode.ShowAll
       )
-      await comfyPage.setSetting('Comfy.ColorPalette', 'light')
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.nextFrame()
       // Click empty space to trigger canvas re-render.
-      await comfyPage.clickEmptySpace()
+      await comfyPage.canvasOps.clickEmptySpace(
+        DefaultGraphPositions.emptySpaceClick
+      )
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-light-color-palette.png'
       )

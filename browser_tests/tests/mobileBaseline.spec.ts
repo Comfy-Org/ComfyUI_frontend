@@ -6,7 +6,7 @@ test.describe(
   { tag: ['@mobile', '@screenshot'] },
   () => {
     test('@mobile empty canvas', async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.ConfirmClear', false)
+      await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
       await comfyPage.executeCommand('Comfy.ClearWorkflow')
       await expect(async () => {
         expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
@@ -16,7 +16,7 @@ test.describe(
     })
 
     test('@mobile default workflow', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('default')
+      await comfyPage.workflow.loadWorkflow('default')
       await expect(comfyPage.canvas).toHaveScreenshot(
         'mobile-default-workflow.png'
       )

@@ -380,7 +380,7 @@ export class NodeReference {
   }
   async copy() {
     await this.click('title')
-    await this.comfyPage.ctrlC()
+    await this.comfyPage.clipboard.copy()
     await this.comfyPage.nextFrame()
   }
   async connectWidget(

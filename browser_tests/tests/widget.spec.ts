@@ -1,33 +1,55 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Truncates text when resized', async ({ comfyPage }) => {
-    await comfyPage.resizeLoadCheckpointNode(0.2, 1)
+    await comfyPage.nodeOps.resizeNode(
+      DefaultGraphPositions.loadCheckpoint.pos,
+      DefaultGraphPositions.loadCheckpoint.size,
+      0.2,
+      1
+    )
     await expect(comfyPage.canvas).toHaveScreenshot(
       'load-checkpoint-resized-min-width.png'
     )
     await comfyPage.closeMenu()
-    await comfyPage.resizeKsamplerNode(0.2, 1)
+    await comfyPage.nodeOps.resizeNode(
+      DefaultGraphPositions.ksampler.pos,
+      DefaultGraphPositions.ksampler.size,
+      0.2,
+      1
+    )
     await expect(comfyPage.canvas).toHaveScreenshot(
       `ksampler-resized-min-width.png`
     )
   })
 
   test("Doesn't truncate when space still available", async ({ comfyPage }) => {
-    await comfyPage.resizeEmptyLatentNode(0.8, 0.8)
+    await comfyPage.nodeOps.resizeNode(
+      DefaultGraphPositions.emptyLatent.pos,
+      DefaultGraphPositions.emptyLatent.size,
+      0.8,
+      0.8
+    )
     await expect(comfyPage.canvas).toHaveScreenshot(
       'empty-latent-resized-80-percent.png'
     )
   })
 
   test('Can revert to full text', async ({ comfyPage }) => {
-    await comfyPage.resizeLoadCheckpointNode(0.8, 1, true)
+    await comfyPage.nodeOps.resizeNode(
+      DefaultGraphPositions.loadCheckpoint.pos,
+      DefaultGraphPositions.loadCheckpoint.size,
+      0.8,
+      1,
+      true
+    )
     await expect(comfyPage.canvas).toHaveScreenshot('resized-to-original.png')
   })
 
@@ -42,7 +64,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
           .options.values
       })
 
-    await comfyPage.loadWorkflow('inputs/optional_combo_input')
+    await comfyPage.workflow.loadWorkflow('inputs/optional_combo_input')
     const initialComboValues = await getComboValues()
 
     // Focus canvas
@@ -61,7 +83,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Should refresh combo values of nodes with v2 combo input spec', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('inputs/node_with_v2_combo_input')
+    await comfyPage.workflow.loadWorkflow('inputs/node_with_v2_combo_input')
     // click canvas to focus
     await comfyPage.page.mouse.click(400, 300)
     // press R to trigger refresh
@@ -81,7 +103,7 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
 
 test.describe('Boolean widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can toggle', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/boolean_widget')
+    await comfyPage.workflow.loadWorkflow('widgets/boolean_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('boolean_widget.png')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const widget = await node.getWidget(0)
@@ -94,7 +116,7 @@ test.describe('Boolean widget', { tag: ['@screenshot', '@widget'] }, () => {
 
 test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('inputs/simple_slider')
+    await comfyPage.workflow.loadWorkflow('inputs/simple_slider')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const widget = await node.getWidget(0)
 
@@ -115,7 +137,7 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
 
 test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can drag adjust value', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/seed_widget')
+    await comfyPage.workflow.loadWorkflow('widgets/seed_widget')
 
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const widget = await node.getWidget(0)
@@ -141,7 +163,7 @@ test.describe(
     test('Auto expand node when widget is added dynamically', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('nodes/single_ksampler')
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
 
       await comfyPage.page.evaluate(() => {
         window['graph'].nodes[0].addWidget('number', 'new_widget', 10)
@@ -157,12 +179,12 @@ test.describe(
 
 test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can load image', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png')
   })
 
   test('Can drag and drop image', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
     // Get position of the load image node
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
@@ -188,7 +210,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can change image by changing the filename combo value', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const loadImageNode = nodes[0]
 
@@ -250,7 +272,7 @@ test.describe(
     test.skip('Shows preview of uploaded animated image', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('widgets/load_animated_webp')
+      await comfyPage.workflow.loadWorkflow('widgets/load_animated_webp')
 
       // Get position of the load animated webp node
       const nodes = await comfyPage.nodeOps.getNodeRefsByType(
@@ -279,7 +301,7 @@ test.describe(
     })
 
     test('Can drag-and-drop animated webp image', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('widgets/load_animated_webp')
+      await comfyPage.workflow.loadWorkflow('widgets/load_animated_webp')
 
       // Get position of the load animated webp node
       const nodes = await comfyPage.nodeOps.getNodeRefsByType(
@@ -301,7 +323,7 @@ test.describe(
     })
 
     test('Can preview saved animated webp image', async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('widgets/save_animated_webp')
+      await comfyPage.workflow.loadWorkflow('widgets/save_animated_webp')
 
       // Get position of the load animated webp node
       const loadNodes = await comfyPage.nodeOps.getNodeRefsByType(
@@ -341,7 +363,7 @@ test.describe(
 
 test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can load audio', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/load_audio_widget')
+    await comfyPage.workflow.loadWorkflow('widgets/load_audio_widget')
     // Wait for the audio widget to be rendered in the DOM
     await comfyPage.page.waitForSelector('.comfy-audio', { state: 'attached' })
     await comfyPage.nextFrame()
@@ -354,7 +376,7 @@ test.describe('Unserialized widgets', { tag: '@widget' }, () => {
     comfyPage
   }) => {
     // Add workflow w/ LoadImage node, which contains file upload and image preview widgets (not serialized)
-    await comfyPage.loadWorkflow('widgets/load_image_widget')
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
     // Move mouse and click to trigger the `graphEqual` check in `changeTracker.ts`
     await comfyPage.page.mouse.move(10, 10)

@@ -15,8 +15,11 @@ async function checkTemplateFileExists(
 
 test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.Workflow.ShowMissingModelsWarning', false)
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.ShowMissingModelsWarning',
+      false
+    )
   })
 
   test('should have a JSON workflow file for each template', async ({
@@ -97,7 +100,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     // Set the tutorial as not completed to mark the user as a first-time user
-    await comfyPage.setSetting('Comfy.TutorialCompleted', false)
+    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
 
     // Load the page
     await comfyPage.setup({ clearStorage: true })
@@ -107,7 +110,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.Locale', 'fr')
+    await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
 
     await comfyPage.executeCommand('Comfy.BrowseTemplates')
 
@@ -134,7 +137,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     // Set locale to a language that doesn't have a template file
-    await comfyPage.setSetting('Comfy.Locale', 'de') // German - no index.de.json exists
+    await comfyPage.settings.setSetting('Comfy.Locale', 'de') // German - no index.de.json exists
 
     // Wait for the German request (expected to 404)
     const germanRequestPromise = comfyPage.page.waitForRequest(

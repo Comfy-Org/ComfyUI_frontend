@@ -5,7 +5,7 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Topbar commands', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test('Should allow registering topbar commands', async ({ comfyPage }) => {
@@ -102,10 +102,14 @@ test.describe('Topbar commands', () => {
       })
       // onChange is called when the setting is first added
       expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(1)
-      expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, world!')
+      expect(await comfyPage.settings.getSetting('TestSetting')).toBe(
+        'Hello, world!'
+      )
 
-      await comfyPage.setSetting('TestSetting', 'Hello, universe!')
-      expect(await comfyPage.getSetting('TestSetting')).toBe('Hello, universe!')
+      await comfyPage.settings.setSetting('TestSetting', 'Hello, universe!')
+      expect(await comfyPage.settings.getSetting('TestSetting')).toBe(
+        'Hello, universe!'
+      )
       expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(2)
     })
 
@@ -127,12 +131,16 @@ test.describe('Topbar commands', () => {
         })
       })
 
-      expect(await comfyPage.getSetting('Comfy.TestSetting')).toBe(false)
+      expect(await comfyPage.settings.getSetting('Comfy.TestSetting')).toBe(
+        false
+      )
       expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(1)
 
       await comfyPage.settingDialog.open()
       await comfyPage.settingDialog.toggleBooleanSetting('Comfy.TestSetting')
-      expect(await comfyPage.getSetting('Comfy.TestSetting')).toBe(true)
+      expect(await comfyPage.settings.getSetting('Comfy.TestSetting')).toBe(
+        true
+      )
       expect(await comfyPage.page.evaluate(() => window['changeCount'])).toBe(2)
     })
 
@@ -301,7 +309,7 @@ test.describe('Topbar commands', () => {
 
   test.describe('Selection Toolbox', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
     })
 
     test('Should allow adding commands to selection toolbox', async ({

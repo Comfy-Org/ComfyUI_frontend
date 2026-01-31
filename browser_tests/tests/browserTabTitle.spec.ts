@@ -1,11 +1,12 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.describe('Browser tab title', { tag: '@smoke' }, () => {
   test.describe('Beta Menu', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     })
 
     test('Can display workflow name', async ({ comfyPage }) => {
@@ -30,7 +31,9 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
       const textBox = comfyPage.widgetTextBox
       await textBox.fill('Hello World')
-      await comfyPage.clickEmptySpace()
+      await comfyPage.canvasOps.clickEmptySpace(
+        DefaultGraphPositions.emptySpaceClick
+      )
       expect(await comfyPage.page.title()).toBe(`*test - ComfyUI`)
 
       // Delete the saved workflow for cleanup.
@@ -42,7 +45,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
   test.describe('Legacy Menu', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
     })
 
     test('Can display default title', async ({ comfyPage }) => {

@@ -4,7 +4,7 @@ import type { Palette } from '../../src/schemas/colorPaletteSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 const customColorPalettes: Record<string, Palette> = {
@@ -153,23 +153,26 @@ const customColorPalettes: Record<string, Palette> = {
 
 test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
   test('Can show custom color palette', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.CustomColorPalettes', customColorPalettes)
+    await comfyPage.settings.setSetting(
+      'Comfy.CustomColorPalettes',
+      customColorPalettes
+    )
     // Reload to apply the new setting. Setting Comfy.CustomColorPalettes directly
     // doesn't update the store immediately.
     await comfyPage.setup()
 
-    await comfyPage.loadWorkflow('nodes/every_node_color')
-    await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+    await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
+    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark-all-colors.png'
     )
-    await comfyPage.setSetting('Comfy.ColorPalette', 'light_red')
+    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-light-red.png'
     )
 
-    await comfyPage.setSetting('Comfy.ColorPalette', 'dark')
+    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
   })
@@ -180,13 +183,16 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     }, customColorPalettes.obsidian_dark)
     expect(await comfyPage.getToastErrorCount()).toBe(0)
 
-    await comfyPage.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
     )
     // Legacy `custom_` prefix is still supported
-    await comfyPage.setSetting('Comfy.ColorPalette', 'custom_obsidian_dark')
+    await comfyPage.settings.setSetting(
+      'Comfy.ColorPalette',
+      'custom_obsidian_dark'
+    )
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'custom-color-palette-obsidian-dark.png'
@@ -199,20 +205,20 @@ test.describe(
   { tag: ['@screenshot', '@settings'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.loadWorkflow('nodes/every_node_color')
+      await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
     })
 
     test('should adjust opacity via node opacity setting', async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
+      await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.5)
 
       // Drag mouse to force canvas to redraw
       await comfyPage.page.mouse.move(0, 0)
 
       await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-0.5.png')
 
-      await comfyPage.setSetting('Comfy.Node.Opacity', 1.0)
+      await comfyPage.settings.setSetting('Comfy.Node.Opacity', 1.0)
 
       await comfyPage.page.mouse.move(8, 8)
       await expect(comfyPage.canvas).toHaveScreenshot('node-opacity-1.png')
@@ -221,8 +227,8 @@ test.describe(
     test('should persist color adjustments when changing themes', async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting('Comfy.Node.Opacity', 0.2)
-      await comfyPage.setSetting('Comfy.ColorPalette', 'arc')
+      await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.2)
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'arc')
       await comfyPage.nextFrame()
       await comfyPage.page.mouse.move(0, 0)
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -233,8 +239,8 @@ test.describe(
     test('should not serialize color adjustments in workflow', async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting('Comfy.Node.Opacity', 0.5)
-      await comfyPage.setSetting('Comfy.ColorPalette', 'light')
+      await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.5)
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.nextFrame()
       const parsed = await (
         await comfyPage.page.waitForFunction(
@@ -262,7 +268,7 @@ test.describe(
     test('should lighten node colors when switching to light theme', async ({
       comfyPage
     }) => {
-      await comfyPage.setSetting('Comfy.ColorPalette', 'light')
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-lightened-colors.png'
@@ -271,8 +277,8 @@ test.describe(
 
     test.describe('Context menu color adjustments', () => {
       test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.setSetting('Comfy.ColorPalette', 'light')
-        await comfyPage.setSetting('Comfy.Node.Opacity', 0.3)
+        await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
+        await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.3)
         const node = await comfyPage.nodeOps.getFirstNodeRef()
         await node?.clickContextMenuOption('Colors')
       })

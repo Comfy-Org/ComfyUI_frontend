@@ -4,10 +4,10 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Minimap', { tag: '@canvas' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.Minimap.Visible', true)
-    await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
-    await comfyPage.loadWorkflow('default')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
+    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
+    await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.page.waitForFunction(
       () => window['app'] && window['app'].canvas
     )

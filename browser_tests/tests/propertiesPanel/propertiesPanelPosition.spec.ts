@@ -12,7 +12,7 @@ test.describe('Properties panel position', () => {
   test('positions on the right when sidebar is on the left', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'left')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'left')
     await comfyPage.nextFrame()
 
     const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
@@ -36,7 +36,7 @@ test.describe('Properties panel position', () => {
   test('positions on the left when sidebar is on the right', async ({
     comfyPage
   }) => {
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'right')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
     await comfyPage.nextFrame()
 
     const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
@@ -63,7 +63,7 @@ test.describe('Properties panel position', () => {
     const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
 
     // When sidebar is on the left, panel is on the right
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'left')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'left')
     await comfyPage.nextFrame()
 
     await expect(propertiesPanel).toBeVisible()
@@ -74,7 +74,7 @@ test.describe('Properties panel position', () => {
     await expect(closeButtonLeft).toHaveClass(/lucide--panel-right/)
 
     // When sidebar is on the right, panel is on the left
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'right')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
     await comfyPage.nextFrame()
 
     const closeButtonRight = propertiesPanel

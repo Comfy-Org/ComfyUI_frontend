@@ -5,14 +5,14 @@ import { comfyPageFixture } from '../fixtures/ComfyPage'
 const test = comfyPageFixture
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
 test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
   })
 
   test('shows selection toolbox', async ({ comfyPage }) => {
@@ -36,11 +36,11 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   test('shows at correct position when node is pasted', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('nodes/single_ksampler')
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await comfyPage.nodeOps.selectNodes(['KSampler'])
-    await comfyPage.ctrlC()
+    await comfyPage.clipboard.copy()
     await comfyPage.page.mouse.move(100, 100)
-    await comfyPage.ctrlV()
+    await comfyPage.clipboard.paste()
 
     const toolboxContainer = comfyPage.selectionToolbox
     await expect(toolboxContainer).toBeVisible()
@@ -57,7 +57,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
   test('hide when select and drag happen at the same time', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('nodes/single_ksampler')
+    await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     const nodePos = await node.getPosition()
 
@@ -104,7 +104,7 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     comfyPage
   }) => {
     // A group + a KSampler node
-    await comfyPage.loadWorkflow('groups/single_group')
+    await comfyPage.workflow.loadWorkflow('groups/single_group')
 
     // Select group + node should show bypass button
     await comfyPage.page.focus('canvas')

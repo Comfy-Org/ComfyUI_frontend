@@ -100,10 +100,10 @@ async function connectSlots(
 
 test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     // await comfyPage.setup()
-    await comfyPage.loadWorkflow('vueNodes/simple-triple')
+    await comfyPage.workflow.loadWorkflow('vueNodes/simple-triple')
     await comfyPage.vueNodes.waitForNodes()
     await fitToViewInstant(comfyPage)
   })
@@ -872,7 +872,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       comfyPage,
       comfyMouse
     }) => {
-      await comfyPage.setSetting(
+      await comfyPage.settings.setSetting(
         'Comfy.LinkRelease.ActionShift',
         'context menu'
       )
@@ -924,11 +924,11 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       comfyPage,
       comfyMouse
     }) => {
-      await comfyPage.setSetting(
+      await comfyPage.settings.setSetting(
         'Comfy.LinkRelease.ActionShift',
         'context menu'
       )
-      await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+      await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
 
       const samplerNode = (
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
@@ -953,7 +953,8 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       }
 
       // Open Search from the context menu
-      await comfyPage.clickContextMenuItem('Search')
+      await comfyPage.contextMenu.clickMenuItem('Search')
+      await comfyPage.nextFrame()
 
       // Search box opens with prefilled type filter based on link type (LATENT)
       await expect(comfyPage.searchBox.input).toBeVisible()
@@ -989,7 +990,10 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       comfyPage,
       comfyMouse
     }) => {
-      await comfyPage.setSetting('Comfy.LinkRelease.ActionShift', 'search box')
+      await comfyPage.settings.setSetting(
+        'Comfy.LinkRelease.ActionShift',
+        'search box'
+      )
 
       const samplerNode = (
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')

@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Release Notifications', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test('should show help center with release information', async ({
@@ -135,7 +135,10 @@ test.describe('Release Notifications', () => {
     comfyPage
   }) => {
     // Disable version update notifications
-    await comfyPage.setSetting('Comfy.Notification.ShowVersionUpdates', false)
+    await comfyPage.settings.setSetting(
+      'Comfy.Notification.ShowVersionUpdates',
+      false
+    )
 
     // Mock release API with test data
     await comfyPage.page.route('**/releases**', async (route) => {
@@ -189,7 +192,10 @@ test.describe('Release Notifications', () => {
     comfyPage
   }) => {
     // Disable version update notifications
-    await comfyPage.setSetting('Comfy.Notification.ShowVersionUpdates', false)
+    await comfyPage.settings.setSetting(
+      'Comfy.Notification.ShowVersionUpdates',
+      false
+    )
 
     // Track API calls
     let apiCallCount = 0
@@ -220,7 +226,10 @@ test.describe('Release Notifications', () => {
     comfyPage
   }) => {
     // Enable version update notifications (default behavior)
-    await comfyPage.setSetting('Comfy.Notification.ShowVersionUpdates', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Notification.ShowVersionUpdates',
+      true
+    )
 
     // Mock release API with test data
     await comfyPage.page.route('**/releases**', async (route) => {
@@ -299,7 +308,10 @@ test.describe('Release Notifications', () => {
     })
 
     // Start with notifications enabled
-    await comfyPage.setSetting('Comfy.Notification.ShowVersionUpdates', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Notification.ShowVersionUpdates',
+      true
+    )
     await comfyPage.setup({ mockReleases: false })
 
     // Open help center
@@ -315,7 +327,10 @@ test.describe('Release Notifications', () => {
     await comfyPage.page.click('.help-center-backdrop')
 
     // Disable notifications
-    await comfyPage.setSetting('Comfy.Notification.ShowVersionUpdates', false)
+    await comfyPage.settings.setSetting(
+      'Comfy.Notification.ShowVersionUpdates',
+      false
+    )
 
     // Reopen help center
     await helpCenterButton.click()
@@ -328,7 +343,10 @@ test.describe('Release Notifications', () => {
     comfyPage
   }) => {
     // Disable notifications
-    await comfyPage.setSetting('Comfy.Notification.ShowVersionUpdates', false)
+    await comfyPage.settings.setSetting(
+      'Comfy.Notification.ShowVersionUpdates',
+      false
+    )
 
     // Mock empty releases
     await comfyPage.page.route('**/releases**', async (route) => {

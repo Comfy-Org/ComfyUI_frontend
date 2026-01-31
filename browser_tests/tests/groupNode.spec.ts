@@ -2,10 +2,11 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe('Group Node', { tag: '@node' }, () => {
@@ -16,7 +17,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     let libraryTab
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       libraryTab = comfyPage.menu.nodeLibraryTab
       await comfyPage.nodeOps.convertAllNodesToGroupNode(groupNodeName)
       await libraryTab.open()
@@ -50,7 +51,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
       // Verify the node is added to the bookmarks tab
       expect(
-        await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
+        await comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
       ).toEqual([groupNodeBookmarkName])
       // Verify the bookmark node with the same name is added to the tree
       expect(await libraryTab.getNode(groupNodeName).count()).not.toBe(0)
@@ -64,7 +65,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
       // Verify the node is removed from the bookmarks tab
       expect(
-        await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
+        await comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
       ).toHaveLength(0)
     })
 
@@ -107,7 +108,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
   )
 
   test('Displays tooltip on title hover', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.EnableTooltips', true)
+    await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
     await comfyPage.nodeOps.convertAllNodesToGroupNode('Group Node')
     await comfyPage.page.mouse.move(47, 173)
     await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
@@ -146,7 +147,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
   test('Preserves hidden input configuration when containing duplicate node types', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow(
+    await comfyPage.workflow.loadWorkflow(
       'groupnodes/group_node_identical_nodes_hidden_inputs'
     )
     await comfyPage.nextFrame()
@@ -215,7 +216,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
   test('Loads from a workflow using the legacy path separator ("/")', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('groupnodes/legacy_group_node')
+    await comfyPage.workflow.loadWorkflow('groupnodes/legacy_group_node')
     expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.locator('.comfy-missing-nodes')
@@ -256,8 +257,8 @@ test.describe('Group Node', { tag: '@node' }, () => {
     }
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-      await comfyPage.loadWorkflow(WORKFLOW_NAME)
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.workflow.loadWorkflow(WORKFLOW_NAME)
       groupNode = await comfyPage.nodeOps.getFirstNodeRef()
       if (!groupNode)
         throw new Error(`Group node not found in workflow ${WORKFLOW_NAME}`)
@@ -267,7 +268,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     test('Copies and pastes group node within the same workflow', async ({
       comfyPage
     }) => {
-      await comfyPage.ctrlV()
+      await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 2)
     })
 
@@ -275,12 +276,12 @@ test.describe('Group Node', { tag: '@node' }, () => {
       comfyPage
     }) => {
       // Set setting
-      await comfyPage.setSetting('Comfy.ConfirmClear', false)
+      await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
 
       // Clear workflow
       await comfyPage.executeCommand('Comfy.ClearWorkflow')
 
-      await comfyPage.ctrlV()
+      await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 1)
     })
 
@@ -288,15 +289,15 @@ test.describe('Group Node', { tag: '@node' }, () => {
       comfyPage
     }) => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await comfyPage.ctrlV()
+      await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 1)
     })
 
     test('Copies and pastes group node across different workflows', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('default')
-      await comfyPage.ctrlV()
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 1)
     })
 
@@ -304,7 +305,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
       comfyPage
     }) => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await comfyPage.ctrlV()
+      await comfyPage.clipboard.paste()
       const currentGraphState = await comfyPage.page.evaluate(() =>
         window['app'].graph.serialize()
       )
@@ -328,7 +329,10 @@ test.describe('Group Node', { tag: '@node' }, () => {
     })
     test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
       expect(await comfyPage.getVisibleToastCount()).toBe(0)
-      await comfyPage.clickTextEncodeNode1()
+      await comfyPage.canvas.click({
+        position: DefaultGraphPositions.textEncodeNode1
+      })
+      await comfyPage.nextFrame()
       await comfyPage.page.keyboard.press('Alt+g')
       expect(await comfyPage.getVisibleToastCount()).toBe(1)
     })

@@ -8,7 +8,7 @@ const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
 
 test.describe('Vue Node Pin', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 

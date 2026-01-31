@@ -14,13 +14,13 @@ const SELECTORS = {
 
 test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
   })
 
   test('Shows current slot label (not stale) in rename dialog', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
+    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
     const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
     await subgraphNode.navigateIntoSubgraph()
@@ -33,7 +33,8 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
 
     // First rename
     await comfyPage.subgraph.rightClickInputSlot(initialInputLabel)
-    await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
+    await comfyPage.nextFrame()
 
     await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
       state: 'visible'
@@ -68,7 +69,8 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     // Now rename again - this is where the bug would show
     // We need to use the index-based approach since the method looks for slot.name
     await comfyPage.subgraph.rightClickInputSlot()
-    await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
+    await comfyPage.nextFrame()
 
     await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
       state: 'visible'
@@ -106,7 +108,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
   test('Shows current output slot label in rename dialog', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('subgraphs/basic-subgraph')
+    await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
 
     const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
     await subgraphNode.navigateIntoSubgraph()
@@ -119,7 +121,8 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
 
     // First rename
     await comfyPage.subgraph.rightClickOutputSlot(initialOutputLabel)
-    await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
+    await comfyPage.nextFrame()
 
     await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
       state: 'visible'
@@ -142,7 +145,8 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
     // Now rename again to check for stale content
     // We need to use the index-based approach since the method looks for slot.name
     await comfyPage.subgraph.rightClickOutputSlot()
-    await comfyPage.clickLitegraphContextMenuItem('Rename Slot')
+    await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
+    await comfyPage.nextFrame()
 
     await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
       state: 'visible'

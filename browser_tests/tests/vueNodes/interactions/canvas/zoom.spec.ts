@@ -5,8 +5,8 @@ import {
 
 test.describe('Vue Nodes Zoom', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 8)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('LiteGraph.Canvas.MinFontSizeForLOD', 8)
     await comfyPage.vueNodes.waitForNodes()
   })
 

@@ -7,8 +7,8 @@ const CREATE_GROUP_HOTKEY = 'Control+g'
 
 test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setSetting('Comfy.Minimap.ShowGroups', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.Minimap.ShowGroups', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 
@@ -24,8 +24,8 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
 
   test('should allow fitting group to contents', async ({ comfyPage }) => {
     await comfyPage.setup()
-    await comfyPage.loadWorkflow('groups/oversized_group')
-    await comfyPage.ctrlA()
+    await comfyPage.workflow.loadWorkflow('groups/oversized_group')
+    await comfyPage.keyboard.selectAll()
     await comfyPage.executeCommand('Comfy.Graph.FitGroupToContents')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
@@ -36,7 +36,7 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
   test('should move nested groups together when dragging outer group', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('groups/nested-groups-1-inner-node')
+    await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
 
     // Get initial positions with null guards
     const outerInitial = await comfyPage.getGroupPosition('Outer Group')

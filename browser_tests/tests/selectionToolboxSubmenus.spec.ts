@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe(
@@ -12,8 +12,8 @@ test.describe(
   { tag: '@ui' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
-      await comfyPage.loadWorkflow('nodes/single_ksampler')
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
       await comfyPage.nextFrame()
       await comfyPage.nodeOps.selectNodes(['KSampler'])
       await comfyPage.nextFrame()
