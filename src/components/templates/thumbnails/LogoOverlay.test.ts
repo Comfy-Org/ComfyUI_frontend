@@ -1,16 +1,22 @@
 import { mount } from '@vue/test-utils'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 
+type LogoOverlayProps = ComponentProps<typeof LogoOverlay>
+
 describe('LogoOverlay', () => {
   function mockGetLogoUrl(provider: string) {
     return `/logos/${provider}.png`
   }
 
-  function mountOverlay(logos: LogoInfo[], props = {}) {
+  function mountOverlay(
+    logos: LogoInfo[],
+    props: Partial<LogoOverlayProps> = {}
+  ) {
     return mount(LogoOverlay, {
       props: {
         logos,
@@ -83,10 +89,10 @@ describe('LogoOverlay', () => {
       expect(images[1].attributes('alt')).toBe('Hunyuan')
     })
 
-    it('joins provider names with ampersand for default label', () => {
+    it('joins provider names with locale-aware conjunction for default label', () => {
       const wrapper = mountOverlay([{ provider: ['WaveSpeed', 'Hunyuan'] }])
       const span = wrapper.find('span')
-      expect(span.text()).toBe('WaveSpeed & Hunyuan')
+      expect(span.text()).toBe('WaveSpeed and Hunyuan')
     })
 
     it('uses custom label when provided', () => {
