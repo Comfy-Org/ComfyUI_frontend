@@ -98,12 +98,10 @@ const config: StorybookConfig = {
       },
       build: {
         rolldownOptions: {
-          experimental: {
-            strictExecutionOrder: true
-          },
           treeshake: false,
           output: {
-            keepNames: true
+            keepNames: true,
+            strictExecutionOrder: true
           },
           onwarn: (warning, warn) => {
             // Suppress specific warnings
