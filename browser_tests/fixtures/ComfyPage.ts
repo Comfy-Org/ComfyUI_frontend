@@ -12,6 +12,7 @@ import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
@@ -184,6 +185,7 @@ export class ComfyPage {
   public readonly keyboard: KeyboardHelper
   public readonly clipboard: ClipboardHelper
   public readonly workflow: WorkflowHelper
+  public readonly contextMenu: ContextMenu
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -224,6 +226,7 @@ export class ComfyPage {
     this.keyboard = new KeyboardHelper(page, this.canvas)
     this.clipboard = new ClipboardHelper(page, this.canvas)
     this.workflow = new WorkflowHelper(this)
+    this.contextMenu = new ContextMenu(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -736,17 +739,21 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * @deprecated Use `comfyPage.contextMenu.clickMenuItem(name)` instead.
+   */
   async clickContextMenuItem(name: string): Promise<void> {
-    await this.page.getByRole('menuitem', { name }).click()
+    await this.contextMenu.clickMenuItem(name)
     await this.nextFrame()
   }
 
   /**
+   * @deprecated Use `comfyPage.contextMenu.clickLitegraphMenuItem(name)` instead.
    * Clicks on a litegraph context menu item (uses .litemenu-entry selector).
    * Use this for canvas/node context menus, not PrimeVue menus.
    */
   async clickLitegraphContextMenuItem(name: string): Promise<void> {
-    await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
+    await this.contextMenu.clickLitegraphMenuItem(name)
     await this.nextFrame()
   }
 
@@ -828,6 +835,9 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * @deprecated Use dialog-specific close methods instead (e.g., settingDialog.close())
+   */
   async closeDialog() {
     await this.page.locator('.p-dialog-close-button').click({ force: true })
     await this.page.locator('.p-dialog').waitFor({ state: 'hidden' })
