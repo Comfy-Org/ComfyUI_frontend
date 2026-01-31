@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import type { ComfyPage } from '../ComfyPage'
-import type { NodeReference} from '../utils/litegraphUtils';
+import type { NodeReference } from '../utils/litegraphUtils'
 import { SubgraphSlotReference } from '../utils/litegraphUtils'
 
 export class SubgraphHelper {
@@ -88,14 +88,6 @@ export class SubgraphHelper {
                 app.canvas.pointer,
                 app.canvas.linkConnector
               )
-            }
-
-            // Wait briefly for menu to appear
-            await new Promise((resolve) => setTimeout(resolve, 100))
-
-            // Check if context menu appeared
-            const menuExists = document.querySelector('.litemenu-entry')
-            if (menuExists) {
               return {
                 success: true,
                 slotName: slot.name,
@@ -135,9 +127,6 @@ export class SubgraphHelper {
               app.canvas.pointer.onDoubleClick(event)
             }
           }
-
-          // Wait briefly for dialog to appear
-          await new Promise((resolve) => setTimeout(resolve, 200))
 
           return { success: true, slotName: slot.name, x: testX, y: testY }
         }
