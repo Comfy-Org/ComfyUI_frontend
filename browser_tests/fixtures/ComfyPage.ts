@@ -20,6 +20,7 @@ import {
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import { DefaultGraphPositions } from './constants/defaultGraphPositions'
+import { DebugHelper } from './helpers/DebugHelper'
 import type { Position, Size } from './types'
 import { NodeReference, SubgraphSlotReference } from './utils/litegraphUtils'
 
@@ -171,6 +172,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
+  public readonly debug: DebugHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -203,6 +205,7 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
+    this.debug = new DebugHelper(page, this.canvas)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -1153,57 +1156,20 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  /**
-   * Add a visual marker at a position for debugging
-   */
+  /** @deprecated Use this.debug.addMarker() instead */
   async debugAddMarker(
     position: Position,
     id: string = 'debug-marker'
   ): Promise<void> {
-    await this.page.evaluate(
-      ([pos, markerId]) => {
-        // Remove existing marker if present
-        const existing = document.getElementById(markerId)
-        if (existing) existing.remove()
-
-        // Create marker
-        const marker = document.createElement('div')
-        marker.id = markerId
-        marker.style.position = 'fixed'
-        marker.style.left = `${pos.x - 10}px`
-        marker.style.top = `${pos.y - 10}px`
-        marker.style.width = '20px'
-        marker.style.height = '20px'
-        marker.style.border = '2px solid red'
-        marker.style.borderRadius = '50%'
-        marker.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'
-        marker.style.pointerEvents = 'none'
-        marker.style.zIndex = '10000'
-        document.body.appendChild(marker)
-      },
-      [position, id] as const
-    )
+    return this.debug.addMarker(position, id)
   }
 
-  /**
-   * Remove debug markers
-   */
+  /** @deprecated Use this.debug.removeMarkers() instead */
   async debugRemoveMarkers(): Promise<void> {
-    await this.page.evaluate(() => {
-      document
-        .querySelectorAll('[id^="debug-marker"]')
-        .forEach((el) => el.remove())
-    })
+    return this.debug.removeMarkers()
   }
 
-  /**
-   * Take a screenshot and attach it to the test report for debugging
-   * This is a convenience method that combines screenshot capture and test attachment
-   *
-   * @param testInfo The Playwright TestInfo object (from test parameters)
-   * @param name Name for the attachment
-   * @param options Optional screenshot options (defaults to page screenshot)
-   */
+  /** @deprecated Use this.debug.attachScreenshot() instead */
   async debugAttachScreenshot(
     testInfo: any,
     name: string,
@@ -1213,35 +1179,7 @@ export class ComfyPage {
       markers?: Array<{ position: Position; id?: string }>
     }
   ): Promise<void> {
-    // Add markers if requested
-    if (options?.markers) {
-      for (const marker of options.markers) {
-        await this.debugAddMarker(marker.position, marker.id)
-      }
-    }
-
-    // Take screenshot - default to page if not specified
-    let screenshot: Buffer
-    const targetElement = options?.element || 'page'
-
-    if (targetElement === 'canvas') {
-      screenshot = await this.canvas.screenshot()
-    } else if (options?.fullPage) {
-      screenshot = await this.page.screenshot({ fullPage: true })
-    } else {
-      screenshot = await this.page.screenshot()
-    }
-
-    // Attach to test report
-    await testInfo.attach(name, {
-      body: screenshot,
-      contentType: 'image/png'
-    })
-
-    // Clean up markers if we added any
-    if (options?.markers) {
-      await this.debugRemoveMarkers()
-    }
+    return this.debug.attachScreenshot(testInfo, name, options)
   }
 
   async doubleClickCanvas() {
@@ -1249,105 +1187,24 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  /**
-   * Capture the canvas as a PNG and save it for debugging
-   */
+  /** @deprecated Use this.debug.saveCanvasScreenshot() instead */
   async debugSaveCanvasScreenshot(filename: string): Promise<void> {
-    await this.page.evaluate(async (filename) => {
-      const canvas = document.getElementById(
-        'graph-canvas'
-      ) as HTMLCanvasElement
-      if (!canvas) {
-        throw new Error('Canvas not found')
-      }
-
-      // Convert canvas to blob
-      return new Promise<void>((resolve) => {
-        canvas.toBlob(async (blob) => {
-          if (!blob) {
-            throw new Error('Failed to create blob from canvas')
-          }
-
-          // Create a download link and trigger it
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = filename
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          URL.revokeObjectURL(url)
-          resolve()
-        }, 'image/png')
-      })
-    }, filename)
+    return this.debug.saveCanvasScreenshot(filename)
   }
 
-  /**
-   * Capture canvas as base64 data URL for inspection
-   */
+  /** @deprecated Use this.debug.getCanvasDataURL() instead */
   async debugGetCanvasDataURL(): Promise<string> {
-    return await this.page.evaluate(() => {
-      const canvas = document.getElementById(
-        'graph-canvas'
-      ) as HTMLCanvasElement
-      if (!canvas) {
-        throw new Error('Canvas not found')
-      }
-      return canvas.toDataURL('image/png')
-    })
+    return this.debug.getCanvasDataURL()
   }
 
-  /**
-   * Create an overlay div with the canvas image for easier Playwright screenshot
-   */
+  /** @deprecated Use this.debug.showCanvasOverlay() instead */
   async debugShowCanvasOverlay(): Promise<void> {
-    await this.page.evaluate(() => {
-      const canvas = document.getElementById(
-        'graph-canvas'
-      ) as HTMLCanvasElement
-      if (!canvas) {
-        throw new Error('Canvas not found')
-      }
-
-      // Remove existing overlay if present
-      const existingOverlay = document.getElementById('debug-canvas-overlay')
-      if (existingOverlay) {
-        existingOverlay.remove()
-      }
-
-      // Create overlay div
-      const overlay = document.createElement('div')
-      overlay.id = 'debug-canvas-overlay'
-      overlay.style.position = 'fixed'
-      overlay.style.top = '0'
-      overlay.style.left = '0'
-      overlay.style.zIndex = '9999'
-      overlay.style.backgroundColor = 'white'
-      overlay.style.padding = '10px'
-      overlay.style.border = '2px solid red'
-
-      // Create image from canvas
-      const img = document.createElement('img')
-      img.src = canvas.toDataURL('image/png')
-      img.style.maxWidth = '800px'
-      img.style.maxHeight = '600px'
-      overlay.appendChild(img)
-
-      document.body.appendChild(overlay)
-    })
+    return this.debug.showCanvasOverlay()
   }
 
-  /**
-   * Remove the debug canvas overlay
-   */
+  /** @deprecated Use this.debug.hideCanvasOverlay() instead */
   async debugHideCanvasOverlay(): Promise<void> {
-    await this.page.evaluate(() => {
-      const overlay = document.getElementById('debug-canvas-overlay')
-      if (overlay) {
-        overlay.remove()
-      }
-    })
+    return this.debug.hideCanvasOverlay()
   }
 
   async clickEmptyLatentNode() {
