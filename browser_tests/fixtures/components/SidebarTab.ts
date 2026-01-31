@@ -1,5 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
+import { TestIds } from '../selectors'
+
 class SidebarTab {
   constructor(
     public readonly page: Page,
@@ -36,11 +38,13 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   get nodeLibrarySearchBoxInput() {
-    return this.page.locator('.node-lib-search-box input[type="text"]')
+    return this.page
+      .getByTestId(TestIds.sidebar.nodeLibrarySearch)
+      .locator('input')
   }
 
   get nodeLibraryTree() {
-    return this.page.locator('.node-lib-tree-explorer')
+    return this.page.getByTestId(TestIds.sidebar.nodeLibrary)
   }
 
   get nodePreview() {
@@ -69,20 +73,16 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
   }
 
-  folderSelector(folderName: string) {
-    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.tree-folder .node-label:has-text("${folderName}")))`
-  }
-
   getFolder(folderName: string) {
-    return this.page.locator(this.folderSelector(folderName))
-  }
-
-  nodeSelector(nodeName: string) {
-    return `.p-tree-node-content:has(> .tree-explorer-node-label:has(.tree-leaf .node-label:has-text("${nodeName}")))`
+    return this.page.locator(
+      `[data-testid="node-tree-folder"][data-folder-name="${folderName}"]`
+    )
   }
 
   getNode(nodeName: string) {
-    return this.page.locator(this.nodeSelector(nodeName))
+    return this.page.locator(
+      `[data-testid="node-tree-leaf"][data-node-name="${nodeName}"]`
+    )
   }
 }
 
@@ -92,7 +92,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   }
 
   get root() {
-    return this.page.locator('.workflows-sidebar-tab')
+    return this.page.getByTestId(TestIds.sidebar.workflows)
   }
 
   async getOpenedWorkflowNames() {
