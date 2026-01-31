@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildMissingNodeHint,
   createMissingNodeTypeFromError
-} from './missingNodeUtil'
+} from './missingNodeErrorUtil'
 
 describe('buildMissingNodeHint', () => {
   it('returns hint with title and node ID when both available', () => {

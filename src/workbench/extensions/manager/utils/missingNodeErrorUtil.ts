@@ -1,13 +1,6 @@
 import type { MissingNodeType } from '@/types/comfy'
 
-/**
- * Extra info returned by the backend for missing_node_type errors
- */
-export interface MissingNodeTypeExtraInfo {
-  class_type?: string | null
-  node_title?: string | null
-  node_id?: string
-}
+import type { MissingNodeTypeExtraInfo } from '../types/missingNodeErrorTypes'
 
 /**
  * Builds a hint string from missing node metadata.

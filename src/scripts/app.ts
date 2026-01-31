@@ -70,10 +70,8 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import { type ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import {
-  createMissingNodeTypeFromError,
-  type MissingNodeTypeExtraInfo
-} from '@/utils/missingNodeUtil'
+import type { MissingNodeTypeExtraInfo } from '@/workbench/extensions/manager/types/missingNodeErrorTypes'
+import { createMissingNodeTypeFromError } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
