@@ -442,11 +442,9 @@ export default defineConfig({
           'console.trace'
         ]
       },
-      experimental: {
-        strictExecutionOrder: true
-      },
       output: {
         keepNames: true,
+        strictExecutionOrder: true,
         codeSplitting: {
           groups: [
             {
