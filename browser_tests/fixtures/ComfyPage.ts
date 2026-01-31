@@ -26,8 +26,8 @@ import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SettingsHelper } from './helpers/SettingsHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
-import { WorkflowHelper } from './helpers/WorkflowHelper';
-import type { FolderStructure } from './helpers/WorkflowHelper';
+import { WorkflowHelper } from './helpers/WorkflowHelper'
+import type { FolderStructure } from './helpers/WorkflowHelper'
 import type { Position } from './types'
 import type { NodeReference } from './utils/litegraphUtils'
 
@@ -473,6 +473,13 @@ export class ComfyPage {
       .catch(() => {})
   }
 
+  /**
+   * @deprecated Use NodeReference pattern instead:
+   * ```
+   * const node = await comfyPage.nodeOps.getNodeRefByTitle('CLIP Text Encode (Prompt)');
+   * await node.click();
+   * ```
+   */
   async clickTextEncodeNode1() {
     await this.canvas.click({
       position: DefaultGraphPositions.textEncodeNode1
@@ -480,6 +487,13 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * @deprecated Use NodeReference pattern instead:
+   * ```
+   * const node = await comfyPage.nodeOps.getNodeRefByTitle('CLIP Text Encode (Prompt)');
+   * await node.clickToggler();
+   * ```
+   */
   async clickTextEncodeNodeToggler() {
     await this.canvas.click({
       position: DefaultGraphPositions.textEncodeNodeToggler
@@ -487,6 +501,13 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * @deprecated Use NodeReference pattern instead:
+   * ```
+   * const node = await comfyPage.nodeOps.getNodeRefByTitle('CLIP Text Encode (Prompt)');
+   * await node.click();
+   * ```
+   */
   async clickTextEncodeNode2() {
     await this.canvas.click({
       position: DefaultGraphPositions.textEncodeNode2
@@ -729,6 +750,13 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * @deprecated Use NodeReference pattern instead:
+   * ```
+   * const node = await comfyPage.nodeOps.getNodeRefByTitle('Empty Latent Image');
+   * await node.click();
+   * ```
+   */
   async clickEmptyLatentNode() {
     await this.canvas.click({
       position: {
@@ -740,6 +768,13 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /**
+   * @deprecated Use NodeReference pattern instead:
+   * ```
+   * const node = await comfyPage.nodeOps.getNodeRefByTitle('Empty Latent Image');
+   * await node.rightClick();
+   * ```
+   */
   async rightClickEmptyLatentNode() {
     await this.canvas.click({
       position: {
