@@ -15,6 +15,32 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
    - More stable, faster, easier to debug
    - See [testing/assets.md](testing/assets.md) for details
 
+## Vue Nodes vs LiteGraph: Which API?
+
+**Choose your approach based on what you're testing:**
+
+| Rendering Mode | When to Use | API Style |
+|----------------|-------------|-----------|
+| **Vue Nodes 2.0** | Testing Vue-rendered node UI, DOM widgets, CSS states | `comfyPage.vueNodes.*`, Playwright locators (`getByText`, `getByRole`) |
+| **LiteGraph (Canvas)** | Testing canvas interactions, connections, legacy behavior | `comfyPage.getNodeRefByTitle()`, `NodeReference` methods |
+
+### Vue Nodes 2.0
+```typescript
+await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+await comfyPage.vueNodes.waitForNodes()
+const node = comfyPage.vueNodes.getNodeByTitle('KSampler')  // Returns Locator
+await comfyPage.page.getByText('Load Checkpoint').click()
+```
+→ See [features/vue-nodes.md](features/vue-nodes.md)
+
+### LiteGraph (Canvas)
+```typescript
+const node = comfyPage.getNodeRefByTitle('KSampler')  // Returns NodeReference
+await node.click()
+const slot = node.getOutputSlot('MODEL')
+```
+→ See [core/nodes.md](core/nodes.md) and [core/canvas.md](core/canvas.md)
+
 ## Quick Reference
 
 | Task                      | Load This File                                     |
