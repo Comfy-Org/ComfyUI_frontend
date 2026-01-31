@@ -504,13 +504,21 @@ export const useWorkflowTemplatesStore = defineStore(
       }
     }
 
+    function isValidLogoIndex(data: unknown): data is LogoIndex {
+      if (typeof data !== 'object' || data === null) return false
+      return Object.entries(data).every(
+        ([key, value]) => typeof key === 'string' && typeof value === 'string'
+      )
+    }
+
     async function fetchLogoIndex(): Promise<LogoIndex> {
       try {
-        const response = await axios.get(
+        const response = await axios.get<LogoIndex>(
           api.fileURL('/templates/index_logo.json')
         )
         const contentType = response.headers['content-type']
-        return contentType?.includes('application/json') ? response.data : {}
+        if (!contentType?.includes('application/json')) return {}
+        return isValidLogoIndex(response.data) ? response.data : {}
       } catch {
         return {}
       }

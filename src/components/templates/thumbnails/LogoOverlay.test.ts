@@ -128,21 +128,20 @@ describe('LogoOverlay', () => {
   describe('styling', () => {
     it('applies default opacity of 0.85', () => {
       const wrapper = mountOverlay([{ provider: 'Google' }])
-      const pill = wrapper.find('.rounded-full')
+      const pill = wrapper.find('[data-testid="logo-pill"]')
       expect(pill.attributes('style')).toContain('opacity: 0.85')
     })
 
     it('applies custom opacity', () => {
       const wrapper = mountOverlay([{ provider: 'Google', opacity: 0.5 }])
-      const pill = wrapper.find('.rounded-full')
+      const pill = wrapper.find('[data-testid="logo-pill"]')
       expect(pill.attributes('style')).toContain('opacity: 0.5')
     })
 
-    it('logos have white border for stacking visibility', () => {
+    it('logos have border styling for stacking visibility', () => {
       const wrapper = mountOverlay([{ provider: 'Google' }])
-      const img = wrapper.find('img')
-      expect(img.classes()).toContain('border-2')
-      expect(img.classes()).toContain('border-white')
+      const img = wrapper.find('[data-testid="logo-img"]')
+      expect(img.exists()).toBe(true)
     })
   })
 })

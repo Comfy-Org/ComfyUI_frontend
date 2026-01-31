@@ -8,6 +8,7 @@
   >
     <div
       v-show="!hasAllFailed(logo.providers)"
+      data-testid="logo-pill"
       class="flex items-center gap-1.5 rounded-full bg-black/20 py-1 pr-2"
       :style="{ opacity: logo.opacity ?? 0.85 }"
     >
@@ -15,6 +16,7 @@
         <img
           v-for="(provider, providerIndex) in logo.providers"
           :key="provider"
+          data-testid="logo-img"
           :src="logo.urls[providerIndex]"
           :alt="provider"
           class="h-6 w-6 rounded-full border-2 border-white object-cover"
