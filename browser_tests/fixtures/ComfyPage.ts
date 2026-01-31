@@ -23,9 +23,7 @@ import { DebugHelper } from './helpers/DebugHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import type { Position } from './types'
-import type {
-  NodeReference
-} from './utils/litegraphUtils'
+import type { NodeReference } from './utils/litegraphUtils'
 
 dotenv.config()
 
@@ -82,18 +80,19 @@ class ComfyMenu {
   }
 
   async toggleTheme() {
+    const currentTheme = await this.getThemeId()
     await this.themeToggleButton.click()
-    await this.page.evaluate(() => {
-      return new Promise((resolve) => {
-        window['app'].ui.settings.addEventListener(
-          'Comfy.ColorPalette.change',
-          resolve,
-          { once: true }
+    await this.page.waitForFunction(
+      (prevTheme) => {
+        const settings = window['app']?.ui?.settings
+        return (
+          settings &&
+          settings.getSettingValue('Comfy.ColorPalette') !== prevTheme
         )
-
-        setTimeout(resolve, 5000)
-      })
-    })
+      },
+      currentTheme,
+      { timeout: 5000 }
+    )
   }
 
   async getThemeId() {
