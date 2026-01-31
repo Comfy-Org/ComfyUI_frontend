@@ -223,7 +223,7 @@ export class ComfyPage {
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
-    this.clipboard = new ClipboardHelper(page, this.canvas)
+    this.clipboard = new ClipboardHelper(this.keyboard, this.canvas)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
   }
