@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "将颜色转换为RGB整数值。",
+    "display_name": "颜色转RGB整数",
+    "inputs": {
+      "color": {
+        "name": "颜色"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb整数",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "组合约束 [2]",
     "inputs": {
@@ -10994,6 +11009,25 @@
     "outputs": {
       "0": {
         "name": "Recraft控制",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "从参考图像创建自定义风格。上传1-5张图片作为风格参考。所有图片的总大小限制为5MB。",
+    "display_name": "Recraft创建风格",
+    "inputs": {
+      "images": {
+        "name": "图片"
+      },
+      "style": {
+        "name": "风格",
+        "tooltip": "生成图像的基础风格。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "风格ID",
         "tooltip": null
       }
     }

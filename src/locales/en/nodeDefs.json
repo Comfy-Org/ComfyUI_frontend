@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "display_name": "Color to RGB Int",
+    "description": "Convert a color to a RGB integer value.",
+    "inputs": {
+      "color": {
+        "name": "color"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combine Hooks [2]",
     "inputs": {
@@ -10996,6 +11011,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "display_name": "Recraft Create Style",
+    "description": "Create a custom style from reference images. Upload 1-5 images to use as style references. Total size of all images is limited to 5 MB.",
+    "inputs": {
+      "style": {
+        "name": "style",
+        "tooltip": "The base style of the generated images."
+      },
+      "images": {
+        "name": "images"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
         "tooltip": null
       }
     }

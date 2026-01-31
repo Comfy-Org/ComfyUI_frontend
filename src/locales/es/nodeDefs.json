@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Convierte un color a un valor entero RGB.",
+    "display_name": "Color a RGB Int",
+    "inputs": {
+      "color": {
+        "name": "color"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combinar Hooks [2]",
     "inputs": {
@@ -10978,6 +10993,25 @@
     "outputs": {
       "0": {
         "name": "controles_recraft",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "Crea un estilo personalizado a partir de imágenes de referencia. Sube de 1 a 5 imágenes para usar como referencias de estilo. El tamaño total de todas las imágenes está limitado a 5 MB.",
+    "display_name": "Recraft Crear Estilo",
+    "inputs": {
+      "images": {
+        "name": "imágenes"
+      },
+      "style": {
+        "name": "estilo",
+        "tooltip": "El estilo base de las imágenes generadas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "id_estilo",
         "tooltip": null
       }
     }
