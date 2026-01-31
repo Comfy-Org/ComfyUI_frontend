@@ -29,6 +29,6 @@ Tags are respected by config:
 ## Running Tests
 
 ```bash
-pnpm test:browser                 # Run all E2E tests
-pnpm test:browser -- --ui         # Interactive UI mode
+pnpm test:browser:local                 # Run all E2E tests
+pnpm test:browser:local -- --ui         # Interactive UI mode
 ```
