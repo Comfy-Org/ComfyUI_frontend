@@ -189,20 +189,20 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     )
     const nav = comfyPage.page.locator('header', { hasText: 'Templates' })
 
-    await comfyPage.templates.waitForMinimumCardCount(1)
+    await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at desktop size
 
     const mobileSize = { width: 640, height: 800 }
     await comfyPage.page.setViewportSize(mobileSize)
-    await comfyPage.templates.waitForMinimumCardCount(1)
+    await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     // Nav header is clipped by overflow-hidden parent at mobile size
     await expect(nav).not.toBeInViewport()
 
     const tabletSize = { width: 1024, height: 800 }
     await comfyPage.page.setViewportSize(tabletSize)
-    await comfyPage.templates.waitForMinimumCardCount(1)
+    await comfyPage.templates.expectMinimumCardCount(1)
     await expect(templateGrid).toBeVisible()
     await expect(nav).toBeVisible() // Nav should be visible at tablet size
   })

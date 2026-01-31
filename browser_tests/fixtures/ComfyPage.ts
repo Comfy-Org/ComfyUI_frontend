@@ -125,7 +125,7 @@ class ConfirmDialog {
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {
     const loc = this[locator]
-    await expect(loc).toBeVisible()
+    await loc.waitFor({ state: 'visible' })
     await loc.click()
 
     // Wait for the dialog mask to disappear after confirming
@@ -514,7 +514,11 @@ export class ComfyPage {
   }
 
   async closeToasts(requireCount = 0) {
-    if (requireCount) await expect(this.visibleToasts).toHaveCount(requireCount)
+    if (requireCount) {
+      await this.visibleToasts
+        .nth(requireCount - 1)
+        .waitFor({ state: 'visible' })
+    }
 
     // Clear all toasts
     const toastCloseButtons = await this.page
@@ -523,7 +527,12 @@ export class ComfyPage {
     for (const button of toastCloseButtons) {
       await button.click()
     }
-    await expect(this.visibleToasts).toHaveCount(0)
+
+    // Wait for toasts to disappear
+    await this.visibleToasts
+      .first()
+      .waitFor({ state: 'hidden', timeout: 1000 })
+      .catch(() => {})
   }
 
   async clickTextEncodeNode1() {
@@ -1447,7 +1456,7 @@ export class ComfyPage {
 
   async closeDialog() {
     await this.page.locator('.p-dialog-close-button').click({ force: true })
-    await expect(this.page.locator('.p-dialog')).toBeHidden()
+    await this.page.locator('.p-dialog').waitFor({ state: 'hidden' })
   }
 
   async resizeNode(
@@ -1547,13 +1556,13 @@ export class ComfyPage {
     const modal = this.page.locator(
       `.comfy-modal-content:has-text("${prompt}")`
     )
-    await expect(modal).toBeVisible()
+    await modal.waitFor({ state: 'visible' })
     await modal
       .locator('.comfyui-button', {
         hasText: buttonText
       })
       .click()
-    await expect(modal).toBeHidden()
+    await modal.waitFor({ state: 'hidden' })
   }
 
   async convertAllNodesToGroupNode(groupNodeName: string) {

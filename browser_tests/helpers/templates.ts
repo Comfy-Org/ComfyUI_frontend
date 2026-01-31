@@ -16,8 +16,8 @@ export class ComfyTemplates {
     this.allTemplateCards = page.locator('[data-testid^="template-workflow-"]')
   }
 
-  async waitForMinimumCardCount(count: number) {
-    return await expect(async () => {
+  async expectMinimumCardCount(count: number) {
+    await expect(async () => {
       const cardCount = await this.allTemplateCards.count()
       expect(cardCount).toBeGreaterThanOrEqual(count)
     }).toPass({
