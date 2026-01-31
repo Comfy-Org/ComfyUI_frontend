@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -55,7 +56,7 @@ test.describe(
 test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
   test('Can open properties panel', async ({ comfyPage }) => {
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -70,7 +71,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
 
   test('Can collapse', async ({ comfyPage }) => {
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -94,7 +95,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     )
 
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -108,7 +109,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
 
   test('Can bypass', async ({ comfyPage }) => {
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -123,7 +124,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
 
   test('Can pin and unpin', async ({ comfyPage }) => {
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -138,7 +139,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 16, y: 16 })
     await expect(comfyPage.canvas).toHaveScreenshot('node-pinned.png')
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -149,7 +150,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.click('.litemenu-entry:has-text("Unpin")')
     await comfyPage.nextFrame()
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -161,7 +162,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
 
   test('Can move after unpin', async ({ comfyPage }) => {
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -169,7 +170,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.page.click('.litemenu-entry:has-text("Pin")')
     await comfyPage.nextFrame()
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -190,7 +191,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
     await comfyPage.page.keyboard.down('Control')
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)
@@ -200,7 +201,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('selected-nodes-pinned.png')
     await comfyPage.canvas.click({
-      position: { x: 724, y: 645 },
+      position: DefaultGraphPositions.emptyLatentWidgetClick,
       button: 'right'
     })
     await comfyPage.page.mouse.move(10, 10)

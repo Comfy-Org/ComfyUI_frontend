@@ -591,7 +591,10 @@ export class ComfyPage {
   }
 
   async dragNode2() {
-    await this.canvasOps.dragAndDrop({ x: 622, y: 400 }, { x: 622, y: 300 })
+    await this.canvasOps.dragAndDrop(DefaultGraphPositions.textEncodeNode2, {
+      x: DefaultGraphPositions.textEncodeNode2.x,
+      y: 300
+    })
     await this.nextFrame()
   }
 

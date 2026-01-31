@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 
 import type { Keybinding } from '../../src/platform/keybindings'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -376,7 +377,9 @@ test.describe('Signin dialog', () => {
     comfyPage
   }) => {
     const nodeNum = (await comfyPage.nodeOps.getNodes()).length
-    await comfyPage.canvas.click({ position: { x: 724, y: 625 } })
+    await comfyPage.canvas.click({
+      position: DefaultGraphPositions.emptyLatentWidgetClick
+    })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await comfyPage.clipboard.copy()

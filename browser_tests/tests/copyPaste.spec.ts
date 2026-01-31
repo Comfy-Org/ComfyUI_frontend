@@ -9,7 +9,9 @@ test.beforeEach(async ({ comfyPage }) => {
 
 test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can copy and paste node', async ({ comfyPage }) => {
-    await comfyPage.canvas.click({ position: { x: 724, y: 625 } })
+    await comfyPage.canvas.click({
+      position: DefaultGraphPositions.emptyLatentWidgetClick
+    })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await comfyPage.clipboard.copy()
@@ -68,7 +70,9 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Paste in text area with node previously copied', async ({
     comfyPage
   }) => {
-    await comfyPage.canvas.click({ position: { x: 724, y: 625 } })
+    await comfyPage.canvas.click({
+      position: DefaultGraphPositions.emptyLatentWidgetClick
+    })
     await comfyPage.page.mouse.move(10, 10)
     await comfyPage.nextFrame()
     await comfyPage.clipboard.copy(null)
