@@ -33,7 +33,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test('Can trigger on link release', async ({ comfyPage }) => {
-    await comfyPage.disconnectEdge()
+    await comfyPage.canvasOps.disconnectEdge()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
   })
 
@@ -47,7 +47,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
     // Don't set LinkRelease settings explicitly to test versioned defaults
 
-    await comfyPage.disconnectEdge()
+    await comfyPage.canvasOps.disconnectEdge()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
     await expect(comfyPage.searchBox.input).toBeVisible()
   })
@@ -60,7 +60,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test('Can auto link node', { tag: '@screenshot' }, async ({ comfyPage }) => {
-    await comfyPage.disconnectEdge()
+    await comfyPage.canvasOps.disconnectEdge()
     // Select the second item as the first item is always reroute
     await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
       suggestionIndex: 0
@@ -100,7 +100,7 @@ test.describe('Node search box', { tag: '@node' }, () => {
     'Link release connecting to node with no slots',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      await comfyPage.disconnectEdge()
+      await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBox.input).toHaveCount(1)
       await comfyPage.page.locator('.p-chip-remove-icon').click()
       await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
@@ -280,7 +280,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     'Can trigger on link release',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      await comfyPage.disconnectEdge()
+      await comfyPage.canvasOps.disconnectEdge()
       const contextMenu = comfyPage.page.locator('.litecontextmenu')
       // Wait for context menu with correct title (slot name | slot type)
       // The title shows the output slot name and type from the disconnected link
@@ -299,7 +299,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     'Can search and add node from context menu',
     { tag: '@screenshot' },
     async ({ comfyPage, comfyMouse }) => {
-      await comfyPage.disconnectEdge()
+      await comfyPage.canvasOps.disconnectEdge()
       await comfyMouse.move({ x: 10, y: 10 })
       await comfyPage.contextMenu.clickMenuItem('Search')
       await comfyPage.nextFrame()
@@ -320,7 +320,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
     // Don't set LinkRelease settings explicitly to test versioned defaults
 
-    await comfyPage.disconnectEdge()
+    await comfyPage.canvasOps.disconnectEdge()
     // Context menu should appear, search box should not
     await expect(comfyPage.searchBox.input).toHaveCount(0)
     const contextMenu = comfyPage.page.locator('.litecontextmenu')
@@ -340,7 +340,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     )
     await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
 
-    await comfyPage.disconnectEdge()
+    await comfyPage.canvasOps.disconnectEdge()
     // Context menu should appear due to explicit setting, not search box
     await expect(comfyPage.searchBox.input).toHaveCount(0)
     const contextMenu = comfyPage.page.locator('.litecontextmenu')

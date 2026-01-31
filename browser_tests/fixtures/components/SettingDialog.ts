@@ -13,7 +13,7 @@ export class SettingDialog extends BaseDialog {
   }
 
   async open() {
-    await this.comfyPage.executeCommand('Comfy.ShowSettingsDialog')
+    await this.comfyPage.command.executeCommand('Comfy.ShowSettingsDialog')
     await this.waitForVisible()
   }
 

@@ -192,7 +192,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     const { x, y } = await loadImageNode.getPosition()
 
     // Drag and drop image file onto the load image node
-    await comfyPage.dragAndDropFile('image32x32.webp', {
+    await comfyPage.dragDrop.dragAndDropFile('image32x32.webp', {
       dropPosition: { x, y }
     })
 
@@ -282,7 +282,7 @@ test.describe(
       const { x, y } = await loadAnimatedWebpNode.getPosition()
 
       // Drag and drop image file onto the load animated webp node
-      await comfyPage.dragAndDropFile('animated_webp.webp', {
+      await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {
         dropPosition: { x, y }
       })
 
@@ -311,7 +311,7 @@ test.describe(
       const { x, y } = await loadAnimatedWebpNode.getPosition()
 
       // Drag and drop image file onto the load animated webp node
-      await comfyPage.dragAndDropFile('animated_webp.webp', {
+      await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {
         dropPosition: { x, y },
         waitForUpload: true
       })
@@ -333,7 +333,7 @@ test.describe(
       const { x, y } = await loadAnimatedWebpNode.getPosition()
 
       // Drag and drop image file onto the load animated webp node
-      await comfyPage.dragAndDropFile('animated_webp.webp', {
+      await comfyPage.dragDrop.dragAndDropFile('animated_webp.webp', {
         dropPosition: { x, y }
       })
       await comfyPage.nextFrame()
@@ -383,6 +383,6 @@ test.describe('Unserialized widgets', { tag: '@widget' }, () => {
     await comfyPage.page.mouse.click(10, 10)
 
     // Expect the graph to not be modified
-    expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
+    expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
   })
 })

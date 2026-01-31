@@ -12,12 +12,12 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
     'Report error on unconnected slot',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      await comfyPage.disconnectEdge()
+      await comfyPage.canvasOps.disconnectEdge()
       await comfyPage.canvasOps.clickEmptySpace(
         DefaultGraphPositions.emptySpaceClick
       )
 
-      await comfyPage.executeCommand('Comfy.QueuePrompt')
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
       await expect(comfyPage.page.locator('.comfy-error-report')).toBeVisible()
       await comfyPage.page
         .locator('.p-dialog')
@@ -48,7 +48,7 @@ test.describe(
 
       await output1.click('title')
 
-      await comfyPage.executeCommand('Comfy.QueueSelectedOutputNodes')
+      await comfyPage.command.executeCommand('Comfy.QueueSelectedOutputNodes')
       await expect(async () => {
         expect(await (await input.getWidget(0)).getValue()).toBe('foo')
         expect(await (await output1.getWidget(0)).getValue()).toBe('foo')

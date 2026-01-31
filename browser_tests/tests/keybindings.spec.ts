@@ -10,7 +10,7 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
   test('Should not trigger non-modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'k' }, () => {
+    await comfyPage.command.registerKeybinding({ key: 'k' }, () => {
       window['TestCommand'] = true
     })
 
@@ -26,7 +26,7 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
   test('Should not trigger modifier keybinding when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'k', ctrl: true }, () => {
+    await comfyPage.command.registerKeybinding({ key: 'k', ctrl: true }, () => {
       window['TestCommand'] = true
     })
 
@@ -43,7 +43,7 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
   test('Should not trigger keybinding reserved by text input when typing in input fields', async ({
     comfyPage
   }) => {
-    await comfyPage.registerKeybinding({ key: 'Ctrl+v' }, () => {
+    await comfyPage.command.registerKeybinding({ key: 'Ctrl+v' }, () => {
       window['TestCommand'] = true
     })
 

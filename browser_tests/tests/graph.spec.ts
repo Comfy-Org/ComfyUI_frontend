@@ -21,6 +21,6 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
   test('Validate workflow links', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Validation.Workflows', true)
     await comfyPage.workflow.loadWorkflow('links/bad_link')
-    await expect(comfyPage.getVisibleToastCount()).resolves.toBe(2)
+    await expect(comfyPage.toast.getVisibleToastCount()).resolves.toBe(2)
   })
 })

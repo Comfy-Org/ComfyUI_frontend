@@ -37,7 +37,7 @@ test.describe('Topbar commands', () => {
   test('Should not allow register command defined in other extension', async ({
     comfyPage
   }) => {
-    await comfyPage.registerCommand('foo', () => alert(1))
+    await comfyPage.command.registerCommand('foo', () => alert(1))
     await comfyPage.page.evaluate(() => {
       window['app'].registerExtension({
         name: 'TestExtension1',
@@ -265,7 +265,7 @@ test.describe('Topbar commands', () => {
           })
       })
 
-      await comfyPage.fillPromptDialog('Hello, world!')
+      await comfyPage.nodeOps.fillPromptDialog('Hello, world!')
       expect(await comfyPage.page.evaluate(() => window['value'])).toBe(
         'Hello, world!'
       )

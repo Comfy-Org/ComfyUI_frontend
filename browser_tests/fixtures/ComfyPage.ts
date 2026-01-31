@@ -1,11 +1,8 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
-import { readFileSync } from 'fs'
 
-import type { KeyCombo } from '../../src/platform/keybindings'
 import { TestIds } from './selectors'
-import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
@@ -19,21 +16,20 @@ import {
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
-import { DefaultGraphPositions } from './constants/defaultGraphPositions'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { ClipboardHelper } from './helpers/ClipboardHelper'
+import { CommandHelper } from './helpers/CommandHelper'
 import { DebugHelper } from './helpers/DebugHelper'
+import { DragDropHelper } from './helpers/DragDropHelper'
 import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SettingsHelper } from './helpers/SettingsHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
+import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
-import type { Position } from './types'
 import type { NodeReference } from './utils/litegraphUtils'
 
 dotenv.config()
-
-type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 class ComfyPropertiesPanel {
   readonly root: Locator
@@ -161,9 +157,6 @@ export class ComfyPage {
   // Inputs
   public readonly workflowUploadInput: Locator
 
-  // Toasts
-  public readonly visibleToasts: Locator
-
   // Components
   public readonly searchBox: ComfyNodeSearchBox
   public readonly menu: ComfyMenu
@@ -181,6 +174,9 @@ export class ComfyPage {
   public readonly clipboard: ClipboardHelper
   public readonly workflow: WorkflowHelper
   public readonly contextMenu: ContextMenu
+  public readonly toast: ToastHelper
+  public readonly dragDrop: DragDropHelper
+  public readonly command: CommandHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -207,7 +203,6 @@ export class ComfyPage {
       .getByTestId('queue-button')
       .getByRole('button', { name: 'Run' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
-    this.visibleToasts = page.locator('.p-toast-message:visible')
 
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
@@ -225,6 +220,13 @@ export class ComfyPage {
     this.clipboard = new ClipboardHelper(this.keyboard, this.canvas)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
+    this.toast = new ToastHelper(page)
+    this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
+    this.command = new CommandHelper(page)
+  }
+
+  get visibleToasts() {
+    return this.toast.visibleToasts
   }
 
   async setupUser(username: string) {
@@ -317,64 +319,6 @@ export class ComfyPage {
     return `./browser_tests/assets/${fileName}`
   }
 
-  async executeCommand(commandId: string) {
-    await this.page.evaluate((id: string) => {
-      return window['app'].extensionManager.command.execute(id)
-    }, commandId)
-  }
-
-  async registerCommand(
-    commandId: string,
-    command: (() => void) | (() => Promise<void>)
-  ) {
-    await this.page.evaluate(
-      ({ commandId, commandStr }) => {
-        const app = window['app']
-        const randomSuffix = Math.random().toString(36).substring(2, 8)
-        const extensionName = `TestExtension_${randomSuffix}`
-
-        app.registerExtension({
-          name: extensionName,
-          commands: [
-            {
-              id: commandId,
-              function: eval(commandStr)
-            }
-          ]
-        })
-      },
-      { commandId, commandStr: command.toString() }
-    )
-  }
-
-  async registerKeybinding(keyCombo: KeyCombo, command: () => void) {
-    await this.page.evaluate(
-      ({ keyCombo, commandStr }) => {
-        const app = window['app']
-        const randomSuffix = Math.random().toString(36).substring(2, 8)
-        const extensionName = `TestExtension_${randomSuffix}`
-        const commandId = `TestCommand_${randomSuffix}`
-
-        app.registerExtension({
-          name: extensionName,
-          keybindings: [
-            {
-              combo: keyCombo,
-              commandId: commandId
-            }
-          ],
-          commands: [
-            {
-              id: commandId,
-              function: eval(commandStr)
-            }
-          ]
-        })
-      },
-      { keyCombo, commandStr: command.toString() }
-    )
-  }
-
   async goto() {
     await this.page.goto(this.url)
   }
@@ -415,236 +359,6 @@ export class ComfyPage {
     })
   }
 
-  async getToastErrorCount() {
-    return await this.page
-      .locator('.p-toast-message.p-toast-message-error')
-      .count()
-  }
-
-  async getVisibleToastCount() {
-    return await this.visibleToasts.count()
-  }
-
-  async closeToasts(requireCount = 0) {
-    if (requireCount) {
-      await this.visibleToasts
-        .nth(requireCount - 1)
-        .waitFor({ state: 'visible' })
-    }
-
-    // Clear all toasts
-    const toastCloseButtons = await this.page
-      .locator('.p-toast-close-button')
-      .all()
-    for (const button of toastCloseButtons) {
-      await button.click()
-    }
-
-    // Wait for toasts to disappear
-    await this.visibleToasts
-      .first()
-      .waitFor({ state: 'hidden', timeout: 1000 })
-      .catch(() => {})
-  }
-
-  async dragAndDropExternalResource(
-    options: {
-      fileName?: string
-      url?: string
-      dropPosition?: Position
-      waitForUpload?: boolean
-    } = {}
-  ) {
-    const {
-      dropPosition = { x: 100, y: 100 },
-      fileName,
-      url,
-      waitForUpload = false
-    } = options
-
-    if (!fileName && !url)
-      throw new Error('Must provide either fileName or url')
-
-    const evaluateParams: {
-      dropPosition: Position
-      fileName?: string
-      fileType?: string
-      buffer?: Uint8Array | number[]
-      url?: string
-    } = { dropPosition }
-
-    // Dropping a file from the filesystem
-    if (fileName) {
-      const filePath = this.assetPath(fileName)
-      const buffer = readFileSync(filePath)
-
-      const getFileType = (fileName: string) => {
-        if (fileName.endsWith('.png')) return 'image/png'
-        if (fileName.endsWith('.svg')) return 'image/svg+xml'
-        if (fileName.endsWith('.webp')) return 'image/webp'
-        if (fileName.endsWith('.webm')) return 'video/webm'
-        if (fileName.endsWith('.json')) return 'application/json'
-        if (fileName.endsWith('.glb')) return 'model/gltf-binary'
-        if (fileName.endsWith('.avif')) return 'image/avif'
-        return 'application/octet-stream'
-      }
-
-      evaluateParams.fileName = fileName
-      evaluateParams.fileType = getFileType(fileName)
-      evaluateParams.buffer = [...new Uint8Array(buffer)]
-    }
-
-    // Dropping a URL (e.g., dropping image across browser tabs in Firefox)
-    if (url) evaluateParams.url = url
-
-    // Set up response waiter for file uploads before triggering the drop
-    const uploadResponsePromise = waitForUpload
-      ? this.page.waitForResponse(
-          (resp) => resp.url().includes('/upload/') && resp.status() === 200,
-          { timeout: 10000 }
-        )
-      : null
-
-    // Execute the drag and drop in the browser
-    await this.page.evaluate(async (params) => {
-      const dataTransfer = new DataTransfer()
-
-      // Add file if provided
-      if (params.buffer && params.fileName && params.fileType) {
-        const file = new File(
-          [new Uint8Array(params.buffer)],
-          params.fileName,
-          {
-            type: params.fileType
-          }
-        )
-        dataTransfer.items.add(file)
-      }
-
-      // Add URL data if provided
-      if (params.url) {
-        dataTransfer.setData('text/uri-list', params.url)
-        dataTransfer.setData('text/x-moz-url', params.url)
-      }
-
-      const targetElement = document.elementFromPoint(
-        params.dropPosition.x,
-        params.dropPosition.y
-      )
-
-      if (!targetElement) {
-        console.error('No element found at drop position:', params.dropPosition)
-        return { success: false, error: 'No element at position' }
-      }
-
-      const eventOptions = {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer,
-        clientX: params.dropPosition.x,
-        clientY: params.dropPosition.y
-      }
-
-      const dragOverEvent = new DragEvent('dragover', eventOptions)
-      const dropEvent = new DragEvent('drop', eventOptions)
-
-      Object.defineProperty(dropEvent, 'preventDefault', {
-        value: () => {},
-        writable: false
-      })
-
-      Object.defineProperty(dropEvent, 'stopPropagation', {
-        value: () => {},
-        writable: false
-      })
-
-      targetElement.dispatchEvent(dragOverEvent)
-      targetElement.dispatchEvent(dropEvent)
-
-      return {
-        success: true,
-        targetInfo: {
-          tagName: targetElement.tagName,
-          id: targetElement.id,
-          classList: Array.from(targetElement.classList)
-        }
-      }
-    }, evaluateParams)
-
-    // Wait for file upload to complete
-    if (uploadResponsePromise) {
-      await uploadResponsePromise
-    }
-
-    await this.nextFrame()
-  }
-
-  async dragAndDropFile(
-    fileName: string,
-    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
-  ) {
-    return this.dragAndDropExternalResource({ fileName, ...options })
-  }
-
-  async dragAndDropURL(url: string, options: { dropPosition?: Position } = {}) {
-    return this.dragAndDropExternalResource({ url, ...options })
-  }
-
-  async dragNode2() {
-    await this.canvasOps.dragAndDrop(DefaultGraphPositions.textEncodeNode2, {
-      x: DefaultGraphPositions.textEncodeNode2.x,
-      y: 300
-    })
-    await this.nextFrame()
-  }
-
-  get promptDialogInput() {
-    return this.page.locator('.p-dialog-content input[type="text"]')
-  }
-
-  async fillPromptDialog(value: string) {
-    await this.promptDialogInput.fill(value)
-    await this.page.keyboard.press('Enter')
-    await this.promptDialogInput.waitFor({ state: 'hidden' })
-    await this.nextFrame()
-  }
-
-  async disconnectEdge() {
-    await this.canvasOps.dragAndDrop(
-      DefaultGraphPositions.clipTextEncodeNode1InputSlot,
-      DefaultGraphPositions.emptySpace
-    )
-  }
-
-  async connectEdge(
-    options: {
-      reverse?: boolean
-    } = {}
-  ) {
-    const { reverse = false } = options
-    const start = reverse
-      ? DefaultGraphPositions.clipTextEncodeNode1InputSlot
-      : DefaultGraphPositions.loadCheckpointNodeClipOutputSlot
-    const end = reverse
-      ? DefaultGraphPositions.loadCheckpointNodeClipOutputSlot
-      : DefaultGraphPositions.clipTextEncodeNode1InputSlot
-
-    await this.canvasOps.dragAndDrop(start, end)
-  }
-
-  async adjustWidgetValue() {
-    // Adjust Empty Latent Image's width input.
-    const page = this.page
-    await page.locator('#graph-canvas').click({
-      position: DefaultGraphPositions.emptyLatentWidgetClick
-    })
-    const dialogInput = page.locator('.graphdialog input[type="text"]')
-    await dialogInput.click()
-    await dialogInput.fill('128')
-    await dialogInput.press('Enter')
-    await this.nextFrame()
-  }
-
   async closeMenu() {
     await this.page.click('button.comfy-close-menu-btn')
     await this.nextFrame()
@@ -668,85 +382,11 @@ export class ComfyPage {
     return await this.page.locator('.dom-widget').count()
   }
 
-  async getUndoQueueSize() {
-    return this.page.evaluate(() => {
-      const workflow = (window['app'].extensionManager as WorkspaceStore)
-        .workflow.activeWorkflow
-      return workflow?.changeTracker.undoQueue.length
-    })
-  }
-  async getRedoQueueSize() {
-    return this.page.evaluate(() => {
-      const workflow = (window['app'].extensionManager as WorkspaceStore)
-        .workflow.activeWorkflow
-      return workflow?.changeTracker.redoQueue.length
-    })
-  }
-  async isCurrentWorkflowModified() {
-    return this.page.evaluate(() => {
-      return (window['app'].extensionManager as WorkspaceStore).workflow
-        .activeWorkflow?.isModified
-    })
-  }
-  async getExportedWorkflow({ api = false }: { api?: boolean } = {}) {
-    return this.page.evaluate(async (api) => {
-      return (await window['app'].graphToPrompt())[api ? 'output' : 'workflow']
-    }, api)
-  }
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
       window['app'].extensionManager.focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
-  }
-
-  /**
-   * Get the position of a group by title.
-   * @param title The title of the group to find
-   * @returns The group's canvas position
-   * @throws Error if group not found
-   */
-  async getGroupPosition(title: string): Promise<Position> {
-    const pos = await this.page.evaluate((title) => {
-      const groups = window['app'].graph.groups
-      const group = groups.find((g: { title: string }) => g.title === title)
-      if (!group) return null
-      return { x: group.pos[0], y: group.pos[1] }
-    }, title)
-    if (!pos) throw new Error(`Group "${title}" not found`)
-    return pos
-  }
-
-  /**
-   * Drag a group by its title.
-   * @param options.name The title of the group to drag
-   * @param options.deltaX Horizontal drag distance in screen pixels
-   * @param options.deltaY Vertical drag distance in screen pixels
-   */
-  async dragGroup(options: {
-    name: string
-    deltaX: number
-    deltaY: number
-  }): Promise<void> {
-    const { name, deltaX, deltaY } = options
-    const screenPos = await this.page.evaluate((title) => {
-      const app = window['app']
-      const groups = app.graph.groups
-      const group = groups.find((g: { title: string }) => g.title === title)
-      if (!group) return null
-      // Position in the title area of the group
-      const clientPos = app.canvasPosToClientPos([
-        group.pos[0] + 50,
-        group.pos[1] + 15
-      ])
-      return { x: clientPos[0], y: clientPos[1] }
-    }, name)
-    if (!screenPos) throw new Error(`Group "${name}" not found`)
-
-    await this.canvasOps.dragAndDrop(screenPos, {
-      x: screenPos.x + deltaX,
-      y: screenPos.y + deltaY
-    })
   }
 }
 

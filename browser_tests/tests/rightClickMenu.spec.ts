@@ -42,9 +42,9 @@ test.describe(
         'Convert to Group Node (Deprecated)'
       )
       await comfyPage.nextFrame()
-      await comfyPage.promptDialogInput.fill('GroupNode2CLIP')
+      await comfyPage.nodeOps.promptDialogInput.fill('GroupNode2CLIP')
       await comfyPage.page.keyboard.press('Enter')
-      await comfyPage.promptDialogInput.waitFor({ state: 'hidden' })
+      await comfyPage.nodeOps.promptDialogInput.waitFor({ state: 'hidden' })
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'right-click-node-group-node.png'

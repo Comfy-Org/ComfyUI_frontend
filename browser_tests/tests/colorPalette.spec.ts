@@ -181,7 +181,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     await comfyPage.page.evaluate((p) => {
       window['app'].extensionManager.colorPalette.addCustomColorPalette(p)
     }, customColorPalettes.obsidian_dark)
-    expect(await comfyPage.getToastErrorCount()).toBe(0)
+    expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
 
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
     await comfyPage.nextFrame()

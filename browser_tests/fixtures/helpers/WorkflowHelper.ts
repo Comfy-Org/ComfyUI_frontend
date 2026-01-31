@@ -80,7 +80,7 @@ export class WorkflowHelper {
     await this.comfyPage.confirmDialog.delete.click()
 
     // Clear toast & close tab
-    await this.comfyPage.closeToasts(1)
+    await this.comfyPage.toast.closeToasts(1)
     await workflowsTab.close()
   }
 

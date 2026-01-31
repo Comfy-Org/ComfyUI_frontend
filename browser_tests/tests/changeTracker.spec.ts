@@ -28,41 +28,41 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     })
 
     test('Can undo multiple operations', async ({ comfyPage }) => {
-      expect(await comfyPage.getUndoQueueSize()).toBe(0)
-      expect(await comfyPage.getRedoQueueSize()).toBe(0)
+      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
+      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
       // Save, confirm no errors & workflow modified flag removed
       await comfyPage.menu.topbar.saveWorkflow('undo-redo-test')
-      expect(await comfyPage.getToastErrorCount()).toBe(0)
-      expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
-      expect(await comfyPage.getUndoQueueSize()).toBe(0)
-      expect(await comfyPage.getRedoQueueSize()).toBe(0)
+      expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
+      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
+      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
       const node = (await comfyPage.nodeOps.getFirstNodeRef())!
       await node.click('title')
       await node.click('collapse')
       await expect(node).toBeCollapsed()
-      expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
-      expect(await comfyPage.getUndoQueueSize()).toBe(1)
-      expect(await comfyPage.getRedoQueueSize()).toBe(0)
+      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
+      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
       await comfyPage.keyboard.bypass()
       await expect(node).toBeBypassed()
-      expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
-      expect(await comfyPage.getUndoQueueSize()).toBe(2)
-      expect(await comfyPage.getRedoQueueSize()).toBe(0)
+      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
+      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(2)
+      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(0)
 
       await comfyPage.keyboard.undo()
       await expect(node).not.toBeBypassed()
-      expect(await comfyPage.isCurrentWorkflowModified()).toBe(true)
-      expect(await comfyPage.getUndoQueueSize()).toBe(1)
-      expect(await comfyPage.getRedoQueueSize()).toBe(1)
+      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(true)
+      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(1)
 
       await comfyPage.keyboard.undo()
       await expect(node).not.toBeCollapsed()
-      expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
-      expect(await comfyPage.getUndoQueueSize()).toBe(0)
-      expect(await comfyPage.getRedoQueueSize()).toBe(2)
+      expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
+      expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
+      expect(await comfyPage.workflow.getRedoQueueSize()).toBe(2)
     })
   })
 
@@ -157,7 +157,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
   })
 
   test('Can detect changes in workflow.extra', async ({ comfyPage }) => {
-    expect(await comfyPage.getUndoQueueSize()).toBe(0)
+    expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
     await comfyPage.page.evaluate(() => {
       window['app'].graph.extra.foo = 'bar'
     })
@@ -165,12 +165,12 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     await comfyPage.canvasOps.clickEmptySpace(
       DefaultGraphPositions.emptySpaceClick
     )
-    expect(await comfyPage.getUndoQueueSize()).toBe(1)
+    expect(await comfyPage.workflow.getUndoQueueSize()).toBe(1)
   })
 
   test('Ignores changes in workflow.ds', async ({ comfyPage }) => {
-    expect(await comfyPage.getUndoQueueSize()).toBe(0)
+    expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
     await comfyPage.canvasOps.pan({ x: 10, y: 10 })
-    expect(await comfyPage.getUndoQueueSize()).toBe(0)
+    expect(await comfyPage.workflow.getUndoQueueSize()).toBe(0)
   })
 })

@@ -34,7 +34,7 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-      await comfyPage.executeCommand('Workspace.ToggleFocusMode')
+      await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
     }

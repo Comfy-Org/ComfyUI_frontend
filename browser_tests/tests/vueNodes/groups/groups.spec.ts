@@ -26,7 +26,7 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
     await comfyPage.setup()
     await comfyPage.workflow.loadWorkflow('groups/oversized_group')
     await comfyPage.keyboard.selectAll()
-    await comfyPage.executeCommand('Comfy.Graph.FitGroupToContents')
+    await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'vue-groups-fit-to-contents.png'
@@ -39,15 +39,17 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
 
     // Get initial positions with null guards
-    const outerInitial = await comfyPage.getGroupPosition('Outer Group')
-    const innerInitial = await comfyPage.getGroupPosition('Inner Group')
+    const outerInitial =
+      await comfyPage.canvasOps.getGroupPosition('Outer Group')
+    const innerInitial =
+      await comfyPage.canvasOps.getGroupPosition('Inner Group')
 
     const initialOffsetX = innerInitial.x - outerInitial.x
     const initialOffsetY = innerInitial.y - outerInitial.y
 
     // Drag the outer group
     const dragDelta = { x: 100, y: 80 }
-    await comfyPage.dragGroup({
+    await comfyPage.canvasOps.dragGroup({
       name: 'Outer Group',
       deltaX: dragDelta.x,
       deltaY: dragDelta.y
@@ -55,8 +57,10 @@ test.describe('Vue Node Groups', { tag: '@screenshot' }, () => {
 
     // Use retrying assertion to wait for positions to update
     await expect(async () => {
-      const outerFinal = await comfyPage.getGroupPosition('Outer Group')
-      const innerFinal = await comfyPage.getGroupPosition('Inner Group')
+      const outerFinal =
+        await comfyPage.canvasOps.getGroupPosition('Outer Group')
+      const innerFinal =
+        await comfyPage.canvasOps.getGroupPosition('Inner Group')
 
       const finalOffsetX = innerFinal.x - outerFinal.x
       const finalOffsetY = innerFinal.y - outerFinal.y

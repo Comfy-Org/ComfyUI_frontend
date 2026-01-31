@@ -75,13 +75,13 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test('Can load template workflows', async ({ comfyPage }) => {
     // Clear the workflow
     await comfyPage.menu.workflowsTab.open()
-    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await expect(async () => {
       expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
     }).toPass({ timeout: 250 })
 
     // Load a template
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
     await comfyPage.page
@@ -112,7 +112,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
 
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
 
     const dialog = comfyPage.page.getByRole('dialog').filter({
       has: comfyPage.page.getByRole('heading', { name: 'Modèles', exact: true })
@@ -164,7 +164,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     )
 
     // Load the templates dialog
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
     // Verify German was requested first, then English as fallback
@@ -184,7 +184,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     comfyPage
   }) => {
     // Open templates dialog
-    await comfyPage.executeCommand('Comfy.BrowseTemplates')
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await comfyPage.templates.content.waitFor({ state: 'visible' })
 
     const templateGrid = comfyPage.page.locator(
@@ -275,7 +275,7 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       })
 
       // Open templates dialog
-      await comfyPage.executeCommand('Comfy.BrowseTemplates')
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
       await expect(comfyPage.templates.content).toBeVisible()
 
       // Wait for cards to load

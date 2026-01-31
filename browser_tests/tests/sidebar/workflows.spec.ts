@@ -25,7 +25,7 @@ test.describe('Workflows sidebar', () => {
       '*Unsaved Workflow.json'
     ])
 
-    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     expect(await tab.getOpenedWorkflowNames()).toEqual([
       '*Unsaved Workflow.json',
       '*Unsaved Workflow (2).json'
@@ -53,20 +53,20 @@ test.describe('Workflows sidebar', () => {
       expect.arrayContaining(['workflow1.json'])
     )
 
-    await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+    await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
     expect(await tab.getOpenedWorkflowNames()).toEqual([
       'workflow1.json',
       '*workflow1 (Copy).json'
     ])
 
-    await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+    await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
     expect(await tab.getOpenedWorkflowNames()).toEqual([
       'workflow1.json',
       '*workflow1 (Copy).json',
       '*workflow1 (Copy) (2).json'
     ])
 
-    await comfyPage.executeCommand('Comfy.DuplicateWorkflow')
+    await comfyPage.command.executeCommand('Comfy.DuplicateWorkflow')
     expect(await tab.getOpenedWorkflowNames()).toEqual([
       'workflow1.json',
       '*workflow1 (Copy).json',
@@ -82,7 +82,7 @@ test.describe('Workflows sidebar', () => {
 
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
-    await comfyPage.executeCommand('Comfy.LoadDefaultWorkflow')
+    await comfyPage.command.executeCommand('Comfy.LoadDefaultWorkflow')
     const originalNodeCount = (await comfyPage.nodeOps.getNodes()).length
 
     await tab.insertWorkflow(tab.getPersistedItem('workflow1.json'))
@@ -121,7 +121,7 @@ test.describe('Workflows sidebar', () => {
   })
 
   test('Can save workflow as', async ({ comfyPage }) => {
-    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.menu.topbar.saveWorkflowAs('workflow3.json')
     expect(await comfyPage.menu.workflowsTab.getOpenedWorkflowNames()).toEqual([
       '*Unsaved Workflow.json',
@@ -140,7 +140,7 @@ test.describe('Workflows sidebar', () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('default')
-    const exportedWorkflow = await comfyPage.getExportedWorkflow({
+    const exportedWorkflow = await comfyPage.workflow.getExportedWorkflow({
       api: false
     })
     expect(exportedWorkflow).toBeDefined()
@@ -170,14 +170,14 @@ test.describe('Workflows sidebar', () => {
     expect(download.suggestedFilename()).toBe('exported_default.json')
 
     // Get the exported workflow content
-    const downloadedContent = await comfyPage.getExportedWorkflow({
+    const downloadedContent = await comfyPage.workflow.getExportedWorkflow({
       api: false
     })
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
     await comfyPage.setup()
 
-    const downloadedContentZh = await comfyPage.getExportedWorkflow({
+    const downloadedContentZh = await comfyPage.workflow.getExportedWorkflow({
       api: false
     })
 
@@ -204,7 +204,7 @@ test.describe('Workflows sidebar', () => {
   test('Can save temporary workflow with unmodified name', async ({
     comfyPage
   }) => {
-    expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
+    expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
 
     await comfyPage.menu.topbar.saveWorkflow('Unsaved Workflow')
     // Should not trigger the overwrite dialog
@@ -212,7 +212,7 @@ test.describe('Workflows sidebar', () => {
       await comfyPage.page.locator('.comfy-modal-content:visible').count()
     ).toBe(0)
 
-    expect(await comfyPage.isCurrentWorkflowModified()).toBe(false)
+    expect(await comfyPage.workflow.isCurrentWorkflowModified()).toBe(false)
   })
 
   test('Can overwrite other workflows with save as', async ({ comfyPage }) => {
@@ -252,7 +252,7 @@ test.describe('Workflows sidebar', () => {
 
     // Load blank workflow
     await comfyPage.menu.workflowsTab.open()
-    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
     // Switch back to the missing_nodes workflow
     await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
@@ -280,7 +280,7 @@ test.describe('Workflows sidebar', () => {
   test('Can close saved workflow with command', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
     await comfyPage.menu.topbar.saveWorkflow('workflow1.json')
-    await comfyPage.executeCommand('Workspace.CloseWorkflow')
+    await comfyPage.command.executeCommand('Workspace.CloseWorkflow')
     expect(await tab.getOpenedWorkflowNames()).toEqual([
       '*Unsaved Workflow.json'
     ])

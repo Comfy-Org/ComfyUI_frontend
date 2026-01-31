@@ -279,7 +279,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
       await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
 
       // Clear workflow
-      await comfyPage.executeCommand('Comfy.ClearWorkflow')
+      await comfyPage.command.executeCommand('Comfy.ClearWorkflow')
 
       await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 1)
@@ -323,18 +323,18 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
   test.describe('Keybindings', () => {
     test('Convert to group node, no selection', async ({ comfyPage }) => {
-      expect(await comfyPage.getVisibleToastCount()).toBe(0)
+      expect(await comfyPage.toast.getVisibleToastCount()).toBe(0)
       await comfyPage.page.keyboard.press('Alt+g')
-      expect(await comfyPage.getVisibleToastCount()).toBe(1)
+      expect(await comfyPage.toast.getVisibleToastCount()).toBe(1)
     })
     test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
-      expect(await comfyPage.getVisibleToastCount()).toBe(0)
+      expect(await comfyPage.toast.getVisibleToastCount()).toBe(0)
       await comfyPage.canvas.click({
         position: DefaultGraphPositions.textEncodeNode1
       })
       await comfyPage.nextFrame()
       await comfyPage.page.keyboard.press('Alt+g')
-      expect(await comfyPage.getVisibleToastCount()).toBe(1)
+      expect(await comfyPage.toast.getVisibleToastCount()).toBe(1)
     })
   })
 })

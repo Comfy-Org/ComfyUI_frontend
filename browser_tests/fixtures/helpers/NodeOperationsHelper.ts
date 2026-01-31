@@ -137,7 +137,7 @@ export class NodeOperationsHelper {
     await this.comfyPage.canvas.press('Control+a')
     const node = await this.getFirstNodeRef()
     await node!.clickContextMenuOption('Convert to Group Node')
-    await this.comfyPage.fillPromptDialog(groupNodeName)
+    await this.fillPromptDialog(groupNodeName)
     await this.comfyPage.nextFrame()
   }
 

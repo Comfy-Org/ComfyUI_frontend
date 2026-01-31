@@ -127,7 +127,7 @@ test.describe('Node Interaction', () => {
       }) => {
         const originalPositions = await getPositions()
         await dragSelectNodes(comfyPage, clipNodes)
-        await comfyPage.executeCommand(
+        await comfyPage.command.executeCommand(
           `Comfy.Canvas.MoveSelectedNodes.${direction}`
         )
         await comfyPage.canvas.press(`Control+Arrow${direction}`)
@@ -166,7 +166,7 @@ test.describe('Node Interaction', () => {
   })
 
   test('Can drag node', { tag: '@screenshot' }, async ({ comfyPage }) => {
-    await comfyPage.dragNode2()
+    await comfyPage.nodeOps.dragTextEncodeNode2()
     await expect(comfyPage.canvas).toHaveScreenshot('dragged-node1.png')
   })
 
@@ -187,9 +187,9 @@ test.describe('Node Interaction', () => {
       test(`Can disconnect/connect edge ${reverse ? 'reverse' : 'normal'}`, async ({
         comfyPage
       }) => {
-        await comfyPage.disconnectEdge()
+        await comfyPage.canvasOps.disconnectEdge()
         await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
-        await comfyPage.connectEdge({ reverse })
+        await comfyPage.canvasOps.connectEdge({ reverse })
         // Move mouse to empty area to avoid slot highlight.
         await comfyPage.canvasOps.moveMouseToEmptyArea()
         // Litegraph renders edge with a slight offset.
@@ -247,7 +247,7 @@ test.describe('Node Interaction', () => {
     'Can adjust widget value',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      await comfyPage.adjustWidgetValue()
+      await comfyPage.nodeOps.adjustEmptyLatentWidth()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'adjusted-widget-value.png'
       )
@@ -445,7 +445,7 @@ test.describe('Node Interaction', () => {
       await comfyPage.workflow.loadWorkflow('groups/oversized_group')
       await comfyPage.keyboard.selectAll()
       await comfyPage.nextFrame()
-      await comfyPage.executeCommand('Comfy.Graph.FitGroupToContents')
+      await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'group-fit-to-contents.png'
@@ -455,10 +455,14 @@ test.describe('Node Interaction', () => {
 
   test('Can pin/unpin nodes', { tag: '@screenshot' }, async ({ comfyPage }) => {
     await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
-    await comfyPage.executeCommand('Comfy.Canvas.ToggleSelectedNodes.Pin')
+    await comfyPage.command.executeCommand(
+      'Comfy.Canvas.ToggleSelectedNodes.Pin'
+    )
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
-    await comfyPage.executeCommand('Comfy.Canvas.ToggleSelectedNodes.Pin')
+    await comfyPage.command.executeCommand(
+      'Comfy.Canvas.ToggleSelectedNodes.Pin'
+    )
     await comfyPage.nextFrame()
     await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
   })
@@ -817,7 +821,7 @@ test.describe('Load duplicate workflow', () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await comfyPage.menu.workflowsTab.open()
-    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
   })

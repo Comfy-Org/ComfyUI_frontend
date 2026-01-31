@@ -1049,9 +1049,9 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     comfyMouse
   }) => {
     // Setup workflow with a KSampler node
-    await comfyPage.executeCommand('Comfy.NewBlankWorkflow')
+    await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
     await comfyPage.waitForGraphNodes(0)
-    await comfyPage.executeCommand('Workspace.SearchBox.Toggle')
+    await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
     await comfyPage.nextFrame()
     await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
     await comfyPage.waitForGraphNodes(1)
@@ -1061,7 +1061,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       await comfyPage.nodeOps.getNodeRefsByType('KSampler')
     )?.[0]
     await comfyPage.vueNodes.selectNode(String(ksamplerNode.id))
-    await comfyPage.executeCommand('Comfy.Graph.ConvertToSubgraph')
+    await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
     // Enter the subgraph
     await comfyPage.vueNodes.enterSubgraph()

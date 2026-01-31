@@ -7,7 +7,7 @@ test.describe(
   () => {
     test('@mobile empty canvas', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
-      await comfyPage.executeCommand('Comfy.ClearWorkflow')
+      await comfyPage.command.executeCommand('Comfy.ClearWorkflow')
       await expect(async () => {
         expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
       }).toPass({ timeout: 5000 })
