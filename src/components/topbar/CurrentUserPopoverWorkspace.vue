@@ -197,7 +197,9 @@ import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/components/topbar/WorkspaceSwitcherPopover.vue'
@@ -205,9 +207,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
-import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -235,20 +236,28 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
 const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription, subscriptionStatus } = useSubscription()
-const { totalCredits, isLoadingBalance } = useSubscriptionCredits()
+const { isActiveSubscription, subscription, balance, isLoading } =
+  useBillingContext()
 const subscriptionDialog = useSubscriptionDialog()
+
+const { locale } = useI18n()
+const isLoadingBalance = isLoading
 
 const displayedCredits = computed(() => {
   if (initState.value !== 'ready') return ''
-  // Only personal workspaces have subscription status from useSubscription()
-  // Team workspaces don't have backend subscription data yet
-  if (isPersonalWorkspace.value) {
-    // Wait for subscription status to load
-    if (subscriptionStatus.value === null) return ''
-    return isActiveSubscription.value ? totalCredits.value : '0'
-  }
-  return '0'
+  // Wait for subscription to load
+  if (subscription.value === null) return ''
+  if (!isActiveSubscription.value) return '0'
+
+  const cents = balance.value?.amountMicros ?? 0
+  return formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }
+  })
 })
 
 const canUpgrade = computed(() => {

@@ -2069,6 +2069,7 @@
     }
   },
   "subscription": {
+    "chooseBestPlanWorkspace": "Choose the best plan for your workspace",
     "title": "Subscription",
     "titleUnsubscribed": "Subscribe to Comfy Cloud",
     "comfyCloud": "Comfy Cloud",
@@ -2076,6 +2077,7 @@
     "beta": "BETA",
     "perMonth": "/ month",
     "usdPerMonth": "USD / mo",
+    "usdPerMonthPerMember": "USD / mo / member",
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
@@ -2139,6 +2141,7 @@
     "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud",
     "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
+    "descriptionWorkspace": "Choose the best plan for your workspace",
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
@@ -2150,6 +2153,8 @@
     "currentPlan": "Current Plan",
     "subscribeTo": "Subscribe to {plan}",
     "monthlyCreditsLabel": "Monthly credits",
+    "monthlyCreditsPerMemberLabel": "Monthly credits / member",
+    "maxMembersLabel": "Max. members",
     "yearlyCreditsLabel": "Total yearly credits",
     "maxDurationLabel": "Max run duration",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
@@ -2172,6 +2177,27 @@
     "billingComingSoon": {
       "title": "Coming Soon",
       "message": "Team billing is coming soon. You'll be able to subscribe to a plan for your workspace with per-seat pricing. Stay tuned for updates."
+    },
+    "preview": {
+      "confirmPayment": "Confirm your payment",
+      "confirmPlanChange": "Confirm your plan change",
+      "startingToday": "Starting today",
+      "starting": "Starting {date}",
+      "ends": "Ends {date}",
+      "eachMonthCreditsRefill": "Each month credits refill to",
+      "perMember": "/ member",
+      "showMoreFeatures": "Show more features",
+      "hideFeatures": "Hide features",
+      "proratedRefund": "Prorated refund for {plan}",
+      "proratedCharge": "Prorated charge for {plan}",
+      "totalDueToday": "Total due today",
+      "nextPaymentDue": "Next payment due {date}. Cancel anytime.",
+      "termsAgreement": "By continuing, you agree to Comfy Org's {terms} and {privacy}.",
+      "terms": "Terms",
+      "privacyPolicy": "Privacy Policy",
+      "addCreditCard": "Add credit card",
+      "confirm": "Confirm",
+      "backToAllPlans": "Back to all plans"
     }
   },
   "userSettings": {

@@ -158,7 +158,7 @@ import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useDialogService } from '@/services/dialogService'
@@ -176,7 +176,9 @@ const dialogService = useDialogService()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { isSubscriptionEnabled } = useSubscription()
+
+const isSubscriptionEnabled = (): boolean =>
+  Boolean(isCloud && window.__CONFIG__?.subscription_required)
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]

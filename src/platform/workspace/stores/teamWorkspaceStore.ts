@@ -30,7 +30,7 @@ export interface PendingInvite {
   expiryDate: Date
 }
 
-type SubscriptionPlan = 'PRO_MONTHLY' | 'PRO_YEARLY' | null
+type SubscriptionPlan = string | null
 
 interface WorkspaceState extends WorkspaceWithRole {
   isSubscribed: boolean
@@ -667,6 +667,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     copyInviteLink,
 
     // Subscription
-    subscribeWorkspace
+    subscribeWorkspace,
+    updateActiveWorkspace
   }
 })

@@ -113,8 +113,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type {
   WorkspaceRole,
   WorkspaceType
@@ -122,15 +122,13 @@ import type {
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
-type SubscriptionPlan = 'PRO_MONTHLY' | 'PRO_YEARLY' | null
-
 interface AvailableWorkspace {
   id: string
   name: string
   type: WorkspaceType
   role: WorkspaceRole
   isSubscribed: boolean
-  subscriptionPlan: SubscriptionPlan
+  subscriptionPlan: string | null
 }
 
 const emit = defineEmits<{
@@ -140,7 +138,34 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { switchWithConfirmation } = useWorkspaceSwitch()
-const { subscriptionTierName: userSubscriptionTierName } = useSubscription()
+const { subscription } = useBillingContext()
+
+const tierKeyMap: Record<string, string> = {
+  STANDARD: 'standard',
+  CREATOR: 'creator',
+  PRO: 'pro',
+  FOUNDER: 'founder',
+  FOUNDERS_EDITION: 'founder'
+}
+
+function formatTierName(
+  tier: string | null | undefined,
+  isYearly: boolean
+): string {
+  if (!tier) return ''
+  const key = tierKeyMap[tier] ?? 'standard'
+  const baseName = t(`subscription.tiers.${key}.name`)
+  return isYearly
+    ? t('subscription.tierNameYearly', { name: baseName })
+    : baseName
+}
+
+const currentSubscriptionTierName = computed(() => {
+  const tier = subscription.value?.tier
+  if (!tier) return ''
+  const isYearly = subscription.value?.duration === 'ANNUAL'
+  return formatTierName(tier, isYearly)
+})
 
 const workspaceStore = useTeamWorkspaceStore()
 const { workspaceId, workspaces, canCreateWorkspace, isFetchingWorkspaces } =
@@ -168,19 +193,26 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
 }
 
 function getTierLabel(workspace: AvailableWorkspace): string | null {
-  // Personal workspace: use user's subscription tier
-  if (workspace.type === 'personal') {
-    return userSubscriptionTierName.value || null
+  // For the current/active workspace, use billing context directly
+  // This ensures we always have the most up-to-date subscription info
+  if (isCurrentWorkspace(workspace)) {
+    return currentSubscriptionTierName.value || null
   }
-  // Team workspace: use workspace subscription plan
+
+  // For non-active workspaces, use cached store data
   if (!workspace.isSubscribed || !workspace.subscriptionPlan) return null
-  if (workspace.subscriptionPlan === 'PRO_MONTHLY')
-    return t('subscription.tiers.pro.name')
-  if (workspace.subscriptionPlan === 'PRO_YEARLY')
-    return t('subscription.tierNameYearly', {
-      name: t('subscription.tiers.pro.name')
-    })
-  return null
+
+  // Parse plan slug (format: TIER_DURATION, e.g. "CREATOR_MONTHLY", "PRO_YEARLY")
+  const planSlug = workspace.subscriptionPlan
+
+  // Extract tier from plan slug (e.g., "CREATOR_MONTHLY" -> "CREATOR")
+  const tierMatch = Object.keys(tierKeyMap).find((tier) =>
+    planSlug.startsWith(tier)
+  )
+  if (!tierMatch) return null
+
+  const isYearly = planSlug.includes('YEARLY') || planSlug.includes('ANNUAL')
+  return formatTierName(tierMatch, isYearly)
 }
 
 async function handleSelectWorkspace(workspace: AvailableWorkspace) {

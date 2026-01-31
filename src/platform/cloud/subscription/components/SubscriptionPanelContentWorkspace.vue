@@ -252,12 +252,10 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
-import { useDialogService } from '@/services/dialogService'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
@@ -273,10 +271,8 @@ const authActions = useFirebaseAuthActions()
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
-const { subscribeWorkspace } = workspaceStore
 const { permissions, workspaceRole } = useWorkspaceUI()
 const { t, n } = useI18n()
-const { showBillingComingSoonDialog } = useDialogService()
 
 // Show subscribe prompt to owners without active subscription
 const showSubscribePrompt = computed(() => {
@@ -293,27 +289,49 @@ const showZeroState = computed(
   () => showSubscribePrompt.value || isMemberView.value
 )
 
-// Subscribe workspace - show billing coming soon dialog for team workspaces
+// Subscribe workspace - opens the subscription dialog (personal or workspace variant)
 function handleSubscribeWorkspace() {
-  if (!isInPersonalWorkspace.value) {
-    showBillingComingSoonDialog()
-    return
-  }
-  subscribeWorkspace('PRO_MONTHLY')
+  showSubscriptionDialog()
 }
 
-const {
-  isActiveSubscription,
-  isCancelled,
-  formattedRenewalDate,
-  formattedEndDate,
-  subscriptionTier,
-  subscriptionTierName,
-  subscriptionStatus,
-  isYearlySubscription
-} = useSubscription()
+const { isActiveSubscription, subscription, showSubscriptionDialog } =
+  useBillingContext()
 
-const { show: showSubscriptionDialog } = useSubscriptionDialog()
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+const subscriptionTier = computed(() => subscription.value?.tier ?? null)
+const isYearlySubscription = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
+
+const formattedRenewalDate = computed(() => {
+  if (!subscription.value?.renewalDate) return ''
+  const renewalDate = new Date(subscription.value.renewalDate)
+  return renewalDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+})
+
+const formattedEndDate = computed(() => {
+  if (!subscription.value?.endDate) return ''
+  const endDate = new Date(subscription.value.endDate)
+  return endDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+})
+
+const subscriptionTierName = computed(() => {
+  const tier = subscriptionTier.value
+  if (!tier) return ''
+  const key = TIER_TO_KEY[tier] ?? 'standard'
+  const baseName = t(`subscription.tiers.${key}.name`)
+  return isYearlySubscription.value
+    ? t('subscription.tierNameYearly', { name: baseName })
+    : baseName
+})
 
 const planMenu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -337,8 +355,8 @@ const tierPrice = computed(() =>
 )
 
 const refillsDate = computed(() => {
-  if (!subscriptionStatus.value?.renewal_date) return ''
-  const date = new Date(subscriptionStatus.value.renewal_date)
+  if (!subscription.value?.renewalDate) return ''
+  const date = new Date(subscription.value.renewalDate)
   const day = String(date.getDate()).padStart(2, '0')
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const year = String(date.getFullYear()).slice(-2)
