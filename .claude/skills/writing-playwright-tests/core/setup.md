@@ -85,31 +85,15 @@ await comfyPage.nextFrame()
 
 ## Common Gotchas
 
-### 1. Missing `nextFrame()`
+See [debugging.md](../reference/debugging.md) for detailed fixes.
 
-Canvas changes don't render immediately:
-
-```typescript
-await comfyPage.canvas.click(100, 200)
-await comfyPage.nextFrame() // ← Required!
-```
-
-### 2. Double-Click Reliability
-
-```typescript
-await element.dblclick({ delay: 5 })
-```
-
-### 3. Screenshot Tests Are Linux-Only
-
-Don't commit local screenshots. Use `New Browser Test Expectations` PR label.
-
-### 4. Focus Before Keyboard
-
-```typescript
-await comfyPage.canvas.focus()
-await comfyPage.page.keyboard.press('Delete')
-```
+| Issue | Solution | Details |
+|-------|----------|---------|
+| Canvas not updating | Add `nextFrame()` after canvas ops | [canvas.md](canvas.md#critical-always-use-nextframe) |
+| Double-click unreliable | Use `{ delay: 5 }` option | [canvas.md](canvas.md#click-operations) |
+| Screenshot mismatch | Linux-only, use PR label | [debugging.md](../reference/debugging.md#debugging-screenshots) |
+| Keyboard not working | Focus canvas first | [canvas.md](canvas.md#focus-before-keyboard) |
+| Flaky async assertions | Use `expect.poll()` or `toPass()` | [debugging.md](../reference/debugging.md#retry-patterns) |
 
 ## Fresh Page Setup
 

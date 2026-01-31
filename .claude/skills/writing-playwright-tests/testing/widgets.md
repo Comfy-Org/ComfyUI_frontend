@@ -77,18 +77,19 @@ await expect(widget.locator).toBeVisible()
 
 ### 1. Wait for Value Change
 
-Widget values may not update instantly:
+Widget values may not update instantly. Use retry patterns:
 
 ```typescript
 await widget.setValue(100)
 await comfyPage.nextFrame()
 
-// Retry assertion
-await expect(async () => {
-  const value = await widget.getValue()
-  expect(value).toBe(100)
-}).toPass({ timeout: 2000 })
+// Use poll for single value
+await expect
+  .poll(() => widget.getValue(), { timeout: 2000 })
+  .toBe(100)
 ```
+
+See [debugging.md](../reference/debugging.md#retry-patterns) for more retry patterns.
 
 ### 2. Combo Widget Selection
 

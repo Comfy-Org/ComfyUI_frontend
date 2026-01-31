@@ -115,15 +115,55 @@ DEBUG=pw:api npx playwright test
 pnpm exec playwright test --ui
 ```
 
-## Retry Pattern
+## Retry Patterns
 
-For inherently async operations:
+Playwright provides two idiomatic approaches for async assertions.
+
+### expect.poll() - Preferred for Single Values
+
+Use when polling a single value until it matches:
+
+```typescript
+// Poll until node count matches
+await expect
+  .poll(() => comfyPage.getGraphNodesCount(), { timeout: 3000 })
+  .toBe(5)
+
+// Poll with custom intervals
+await expect
+  .poll(() => widget.getValue(), { intervals: [100, 200, 500], timeout: 2000 })
+  .toBe('expected')
+```
+
+### expect().toPass() - For Multiple Assertions
+
+Use when multiple conditions must be true together:
 
 ```typescript
 await expect(async () => {
-  const value = await widget.getValue()
-  expect(value).toBe(100)
-}).toPass({ timeout: 2000 })
+  expect(await input.getWidget(0).getValue()).toBe('foo')
+  expect(await output1.getWidget(0).getValue()).toBe('foo')
+  expect(await output2.getWidget(0).getValue()).toBe('')
+}).toPass({ timeout: 2_000 })
+```
+
+### When to Use Each
+
+| Pattern | Use Case |
+|---------|----------|
+| `expect.poll()` | Single value polling, cleaner syntax |
+| `expect().toPass()` | Multiple assertions that must all pass |
+| `locator.waitFor()` | Waiting for element state changes |
+| Auto-retrying assertions | `toBeVisible()`, `toHaveText()`, etc. |
+
+### ❌ Never Use waitForTimeout
+
+```typescript
+// ❌ Bad - arbitrary delay, flaky
+await page.waitForTimeout(500)
+
+// ✅ Good - wait for actual condition
+await expect.poll(() => getData()).toBe(expected)
 ```
 
 ## Debugging Screenshots

@@ -118,20 +118,7 @@ const result = await comfyPage.page.evaluate(() => {
 
 ## WebSocket Mocking
 
-Mock WebSocket status updates:
-
-```typescript
-// Get WebSocket fixture
-const { websocket } = await comfyPage.getWebSocket()
-
-// Send mock status
-await websocket.send(
-  JSON.stringify({
-    type: 'status',
-    data: { exec_info: { queue_remaining: 0 } }
-  })
-)
-```
+See [mocking.md](mocking.md#websocket-mocking) for WebSocket patterns.
 
 ## Vue Node Testing
 

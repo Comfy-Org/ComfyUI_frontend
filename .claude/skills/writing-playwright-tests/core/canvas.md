@@ -82,23 +82,7 @@ await comfyPage.nextFrame()
 
 ## Connecting Nodes
 
-```typescript
-// Get output slot
-const outputNode = comfyPage.getNodeRefByTitle('CLIP Loader')
-const outputSlot = outputNode.getOutputSlot('CLIP')
-
-// Get input slot
-const inputNode = comfyPage.getNodeRefByTitle('CLIP Text Encode')
-const inputSlot = inputNode.getInputSlot('clip')
-
-// Connect via drag
-await comfyMouse.dragFromTo(
-  await outputSlot.getPosition(),
-  await inputSlot.getPosition(),
-  { steps: 10 }
-)
-await comfyPage.nextFrame()
-```
+See [nodes.md](nodes.md#connect-slots) for node connection patterns.
 
 ## Screenshot Testing
 

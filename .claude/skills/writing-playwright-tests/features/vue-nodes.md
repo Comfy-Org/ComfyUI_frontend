@@ -99,14 +99,15 @@ const fixture = await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
 // Fixture maintains stable reference even if title changes
 ```
 
-## Common Vue Nodes Settings
+## Vue Nodes Settings
+
+The essential setting for Vue Nodes:
 
 ```typescript
 await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
-await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-await comfyPage.setSetting('Comfy.Minimap.Visible', false)
-await comfyPage.setSetting('Comfy.Graph.CanvasMenu', true)
 ```
+
+See [setup.md](../core/setup.md#common-settings) for other common settings.
 
 ## Example: Complete Vue Node Test
 

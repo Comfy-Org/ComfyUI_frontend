@@ -57,6 +57,7 @@ const slot = node.getOutputSlot('MODEL')
 | **API mocking**           | [testing/mocking.md](testing/mocking.md)           |
 | **Test assets**           | [testing/assets.md](testing/assets.md)             |
 | **Debug flaky tests**     | [reference/debugging.md](reference/debugging.md)   |
+| **Async retry patterns**  | [reference/debugging.md](reference/debugging.md#retry-patterns) |
 | **All fixture methods**   | [reference/fixtures.md](reference/fixtures.md)     |
 | **Quick cheatsheet**      | [reference/cheatsheet.md](reference/cheatsheet.md) |
 

@@ -124,18 +124,6 @@ test('should upload image file', async ({ comfyPage }) => {
 })
 ```
 
-## Organizing Test Assets
+## Asset Organization
 
-Assets should be organized by feature:
-
-```
-browser_tests/assets/
-├── widgets/               # Widget-specific workflows
-│   ├── load_image_widget.json
-│   └── boolean_widget.json
-├── workflowInMedia/       # Files with embedded workflows
-├── nodes/                 # Node-specific workflows
-└── image32x32.webp        # Shared image assets
-```
-
-See [patterns/assets.md](assets.md) for full asset organization guide.
+See [assets.md](assets.md) for directory structure and best practices.

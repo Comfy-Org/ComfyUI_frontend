@@ -14,18 +14,9 @@ await comfyPage.loadWorkflow('nodes/reroute')
 await comfyPage.loadWorkflow('canvas/pan_zoom')
 ```
 
-### Asset Directory Structure
+### Asset Organization
 
-```
-browser_tests/assets/
-├── default.json          # Basic starting workflow
-├── canvas/               # Canvas state tests
-├── groups/               # Group-related workflows
-├── nodes/                # Node-specific workflows
-├── widgets/              # Widget test workflows
-├── workflows/            # Complex workflow scenarios
-└── images/               # Image assets for drag-drop
-```
+See [assets.md](../testing/assets.md) for full directory structure and best practices.
 
 ### Creating New Assets
 

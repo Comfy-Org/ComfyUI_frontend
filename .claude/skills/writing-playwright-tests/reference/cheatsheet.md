@@ -210,18 +210,9 @@ await comfyPage.page.waitForFunction(
 )
 ```
 
-## Tags Quick Reference
+## Tags
 
-| Tag           | Purpose              | Run with                  |
-| ------------- | -------------------- | ------------------------- |
-| `@smoke`      | Fast essential tests | `--grep @smoke`           |
-| `@slow`       | Long-running tests   | `--grep-invert @slow`     |
-| `@screenshot` | Visual regression    | `--grep @screenshot`      |
-| `@mobile`     | Mobile viewport      | `--project=mobile-chrome` |
-| `@2x`         | HiDPI scale          | `--project=chromium-2x`   |
-| `@canvas`     | Canvas tests         | `--grep @canvas`          |
-| `@node`       | Node tests           | `--grep @node`            |
-| `@widget`     | Widget tests         | `--grep @widget`          |
+See [setup.md](../core/setup.md#test-tags) for tag definitions.
 
 ## Run Commands
 
