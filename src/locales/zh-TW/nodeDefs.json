@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "將顏色轉換為 RGB 整數值。",
+    "display_name": "顏色轉為 RGB 整數值",
+    "inputs": {
+      "color": {
+        "name": "顏色"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb 整數值",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "合併 Hooks [2]",
     "inputs": {
@@ -10978,6 +10993,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "從參考圖片建立自訂風格。上傳 1-5 張圖片作為風格參考。所有圖片的總大小限制為 5 MB。",
+    "display_name": "Recraft 建立風格",
+    "inputs": {
+      "images": {
+        "name": "圖片"
+      },
+      "style": {
+        "name": "風格",
+        "tooltip": "生成圖片的基礎風格。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "風格 ID",
         "tooltip": null
       }
     }

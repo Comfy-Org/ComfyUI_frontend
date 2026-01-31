@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "カラーをRGB整数値に変換します。",
+    "display_name": "カラーをRGB整数に変換",
+    "inputs": {
+      "color": {
+        "name": "カラー"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb整数値",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "フックを組み合わせる [2]",
     "inputs": {
@@ -10978,6 +10993,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "参照画像からカスタムスタイルを作成します。スタイル参照として1～5枚の画像をアップロードしてください。すべての画像の合計サイズは5MBまでです。",
+    "display_name": "Recraft スタイル作成",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "style": {
+        "name": "スタイル",
+        "tooltip": "生成される画像の基本スタイルです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "スタイルID",
         "tooltip": null
       }
     }

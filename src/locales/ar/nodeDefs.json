@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "تحويل لون إلى قيمة عددية لنظام RGB.",
+    "display_name": "تحويل اللون إلى قيمة RGB عددية",
+    "inputs": {
+      "color": {
+        "name": "اللون"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "قيمة RGB عددية",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "دمج الخطافات [2]",
     "inputs": {
@@ -10978,6 +10993,25 @@
     "outputs": {
       "0": {
         "name": "عناصر تحكم إعادة الصياغة",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "أنشئ نمطًا مخصصًا من صور مرجعية. قم برفع ١ إلى ٥ صور لاستخدامها كمرجع للنمط. الحجم الإجمالي لجميع الصور محدود بـ ٥ ميجابايت.",
+    "display_name": "إنشاء نمط مخصص Recraft",
+    "inputs": {
+      "images": {
+        "name": "الصور"
+      },
+      "style": {
+        "name": "النمط",
+        "tooltip": "النمط الأساسي للصور المُولدة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "معرّف النمط",
         "tooltip": null
       }
     }

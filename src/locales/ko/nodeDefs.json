@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "색상을 RGB 정수 값으로 변환합니다.",
+    "display_name": "색상을 RGB 정수로 변환",
+    "inputs": {
+      "color": {
+        "name": "색상"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_정수",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "후크 결합 [2]",
     "inputs": {
@@ -10978,6 +10993,25 @@
     "outputs": {
       "0": {
         "name": "recraft 제어",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "참고 이미지를 사용하여 사용자 지정 스타일을 만듭니다. 스타일 참조로 사용할 이미지를 1~5개 업로드하세요. 모든 이미지의 총 용량은 5MB로 제한됩니다.",
+    "display_name": "Recraft 스타일 생성",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "style": {
+        "name": "스타일",
+        "tooltip": "생성된 이미지의 기본 스타일입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
         "tooltip": null
       }
     }

@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Bir rengi RGB tam sayı değerine dönüştür.",
+    "display_name": "Renkten RGB Tam Sayıya",
+    "inputs": {
+      "color": {
+        "name": "renk"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_tam_sayı",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Kancaları Birleştir [2]",
     "inputs": {
@@ -10978,6 +10993,25 @@
     "outputs": {
       "0": {
         "name": "recraft_kontrolleri",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "Referans görsellerden özel bir stil oluşturun. Stil referansı olarak kullanmak için 1-5 görsel yükleyin. Tüm görsellerin toplam boyutu 5 MB ile sınırlıdır.",
+    "display_name": "Recraft Stil Oluştur",
+    "inputs": {
+      "images": {
+        "name": "görseller"
+      },
+      "style": {
+        "name": "stil",
+        "tooltip": "Oluşturulan görsellerin temel stili."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "stil_id",
         "tooltip": null
       }
     }

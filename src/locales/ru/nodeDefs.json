@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Преобразовать цвет в целочисленное значение RGB.",
+    "display_name": "Преобразование цвета в RGB Int",
+    "inputs": {
+      "color": {
+        "name": "цвет"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Объединить хуки [2]",
     "inputs": {
@@ -10978,6 +10993,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "Создайте пользовательский стиль на основе референсных изображений. Загрузите 1–5 изображений для использования в качестве референсов стиля. Общий размер всех изображений ограничен 5 МБ.",
+    "display_name": "Recraft Создать стиль",
+    "inputs": {
+      "images": {
+        "name": "изображения"
+      },
+      "style": {
+        "name": "стиль",
+        "tooltip": "Базовый стиль сгенерированных изображений."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
         "tooltip": null
       }
     }

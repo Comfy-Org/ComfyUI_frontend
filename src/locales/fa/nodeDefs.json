@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "تبدیل یک رنگ به مقدار صحیح RGB.",
+    "display_name": "تبدیل رنگ به مقدار صحیح RGB",
+    "inputs": {
+      "color": {
+        "name": "رنگ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مقدار صحیح RGB",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "ترکیب هوک‌ها [۲]",
     "inputs": {
@@ -10994,6 +11009,25 @@
     "outputs": {
       "0": {
         "name": "کنترل‌های Recraft",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "ایجاد یک استایل سفارشی از تصاویر مرجع. ۱ تا ۵ تصویر را برای استفاده به عنوان مرجع استایل بارگذاری کنید. مجموع حجم تمام تصاویر حداکثر ۵ مگابایت است.",
+    "display_name": "ایجاد استایل سفارشی Recraft",
+    "inputs": {
+      "images": {
+        "name": "تصاویر"
+      },
+      "style": {
+        "name": "استایل",
+        "tooltip": "استایل پایه تصاویر تولید شده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه استایل",
         "tooltip": null
       }
     }
