@@ -3,7 +3,7 @@ import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
 
-import type { LGraphNode, LGraph } from '../../src/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { KeyCombo } from '../../src/platform/keybindings'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
@@ -22,10 +22,11 @@ import { Topbar } from './components/Topbar'
 import { DefaultGraphPositions } from './constants/defaultGraphPositions'
 import { CanvasHelper } from './helpers/CanvasHelper'
 import { DebugHelper } from './helpers/DebugHelper'
+import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import type { Position, Size } from './types'
 import type { SubgraphSlotReference } from './utils/litegraphUtils'
-import { NodeReference } from './utils/litegraphUtils'
+import type { NodeReference } from './utils/litegraphUtils'
 
 dotenv.config()
 
@@ -178,6 +179,7 @@ export class ComfyPage {
   public readonly debug: DebugHelper
   public readonly subgraph: SubgraphHelper
   public readonly canvasOps: CanvasHelper
+  public readonly nodeOps: NodeOperationsHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -213,6 +215,7 @@ export class ComfyPage {
     this.debug = new DebugHelper(page, this.canvas)
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
+    this.nodeOps = new NodeOperationsHelper(this)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -230,20 +233,14 @@ export class ComfyPage {
     return result
   }
 
+  /** @deprecated Use this.nodeOps.getGraphNodesCount() instead */
   async getGraphNodesCount(): Promise<number> {
-    return await this.page.evaluate(() => {
-      return window['app']?.graph?.nodes?.length || 0
-    })
+    return this.nodeOps.getGraphNodesCount()
   }
 
+  /** @deprecated Use this.nodeOps.getSelectedGraphNodesCount() instead */
   async getSelectedGraphNodesCount(): Promise<number> {
-    return await this.page.evaluate(() => {
-      return (
-        window['app']?.graph?.nodes?.filter(
-          (node: any) => node.is_selected === true
-        ).length || 0
-      )
-    })
+    return this.nodeOps.getSelectedGraphNodesCount()
   }
 
   async setupWorkflowsDirectory(structure: FolderStructure) {
@@ -980,25 +977,14 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /** @deprecated Use this.nodeOps.selectNodes() instead */
   async selectNodes(nodeTitles: string[]) {
-    await this.page.keyboard.down('Control')
-    for (const nodeTitle of nodeTitles) {
-      const nodes = await this.getNodeRefsByTitle(nodeTitle)
-      for (const node of nodes) {
-        await node.click('title')
-      }
-    }
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    return this.nodeOps.selectNodes(nodeTitles)
   }
 
+  /** @deprecated Use this.nodeOps.select2Nodes() instead */
   async select2Nodes() {
-    // Select 2 CLIP nodes.
-    await this.page.keyboard.down('Control')
-    await this.clickTextEncodeNode1()
-    await this.clickTextEncodeNode2()
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
+    return this.nodeOps.select2Nodes()
   }
 
   async ctrlSend(keyToPress: string, locator: Locator | null = this.canvas) {
@@ -1049,6 +1035,7 @@ export class ComfyPage {
     await this.page.locator('.p-dialog').waitFor({ state: 'hidden' })
   }
 
+  /** @deprecated Use this.nodeOps.resizeNode() instead */
   async resizeNode(
     nodePos: Position,
     nodeSize: Size,
@@ -1056,24 +1043,13 @@ export class ComfyPage {
     ratioY: number,
     revertAfter: boolean = false
   ) {
-    const bottomRight = {
-      x: nodePos.x + nodeSize.width,
-      y: nodePos.y + nodeSize.height
-    }
-    const target = {
-      x: nodePos.x + nodeSize.width * ratioX,
-      y: nodePos.y + nodeSize.height * ratioY
-    }
-    // -1 to be inside the node.  -2 because nodes currently get an arbitrary +1 to width.
-    await this.dragAndDrop(
-      { x: bottomRight.x - 2, y: bottomRight.y - 1 },
-      target
+    return this.nodeOps.resizeNode(
+      nodePos,
+      nodeSize,
+      ratioX,
+      ratioY,
+      revertAfter
     )
-    await this.nextFrame()
-    if (revertAfter) {
-      await this.dragAndDrop({ x: target.x - 2, y: target.y - 1 }, bottomRight)
-      await this.nextFrame()
-    }
   }
 
   async resizeKsamplerNode(
@@ -1131,12 +1107,9 @@ export class ComfyPage {
     await modal.waitFor({ state: 'hidden' })
   }
 
+  /** @deprecated Use this.nodeOps.convertAllNodesToGroupNode() instead */
   async convertAllNodesToGroupNode(groupNodeName: string) {
-    await this.canvas.press('Control+a')
-    const node = await this.getFirstNodeRef()
-    await node!.clickContextMenuOption('Convert to Group Node')
-    await this.fillPromptDialog(groupNodeName)
-    await this.nextFrame()
+    return this.nodeOps.convertAllNodesToGroupNode(groupNodeName)
   }
 
   /** @deprecated Use this.canvasOps.convertOffsetToCanvas() instead */
@@ -1149,58 +1122,37 @@ export class ComfyPage {
     return await this.page.locator('.dom-widget').count()
   }
 
+  /** @deprecated Use this.nodeOps.getNodeRefById() instead */
   async getNodeRefById(id: NodeId) {
-    return new NodeReference(id, this)
+    return this.nodeOps.getNodeRefById(id)
   }
+
+  /** @deprecated Use this.nodeOps.getNodes() instead */
   async getNodes(): Promise<LGraphNode[]> {
-    return await this.page.evaluate(() => {
-      return window['app'].graph.nodes
-    })
+    return this.nodeOps.getNodes()
   }
+
+  /** @deprecated Use this.nodeOps.waitForGraphNodes() instead */
   async waitForGraphNodes(count: number) {
-    await this.page.waitForFunction((count) => {
-      return window['app']?.canvas.graph?.nodes?.length === count
-    }, count)
+    return this.nodeOps.waitForGraphNodes(count)
   }
+
+  /** @deprecated Use this.nodeOps.getNodeRefsByType() instead */
   async getNodeRefsByType(
     type: string,
     includeSubgraph: boolean = false
   ): Promise<NodeReference[]> {
-    return Promise.all(
-      (
-        await this.page.evaluate(
-          ({ type, includeSubgraph }) => {
-            const graph = (
-              includeSubgraph ? window['app'].canvas.graph : window['app'].graph
-            ) as LGraph
-            const nodes = graph.nodes
-            return nodes
-              .filter((n: LGraphNode) => n.type === type)
-              .map((n: LGraphNode) => n.id)
-          },
-          { type, includeSubgraph }
-        )
-      ).map((id: NodeId) => this.getNodeRefById(id))
-    )
-  }
-  async getNodeRefsByTitle(title: string): Promise<NodeReference[]> {
-    return Promise.all(
-      (
-        await this.page.evaluate((title) => {
-          return window['app'].graph.nodes
-            .filter((n: LGraphNode) => n.title === title)
-            .map((n: LGraphNode) => n.id)
-        }, title)
-      ).map((id: NodeId) => this.getNodeRefById(id))
-    )
+    return this.nodeOps.getNodeRefsByType(type, includeSubgraph)
   }
 
+  /** @deprecated Use this.nodeOps.getNodeRefsByTitle() instead */
+  async getNodeRefsByTitle(title: string): Promise<NodeReference[]> {
+    return this.nodeOps.getNodeRefsByTitle(title)
+  }
+
+  /** @deprecated Use this.nodeOps.getFirstNodeRef() instead */
   async getFirstNodeRef(): Promise<NodeReference | null> {
-    const id = await this.page.evaluate(() => {
-      return window['app'].graph.nodes[0]?.id
-    })
-    if (!id) return null
-    return this.getNodeRefById(id)
+    return this.nodeOps.getFirstNodeRef()
   }
   /** @deprecated Use this.canvasOps.moveMouseToEmptyArea() instead */
   async moveMouseToEmptyArea() {

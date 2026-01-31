@@ -1,0 +1,148 @@
+import type {
+  LGraph,
+  LGraphNode
+} from '../../../src/lib/litegraph/src/litegraph'
+import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyPage } from '../ComfyPage'
+import type { Position, Size } from '../types'
+import { NodeReference } from '../utils/litegraphUtils'
+
+export class NodeOperationsHelper {
+  constructor(private comfyPage: ComfyPage) {}
+
+  private get page() {
+    return this.comfyPage.page
+  }
+
+  async getGraphNodesCount(): Promise<number> {
+    return await this.page.evaluate(() => {
+      return window['app']?.graph?.nodes?.length || 0
+    })
+  }
+
+  async getSelectedGraphNodesCount(): Promise<number> {
+    return await this.page.evaluate(() => {
+      return (
+        window['app']?.graph?.nodes?.filter(
+          (node: LGraphNode) => node.is_selected === true
+        ).length || 0
+      )
+    })
+  }
+
+  async getNodes(): Promise<LGraphNode[]> {
+    return await this.page.evaluate(() => {
+      return window['app'].graph.nodes
+    })
+  }
+
+  async waitForGraphNodes(count: number): Promise<void> {
+    await this.page.waitForFunction((count) => {
+      return window['app']?.canvas.graph?.nodes?.length === count
+    }, count)
+  }
+
+  async getFirstNodeRef(): Promise<NodeReference | null> {
+    const id = await this.page.evaluate(() => {
+      return window['app'].graph.nodes[0]?.id
+    })
+    if (!id) return null
+    return this.getNodeRefById(id)
+  }
+
+  async getNodeRefById(id: NodeId): Promise<NodeReference> {
+    return new NodeReference(id, this.comfyPage)
+  }
+
+  async getNodeRefsByType(
+    type: string,
+    includeSubgraph: boolean = false
+  ): Promise<NodeReference[]> {
+    return Promise.all(
+      (
+        await this.page.evaluate(
+          ({ type, includeSubgraph }) => {
+            const graph = (
+              includeSubgraph ? window['app'].canvas.graph : window['app'].graph
+            ) as LGraph
+            const nodes = graph.nodes
+            return nodes
+              .filter((n: LGraphNode) => n.type === type)
+              .map((n: LGraphNode) => n.id)
+          },
+          { type, includeSubgraph }
+        )
+      ).map((id: NodeId) => this.getNodeRefById(id))
+    )
+  }
+
+  async getNodeRefsByTitle(title: string): Promise<NodeReference[]> {
+    return Promise.all(
+      (
+        await this.page.evaluate((title) => {
+          return window['app'].graph.nodes
+            .filter((n: LGraphNode) => n.title === title)
+            .map((n: LGraphNode) => n.id)
+        }, title)
+      ).map((id: NodeId) => this.getNodeRefById(id))
+    )
+  }
+
+  async selectNodes(nodeTitles: string[]): Promise<void> {
+    await this.page.keyboard.down('Control')
+    for (const nodeTitle of nodeTitles) {
+      const nodes = await this.getNodeRefsByTitle(nodeTitle)
+      for (const node of nodes) {
+        await node.click('title')
+      }
+    }
+    await this.page.keyboard.up('Control')
+    await this.comfyPage.nextFrame()
+  }
+
+  async select2Nodes(): Promise<void> {
+    await this.page.keyboard.down('Control')
+    await this.comfyPage.clickTextEncodeNode1()
+    await this.comfyPage.clickTextEncodeNode2()
+    await this.page.keyboard.up('Control')
+    await this.comfyPage.nextFrame()
+  }
+
+  async resizeNode(
+    nodePos: Position,
+    nodeSize: Size,
+    ratioX: number,
+    ratioY: number,
+    revertAfter: boolean = false
+  ): Promise<void> {
+    const bottomRight = {
+      x: nodePos.x + nodeSize.width,
+      y: nodePos.y + nodeSize.height
+    }
+    const target = {
+      x: nodePos.x + nodeSize.width * ratioX,
+      y: nodePos.y + nodeSize.height * ratioY
+    }
+    // -1 to be inside the node.  -2 because nodes currently get an arbitrary +1 to width.
+    await this.comfyPage.dragAndDrop(
+      { x: bottomRight.x - 2, y: bottomRight.y - 1 },
+      target
+    )
+    await this.comfyPage.nextFrame()
+    if (revertAfter) {
+      await this.comfyPage.dragAndDrop(
+        { x: target.x - 2, y: target.y - 1 },
+        bottomRight
+      )
+      await this.comfyPage.nextFrame()
+    }
+  }
+
+  async convertAllNodesToGroupNode(groupNodeName: string): Promise<void> {
+    await this.comfyPage.canvas.press('Control+a')
+    const node = await this.getFirstNodeRef()
+    await node!.clickContextMenuOption('Convert to Group Node')
+    await this.comfyPage.fillPromptDialog(groupNodeName)
+    await this.comfyPage.nextFrame()
+  }
+}
