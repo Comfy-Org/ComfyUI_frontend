@@ -197,12 +197,8 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page.getByLabel('Customize').click()
-    await comfyPage.page
-      .locator('.icon-field .p-selectbutton > *:nth-child(2)')
-      .click()
-    await comfyPage.page
-      .locator('.color-field .p-selectbutton > *:nth-child(2)')
-      .click()
+    await comfyPage.page.getByRole('radio', { name: 'Folder' }).click()
+    await comfyPage.page.getByRole('radio', { name: 'Blue' }).click()
     await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     expect(
@@ -220,9 +216,7 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page.getByLabel('Customize').click()
-    await comfyPage.page
-      .locator('.icon-field .p-selectbutton > *:nth-child(2)')
-      .click()
+    await comfyPage.page.getByRole('radio', { name: 'Folder' }).click()
     await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     expect(
@@ -258,9 +252,7 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.locator('.p-colorpicker-color-background').click()
 
     // Finalize the customization
-    await comfyPage.page
-      .locator('.icon-field .p-selectbutton > *:nth-child(2)')
-      .click()
+    await comfyPage.page.getByRole('radio', { name: 'Folder' }).click()
     await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
 
