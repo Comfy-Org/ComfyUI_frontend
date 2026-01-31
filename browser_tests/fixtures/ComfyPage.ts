@@ -20,9 +20,14 @@ import {
 import { Topbar } from './components/Topbar'
 import { DefaultGraphPositions } from './constants/defaultGraphPositions'
 import { CanvasHelper } from './helpers/CanvasHelper'
+import { ClipboardHelper } from './helpers/ClipboardHelper'
 import { DebugHelper } from './helpers/DebugHelper'
+import { KeyboardHelper } from './helpers/KeyboardHelper'
 import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
+import { SettingsHelper } from './helpers/SettingsHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
+import { WorkflowHelper } from './helpers/WorkflowHelper';
+import type { FolderStructure } from './helpers/WorkflowHelper';
 import type { Position } from './types'
 import type { NodeReference } from './utils/litegraphUtils'
 
@@ -105,10 +110,6 @@ class ComfyMenu {
   }
 }
 
-type FolderStructure = {
-  [key: string]: FolderStructure | string
-}
-
 type KeysOfType<T, Match> = {
   [K in keyof T]: T[K] extends Match ? K : never
 }[keyof T]
@@ -179,6 +180,10 @@ export class ComfyPage {
   public readonly subgraph: SubgraphHelper
   public readonly canvasOps: CanvasHelper
   public readonly nodeOps: NodeOperationsHelper
+  public readonly settings: SettingsHelper
+  public readonly keyboard: KeyboardHelper
+  public readonly clipboard: ClipboardHelper
+  public readonly workflow: WorkflowHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -215,46 +220,18 @@ export class ComfyPage {
     this.subgraph = new SubgraphHelper(this)
     this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
     this.nodeOps = new NodeOperationsHelper(this)
+    this.settings = new SettingsHelper(page)
+    this.keyboard = new KeyboardHelper(page, this.canvas)
+    this.clipboard = new ClipboardHelper(page, this.canvas)
+    this.workflow = new WorkflowHelper(this)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
-    const result: FolderStructure = {}
-
-    for (const [key, value] of Object.entries(structure)) {
-      if (typeof value === 'string') {
-        const filePath = this.assetPath(value)
-        result[key] = fs.readFileSync(filePath, 'utf-8')
-      } else {
-        result[key] = this.convertLeafToContent(value)
-      }
-    }
-
-    return result
+    return this.workflow.convertLeafToContent(structure)
   }
 
   async setupWorkflowsDirectory(structure: FolderStructure) {
-    const resp = await this.request.post(
-      `${this.url}/api/devtools/setup_folder_structure`,
-      {
-        data: {
-          tree_structure: this.convertLeafToContent(structure),
-          base_path: `user/${this.id}/workflows`
-        }
-      }
-    )
-
-    if (resp.status() !== 200) {
-      throw new Error(
-        `Failed to setup workflows directory: ${await resp.text()}`
-      )
-    }
-
-    await this.page.evaluate(async () => {
-      await window['app'].extensionManager.workflow.syncWorkflows()
-    })
-
-    // Wait for Vue to re-render the workflow list
-    await this.nextFrame()
+    return this.workflow.setupWorkflowsDirectory(structure)
   }
 
   async setupUser(username: string) {
@@ -405,19 +382,12 @@ export class ComfyPage {
     )
   }
 
-  async setSetting(settingId: string, settingValue: any) {
-    return await this.page.evaluate(
-      async ({ id, value }) => {
-        await window['app'].extensionManager.setting.set(id, value)
-      },
-      { id: settingId, value: settingValue }
-    )
+  async setSetting(settingId: string, settingValue: unknown): Promise<void> {
+    return this.settings.setSetting(settingId, settingValue)
   }
 
-  async getSetting(settingId: string) {
-    return await this.page.evaluate(async (id) => {
-      return await window['app'].extensionManager.setting.get(id)
-    }, settingId)
+  async getSetting<T = unknown>(settingId: string): Promise<T> {
+    return this.settings.getSetting<T>(settingId)
   }
 
   async goto() {
@@ -435,34 +405,14 @@ export class ComfyPage {
   }
 
   async loadWorkflow(workflowName: string) {
-    await this.workflowUploadInput.setInputFiles(
-      this.assetPath(`${workflowName}.json`)
-    )
-    await this.nextFrame()
+    return this.workflow.loadWorkflow(workflowName)
   }
 
   async deleteWorkflow(
     workflowName: string,
     whenMissing: 'ignoreMissing' | 'throwIfMissing' = 'ignoreMissing'
   ) {
-    // Open workflows tab
-    const { workflowsTab } = this.menu
-    await workflowsTab.open()
-
-    // Action to take if workflow missing
-    if (whenMissing === 'ignoreMissing') {
-      const workflows = await workflowsTab.getTopLevelSavedWorkflowNames()
-      if (!workflows.includes(workflowName)) return
-    }
-
-    // Delete workflow
-    await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
-    await this.clickContextMenuItem('Delete')
-    await this.confirmDialog.delete.click()
-
-    // Clear toast & close tab
-    await this.closeToasts(1)
-    await workflowsTab.close()
+    return this.workflow.deleteWorkflow(workflowName, whenMissing)
   }
 
   /**
@@ -803,41 +753,39 @@ export class ComfyPage {
   }
 
   async ctrlSend(keyToPress: string, locator: Locator | null = this.canvas) {
-    const target = locator ?? this.page.keyboard
-    await target.press(`Control+${keyToPress}`)
-    await this.nextFrame()
+    await this.keyboard.ctrlSend(keyToPress, locator)
   }
 
   async ctrlA(locator?: Locator | null) {
-    await this.ctrlSend('KeyA', locator)
+    await this.keyboard.selectAll(locator)
   }
 
   async ctrlB(locator?: Locator | null) {
-    await this.ctrlSend('KeyB', locator)
+    await this.keyboard.bypass(locator)
   }
 
   async ctrlC(locator?: Locator | null) {
-    await this.ctrlSend('KeyC', locator)
+    await this.clipboard.copy(locator)
   }
 
   async ctrlV(locator?: Locator | null) {
-    await this.ctrlSend('KeyV', locator)
+    await this.clipboard.paste(locator)
   }
 
   async ctrlZ(locator?: Locator | null) {
-    await this.ctrlSend('KeyZ', locator)
+    await this.keyboard.undo(locator)
   }
 
   async ctrlY(locator?: Locator | null) {
-    await this.ctrlSend('KeyY', locator)
+    await this.keyboard.redo(locator)
   }
 
   async ctrlArrowUp(locator?: Locator | null) {
-    await this.ctrlSend('ArrowUp', locator)
+    await this.keyboard.moveUp(locator)
   }
 
   async ctrlArrowDown(locator?: Locator | null) {
-    await this.ctrlSend('ArrowDown', locator)
+    await this.keyboard.moveDown(locator)
   }
 
   async closeMenu() {
