@@ -21,8 +21,10 @@ import {
 import { Topbar } from './components/Topbar'
 import { DefaultGraphPositions } from './constants/defaultGraphPositions'
 import { DebugHelper } from './helpers/DebugHelper'
+import { SubgraphHelper } from './helpers/SubgraphHelper'
 import type { Position, Size } from './types'
-import { NodeReference, SubgraphSlotReference } from './utils/litegraphUtils'
+import type { SubgraphSlotReference } from './utils/litegraphUtils';
+import { NodeReference } from './utils/litegraphUtils'
 
 dotenv.config()
 
@@ -173,6 +175,7 @@ export class ComfyPage {
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
   public readonly debug: DebugHelper
+  public readonly subgraph: SubgraphHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -206,6 +209,7 @@ export class ComfyPage {
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.debug = new DebugHelper(page, this.canvas)
+    this.subgraph = new SubgraphHelper(this)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -843,317 +847,90 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  /**
-   * Core helper method for interacting with subgraph I/O slots.
-   * Handles both input/output slots and both right-click/double-click actions.
-   *
-   * @param slotType - 'input' or 'output'
-   * @param action - 'rightClick' or 'doubleClick'
-   * @param slotName - Optional specific slot name to target
-   * @private
-   */
-  private async interactWithSubgraphSlot(
-    slotType: 'input' | 'output',
-    action: 'rightClick' | 'doubleClick',
-    slotName?: string
-  ): Promise<void> {
-    const foundSlot = await this.page.evaluate(
-      async (params) => {
-        const { slotType, action, targetSlotName } = params
-        const app = window['app']
-        const currentGraph = app.canvas.graph
-
-        // Check if we're in a subgraph
-        if (currentGraph.constructor.name !== 'Subgraph') {
-          throw new Error(
-            'Not in a subgraph - this method only works inside subgraphs'
-          )
-        }
-
-        // Get the appropriate node and slots
-        const node =
-          slotType === 'input'
-            ? currentGraph.inputNode
-            : currentGraph.outputNode
-        const slots =
-          slotType === 'input' ? currentGraph.inputs : currentGraph.outputs
-
-        if (!node) {
-          throw new Error(`No ${slotType} node found in subgraph`)
-        }
-
-        if (!slots || slots.length === 0) {
-          throw new Error(`No ${slotType} slots found in subgraph`)
-        }
-
-        // Filter slots based on target name and action type
-        const slotsToTry = targetSlotName
-          ? slots.filter((slot) => slot.name === targetSlotName)
-          : action === 'rightClick'
-            ? slots
-            : [slots[0]] // Right-click tries all, double-click uses first
-
-        if (slotsToTry.length === 0) {
-          throw new Error(
-            targetSlotName
-              ? `${slotType} slot '${targetSlotName}' not found`
-              : `No ${slotType} slots available to try`
-          )
-        }
-
-        // Handle the interaction based on action type
-        if (action === 'rightClick') {
-          // Right-click: try each slot until one works
-          for (const slot of slotsToTry) {
-            if (!slot.pos) continue
-
-            const event = {
-              canvasX: slot.pos[0],
-              canvasY: slot.pos[1],
-              button: 2, // Right mouse button
-              preventDefault: () => {},
-              stopPropagation: () => {}
-            }
-
-            if (node.onPointerDown) {
-              node.onPointerDown(
-                event,
-                app.canvas.pointer,
-                app.canvas.linkConnector
-              )
-            }
-
-            // Wait briefly for menu to appear
-            await new Promise((resolve) => setTimeout(resolve, 100))
-
-            // Check if context menu appeared
-            const menuExists = document.querySelector('.litemenu-entry')
-            if (menuExists) {
-              return {
-                success: true,
-                slotName: slot.name,
-                x: slot.pos[0],
-                y: slot.pos[1]
-              }
-            }
-          }
-        } else if (action === 'doubleClick') {
-          // Double-click: use first slot with bounding rect center
-          const slot = slotsToTry[0]
-          if (!slot.boundingRect) {
-            throw new Error(`${slotType} slot bounding rect not found`)
-          }
-
-          const rect = slot.boundingRect
-          const testX = rect[0] + rect[2] / 2 // x + width/2
-          const testY = rect[1] + rect[3] / 2 // y + height/2
-
-          const event = {
-            canvasX: testX,
-            canvasY: testY,
-            button: 0, // Left mouse button
-            preventDefault: () => {},
-            stopPropagation: () => {}
-          }
-
-          if (node.onPointerDown) {
-            node.onPointerDown(
-              event,
-              app.canvas.pointer,
-              app.canvas.linkConnector
-            )
-
-            // Trigger double-click
-            if (app.canvas.pointer.onDoubleClick) {
-              app.canvas.pointer.onDoubleClick(event)
-            }
-          }
-
-          // Wait briefly for dialog to appear
-          await new Promise((resolve) => setTimeout(resolve, 200))
-
-          return { success: true, slotName: slot.name, x: testX, y: testY }
-        }
-
-        return { success: false }
-      },
-      { slotType, action, targetSlotName: slotName }
-    )
-
-    if (!foundSlot.success) {
-      const actionText =
-        action === 'rightClick' ? 'open context menu for' : 'double-click'
-      throw new Error(
-        slotName
-          ? `Could not ${actionText} ${slotType} slot '${slotName}'`
-          : `Could not find any ${slotType} slot to ${actionText}`
-      )
-    }
-
-    // Wait for the appropriate UI element to appear
-    if (action === 'rightClick') {
-      await this.page.waitForSelector('.litemenu-entry', {
-        state: 'visible',
-        timeout: 5000
-      })
-    } else {
-      await this.nextFrame()
-    }
-  }
-
-  /**
-   * Right-clicks on a subgraph input slot to open the context menu.
-   * Must be called when inside a subgraph.
-   *
-   * This method uses the actual slot positions from the subgraph.inputs array,
-   * which contain the correct coordinates for each input slot. These positions
-   * are different from the visual node positions and are specifically where
-   * the slots are rendered on the input node.
-   *
-   * @param inputName Optional name of the specific input slot to target (e.g., 'text').
-   *                  If not provided, tries all available input slots until one works.
-   * @returns Promise that resolves when the context menu appears
-   */
+  /** @deprecated Use this.subgraph.rightClickInputSlot() instead */
   async rightClickSubgraphInputSlot(inputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('input', 'rightClick', inputName)
+    return this.subgraph.rightClickInputSlot(inputName)
   }
 
-  /**
-   * Right-clicks on a subgraph output slot to open the context menu.
-   * Must be called when inside a subgraph.
-   *
-   * Similar to rightClickSubgraphInputSlot but for output slots.
-   *
-   * @param outputName Optional name of the specific output slot to target.
-   *                   If not provided, tries all available output slots until one works.
-   * @returns Promise that resolves when the context menu appears
-   */
+  /** @deprecated Use this.subgraph.rightClickOutputSlot() instead */
   async rightClickSubgraphOutputSlot(outputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('output', 'rightClick', outputName)
+    return this.subgraph.rightClickOutputSlot(outputName)
   }
 
-  /**
-   * Double-clicks on a subgraph input slot to rename it.
-   * Must be called when inside a subgraph.
-   *
-   * @param inputName Optional name of the specific input slot to target (e.g., 'text').
-   *                  If not provided, tries the first available input slot.
-   * @returns Promise that resolves when the rename dialog appears
-   */
+  /** @deprecated Use this.subgraph.doubleClickInputSlot() instead */
   async doubleClickSubgraphInputSlot(inputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('input', 'doubleClick', inputName)
+    return this.subgraph.doubleClickInputSlot(inputName)
   }
 
-  /**
-   * Double-clicks on a subgraph output slot to rename it.
-   * Must be called when inside a subgraph.
-   *
-   * @param outputName Optional name of the specific output slot to target.
-   *                   If not provided, tries the first available output slot.
-   * @returns Promise that resolves when the rename dialog appears
-   */
+  /** @deprecated Use this.subgraph.doubleClickOutputSlot() instead */
   async doubleClickSubgraphOutputSlot(outputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('output', 'doubleClick', outputName)
+    return this.subgraph.doubleClickOutputSlot(outputName)
   }
 
-  /**
-   * Get a reference to a subgraph input slot
-   */
+  /** @deprecated Use this.subgraph.getInputSlot() instead */
   async getSubgraphInputSlot(
     slotName?: string
   ): Promise<SubgraphSlotReference> {
-    return new SubgraphSlotReference('input', slotName || '', this)
+    return this.subgraph.getInputSlot(slotName)
   }
 
-  /**
-   * Get a reference to a subgraph output slot
-   */
+  /** @deprecated Use this.subgraph.getOutputSlot() instead */
   async getSubgraphOutputSlot(
     slotName?: string
   ): Promise<SubgraphSlotReference> {
-    return new SubgraphSlotReference('output', slotName || '', this)
+    return this.subgraph.getOutputSlot(slotName)
   }
 
-  /**
-   * Connect a regular node output to a subgraph input.
-   * This creates a new input slot on the subgraph if targetInputName is not provided.
-   */
+  /** @deprecated Use this.subgraph.connectToInput() instead */
   async connectToSubgraphInput(
     sourceNode: NodeReference,
     sourceSlotIndex: number,
     targetInputName?: string
   ): Promise<void> {
-    const sourceSlot = await sourceNode.getOutput(sourceSlotIndex)
-    const targetSlot = await this.getSubgraphInputSlot(targetInputName)
-
-    const targetPosition = targetInputName
-      ? await targetSlot.getPosition() // Connect to existing slot
-      : await targetSlot.getOpenSlotPosition() // Create new slot
-
-    await this.dragAndDrop(await sourceSlot.getPosition(), targetPosition)
-    await this.nextFrame()
+    return this.subgraph.connectToInput(
+      sourceNode,
+      sourceSlotIndex,
+      targetInputName
+    )
   }
 
-  /**
-   * Connect a subgraph input to a regular node input.
-   * This creates a new input slot on the subgraph if sourceInputName is not provided.
-   */
+  /** @deprecated Use this.subgraph.connectFromInput() instead */
   async connectFromSubgraphInput(
     targetNode: NodeReference,
     targetSlotIndex: number,
     sourceInputName?: string
   ): Promise<void> {
-    const sourceSlot = await this.getSubgraphInputSlot(sourceInputName)
-    const targetSlot = await targetNode.getInput(targetSlotIndex)
-
-    const sourcePosition = sourceInputName
-      ? await sourceSlot.getPosition() // Connect from existing slot
-      : await sourceSlot.getOpenSlotPosition() // Create new slot
-
-    const targetPosition = await targetSlot.getPosition()
-
-    await this.dragAndDrop(sourcePosition, targetPosition)
-    await this.nextFrame()
+    return this.subgraph.connectFromInput(
+      targetNode,
+      targetSlotIndex,
+      sourceInputName
+    )
   }
 
-  /**
-   * Connect a regular node output to a subgraph output.
-   * This creates a new output slot on the subgraph if targetOutputName is not provided.
-   */
+  /** @deprecated Use this.subgraph.connectToOutput() instead */
   async connectToSubgraphOutput(
     sourceNode: NodeReference,
     sourceSlotIndex: number,
     targetOutputName?: string
   ): Promise<void> {
-    const sourceSlot = await sourceNode.getOutput(sourceSlotIndex)
-    const targetSlot = await this.getSubgraphOutputSlot(targetOutputName)
-
-    const targetPosition = targetOutputName
-      ? await targetSlot.getPosition() // Connect to existing slot
-      : await targetSlot.getOpenSlotPosition() // Create new slot
-
-    await this.dragAndDrop(await sourceSlot.getPosition(), targetPosition)
-    await this.nextFrame()
+    return this.subgraph.connectToOutput(
+      sourceNode,
+      sourceSlotIndex,
+      targetOutputName
+    )
   }
 
-  /**
-   * Connect a subgraph output to a regular node input.
-   * This creates a new output slot on the subgraph if sourceOutputName is not provided.
-   */
+  /** @deprecated Use this.subgraph.connectFromOutput() instead */
   async connectFromSubgraphOutput(
     targetNode: NodeReference,
     targetSlotIndex: number,
     sourceOutputName?: string
   ): Promise<void> {
-    const sourceSlot = await this.getSubgraphOutputSlot(sourceOutputName)
-    const targetSlot = await targetNode.getInput(targetSlotIndex)
-
-    const sourcePosition = sourceOutputName
-      ? await sourceSlot.getPosition() // Connect from existing slot
-      : await sourceSlot.getOpenSlotPosition() // Create new slot
-
-    await this.dragAndDrop(sourcePosition, await targetSlot.getPosition())
-    await this.nextFrame()
+    return this.subgraph.connectFromOutput(
+      targetNode,
+      targetSlotIndex,
+      sourceOutputName
+    )
   }
 
   /** @deprecated Use this.debug.addMarker() instead */
