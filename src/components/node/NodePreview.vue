@@ -10,7 +10,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
   <div v-else class="_sb_node_preview bg-component-node-background">
     <div class="_sb_table">
       <div
-        class="node_header mr-4 text-ellipsis"
+        class="node_header text-ellipsis"
         :title="nodeDef.display_name"
         :style="{
           backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
