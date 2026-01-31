@@ -20,10 +20,11 @@ import {
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
 import { DefaultGraphPositions } from './constants/defaultGraphPositions'
+import { CanvasHelper } from './helpers/CanvasHelper'
 import { DebugHelper } from './helpers/DebugHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import type { Position, Size } from './types'
-import type { SubgraphSlotReference } from './utils/litegraphUtils';
+import type { SubgraphSlotReference } from './utils/litegraphUtils'
 import { NodeReference } from './utils/litegraphUtils'
 
 dotenv.config()
@@ -176,6 +177,7 @@ export class ComfyPage {
   public readonly vueNodes: VueNodeHelpers
   public readonly debug: DebugHelper
   public readonly subgraph: SubgraphHelper
+  public readonly canvasOps: CanvasHelper
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -210,6 +212,7 @@ export class ComfyPage {
     this.vueNodes = new VueNodeHelpers(page)
     this.debug = new DebugHelper(page, this.canvas)
     this.subgraph = new SubgraphHelper(this)
+    this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -502,13 +505,9 @@ export class ComfyPage {
     })
   }
 
+  /** @deprecated Use this.canvasOps.resetView() instead */
   async resetView() {
-    if (await this.resetViewButton.isVisible()) {
-      await this.resetViewButton.click()
-    }
-    // Avoid "Reset View" button highlight.
-    await this.page.mouse.move(10, 10)
-    await this.nextFrame()
+    return this.canvasOps.resetView()
   }
 
   async getToastErrorCount() {
@@ -565,18 +564,12 @@ export class ComfyPage {
   }
 
   async clickEmptySpace() {
-    await this.canvas.click({
-      position: DefaultGraphPositions.emptySpaceClick
-    })
-    await this.nextFrame()
+    return this.canvasOps.clickEmptySpace(DefaultGraphPositions.emptySpaceClick)
   }
 
+  /** @deprecated Use this.canvasOps.dragAndDrop() instead */
   async dragAndDrop(source: Position, target: Position) {
-    await this.page.mouse.move(source.x, source.y)
-    await this.page.mouse.down()
-    await this.page.mouse.move(target.x, target.y, { steps: 100 })
-    await this.page.mouse.up()
-    await this.nextFrame()
+    return this.canvasOps.dragAndDrop(source, target)
   }
 
   async dragAndDropExternalResource(
@@ -793,44 +786,24 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /** @deprecated Use this.canvasOps.zoom() instead */
   async zoom(deltaY: number, steps: number = 1) {
-    await this.page.mouse.move(10, 10)
-    for (let i = 0; i < steps; i++) {
-      await this.page.mouse.wheel(0, deltaY)
-    }
-    await this.nextFrame()
+    return this.canvasOps.zoom(deltaY, steps)
   }
 
+  /** @deprecated Use this.canvasOps.pan() instead */
   async pan(offset: Position, safeSpot?: Position) {
-    safeSpot = safeSpot || { x: 10, y: 10 }
-    await this.page.mouse.move(safeSpot.x, safeSpot.y)
-    await this.page.mouse.down()
-    await this.page.mouse.move(offset.x + safeSpot.x, offset.y + safeSpot.y)
-    await this.page.mouse.up()
-    await this.nextFrame()
+    return this.canvasOps.pan(offset, safeSpot)
   }
 
+  /** @deprecated Use this.canvasOps.panWithTouch() instead */
   async panWithTouch(offset: Position, safeSpot?: Position) {
-    safeSpot = safeSpot || { x: 10, y: 10 }
-    const client = await this.page.context().newCDPSession(this.page)
-    await client.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [safeSpot]
-    })
-    await client.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [{ x: offset.x + safeSpot.x, y: offset.y + safeSpot.y }]
-    })
-    await client.send('Input.dispatchTouchEvent', {
-      type: 'touchEnd',
-      touchPoints: []
-    })
-    await this.nextFrame()
+    return this.canvasOps.panWithTouch(offset, safeSpot)
   }
 
+  /** @deprecated Use this.canvasOps.rightClick() instead */
   async rightClickCanvas(x: number = 10, y: number = 10) {
-    await this.page.mouse.click(x, y, { button: 'right' })
-    await this.nextFrame()
+    return this.canvasOps.rightClick(x, y)
   }
 
   async clickContextMenuItem(name: string): Promise<void> {
@@ -959,9 +932,9 @@ export class ComfyPage {
     return this.debug.attachScreenshot(testInfo, name, options)
   }
 
+  /** @deprecated Use this.canvasOps.doubleClick() instead */
   async doubleClickCanvas() {
-    await this.page.mouse.dblclick(10, 10, { delay: 5 })
-    await this.nextFrame()
+    return this.canvasOps.doubleClick()
   }
 
   /** @deprecated Use this.debug.saveCanvasScreenshot() instead */
@@ -1166,10 +1139,9 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
+  /** @deprecated Use this.canvasOps.convertOffsetToCanvas() instead */
   async convertOffsetToCanvas(pos: [number, number]) {
-    return this.page.evaluate((pos) => {
-      return window['app'].canvas.ds.convertOffsetToCanvas(pos)
-    }, pos)
+    return this.canvasOps.convertOffsetToCanvas(pos)
   }
 
   /** Get number of DOM widgets on the canvas. */
@@ -1230,8 +1202,9 @@ export class ComfyPage {
     if (!id) return null
     return this.getNodeRefById(id)
   }
+  /** @deprecated Use this.canvasOps.moveMouseToEmptyArea() instead */
   async moveMouseToEmptyArea() {
-    await this.page.mouse.move(10, 10)
+    return this.canvasOps.moveMouseToEmptyArea()
   }
   async getUndoQueueSize() {
     return this.page.evaluate(() => {
