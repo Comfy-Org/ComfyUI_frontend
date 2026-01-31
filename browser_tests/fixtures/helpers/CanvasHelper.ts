@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
+import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
 import type { Position } from '../types'
 
 export class CanvasHelper {
@@ -124,5 +125,60 @@ export class CanvasHelper {
       const [clientX, clientY] = app.canvasPosToClientPos([centerX, centerY])
       return { x: clientX, y: clientY }
     }, title)
+  }
+
+  async getGroupPosition(title: string): Promise<Position> {
+    const pos = await this.page.evaluate((title) => {
+      const groups = window['app'].graph.groups
+      const group = groups.find((g: { title: string }) => g.title === title)
+      if (!group) return null
+      return { x: group.pos[0], y: group.pos[1] }
+    }, title)
+    if (!pos) throw new Error(`Group "${title}" not found`)
+    return pos
+  }
+
+  async dragGroup(options: {
+    name: string
+    deltaX: number
+    deltaY: number
+  }): Promise<void> {
+    const { name, deltaX, deltaY } = options
+    const screenPos = await this.page.evaluate((title) => {
+      const app = window['app']
+      const groups = app.graph.groups
+      const group = groups.find((g: { title: string }) => g.title === title)
+      if (!group) return null
+      const clientPos = app.canvasPosToClientPos([
+        group.pos[0] + 50,
+        group.pos[1] + 15
+      ])
+      return { x: clientPos[0], y: clientPos[1] }
+    }, name)
+    if (!screenPos) throw new Error(`Group "${name}" not found`)
+
+    await this.dragAndDrop(screenPos, {
+      x: screenPos.x + deltaX,
+      y: screenPos.y + deltaY
+    })
+  }
+
+  async disconnectEdge(): Promise<void> {
+    await this.dragAndDrop(
+      DefaultGraphPositions.clipTextEncodeNode1InputSlot,
+      DefaultGraphPositions.emptySpace
+    )
+  }
+
+  async connectEdge(options: { reverse?: boolean } = {}): Promise<void> {
+    const { reverse = false } = options
+    const start = reverse
+      ? DefaultGraphPositions.clipTextEncodeNode1InputSlot
+      : DefaultGraphPositions.loadCheckpointNodeClipOutputSlot
+    const end = reverse
+      ? DefaultGraphPositions.loadCheckpointNodeClipOutputSlot
+      : DefaultGraphPositions.clipTextEncodeNode1InputSlot
+
+    await this.dragAndDrop(start, end)
   }
 }

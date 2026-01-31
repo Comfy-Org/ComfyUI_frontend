@@ -1,9 +1,12 @@
+import type { Locator } from '@playwright/test'
+
 import type {
   LGraph,
   LGraphNode
 } from '../../../src/lib/litegraph/src/litegraph'
 import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyPage } from '../ComfyPage'
+import { DefaultGraphPositions } from '../constants/defaultGraphPositions'
 import type { Position, Size } from '../types'
 import { NodeReference } from '../utils/litegraphUtils'
 
@@ -135,6 +138,39 @@ export class NodeOperationsHelper {
     const node = await this.getFirstNodeRef()
     await node!.clickContextMenuOption('Convert to Group Node')
     await this.comfyPage.fillPromptDialog(groupNodeName)
+    await this.comfyPage.nextFrame()
+  }
+
+  get promptDialogInput(): Locator {
+    return this.page.locator('.p-dialog-content input[type="text"]')
+  }
+
+  async fillPromptDialog(value: string): Promise<void> {
+    await this.promptDialogInput.fill(value)
+    await this.page.keyboard.press('Enter')
+    await this.promptDialogInput.waitFor({ state: 'hidden' })
+    await this.comfyPage.nextFrame()
+  }
+
+  async dragTextEncodeNode2(): Promise<void> {
+    await this.comfyPage.canvasOps.dragAndDrop(
+      DefaultGraphPositions.textEncodeNode2,
+      {
+        x: DefaultGraphPositions.textEncodeNode2.x,
+        y: 300
+      }
+    )
+    await this.comfyPage.nextFrame()
+  }
+
+  async adjustEmptyLatentWidth(): Promise<void> {
+    await this.page.locator('#graph-canvas').click({
+      position: DefaultGraphPositions.emptyLatentWidgetClick
+    })
+    const dialogInput = this.page.locator('.graphdialog input[type="text"]')
+    await dialogInput.click()
+    await dialogInput.fill('128')
+    await dialogInput.press('Enter')
     await this.comfyPage.nextFrame()
   }
 }

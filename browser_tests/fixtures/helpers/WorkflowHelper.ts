@@ -1,6 +1,9 @@
 import { readFileSync } from 'fs'
 
+import type { useWorkspaceStore } from '../../../src/stores/workspaceStore'
 import type { ComfyPage } from '../ComfyPage'
+
+type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 export type FolderStructure = {
   [key: string]: FolderStructure | string
@@ -79,5 +82,35 @@ export class WorkflowHelper {
     // Clear toast & close tab
     await this.comfyPage.closeToasts(1)
     await workflowsTab.close()
+  }
+
+  async getUndoQueueSize(): Promise<number | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      const workflow = (window['app'].extensionManager as WorkspaceStore)
+        .workflow.activeWorkflow
+      return workflow?.changeTracker.undoQueue.length
+    })
+  }
+
+  async getRedoQueueSize(): Promise<number | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      const workflow = (window['app'].extensionManager as WorkspaceStore)
+        .workflow.activeWorkflow
+      return workflow?.changeTracker.redoQueue.length
+    })
+  }
+
+  async isCurrentWorkflowModified(): Promise<boolean | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      return (window['app'].extensionManager as WorkspaceStore).workflow
+        .activeWorkflow?.isModified
+    })
+  }
+
+  async getExportedWorkflow(options?: { api?: boolean }): Promise<any> {
+    const api = options?.api ?? false
+    return this.comfyPage.page.evaluate(async (api) => {
+      return (await window['app'].graphToPrompt())[api ? 'output' : 'workflow']
+    }, api)
   }
 }
