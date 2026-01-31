@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import * as fs from 'fs'
 
 import type { KeyCombo } from '../../src/platform/keybindings'
+import { TestIds } from './selectors'
 import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
@@ -52,8 +53,8 @@ class ComfyMenu {
   public readonly saveButton: Locator
 
   constructor(public readonly page: Page) {
-    this.sideToolbar = page.locator('.side-tool-bar-container')
-    this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
+    this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
+    this.themeToggleButton = page.getByTestId(TestIds.sidebar.themeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
     this.saveButton = page
       .locator('button[title="Save the current workflow"]')
