@@ -1,7 +1,7 @@
 import type { APIRequestContext, Locator, Page } from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
-import * as fs from 'fs'
+import { readFileSync } from 'fs'
 
 import type { KeyCombo } from '../../src/platform/keybindings'
 import { TestIds } from './selectors'
@@ -550,7 +550,7 @@ export class ComfyPage {
     // Dropping a file from the filesystem
     if (fileName) {
       const filePath = this.assetPath(fileName)
-      const buffer = fs.readFileSync(filePath)
+      const buffer = readFileSync(filePath)
 
       const getFileType = (fileName: string) => {
         if (fileName.endsWith('.png')) return 'image/png'

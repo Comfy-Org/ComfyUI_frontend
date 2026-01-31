@@ -1,4 +1,4 @@
-import * as fs from 'fs'
+import { readFileSync } from 'fs'
 
 import type { ComfyPage } from '../ComfyPage'
 
@@ -15,7 +15,7 @@ export class WorkflowHelper {
     for (const [key, value] of Object.entries(structure)) {
       if (typeof value === 'string') {
         const filePath = this.comfyPage.assetPath(value)
-        result[key] = fs.readFileSync(filePath, 'utf-8')
+        result[key] = readFileSync(filePath, 'utf-8')
       } else {
         result[key] = this.convertLeafToContent(value)
       }
