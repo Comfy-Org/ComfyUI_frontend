@@ -336,8 +336,6 @@ test.describe('Node library sidebar', () => {
 
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.nodeLibrarySearchBoxInput.fill('KSampler')
-    // Node search box is debounced and may take some time to update.
-    await comfyPage.page.waitForTimeout(1000)
-    expect(await tab.getNode('KSampler (Advanced)').count()).toBe(2)
+    await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
   })
 })

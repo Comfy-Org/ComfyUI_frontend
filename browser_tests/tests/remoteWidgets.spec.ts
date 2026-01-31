@@ -257,13 +257,11 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       await addRemoteWidgetNode(comfyPage, nodeName)
       await waitForWidgetUpdate(comfyPage)
 
-      // Wait for timeout and backoff, then force re-render, repeat
-      const requestTimeout = 512
-      await comfyPage.page.waitForTimeout(requestTimeout)
-      await waitForWidgetUpdate(comfyPage)
-      await comfyPage.page.waitForTimeout(requestTimeout * 2)
-      await waitForWidgetUpdate(comfyPage)
-      await comfyPage.page.waitForTimeout(requestTimeout * 3)
+      // Wait for exponential backoff retries to accumulate timestamps
+      await expect(async () => {
+        await waitForWidgetUpdate(comfyPage)
+        expect(timestamps.length).toBeGreaterThanOrEqual(3)
+      }).toPass({ timeout: 10000, intervals: [500, 1000, 1500] })
 
       // Verify exponential backoff between retries
       const intervals = timestamps.slice(1).map((t, i) => t - timestamps[i])

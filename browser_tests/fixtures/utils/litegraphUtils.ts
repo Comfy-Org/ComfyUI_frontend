@@ -1,4 +1,5 @@
-import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 import type { NodeId } from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import { ManageGroupNode } from '../../helpers/manageGroupNode'
@@ -458,13 +459,14 @@ export class NodeReference {
       { x: nodePos.x + 20, y: nodePos.y + titleHeight + 5 }
     ]
 
-    let isInSubgraph = false
-    let attempts = 0
-    const maxAttempts = 3
+    const checkIsInSubgraph = async () => {
+      return this.comfyPage.page.evaluate(() => {
+        const graph = window['app'].canvas.graph
+        return graph?.constructor?.name === 'Subgraph'
+      })
+    }
 
-    while (!isInSubgraph && attempts < maxAttempts) {
-      attempts++
-
+    await expect(async () => {
       for (const position of clickPositions) {
         // Clear any selection first
         await this.comfyPage.canvas.click({
@@ -477,24 +479,9 @@ export class NodeReference {
         await this.comfyPage.canvas.dblclick({ position, force: true })
         await this.comfyPage.nextFrame()
 
-        // Check if we successfully entered the subgraph
-        isInSubgraph = await this.comfyPage.page.evaluate(() => {
-          const graph = window['app'].canvas.graph
-          return graph?.constructor?.name === 'Subgraph'
-        })
-
-        if (isInSubgraph) break
+        if (await checkIsInSubgraph()) return
       }
-
-      if (!isInSubgraph && attempts < maxAttempts) {
-        await this.comfyPage.page.waitForTimeout(500)
-      }
-    }
-
-    if (!isInSubgraph) {
-      throw new Error(
-        'Failed to navigate into subgraph after ' + attempts + ' attempts'
-      )
-    }
+      throw new Error('Not in subgraph yet')
+    }).toPass({ timeout: 5000, intervals: [100, 200, 500] })
   }
 }
