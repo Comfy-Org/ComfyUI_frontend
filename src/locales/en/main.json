@@ -1,4 +1,16 @@
 {
+  "discover": {
+    "searchPlaceholder": "Search workflow templates...",
+    "filters": {
+      "tags": "Tags",
+      "models": "Models",
+      "mediaType": "Media Type",
+      "openSource": "Open Source"
+    },
+    "resultsCount": "{count} template | {count} templates",
+    "noResults": "No templates found",
+    "noResultsHint": "Try adjusting your search or filters"
+  },
   "g": {
     "user": "User",
     "you": "You",

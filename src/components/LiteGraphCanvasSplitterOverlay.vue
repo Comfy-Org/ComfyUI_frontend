@@ -25,7 +25,9 @@
         <!-- First panel: sidebar when left, properties when right -->
         <SplitterPanel
           v-if="
-            !focusMode && (sidebarLocation === 'left' || rightSidePanelVisible)
+            !focusMode &&
+            !isFullPageTabActive &&
+            (sidebarLocation === 'left' || rightSidePanelVisible)
           "
           :class="
             sidebarLocation === 'left'
@@ -98,7 +100,9 @@
         <!-- Last panel: properties when left, sidebar when right -->
         <SplitterPanel
           v-if="
-            !focusMode && (sidebarLocation === 'right' || rightSidePanelVisible)
+            !focusMode &&
+            !isFullPageTabActive &&
+            (sidebarLocation === 'right' || rightSidePanelVisible)
           "
           :class="
             sidebarLocation === 'right'
