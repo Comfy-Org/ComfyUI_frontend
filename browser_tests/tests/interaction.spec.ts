@@ -739,7 +739,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       () => {
         for (let i = 0; i < window.localStorage.length; i++) {
           const key = window.localStorage.key(i)
-          if (key?.startsWith('Comfy.Draft:')) {
+          if (key?.startsWith('Comfy.Workflow.Draft.v2:')) {
             const value = window.localStorage.getItem(key)
             // Check that the draft contains collapsed node flags
             if (value && value.includes('"flags":')) {
