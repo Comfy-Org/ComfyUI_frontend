@@ -182,7 +182,6 @@ export function useTemplateWorkflows() {
     getTemplateThumbnailUrl,
     getTemplateTitle,
     getTemplateDescription,
-    loadWorkflowTemplate,
-    getLogoUrl: workflowTemplatesStore.getLogoUrl
+    loadWorkflowTemplate
   }
 }

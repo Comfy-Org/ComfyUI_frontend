@@ -254,7 +254,7 @@
                     <LogoOverlay
                       v-if="template.logos?.length"
                       :logos="template.logos"
-                      :get-logo-url="getLogoUrl"
+                      :get-logo-url="workflowTemplatesStore.getLogoUrl"
                     />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
@@ -478,8 +478,7 @@ const {
   loadWorkflowTemplate,
   getTemplateThumbnailUrl,
   getTemplateTitle,
-  getTemplateDescription,
-  getLogoUrl
+  getTemplateDescription
 } = useTemplateWorkflows()
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
