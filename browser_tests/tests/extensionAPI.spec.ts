@@ -1,7 +1,16 @@
 import { expect } from '@playwright/test'
 
+import type { Settings } from '../../src/schemas/apiSchema'
 import type { SettingParams } from '../../src/platform/settings/types'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+
+/**
+ * Type helper for test settings with arbitrary IDs.
+ * Extensions can register settings with any ID, but SettingParams.id
+ * is typed as keyof Settings for autocomplete. This helper allows
+ * arbitrary IDs in tests while keeping type safety for other fields.
+ */
+type TestSettingId = keyof Settings
 
 test.describe('Topbar commands', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -87,7 +96,8 @@ test.describe('Topbar commands', () => {
           name: 'TestExtension1',
           settings: [
             {
-              id: 'TestSetting',
+              // Extensions can register arbitrary setting IDs
+              id: 'TestSetting' as TestSettingId,
               name: 'Test Setting',
               type: 'text',
               defaultValue: 'Hello, world!',
@@ -117,7 +127,8 @@ test.describe('Topbar commands', () => {
           name: 'TestExtension1',
           settings: [
             {
-              id: 'Comfy.TestSetting',
+              // Extensions can register arbitrary setting IDs
+              id: 'Comfy.TestSetting' as TestSettingId,
               name: 'Test Setting',
               type: 'boolean',
               defaultValue: false,
@@ -202,7 +213,8 @@ test.describe('Topbar commands', () => {
               name: 'TestExtension1',
               settings: [
                 {
-                  id: 'Comfy.TestSetting',
+                  // Extensions can register arbitrary setting IDs
+                  id: 'Comfy.TestSetting' as TestSettingId,
                   name: 'Test',
                   attrs: { disabled: true },
                   ...config

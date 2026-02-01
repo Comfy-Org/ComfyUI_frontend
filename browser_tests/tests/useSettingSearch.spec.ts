@@ -1,6 +1,14 @@
 import { expect } from '@playwright/test'
 
+import type { Settings } from '../../src/schemas/apiSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+
+/**
+ * Type helper for test settings with arbitrary IDs.
+ * Extensions can register settings with any ID, but SettingParams.id
+ * is typed as keyof Settings for autocomplete.
+ */
+type TestSettingId = keyof Settings
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -14,14 +22,16 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
         name: 'TestSettingsExtension',
         settings: [
           {
-            id: 'TestHiddenSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestHiddenSetting' as TestSettingId,
             name: 'Test Hidden Setting',
             type: 'hidden',
             defaultValue: 'hidden_value',
             category: ['Test', 'Hidden']
           },
           {
-            id: 'TestDeprecatedSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestDeprecatedSetting' as TestSettingId,
             name: 'Test Deprecated Setting',
             type: 'text',
             defaultValue: 'deprecated_value',
@@ -29,7 +39,8 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
             category: ['Test', 'Deprecated']
           },
           {
-            id: 'TestVisibleSetting',
+            // Extensions can register arbitrary setting IDs
+            id: 'TestVisibleSetting' as TestSettingId,
             name: 'Test Visible Setting',
             type: 'text',
             defaultValue: 'visible_value',
