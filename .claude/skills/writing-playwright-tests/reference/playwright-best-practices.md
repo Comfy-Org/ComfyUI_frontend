@@ -115,6 +115,7 @@ await expect(panel.locator('[role="tablist"]').getByText('Nodes')).toBeVisible()
 ```
 
 **Common patterns that cause this:**
+
 - Tabs and section headers with same text (e.g., "Nodes" tab + "NODES" accordion)
 - Settings containing the section name (e.g., "Nodes 2.0", "Snap nodes to grid")
 - Repeated labels across different panels
