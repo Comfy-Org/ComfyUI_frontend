@@ -897,5 +897,41 @@ describe('useQueueStore', () => {
 
       expect(store.isLoading).toBe(false)
     })
+
+    it('should handle stale request failure without affecting latest state', async () => {
+      let resolveSecond: (value: {
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }) => void
+
+      const secondQueuePromise = new Promise<{
+        Running: JobListItem[]
+        Pending: JobListItem[]
+      }>((resolve) => {
+        resolveSecond = resolve
+      })
+
+      mockGetHistory.mockResolvedValue([])
+
+      mockGetQueue
+        .mockRejectedValueOnce(new Error('stale network error'))
+        .mockReturnValueOnce(secondQueuePromise)
+
+      const firstUpdate = store.update()
+      const secondUpdate = store.update()
+
+      resolveSecond!({ Running: [], Pending: [createPendingJob(2, 'new-job')] })
+      await secondUpdate
+
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.pendingTasks[0].promptId).toBe('new-job')
+      expect(store.isLoading).toBe(false)
+
+      await expect(firstUpdate).rejects.toThrow('stale network error')
+
+      expect(store.pendingTasks).toHaveLength(1)
+      expect(store.pendingTasks[0].promptId).toBe('new-job')
+      expect(store.isLoading).toBe(false)
+    })
   })
 })
