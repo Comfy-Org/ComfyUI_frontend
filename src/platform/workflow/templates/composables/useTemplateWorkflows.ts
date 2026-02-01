@@ -158,6 +158,7 @@ export function useTemplateWorkflows() {
    */
   const fetchTemplateJson = async (id: string, sourceModule: string) => {
     if (sourceModule === 'default') {
+      // Default templates provided by frontend are served on this separate endpoint
       return fetch(api.fileURL(`/templates/${id}.json`)).then((r) => r.json())
     } else {
       return fetch(
