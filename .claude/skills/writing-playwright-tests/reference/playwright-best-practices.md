@@ -95,6 +95,30 @@ await page.getByRole('button').first().click()
 await page.getByRole('button', { name: 'Submit' }).click()
 ```
 
+### ❌ Ambiguous Text Selectors (Strict Mode Violations)
+
+`getByText()` matches **all elements containing that text**, causing strict mode violations when multiple elements match. Common in UIs with tabs, section headers, and settings that share terminology.
+
+```typescript
+// Bad - "Nodes" appears in tab, section header, and setting labels
+await expect(panel.getByText('Nodes')).toBeVisible()
+// Error: strict mode violation, resolved to 4 elements
+
+// Good - use role with exact name (section headers are often buttons)
+await expect(panel.getByRole('button', { name: 'NODES' })).toBeVisible()
+
+// Good - use exact match when appropriate
+await expect(panel.getByText('Nodes', { exact: true })).toBeVisible()
+
+// Good - scope to a more specific container first
+await expect(panel.locator('[role="tablist"]').getByText('Nodes')).toBeVisible()
+```
+
+**Common patterns that cause this:**
+- Tabs and section headers with same text (e.g., "Nodes" tab + "NODES" accordion)
+- Settings containing the section name (e.g., "Nodes 2.0", "Snap nodes to grid")
+- Repeated labels across different panels
+
 ### ❌ Non-Awaited Assertions
 
 ```typescript
