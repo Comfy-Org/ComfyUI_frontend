@@ -13,6 +13,7 @@ import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { ComfyPropertiesPanel } from './components/ComfyPropertiesPanel'
 import { SettingDialog } from './components/SettingDialog'
 import {
   NodeLibrarySidebarTab,
@@ -25,18 +26,6 @@ import { NodeReference, SubgraphSlotReference } from './utils/litegraphUtils'
 dotenv.config()
 
 type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
-
-class ComfyPropertiesPanel {
-  readonly root: Locator
-  readonly panelTitle: Locator
-  readonly searchBox: Locator
-
-  constructor(readonly page: Page) {
-    this.root = page.getByTestId('properties-panel')
-    this.panelTitle = this.root.locator('h3')
-    this.searchBox = this.root.getByPlaceholder('Search...')
-  }
-}
 
 class ComfyMenu {
   private _nodeLibraryTab: NodeLibrarySidebarTab | null = null
@@ -170,6 +159,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
+  public readonly propertiesPanel: ComfyPropertiesPanel
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -202,6 +192,7 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
+    this.propertiesPanel = new ComfyPropertiesPanel(page)
   }
 
   convertLeafToContent(structure: FolderStructure): FolderStructure {
@@ -1614,7 +1605,7 @@ export class ComfyPage {
       (
         await this.page.evaluate((title) => {
           return window['app'].graph.nodes
-            .filter((n: LGraphNode) => n.title === title)
+            .filter((n: LGraphNode) => n.getTitle() === title)
             .map((n: LGraphNode) => n.id)
         }, title)
       ).map((id: NodeId) => this.getNodeRefById(id))
