@@ -29,10 +29,23 @@ export function getFromPngBuffer(buffer: ArrayBuffer): Record<string, string> {
         ...pngData.slice(offset + 8, keyword_end)
       )
       // Get the text
-      const contentArraySegment = pngData.slice(
-        keyword_end + 1,
-        offset + 8 + length
-      )
+      // For iTXt chunks, skip compression flag (1), compression method (1),
+      // language tag (null-terminated), and translated keyword (null-terminated)
+      let textStart = keyword_end + 1
+      if (type === 'iTXt') {
+        textStart += 2 // Skip compression flag and method
+        // Skip language tag (find null terminator)
+        while (pngData[textStart] !== 0 && textStart < offset + 8 + length) {
+          textStart++
+        }
+        textStart++ // Skip null terminator
+        // Skip translated keyword (find null terminator)
+        while (pngData[textStart] !== 0 && textStart < offset + 8 + length) {
+          textStart++
+        }
+        textStart++ // Skip null terminator
+      }
+      const contentArraySegment = pngData.slice(textStart, offset + 8 + length)
       const contentJson = new TextDecoder('utf-8').decode(contentArraySegment)
       txt_chunks[keyword] = contentJson
     }
