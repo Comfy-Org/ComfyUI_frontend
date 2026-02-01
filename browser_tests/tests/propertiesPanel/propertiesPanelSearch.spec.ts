@@ -10,7 +10,10 @@ test.describe('Properties panel search functionality', { tag: ['@ui'] }, () => {
 
   test.describe('Search with multiple nodes selected', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectFirstNodeByTitles([
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
     })
 
     test('filters widgets by search query', async ({ comfyPage }) => {

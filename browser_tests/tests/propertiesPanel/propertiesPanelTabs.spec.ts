@@ -67,7 +67,10 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
       await expect(propertiesPanel.getTab('Nodes')).not.toBeVisible()
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectFirstNodeByTitles([
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
       await expect(propertiesPanel.getTab('Parameters')).toBeVisible()
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
       await expect(propertiesPanel.getTab('Info')).not.toBeVisible()
@@ -77,10 +80,13 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
     test('first tab updates for multiple selection', async ({ comfyPage }) => {
       const { propertiesPanel } = comfyPage
 
-      await comfyPage.selectNodes(['KSampler'])
+      await comfyPage.selectFirstNodeByTitles(['KSampler'])
       await expect(propertiesPanel.getTab('Parameters')).toBeVisible()
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectFirstNodeByTitles([
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
       const firstTab = propertiesPanel.tabList.locator('[role="tab"]').first()
       await expect(firstTab).toBeVisible()
     })
@@ -92,10 +98,10 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
     }) => {
       const { propertiesPanel } = comfyPage
 
-      await comfyPage.selectNodes(['KSampler'])
+      await comfyPage.selectFirstNodeByTitles(['KSampler'])
       await propertiesPanel.clickTab('Settings')
 
-      await comfyPage.selectNodes(['CLIP Text Encode (Prompt)'])
+      await comfyPage.selectFirstNodeByTitles(['CLIP Text Encode (Prompt)'])
 
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
     })
@@ -105,10 +111,13 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
     }) => {
       const { propertiesPanel } = comfyPage
 
-      await comfyPage.selectNodes(['KSampler'])
+      await comfyPage.selectFirstNodeByTitles(['KSampler'])
       await propertiesPanel.clickTab('Info')
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectFirstNodeByTitles([
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
 
       await expect(propertiesPanel.getTab('Info')).not.toBeVisible()
       const firstTab = propertiesPanel.tabList.locator('[role="tab"]').first()

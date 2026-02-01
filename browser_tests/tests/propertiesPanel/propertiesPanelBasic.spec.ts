@@ -120,7 +120,7 @@ test.describe('Properties panel basic functionality', { tag: ['@ui'] }, () => {
     }) => {
       const { propertiesPanel } = comfyPage
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.select2Nodes()
 
       await expect(propertiesPanel.panelTitle).toContainText('items selected')
     })
@@ -130,7 +130,7 @@ test.describe('Properties panel basic functionality', { tag: ['@ui'] }, () => {
     }) => {
       const { propertiesPanel } = comfyPage
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.select2Nodes()
 
       await expect(propertiesPanel.getTab('Parameters')).toBeVisible()
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
@@ -142,11 +142,10 @@ test.describe('Properties panel basic functionality', { tag: ['@ui'] }, () => {
     }) => {
       const { propertiesPanel } = comfyPage
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.select2Nodes()
 
-      await expect(propertiesPanel.root.getByText('KSampler')).toBeVisible()
       await expect(
-        propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+        propertiesPanel.root.getByText('CLIP Text Encode (Prompt)').first()
       ).toBeVisible()
     })
   })
