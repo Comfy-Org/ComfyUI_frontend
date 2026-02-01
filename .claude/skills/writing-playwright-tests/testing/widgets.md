@@ -2,10 +2,10 @@
 
 > **⚠️ LiteGraph Mode:** These patterns apply to the default LiteGraph canvas rendering where widgets are drawn on canvas. For Vue Nodes 2.0 (DOM-based widgets), see [vue-nodes.md](../features/vue-nodes.md#dom-based-widget-access).
 >
-> | Mode | Widget Access | Interaction Style |
-> |------|---------------|-------------------|
-> | LiteGraph | `node.getWidget('seed')` | `setValue()`, `getValue()`, canvas coordinates |
-> | Vue Nodes | `comfyPage.vueNodes.getWidgetByName()` | DOM locators, `click()`, `fill()` |
+> | Mode      | Widget Access                          | Interaction Style                              |
+> | --------- | -------------------------------------- | ---------------------------------------------- |
+> | LiteGraph | `node.getWidget('seed')`               | `setValue()`, `getValue()`, canvas coordinates |
+> | Vue Nodes | `comfyPage.vueNodes.getWidgetByName()` | DOM locators, `click()`, `fill()`              |
 
 ## Getting Widgets
 
@@ -91,9 +91,7 @@ await widget.setValue(100)
 await comfyPage.nextFrame()
 
 // Use poll for single value
-await expect
-  .poll(() => widget.getValue(), { timeout: 2000 })
-  .toBe(100)
+await expect.poll(() => widget.getValue(), { timeout: 2000 }).toBe(100)
 ```
 
 See [debugging.md](../reference/debugging.md#retry-patterns) for more retry patterns.

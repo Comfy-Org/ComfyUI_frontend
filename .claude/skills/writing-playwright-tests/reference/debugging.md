@@ -149,12 +149,12 @@ await expect(async () => {
 
 ### When to Use Each
 
-| Pattern | Use Case |
-|---------|----------|
-| `expect.poll()` | Single value polling, cleaner syntax |
-| `expect().toPass()` | Multiple assertions that must all pass |
-| `locator.waitFor()` | Waiting for element state changes |
-| Auto-retrying assertions | `toBeVisible()`, `toHaveText()`, etc. |
+| Pattern                  | Use Case                               |
+| ------------------------ | -------------------------------------- |
+| `expect.poll()`          | Single value polling, cleaner syntax   |
+| `expect().toPass()`      | Multiple assertions that must all pass |
+| `locator.waitFor()`      | Waiting for element state changes      |
+| Auto-retrying assertions | `toBeVisible()`, `toHaveText()`, etc.  |
 
 ### ❌ Never Use waitForTimeout
 

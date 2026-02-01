@@ -3,8 +3,9 @@
 Vue Nodes 2.0 is an alternative rendering mode for nodes. Tests need to explicitly enable it.
 
 > **📋 This file covers Vue Nodes equivalents for:**
+>
 > - Canvas interactions → [LiteGraph version](../core/canvas.md)
-> - Node operations → [LiteGraph version](../core/nodes.md)  
+> - Node operations → [LiteGraph version](../core/nodes.md)
 > - Widget testing → [LiteGraph version](../testing/widgets.md)
 >
 > Vue Nodes uses **DOM elements** instead of canvas drawing. Test with Playwright locators, not coordinate-based clicks.

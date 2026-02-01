@@ -2,10 +2,10 @@
 
 > **⚠️ LiteGraph Mode:** These patterns apply to the default LiteGraph canvas rendering. For Vue Nodes 2.0 (DOM-based rendering), see [vue-nodes.md](../features/vue-nodes.md).
 >
-> | Mode | Node Access | Example |
-> |------|-------------|---------|
-> | LiteGraph | `comfyPage.getNodeRefByTitle()` | `node.click()`, `node.getWidget('seed')` |
-> | Vue Nodes | `comfyPage.vueNodes.getNodeByTitle()` | Playwright locators, CSS classes |
+> | Mode      | Node Access                           | Example                                  |
+> | --------- | ------------------------------------- | ---------------------------------------- |
+> | LiteGraph | `comfyPage.getNodeRefByTitle()`       | `node.click()`, `node.getWidget('seed')` |
+> | Vue Nodes | `comfyPage.vueNodes.getNodeByTitle()` | Playwright locators, CSS classes         |
 
 ## Getting Node References
 

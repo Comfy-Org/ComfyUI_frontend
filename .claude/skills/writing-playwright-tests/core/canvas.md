@@ -1,6 +1,7 @@
 # Canvas Interaction Patterns
 
 > **⚠️ LiteGraph Mode:** These patterns apply to the default LiteGraph canvas rendering. For Vue Nodes 2.0 (DOM-based rendering), see [vue-nodes.md](../features/vue-nodes.md). Check which mode you're testing:
+>
 > - **LiteGraph:** Canvas-based, use `comfyPage.canvas.*`, `NodeReference`, coordinate-based interactions
 > - **Vue Nodes:** DOM-based, use `comfyPage.vueNodes.*`, Playwright locators, CSS selectors
 
