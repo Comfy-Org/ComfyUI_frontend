@@ -11,6 +11,7 @@ import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
 import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
+import { BottomPanel } from './components/BottomPanel'
 import {
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
@@ -177,6 +178,7 @@ export class ComfyPage {
   public readonly toast: ToastHelper
   public readonly dragDrop: DragDropHelper
   public readonly command: CommandHelper
+  public readonly bottomPanel: BottomPanel
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -223,6 +225,7 @@ export class ComfyPage {
     this.toast = new ToastHelper(page)
     this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
     this.command = new CommandHelper(page)
+    this.bottomPanel = new BottomPanel(page)
   }
 
   get visibleToasts() {

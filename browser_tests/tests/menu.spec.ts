@@ -101,8 +101,8 @@ test.describe('Menu', { tag: '@ui' }, () => {
       const checkmark = bottomPanelMenuItem.locator('.pi-check')
 
       // Check initial state of bottom panel (it's initially hidden)
-      const bottomPanel = comfyPage.page.locator('.bottom-panel')
-      await expect(bottomPanel).not.toBeVisible()
+      const { bottomPanel } = comfyPage
+      await expect(bottomPanel.root).not.toBeVisible()
 
       // Checkmark should be invisible initially (panel is hidden)
       await expect(checkmark).toHaveClass(/invisible/)
@@ -115,7 +115,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(viewSubmenu).toBeVisible()
 
       // Verify bottom panel is now visible
-      await expect(bottomPanel).toBeVisible()
+      await expect(bottomPanel.root).toBeVisible()
 
       // Checkmark should now be visible (panel is shown)
       await expect(checkmark).not.toHaveClass(/invisible/)
@@ -128,7 +128,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(viewSubmenu).toBeVisible()
 
       // Verify bottom panel is hidden again
-      await expect(bottomPanel).not.toBeVisible()
+      await expect(bottomPanel.root).not.toBeVisible()
 
       // Checkmark should be invisible again (panel is hidden)
       await expect(checkmark).toHaveClass(/invisible/)
