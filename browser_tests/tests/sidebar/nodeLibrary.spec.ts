@@ -213,9 +213,19 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page.getByLabel('Customize').click()
-    await comfyPage.page.getByRole('radio', { name: 'Folder' }).click()
-    await comfyPage.page.getByRole('radio', { name: 'Blue' }).click()
-    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
+    const dialog = comfyPage.page.getByRole('dialog', {
+      name: 'Customize Folder'
+    })
+    // Select Folder icon (2nd button in Icon group)
+    const iconGroup = dialog.getByText('Icon').locator('..').getByRole('group')
+    await iconGroup.getByRole('button').nth(1).click()
+    // Select Blue color (2nd button in Color group)
+    const colorGroup = dialog
+      .getByText('Color')
+      .locator('..')
+      .getByRole('group')
+    await colorGroup.getByRole('button').nth(1).click()
+    await dialog.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     expect(
       await comfyPage.settings.getSetting(
@@ -236,8 +246,13 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page.getByLabel('Customize').click()
-    await comfyPage.page.getByRole('radio', { name: 'Folder' }).click()
-    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
+    const dialog = comfyPage.page.getByRole('dialog', {
+      name: 'Customize Folder'
+    })
+    // Select Folder icon (2nd button in Icon group)
+    const iconGroup = dialog.getByText('Icon').locator('..').getByRole('group')
+    await iconGroup.getByRole('button').nth(1).click()
+    await dialog.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
     expect(
       await comfyPage.settings.getSetting(
@@ -276,8 +291,13 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.locator('.p-colorpicker-color-background').click()
 
     // Finalize the customization
-    await comfyPage.page.getByRole('radio', { name: 'Folder' }).click()
-    await comfyPage.page.getByRole('button', { name: 'Confirm' }).click()
+    const dialog = comfyPage.page.getByRole('dialog', {
+      name: 'Customize Folder'
+    })
+    // Select Folder icon (2nd button in Icon group)
+    const iconGroup = dialog.getByText('Icon').locator('..').getByRole('group')
+    await iconGroup.getByRole('button').nth(1).click()
+    await dialog.getByRole('button', { name: 'Confirm' }).click()
     await comfyPage.nextFrame()
 
     // Verify the color selection is saved
