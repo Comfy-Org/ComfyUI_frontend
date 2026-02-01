@@ -13,20 +13,24 @@ test.describe('Properties panel global settings', { tag: ['@ui'] }, () => {
     test('displays Nodes section', async ({ comfyPage }) => {
       const { propertiesPanel } = comfyPage
 
-      await expect(propertiesPanel.root.getByText('Nodes')).toBeVisible()
+      await expect(
+        propertiesPanel.root.getByRole('button', { name: 'NODES' })
+      ).toBeVisible()
     })
 
     test('displays Canvas section', async ({ comfyPage }) => {
       const { propertiesPanel } = comfyPage
 
-      await expect(propertiesPanel.root.getByText('Canvas')).toBeVisible()
+      await expect(
+        propertiesPanel.root.getByRole('button', { name: 'CANVAS' })
+      ).toBeVisible()
     })
 
     test('displays Connection Links section', async ({ comfyPage }) => {
       const { propertiesPanel } = comfyPage
 
       await expect(
-        propertiesPanel.root.getByText('Connection Links')
+        propertiesPanel.root.getByRole('button', { name: 'CONNECTION LINKS' })
       ).toBeVisible()
     })
 

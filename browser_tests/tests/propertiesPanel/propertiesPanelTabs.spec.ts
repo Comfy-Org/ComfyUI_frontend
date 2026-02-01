@@ -20,8 +20,12 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
       await expect(propertiesPanel.root.getByText('KSampler')).toBeVisible()
 
       await propertiesPanel.clickTab('Global Settings')
-      await expect(propertiesPanel.root.getByText('Nodes')).toBeVisible()
-      await expect(propertiesPanel.root.getByText('Canvas')).toBeVisible()
+      await expect(
+        propertiesPanel.root.getByRole('button', { name: 'NODES' })
+      ).toBeVisible()
+      await expect(
+        propertiesPanel.root.getByRole('button', { name: 'CANVAS' })
+      ).toBeVisible()
     })
 
     test('switches between tabs in single node mode', async ({ comfyPage }) => {
