@@ -25,24 +25,22 @@ export class SubgraphSlotReference {
       ([type, slotName]) => {
         const currentGraph = window.app!.canvas.graph!
 
-        // Check if we're in a subgraph
-        if (currentGraph.constructor.name !== 'Subgraph') {
+        // Check if we're in a subgraph (subgraphs have inputNode property)
+        if (!('inputNode' in currentGraph)) {
           throw new Error(
             'Not in a subgraph - this method only works inside subgraphs'
           )
         }
 
         const slots =
-          type === 'input'
-            ? (currentGraph as any).inputs
-            : (currentGraph as any).outputs
+          type === 'input' ? currentGraph.inputs : currentGraph.outputs
         if (!slots || slots.length === 0) {
           throw new Error(`No ${type} slots found in subgraph`)
         }
 
         // Find the specific slot or use the first one if no name specified
         const slot = slotName
-          ? slots.find((s: any) => s.name === slotName)
+          ? slots.find((s) => s.name === slotName)
           : slots[0]
 
         if (!slot) {
@@ -74,16 +72,15 @@ export class SubgraphSlotReference {
       ([type]) => {
         const currentGraph = window.app!.canvas.graph!
 
-        if (currentGraph.constructor.name !== 'Subgraph') {
+        // Check if we're in a subgraph (subgraphs have inputNode property)
+        if (!('inputNode' in currentGraph)) {
           throw new Error(
             'Not in a subgraph - this method only works inside subgraphs'
           )
         }
 
         const node =
-          type === 'input'
-            ? (currentGraph as any).inputNode
-            : (currentGraph as any).outputNode
+          type === 'input' ? currentGraph.inputNode : currentGraph.outputNode
 
         if (!node) {
           throw new Error(`No ${type} node found in subgraph`)

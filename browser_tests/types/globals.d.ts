@@ -1,5 +1,5 @@
 import type { ComfyApp } from '@/scripts/app'
-import type { LGraph } from '@/lib/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 
 interface AppReadiness {

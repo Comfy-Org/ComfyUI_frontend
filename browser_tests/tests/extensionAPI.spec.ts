@@ -87,7 +87,7 @@ test.describe('Topbar commands', () => {
           name: 'TestExtension1',
           settings: [
             {
-              id: 'TestSetting' as any,
+              id: 'TestSetting',
               name: 'Test Setting',
               type: 'text',
               defaultValue: 'Hello, world!',
@@ -117,7 +117,7 @@ test.describe('Topbar commands', () => {
           name: 'TestExtension1',
           settings: [
             {
-              id: 'Comfy.TestSetting' as any,
+              id: 'Comfy.TestSetting',
               name: 'Test Setting',
               type: 'boolean',
               defaultValue: false,
@@ -144,7 +144,8 @@ test.describe('Topbar commands', () => {
 
     test.describe('Passing through attrs to setting components', () => {
       const testCases: Array<{
-        config: Partial<Omit<SettingParams, 'id'>>
+        config: Pick<SettingParams, 'type' | 'defaultValue'> &
+          Partial<Omit<SettingParams, 'id' | 'type' | 'defaultValue'>>
         selector: string
       }> = [
         {
@@ -201,11 +202,11 @@ test.describe('Topbar commands', () => {
               name: 'TestExtension1',
               settings: [
                 {
-                  id: 'Comfy.TestSetting' as any,
+                  id: 'Comfy.TestSetting',
                   name: 'Test',
                   attrs: { disabled: true },
                   ...config
-                } as any
+                }
               ]
             })
           }, config)

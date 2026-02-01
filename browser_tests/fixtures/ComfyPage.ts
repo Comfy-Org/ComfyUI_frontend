@@ -139,7 +139,7 @@ class ConfirmDialog {
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
-      () => (window.app?.extensionManager as any)?.workflow?.isBusy === false,
+      () => window.app?.extensionManager?.workflow?.isBusy === false,
       undefined,
       { timeout: 3000 }
     )
@@ -387,7 +387,7 @@ export class ComfyPage {
 
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      ;(window.app!.extensionManager as any).focusMode = focusMode
+      window.app!.extensionManager.focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
   }

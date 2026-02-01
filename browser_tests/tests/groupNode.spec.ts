@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import type { NodeLibrarySidebarTab } from '../fixtures/components/SidebarTab'
@@ -313,7 +315,8 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
       await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
         await comfyPage.page.evaluate(
-          (workflow) => window.app!.loadGraphData(workflow as any),
+          (workflow) =>
+            window.app!.loadGraphData(workflow as ComfyWorkflowJSON),
           currentGraphState
         )
         await comfyPage.nextFrame()

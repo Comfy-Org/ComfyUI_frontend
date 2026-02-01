@@ -251,7 +251,7 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
       image1.src = src
       const image2 = new Image()
       image2.src = src
-      const targetNode = graph.nodes[6]
+      const targetNode = graph!.nodes[6]
       targetNode.imgs = [image1, image2]
       targetNode.imageIndex = 1
       app!.canvas.setDirty(true)

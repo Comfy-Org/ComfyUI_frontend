@@ -54,9 +54,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         )
         node!.widgets![0].value = value
 
-        ;(
-          window.app!.extensionManager as any
-        ).workflow.activeWorkflow.changeTracker.checkState()
+        window.app!.extensionManager.workflow.activeWorkflow?.changeTracker.checkState()
       }, value)
     }
 

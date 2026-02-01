@@ -10,7 +10,7 @@ export const webSocketFixture = base.extend<{
         await page.evaluate(function () {
           // Create a wrapper for WebSocket that stores them globally
           // so we can look it up to trigger messages
-          const store: Record<string, WebSocket> = ((window as any).__ws__ = {})
+          const store: Record<string, WebSocket> = (window.__ws__ = {})
           window.WebSocket = class extends window.WebSocket {
             constructor(
               ...rest: ConstructorParameters<typeof window.WebSocket>
@@ -34,7 +34,7 @@ export const webSocketFixture = base.extend<{
                 u.pathname = '/'
                 url = u.toString() + 'ws'
               }
-              const ws: WebSocket = (window as any).__ws__[url]
+              const ws: WebSocket = window.__ws__![url]
               ws.dispatchEvent(
                 new MessageEvent('message', {
                   data

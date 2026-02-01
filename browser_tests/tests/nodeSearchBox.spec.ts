@@ -1,5 +1,8 @@
-import { comfyExpect as expect, comfyPageFixture as test } from '../fixtures/ComfyPage';
-import type { ComfyPage } from '../fixtures/ComfyPage';
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '../fixtures/ComfyPage'
+import type { ComfyPage } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')

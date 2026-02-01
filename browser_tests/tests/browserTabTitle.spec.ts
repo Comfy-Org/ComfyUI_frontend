@@ -11,8 +11,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
     test('Can display workflow name', async ({ comfyPage }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return (window.app!.extensionManager as any).workflow.activeWorkflow
-          .filename
+        return window.app!.extensionManager.workflow.activeWorkflow?.filename
       })
       expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
     })
@@ -23,8 +22,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
       comfyPage
     }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return (window.app!.extensionManager as any).workflow.activeWorkflow
-          .filename
+        return window.app!.extensionManager.workflow.activeWorkflow?.filename
       })
       expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
 
@@ -40,9 +38,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
       // Delete the saved workflow for cleanup.
       await comfyPage.page.evaluate(async () => {
-        return (
-          window.app!.extensionManager as any
-        ).workflow.activeWorkflow.delete()
+        return window.app!.extensionManager.workflow.activeWorkflow?.delete()
       })
     })
   })

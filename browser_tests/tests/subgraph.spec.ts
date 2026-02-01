@@ -27,7 +27,10 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     type: 'inputs' | 'outputs'
   ): Promise<number> {
     return await comfyPage.page.evaluate((slotType: 'inputs' | 'outputs') => {
-      return (window.app!.canvas.graph as any)?.[slotType]?.length || 0
+      const graph = window.app!.canvas.graph
+      // isSubgraph check: subgraphs have isRootGraph === false
+      if (!graph || !('inputNode' in graph)) return 0
+      return graph[slotType]?.length || 0
     }, type)
   }
 
@@ -132,11 +135,12 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.inputs?.[0]?.label || null
       })
 
-      await comfyPage.subgraph.rightClickInputSlot(initialInputLabel)
+      await comfyPage.subgraph.rightClickInputSlot(initialInputLabel!)
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
       await comfyPage.nextFrame()
 
@@ -151,8 +155,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.inputs?.[0]?.label || null
       })
 
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
@@ -166,11 +171,12 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.inputs?.[0]?.label || null
       })
 
-      await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel)
+      await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel!)
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
         state: 'visible'
@@ -183,8 +189,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.inputs?.[0]?.label || null
       })
 
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
@@ -198,11 +205,12 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialOutputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.outputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.outputs?.[0]?.label || null
       })
 
-      await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel)
+      await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel!)
 
       await comfyPage.page.waitForSelector(SELECTORS.promptDialog, {
         state: 'visible'
@@ -216,8 +224,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newOutputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.outputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.outputs?.[0]?.label || null
       })
 
       expect(newOutputName).toBe(renamedOutputName)
@@ -233,12 +242,13 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.inputs?.[0]?.label || null
       })
 
       // Test that right-click still works for renaming
-      await comfyPage.subgraph.rightClickInputSlot(initialInputLabel)
+      await comfyPage.subgraph.rightClickInputSlot(initialInputLabel!)
       await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
       await comfyPage.nextFrame()
 
@@ -254,8 +264,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.inputs?.[0]?.label || null
       })
 
       expect(newInputName).toBe(rightClickRenamedName)
@@ -271,16 +282,20 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.inputs?.[0]?.label || null
       })
 
       // Use direct pointer event approach to double-click on label
       await comfyPage.page.evaluate(() => {
         const app = window.app!
 
-        const graph = app.canvas.graph as any
-        const input = graph?.inputs?.[0]
+        const graph = app.canvas.graph
+        if (!graph || !('inputNode' in graph)) {
+          throw new Error('Expected to be in subgraph')
+        }
+        const input = graph.inputs?.[0]
 
         if (!input?.labelPos) {
           throw new Error('Could not get label position for testing')
@@ -290,25 +305,27 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         const testX = input.labelPos[0]
         const testY = input.labelPos[1]
 
+        // Create a minimal mock event with required properties
+        // Full PointerEvent creation is unnecessary for this test
         const leftClickEvent = {
           canvasX: testX,
           canvasY: testY,
-          button: 0, // Left mouse button
+          button: 0,
           preventDefault: () => {},
           stopPropagation: () => {}
-        }
+        } as Parameters<typeof graph.inputNode.onPointerDown>[0]
 
-        const inputNode = graph?.inputNode
+        const inputNode = graph.inputNode
         if (inputNode?.onPointerDown) {
           inputNode.onPointerDown(
-            leftClickEvent as any,
+            leftClickEvent,
             app.canvas.pointer,
             app.canvas.linkConnector
           )
 
           // Trigger double-click if pointer has the handler
           if (app.canvas.pointer.onDoubleClick) {
-            app.canvas.pointer.onDoubleClick(leftClickEvent as any)
+            app.canvas.pointer.onDoubleClick(leftClickEvent)
           }
         }
       })
@@ -327,8 +344,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph as any
-        return graph?.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph
+        if (!graph || !('inputNode' in graph)) return null
+        return graph.inputs?.[0]?.label || null
       })
 
       expect(newInputName).toBe(labelClickRenamedName)
