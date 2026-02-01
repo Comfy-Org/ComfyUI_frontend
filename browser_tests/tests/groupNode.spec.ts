@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { NodeLibrarySidebarTab } from '../fixtures/components/SidebarTab'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
@@ -14,7 +15,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     const groupNodeCategory = 'group nodes>workflow'
     const groupNodeBookmarkName = `workflow>${groupNodeName}`
-    let libraryTab
+    let libraryTab: NodeLibrarySidebarTab
 
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
@@ -119,7 +120,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
   test('Manage group opens with the correct group selected', async ({
     comfyPage
   }) => {
-    const makeGroup = async (name, type1, type2) => {
+    const makeGroup = async (name: string, type1: string, type2: string) => {
       const node1 = (await comfyPage.nodeOps.getNodeRefsByType(type1))[0]
       const node2 = (await comfyPage.nodeOps.getNodeRefsByType(type2))[0]
       await node1.click('title')
@@ -161,15 +162,13 @@ test.describe('Group Node', { tag: '@node' }, () => {
       const {
         extra: { groupNodes }
       } = window.app!.graph!
-      const { nodes } = groupNodes[nodeName]
-      return nodes.reduce((acc: number, node) => {
-        return acc + node.inputs.length
-      }, 0)
+      const { nodes } = groupNodes![nodeName]
+      return nodes.reduce((acc, node) => acc + (node.inputs?.length ?? 0), 0)
     }, groupNodeName)
 
     const visibleInputCount = await comfyPage.page.evaluate((id) => {
       const node = window.app!.graph!.getNodeById(id)
-      return node.inputs.length
+      return node!.inputs.length
     }, groupNodeId)
 
     // Verify there are 4 total inputs (2 VAE decode nodes with 2 inputs each)
@@ -314,7 +313,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
       await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
         await comfyPage.page.evaluate(
-          (workflow) => window.app!.loadGraphData(workflow),
+          (workflow) => window.app!.loadGraphData(workflow as any),
           currentGraphState
         )
         await comfyPage.nextFrame()

@@ -52,10 +52,11 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         const node = window.app!.graph!._nodes.find(
           (n) => n.type === 'EmptyLatentImage'
         )
-        node.widgets[0].value = value
-        window[
-          'app'
-        ].extensionManager.workflow.activeWorkflow.changeTracker.checkState()
+        node!.widgets![0].value = value
+
+        ;(
+          window.app!.extensionManager as any
+        ).workflow.activeWorkflow.changeTracker.checkState()
       }, value)
     }
 

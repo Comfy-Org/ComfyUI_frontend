@@ -28,7 +28,7 @@ export class SubgraphHelper {
       async (params) => {
         const { slotType, action, targetSlotName } = params
         const app = window.app!
-        const currentGraph = app.canvas.graph
+        const currentGraph = app.canvas!.graph!
 
         // Check if we're in a subgraph
         if (currentGraph.constructor.name !== 'Subgraph') {
@@ -242,7 +242,7 @@ export class SubgraphHelper {
       ? await targetSlot.getPosition() // Connect to existing slot
       : await targetSlot.getOpenSlotPosition() // Create new slot
 
-    await this.comfyPage.dragDrop(
+    await this.comfyPage.canvasOps.dragAndDrop(
       await sourceSlot.getPosition(),
       targetPosition
     )
@@ -267,7 +267,7 @@ export class SubgraphHelper {
 
     const targetPosition = await targetSlot.getPosition()
 
-    await this.comfyPage.dragDrop(sourcePosition, targetPosition)
+    await this.comfyPage.canvasOps.dragAndDrop(sourcePosition, targetPosition)
     await this.comfyPage.nextFrame()
   }
 
@@ -287,7 +287,7 @@ export class SubgraphHelper {
       ? await targetSlot.getPosition() // Connect to existing slot
       : await targetSlot.getOpenSlotPosition() // Create new slot
 
-    await this.comfyPage.dragDrop(
+    await this.comfyPage.canvasOps.dragAndDrop(
       await sourceSlot.getPosition(),
       targetPosition
     )
@@ -310,7 +310,7 @@ export class SubgraphHelper {
       ? await sourceSlot.getPosition() // Connect from existing slot
       : await sourceSlot.getOpenSlotPosition() // Create new slot
 
-    await this.comfyPage.dragDrop(
+    await this.comfyPage.canvasOps.dragAndDrop(
       sourcePosition,
       await targetSlot.getPosition()
     )

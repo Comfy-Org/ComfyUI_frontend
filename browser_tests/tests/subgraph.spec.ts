@@ -26,8 +26,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     comfyPage: typeof test.prototype.comfyPage,
     type: 'inputs' | 'outputs'
   ): Promise<number> {
-    return await comfyPage.page.evaluate((slotType) => {
-      return window.app!.canvas.graph[slotType]?.length || 0
+    return await comfyPage.page.evaluate((slotType: 'inputs' | 'outputs') => {
+      return (window.app!.canvas.graph as any)?.[slotType]?.length || 0
     }, type)
   }
 
@@ -36,7 +36,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     comfyPage: typeof test.prototype.comfyPage
   ): Promise<number> {
     return await comfyPage.page.evaluate(() => {
-      return window.app!.canvas.graph.nodes?.length || 0
+      return window.app!.canvas.graph!.nodes?.length || 0
     })
   }
 
@@ -132,8 +132,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.inputs?.[0]?.label || null
       })
 
       await comfyPage.subgraph.rightClickInputSlot(initialInputLabel)
@@ -151,8 +151,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.inputs?.[0]?.label || null
       })
 
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
@@ -166,8 +166,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.inputs?.[0]?.label || null
       })
 
       await comfyPage.subgraph.doubleClickInputSlot(initialInputLabel)
@@ -183,8 +183,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.inputs?.[0]?.label || null
       })
 
       expect(newInputName).toBe(RENAMED_INPUT_NAME)
@@ -198,8 +198,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialOutputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.outputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.outputs?.[0]?.label || null
       })
 
       await comfyPage.subgraph.doubleClickOutputSlot(initialOutputLabel)
@@ -216,8 +216,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newOutputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.outputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.outputs?.[0]?.label || null
       })
 
       expect(newOutputName).toBe(renamedOutputName)
@@ -233,8 +233,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.inputs?.[0]?.label || null
       })
 
       // Test that right-click still works for renaming
@@ -254,8 +254,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.inputs?.[0]?.label || null
       })
 
       expect(newInputName).toBe(rightClickRenamedName)
@@ -271,15 +271,16 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.inputs?.[0]?.label || null
       })
 
       // Use direct pointer event approach to double-click on label
       await comfyPage.page.evaluate(() => {
-        const app = window.app
-        const graph = app.canvas.graph
-        const input = graph.inputs?.[0]
+        const app = window.app!
+
+        const graph = app.canvas.graph as any
+        const input = graph?.inputs?.[0]
 
         if (!input?.labelPos) {
           throw new Error('Could not get label position for testing')
@@ -297,17 +298,17 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
           stopPropagation: () => {}
         }
 
-        const inputNode = graph.inputNode
+        const inputNode = graph?.inputNode
         if (inputNode?.onPointerDown) {
           inputNode.onPointerDown(
-            leftClickEvent,
+            leftClickEvent as any,
             app.canvas.pointer,
             app.canvas.linkConnector
           )
 
           // Trigger double-click if pointer has the handler
           if (app.canvas.pointer.onDoubleClick) {
-            app.canvas.pointer.onDoubleClick(leftClickEvent)
+            app.canvas.pointer.onDoubleClick(leftClickEvent as any)
           }
         }
       })
@@ -326,8 +327,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window.app!.canvas.graph
-        return graph.inputs?.[0]?.label || null
+        const graph = window.app!.canvas.graph as any
+        return graph?.inputs?.[0]?.label || null
       })
 
       expect(newInputName).toBe(labelClickRenamedName)
@@ -340,7 +341,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         'subgraphs/subgraph-compressed-target-slot'
       )
       const step = await comfyPage.page.evaluate(() => {
-        return window.app.graph.nodes[0].widgets[0].options.step
+        return window.app!.graph!.nodes[0].widgets![0].options.step
       })
       expect(step).toBe(10)
     })
@@ -350,7 +351,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can create subgraph from selected nodes', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('default')
 
-      const _initialNodeCount = await getGraphNodeCount(comfyPage)
+      await getGraphNodeCount(comfyPage)
 
       await comfyPage.keyboard.selectAll()
       await comfyPage.nextFrame()
@@ -459,7 +460,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const initialNodeCount = await getGraphNodeCount(comfyPage)
 
       const nodesInSubgraph = await comfyPage.page.evaluate(() => {
-        const nodes = window.app!.canvas.graph.nodes
+        const nodes = window.app!.canvas.graph!.nodes
         return nodes?.[0]?.id || null
       })
 
@@ -689,7 +690,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       // Check that the subgraph node has no widgets after removing the text slot
       const widgetCount = await comfyPage.page.evaluate(() => {
-        return window.app!.canvas.graph.nodes[0].widgets?.length || 0
+        return window.app!.canvas.graph!.nodes[0].widgets?.length || 0
       })
 
       expect(widgetCount).toBe(0)

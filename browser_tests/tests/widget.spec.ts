@@ -61,8 +61,8 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
         return window
           .app!.graph!.nodes.find(
             (node) => node.title === 'Node With Optional Combo Input'
-          )
-          .widgets.find((widget) => widget.name === 'optional_combo_input')
+          )!
+          .widgets!.find((widget) => widget.name === 'optional_combo_input')!
           .options.values
       })
 
@@ -98,8 +98,9 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
       return window
         .app!.graph!.nodes.find(
           (node) => node.title === 'Node With V2 Combo Input'
-        )
-        .widgets.find((widget) => widget.name === 'combo_input').options.values
+        )!
+        .widgets!.find((widget) => widget.name === 'combo_input')!.options
+        .values
     })
     expect(comboValues).toEqual(['A', 'B'])
   })
@@ -125,7 +126,7 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
     const widget = await node.getWidget(0)
 
     await comfyPage.page.evaluate(() => {
-      const widget = window.app!.graph!.nodes[0].widgets[0]
+      const widget = window.app!.graph!.nodes[0].widgets![0]
       widget.callback = (value: number) => {
         window.widgetValue = value
       }
@@ -146,7 +147,7 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     const widget = await node.getWidget(0)
     await comfyPage.page.evaluate(() => {
-      const widget = window.app!.graph!.nodes[0].widgets[0]
+      const widget = window.app!.graph!.nodes[0].widgets![0]
       widget.callback = (value: number) => {
         window.widgetValue = value
       }
@@ -170,8 +171,8 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
 
       await comfyPage.page.evaluate(() => {
-        window.graph!.nodes[0].addWidget('number', 'new_widget', 10)
-        window.graph!.setDirtyCanvas(true, true)
+        window.app!.graph!.nodes[0].addWidget('number', 'new_widget', 10, null)
+        window.app!.graph!.setDirtyCanvas(true, true)
       })
 
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -253,11 +254,11 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
       const targetNode = graph.nodes[6]
       targetNode.imgs = [image1, image2]
       targetNode.imageIndex = 1
-      app.canvas.setDirty(true)
+      app!.canvas.setDirty(true)
 
       const x = targetNode.pos[0] + targetNode.size[0] - 41
-      const y = targetNode.pos[1] + targetNode.widgets.at(-1).last_y + 30
-      return app.canvasPosToClientPos([x, y])
+      const y = targetNode.pos[1] + targetNode.widgets!.at(-1)!.last_y! + 30
+      return app!.canvasPosToClientPos([x, y])
     })
 
     const clip = { x, y, width: 35, height: 35 }
@@ -354,7 +355,7 @@ test.describe(
         ([loadId, saveId]) => {
           // Set the output of the SaveAnimatedWEBP node to equal the loader node's image
           window.app!.nodeOutputs[saveId] = window.app!.nodeOutputs[loadId]
-          app.canvas.setDirty(true)
+          app!.canvas.setDirty(true)
         },
         [loadAnimatedWebpNode.id, saveAnimatedWebpNode.id]
       )
