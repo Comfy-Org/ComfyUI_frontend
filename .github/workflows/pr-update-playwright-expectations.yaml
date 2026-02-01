@@ -59,6 +59,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ steps.pr-info.outputs.branch }}
+          token: ${{ secrets.PR_GH_TOKEN }}
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
         with:
