@@ -1,4 +1,6 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { until } from '@vueuse/core'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
@@ -39,7 +41,7 @@ describe('useVersionCompatibilityStore', () => {
   let mockSettingStore: { get: ReturnType<typeof vi.fn> }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
     // Clear the mock dismissal storage
     mockDismissalStorage.value = {}
@@ -357,17 +359,15 @@ describe('useVersionCompatibilityStore', () => {
 
   describe('initialization', () => {
     it('should fetch system stats if not available', async () => {
-      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = null
       mockSystemStatsStore.isInitialized = false
 
       await store.initialize()
 
-      expect(until).toHaveBeenCalled()
+      expect(vi.mocked(until)).toHaveBeenCalled()
     })
 
     it('should not fetch system stats if already available', async () => {
-      const { until } = await import('@vueuse/core')
       mockSystemStatsStore.systemStats = {
         system: {
           comfyui_version: '1.24.0',
@@ -378,7 +378,7 @@ describe('useVersionCompatibilityStore', () => {
 
       await store.initialize()
 
-      expect(until).not.toHaveBeenCalled()
+      expect(vi.mocked(until)).not.toHaveBeenCalled()
     })
   })
 })

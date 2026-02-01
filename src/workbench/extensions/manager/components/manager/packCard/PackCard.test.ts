@@ -1,5 +1,5 @@
+import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
 import ProgressSpinner from 'primevue/progressspinner'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -15,6 +15,7 @@ const translateMock = vi.hoisted(() =>
   )
 )
 const dateMock = vi.hoisted(() => vi.fn(() => '2024. 1. 1.'))
+const storageMap = vi.hoisted(() => new Map<string, unknown>())
 
 // Mock dependencies
 vi.mock('vue-i18n', () => ({
@@ -45,16 +46,17 @@ vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   }))
 }))
 
-vi.mock('@vueuse/core', async () => {
-  const { ref } = await import('vue')
-  return {
-    whenever: vi.fn(),
-    useStorage: vi.fn((_key, defaultValue) => {
-      return ref(defaultValue)
-    }),
-    createSharedComposable: vi.fn((fn) => fn)
-  }
-})
+vi.mock('@vueuse/core', () => ({
+  whenever: vi.fn(),
+  useStorage: vi.fn((key: string, defaultValue: unknown) => {
+    if (!storageMap.has(key)) storageMap.set(key, defaultValue)
+    return storageMap.get(key)
+  }),
+  createSharedComposable: vi.fn((fn) => {
+    let cached: ReturnType<typeof fn>
+    return (...args: Parameters<typeof fn>) => (cached ??= fn(...args))
+  })
+}))
 
 vi.mock('@/config', () => ({
   default: {
@@ -72,12 +74,9 @@ vi.mock('@/stores/systemStatsStore', () => ({
 }))
 
 describe('PackCard', () => {
-  let pinia: ReturnType<typeof createPinia>
-
   beforeEach(() => {
     vi.clearAllMocks()
-    pinia = createPinia()
-    setActivePinia(pinia)
+    storageMap.clear()
   })
 
   const createWrapper = (props: {
@@ -87,7 +86,7 @@ describe('PackCard', () => {
     const wrapper = mount(PackCard, {
       props,
       global: {
-        plugins: [pinia],
+        plugins: [createTestingPinia({ stubActions: false })],
         components: {
           ProgressSpinner
         },

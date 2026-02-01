@@ -108,11 +108,11 @@ import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
-import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import type { NodeBadgeProps } from './NodeBadge.vue'
@@ -160,12 +160,12 @@ const enterSubgraphTooltipConfig = computed(() => {
 })
 
 const resolveTitle = (info: VueNodeData | undefined) => {
-  const title = (info?.title ?? '').trim()
-  if (title.length > 0) return title
-
-  const nodeType = (info?.type ?? '').trim() || 'Untitled'
-  const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-  return st(key, nodeType)
+  const untitledLabel = st('g.untitled', 'Untitled')
+  return resolveNodeDisplayName(info ?? null, {
+    emptyLabel: untitledLabel,
+    untitledLabel,
+    st
+  })
 }
 
 // Local state for title to provide immediate feedback

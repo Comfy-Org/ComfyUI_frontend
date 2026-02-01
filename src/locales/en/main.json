@@ -121,6 +121,7 @@
     "customize": "Customize",
     "experimental": "BETA",
     "deprecated": "DEPR",
+    "devOnly": "DEV",
     "loadWorkflow": "Load Workflow",
     "goToNode": "Go to Node",
     "setAsBackground": "Set as Background",
@@ -342,6 +343,28 @@
     "errorConnecting": "Error connecting to the Comfy Node Registry.",
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
+    "emptyState": {
+      "allInstalled": {
+        "title": "No Extensions Installed",
+        "message": "You haven't installed any extensions yet."
+      },
+      "updateAvailable": {
+        "title": "All Up to Date",
+        "message": "All your extensions are up to date."
+      },
+      "conflicting": {
+        "title": "No Conflicts Detected",
+        "message": "All your extensions are compatible."
+      },
+      "workflow": {
+        "title": "No Extensions in Workflow",
+        "message": "This workflow doesn't use any extension nodes."
+      },
+      "missing": {
+        "title": "No Missing Nodes",
+        "message": "All required nodes are installed."
+      }
+    },
     "tryAgainLater": "Please try again later.",
     "gettingInfo": "Getting info...",
     "nodePack": "Node Pack",
@@ -756,6 +779,7 @@
       "title": "Queue Progress",
       "total": "Total: {percent}",
       "colonPercent": ": {percent}",
+      "inlineTotalLabel": "Total",
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
       "viewList": "List view",
@@ -942,6 +966,9 @@
       "searchPlaceholder": "Search..."
     }
   },
+  "templates": {
+    "logoProviderSeparator": " & "
+  },
   "graphCanvasMenu": {
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
@@ -993,7 +1020,8 @@
     "showAll": "Show all",
     "hidden": "Hidden / nested parameters",
     "hideAll": "Hide all",
-    "showRecommended": "Show recommended widgets"
+    "showRecommended": "Show recommended widgets",
+    "cannotDeleteGlobal": "Cannot delete installed blueprints"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
@@ -1490,6 +1518,7 @@
     "Gemini": "Gemini",
     "video_models": "video_models",
     "gligen": "gligen",
+    "Grok": "Grok",
     "sd": "sd",
     "Ideogram": "Ideogram",
     "postprocessing": "postprocessing",
@@ -1551,6 +1580,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
+    "COLOR": "COLOR",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1922,13 +1952,7 @@
       "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again."
     },
     "deleteAccount": {
-      "deleteAccount": "Delete Account",
-      "confirmTitle": "Delete Account",
-      "confirmMessage": "Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.",
-      "confirm": "Delete Account",
-      "cancel": "Cancel",
-      "success": "Account Deleted",
-      "successDetail": "Your account has been successfully deleted."
+      "contactSupport": "To delete your account, please contact {email}"
     },
     "reauthRequired": {
       "title": "Re-authentication Required",
@@ -2544,7 +2568,7 @@
     "tagsPlaceholder": "e.g., models, checkpoint",
     "tryAdjustingFilters": "Try adjusting your search or filters",
     "unknown": "Unknown",
-    "unsupportedUrlSource": "Only URLs from {sources} are supported",
+    "unsupportedUrlSource": "This URL is not supported. Use a direct model link from {sources}. See the how-to videos below for help.",
     "upgradeFeatureDescription": "This feature is only available with Creator or Pro plans.",
     "upgradeToUnlockFeature": "Upgrade to unlock this feature",
     "upload": "Import",

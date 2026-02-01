@@ -156,7 +156,11 @@ watch([selectedIndex, selectedOutput], doEmit)
 watch(
   () => outputs.media.value,
   (newAssets, oldAssets) => {
-    if (newAssets.length === oldAssets.length || oldAssets.length === 0) return
+    if (
+      newAssets.length === oldAssets.length ||
+      (oldAssets.length === 0 && newAssets.length !== 1)
+    )
+      return
     if (selectedIndex.value[0] <= 0) {
       selectedIndex.value = [0, 0]
       return

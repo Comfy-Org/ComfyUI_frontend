@@ -23,7 +23,7 @@ async function selectNodeWithPan(comfyPage: ComfyPage, nodeRef: NodeReference) {
   await nodeRef.click('title')
 }
 
-test.describe('Node Help', () => {
+test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setup()
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')

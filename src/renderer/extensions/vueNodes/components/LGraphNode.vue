@@ -150,7 +150,9 @@
       v-if="!isCollapsed && nodeData.resizable !== false"
       role="button"
       :aria-label="t('g.resizeFromBottomRight')"
-      :class="cn(baseResizeHandleClasses, 'right-0 bottom-0 cursor-se-resize')"
+      :class="
+        cn(baseResizeHandleClasses, '-right-1 -bottom-1 cursor-se-resize')
+      "
       @pointerdown.stop="handleResizePointerDown"
     />
   </div>
@@ -344,7 +346,7 @@ function initSizeStyles() {
 }
 
 const baseResizeHandleClasses =
-  'absolute h-3 w-3 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const MIN_NODE_WIDTH = 225
 
@@ -549,6 +551,12 @@ const showAdvancedState = customRef((track, trigger) => {
   }
 })
 
+const hasVideoInput = computed(() => {
+  return (
+    lgraphNode.value?.inputs?.some((input) => input.type === 'VIDEO') ?? false
+  )
+})
+
 const nodeMedia = computed(() => {
   const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
   const node = lgraphNode.value
@@ -558,13 +566,9 @@ const nodeMedia = computed(() => {
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
 
-  // Determine media type from previewMediaType or fallback to input slot types
-  // Note: Despite the field name "images", videos are also included in outputs
-  // TODO: fix the backend to return videos using the videos key instead of the images key
-  const hasVideoInput = node.inputs?.some((input) => input.type === 'VIDEO')
   const type =
     node.previewMediaType === 'video' ||
-    (!node.previewMediaType && hasVideoInput)
+    (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
       : 'image'
 

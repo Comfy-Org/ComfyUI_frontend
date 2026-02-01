@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP 視覺",
     "CLIP_VISION_OUTPUT": "CLIP 視覺輸出",
+    "COLOR": "顏色",
     "COMBO": "組合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +750,7 @@
     "deleteImage": "刪除圖片",
     "deprecated": "已棄用",
     "description": "描述",
+    "devOnly": "開發專用",
     "devices": "裝置",
     "disableAll": "全部停用",
     "disableSelected": "停用所選",
@@ -1300,6 +1302,28 @@
     "disabledNodesWontUpdate": "已停用的節點將不會更新",
     "discoverCommunityContent": "探索社群製作的節點包、擴充功能等...",
     "downloads": "下載次數",
+    "emptyState": {
+      "allInstalled": {
+        "message": "你尚未安裝任何擴充功能。",
+        "title": "尚未安裝擴充功能"
+      },
+      "conflicting": {
+        "message": "你的所有擴充功能皆相容。",
+        "title": "未偵測到衝突"
+      },
+      "missing": {
+        "message": "所有必要的節點都已安裝。",
+        "title": "無缺少的節點"
+      },
+      "updateAvailable": {
+        "message": "你的所有擴充功能都是最新的。",
+        "title": "全部為最新版本"
+      },
+      "workflow": {
+        "message": "此工作流程未使用任何擴充節點。",
+        "title": "工作流程中無擴充功能"
+      }
+    },
     "enablePackToChangeVersion": "啟用此套件以變更版本",
     "errorConnecting": "連線至 Comfy Node Registry 時發生錯誤。",
     "extensionsSuccessfullyInstalled": "擴充功能已成功安裝並可使用！",
@@ -1685,6 +1709,7 @@
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Gemini": "雙子星",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -2264,6 +2289,7 @@
       "filterBy": "篩選依據",
       "filterCurrentWorkflow": "目前工作流程",
       "filterJobs": "篩選作業",
+      "inlineTotalLabel": "總計",
       "interruptAll": "中斷所有執行中作業",
       "jobQueue": "作業佇列",
       "jobsCompleted": "{count} 個作業已完成",
@@ -2310,6 +2336,7 @@
   },
   "subgraphStore": {
     "blueprintName": "子圖名稱",
+    "cannotDeleteGlobal": "無法刪除已安裝的藍圖",
     "confirmDelete": "此操作將永久從您的程式庫中移除藍圖",
     "confirmDeleteTitle": "刪除藍圖？",
     "hidden": "隱藏 / 巢狀參數",

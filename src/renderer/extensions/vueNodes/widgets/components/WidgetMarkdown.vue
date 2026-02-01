@@ -21,6 +21,9 @@
         }
       }"
       data-capture-wheel="true"
+      @pointerdown.capture.stop
+      @pointermove.capture.stop
+      @pointerup.capture.stop
       @click.stop
       @keydown.stop
     />

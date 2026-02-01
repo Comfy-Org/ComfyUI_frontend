@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
+    "COLOR": "颜色",
     "COMBO": "组合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +750,7 @@
     "deleteImage": "删除图片",
     "deprecated": "已弃用",
     "description": "描述",
+    "devOnly": "开发专用",
     "devices": "设备",
     "disableAll": "禁用全部",
     "disableSelected": "禁用选中项",
@@ -1300,6 +1302,28 @@
     "disabledNodesWontUpdate": "已禁用的节点不会被更新",
     "discoverCommunityContent": "发现社区制作的节点包，扩展等等...",
     "downloads": "下载",
+    "emptyState": {
+      "allInstalled": {
+        "message": "你还没有安装任何扩展。",
+        "title": "未安装扩展"
+      },
+      "conflicting": {
+        "message": "你的所有扩展均兼容。",
+        "title": "未检测到冲突"
+      },
+      "missing": {
+        "message": "所有必需节点均已安装。",
+        "title": "无缺失节点"
+      },
+      "updateAvailable": {
+        "message": "你的所有扩展都是最新的。",
+        "title": "全部已是最新"
+      },
+      "workflow": {
+        "message": "此工作流未使用任何扩展节点。",
+        "title": "工作流中无扩展"
+      }
+    },
     "enablePackToChangeVersion": "启用此包以更改版本",
     "errorConnecting": "连接到Comfy节点注册表时出错。",
     "extensionsSuccessfullyInstalled": "扩展已成功安装并可使用！",
@@ -1685,6 +1709,7 @@
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -2275,6 +2300,7 @@
       "filterBy": "筛选方式",
       "filterCurrentWorkflow": "当前工作流",
       "filterJobs": "筛选任务",
+      "inlineTotalLabel": "总计",
       "interruptAll": "中断全部正在运行的任务",
       "jobQueue": "任务队列",
       "jobsCompleted": "{count} 任务完成 | {count} 任务完成",
@@ -2321,6 +2347,7 @@
   },
   "subgraphStore": {
     "blueprintName": "子工作流名称",
+    "cannotDeleteGlobal": "无法删除已安装的蓝图",
     "confirmDelete": "此操作将永久从您的库中移除该子工作流",
     "confirmDeleteTitle": "删除子工作流？",
     "hidden": "隐藏/嵌套参数",

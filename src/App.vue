@@ -1,13 +1,11 @@
 <template>
-  <WorkspaceAuthGate>
-    <router-view />
-    <ProgressSpinner
-      v-if="isLoading"
-      class="absolute inset-0 flex h-[unset] items-center justify-center"
-    />
-    <GlobalDialog />
-    <BlockUI full-screen :blocked="isLoading" />
-  </WorkspaceAuthGate>
+  <router-view />
+  <ProgressSpinner
+    v-if="isLoading"
+    class="absolute inset-0 flex h-[unset] items-center justify-center"
+  />
+  <GlobalDialog />
+  <BlockUI full-screen :blocked="isLoading" />
 </template>
 
 <script setup lang="ts">
@@ -16,7 +14,6 @@ import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted } from 'vue'
 
-import WorkspaceAuthGate from '@/components/auth/WorkspaceAuthGate.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -49,6 +46,8 @@ onMounted(() => {
     document.addEventListener('contextmenu', showContextMenu)
   }
 
+  // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
+  // See: https://vite.dev/guide/build#load-error-handling
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
     // eslint-disable-next-line no-undef

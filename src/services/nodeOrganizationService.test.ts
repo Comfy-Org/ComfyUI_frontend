@@ -5,7 +5,7 @@ import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 
 describe('nodeOrganizationService', () => {
-  const createMockNodeDef = (overrides: any = {}) => {
+  const createMockNodeDef = (overrides: Partial<ComfyNodeDefImpl> = {}) => {
     const mockNodeDef = {
       name: 'TestNode',
       display_name: 'Test Node',
@@ -273,7 +273,7 @@ describe('nodeOrganizationService', () => {
       it('should handle unknown source type', () => {
         const nodeDef = createMockNodeDef({
           nodeSource: {
-            type: 'unknown' as any,
+            type: 'unknown' as NodeSourceType,
             className: 'unknown',
             displayText: 'Unknown',
             badgeText: '?'

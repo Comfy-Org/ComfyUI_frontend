@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Copy Paste', () => {
+test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
   test('Can copy and paste node', async ({ comfyPage }) => {
     await comfyPage.clickEmptyLatentNode()
     await comfyPage.page.mouse.move(10, 10)

@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
+    "COLOR": "カラー",
     "COMBO": "コンボ",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +750,7 @@
     "deleteImage": "画像を削除",
     "deprecated": "非推奨",
     "description": "説明",
+    "devOnly": "DEV",
     "devices": "デバイス",
     "disableAll": "すべて無効にする",
     "disableSelected": "選択したものを無効化",
@@ -1300,6 +1302,28 @@
     "disabledNodesWontUpdate": "無効なノードは更新されません",
     "discoverCommunityContent": "コミュニティが作成したノードパック、拡張機能などを探す...",
     "downloads": "ダウンロード",
+    "emptyState": {
+      "allInstalled": {
+        "message": "まだ拡張機能をインストールしていません。",
+        "title": "拡張機能がインストールされていません"
+      },
+      "conflicting": {
+        "message": "すべての拡張機能は互換性があります。",
+        "title": "競合は検出されませんでした"
+      },
+      "missing": {
+        "message": "必要なノードはすべてインストールされています。",
+        "title": "不足しているノードはありません"
+      },
+      "updateAvailable": {
+        "message": "すべての拡張機能は最新の状態です。",
+        "title": "すべて最新です"
+      },
+      "workflow": {
+        "message": "このワークフローでは拡張ノードが使用されていません。",
+        "title": "ワークフローに拡張機能がありません"
+      }
+    },
     "enablePackToChangeVersion": "このパックを有効にしてバージョンを変更してください",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",
     "extensionsSuccessfullyInstalled": "拡張機能のインストールが完了し、使用可能になりました！",
@@ -1685,6 +1709,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -2264,6 +2289,7 @@
       "filterBy": "フィルター条件",
       "filterCurrentWorkflow": "現在のワークフロー",
       "filterJobs": "ジョブをフィルター",
+      "inlineTotalLabel": "合計",
       "interruptAll": "すべての実行中ジョブを中断",
       "jobQueue": "ジョブキュー",
       "jobsCompleted": "{count}件のジョブが完了",
@@ -2310,6 +2336,7 @@
   },
   "subgraphStore": {
     "blueprintName": "サブグラフ名",
+    "cannotDeleteGlobal": "インストール済みのブループリントは削除できません",
     "confirmDelete": "この操作により、ライブラリからサブグラフが完全に削除されます",
     "confirmDeleteTitle": "サブグラフを削除しますか？",
     "hidden": "非表示／ネストされたパラメータ",

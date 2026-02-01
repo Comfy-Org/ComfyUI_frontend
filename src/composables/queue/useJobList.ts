@@ -17,7 +17,7 @@ import {
   isToday,
   isYesterday
 } from '@/utils/dateTimeUtil'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
@@ -185,13 +185,11 @@ export function useJobList() {
     executionStore.isPromptInitializing(promptId)
 
   const currentNodeName = computed(() => {
-    const node = executionStore.executingNode
-    if (!node) return t('g.emDash')
-    const title = (node.title ?? '').toString().trim()
-    if (title) return title
-    const nodeType = (node.type ?? '').toString().trim() || t('g.untitled')
-    const key = `nodeDefs.${normalizeI18nKey(nodeType)}.display_name`
-    return st(key, nodeType)
+    return resolveNodeDisplayName(executionStore.executingNode, {
+      emptyLabel: t('g.emDash'),
+      untitledLabel: t('g.untitled'),
+      st
+    })
   })
 
   const selectedJobTab = ref<JobTab>('All')

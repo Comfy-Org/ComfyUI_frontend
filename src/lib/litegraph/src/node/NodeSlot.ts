@@ -37,7 +37,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
 
   /** The offset from the parent node to the centre point of this slot. */
-  get #centreOffset(): Readonly<Point> {
+  private get _centreOffset(): Readonly<Point> {
     const nodePos = this.node.pos
     const { boundingRect } = this
 
@@ -55,9 +55,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   /** The center point of this slot when the node is collapsed. */
   abstract get collapsedPos(): Readonly<Point>
 
-  #node: LGraphNode
+  protected _node: LGraphNode
   get node(): LGraphNode {
-    return this.#node
+    return this._node
   }
 
   get highlightColor(): CanvasColour {
@@ -89,7 +89,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     super(name, type, rectangle)
 
     Object.assign(this, rest)
-    this.#node = node
+    this._node = node
   }
 
   /**
@@ -126,7 +126,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       ? this.highlightColor
       : LiteGraph.NODE_TEXT_COLOR
 
-    const pos = this.#centreOffset
+    const pos = this._centreOffset
     const slot_type = this.type
     const slot_shape = (
       slot_type === SlotType.Array ? SlotShape.Grid : this.shape
@@ -258,6 +258,25 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     ctx.fillStyle = originalFillStyle
     ctx.strokeStyle = originalStrokeStyle
     ctx.lineWidth = originalLineWidth
+  }
+
+  /**
+   * Custom JSON serialization to prevent circular reference errors.
+   * Returns only serializable slot properties without the node back-reference.
+   */
+  toJSON(): INodeSlot {
+    return {
+      name: this.name,
+      type: this.type,
+      label: this.label,
+      color_on: this.color_on,
+      color_off: this.color_off,
+      shape: this.shape,
+      dir: this.dir,
+      localized_name: this.localized_name,
+      pos: this.pos,
+      boundingRect: [...this.boundingRect] as [number, number, number, number]
+    }
   }
 
   drawCollapsed(ctx: CanvasRenderingContext2D) {

@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -88,7 +89,7 @@ const MOCK_NODE_NAMES = [
   'UltralyticsDetectorProvider',
   'DownloadAndLoadDepthAnythingV2Model',
   'IPAdapterModelLoader',
-  'LS_LoadSegformerModel',
+  'LoadSegformerModel',
   'LoadNLFModel',
   'FlashVSRNode'
 ] as const
@@ -112,7 +113,7 @@ vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
 
 describe('useModelToNodeStore', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
   })
 
@@ -257,14 +258,14 @@ describe('useModelToNodeStore', () => {
       const segformerB2Provider = modelToNodeStore.getNodeProvider(
         'segformer_b2_clothes'
       )
-      expect(segformerB2Provider?.nodeDef?.name).toBe('LS_LoadSegformerModel')
+      expect(segformerB2Provider?.nodeDef?.name).toBe('LoadSegformerModel')
       expect(segformerB2Provider?.key).toBe('model_name')
 
       const segformerB3FashionProvider = modelToNodeStore.getNodeProvider(
         'segformer_b3_fashion'
       )
       expect(segformerB3FashionProvider?.nodeDef?.name).toBe(
-        'LS_LoadSegformerModel'
+        'LoadSegformerModel'
       )
     })
   })
@@ -333,7 +334,7 @@ describe('useModelToNodeStore', () => {
     it('should not register provider when nodeDef is undefined', () => {
       const modelToNodeStore = useModelToNodeStore()
       const providerWithoutNodeDef = new ModelNodeProvider(
-        undefined as any,
+        undefined!,
         'custom_key'
       )
 
@@ -474,7 +475,7 @@ describe('useModelToNodeStore', () => {
 
     it('should not register when nodeDefStore is empty', () => {
       // Create fresh Pinia for this test to avoid state persistence
-      setActivePinia(createPinia())
+      setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: {}
@@ -499,7 +500,7 @@ describe('useModelToNodeStore', () => {
 
     it('should return empty Record when nodeDefStore is empty', () => {
       // Create fresh Pinia for this test to avoid state persistence
-      setActivePinia(createPinia())
+      setActivePinia(createTestingPinia({ stubActions: false }))
 
       vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
         nodeDefsByName: {}
@@ -601,15 +602,11 @@ describe('useModelToNodeStore', () => {
       modelToNodeStore.registerDefaults()
 
       // These should not throw but return undefined
+      expect(modelToNodeStore.getCategoryForNodeType(null!)).toBeUndefined()
       expect(
-        modelToNodeStore.getCategoryForNodeType(null as any)
+        modelToNodeStore.getCategoryForNodeType(undefined!)
       ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType(undefined as any)
-      ).toBeUndefined()
-      expect(
-        modelToNodeStore.getCategoryForNodeType(123 as any)
-      ).toBeUndefined()
+      expect(modelToNodeStore.getCategoryForNodeType('123')).toBeUndefined()
     })
 
     it('should be case-sensitive for node type matching', () => {

@@ -14,7 +14,12 @@
     </template>
 
     <template #header>
-      <SearchBox v-model="searchQuery" size="lg" class="max-w-[384px]" />
+      <SearchBox
+        v-model="searchQuery"
+        size="lg"
+        class="max-w-[384px]"
+        autofocus
+      />
     </template>
 
     <template #header-right-area>
@@ -251,6 +256,11 @@
                         "
                       />
                     </template>
+                    <LogoOverlay
+                      v-if="template.logos?.length"
+                      :logos="template.logos"
+                      :get-logo-url="workflowTemplatesStore.getLogoUrl"
+                    />
                     <ProgressSpinner
                       v-if="loadingTemplate === template.name"
                       class="absolute inset-0 z-10 m-auto h-12 w-12"
@@ -392,6 +402,7 @@ import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
+import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
@@ -767,7 +778,7 @@ useIntersectionObserver(loadTrigger, () => {
 // Reset pagination when filters change
 watch(
   [
-    searchQuery,
+    filteredTemplates,
     selectedNavItem,
     sortBy,
     selectedModels,

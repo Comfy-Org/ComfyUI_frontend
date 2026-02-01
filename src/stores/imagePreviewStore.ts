@@ -148,6 +148,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
             existingOutput[k] = newValue
           }
         }
+        nodeOutputs.value[nodeLocatorId] = existingOutput
         return
       }
     }

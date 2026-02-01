@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "색상을 RGB 정수 값으로 변환합니다.",
+    "display_name": "색상을 RGB 정수로 변환",
+    "inputs": {
+      "color": {
+        "name": "색상"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_정수",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "후크 결합 [2]",
     "inputs": {
@@ -3380,6 +3395,142 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 이미지를 수정합니다",
+    "display_name": "Grok 이미지 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "이미지 개수",
+        "tooltip": "생성할 편집된 이미지의 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "텍스트 프롬프트를 기반으로 Grok을 사용해 이미지를 생성합니다",
+    "display_name": "Grok 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "이미지 개수",
+        "tooltip": "생성할 이미지의 수"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위해 사용되는 텍스트 프롬프트"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "텍스트 프롬프트를 기반으로 기존 비디오를 편집합니다.",
+    "display_name": "Grok 비디오 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "최대 지원 길이는 8.7초, 파일 크기는 50MB입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "프롬프트 또는 이미지를 통해 비디오를 생성합니다",
+    "display_name": "Grok 비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "출력 비디오의 종횡비입니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이",
+        "tooltip": "출력 비디오의 길이(초)입니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 비디오의 해상도입니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10846,6 +10997,25 @@
       }
     }
   },
+  "RecraftCreateStyleNode": {
+    "description": "참고 이미지를 사용하여 사용자 지정 스타일을 만듭니다. 스타일 참조로 사용할 이미지를 1~5개 업로드하세요. 모든 이미지의 총 용량은 5MB로 제한됩니다.",
+    "display_name": "Recraft 스타일 생성",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "style": {
+        "name": "스타일",
+        "tooltip": "생성된 이미지의 기본 스타일입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftCreativeUpscaleNode": {
     "description": "이미지를 동기적으로 업스케일합니다.\n‘크리에이티브 업스케일’ 도구를 사용하여 주어진 래스터 이미지를 향상시키고, 작은 디테일과 얼굴을 정교하게 개선하면서 해상도를 높입니다.",
     "display_name": "Recraft 크리에이티브 업스케일 이미지",
@@ -15093,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "이미지와 선택적 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "생성된 비디오의 시작 프레임으로 사용할 이미지입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 텍스트-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 텍스트 설명 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "기존 비디오에 추가 프레임을 생성하여 확장합니다.",
+    "display_name": "Vidu 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 확장을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "확장된 비디오를 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "확장할 원본 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "이미지와 선택적 프롬프트로부터 비디오 생성",
     "display_name": "Vidu 이미지 비디오 생성",
@@ -15127,6 +15410,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "비디오 생성을 위한 시드(0은 랜덤)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "여러 키프레임 전환이 포함된 비디오를 생성합니다.",
+    "display_name": "Vidu 다중 프레임 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "키프레임 전환 수 (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "시작 프레임 이미지입니다. 종횡비는 1:4에서 4:1 사이여야 합니다."
       }
     },
     "outputs": {
