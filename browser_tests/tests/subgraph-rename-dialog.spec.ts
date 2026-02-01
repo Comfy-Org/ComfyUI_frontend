@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 // Constants
-const INITIAL_NAME = 'initial_slot_name'
 const RENAMED_NAME = 'renamed_slot_name'
 const SECOND_RENAMED_NAME = 'second_renamed_name'
 
@@ -27,7 +26,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
 
     // Get initial slot label
     const initialInputLabel = await comfyPage.page.evaluate(() => {
-      const graph = window.app.canvas.graph
+      const graph = window.app!.canvas.graph
       return graph.inputs?.[0]?.label || graph.inputs?.[0]?.name || null
     })
 
@@ -56,7 +55,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
 
     // Verify the rename worked
     const afterFirstRename = await comfyPage.page.evaluate(() => {
-      const graph = window.app.canvas.graph
+      const graph = window.app!.canvas.graph
       const slot = graph.inputs?.[0]
       return {
         label: slot?.label || null,
@@ -99,7 +98,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
 
     // Verify the second rename worked
     const afterSecondRename = await comfyPage.page.evaluate(() => {
-      const graph = window.app.canvas.graph
+      const graph = window.app!.canvas.graph
       return graph.inputs?.[0]?.label || null
     })
     expect(afterSecondRename).toBe(SECOND_RENAMED_NAME)
@@ -115,7 +114,7 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
 
     // Get initial output slot label
     const initialOutputLabel = await comfyPage.page.evaluate(() => {
-      const graph = window.app.canvas.graph
+      const graph = window.app!.canvas.graph
       return graph.outputs?.[0]?.label || graph.outputs?.[0]?.name || null
     })
 

@@ -1,9 +1,9 @@
 import type { Response } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { StatusWsMessage } from '../../src/schemas/apiSchema.ts'
-import { comfyPageFixture } from '../fixtures/ComfyPage.ts'
-import { webSocketFixture } from '../fixtures/ws.ts'
+import type { StatusWsMessage } from '../../src/schemas/apiSchema'
+import { comfyPageFixture } from '../fixtures/ComfyPage'
+import { webSocketFixture } from '../fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -49,7 +49,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     // Find and set the width on the latent node
     const triggerChange = async (value: number) => {
       return await comfyPage.page.evaluate((value) => {
-        const node = window.app.graph._nodes.find(
+        const node = window.app!.graph!._nodes.find(
           (n) => n.type === 'EmptyLatentImage'
         )
         node.widgets[0].value = value

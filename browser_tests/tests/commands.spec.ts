@@ -41,7 +41,7 @@ test.describe('Keybindings', { tag: '@keyboard' }, () => {
 
   test('Should handle async command errors', async ({ comfyPage }) => {
     await comfyPage.command.registerCommand('TestCommand', async () => {
-      await new Promise<void>((resolve, reject) =>
+      await new Promise<void>((_resolve, reject) =>
         setTimeout(() => {
           reject(new Error('Test error'))
         }, 5)

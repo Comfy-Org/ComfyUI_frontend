@@ -35,7 +35,7 @@ export class NodeOperationsHelper {
 
   async getNodes(): Promise<LGraphNode[]> {
     return await this.page.evaluate(() => {
-      return window.app.graph.nodes
+      return window.app!.graph.nodes
     })
   }
 
@@ -47,7 +47,7 @@ export class NodeOperationsHelper {
 
   async getFirstNodeRef(): Promise<NodeReference | null> {
     const id = await this.page.evaluate(() => {
-      return window.app.graph.nodes[0]?.id
+      return window.app!.graph.nodes[0]?.id
     })
     if (!id) return null
     return this.getNodeRefById(id)
@@ -66,7 +66,7 @@ export class NodeOperationsHelper {
         await this.page.evaluate(
           ({ type, includeSubgraph }) => {
             const graph = (
-              includeSubgraph ? window.app.canvas.graph : window.app.graph
+              includeSubgraph ? window.app!.canvas.graph : window.app!.graph
             ) as LGraph
             const nodes = graph.nodes
             return nodes
@@ -83,8 +83,8 @@ export class NodeOperationsHelper {
     return Promise.all(
       (
         await this.page.evaluate((title) => {
-          return window.app.graph.nodes
-            .filter((n: LGraphNode) => n.title === title)
+          return window
+            .app!.graph.nodes.filter((n: LGraphNode) => n.title === title)
             .map((n: LGraphNode) => n.id)
         }, title)
       ).map((id: NodeId) => this.getNodeRefById(id))

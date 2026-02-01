@@ -1,7 +1,6 @@
 import type { ComfyApp } from '@/scripts/app'
 import type { LGraph } from '@/lib/litegraph'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
-import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 
 interface AppReadiness {
   featureFlagsReceived: boolean
@@ -31,6 +30,11 @@ declare global {
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
   }
+
+  const app: ComfyApp | undefined
+  const graph: LGraph | undefined
+  const LiteGraph: LiteGraphGlobal | undefined
+  const LGraphBadge: typeof LGraphBadge | undefined
 }
 
 export {}

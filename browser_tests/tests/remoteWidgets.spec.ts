@@ -26,21 +26,21 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
     nodeName: string
   ): Promise<string[] | undefined> => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window.app.graph.nodes.find((node) => node.title === name)
+      const node = window.app!.graph!.nodes.find((node) => node.title === name)
       return node.widgets[0].options.values
     }, nodeName)
   }
 
   const getWidgetValue = async (comfyPage: ComfyPage, nodeName: string) => {
     return await comfyPage.page.evaluate((name) => {
-      const node = window.app.graph.nodes.find((node) => node.title === name)
+      const node = window.app!.graph!.nodes.find((node) => node.title === name)
       return node.widgets[0].value
     }, nodeName)
   }
 
   const clickRefreshButton = (comfyPage: ComfyPage, nodeName: string) => {
     return comfyPage.page.evaluate((name) => {
-      const node = window.app.graph.nodes.find((node) => node.title === name)
+      const node = window.app!.graph!.nodes.find((node) => node.title === name)
       const buttonWidget = node.widgets.find((w) => w.name === 'refresh')
       return buttonWidget?.callback()
     }, nodeName)
@@ -92,7 +92,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       await comfyPage.workflow.loadWorkflow('inputs/remote_widget')
 
       const node = await comfyPage.page.evaluate((name) => {
-        return window.app.graph.nodes.find((node) => node.title === name)
+        return window.app!.graph!.nodes.find((node) => node.title === name)
       }, nodeName)
       expect(node).toBeDefined()
 
@@ -196,7 +196,7 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       // Fulfill each request with a unique timestamp
       await comfyPage.page.route(
         '**/api/models/checkpoints**',
-        async (route, request) => {
+        async (route, _request) => {
           await route.fulfill({
             body: JSON.stringify([Date.now()]),
             status: 200

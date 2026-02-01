@@ -345,7 +345,7 @@ test.describe('Error dialog', () => {
     comfyPage
   }) => {
     await comfyPage.page.evaluate(() => {
-      const graph = window.graph
+      const graph = window.graph!
       graph.configure = () => {
         throw new Error('Error on configure!')
       }
@@ -361,7 +361,7 @@ test.describe('Error dialog', () => {
     comfyPage
   }) => {
     await comfyPage.page.evaluate(async () => {
-      const app = window.app
+      const app = window.app!
       app.api.queuePrompt = () => {
         throw new Error('Error on queuePrompt!')
       }
@@ -391,7 +391,7 @@ test.describe('Signin dialog', () => {
     await textBox.press('Control+c')
 
     await comfyPage.page.evaluate(() => {
-      void window.app.extensionManager.dialog.showSignInDialog()
+      void window.app!.extensionManager.dialog.showSignInDialog()
     })
 
     const input = comfyPage.page.locator('#comfy-org-sign-in-password')

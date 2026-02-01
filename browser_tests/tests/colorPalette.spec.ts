@@ -179,7 +179,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
   test('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate((p) => {
-      window.app.extensionManager.colorPalette.addCustomColorPalette(p)
+      window.app!.extensionManager.colorPalette.addCustomColorPalette(p)
     }, customColorPalettes.obsidian_dark)
     expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
 

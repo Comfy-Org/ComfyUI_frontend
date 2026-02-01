@@ -96,7 +96,7 @@ class ComfyMenu {
 
   async getThemeId() {
     return await this.page.evaluate(async () => {
-      return await window.app.ui.settings.getSettingValue('Comfy.ColorPalette')
+      return await window.app!.ui.settings.getSettingValue('Comfy.ColorPalette')
     })
   }
 }
@@ -382,7 +382,7 @@ export class ComfyPage {
 
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      window.app.extensionManager.focusMode = focusMode
+      window.app!.extensionManager.focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
   }

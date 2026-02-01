@@ -93,13 +93,13 @@ export class CanvasHelper {
 
   async getScale(): Promise<number> {
     return this.page.evaluate(() => {
-      return window.app.canvas.ds.scale
+      return window.app!.canvas.ds.scale
     })
   }
 
   async setScale(scale: number): Promise<void> {
     await this.page.evaluate((s) => {
-      window.app.canvas.ds.scale = s
+      window.app!.canvas.ds.scale = s
     }, scale)
     await this.nextFrame()
   }
@@ -108,13 +108,13 @@ export class CanvasHelper {
     pos: [number, number]
   ): Promise<[number, number]> {
     return this.page.evaluate((pos) => {
-      return window.app.canvas.ds.convertOffsetToCanvas(pos)
+      return window.app!.canvas.ds.convertOffsetToCanvas(pos)
     }, pos)
   }
 
   async getNodeCenterByTitle(title: string): Promise<Position | null> {
     return this.page.evaluate((title) => {
-      const app = window.app
+      const app = window.app!
       const node = app.graph.nodes.find(
         (n: { title: string }) => n.title === title
       )
@@ -129,7 +129,7 @@ export class CanvasHelper {
 
   async getGroupPosition(title: string): Promise<Position> {
     const pos = await this.page.evaluate((title) => {
-      const groups = window.app.graph.groups
+      const groups = window.app!.graph.groups
       const group = groups.find((g: { title: string }) => g.title === title)
       if (!group) return null
       return { x: group.pos[0], y: group.pos[1] }
@@ -145,7 +145,7 @@ export class CanvasHelper {
   }): Promise<void> {
     const { name, deltaX, deltaY } = options
     const screenPos = await this.page.evaluate((title) => {
-      const app = window.app
+      const app = window.app!
       const groups = app.graph.groups
       const group = groups.find((g: { title: string }) => g.title === title)
       if (!group) return null

@@ -10,7 +10,7 @@ test.describe('Topbar commands', () => {
 
   test('Should allow registering topbar commands', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      window.app.registerExtension({
+      window.app!.registerExtension({
         name: 'TestExtension1',
         commands: [
           {
@@ -39,7 +39,7 @@ test.describe('Topbar commands', () => {
   }) => {
     await comfyPage.command.registerCommand('foo', () => alert(1))
     await comfyPage.page.evaluate(() => {
-      window.app.registerExtension({
+      window.app!.registerExtension({
         name: 'TestExtension1',
         menuCommands: [
           {
@@ -56,7 +56,7 @@ test.describe('Topbar commands', () => {
 
   test('Should allow registering keybindings', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const app = window.app
+      const app = window.app!
       app.registerExtension({
         name: 'TestExtension1',
         commands: [
@@ -83,7 +83,7 @@ test.describe('Topbar commands', () => {
   test.describe('Settings', () => {
     test('Should allow adding settings', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
-        window.app.registerExtension({
+        window.app!.registerExtension({
           name: 'TestExtension1',
           settings: [
             {
@@ -113,7 +113,7 @@ test.describe('Topbar commands', () => {
 
     test('Should allow setting boolean settings', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
-        window.app.registerExtension({
+        window.app!.registerExtension({
           name: 'TestExtension1',
           settings: [
             {
@@ -197,7 +197,7 @@ test.describe('Topbar commands', () => {
           comfyPage
         }) => {
           await comfyPage.page.evaluate((config) => {
-            window.app.registerExtension({
+            window.app!.registerExtension({
               name: 'TestExtension1',
               settings: [
                 {
@@ -230,7 +230,7 @@ test.describe('Topbar commands', () => {
   test.describe('About panel', () => {
     test('Should allow adding badges', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
-        window.app.registerExtension({
+        window.app!.registerExtension({
           name: 'TestExtension1',
           aboutPageBadges: [
             {
@@ -253,8 +253,8 @@ test.describe('Topbar commands', () => {
   test.describe('Dialog', () => {
     test('Should allow showing a prompt dialog', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
-        void window.app.extensionManager.dialog
-          .prompt({
+        void window
+          .app!.extensionManager.dialog.prompt({
             title: 'Test Prompt',
             message: 'Test Prompt Message'
           })
@@ -273,8 +273,8 @@ test.describe('Topbar commands', () => {
       comfyPage
     }) => {
       await comfyPage.page.evaluate(() => {
-        void window.app.extensionManager.dialog
-          .confirm({
+        void window
+          .app!.extensionManager.dialog.confirm({
             title: 'Test Confirm',
             message: 'Test Confirm Message'
           })
@@ -290,8 +290,8 @@ test.describe('Topbar commands', () => {
     test('Should allow dismissing a dialog', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {
         window['value'] = 'foo'
-        void window.app.extensionManager.dialog
-          .confirm({
+        void window
+          .app!.extensionManager.dialog.confirm({
             title: 'Test Confirm',
             message: 'Test Confirm Message'
           })
@@ -315,7 +315,7 @@ test.describe('Topbar commands', () => {
     }) => {
       // Register an extension with a selection toolbox command
       await comfyPage.page.evaluate(() => {
-        window.app.registerExtension({
+        window.app!.registerExtension({
           name: 'TestExtension1',
           commands: [
             {

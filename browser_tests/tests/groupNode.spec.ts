@@ -23,7 +23,9 @@ test.describe('Group Node', { tag: '@node' }, () => {
       await libraryTab.open()
     })
 
-    test('Is added to node library sidebar', async ({ comfyPage }) => {
+    test('Is added to node library sidebar', async ({
+      comfyPage: _comfyPage
+    }) => {
       expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
     })
 
@@ -158,7 +160,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     const totalInputCount = await comfyPage.page.evaluate((nodeName) => {
       const {
         extra: { groupNodes }
-      } = window.app.graph
+      } = window.app!.graph!
       const { nodes } = groupNodes[nodeName]
       return nodes.reduce((acc: number, node) => {
         return acc + node.inputs.length
@@ -166,7 +168,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     }, groupNodeName)
 
     const visibleInputCount = await comfyPage.page.evaluate((id) => {
-      const node = window.app.graph.getNodeById(id)
+      const node = window.app!.graph!.getNodeById(id)
       return node.inputs.length
     }, groupNodeId)
 
@@ -233,7 +235,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
 
     const isRegisteredLitegraph = async (comfyPage: ComfyPage) => {
       return await comfyPage.page.evaluate((nodeType: string) => {
-        return !!window.LiteGraph.registered_node_types[nodeType]
+        return !!window.LiteGraph!.registered_node_types[nodeType]
       }, GROUP_NODE_TYPE)
     }
 
@@ -307,12 +309,12 @@ test.describe('Group Node', { tag: '@node' }, () => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await comfyPage.clipboard.paste()
       const currentGraphState = await comfyPage.page.evaluate(() =>
-        window.app.graph.serialize()
+        window.app!.graph!.serialize()
       )
 
       await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
         await comfyPage.page.evaluate(
-          (workflow) => window.app.loadGraphData(workflow),
+          (workflow) => window.app!.loadGraphData(workflow),
           currentGraphState
         )
         await comfyPage.nextFrame()

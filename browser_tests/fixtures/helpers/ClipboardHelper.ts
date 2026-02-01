@@ -5,7 +5,7 @@ import type { KeyboardHelper } from './KeyboardHelper'
 export class ClipboardHelper {
   constructor(
     private readonly keyboard: KeyboardHelper,
-    private readonly canvas: Locator
+    private readonly _canvas: Locator
   ) {}
 
   async copy(locator?: Locator | null): Promise<void> {

@@ -6,7 +6,7 @@ export class SettingsHelper {
   async setSetting(settingId: string, settingValue: unknown): Promise<void> {
     await this.page.evaluate(
       async ({ id, value }) => {
-        await window.app.extensionManager.setting.set(id, value)
+        await window.app!.extensionManager.setting.set(id, value)
       },
       { id: settingId, value: settingValue }
     )
@@ -14,7 +14,7 @@ export class SettingsHelper {
 
   async getSetting<T = unknown>(settingId: string): Promise<T> {
     return await this.page.evaluate(async (id) => {
-      return await window.app.extensionManager.setting.get(id)
+      return await window.app!.extensionManager.setting.get(id)
     }, settingId)
   }
 }

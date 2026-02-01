@@ -45,7 +45,7 @@ export class WorkflowHelper {
     }
 
     await this.comfyPage.page.evaluate(async () => {
-      await window.app.extensionManager.workflow.syncWorkflows()
+      await window.app!.extensionManager.workflow.syncWorkflows()
     })
 
     // Wait for Vue to re-render the workflow list
@@ -86,7 +86,7 @@ export class WorkflowHelper {
 
   async getUndoQueueSize(): Promise<number | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      const workflow = (window.app.extensionManager as WorkspaceStore).workflow
+      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow
       return workflow?.changeTracker.undoQueue.length
     })
@@ -94,7 +94,7 @@ export class WorkflowHelper {
 
   async getRedoQueueSize(): Promise<number | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      const workflow = (window.app.extensionManager as WorkspaceStore).workflow
+      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow
       return workflow?.changeTracker.redoQueue.length
     })
@@ -102,7 +102,7 @@ export class WorkflowHelper {
 
   async isCurrentWorkflowModified(): Promise<boolean | undefined> {
     return this.comfyPage.page.evaluate(() => {
-      return (window.app.extensionManager as WorkspaceStore).workflow
+      return (window.app!.extensionManager as WorkspaceStore).workflow
         .activeWorkflow?.isModified
     })
   }
@@ -110,7 +110,7 @@ export class WorkflowHelper {
   async getExportedWorkflow(options?: { api?: boolean }): Promise<any> {
     const api = options?.api ?? false
     return this.comfyPage.page.evaluate(async (api) => {
-      return (await window.app.graphToPrompt())[api ? 'output' : 'workflow']
+      return (await window.app!.graphToPrompt())[api ? 'output' : 'workflow']
     }, api)
   }
 }

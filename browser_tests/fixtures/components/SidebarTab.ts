@@ -33,7 +33,7 @@ class SidebarTab {
 }
 
 export class NodeLibrarySidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'node-library')
   }
 
@@ -59,12 +59,12 @@ export class NodeLibrarySidebarTab extends SidebarTab {
     return this.tabContainer.locator('.new-folder-button')
   }
 
-  async open() {
+  override async open() {
     await super.open()
     await this.nodeLibraryTree.waitFor({ state: 'visible' })
   }
 
-  async close() {
+  override async close() {
     if (!this.tabButton.isVisible()) {
       return
     }
@@ -101,7 +101,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
 }
 
 export class WorkflowsSidebarTab extends SidebarTab {
-  constructor(public readonly page: Page) {
+  constructor(public override readonly page: Page) {
     super(page, 'workflows')
   }
 
