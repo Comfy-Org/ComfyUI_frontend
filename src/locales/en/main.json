@@ -1785,7 +1785,11 @@
   "imageCrop": {
     "loading": "Loading...",
     "noInputImage": "No input image connected",
-    "cropPreviewAlt": "Crop preview"
+    "cropPreviewAlt": "Crop preview",
+    "ratio": "Ratio",
+    "lockRatio": "Lock aspect ratio",
+    "unlockRatio": "Unlock aspect ratio",
+    "custom": "Custom"
   },
   "boundingBox": {
     "x": "X",

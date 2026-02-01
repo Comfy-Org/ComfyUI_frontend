@@ -22,6 +22,15 @@ const CORNER_SIZE = 10
 const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 2
 
+export const ASPECT_RATIOS: Record<string, number | null> = {
+  '1:1': 1,
+  '3:4': 3 / 4,
+  '4:3': 4 / 3,
+  '16:9': 16 / 9,
+  '9:16': 9 / 16,
+  custom: null
+}
+
 interface UseImageCropOptions {
   imageEl: Ref<HTMLImageElement | null>
   containerEl: Ref<HTMLDivElement | null>
@@ -87,6 +96,47 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const resizeStartCropY = ref(0)
   const resizeStartCropWidth = ref(0)
   const resizeStartCropHeight = ref(0)
+
+  const selectedRatio = ref<string>('custom')
+  const isLockEnabled = ref(false)
+  const lockedRatio = ref<number | null>(null)
+
+  watch(selectedRatio, (ratio) => {
+    if (ratio === 'custom') {
+      isLockEnabled.value = false
+      lockedRatio.value = null
+      return
+    }
+    lockedRatio.value = ASPECT_RATIOS[ratio] ?? null
+    isLockEnabled.value = true
+    applyLockedRatio()
+  })
+
+  watch(isLockEnabled, (locked) => {
+    if (locked && lockedRatio.value == null) {
+      lockedRatio.value = cropWidth.value / cropHeight.value
+    }
+    if (!locked) {
+      selectedRatio.value = 'custom'
+      lockedRatio.value = null
+    }
+  })
+
+  function applyLockedRatio() {
+    if (lockedRatio.value == null) return
+
+    const ratio = lockedRatio.value
+    const w = cropWidth.value
+    let newHeight = Math.round(w / ratio)
+
+    if (cropY.value + newHeight > naturalHeight.value) {
+      newHeight = naturalHeight.value - cropY.value
+      const newWidth = Math.round(newHeight * ratio)
+      cropWidth.value = Math.max(MIN_CROP_SIZE, newWidth)
+    }
+
+    cropHeight.value = Math.max(MIN_CROP_SIZE, newHeight)
+  }
 
   useResizeObserver(containerEl, () => {
     if (imageEl.value && imageUrl.value) {
@@ -200,7 +250,9 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   }
 
-  const resizeHandles = computed<ResizeHandle[]>(() => {
+  const CORNER_DIRECTIONS = new Set<ResizeDirection>(['nw', 'ne', 'sw', 'se'])
+
+  const allResizeHandles = computed<ResizeHandle[]>(() => {
     const x = imageOffsetX.value + cropX.value * scaleFactor.value
     const y = imageOffsetY.value + cropY.value * scaleFactor.value
     const w = cropWidth.value * scaleFactor.value
@@ -286,6 +338,13 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     ]
   })
 
+  const resizeHandles = computed<ResizeHandle[]>(() => {
+    if (!isLockEnabled.value) return allResizeHandles.value
+    return allResizeHandles.value.filter((h) =>
+      CORNER_DIRECTIONS.has(h.direction)
+    )
+  })
+
   const handleImageLoad = () => {
     isLoading.value = false
     updateDisplayedDimensions()
@@ -366,6 +425,13 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     const deltaX = (e.clientX - resizeStartX.value) / effectiveScale
     const deltaY = (e.clientY - resizeStartY.value) / effectiveScale
 
+    const ratioValue = isLockEnabled.value ? lockedRatio.value : null
+
+    if (ratioValue != null && CORNER_DIRECTIONS.has(dir)) {
+      handleConstrainedResize(dir, deltaX, deltaY, ratioValue)
+      return
+    }
+
     const affectsLeft = dir === 'left' || dir === 'nw' || dir === 'sw'
     const affectsRight = dir === 'right' || dir === 'ne' || dir === 'se'
     const affectsTop = dir === 'top' || dir === 'nw' || dir === 'ne'
@@ -414,6 +480,70 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   }
 
+  function handleConstrainedResize(
+    dir: ResizeDirection,
+    deltaX: number,
+    deltaY: number,
+    ratio: number
+  ) {
+    const affectsLeft = dir === 'nw' || dir === 'sw'
+    const affectsTop = dir === 'nw' || dir === 'ne'
+
+    const sx = affectsLeft ? -1 : 1
+    const sy = affectsTop ? -1 : 1
+
+    const invRatio = 1 / ratio
+    const dot = deltaX * sx + deltaY * sy * invRatio
+    const lenSq = 1 + invRatio * invRatio
+    const widthDelta = dot / lenSq
+
+    let newWidth = Math.round(resizeStartCropWidth.value + widthDelta)
+    let newHeight = Math.round(newWidth / ratio)
+
+    if (newWidth < MIN_CROP_SIZE) {
+      newWidth = MIN_CROP_SIZE
+      newHeight = Math.round(newWidth / ratio)
+    }
+    if (newHeight < MIN_CROP_SIZE) {
+      newHeight = MIN_CROP_SIZE
+      newWidth = Math.round(newHeight * ratio)
+    }
+
+    let newX = resizeStartCropX.value
+    let newY = resizeStartCropY.value
+
+    if (affectsLeft) {
+      newX = resizeStartCropX.value + resizeStartCropWidth.value - newWidth
+    }
+    if (affectsTop) {
+      newY = resizeStartCropY.value + resizeStartCropHeight.value - newHeight
+    }
+
+    if (newX < 0) {
+      newWidth += newX
+      newX = 0
+      newHeight = Math.round(newWidth / ratio)
+    }
+    if (newY < 0) {
+      newHeight += newY
+      newY = 0
+      newWidth = Math.round(newHeight * ratio)
+    }
+    if (newX + newWidth > naturalWidth.value) {
+      newWidth = naturalWidth.value - newX
+      newHeight = Math.round(newWidth / ratio)
+    }
+    if (newY + newHeight > naturalHeight.value) {
+      newHeight = naturalHeight.value - newY
+      newWidth = Math.round(newHeight * ratio)
+    }
+
+    cropX.value = Math.round(newX)
+    cropY.value = Math.round(newY)
+    cropWidth.value = Math.max(MIN_CROP_SIZE, newWidth)
+    cropHeight.value = Math.max(MIN_CROP_SIZE, newHeight)
+  }
+
   const handleResizeEnd = (e: PointerEvent) => {
     if (!isResizing.value) return
 
@@ -452,6 +582,9 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     cropY,
     cropWidth,
     cropHeight,
+
+    selectedRatio,
+    isLockEnabled,
 
     cropBoxStyle,
     cropImageStyle,
