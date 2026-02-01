@@ -78,15 +78,6 @@ const sortOptions = computed(() => [
   { name: t('assetBrowser.sortZA'), value: 'name-desc' as const }
 ])
 
-const ownershipOptions = computed(() => [
-  { name: t('assetBrowser.ownershipAll'), value: 'all' as const },
-  { name: t('assetBrowser.ownershipMyModels'), value: 'my-models' as const },
-  {
-    name: t('assetBrowser.ownershipPublicModels'),
-    value: 'public-models' as const
-  }
-])
-
 const { assets = [], showOwnershipFilter = false } = defineProps<{
   assets?: AssetItem[]
   showOwnershipFilter?: boolean
@@ -97,9 +88,8 @@ const baseModels = ref<SelectOption[]>([])
 const sortBy = ref<AssetSortOption>('recent')
 const ownership = ref<OwnershipOption>('all')
 
-const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
-  () => assets
-)
+const { availableFileFormats, availableBaseModels, ownershipOptions } =
+  useAssetFilterOptions(() => assets)
 
 const emit = defineEmits<{
   filterChange: [filters: AssetFilterState]

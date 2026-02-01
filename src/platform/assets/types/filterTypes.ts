@@ -5,11 +5,11 @@
 
 /**
  * Generic filter/select option used across components
- * Compatible with both SelectOption (name/value) and FilterOption (id/name) patterns
+ * Compatible with SelectOption (name/value) pattern
  */
 export interface FilterOption {
-  id: string
   name: string
+  value: string
 }
 
 /**
@@ -24,8 +24,8 @@ export type OwnershipOption = 'all' | 'my-models' | 'public-models'
  * Ownership filter option for dropdowns/selects
  */
 export interface OwnershipFilterOption {
-  id: OwnershipOption
   name: string
+  value: OwnershipOption
 }
 
 /**

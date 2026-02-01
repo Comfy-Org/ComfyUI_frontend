@@ -82,7 +82,7 @@ function closeOwnershipPopover() {
 }
 
 function handleOwnershipSelected(item: OwnershipFilterOption) {
-  ownershipSelected.value = item.id
+  ownershipSelected.value = item.value
   closeOwnershipPopover()
 }
 
@@ -98,10 +98,10 @@ function toggleBaseModelPopover(event: Event) {
 
 function toggleBaseModelSelection(item: FilterOption) {
   const current = baseModelSelected.value
-  if (current.has(item.id)) {
-    current.delete(item.id)
+  if (current.has(item.value)) {
+    current.delete(item.value)
   } else {
-    current.add(item.id)
+    current.add(item.value)
   }
   baseModelSelected.value = new Set(current)
 }
@@ -228,7 +228,7 @@ function toggleBaseModelSelection(item: FilterOption) {
       >
         <Button
           v-for="item of ownershipOptions"
-          :key="item.id"
+          :key="item.value"
           variant="textonly"
           size="unset"
           :class="cn('flex justify-between items-center h-6 text-left')"
@@ -236,7 +236,7 @@ function toggleBaseModelSelection(item: FilterOption) {
         >
           <span>{{ item.name }}</span>
           <i
-            v-if="ownershipSelected === item.id"
+            v-if="ownershipSelected === item.value"
             class="icon-[lucide--check] size-4"
           />
         </Button>
@@ -290,7 +290,7 @@ function toggleBaseModelSelection(item: FilterOption) {
       >
         <Button
           v-for="item of baseModelOptions"
-          :key="item.id"
+          :key="item.value"
           variant="textonly"
           size="unset"
           :class="cn('flex justify-between items-center h-6 text-left')"
@@ -298,7 +298,7 @@ function toggleBaseModelSelection(item: FilterOption) {
         >
           <span>{{ item.name }}</span>
           <i
-            v-if="baseModelSelected.has(item.id)"
+            v-if="baseModelSelected.has(item.value)"
             class="icon-[lucide--check] size-4"
           />
         </Button>

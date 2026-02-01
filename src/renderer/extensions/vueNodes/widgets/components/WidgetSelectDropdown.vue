@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { capitalize } from 'es-toolkit'
 import { computed, provide, ref, toRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import { t } from '@/i18n'
+import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import {
   filterItemByBaseModels,
   filterItemByOwnership
@@ -60,6 +61,7 @@ const modelValue = defineModel<string | undefined>({
   }
 })
 
+const { t } = useI18n()
 const toastStore = useToastStore()
 const queueStore = useQueueStore()
 
@@ -83,39 +85,27 @@ const filterSelected = ref('all')
 const filterOptions = computed<FilterOption[]>(() => {
   if (props.isAssetMode) {
     const categoryName = assetData?.category.value ?? 'All'
-    return [{ id: 'all', name: capitalize(categoryName) }]
+    return [{ name: capitalize(categoryName), value: 'all' }]
   }
   return [
-    { id: 'all', name: 'All' },
-    { id: 'inputs', name: 'Inputs' },
-    { id: 'outputs', name: 'Outputs' }
+    { name: 'All', value: 'all' },
+    { name: 'Inputs', value: 'inputs' },
+    { name: 'Outputs', value: 'outputs' }
   ]
 })
 
 const ownershipSelected = ref<OwnershipOption>('all')
 const showOwnershipFilter = computed(() => props.isAssetMode)
-const ownershipOptions = computed(() => [
-  { id: 'all' as const, name: t('assetBrowser.ownershipAll') },
-  { id: 'my-models' as const, name: t('assetBrowser.ownershipMyModels') },
-  {
-    id: 'public-models' as const,
-    name: t('assetBrowser.ownershipPublicModels')
-  }
-])
+
+const { ownershipOptions, availableBaseModels } = useAssetFilterOptions(
+  () => assetData?.assets.value ?? []
+)
 
 const baseModelSelected = ref<Set<string>>(new Set())
 const showBaseModelFilter = computed(() => props.isAssetMode)
 const baseModelOptions = computed<FilterOption[]>(() => {
   if (!props.isAssetMode || !assetData) return []
-  const models = new Set<string>()
-  for (const asset of assetData.assets.value) {
-    for (const model of getAssetBaseModels(asset)) {
-      models.add(model)
-    }
-  }
-  return Array.from(models)
-    .sort()
-    .map((model) => ({ id: model, name: model }))
+  return availableBaseModels.value
 })
 
 const selectedSet = ref<Set<string>>(new Set())
