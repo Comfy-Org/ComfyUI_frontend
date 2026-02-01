@@ -36,6 +36,7 @@ describe('useAssetBrowser', () => {
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     last_access_time: '2024-01-01T00:00:00Z',
+    is_immutable: false,
     ...overrides
   })
 
@@ -462,6 +463,12 @@ describe('useAssetBrowser', () => {
         createApiAsset({
           name: 'another-my-model.safetensors',
           is_immutable: false
+        }),
+        // Need a second category so typeCategories.length > 1
+        createApiAsset({
+          name: 'lora.safetensors',
+          is_immutable: true,
+          tags: ['models', 'loras']
         })
       ]
 
@@ -586,6 +593,12 @@ describe('useAssetBrowser', () => {
           name: 'public-model.safetensors',
           is_immutable: true,
           tags: ['models', 'checkpoints']
+        }),
+        // Need a second category so typeCategories.length > 1
+        createApiAsset({
+          name: 'lora.safetensors',
+          is_immutable: true,
+          tags: ['models', 'loras']
         })
       ]
 
