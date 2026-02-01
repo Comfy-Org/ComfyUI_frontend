@@ -27,21 +27,23 @@ function getClientId(): string | null {
  * Composable for managing per-tab workflow state in sessionStorage.
  */
 export function useWorkflowTabState() {
-  const currentWorkspaceId = getWorkspaceId()
-
   /**
    * Gets the active workflow path for the current tab.
    * Returns null if no pointer exists or workspaceId doesn't match.
+   * Falls back to searching for any pointer matching current workspace
+   * when clientId changes after page reload.
    */
   function getActivePath(): string | null {
     const clientId = getClientId()
+    const workspaceId = getWorkspaceId()
     if (!clientId) return null
 
-    const pointer = readActivePath(clientId)
+    // Pass workspaceId for fallback search when clientId doesn't match
+    const pointer = readActivePath(clientId, workspaceId)
     if (!pointer) return null
 
     // Validate workspace - ignore stale pointers from different workspace
-    if (pointer.workspaceId !== currentWorkspaceId) return null
+    if (pointer.workspaceId !== workspaceId) return null
 
     return pointer.path
   }
@@ -51,10 +53,11 @@ export function useWorkflowTabState() {
    */
   function setActivePath(path: string): void {
     const clientId = getClientId()
+    const workspaceId = getWorkspaceId()
     if (!clientId) return
 
     const pointer: ActivePathPointer = {
-      workspaceId: currentWorkspaceId,
+      workspaceId,
       path
     }
     writeActivePath(clientId, pointer)
@@ -63,16 +66,20 @@ export function useWorkflowTabState() {
   /**
    * Gets the open workflow paths for the current tab.
    * Returns null if no pointer exists or workspaceId doesn't match.
+   * Falls back to searching for any pointer matching current workspace
+   * when clientId changes after page reload.
    */
   function getOpenPaths(): { paths: string[]; activeIndex: number } | null {
     const clientId = getClientId()
+    const workspaceId = getWorkspaceId()
     if (!clientId) return null
 
-    const pointer = readOpenPaths(clientId)
+    // Pass workspaceId for fallback search when clientId doesn't match
+    const pointer = readOpenPaths(clientId, workspaceId)
     if (!pointer) return null
 
-    // Validate workspace
-    if (pointer.workspaceId !== currentWorkspaceId) return null
+    // Validate workspace - ignore stale pointers from different workspace
+    if (pointer.workspaceId !== workspaceId) return null
 
     return { paths: pointer.paths, activeIndex: pointer.activeIndex }
   }
@@ -82,10 +89,11 @@ export function useWorkflowTabState() {
    */
   function setOpenPaths(paths: string[], activeIndex: number): void {
     const clientId = getClientId()
+    const workspaceId = getWorkspaceId()
     if (!clientId) return
 
     const pointer: OpenPathsPointer = {
-      workspaceId: currentWorkspaceId,
+      workspaceId,
       paths,
       activeIndex
     }
