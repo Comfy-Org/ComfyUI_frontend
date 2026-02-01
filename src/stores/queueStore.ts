@@ -551,6 +551,9 @@ export const useQueueStore = defineStore('queue', () => {
         return existing
       })
     } finally {
+      // Only clear loading if this is the latest request.
+      // A stale request completing (success or error) should not touch loading state
+      // since a newer request is responsible for it.
       if (requestId === updateRequestId) {
         isLoading.value = false
       }

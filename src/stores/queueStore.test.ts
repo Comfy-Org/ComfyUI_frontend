@@ -49,6 +49,9 @@ const createTaskOutput = (
   }
 })
 
+type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
+type QueueResolver = (value: QueueResponse) => void
+
 // Mock API
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -805,25 +808,13 @@ describe('useQueueStore', () => {
 
   describe('update deduplication', () => {
     it('should discard stale responses when newer request completes first', async () => {
-      let resolveFirst: (value: {
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }) => void
-      let resolveSecond: (value: {
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }) => void
+      let resolveFirst: QueueResolver
+      let resolveSecond: QueueResolver
 
-      const firstQueuePromise = new Promise<{
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }>((resolve) => {
+      const firstQueuePromise = new Promise<QueueResponse>((resolve) => {
         resolveFirst = resolve
       })
-      const secondQueuePromise = new Promise<{
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }>((resolve) => {
+      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
         resolveSecond = resolve
       })
 
@@ -853,25 +844,13 @@ describe('useQueueStore', () => {
     })
 
     it('should set isLoading to false only for the latest request', async () => {
-      let resolveFirst: (value: {
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }) => void
-      let resolveSecond: (value: {
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }) => void
+      let resolveFirst: QueueResolver
+      let resolveSecond: QueueResolver
 
-      const firstQueuePromise = new Promise<{
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }>((resolve) => {
+      const firstQueuePromise = new Promise<QueueResponse>((resolve) => {
         resolveFirst = resolve
       })
-      const secondQueuePromise = new Promise<{
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }>((resolve) => {
+      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
         resolveSecond = resolve
       })
 
@@ -899,15 +878,9 @@ describe('useQueueStore', () => {
     })
 
     it('should handle stale request failure without affecting latest state', async () => {
-      let resolveSecond: (value: {
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }) => void
+      let resolveSecond: QueueResolver
 
-      const secondQueuePromise = new Promise<{
-        Running: JobListItem[]
-        Pending: JobListItem[]
-      }>((resolve) => {
+      const secondQueuePromise = new Promise<QueueResponse>((resolve) => {
         resolveSecond = resolve
       })
 
