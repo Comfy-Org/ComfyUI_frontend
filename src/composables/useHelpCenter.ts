@@ -16,8 +16,11 @@ export function useHelpCenter(
   const settingStore = useSettingStore()
   const releaseStore = useReleaseStore()
   const helpCenterStore = useHelpCenterStore()
-  const { isVisible: isHelpCenterVisible, triggerLocation } =
-    storeToRefs(helpCenterStore)
+  const {
+    isVisible: isHelpCenterVisible,
+    triggerLocation,
+    triggerElement
+  } = storeToRefs(helpCenterStore)
   const { shouldShowRedDot: showReleaseRedDot } = storeToRefs(releaseStore)
 
   const conflictDetection = useConflictDetection()
@@ -40,11 +43,11 @@ export function useHelpCenter(
   /**
    * Toggle Help Center and track UI button click.
    */
-  const toggleHelpCenter = () => {
+  const toggleHelpCenter = (element?: HTMLElement | null) => {
     useTelemetry()?.trackUiButtonClicked({
       button_id: `${triggerFrom}_help_center_toggled`
     })
-    helpCenterStore.toggle(triggerFrom)
+    helpCenterStore.toggle(triggerFrom, element)
   }
 
   const closeHelpCenter = () => {
@@ -91,6 +94,7 @@ export function useHelpCenter(
   return {
     isHelpCenterVisible,
     triggerLocation,
+    triggerElement,
     shouldShowRedDot,
     sidebarLocation,
     toggleHelpCenter,
