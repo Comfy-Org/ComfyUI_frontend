@@ -1,6 +1,6 @@
 <template>
   <div class="flex size-full flex-col">
-    <!-- Header with back button -->
+    <!-- Header with back button and actions -->
     <div
       class="flex shrink-0 items-center gap-4 border-b border-interface-stroke px-6 py-4"
     >
@@ -11,6 +11,20 @@
       <h1 class="flex-1 truncate text-xl font-semibold text-base-foreground">
         {{ workflow.title }}
       </h1>
+      <div class="flex items-center gap-2">
+        <Button variant="secondary" size="md" @click="handleMakeCopy">
+          <i class="icon-[lucide--copy]" />
+          {{ $t('discover.detail.makeCopy') }}
+        </Button>
+        <Button variant="secondary" size="md" @click="handleAppMode">
+          <i class="icon-[lucide--layout-template]" />
+          {{ $t('discover.detail.appMode') }}
+        </Button>
+        <Button variant="primary" size="md" @click="handleRunWorkflow">
+          <i class="icon-[lucide--play]" />
+          {{ $t('discover.detail.runWorkflow') }}
+        </Button>
+      </div>
     </div>
 
     <!-- Two-column layout -->
@@ -129,49 +143,11 @@
             </div>
           </div>
         </div>
-
-        <!-- Action buttons -->
-        <div
-          class="flex shrink-0 flex-col gap-2 border-t border-interface-stroke p-4"
-        >
-          <Button
-            variant="primary"
-            size="md"
-            class="w-full"
-            @click="handleRunWorkflow"
-          >
-            <i class="icon-[lucide--play]" />
-            {{ $t('discover.detail.runWorkflow') }}
-          </Button>
-          <Button
-            variant="secondary"
-            size="md"
-            class="w-full"
-            @click="handleMakeCopy"
-          >
-            <i class="icon-[lucide--copy]" />
-            {{ $t('discover.detail.makeCopy') }}
-          </Button>
-        </div>
       </div>
 
       <!-- Right column: Workflow preview -->
-      <div class="relative min-h-0 min-w-0 flex-1">
+      <div class="min-h-0 min-w-0 flex-1">
         <WorkflowPreviewCanvas :workflow-url="workflow.workflow_url" />
-        <!-- Bottom overlay with CTA -->
-        <div
-          class="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center bg-gradient-to-t from-black/60 to-transparent p-6"
-        >
-          <div class="pointer-events-auto flex flex-col items-center gap-3">
-            <span class="text-sm text-white/80">
-              {{ $t('discover.detail.previewHint') }}
-            </span>
-            <Button variant="primary" size="md" @click="handleMakeCopy">
-              <i class="icon-[lucide--copy]" />
-              {{ $t('discover.detail.makeCopy') }}
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -185,6 +161,9 @@ import SquareChip from '@/components/chip/SquareChip.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
 import WorkflowPreviewCanvas from '@/components/discover/WorkflowPreviewCanvas.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { app } from '@/scripts/app'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AlgoliaWorkflowTemplate } from '@/types/discoverTypes'
 
 const { t } = useI18n()
@@ -195,8 +174,8 @@ const { workflow } = defineProps<{
 
 const emit = defineEmits<{
   back: []
-  runWorkflow: [workflow: AlgoliaWorkflowTemplate]
   makeCopy: [workflow: AlgoliaWorkflowTemplate]
+  appMode: [workflow: AlgoliaWorkflowTemplate]
 }>()
 
 const authorName = computed(
@@ -222,10 +201,46 @@ function formatCount(count: number): string {
 }
 
 function handleRunWorkflow() {
-  emit('runWorkflow', workflow)
+  useToastStore().add({
+    severity: 'info',
+    summary: t('g.comingSoon'),
+    detail: t('discover.detail.runWorkflowNotImplemented'),
+    life: 3000
+  })
 }
 
-function handleMakeCopy() {
-  emit('makeCopy', workflow)
+async function handleMakeCopy() {
+  if (!workflow.workflow_url) return
+
+  // Check that app canvas and graph are initialized
+  if (!app.canvas?.graph) {
+    useToastStore().addAlert(t('discover.detail.appNotReady'))
+    return
+  }
+
+  try {
+    const response = await fetch(workflow.workflow_url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch workflow: ${response.status}`)
+    }
+    const workflowData = await response.json()
+
+    await app.loadGraphData(workflowData, true, true, workflow.title, {
+      openSource: 'template'
+    })
+
+    // Close the sidebar to show the new workflow
+    useSidebarTabStore().activeSidebarTabId = null
+
+    emit('makeCopy', workflow)
+  } catch (error) {
+    useToastStore().addAlert(
+      t('discover.detail.makeCopyFailed', { error: String(error) })
+    )
+  }
+}
+
+function handleAppMode() {
+  emit('appMode', workflow)
 }
 </script>
