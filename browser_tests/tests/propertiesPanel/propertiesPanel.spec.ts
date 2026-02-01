@@ -10,24 +10,24 @@ test.describe('Properties panel', () => {
 
     await expect(propertiesPanel.panelTitle).toContainText('Workflow Overview')
 
-    await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+    await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
 
     await expect(propertiesPanel.panelTitle).toContainText('3 items selected')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
     await expect(
-      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+      propertiesPanel.root.getByText('VAE Decode')
     ).toHaveCount(2)
 
     await propertiesPanel.searchBox.fill('seed')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
     await expect(
-      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+      propertiesPanel.root.getByText('VAE Decode')
     ).toHaveCount(0)
 
     await propertiesPanel.searchBox.fill('')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
     await expect(
-      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+      propertiesPanel.root.getByText('VAE Decode')
     ).toHaveCount(2)
   })
 })

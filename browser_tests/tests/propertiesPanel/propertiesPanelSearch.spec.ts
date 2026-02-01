@@ -10,7 +10,7 @@ test.describe('Properties panel search functionality', { tag: ['@ui'] }, () => {
 
   test.describe('Search with multiple nodes selected', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
     })
 
     test('filters widgets by search query', async ({ comfyPage }) => {
@@ -20,7 +20,7 @@ test.describe('Properties panel search functionality', { tag: ['@ui'] }, () => {
 
       await expect(propertiesPanel.root.getByText('KSampler')).toBeVisible()
       await expect(
-        propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+        propertiesPanel.root.getByText('VAE Decode')
       ).not.toBeVisible()
     })
 
@@ -32,7 +32,7 @@ test.describe('Properties panel search functionality', { tag: ['@ui'] }, () => {
 
       await expect(propertiesPanel.root.getByText('KSampler')).toBeVisible()
       await expect(
-        propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+        propertiesPanel.root.getByText('VAE Decode')
       ).toBeVisible()
     })
 

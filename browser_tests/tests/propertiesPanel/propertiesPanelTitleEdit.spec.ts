@@ -72,7 +72,7 @@ test.describe('Properties panel title editing', { tag: ['@ui'] }, () => {
     }) => {
       const { propertiesPanel } = comfyPage
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
       await propertiesPanel.panelTitle.click()
 
       await expect(propertiesPanel.nodeTitleInput).not.toBeVisible()

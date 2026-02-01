@@ -67,7 +67,7 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
       await expect(propertiesPanel.getTab('Nodes')).not.toBeVisible()
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
       await expect(propertiesPanel.getTab('Parameters')).toBeVisible()
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
       await expect(propertiesPanel.getTab('Info')).not.toBeVisible()
@@ -80,7 +80,7 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
       await comfyPage.selectNodes(['KSampler'])
       await expect(propertiesPanel.getTab('Parameters')).toBeVisible()
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
       const firstTab = propertiesPanel.tabList.locator('[role="tab"]').first()
       await expect(firstTab).toBeVisible()
     })
@@ -95,7 +95,7 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
       await comfyPage.selectNodes(['KSampler'])
       await propertiesPanel.clickTab('Settings')
 
-      await comfyPage.selectNodes(['CLIP Text Encode (Prompt)'])
+      await comfyPage.selectNodes(['VAE Decode'])
 
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
     })
@@ -108,7 +108,7 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
       await comfyPage.selectNodes(['KSampler'])
       await propertiesPanel.clickTab('Info')
 
-      await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
+      await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
 
       await expect(propertiesPanel.getTab('Info')).not.toBeVisible()
       const firstTab = propertiesPanel.tabList.locator('[role="tab"]').first()
