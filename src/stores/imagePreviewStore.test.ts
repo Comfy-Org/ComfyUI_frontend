@@ -1,3 +1,4 @@
+import { createTestingPinia } from '@pinia/testing'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
