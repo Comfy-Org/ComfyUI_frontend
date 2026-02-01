@@ -1373,18 +1373,14 @@ export class ComfyPage {
   }
 
   async selectNodes(nodeTitles: string[]) {
-    let isFirst = true
+    await this.page.keyboard.down('Control')
     for (const nodeTitle of nodeTitles) {
       const nodes = await this.getNodeRefsByTitle(nodeTitle)
       for (const node of nodes) {
-        if (isFirst) {
-          await node.click('title')
-          isFirst = false
-        } else {
-          await node.click('title', { modifiers: ['Control'] })
-        }
+        await node.click('title')
       }
     }
+    await this.page.keyboard.up('Control')
     await this.nextFrame()
   }
 
@@ -1609,7 +1605,7 @@ export class ComfyPage {
       (
         await this.page.evaluate((title) => {
           return window['app'].graph.nodes
-            .filter((n: LGraphNode) => n.getTitle() === title)
+            .filter((n: LGraphNode) => n.title === title)
             .map((n: LGraphNode) => n.id)
         }, title)
       ).map((id: NodeId) => this.getNodeRefById(id))
