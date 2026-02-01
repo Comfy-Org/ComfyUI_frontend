@@ -755,10 +755,17 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
       await comfyPage.menu.topbar.saveWorkflow(workflowB)
 
-      // Wait for localStorage to persist the workflow paths before reloading
-      await comfyPage.page.waitForFunction(
-        () => !!window.localStorage.getItem('Comfy.OpenWorkflowsPaths')
-      )
+      // Wait for sessionStorage to persist the workflow paths before reloading
+      // V2 persistence uses sessionStorage with client-scoped keys
+      await comfyPage.page.waitForFunction(() => {
+        for (let i = 0; i < window.sessionStorage.length; i++) {
+          const key = window.sessionStorage.key(i)
+          if (key?.startsWith('Comfy.Workflow.OpenPaths:')) {
+            return true
+          }
+        }
+        return false
+      })
       await comfyPage.setup({ clearStorage: false })
     })
 
