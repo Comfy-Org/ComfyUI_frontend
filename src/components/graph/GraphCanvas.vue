@@ -24,12 +24,15 @@
     <template v-if="showUI" #side-toolbar>
       <SideToolbar />
     </template>
-    <template v-if="showUI" #side-bar-panel>
+    <template v-if="showUI && !isFullPageTabActive" #side-bar-panel>
       <div
         class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
+    </template>
+    <template v-if="showUI && isFullPageTabActive" #full-page-content>
+      <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
     </template>
     <template v-if="showUI" #topmenu>
       <TopMenuSection />
@@ -204,6 +207,9 @@ const selectionToolboxEnabled = computed(() =>
 )
 const activeSidebarTab = computed(() => {
   return workspaceStore.sidebarTab.activeSidebarTab
+})
+const isFullPageTabActive = computed(() => {
+  return workspaceStore.sidebarTab.isFullPageTabActive
 })
 const showUI = computed(
   () => !workspaceStore.focusMode && betaMenuEnabled.value

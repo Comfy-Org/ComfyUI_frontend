@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
+import { useDiscoverSidebarTab } from '@/composables/sidebarTabs/useDiscoverSidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { t, te } from '@/i18n'
@@ -19,6 +20,15 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     return (
       sidebarTabs.value.find((tab) => tab.id === activeSidebarTabId.value) ??
       null
+    )
+  })
+
+  const FULL_PAGE_TAB_IDS = ['discover']
+
+  const isFullPageTabActive = computed(() => {
+    return (
+      activeSidebarTabId.value !== null &&
+      FULL_PAGE_TAB_IDS.includes(activeSidebarTabId.value)
     )
   })
 
@@ -102,6 +112,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
    * Register the core sidebar tabs.
    */
   const registerCoreSidebarTabs = () => {
+    registerSidebarTab(useDiscoverSidebarTab())
     registerSidebarTab(useAssetsSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
     registerSidebarTab(useModelLibrarySidebarTab())
@@ -131,6 +142,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     sidebarTabs,
     activeSidebarTabId,
     activeSidebarTab,
+    isFullPageTabActive,
     toggleSidebarTab,
     registerSidebarTab,
     unregisterSidebarTab,

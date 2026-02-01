@@ -718,6 +718,8 @@
     "workflows": "Workflows",
     "templates": "Templates",
     "assets": "Assets",
+    "discover": "Discover",
+    "discoverPlaceholder": "Discover content coming soon",
     "mediaAssets": {
       "title": "Media Assets",
       "sortNewestFirst": "Newest first",

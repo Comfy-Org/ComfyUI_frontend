@@ -2,7 +2,7 @@
   <div
     class="w-full h-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
   >
-    <slot name="workflow-tabs" />
+    <slot v-if="!isFullPageTabActive" name="workflow-tabs" />
 
     <div
       class="pointer-events-none flex flex-1 overflow-hidden"
@@ -55,9 +55,22 @@
 
         <!-- Main panel (always present) -->
         <SplitterPanel :size="80" class="flex flex-col">
-          <slot name="topmenu" :sidebar-panel-visible />
+          <slot
+            v-if="!isFullPageTabActive"
+            name="topmenu"
+            :sidebar-panel-visible
+          />
+
+          <!-- Full page content (replaces graph canvas when active) -->
+          <div
+            v-if="isFullPageTabActive"
+            class="pointer-events-auto flex-1 overflow-hidden bg-comfy-menu-bg"
+          >
+            <slot name="full-page-content" />
+          </div>
 
           <Splitter
+            v-else
             class="bg-transparent pointer-events-none border-none splitter-overlay-bottom mr-1 mb-1 ml-1 flex-1"
             layout="vertical"
             :pt:gutter="
@@ -144,7 +157,8 @@ const unifiedWidth = computed(() =>
 
 const { focusMode } = storeToRefs(workspaceStore)
 
-const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
+const { activeSidebarTabId, activeSidebarTab, isFullPageTabActive } =
+  storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
 
