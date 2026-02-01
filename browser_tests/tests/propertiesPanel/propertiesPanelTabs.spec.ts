@@ -68,10 +68,10 @@ test.describe('Properties panel tab navigation', { tag: ['@ui'] }, () => {
       await expect(propertiesPanel.getTab('Nodes')).not.toBeVisible()
 
       await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
-      await expect(propertiesPanel.getTab('Parameters')).toBeVisible()
+      await expect(propertiesPanel.getTab('Nodes')).toBeVisible()
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
       await expect(propertiesPanel.getTab('Info')).not.toBeVisible()
-      await expect(propertiesPanel.getTab('Nodes')).not.toBeVisible()
+      await expect(propertiesPanel.getTab('Parameters')).not.toBeVisible()
     })
 
     test('first tab updates for multiple selection', async ({ comfyPage }) => {

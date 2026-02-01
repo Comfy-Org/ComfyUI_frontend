@@ -125,19 +125,19 @@ test.describe('Properties panel basic functionality', { tag: ['@ui'] }, () => {
       await expect(propertiesPanel.panelTitle).toContainText('items selected')
     })
 
-    test('shows Parameters and Settings tabs for multiple selection', async ({
+    test('shows Nodes and Settings tabs for multiple selection', async ({
       comfyPage
     }) => {
       const { propertiesPanel } = comfyPage
 
       await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
 
-      await expect(propertiesPanel.getTab('Parameters')).toBeVisible()
+      await expect(propertiesPanel.getTab('Nodes')).toBeVisible()
       await expect(propertiesPanel.getTab('Settings')).toBeVisible()
       await expect(propertiesPanel.getTab('Info')).not.toBeVisible()
     })
 
-    test('lists all selected nodes in Parameters tab', async ({
+    test('lists all selected nodes in Nodes tab', async ({
       comfyPage
     }) => {
       const { propertiesPanel } = comfyPage

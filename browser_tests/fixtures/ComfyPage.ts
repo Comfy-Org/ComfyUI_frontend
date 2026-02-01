@@ -1373,14 +1373,18 @@ export class ComfyPage {
   }
 
   async selectNodes(nodeTitles: string[]) {
-    await this.page.keyboard.down('Control')
+    let isFirst = true
     for (const nodeTitle of nodeTitles) {
       const nodes = await this.getNodeRefsByTitle(nodeTitle)
       for (const node of nodes) {
-        await node.click('title')
+        if (isFirst) {
+          await node.click('title')
+          isFirst = false
+        } else {
+          await node.click('title', { modifiers: ['Control'] })
+        }
       }
     }
-    await this.page.keyboard.up('Control')
     await this.nextFrame()
   }
 
