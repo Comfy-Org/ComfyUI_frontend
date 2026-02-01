@@ -1,7 +1,16 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
+
+/**
+ * Helper type for accessing nodes by ID in browser tests.
+ * Provides typed access to graph internals without requiring `any`.
+ */
+export interface TestGraphAccess {
+  _nodes_by_id: Record<string, LGraphNode>
+}
 
 interface AppReadiness {
   featureFlagsReceived: boolean

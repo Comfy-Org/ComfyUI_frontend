@@ -1,5 +1,9 @@
 import { readFileSync } from 'fs'
 
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '../../../src/platform/workflow/validation/schemas/workflowSchema'
 import type { WorkspaceStore } from '../../types/globals'
 import type { ComfyPage } from '../ComfyPage'
 
@@ -107,7 +111,13 @@ export class WorkflowHelper {
     })
   }
 
-  async getExportedWorkflow(options?: { api?: boolean }): Promise<any> {
+  async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>
+  async getExportedWorkflow(options?: {
+    api?: false
+  }): Promise<ComfyWorkflowJSON>
+  async getExportedWorkflow(options?: {
+    api?: boolean
+  }): Promise<ComfyWorkflowJSON | ComfyApiWorkflow> {
     const api = options?.api ?? false
     return this.comfyPage.page.evaluate(async (api) => {
       return (await window.app!.graphToPrompt())[api ? 'output' : 'workflow']

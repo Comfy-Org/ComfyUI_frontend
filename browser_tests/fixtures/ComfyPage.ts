@@ -260,7 +260,7 @@ export class ComfyPage {
     return await resp.json()
   }
 
-  async setupSettings(settings: Record<string, any>) {
+  async setupSettings(settings: Record<string, unknown>) {
     const resp = await this.request.post(
       `${this.url}/api/devtools/set_settings`,
       {

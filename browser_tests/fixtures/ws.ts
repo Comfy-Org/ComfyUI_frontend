@@ -1,7 +1,7 @@
 import { test as base } from '@playwright/test'
 
 export const webSocketFixture = base.extend<{
-  ws: { trigger(data: any, url?: string): Promise<void> }
+  ws: { trigger(data: unknown, url?: string): Promise<void> }
 }>({
   ws: [
     async ({ page }, use) => {
