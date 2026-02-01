@@ -15263,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "画像とオプションのプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 画像から動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "生成される動画の開始フレームとして使用する画像。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_audio": {
+        "name": "オーディオ"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画生成用のオプションのテキストプロンプト（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "テキストプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 テキストから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_audio": {
+        "name": "オーディオ"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画生成用のテキスト説明（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "既存の動画を拡張して追加フレームを生成します。",
+    "display_name": "Vidu 動画拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "end_frame": {
+        "name": "終了フレーム"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画拡張に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "拡張動画用のオプションのテキストプロンプト（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "拡張する元の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "画像とオプションのプロンプトからビデオを生成",
     "display_name": "Vidu 画像からビデオ生成",
@@ -15297,6 +15410,49 @@
       "seed": {
         "name": "シード",
         "tooltip": "ビデオ生成のシード値（0でランダム）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "複数のキーフレーム遷移を持つ動画を生成します。",
+    "display_name": "Vidu マルチフレーム動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "frames": {
+        "name": "フレーム数",
+        "tooltip": "キーフレーム遷移の数（2～9）。"
+      },
+      "frames_duration1": {
+        "name": "長さ1"
+      },
+      "frames_duration2": {
+        "name": "長さ2"
+      },
+      "frames_prompt1": {
+        "name": "プロンプト1"
+      },
+      "frames_prompt2": {
+        "name": "プロンプト2"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "start_image": {
+        "name": "開始画像",
+        "tooltip": "開始フレーム画像。アスペクト比は1:4から4:1の間である必要があります。"
       }
     },
     "outputs": {

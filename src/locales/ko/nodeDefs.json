@@ -15263,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "이미지와 선택적 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "생성된 비디오의 시작 프레임으로 사용할 이미지입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 텍스트-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 텍스트 설명 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "기존 비디오에 추가 프레임을 생성하여 확장합니다.",
+    "display_name": "Vidu 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 확장을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "확장된 비디오를 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "확장할 원본 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "이미지와 선택적 프롬프트로부터 비디오 생성",
     "display_name": "Vidu 이미지 비디오 생성",
@@ -15297,6 +15410,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "비디오 생성을 위한 시드(0은 랜덤)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "여러 키프레임 전환이 포함된 비디오를 생성합니다.",
+    "display_name": "Vidu 다중 프레임 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "키프레임 전환 수 (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "시작 프레임 이미지입니다. 종횡비는 1:4에서 4:1 사이여야 합니다."
       }
     },
     "outputs": {

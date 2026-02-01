@@ -15295,6 +15295,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "display_name": "Vidu Q3 Image-to-Video Generation",
+    "description": "Generate a video from an image and an optional prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "An image to be used as the start frame of the generated video."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "An optional text prompt for video generation (max 2000 characters)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "display_name": "Vidu Q3 Text-to-Video Generation",
+    "description": "Generate video from a text prompt.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video generation."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "A textual description for video generation, with a maximum length of 2000 characters."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "display_name": "Vidu Video Extension",
+    "description": "Extend an existing video by generating additional frames.",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model to use for video extension."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "The source video to extend."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "An optional text prompt for the extended video (max 2000 characters)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "display_name": "Vidu Image To Video Generation",
     "description": "Generate video from image and optional prompt",
@@ -15329,6 +15442,49 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "display_name": "Vidu Multi-Frame Video Generation",
+    "description": "Generate a video with multiple keyframe transitions.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "The starting frame image. Aspect ratio must be between 1:4 and 4:1."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "Number of keyframe transitions (2-9)."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
       }
     },
     "outputs": {
