@@ -1605,7 +1605,7 @@ export class ComfyPage {
       (
         await this.page.evaluate((title) => {
           return window['app'].graph.nodes
-            .filter((n: LGraphNode) => n.title === title)
+            .filter((n: LGraphNode) => n.getTitle() === title)
             .map((n: LGraphNode) => n.id)
         }, title)
       ).map((id: NodeId) => this.getNodeRefById(id))
