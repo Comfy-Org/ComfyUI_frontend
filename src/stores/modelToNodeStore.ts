@@ -219,9 +219,9 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     quickRegister('ipadapter', 'IPAdapterModelLoader', 'ipadapter_file')
 
     // Segformer clothing/fashion segmentation models (comfyui_layerstyle)
-    quickRegister('segformer_b2_clothes', 'LoadSegformerModel', 'model_name')
-    quickRegister('segformer_b3_clothes', 'LoadSegformerModel', 'model_name')
-    quickRegister('segformer_b3_fashion', 'LoadSegformerModel', 'model_name')
+    quickRegister('segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name')
+    quickRegister('segformer_b3_clothes', 'LS_LoadSegformerModel', 'model_name')
+    quickRegister('segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name')
 
     // NLF pose estimation models (ComfyUI-WanVideoWrapper)
     quickRegister('nlf', 'LoadNLFModel', 'nlf_model')

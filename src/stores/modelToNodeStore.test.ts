@@ -89,7 +89,7 @@ const MOCK_NODE_NAMES = [
   'UltralyticsDetectorProvider',
   'DownloadAndLoadDepthAnythingV2Model',
   'IPAdapterModelLoader',
-  'LoadSegformerModel',
+  'LS_LoadSegformerModel',
   'LoadNLFModel',
   'FlashVSRNode'
 ] as const
@@ -258,14 +258,14 @@ describe('useModelToNodeStore', () => {
       const segformerB2Provider = modelToNodeStore.getNodeProvider(
         'segformer_b2_clothes'
       )
-      expect(segformerB2Provider?.nodeDef?.name).toBe('LoadSegformerModel')
+      expect(segformerB2Provider?.nodeDef?.name).toBe('LS_LoadSegformerModel')
       expect(segformerB2Provider?.key).toBe('model_name')
 
       const segformerB3FashionProvider = modelToNodeStore.getNodeProvider(
         'segformer_b3_fashion'
       )
       expect(segformerB3FashionProvider?.nodeDef?.name).toBe(
-        'LoadSegformerModel'
+        'LS_LoadSegformerModel'
       )
     })
   })
