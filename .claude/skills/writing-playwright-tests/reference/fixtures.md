@@ -49,14 +49,14 @@ test('drag example', async ({ comfyPage, comfyMouse }) => {
 
 ### Nodes
 
-| Method                       | Description                              |
-| ---------------------------- | ---------------------------------------- |
-| `getNodeRefsByTitle(title)`  | Get nodes by display title (returns `[]`)|
-| `getNodeRefById(id)`         | Get node by numeric ID                   |
-| `getFirstNode()`             | Get first node                           |
-| `getLastNode()`              | Get last node                            |
-| `getNodes()`                 | Get all nodes                            |
-| `selectNodes(titles[])`      | Ctrl+click to select nodes by title      |
+| Method                      | Description                               |
+| --------------------------- | ----------------------------------------- |
+| `getNodeRefsByTitle(title)` | Get nodes by display title (returns `[]`) |
+| `getNodeRefById(id)`        | Get node by numeric ID                    |
+| `getFirstNode()`            | Get first node                            |
+| `getLastNode()`             | Get last node                             |
+| `getNodes()`                | Get all nodes                             |
+| `selectNodes(titles[])`     | Ctrl+click to select nodes by title       |
 
 **Node titles**: Use display names like `'KSampler'`, `'VAE Decode'`, `'CLIP Text Encode (Prompt)'`.
 These match the `display_name` from node definitions, not the internal type name.
