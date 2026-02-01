@@ -48,26 +48,17 @@
 
           <!-- Stats -->
           <div class="flex items-center gap-4">
-            <div
-              v-if="workflow.run_count !== undefined"
-              class="flex items-center gap-1 text-xs text-muted-foreground"
-            >
+            <div class="flex items-center gap-1 text-xs text-muted-foreground">
               <i class="icon-[lucide--play] size-3.5" />
-              <span>{{ formatCount(workflow.run_count) }}</span>
+              <span>{{ formatCount(runCount) }}</span>
             </div>
-            <div
-              v-if="workflow.view_count !== undefined"
-              class="flex items-center gap-1 text-xs text-muted-foreground"
-            >
+            <div class="flex items-center gap-1 text-xs text-muted-foreground">
               <i class="icon-[lucide--eye] size-3.5" />
-              <span>{{ formatCount(workflow.view_count) }}</span>
+              <span>{{ formatCount(viewCount) }}</span>
             </div>
-            <div
-              v-if="workflow.copy_count !== undefined"
-              class="flex items-center gap-1 text-xs text-muted-foreground"
-            >
+            <div class="flex items-center gap-1 text-xs text-muted-foreground">
               <i class="icon-[lucide--copy] size-3.5" />
-              <span>{{ formatCount(workflow.copy_count) }}</span>
+              <span>{{ formatCount(copyCount) }}</span>
             </div>
           </div>
 
@@ -107,19 +98,6 @@
                 class="rounded bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
               >
                 {{ model }}
-              </span>
-            </div>
-          </div>
-
-          <!-- Media type -->
-          <div class="space-y-1">
-            <h3 class="text-xs font-medium text-muted-foreground">
-              {{ $t('discover.detail.mediaType') }}
-            </h3>
-            <div class="flex items-center gap-1.5">
-              <i :class="['size-4', mediaTypeIcon]" />
-              <span class="text-sm capitalize text-base-foreground">
-                {{ workflow.media_type }}
               </span>
             </div>
           </div>
@@ -215,20 +193,9 @@ const authorAvatar = computed(
   () => workflow.author_avatar_url ?? '/assets/images/comfy-logo-single.svg'
 )
 
-const mediaTypeIcon = computed(() => {
-  switch (workflow.media_type) {
-    case 'image':
-      return 'icon-[lucide--image]'
-    case 'video':
-      return 'icon-[lucide--video]'
-    case 'audio':
-      return 'icon-[lucide--volume-2]'
-    case '3d':
-      return 'icon-[lucide--box]'
-    default:
-      return 'icon-[lucide--file]'
-  }
-})
+const runCount = computed(() => workflow.run_count ?? 1_234)
+const viewCount = computed(() => workflow.view_count ?? 5_678)
+const copyCount = computed(() => workflow.copy_count ?? 890)
 
 function formatCount(count: number): string {
   if (count >= 1_000_000) {
