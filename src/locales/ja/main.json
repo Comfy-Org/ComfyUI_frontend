@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
+    "COLOR": "カラー",
     "COMBO": "コンボ",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1301,6 +1302,28 @@
     "disabledNodesWontUpdate": "無効なノードは更新されません",
     "discoverCommunityContent": "コミュニティが作成したノードパック、拡張機能などを探す...",
     "downloads": "ダウンロード",
+    "emptyState": {
+      "allInstalled": {
+        "message": "まだ拡張機能をインストールしていません。",
+        "title": "拡張機能がインストールされていません"
+      },
+      "conflicting": {
+        "message": "すべての拡張機能は互換性があります。",
+        "title": "競合は検出されませんでした"
+      },
+      "missing": {
+        "message": "必要なノードはすべてインストールされています。",
+        "title": "不足しているノードはありません"
+      },
+      "updateAvailable": {
+        "message": "すべての拡張機能は最新の状態です。",
+        "title": "すべて最新です"
+      },
+      "workflow": {
+        "message": "このワークフローでは拡張ノードが使用されていません。",
+        "title": "ワークフローに拡張機能がありません"
+      }
+    },
     "enablePackToChangeVersion": "このパックを有効にしてバージョンを変更してください",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",
     "extensionsSuccessfullyInstalled": "拡張機能のインストールが完了し、使用可能になりました！",

@@ -89,7 +89,7 @@ export class ComfyNodeDefImpl
    * @internal
    * Migrate default input options to forceInput.
    */
-  static #migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
+  private static _migrateDefaultInput(nodeDef: ComfyNodeDefV1): ComfyNodeDefV1 {
     const def = _.cloneDeep(nodeDef)
     def.input ??= {}
     // For required inputs, now we have the input socket always present. Specifying
@@ -118,7 +118,7 @@ export class ComfyNodeDefImpl
   }
 
   constructor(def: ComfyNodeDefV1) {
-    const obj = ComfyNodeDefImpl.#migrateDefaultInput(def)
+    const obj = ComfyNodeDefImpl._migrateDefaultInput(def)
 
     /**
      * Assign extra fields to `this` for compatibility with group node feature.
