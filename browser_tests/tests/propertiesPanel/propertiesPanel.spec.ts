@@ -6,20 +6,17 @@ test.describe('Properties panel', () => {
   test('opens and updates title based on selection', async ({ comfyPage }) => {
     await comfyPage.actionbar.propertiesButton.click()
 
-    const { propertiesPanel } = comfyPage
+    const { propertiesPanel } = comfyPage.menu
 
     await expect(propertiesPanel.panelTitle).toContainText('Workflow Overview')
 
-    await comfyPage.selectFirstNodeByTitles([
-      'KSampler',
-      'CLIP Text Encode (Prompt)'
-    ])
+    await comfyPage.selectNodes(['KSampler', 'CLIP Text Encode (Prompt)'])
 
-    await expect(propertiesPanel.panelTitle).toContainText('items selected')
+    await expect(propertiesPanel.panelTitle).toContainText('3 items selected')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
     await expect(
-      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)').first()
-    ).toBeVisible()
+      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+    ).toHaveCount(2)
 
     await propertiesPanel.searchBox.fill('seed')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
@@ -30,7 +27,7 @@ test.describe('Properties panel', () => {
     await propertiesPanel.searchBox.fill('')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
     await expect(
-      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)').first()
-    ).toBeVisible()
+      propertiesPanel.root.getByText('CLIP Text Encode (Prompt)')
+    ).toHaveCount(2)
   })
 })

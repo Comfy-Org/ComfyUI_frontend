@@ -1384,18 +1384,6 @@ export class ComfyPage {
     await this.nextFrame()
   }
 
-  async selectFirstNodeByTitles(nodeTitles: string[]) {
-    await this.page.keyboard.down('Control')
-    for (const nodeTitle of nodeTitles) {
-      const nodes = await this.getNodeRefsByTitle(nodeTitle)
-      if (nodes.length > 0) {
-        await nodes[0].click('title')
-      }
-    }
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
-  }
-
   async select2Nodes() {
     // Select 2 CLIP nodes.
     await this.page.keyboard.down('Control')
