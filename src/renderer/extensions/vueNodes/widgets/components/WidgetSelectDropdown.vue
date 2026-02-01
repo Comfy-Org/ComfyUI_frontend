@@ -5,6 +5,10 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { t } from '@/i18n'
 import {
+  filterItemByBaseModels,
+  filterItemByOwnership
+} from '@/platform/assets/utils/assetFilterUtils'
+import {
   getAssetBaseModels,
   getAssetDisplayName,
   getAssetFilename
@@ -242,25 +246,16 @@ const assetItems = computed<FormDropdownItem[]>(() => {
   }))
 })
 
-/**
- * Filters asset items by ownership selection.
- */
-const ownershipFilteredAssetItems = computed<FormDropdownItem[]>(() => {
-  if (ownershipSelected.value === 'all') return assetItems.value
-  const isPublic = ownershipSelected.value === 'public-models'
-  return assetItems.value.filter((item) => item.is_immutable === isPublic)
-})
+const ownershipFilteredAssetItems = computed<FormDropdownItem[]>(() =>
+  filterItemByOwnership(assetItems.value, ownershipSelected.value)
+)
 
-/**
- * Filters asset items by base model selection.
- */
-const baseModelFilteredAssetItems = computed<FormDropdownItem[]>(() => {
-  if (baseModelSelected.value.size === 0)
-    return ownershipFilteredAssetItems.value
-  return ownershipFilteredAssetItems.value.filter((item) =>
-    item.base_models?.some((model) => baseModelSelected.value.has(model))
+const baseModelFilteredAssetItems = computed<FormDropdownItem[]>(() =>
+  filterItemByBaseModels(
+    ownershipFilteredAssetItems.value,
+    baseModelSelected.value
   )
-})
+)
 
 const allItems = computed<FormDropdownItem[]>(() => {
   if (props.isAssetMode && assetData) {

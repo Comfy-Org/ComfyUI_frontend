@@ -11,6 +11,12 @@ import type {
 } from '@/platform/assets/types/filterTypes'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
+  filterByBaseModels,
+  filterByCategory,
+  filterByFileFormats,
+  filterByOwnership
+} from '@/platform/assets/utils/assetFilterUtils'
+import {
   getAssetBaseModels,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
@@ -19,50 +25,6 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
 type NavId = 'all' | 'imported' | (string & {})
-
-function filterByCategory(category: string) {
-  return (asset: AssetItem) => {
-    if (category === 'all') return true
-
-    // Check if any tag matches the category (for exact matches)
-    if (asset.tags.includes(category)) return true
-
-    // Check if any tag's top-level folder matches the category
-    return asset.tags.some((tag) => {
-      if (typeof tag === 'string' && tag.includes('/')) {
-        return tag.split('/')[0] === category
-      }
-      return false
-    })
-  }
-}
-
-function filterByFileFormats(formats: string[]) {
-  return (asset: AssetItem) => {
-    if (formats.length === 0) return true
-    const formatSet = new Set(formats)
-    const extension = asset.name.split('.').pop()?.toLowerCase()
-    return extension ? formatSet.has(extension) : false
-  }
-}
-
-function filterByBaseModels(models: string[]) {
-  return (asset: AssetItem) => {
-    if (models.length === 0) return true
-    const modelSet = new Set(models)
-    const assetBaseModels = getAssetBaseModels(asset)
-    return assetBaseModels.some((model) => modelSet.has(model))
-  }
-}
-
-function filterByOwnership(ownership: OwnershipOption) {
-  return (asset: AssetItem) => {
-    if (ownership === 'all') return true
-    if (ownership === 'my-models') return asset.is_immutable === false
-    if (ownership === 'public-models') return asset.is_immutable === true
-    return true
-  }
-}
 
 type AssetBadge = {
   label: string
