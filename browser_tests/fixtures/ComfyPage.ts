@@ -195,10 +195,7 @@ export class ComfyPage {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.locator('.selection-toolbox')
-    this.widgetTextBox = page
-      .locator('[data-node-id]')
-      .first()
-      .getByPlaceholder('text')
+    this.widgetTextBox = page.getByPlaceholder('text').nth(1)
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.runButton = page

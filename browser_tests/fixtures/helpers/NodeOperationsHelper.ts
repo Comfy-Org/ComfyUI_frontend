@@ -119,13 +119,13 @@ export class NodeOperationsHelper {
       y: nodePos.y + nodeSize.height * ratioY
     }
     // -1 to be inside the node.  -2 because nodes currently get an arbitrary +1 to width.
-    await this.comfyPage.dragAndDrop(
+    await this.comfyPage.canvasOps.dragAndDrop(
       { x: bottomRight.x - 2, y: bottomRight.y - 1 },
       target
     )
     await this.comfyPage.nextFrame()
     if (revertAfter) {
-      await this.comfyPage.dragAndDrop(
+      await this.comfyPage.canvasOps.dragAndDrop(
         { x: target.x - 2, y: target.y - 1 },
         bottomRight
       )

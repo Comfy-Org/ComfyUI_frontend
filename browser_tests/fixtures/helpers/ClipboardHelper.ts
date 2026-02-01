@@ -9,10 +9,10 @@ export class ClipboardHelper {
   ) {}
 
   async copy(locator?: Locator | null): Promise<void> {
-    await this.keyboard.ctrlSend('KeyC', locator ?? this.canvas)
+    await this.keyboard.ctrlSend('KeyC', locator === undefined ? null : locator)
   }
 
   async paste(locator?: Locator | null): Promise<void> {
-    await this.keyboard.ctrlSend('KeyV', locator ?? this.canvas)
+    await this.keyboard.ctrlSend('KeyV', locator === undefined ? null : locator)
   }
 }

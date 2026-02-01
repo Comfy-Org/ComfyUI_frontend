@@ -1050,11 +1050,11 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   }) => {
     // Setup workflow with a KSampler node
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-    await comfyPage.waitForGraphNodes(0)
+    await comfyPage.nodeOps.waitForGraphNodes(0)
     await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
     await comfyPage.nextFrame()
     await comfyPage.searchBox.fillAndSelectFirstNode('KSampler')
-    await comfyPage.waitForGraphNodes(1)
+    await comfyPage.nodeOps.waitForGraphNodes(1)
 
     // Convert the KSampler node to a subgraph
     let ksamplerNode = (
