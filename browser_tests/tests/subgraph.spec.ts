@@ -781,6 +781,8 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       // Reload the page
       await comfyPage.page.reload()
       await comfyPage.setup()
+      await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+      await comfyPage.nextFrame()
 
       // Navigate into subgraph
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')

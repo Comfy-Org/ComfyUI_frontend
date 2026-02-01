@@ -20,26 +20,26 @@ export class KeyboardHelper {
   }
 
   async selectAll(locator?: Locator | null): Promise<void> {
-    await this.ctrlSend('KeyA', locator ?? this.canvas)
+    await this.ctrlSend('KeyA', locator)
   }
 
   async bypass(locator?: Locator | null): Promise<void> {
-    await this.ctrlSend('KeyB', locator ?? this.canvas)
+    await this.ctrlSend('KeyB', locator)
   }
 
   async undo(locator?: Locator | null): Promise<void> {
-    await this.ctrlSend('KeyZ', locator ?? this.canvas)
+    await this.ctrlSend('KeyZ', locator)
   }
 
   async redo(locator?: Locator | null): Promise<void> {
-    await this.ctrlSend('KeyY', locator ?? this.canvas)
+    await this.ctrlSend('KeyY', locator)
   }
 
   async moveUp(locator?: Locator | null): Promise<void> {
-    await this.ctrlSend('ArrowUp', locator ?? this.canvas)
+    await this.ctrlSend('ArrowUp', locator)
   }
 
   async moveDown(locator?: Locator | null): Promise<void> {
-    await this.ctrlSend('ArrowDown', locator ?? this.canvas)
+    await this.ctrlSend('ArrowDown', locator)
   }
 }

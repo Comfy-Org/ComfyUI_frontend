@@ -385,6 +385,7 @@ test.describe('Node library sidebar', () => {
     ])
 
     const tab = comfyPage.menu.nodeLibraryTab
+    await tab.open()
     await tab.nodeLibrarySearchBoxInput.fill('KSampler')
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
   })

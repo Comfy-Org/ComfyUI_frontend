@@ -39,9 +39,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   get nodeLibrarySearchBoxInput() {
-    return this.page
-      .getByTestId(TestIds.sidebar.nodeLibrarySearch)
-      .locator('input')
+    return this.page.getByPlaceholder('Search Nodes...')
   }
 
   get nodeLibraryTree() {

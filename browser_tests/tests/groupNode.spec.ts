@@ -29,7 +29,7 @@ test.describe('Group Node', { tag: '@node' }, () => {
     test('Is added to node library sidebar', async ({
       comfyPage: _comfyPage
     }) => {
-      expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
+      expect(await libraryTab.getFolder(groupNodeCategory).count()).toBe(1)
     })
 
     test('Can be added to canvas using node library sidebar', async ({

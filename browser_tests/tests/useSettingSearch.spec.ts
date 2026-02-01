@@ -121,15 +121,13 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     await expect(settingsDialog).toBeVisible()
 
     // Click on a specific category (Appearance) to verify category switching
-    const appearanceCategory = comfyPage.page.getByTestId(
-      'settings-tab-Appearance'
-    )
+    const appearanceCategory = comfyPage.page.getByRole('option', {
+      name: 'Appearance'
+    })
     await appearanceCategory.click()
 
-    // Verify the category is selected by checking if its parent option has the selected class
-    await expect(appearanceCategory.locator('xpath=ancestor::li')).toHaveClass(
-      /p-listbox-option-selected/
-    )
+    // Verify the category is selected
+    await expect(appearanceCategory).toHaveClass(/p-listbox-option-selected/)
   })
 
   test('settings content area is visible', async ({ comfyPage }) => {
