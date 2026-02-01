@@ -21,7 +21,7 @@ function createAsset(
     tags: [],
     is_immutable: false,
     ...options
-  } as AssetItem
+  } satisfies AssetItem
 }
 
 describe('filterByCategory', () => {
