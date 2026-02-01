@@ -49,20 +49,6 @@
         </template>
       </MultiSelect>
 
-      <!-- Media type filter -->
-      <MultiSelect
-        v-model="selectedMediaTypes"
-        :label="$t('discover.filters.mediaType')"
-        :options="mediaTypeOptions"
-        :show-selected-count="true"
-        :show-clear-button="true"
-        class="w-40"
-      >
-        <template #icon>
-          <i class="icon-[lucide--image]" />
-        </template>
-      </MultiSelect>
-
       <!-- Open source toggle -->
       <Button
         :variant="openSourceOnly ? 'primary' : 'secondary'"
@@ -252,31 +238,28 @@ const hoveredTemplate = ref<string | null>(null)
 
 const selectedTags = ref<Array<{ name: string; value: string }>>([])
 const selectedModels = ref<Array<{ name: string; value: string }>>([])
-const selectedMediaTypes = ref<Array<{ name: string; value: string }>>([])
 const openSourceOnly = ref(false)
 
+// Store initial facet values to preserve filter options
+const initialFacets = ref<Record<string, Record<string, number>> | null>(null)
+
 const tagOptions = computed(() => {
-  if (!results.value?.facets?.tags) return []
-  return Object.entries(results.value.facets.tags).map(([tag, count]) => ({
+  const facets = initialFacets.value?.tags ?? results.value?.facets?.tags
+  if (!facets) return []
+  return Object.entries(facets).map(([tag, count]) => ({
     name: `${tag} (${count})`,
     value: tag
   }))
 })
 
 const modelOptions = computed(() => {
-  if (!results.value?.facets?.models) return []
-  return Object.entries(results.value.facets.models).map(([model, count]) => ({
+  const facets = initialFacets.value?.models ?? results.value?.facets?.models
+  if (!facets) return []
+  return Object.entries(facets).map(([model, count]) => ({
     name: `${model} (${count})`,
     value: model
   }))
 })
-
-const mediaTypeOptions = computed(() => [
-  { name: 'Image', value: 'image' },
-  { name: 'Video', value: 'video' },
-  { name: 'Audio', value: 'audio' },
-  { name: '3D', value: '3d' }
-])
 
 function buildFacetFilters(): string[][] {
   const filters: string[][] = []
@@ -287,9 +270,6 @@ function buildFacetFilters(): string[][] {
   if (selectedModels.value.length > 0) {
     filters.push(selectedModels.value.map((m) => `models:${m.value}`))
   }
-  if (selectedMediaTypes.value.length > 0) {
-    filters.push(selectedMediaTypes.value.map((m) => `media_type:${m.value}`))
-  }
   if (openSourceOnly.value) {
     filters.push(['open_source:true'])
   }
@@ -298,12 +278,17 @@ function buildFacetFilters(): string[][] {
 }
 
 async function performSearch() {
-  await search({
+  const result = await search({
     query: searchQuery.value,
     pageSize: 24,
     pageNumber: currentPage.value,
     facetFilters: buildFacetFilters()
   })
+
+  // Store initial facets on first search (no filters applied)
+  if (!initialFacets.value && result.facets) {
+    initialFacets.value = result.facets
+  }
 }
 
 function handleSearch() {
@@ -321,7 +306,7 @@ function handleTemplateClick(_template: AlgoliaWorkflowTemplate) {
 }
 
 watch(
-  [selectedTags, selectedModels, selectedMediaTypes, openSourceOnly],
+  [selectedTags, selectedModels, openSourceOnly],
   () => {
     currentPage.value = 0
     performSearch()
