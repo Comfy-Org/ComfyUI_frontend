@@ -475,6 +475,7 @@ export const useQueueStore = defineStore('queue', () => {
   const maxHistoryItems = ref(64)
   const isLoading = ref(false)
 
+  // Scoped per-store instance; incremented to dedupe concurrent update() calls
   let updateRequestId = 0
 
   const tasks = computed<TaskItemImpl[]>(
