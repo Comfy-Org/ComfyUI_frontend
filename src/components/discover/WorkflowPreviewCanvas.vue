@@ -84,10 +84,6 @@ function initCanvas() {
   canvas.value = new LGraphCanvas(canvasRef.value, graph.value, {
     skip_render: true
   })
-  canvas.value.state.readOnly = true
-  canvas.value.allow_searchbox = false
-  canvas.value.allow_dragnodes = false
-  canvas.value.allow_interaction = false
   canvas.value.startRendering()
   isInitialized.value = true
 }

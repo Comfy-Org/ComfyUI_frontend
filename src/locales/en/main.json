@@ -21,7 +21,8 @@
       "runWorkflow": "Run Workflow",
       "makeCopy": "Make a Copy",
       "workflowPreview": "Workflow Preview",
-      "previewError": "Failed to load preview"
+      "previewError": "Failed to load preview",
+      "previewHint": "Make a copy to save your changes"
     }
   },
   "g": {

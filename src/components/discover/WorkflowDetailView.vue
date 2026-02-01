@@ -156,8 +156,22 @@
       </div>
 
       <!-- Right column: Workflow preview -->
-      <div class="min-h-0 min-w-0 flex-1">
+      <div class="relative min-h-0 min-w-0 flex-1">
         <WorkflowPreviewCanvas :workflow-url="workflow.workflow_url" />
+        <!-- Bottom overlay with CTA -->
+        <div
+          class="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-center bg-gradient-to-t from-black/60 to-transparent p-6"
+        >
+          <div class="pointer-events-auto flex flex-col items-center gap-3">
+            <span class="text-sm text-white/80">
+              {{ $t('discover.detail.previewHint') }}
+            </span>
+            <Button variant="primary" size="md" @click="handleMakeCopy">
+              <i class="icon-[lucide--copy]" />
+              {{ $t('discover.detail.makeCopy') }}
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
