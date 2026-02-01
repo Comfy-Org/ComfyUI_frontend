@@ -1,6 +1,7 @@
-import type { ComfyApp } from '@/scripts/app'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
+import type { ComfyApp } from '@/scripts/app'
+import type { useWorkspaceStore } from '@/stores/workspaceStore'
 
 interface AppReadiness {
   featureFlagsReceived: boolean
@@ -29,6 +30,12 @@ declare global {
     // Feature flags test globals
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
+
+    /**
+     * WebSocket store used by test fixtures for mocking WebSocket connections.
+     * @see browser_tests/fixtures/ws.ts
+     */
+    __ws__?: Record<string, WebSocket>
   }
 
   const app: ComfyApp | undefined
@@ -37,4 +44,15 @@ declare global {
   const LGraphBadge: typeof LGraphBadge | undefined
 }
 
-export {}
+/**
+ * Internal store type for browser test access.
+ * Used to access properties not exposed via the public ExtensionManager interface.
+ *
+ * @example
+ * ```ts
+ * await page.evaluate(() => {
+ *   ;(window.app!.extensionManager as WorkspaceStore).workflow.syncWorkflows()
+ * })
+ * ```
+ */
+export type WorkspaceStore = ReturnType<typeof useWorkspaceStore>

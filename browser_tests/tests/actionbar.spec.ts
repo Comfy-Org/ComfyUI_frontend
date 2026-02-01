@@ -4,6 +4,7 @@ import { expect, mergeTests } from '@playwright/test'
 import type { StatusWsMessage } from '../../src/schemas/apiSchema'
 import { comfyPageFixture } from '../fixtures/ComfyPage'
 import { webSocketFixture } from '../fixtures/ws'
+import type { WorkspaceStore } from '../types/globals'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -54,7 +55,9 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
         )
         node!.widgets![0].value = value
 
-        window.app!.extensionManager.workflow.activeWorkflow?.changeTracker.checkState()
+        ;(
+          window.app!.extensionManager as WorkspaceStore
+        ).workflow.activeWorkflow?.changeTracker.checkState()
       }, value)
     }
 

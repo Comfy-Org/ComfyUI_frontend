@@ -34,6 +34,7 @@ import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
 import type { NodeReference } from './utils/litegraphUtils'
+import type { WorkspaceStore } from '../types/globals'
 
 dotenv.config()
 
@@ -139,7 +140,9 @@ class ConfirmDialog {
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
-      () => window.app?.extensionManager?.workflow?.isBusy === false,
+      () =>
+        (window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          ?.isBusy === false,
       undefined,
       { timeout: 3000 }
     )
@@ -387,7 +390,7 @@ export class ComfyPage {
 
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      window.app!.extensionManager.focusMode = focusMode
+      ;(window.app!.extensionManager as WorkspaceStore).focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
   }

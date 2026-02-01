@@ -111,5 +111,3 @@ const workspaceStoreSetup = () => {
 }
 
 export const useWorkspaceStore = defineStore('workspace', workspaceStoreSetup)
-
-export type WorkspaceStore = ReturnType<typeof useWorkspaceStore>

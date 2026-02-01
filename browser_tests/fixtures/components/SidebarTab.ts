@@ -1,5 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
+import type { WorkspaceStore } from '../../types/globals'
 import { TestIds } from '../selectors'
 
 class SidebarTab {
@@ -154,7 +155,9 @@ export class WorkflowsSidebarTab extends SidebarTab {
 
     // Wait for workflow service to finish renaming
     await this.page.waitForFunction(
-      () => !window.app?.extensionManager?.workflow?.isBusy,
+      () =>
+        !(window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          ?.isBusy,
       undefined,
       { timeout: 3000 }
     )

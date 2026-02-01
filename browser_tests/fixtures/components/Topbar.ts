@@ -1,5 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
+import type { WorkspaceStore } from '../../types/globals'
+
 export class Topbar {
   private readonly menuLocator: Locator
   private readonly menuTrigger: Locator
@@ -85,7 +87,7 @@ export class Topbar {
 
     // Wait for workflow service to finish saving
     await this.page.waitForFunction(
-      () => !window.app!.extensionManager.workflow.isBusy,
+      () => !(window.app!.extensionManager as WorkspaceStore).workflow.isBusy,
       undefined,
       { timeout: 3000 }
     )

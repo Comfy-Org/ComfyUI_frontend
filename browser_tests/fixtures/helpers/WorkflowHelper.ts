@@ -1,9 +1,7 @@
 import { readFileSync } from 'fs'
 
-import type { useWorkspaceStore } from '../../../src/stores/workspaceStore'
+import type { WorkspaceStore } from '../../types/globals'
 import type { ComfyPage } from '../ComfyPage'
-
-type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 export type FolderStructure = {
   [key: string]: FolderStructure | string
@@ -45,7 +43,9 @@ export class WorkflowHelper {
     }
 
     await this.comfyPage.page.evaluate(async () => {
-      await window.app!.extensionManager.workflow.syncWorkflows()
+      await (
+        window.app!.extensionManager as WorkspaceStore
+      ).workflow.syncWorkflows()
     })
 
     // Wait for Vue to re-render the workflow list

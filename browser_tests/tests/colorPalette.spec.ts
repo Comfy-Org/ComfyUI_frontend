@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { WorkspaceStore } from '../types/globals'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -178,7 +179,9 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
   test('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate((p) => {
-      window.app!.extensionManager.colorPalette.addCustomColorPalette(p)
+      ;(
+        window.app!.extensionManager as WorkspaceStore
+      ).colorPalette.addCustomColorPalette(p)
     }, customColorPalettes.obsidian_dark)
     expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
 
