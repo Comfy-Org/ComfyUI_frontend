@@ -15263,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Genera un video a partir de una imagen y un prompt opcional.",
+    "display_name": "Generación de video de imagen a video Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Una imagen que se usará como el primer fotograma del video generado."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Un prompt de texto opcional para la generación de video (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Genera un video a partir de un prompt de texto.",
+    "display_name": "Generación de video de texto a video Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Una descripción textual para la generación de video, con una longitud máxima de 2000 caracteres."
+      },
+      "seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Extiende un video existente generando fotogramas adicionales.",
+    "display_name": "Extensión de video Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "end_frame": {
+        "name": "fotograma_final"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la extensión de video."
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Un prompt de texto opcional para el video extendido (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "El video fuente a extender."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Generar video a partir de imagen y texto opcional",
     "display_name": "Generación de Video a partir de Imagen Vidu",
@@ -15297,6 +15410,49 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para la generación de video (0 para aleatorio)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Genera un video con múltiples transiciones de fotogramas clave.",
+    "display_name": "Generación de video multifotograma Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "frames": {
+        "name": "fotogramas",
+        "tooltip": "Número de transiciones de fotogramas clave (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duración1"
+      },
+      "frames_duration2": {
+        "name": "duración2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "start_image": {
+        "name": "imagen_inicial",
+        "tooltip": "La imagen del fotograma inicial. La relación de aspecto debe estar entre 1:4 y 4:1."
       }
     },
     "outputs": {

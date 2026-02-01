@@ -15263,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Générez une vidéo à partir d’une image et d’une invite optionnelle.",
+    "display_name": "Génération d’image en vidéo Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Une image à utiliser comme première image de la vidéo générée."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de vidéo."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une invite textuelle optionnelle pour la génération de vidéo (max. 2000 caractères)."
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Générez une vidéo à partir d’une invite textuelle.",
+    "display_name": "Génération de vidéo à partir de texte Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de vidéo."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle pour la génération de vidéo, longueur maximale de 2000 caractères."
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Prolongez une vidéo existante en générant des images supplémentaires.",
+    "display_name": "Extension de vidéo Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "end_frame": {
+        "name": "image_finale"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour l’extension de la vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une invite textuelle optionnelle pour la vidéo étendue (max. 2000 caractères)."
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "La vidéo source à prolonger."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Générer une vidéo à partir d'une image et d'un éventuel prompt",
     "display_name": "Génération vidéo Vidu à partir d'image",
@@ -15297,6 +15410,49 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour la génération vidéo (0 pour aléatoire)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Générez une vidéo avec plusieurs transitions d’images clés.",
+    "display_name": "Génération de vidéo multi-images Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "frames": {
+        "name": "images",
+        "tooltip": "Nombre de transitions d’images clés (2-9)."
+      },
+      "frames_duration1": {
+        "name": "durée1"
+      },
+      "frames_duration2": {
+        "name": "durée2"
+      },
+      "frames_prompt1": {
+        "name": "invite1"
+      },
+      "frames_prompt2": {
+        "name": "invite2"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "start_image": {
+        "name": "image_de_départ",
+        "tooltip": "L’image de départ. Le rapport d’aspect doit être compris entre 1:4 et 4:1."
       }
     },
     "outputs": {

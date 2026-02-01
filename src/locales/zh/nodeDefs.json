@@ -15290,6 +15290,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "根据图像和可选提示生成视频。",
+    "display_name": "Vidu Q3 图像转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "用作生成视频起始帧的图像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于视频生成的可选文本提示（最多2000字符）。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "根据文本提示生成视频。",
+    "display_name": "Vidu Q3 文本转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于视频生成的文本描述，最大长度为2000字符。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "通过生成额外帧来扩展已有视频。",
+    "display_name": "Vidu 视频扩展",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于视频扩展的模型。"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于扩展视频的可选文本提示（最多2000字符）。"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要扩展的源视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "从图像和可选提示生成视频",
     "display_name": "Vidu 图像转视频生成",
@@ -15324,6 +15437,49 @@
       "seed": {
         "name": "随机种",
         "tooltip": "视频生成的种子值（0 表示随机）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "生成包含多个关键帧过渡的视频。",
+    "display_name": "Vidu 多帧视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "关键帧过渡数量（2-9）。"
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "起始帧图像。宽高比需在1:4到4:1之间。"
       }
     },
     "outputs": {

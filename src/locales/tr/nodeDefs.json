@@ -15263,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Bir görüntüden ve isteğe bağlı bir istemden video oluşturun.",
+    "display_name": "Vidu Q3 Görüntüden Videoya Üretim",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Oluşturulan videonun başlangıç karesi olarak kullanılacak bir görüntü."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video üretimi için kullanılacak model."
+      },
+      "model_audio": {
+        "name": "ses"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Video üretimi için isteğe bağlı metin istemi (en fazla 2000 karakter)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Bir metin isteminden video oluşturun.",
+    "display_name": "Vidu Q3 Metinden Videoya Üretim",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video üretimi için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "model_audio": {
+        "name": "ses"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Video üretimi için metinsel açıklama, maksimum 2000 karakter."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Mevcut bir videoyu ek kareler üreterek uzatın.",
+    "display_name": "Vidu Video Uzatma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "end_frame": {
+        "name": "bitiş karesi"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video uzatma için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Uzatılan video için isteğe bağlı metin istemi (en fazla 2000 karakter)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Uzatılacak kaynak video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Görsel ve isteğe bağlı prompt'tan video oluştur",
     "display_name": "Vidu Görselden Video Oluşturma",
@@ -15297,6 +15410,49 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Video oluşturma için tohum (rastgele için 0)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Birden fazla ana kare geçişiyle video oluşturun.",
+    "display_name": "Vidu Çok Kareli Video Üretimi",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "frames": {
+        "name": "kareler",
+        "tooltip": "Ana kare geçiş sayısı (2-9)."
+      },
+      "frames_duration1": {
+        "name": "süre1"
+      },
+      "frames_duration2": {
+        "name": "süre2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "başlangıç_görüntüsü",
+        "tooltip": "Başlangıç karesi görüntüsü. En-boy oranı 1:4 ile 4:1 arasında olmalıdır."
       }
     },
     "outputs": {

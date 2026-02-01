@@ -15263,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "إنشاء فيديو من صورة ونص اختياري.",
+    "display_name": "توليد فيديو من صورة Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صورة تُستخدم كإطار بداية للفيديو المُنتج."
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "النص",
+        "tooltip": "نص اختياري لتوليد الفيديو (بحد أقصى ٢٠٠٠ حرف)."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "إنشاء فيديو من نص.",
+    "display_name": "توليد فيديو من نص Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتوليد الفيديو."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبة العرض إلى الارتفاع"
+      },
+      "model_audio": {
+        "name": "الصوت"
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "النص",
+        "tooltip": "وصف نصي لتوليد الفيديو، بحد أقصى ٢٠٠٠ حرف."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "تمديد فيديو موجود بإضافة إطارات جديدة.",
+    "display_name": "تمديد فيديو Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "end_frame": {
+        "name": "الإطار النهائي"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المستخدم لتمديد الفيديو."
+      },
+      "model_duration": {
+        "name": "المدة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "prompt": {
+        "name": "النص",
+        "tooltip": "نص اختياري للفيديو الممدد (بحد أقصى ٢٠٠٠ حرف)."
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "الفيديو المصدر للتمديد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "إنشاء فيديو من صورة ونص اختياري",
     "display_name": "إنشاء الفيديو من الصورة باستخدام Vidu",
@@ -15297,6 +15410,49 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "البذرة لتوليد الفيديو (0 للعشوائية)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "إنشاء فيديو بانتقالات بين إطارات رئيسية متعددة.",
+    "display_name": "توليد فيديو متعدد الإطارات Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "frames": {
+        "name": "الإطارات",
+        "tooltip": "عدد انتقالات الإطارات الرئيسية (٢-٩)."
+      },
+      "frames_duration1": {
+        "name": "المدة١"
+      },
+      "frames_duration2": {
+        "name": "المدة٢"
+      },
+      "frames_prompt1": {
+        "name": "النص١"
+      },
+      "frames_prompt2": {
+        "name": "النص٢"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "start_image": {
+        "name": "الصورة الابتدائية",
+        "tooltip": "صورة الإطار الأول. يجب أن تكون نسبة العرض إلى الارتفاع بين ١:٤ و٤:١."
       }
     },
     "outputs": {
