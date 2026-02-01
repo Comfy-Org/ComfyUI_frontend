@@ -1,4 +1,3 @@
-import axios from 'axios'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -507,12 +506,11 @@ export const useWorkflowTemplatesStore = defineStore(
 
     async function fetchLogoIndex(): Promise<LogoIndex> {
       try {
-        const response = await axios.get(
-          api.fileURL('/templates/index_logo.json')
-        )
-        const contentType = response.headers['content-type']
+        const response = await api.fetchApi('/templates/index_logo.json')
+        const contentType = response.headers.get('content-type')
         if (!contentType?.includes('application/json')) return {}
-        const result = zLogoIndex.safeParse(response.data)
+        const data = await response.json()
+        const result = zLogoIndex.safeParse(data)
         return result.success ? result.data : {}
       } catch {
         return {}

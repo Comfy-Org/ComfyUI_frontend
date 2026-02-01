@@ -942,6 +942,9 @@
       "searchPlaceholder": "Search..."
     }
   },
+  "templates": {
+    "logoProviderSeparator": " & "
+  },
   "graphCanvasMenu": {
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",

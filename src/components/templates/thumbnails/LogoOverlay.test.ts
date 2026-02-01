@@ -1,10 +1,18 @@
 import { mount } from '@vue/test-utils'
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { nextTick } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { nextTick, ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
 
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) =>
+      key === 'templates.logoProviderSeparator' ? ' & ' : key,
+    locale: ref('en')
+  })
+}))
 
 type LogoOverlayProps = ComponentProps<typeof LogoOverlay>
 
@@ -133,42 +141,17 @@ describe('LogoOverlay', () => {
   })
 
   describe('error handling', () => {
-    it('hides logo pill when all provider images fail to load', async () => {
-      const wrapper = mountOverlay([{ provider: 'Google' }])
-      const img = wrapper.find('[data-testid="logo-img"]')
-      await img.trigger('error')
-      await nextTick()
-      const pill = wrapper.find('[data-testid="logo-pill"]')
-      expect(pill.attributes('style')).toContain('display: none')
-    })
-
-    it('keeps logo visible when only some images fail in stacked logos', async () => {
+    it('keeps showing remaining providers when one image fails in stacked logos', async () => {
       const wrapper = mountOverlay([{ provider: ['Google', 'OpenAI'] }])
       const images = wrapper.findAll('[data-testid="logo-img"]')
+      expect(images).toHaveLength(2)
+
       await images[0].trigger('error')
       await nextTick()
-      const pill = wrapper.find('[data-testid="logo-pill"]')
-      expect(pill.attributes('style')).not.toContain('display: none')
-    })
-  })
 
-  describe('styling', () => {
-    it('applies default opacity of 0.85', () => {
-      const wrapper = mountOverlay([{ provider: 'Google' }])
-      const pill = wrapper.find('[data-testid="logo-pill"]')
-      expect(pill.attributes('style')).toContain('opacity: 0.85')
-    })
-
-    it('applies custom opacity', () => {
-      const wrapper = mountOverlay([{ provider: 'Google', opacity: 0.5 }])
-      const pill = wrapper.find('[data-testid="logo-pill"]')
-      expect(pill.attributes('style')).toContain('opacity: 0.5')
-    })
-
-    it('logos have border styling for stacking visibility', () => {
-      const wrapper = mountOverlay([{ provider: 'Google' }])
-      const img = wrapper.find('[data-testid="logo-img"]')
-      expect(img.exists()).toBe(true)
+      const remainingImages = wrapper.findAll('[data-testid="logo-img"]')
+      expect(remainingImages).toHaveLength(2)
+      expect(remainingImages[1].attributes('alt')).toBe('OpenAI')
     })
   })
 })

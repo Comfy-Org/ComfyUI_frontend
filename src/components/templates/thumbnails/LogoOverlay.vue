@@ -37,20 +37,22 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { i18n } from '@/i18n'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'
 import { cn } from '@/utils/tailwindUtil'
 
+const { t, locale } = useI18n()
+
 function formatProviderList(providers: string[]): string {
-  const locale = String(i18n.global.locale.value)
+  const localeValue = String(locale.value)
   try {
-    return new Intl.ListFormat(locale, {
+    return new Intl.ListFormat(localeValue, {
       style: 'long',
       type: 'conjunction'
     }).format(providers)
   } catch {
-    return providers.join(' & ')
+    return providers.join(t('templates.logoProviderSeparator'))
   }
 }
 
@@ -97,8 +99,10 @@ const validLogos = computed<ValidatedLogo[]>(() => {
 
     if (validProviders.length === 0) return
 
+    const providerKey = validProviders.join('-')
+    const layoutKey = `${logo.position ?? ''}-${logo.opacity ?? ''}-${logo.gap ?? ''}`
     result.push({
-      key: validProviders.join('-') || `logo-${index}`,
+      key: providerKey ? `${providerKey}-${layoutKey}` : `logo-${index}`,
       providers: validProviders,
       urls: validUrls,
       label: logo.label ?? formatProviderList(validProviders),
