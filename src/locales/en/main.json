@@ -20,7 +20,8 @@
       "author": "Comfy Org",
       "runWorkflow": "Run Workflow",
       "makeCopy": "Make a Copy",
-      "workflowPreview": "Workflow Preview"
+      "workflowPreview": "Workflow Preview",
+      "previewError": "Failed to load preview"
     }
   },
   "g": {

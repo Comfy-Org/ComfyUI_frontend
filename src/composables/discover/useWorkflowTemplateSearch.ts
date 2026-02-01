@@ -26,7 +26,13 @@ const RETRIEVE_ATTRIBUTES = [
   'tags',
   'models',
   'open_source',
-  'requires_custom_nodes'
+  'requires_custom_nodes',
+  'author_name',
+  'author_avatar_url',
+  'run_count',
+  'view_count',
+  'copy_count',
+  'workflow_url'
 ] as const
 
 export function useWorkflowTemplateSearch() {

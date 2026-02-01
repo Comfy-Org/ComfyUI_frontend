@@ -178,17 +178,8 @@
       </div>
 
       <!-- Right column: Workflow preview -->
-      <div class="flex flex-1 flex-col bg-graph-canvas">
-        <div
-          class="flex size-full items-center justify-center text-muted-foreground"
-        >
-          <div class="flex flex-col items-center gap-3">
-            <i class="icon-[lucide--workflow] size-16 opacity-30" />
-            <span class="text-sm">{{
-              $t('discover.detail.workflowPreview')
-            }}</span>
-          </div>
-        </div>
+      <div class="min-h-0 min-w-0 flex-1">
+        <WorkflowPreviewCanvas :workflow-url="workflow.workflow_url" />
       </div>
     </div>
   </div>
@@ -200,6 +191,7 @@ import { useI18n } from 'vue-i18n'
 
 import SquareChip from '@/components/chip/SquareChip.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
+import WorkflowPreviewCanvas from '@/components/discover/WorkflowPreviewCanvas.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { AlgoliaWorkflowTemplate } from '@/types/discoverTypes'
 

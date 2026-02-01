@@ -170,6 +170,22 @@
               >
                 {{ template.title }}
               </h3>
+              <div
+                v-if="template.author_name"
+                class="flex items-center gap-1.5"
+              >
+                <img
+                  :src="
+                    template.author_avatar_url ??
+                    '/assets/images/comfy-logo-single.svg'
+                  "
+                  :alt="template.author_name"
+                  class="size-4 rounded-full bg-secondary-background object-cover"
+                />
+                <span class="text-xs text-muted-foreground">
+                  {{ template.author_name }}
+                </span>
+              </div>
               <p
                 class="line-clamp-2 text-xs text-muted-foreground"
                 :title="template.description"

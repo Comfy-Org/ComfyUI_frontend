@@ -21,7 +21,7 @@ export interface AlgoliaWorkflowTemplate {
   run_count?: number
   view_count?: number
   copy_count?: number
-  workflow_json?: string
+  workflow_url?: string
 }
 
 export type WorkflowTemplateSearchAttribute = keyof AlgoliaWorkflowTemplate
