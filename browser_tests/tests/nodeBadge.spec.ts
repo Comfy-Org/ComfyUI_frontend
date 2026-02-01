@@ -12,8 +12,8 @@ test.beforeEach(async ({ comfyPage }) => {
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
   test('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window['LGraphBadge']
-      const app = window['app'] as ComfyApp
+      const LGraphBadge = window.LGraphBadge
+      const app = window.app as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes
 
@@ -29,8 +29,8 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
 
   test('Can add multiple badges', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window['LGraphBadge']
-      const app = window['app'] as ComfyApp
+      const LGraphBadge = window.LGraphBadge
+      const app = window.app as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes
 
@@ -49,8 +49,8 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
 
   test('Can add badge left-side', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window['LGraphBadge']
-      const app = window['app'] as ComfyApp
+      const LGraphBadge = window.LGraphBadge
+      const app = window.app as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes
 

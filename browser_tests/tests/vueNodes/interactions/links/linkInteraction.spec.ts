@@ -25,7 +25,7 @@ async function getInputLinkDetails(
 ) {
   return await page.evaluate(
     ([targetNodeId, targetSlot]) => {
-      const app = window['app']
+      const app = window.app
       const graph = app?.canvas?.graph ?? app?.graph
       if (!graph) return null
 
@@ -437,7 +437,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     // This avoids relying on an exact path hit-test position.
     await comfyPage.page.evaluate(
       ([targetNodeId, targetSlot, clientPoint]) => {
-        const app = window['app']
+        const app = window.app
         const graph = app?.canvas?.graph ?? app?.graph
         if (!graph) throw new Error('Graph not available')
         const node = graph.getNodeById(targetNodeId)
@@ -525,7 +525,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
     // This avoids relying on an exact path hit-test position.
     await comfyPage.page.evaluate(
       ([targetNodeId, targetSlot, clientPoint]) => {
-        const app = window['app']
+        const app = window.app
         const graph = app?.canvas?.graph ?? app?.graph
         if (!graph) throw new Error('Graph not available')
         const node = graph.getNodeById(targetNodeId)
@@ -906,7 +906,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
 
       // Pinned endpoint should not change with mouse movement while menu is open
       const before = await comfyPage.page.evaluate(() => {
-        const snap = window['app']?.canvas?.linkConnector?.state?.snapLinksPos
+        const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
         return Array.isArray(snap) ? [snap[0], snap[1]] : null
       })
       expect(before).not.toBeNull()
@@ -914,7 +914,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
       // Move mouse elsewhere and verify snap position is unchanged
       await comfyMouse.move({ x: dropPos.x + 160, y: dropPos.y + 100 })
       const after = await comfyPage.page.evaluate(() => {
-        const snap = window['app']?.canvas?.linkConnector?.state?.snapLinksPos
+        const snap = window.app?.canvas?.linkConnector?.state?.snapLinksPos
         return Array.isArray(snap) ? [snap[0], snap[1]] : null
       })
       expect(after).toEqual(before)

@@ -83,7 +83,7 @@ class ComfyMenu {
     await this.themeToggleButton.click()
     await this.page.waitForFunction(
       (prevTheme) => {
-        const settings = window['app']?.ui?.settings
+        const settings = window.app?.ui?.settings
         return (
           settings &&
           settings.getSettingValue('Comfy.ColorPalette') !== prevTheme
@@ -96,9 +96,7 @@ class ComfyMenu {
 
   async getThemeId() {
     return await this.page.evaluate(async () => {
-      return await window['app'].ui.settings.getSettingValue(
-        'Comfy.ColorPalette'
-      )
+      return await window.app.ui.settings.getSettingValue('Comfy.ColorPalette')
     })
   }
 }
@@ -136,7 +134,7 @@ class ConfirmDialog {
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
-      () => window['app']?.extensionManager?.workflow?.isBusy === false,
+      () => window.app?.extensionManager?.workflow?.isBusy === false,
       undefined,
       { timeout: 3000 }
     )
@@ -307,9 +305,9 @@ export class ComfyPage {
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.page.waitForFunction(
       () =>
-        // window['app'] => GraphCanvas ready
-        // window['app'].extensionManager => GraphView ready
-        window['app'] && window['app'].extensionManager
+        // window.app => GraphCanvas ready
+        // window.app.extensionManager => GraphView ready
+        window.app && window.app.extensionManager
     )
     await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
     await this.nextFrame()
@@ -384,7 +382,7 @@ export class ComfyPage {
 
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      window['app'].extensionManager.focusMode = focusMode
+      window.app.extensionManager.focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
   }

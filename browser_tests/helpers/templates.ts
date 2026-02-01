@@ -33,7 +33,7 @@ export class ComfyTemplates {
 
   async getAllTemplates(): Promise<TemplateInfo[]> {
     const templates: WorkflowTemplates[] = await this.page.evaluate(() =>
-      window['app'].api.getCoreWorkflowTemplates()
+      window.app.api.getCoreWorkflowTemplates()
     )
     return templates.flatMap((t) => t.templates)
   }

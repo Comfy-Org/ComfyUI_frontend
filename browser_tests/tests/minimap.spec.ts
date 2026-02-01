@@ -8,9 +8,7 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.workflow.loadWorkflow('default')
-    await comfyPage.page.waitForFunction(
-      () => window['app'] && window['app'].canvas
-    )
+    await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
   })
 
   test('Validate minimap is visible by default', async ({ comfyPage }) => {

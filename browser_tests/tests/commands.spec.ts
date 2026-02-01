@@ -9,25 +9,25 @@ test.beforeEach(async ({ comfyPage }) => {
 test.describe('Keybindings', { tag: '@keyboard' }, () => {
   test('Should execute command', async ({ comfyPage }) => {
     await comfyPage.command.registerCommand('TestCommand', () => {
-      window['foo'] = true
+      window.foo = true
     })
 
     await comfyPage.command.executeCommand('TestCommand')
-    expect(await comfyPage.page.evaluate(() => window['foo'])).toBe(true)
+    expect(await comfyPage.page.evaluate(() => window.foo)).toBe(true)
   })
 
   test('Should execute async command', async ({ comfyPage }) => {
     await comfyPage.command.registerCommand('TestCommand', async () => {
       await new Promise<void>((resolve) =>
         setTimeout(() => {
-          window['foo'] = true
+          window.foo = true
           resolve()
         }, 5)
       )
     })
 
     await comfyPage.command.executeCommand('TestCommand')
-    expect(await comfyPage.page.evaluate(() => window['foo'])).toBe(true)
+    expect(await comfyPage.page.evaluate(() => window.foo)).toBe(true)
   })
 
   test('Should handle command errors', async ({ comfyPage }) => {

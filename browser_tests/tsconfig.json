@@ -7,5 +7,10 @@
     "noUnusedParameters": true,
     "resolveJsonModule": true
   },
-  "include": ["**/*.ts", "../src/types/**/*.d.ts", "../global.d.ts"]
+  "include": [
+    "**/*.ts",
+    "../src/types/**/*.d.ts",
+    "../global.d.ts",
+    "types/**/*.d.ts"
+  ]
 }

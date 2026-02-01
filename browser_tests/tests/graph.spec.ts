@@ -13,7 +13,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
     await comfyPage.workflow.loadWorkflow('inputs/input_order_swap')
     expect(
       await comfyPage.page.evaluate(() => {
-        return window['app'].graph.links.get(1)?.target_slot
+        return window.app.graph.links.get(1)?.target_slot
       })
     ).toBe(1)
   })

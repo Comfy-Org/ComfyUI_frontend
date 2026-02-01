@@ -27,7 +27,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     type: 'inputs' | 'outputs'
   ): Promise<number> {
     return await comfyPage.page.evaluate((slotType) => {
-      return window['app'].canvas.graph[slotType]?.length || 0
+      return window.app.canvas.graph[slotType]?.length || 0
     }, type)
   }
 
@@ -36,7 +36,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     comfyPage: typeof test.prototype.comfyPage
   ): Promise<number> {
     return await comfyPage.page.evaluate(() => {
-      return window['app'].canvas.graph.nodes?.length || 0
+      return window.app.canvas.graph.nodes?.length || 0
     })
   }
 
@@ -45,7 +45,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     comfyPage: typeof test.prototype.comfyPage
   ): Promise<boolean> {
     return await comfyPage.page.evaluate(() => {
-      const graph = window['app'].canvas.graph
+      const graph = window.app.canvas.graph
       return graph?.constructor?.name === 'Subgraph'
     })
   }
@@ -132,7 +132,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.inputs?.[0]?.label || null
       })
 
@@ -151,7 +151,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.inputs?.[0]?.label || null
       })
 
@@ -166,7 +166,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.inputs?.[0]?.label || null
       })
 
@@ -183,7 +183,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.inputs?.[0]?.label || null
       })
 
@@ -198,7 +198,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialOutputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.outputs?.[0]?.label || null
       })
 
@@ -216,7 +216,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newOutputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.outputs?.[0]?.label || null
       })
 
@@ -233,7 +233,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.inputs?.[0]?.label || null
       })
 
@@ -254,7 +254,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.inputs?.[0]?.label || null
       })
 
@@ -271,13 +271,13 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await subgraphNode.navigateIntoSubgraph()
 
       const initialInputLabel = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.inputs?.[0]?.label || null
       })
 
       // Use direct pointer event approach to double-click on label
       await comfyPage.page.evaluate(() => {
-        const app = window['app']
+        const app = window.app
         const graph = app.canvas.graph
         const input = graph.inputs?.[0]
 
@@ -326,7 +326,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       await comfyPage.nextFrame()
 
       const newInputName = await comfyPage.page.evaluate(() => {
-        const graph = window['app'].canvas.graph
+        const graph = window.app.canvas.graph
         return graph.inputs?.[0]?.label || null
       })
 
@@ -340,7 +340,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
         'subgraphs/subgraph-compressed-target-slot'
       )
       const step = await comfyPage.page.evaluate(() => {
-        return window['app'].graph.nodes[0].widgets[0].options.step
+        return window.app.graph.nodes[0].widgets[0].options.step
       })
       expect(step).toBe(10)
     })
@@ -459,7 +459,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       const initialNodeCount = await getGraphNodeCount(comfyPage)
 
       const nodesInSubgraph = await comfyPage.page.evaluate(() => {
-        const nodes = window['app'].canvas.graph.nodes
+        const nodes = window.app.canvas.graph.nodes
         return nodes?.[0]?.id || null
       })
 
@@ -689,7 +689,7 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
 
       // Check that the subgraph node has no widgets after removing the text slot
       const widgetCount = await comfyPage.page.evaluate(() => {
-        return window['app'].canvas.graph.nodes[0].widgets?.length || 0
+        return window.app.canvas.graph.nodes[0].widgets?.length || 0
       })
 
       expect(widgetCount).toBe(0)

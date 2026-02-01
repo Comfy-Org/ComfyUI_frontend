@@ -7,7 +7,7 @@ export class CommandHelper {
 
   async executeCommand(commandId: string): Promise<void> {
     await this.page.evaluate((id: string) => {
-      return window['app'].extensionManager.command.execute(id)
+      return window.app.extensionManager.command.execute(id)
     }, commandId)
   }
 
@@ -17,7 +17,7 @@ export class CommandHelper {
   ): Promise<void> {
     await this.page.evaluate(
       ({ commandId, commandStr }) => {
-        const app = window['app']
+        const app = window.app
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const extensionName = `TestExtension_${randomSuffix}`
 
@@ -41,7 +41,7 @@ export class CommandHelper {
   ): Promise<void> {
     await this.page.evaluate(
       ({ keyCombo, commandStr }) => {
-        const app = window['app']
+        const app = window.app
         const randomSuffix = Math.random().toString(36).substring(2, 8)
         const extensionName = `TestExtension_${randomSuffix}`
         const commandId = `TestCommand_${randomSuffix}`

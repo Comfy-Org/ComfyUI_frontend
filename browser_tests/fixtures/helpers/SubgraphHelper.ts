@@ -27,7 +27,7 @@ export class SubgraphHelper {
     const foundSlot = await this.page.evaluate(
       async (params) => {
         const { slotType, action, targetSlotName } = params
-        const app = window['app']
+        const app = window.app
         const currentGraph = app.canvas.graph
 
         // Check if we're in a subgraph

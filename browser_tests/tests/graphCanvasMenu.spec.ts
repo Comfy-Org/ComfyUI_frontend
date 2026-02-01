@@ -26,7 +26,7 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
         'canvas-with-hidden-links.png'
       )
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
-        return window['LiteGraph'].HIDDEN_LINK
+        return window.LiteGraph.HIDDEN_LINK
       })
       expect(await comfyPage.settings.getSetting('Comfy.LinkRenderMode')).toBe(
         hiddenLinkRenderMode

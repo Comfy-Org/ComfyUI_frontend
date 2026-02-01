@@ -154,7 +154,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
 
     // Wait for workflow service to finish renaming
     await this.page.waitForFunction(
-      () => !window['app']?.extensionManager?.workflow?.isBusy,
+      () => !window.app?.extensionManager?.workflow?.isBusy,
       undefined,
       { timeout: 3000 }
     )

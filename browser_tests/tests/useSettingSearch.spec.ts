@@ -10,7 +10,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Register test settings to verify hidden/deprecated filtering
     await comfyPage.page.evaluate(() => {
-      window['app'].registerExtension({
+      window.app.registerExtension({
         name: 'TestSettingsExtension',
         settings: [
           {
