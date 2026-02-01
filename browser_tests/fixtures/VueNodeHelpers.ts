@@ -148,9 +148,9 @@ export class VueNodeHelpers {
    * Get a specific widget by node title and widget name
    */
   getWidgetByName(nodeTitle: string, widgetName: string): Locator {
-    return this.getNodeByTitle(nodeTitle).locator(
-      `_vue=[widget.name="${widgetName}"]`
-    )
+    return this.getNodeByTitle(nodeTitle).getByLabel(widgetName, {
+      exact: true
+    })
   }
 
   /**
