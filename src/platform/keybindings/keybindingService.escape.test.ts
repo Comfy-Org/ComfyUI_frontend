@@ -1,4 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
+import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
@@ -16,11 +17,12 @@ vi.mock('@/platform/settings/settingStore', () => ({
   }))
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: vi.fn(() => ({
-    dialogStack: []
-  }))
-}))
+vi.mock('@/stores/dialogStore', () => {
+  const dialogStack = reactive<DialogInstance[]>([])
+  return {
+    useDialogStore: () => ({ dialogStack })
+  }
+})
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -40,11 +42,8 @@ describe('keybindingService - Escape key handling', () => {
     mockCommandExecute = vi.fn()
     commandStore.execute = mockCommandExecute
 
-    vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: [] as DialogInstance[]
-    } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-      typeof useDialogStore
-    >)
+    const dialogStore = useDialogStore()
+    dialogStore.dialogStack.length = 0
 
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
@@ -76,11 +75,8 @@ describe('keybindingService - Escape key handling', () => {
   }
 
   it('should execute Escape keybinding when no dialogs are open', async () => {
-    vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: [] as DialogInstance[]
-    } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-      typeof useDialogStore
-    >)
+    const dialogStore = useDialogStore()
+    dialogStore.dialogStack.length = 0
 
     const event = createKeyboardEvent('Escape')
     await keybindingService.keybindHandler(event)
@@ -89,11 +85,8 @@ describe('keybindingService - Escape key handling', () => {
   })
 
   it('should NOT execute Escape keybinding when dialogs are open', async () => {
-    vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: [{ key: 'test-dialog' } as DialogInstance]
-    } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-      typeof useDialogStore
-    >)
+    const dialogStore = useDialogStore()
+    dialogStore.dialogStack.push({ key: 'test-dialog' } as DialogInstance)
 
     keybindingService = useKeybindingService()
 
@@ -104,11 +97,8 @@ describe('keybindingService - Escape key handling', () => {
   })
 
   it('should execute Escape keybinding with modifiers regardless of dialog state', async () => {
-    vi.mocked(useDialogStore).mockReturnValue({
-      dialogStack: [{ key: 'test-dialog' } as DialogInstance]
-    } as Partial<ReturnType<typeof useDialogStore>> as ReturnType<
-      typeof useDialogStore
-    >)
+    const dialogStore = useDialogStore()
+    dialogStore.dialogStack.push({ key: 'test-dialog' } as DialogInstance)
 
     const keybindingStore = useKeybindingStore()
     keybindingStore.addDefaultKeybinding(
