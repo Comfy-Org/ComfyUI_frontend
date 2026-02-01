@@ -394,6 +394,21 @@ useEventListener(
   { passive: true }
 )
 
+// Prevent middle-click paste on Linux systems
+// On Linux, middle mouse button triggers paste from PRIMARY clipboard,
+// which can cause unwanted workflow duplication during canvas panning
+// See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/4464
+useEventListener(
+  canvasRef,
+  'auxclick',
+  (e: MouseEvent) => {
+    if (e.button === 1) {
+      e.preventDefault()
+    }
+  },
+  { capture: true }
+)
+
 const comfyAppReady = ref(false)
 const workflowPersistence = useWorkflowPersistence()
 const { flags } = useFeatureFlags()
