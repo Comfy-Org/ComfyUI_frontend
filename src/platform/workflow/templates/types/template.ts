@@ -11,8 +11,6 @@ export interface LogoInfo {
   opacity?: number
 }
 
-export type LogoIndex = Record<string, string>
-
 export interface TemplateInfo {
   name: string
   /**

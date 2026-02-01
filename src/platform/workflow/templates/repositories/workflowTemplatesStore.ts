@@ -9,8 +9,9 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
+import { zLogoIndex } from '../schemas/templateSchema'
+import type { LogoIndex } from '../schemas/templateSchema'
 import type {
-  LogoIndex,
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
@@ -504,21 +505,15 @@ export const useWorkflowTemplatesStore = defineStore(
       }
     }
 
-    function isValidLogoIndex(data: unknown): data is LogoIndex {
-      if (typeof data !== 'object' || data === null) return false
-      return Object.entries(data).every(
-        ([key, value]) => typeof key === 'string' && typeof value === 'string'
-      )
-    }
-
     async function fetchLogoIndex(): Promise<LogoIndex> {
       try {
-        const response = await axios.get<LogoIndex>(
+        const response = await axios.get(
           api.fileURL('/templates/index_logo.json')
         )
         const contentType = response.headers['content-type']
         if (!contentType?.includes('application/json')) return {}
-        return isValidLogoIndex(response.data) ? response.data : {}
+        const result = zLogoIndex.safeParse(response.data)
+        return result.success ? result.data : {}
       } catch {
         return {}
       }
