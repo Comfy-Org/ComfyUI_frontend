@@ -51,7 +51,7 @@ await comfyMouse.dragFromTo(
 await comfyPage.nextFrame()
 
 // Drag node
-const node = comfyPage.getNodeRefByTitle('KSampler')
+const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
 await node.drag({ x: 50, y: 50 })
 await comfyPage.nextFrame()
 ```

@@ -59,7 +59,7 @@ const nodes = await comfyPage.getNodes()
 expect(nodes.length).toBe(5)
 
 // Check specific node exists
-const node = comfyPage.getNodeRefByTitle('KSampler')
+const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
 await expect(node.locator).toBeVisible()
 ```
 
@@ -80,7 +80,7 @@ test.describe('Workflow Operations', { tag: ['@workflow'] }, () => {
     await comfyPage.loadWorkflow('widgets/slider_widget')
     await comfyPage.nextFrame()
 
-    const node = comfyPage.getNodeRefByTitle('Preview Image')
+    const node = (await comfyPage.getNodeRefsByTitle('Preview Image'))[0]
     await expect(node.locator).toBeVisible()
   })
 })

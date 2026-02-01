@@ -170,7 +170,7 @@ test.describe('Combo Widget', { tag: ['@widget'] }, () => {
   })
 
   test('changes combo selection', async ({ comfyPage }) => {
-    const node = comfyPage.getNodeRefByTitle('KSampler')
+    const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
     const widget = node.getWidget('sampler_name')
 
     await widget.click()

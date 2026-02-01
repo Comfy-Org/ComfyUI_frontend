@@ -49,13 +49,17 @@ test('drag example', async ({ comfyPage, comfyMouse }) => {
 
 ### Nodes
 
-| Method                     | Description               |
-| -------------------------- | ------------------------- |
-| `getNodeRefByTitle(title)` | Get node by display title |
-| `getNodeRefById(id)`       | Get node by numeric ID    |
-| `getFirstNode()`           | Get first node            |
-| `getLastNode()`            | Get last node             |
-| `getNodes()`               | Get all nodes             |
+| Method                       | Description                              |
+| ---------------------------- | ---------------------------------------- |
+| `getNodeRefsByTitle(title)`  | Get nodes by display title (returns `[]`)|
+| `getNodeRefById(id)`         | Get node by numeric ID                   |
+| `getFirstNode()`             | Get first node                           |
+| `getLastNode()`              | Get last node                            |
+| `getNodes()`                 | Get all nodes                            |
+| `selectNodes(titles[])`      | Ctrl+click to select nodes by title      |
+
+**Node titles**: Use display names like `'KSampler'`, `'VAE Decode'`, `'CLIP Text Encode (Prompt)'`.
+These match the `display_name` from node definitions, not the internal type name.
 
 ### Settings
 
@@ -79,7 +83,7 @@ test('drag example', async ({ comfyPage, comfyMouse }) => {
 
 ## NodeReference Methods
 
-Returned by `getNodeRefByTitle()`, `getNodeRefById()`.
+Returned by `getNodeRefsByTitle()[0]`, `getNodeRefById()`.
 
 | Method                | Description                 |
 | --------------------- | --------------------------- |

@@ -2,18 +2,22 @@
 
 > **⚠️ LiteGraph Mode:** These patterns apply to the default LiteGraph canvas rendering. For Vue Nodes 2.0 (DOM-based rendering), see [vue-nodes.md](../features/vue-nodes.md).
 >
-> | Mode      | Node Access                           | Example                                  |
-> | --------- | ------------------------------------- | ---------------------------------------- |
-> | LiteGraph | `comfyPage.getNodeRefByTitle()`       | `node.click()`, `node.getWidget('seed')` |
-> | Vue Nodes | `comfyPage.vueNodes.getNodeByTitle()` | Playwright locators, CSS classes         |
+> | Mode      | Node Access                            | Example                                  |
+> | --------- | -------------------------------------- | ---------------------------------------- |
+> | LiteGraph | `comfyPage.getNodeRefsByTitle()[0]`    | `node.click()`, `node.getWidget('seed')` |
+> | Vue Nodes | `comfyPage.vueNodes.getNodeByTitle()`  | Playwright locators, CSS classes         |
 
 ## Getting Node References
 
 ### By Title (Preferred)
 
 ```typescript
-// Stable across positions and reloads
-const node = comfyPage.getNodeRefByTitle('KSampler')
+// Use display names (e.g., 'KSampler', 'VAE Decode', 'CLIP Text Encode (Prompt)')
+// These match the display_name from node definitions, not internal type names
+const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+
+// For multi-selection
+await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
 ```
 
 ### By ID
@@ -35,7 +39,7 @@ const lastNode = comfyPage.getLastNode()
 ### Click Node
 
 ```typescript
-const node = comfyPage.getNodeRefByTitle('KSampler')
+const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
 await node.click()
 await comfyPage.nextFrame()
 ```
@@ -43,7 +47,7 @@ await comfyPage.nextFrame()
 ### Drag Node
 
 ```typescript
-const node = comfyPage.getNodeRefByTitle('KSampler')
+const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
 await node.drag({ x: 100, y: 50 })
 await comfyPage.nextFrame()
 ```
@@ -112,8 +116,8 @@ const position = await outputSlot.getPosition()
 ### Connect Slots
 
 ```typescript
-const sourceNode = comfyPage.getNodeRefByTitle('Load Checkpoint')
-const targetNode = comfyPage.getNodeRefByTitle('KSampler')
+const sourceNode = (await comfyPage.getNodeRefsByTitle('Load Checkpoint'))[0]
+const targetNode = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
 
 const outputSlot = sourceNode.getOutputSlot('MODEL')
 const inputSlot = targetNode.getInputSlot('model')
@@ -184,7 +188,7 @@ test.describe('Node Operations', { tag: ['@node'] }, () => {
   })
 
   test('collapses and expands node', async ({ comfyPage }) => {
-    const node = comfyPage.getNodeRefByTitle('KSampler')
+    const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
 
     await node.collapse()
     await comfyPage.nextFrame()
@@ -195,9 +199,9 @@ test.describe('Node Operations', { tag: ['@node'] }, () => {
     await expect(node).not.toBeCollapsed()
   })
 
-  test('connects two nodes', async ({ comfyPage }) => {
-    const source = comfyPage.getNodeRefByTitle('Load Checkpoint')
-    const target = comfyPage.getNodeRefByTitle('KSampler')
+  test('connects two nodes', async ({ comfyPage, comfyMouse }) => {
+    const source = (await comfyPage.getNodeRefsByTitle('Load Checkpoint'))[0]
+    const target = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
 
     await comfyMouse.dragFromTo(
       await source.getOutputSlot('MODEL').getPosition(),

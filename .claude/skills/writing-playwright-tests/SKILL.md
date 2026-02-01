@@ -22,7 +22,7 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
 | Rendering Mode         | When to Use                                               | API Style                                                              |
 | ---------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------- |
 | **Vue Nodes 2.0**      | Testing Vue-rendered node UI, DOM widgets, CSS states     | `comfyPage.vueNodes.*`, Playwright locators (`getByText`, `getByRole`) |
-| **LiteGraph (Canvas)** | Testing canvas interactions, connections, legacy behavior | `comfyPage.getNodeRefByTitle()`, `NodeReference` methods               |
+| **LiteGraph (Canvas)** | Testing canvas interactions, connections, legacy behavior | `comfyPage.getNodeRefsByTitle()[0]`, `NodeReference` methods           |
 
 ### Vue Nodes 2.0
 
@@ -38,7 +38,7 @@ await comfyPage.page.getByText('Load Checkpoint').click()
 ### LiteGraph (Canvas)
 
 ```typescript
-const node = comfyPage.getNodeRefByTitle('KSampler') // Returns NodeReference
+const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0] // Returns NodeReference
 await node.click()
 const slot = node.getOutputSlot('MODEL')
 ```

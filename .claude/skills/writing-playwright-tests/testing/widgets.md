@@ -10,7 +10,7 @@
 ## Getting Widgets
 
 ```typescript
-const node = comfyPage.getNodeRefByTitle('KSampler')
+const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
 const widget = node.getWidget('seed')
 ```
 
@@ -132,7 +132,7 @@ test.describe('Widget Operations', { tag: ['@widget'] }, () => {
   })
 
   test('sets number widget value', async ({ comfyPage }) => {
-    const node = comfyPage.getNodeRefByTitle('KSampler')
+    const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
     const seedWidget = node.getWidget('seed')
 
     await seedWidget.setValue(42)
@@ -143,7 +143,7 @@ test.describe('Widget Operations', { tag: ['@widget'] }, () => {
   })
 
   test('selects combo option', async ({ comfyPage }) => {
-    const node = comfyPage.getNodeRefByTitle('KSampler')
+    const node = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
     const samplerWidget = node.getWidget('sampler_name')
 
     await samplerWidget.click()
