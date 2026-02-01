@@ -126,6 +126,12 @@ export function useKeybindingService() {
     }
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
     for (const keybinding of newBindings) {
+      if (
+        isCloud &&
+        keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
+      ) {
+        continue
+      }
       keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
     }
   }

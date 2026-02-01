@@ -121,11 +121,15 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   const registerCoreBottomPanelTabs = async () => {
     // Use __DISTRIBUTION__ directly for proper dead code elimination
     if (__DISTRIBUTION__ !== 'cloud') {
-      const { useLogsTerminalTab, useCommandTerminalTab } =
-        await import('@/composables/bottomPanelTabs/useTerminalTabs')
-      registerBottomPanelTab(useLogsTerminalTab())
-      if (isElectron()) {
-        registerBottomPanelTab(useCommandTerminalTab())
+      try {
+        const { useLogsTerminalTab, useCommandTerminalTab } =
+          await import('@/composables/bottomPanelTabs/useTerminalTabs')
+        registerBottomPanelTab(useLogsTerminalTab())
+        if (isElectron()) {
+          registerBottomPanelTab(useCommandTerminalTab())
+        }
+      } catch (error) {
+        console.error('Failed to load terminal tabs:', error)
       }
     }
     useShortcutsTab().forEach(registerBottomPanelTab)
