@@ -16,6 +16,12 @@ export interface AlgoliaWorkflowTemplate {
   models: string[]
   open_source: boolean
   requires_custom_nodes: string[]
+  author_name?: string
+  author_avatar_url?: string
+  run_count?: number
+  view_count?: number
+  copy_count?: number
+  workflow_json?: string
 }
 
 export type WorkflowTemplateSearchAttribute = keyof AlgoliaWorkflowTemplate

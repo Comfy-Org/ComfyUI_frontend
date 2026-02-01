@@ -1,5 +1,12 @@
 <template>
-  <div class="flex size-full flex-col">
+  <WorkflowDetailView
+    v-if="selectedWorkflow"
+    :workflow="selectedWorkflow"
+    @back="selectedWorkflow = null"
+    @run-workflow="handleRunWorkflow"
+    @make-copy="handleMakeCopy"
+  />
+  <div v-else class="flex size-full flex-col">
     <!-- Header with search -->
     <div
       class="flex shrink-0 items-center gap-4 border-b border-interface-stroke px-6 py-4"
@@ -59,6 +66,16 @@
         {{ $t('discover.filters.openSource') }}
       </Button>
 
+      <!-- Cloud only toggle -->
+      <Button
+        :variant="cloudOnly ? 'primary' : 'secondary'"
+        size="md"
+        @click="cloudOnly = !cloudOnly"
+      >
+        <i class="icon-[lucide--cloud]" />
+        {{ $t('discover.filters.cloudOnly') }}
+      </Button>
+
       <div class="flex-1" />
 
       <!-- Results count -->
@@ -105,7 +122,7 @@
 
       <!-- No results state -->
       <div
-        v-else-if="results && results.templates.length === 0"
+        v-else-if="!cloudOnly || (results && results.templates.length === 0)"
         class="flex h-64 flex-col items-center justify-center text-muted-foreground"
       >
         <i class="icon-[lucide--search] mb-4 size-12 opacity-50" />
@@ -189,7 +206,7 @@
       </div>
     </div>
 
-    <!-- Pagination -->
+    <!-- Pagination (inside v-else block) -->
     <div
       v-if="results && results.totalPages > 1"
       class="flex shrink-0 items-center justify-center gap-2 border-t border-interface-stroke px-6 py-3"
@@ -225,6 +242,7 @@ import CardTop from '@/components/card/CardTop.vue'
 import LazyImage from '@/components/common/LazyImage.vue'
 import SearchBox from '@/components/common/SearchBox.vue'
 import SquareChip from '@/components/chip/SquareChip.vue'
+import WorkflowDetailView from '@/components/discover/WorkflowDetailView.vue'
 import MultiSelect from '@/components/input/MultiSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSearch } from '@/composables/discover/useWorkflowTemplateSearch'
@@ -235,10 +253,12 @@ const { search, isLoading, results } = useWorkflowTemplateSearch()
 const searchQuery = ref('')
 const currentPage = ref(0)
 const hoveredTemplate = ref<string | null>(null)
+const selectedWorkflow = ref<AlgoliaWorkflowTemplate | null>(null)
 
 const selectedTags = ref<Array<{ name: string; value: string }>>([])
 const selectedModels = ref<Array<{ name: string; value: string }>>([])
 const openSourceOnly = ref(false)
+const cloudOnly = ref(true)
 
 // Store initial facet values to preserve filter options
 const initialFacets = ref<Record<string, Record<string, number>> | null>(null)
@@ -301,12 +321,20 @@ function goToPage(page: number) {
   performSearch()
 }
 
-function handleTemplateClick(_template: AlgoliaWorkflowTemplate) {
-  // TODO: Implement template loading
+function handleTemplateClick(template: AlgoliaWorkflowTemplate) {
+  selectedWorkflow.value = template
+}
+
+function handleRunWorkflow(_workflow: AlgoliaWorkflowTemplate) {
+  // TODO: Implement workflow run
+}
+
+function handleMakeCopy(_workflow: AlgoliaWorkflowTemplate) {
+  // TODO: Implement make a copy
 }
 
 watch(
-  [selectedTags, selectedModels, openSourceOnly],
+  [selectedTags, selectedModels, openSourceOnly, cloudOnly],
   () => {
     currentPage.value = 0
     performSearch()

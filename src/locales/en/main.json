@@ -5,11 +5,23 @@
       "tags": "Tags",
       "models": "Models",
       "mediaType": "Media Type",
-      "openSource": "Open Source only"
+      "openSource": "Open Source models only",
+      "cloudOnly": "Cloud only"
     },
     "resultsCount": "{count} template | {count} templates",
     "noResults": "No templates found",
-    "noResultsHint": "Try adjusting your search or filters"
+    "noResultsHint": "Try adjusting your search or filters",
+    "detail": {
+      "officialWorkflow": "Official Workflow",
+      "mediaType": "Media Type",
+      "openSource": "Uses open source models only",
+      "requiredNodes": "Required Custom Nodes",
+      "gallery": "Gallery",
+      "author": "Comfy Org",
+      "runWorkflow": "Run Workflow",
+      "makeCopy": "Make a Copy",
+      "workflowPreview": "Workflow Preview"
+    }
   },
   "g": {
     "user": "User",
