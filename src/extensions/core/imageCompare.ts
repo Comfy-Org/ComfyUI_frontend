@@ -1,6 +1,5 @@
 import type { NodeOutputWith } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 
 type ImageCompareOutput = NodeOutputWith<{
@@ -23,15 +22,14 @@ useExtensionService().registerExtension({
       onExecuted?.call(this, output)
 
       const { a_images: aImages, b_images: bImages } = output
-      const rand = app.getRandParam()
 
       const beforeUrl =
         aImages && aImages.length > 0
-          ? api.apiURL(`/view?${new URLSearchParams(aImages[0])}${rand}`)
+          ? api.apiURL(`/view?${new URLSearchParams(aImages[0])}`)
           : ''
       const afterUrl =
         bImages && bImages.length > 0
-          ? api.apiURL(`/view?${new URLSearchParams(bImages[0])}${rand}`)
+          ? api.apiURL(`/view?${new URLSearchParams(bImages[0])}`)
           : ''
 
       const widget = node.widgets?.find((w) => w.type === 'imagecompare')

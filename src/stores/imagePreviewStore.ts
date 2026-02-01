@@ -112,12 +112,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const outputs = getNodeOutputs(node)
     if (!outputs?.images?.length) return
 
-    const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.map((image) => {
       const imgUrlPart = new URLSearchParams(image)
-      return api.apiURL(`/view?${imgUrlPart}${previewParam}${rand}`)
+      return api.apiURL(`/view?${imgUrlPart}${previewParam}`)
     })
   }
 

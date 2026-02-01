@@ -78,7 +78,7 @@ export const useCompletionSummary = () => {
             completedCount++
             const preview = task.previewOutput
             if (preview?.isImage) {
-              imagePreviews.push(preview.urlWithTimestamp)
+              imagePreviews.push(preview.url)
             }
           } else if (state === 'failed') {
             failedCount++

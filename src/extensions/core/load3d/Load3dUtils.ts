@@ -2,7 +2,6 @@ import type Load3d from '@/extensions/core/load3d/Load3d'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 
 class Load3dUtils {
   static async generateThumbnailIfNeeded(
@@ -133,8 +132,7 @@ class Load3dUtils {
     const params = [
       'filename=' + encodeURIComponent(filename),
       'type=' + type,
-      'subfolder=' + subfolder,
-      app.getRandParam().substring(1)
+      'subfolder=' + subfolder
     ].join('&')
 
     return `/view?${params}`

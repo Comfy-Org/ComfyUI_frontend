@@ -59,10 +59,7 @@ function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
   }
 
   const pathPlusQueryParams = api.apiURL(
-    '/view?' +
-      params.toString() +
-      app.getPreviewFormatParam() +
-      app.getRandParam()
+    '/view?' + params.toString() + app.getPreviewFormatParam()
   )
   const imageElement = new Image()
   imageElement.crossOrigin = 'anonymous'
