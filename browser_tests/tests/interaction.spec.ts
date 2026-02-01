@@ -733,23 +733,9 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
-    // Wait for V2 persistence to save the modified workflow (debounced at 512ms)
-    // Check that localStorage has a draft key with the collapsed node state
-    await comfyPage.page.waitForFunction(
-      () => {
-        for (let i = 0; i < window.localStorage.length; i++) {
-          const key = window.localStorage.key(i)
-          if (key?.startsWith('Comfy.Workflow.Draft.v2:')) {
-            const value = window.localStorage.getItem(key)
-            // Check that the draft contains collapsed node flags
-            if (value && value.includes('"flags":')) {
-              return true
-            }
-          }
-        }
-        return false
-      },
-      { timeout: 2000 }
+    // Wait for V2 persistence debounce (512ms) to save the modified workflow
+    await comfyPage.page.evaluate(
+      () => new Promise((resolve) => setTimeout(resolve, 600))
     )
     await comfyPage.setup({ clearStorage: false })
     await expect(comfyPage.canvas).toHaveScreenshot(
