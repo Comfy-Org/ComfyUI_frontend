@@ -1527,7 +1527,6 @@
     "disabledTooltip": "Le flux de travail ne sera pas mis en file d'attente automatiquement",
     "execute": "Exécuter",
     "help": "Aide",
-    "helpAndFeedback": "Aide et commentaires",
     "hideMenu": "Masquer le menu",
     "instant": "Instantané",
     "instantTooltip": "Le flux de travail sera mis en file d'attente immédiatement après la fin d'une génération",

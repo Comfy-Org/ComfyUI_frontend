@@ -7,7 +7,7 @@
     :icon-badge="shouldShowRedDot ? '•' : ''"
     badge-class="-top-1 -right-1 min-w-2 w-2 h-2 p-0 rounded-full text-[0px] bg-[#ff3b30]"
     :is-small="isSmall"
-    @click="toggleHelpCenter"
+    @click="toggleHelpCenter()"
   />
 </template>
 

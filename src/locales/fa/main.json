@@ -1527,7 +1527,6 @@
     "disabledTooltip": "workflow به صورت خودکار در صف قرار نمی‌گیرد",
     "execute": "اجرا",
     "help": "راهنما",
-    "helpAndFeedback": "راهنما و بازخورد",
     "hideMenu": "مخفی کردن منو",
     "instant": "فوری",
     "instantTooltip": "workflow بلافاصله پس از پایان تولید در صف قرار می‌گیرد",
