@@ -49,19 +49,22 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   test('Old workflow with converted input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/old_workflow_converted_input')
     const node = await comfyPage.nodeOps.getNodeRefById('1')
-    const inputs = await node.getProperty('inputs')
+    const inputs = (await node.getProperty('inputs')) as {
+      name: string
+      link?: number | null
+    }[]
     const vaeInput = inputs.find((w) => w.name === 'vae')
     const convertedInput = inputs.find((w) => w.name === 'strength')
 
     expect(vaeInput).toBeDefined()
     expect(convertedInput).toBeDefined()
-    expect(vaeInput.link).toBeNull()
-    expect(convertedInput.link).not.toBeNull()
+    expect(vaeInput!.link).toBeNull()
+    expect(convertedInput!.link).not.toBeNull()
   })
   test('Renamed converted input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/renamed_converted_widget')
     const node = await comfyPage.nodeOps.getNodeRefById('3')
-    const inputs = await node.getProperty('inputs')
+    const inputs = (await node.getProperty('inputs')) as { name: string }[]
     const renamedInput = inputs.find((w) => w.name === 'breadth')
     expect(renamedInput).toBeUndefined()
   })

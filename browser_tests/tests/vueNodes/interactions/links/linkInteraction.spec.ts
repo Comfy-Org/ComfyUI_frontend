@@ -451,7 +451,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
         if (!link) throw new Error('Link not found')
 
         // Convert the client/canvas pixel coordinates to graph space
-        const pos = app.canvas.ds.convertCanvasToOffset([
+        const pos = app!.canvas.ds.convertCanvasToOffset([
           clientPoint.x,
           clientPoint.y
         ])
@@ -539,7 +539,7 @@ test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
         if (!link) throw new Error('Link not found')
 
         // Convert the client/canvas pixel coordinates to graph space
-        const pos = app.canvas.ds.convertCanvasToOffset([
+        const pos = app!.canvas.ds.convertCanvasToOffset([
           clientPoint.x,
           clientPoint.y
         ])

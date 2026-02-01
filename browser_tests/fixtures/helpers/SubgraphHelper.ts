@@ -1,5 +1,10 @@
 import type { Page } from '@playwright/test'
 
+import type {
+  CanvasPointerEvent,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
+
 import type { ComfyPage } from '../ComfyPage'
 import type { NodeReference } from '../utils/litegraphUtils'
 import { SubgraphSlotReference } from '../utils/litegraphUtils'
@@ -37,13 +42,12 @@ export class SubgraphHelper {
           )
         }
 
+        const subgraph = currentGraph as Subgraph
+
         // Get the appropriate node and slots
         const node =
-          slotType === 'input'
-            ? currentGraph.inputNode
-            : currentGraph.outputNode
-        const slots =
-          slotType === 'input' ? currentGraph.inputs : currentGraph.outputs
+          slotType === 'input' ? subgraph.inputNode : subgraph.outputNode
+        const slots = slotType === 'input' ? subgraph.inputs : subgraph.outputs
 
         if (!node) {
           throw new Error(`No ${slotType} node found in subgraph`)
@@ -84,7 +88,7 @@ export class SubgraphHelper {
 
             if (node.onPointerDown) {
               node.onPointerDown(
-                event,
+                event as unknown as CanvasPointerEvent,
                 app.canvas.pointer,
                 app.canvas.linkConnector
               )
@@ -117,14 +121,16 @@ export class SubgraphHelper {
 
           if (node.onPointerDown) {
             node.onPointerDown(
-              event,
+              event as unknown as CanvasPointerEvent,
               app.canvas.pointer,
               app.canvas.linkConnector
             )
 
             // Trigger double-click
             if (app.canvas.pointer.onDoubleClick) {
-              app.canvas.pointer.onDoubleClick(event)
+              app.canvas.pointer.onDoubleClick(
+                event as unknown as CanvasPointerEvent
+              )
             }
           }
 

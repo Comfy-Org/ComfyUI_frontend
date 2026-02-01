@@ -1,7 +1,7 @@
 import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { Keybinding } from '../../src/platform/keybindings'
+import type { Keybinding } from '../../src/platform/keybindings/types'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
@@ -346,7 +346,7 @@ test.describe('Error dialog', () => {
   }) => {
     await comfyPage.page.evaluate(() => {
       const graph = window.graph!
-      graph.configure = () => {
+      ;(graph as { configure: () => void }).configure = () => {
         throw new Error('Error on configure!')
       }
     })

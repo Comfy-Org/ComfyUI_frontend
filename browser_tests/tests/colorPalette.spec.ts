@@ -1,13 +1,12 @@
 import { expect } from '@playwright/test'
 
-import type { Palette } from '../../src/schemas/colorPaletteSchema'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-const customColorPalettes: Record<string, Palette> = {
+const customColorPalettes = {
   obsidian: {
     version: 102,
     id: 'obsidian',
@@ -179,7 +178,9 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
 
   test('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate((p) => {
-      window.app!.extensionManager.colorPalette.addCustomColorPalette(p)
+      ;(window.app!.extensionManager as any).colorPalette.addCustomColorPalette(
+        p
+      )
     }, customColorPalettes.obsidian_dark)
     expect(await comfyPage.toast.getToastErrorCount()).toBe(0)
 

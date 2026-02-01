@@ -13,8 +13,8 @@ export class SettingsHelper {
   }
 
   async getSetting<T = unknown>(settingId: string): Promise<T> {
-    return await this.page.evaluate(async (id) => {
+    return (await this.page.evaluate(async (id) => {
       return await window.app!.extensionManager.setting.get(id)
-    }, settingId)
+    }, settingId)) as T
   }
 }

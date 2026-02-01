@@ -25,7 +25,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       const originalSend = WebSocket.prototype.send
       WebSocket.prototype.send = function (data) {
         try {
-          const parsed = JSON.parse(data)
+          const parsed = JSON.parse(data as string)
           if (parsed.type === 'feature_flags') {
             window.__capturedMessages!.clientFeatureFlags = parsed
           }
@@ -285,10 +285,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
           window.app?.api?.serverFeatureFlags?.supports_preview_metadata !==
           undefined
         ) {
-          window.__appReadiness = {
-            ...window.__appReadiness,
-            featureFlagsReceived: true
-          }
+          window.__appReadiness!.featureFlagsReceived = true
           clearInterval(checkFeatureFlags)
         }
       }, 10)
@@ -296,10 +293,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       // Monitor API initialization
       const checkApi = setInterval(() => {
         if (window.app?.api) {
-          window.__appReadiness = {
-            ...window.__appReadiness,
-            apiInitialized: true
-          }
+          window.__appReadiness!.apiInitialized = true
           clearInterval(checkApi)
         }
       }, 10)
@@ -307,10 +301,7 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       // Monitor app initialization
       const checkApp = setInterval(() => {
         if (window.app?.graph) {
-          window.__appReadiness = {
-            ...window.__appReadiness,
-            appInitialized: true
-          }
+          window.__appReadiness!.appInitialized = true
           clearInterval(checkApp)
         }
       }, 10)

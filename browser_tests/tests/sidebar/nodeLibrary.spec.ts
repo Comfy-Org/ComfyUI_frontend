@@ -301,9 +301,9 @@ test.describe('Node library sidebar', () => {
     await comfyPage.nextFrame()
 
     // Verify the color selection is saved
-    const setting = await comfyPage.settings.getSetting(
-      'Comfy.NodeLibrary.BookmarksCustomization'
-    )
+    const setting = await comfyPage.settings.getSetting<
+      Record<string, { icon?: string; color?: string }>
+    >('Comfy.NodeLibrary.BookmarksCustomization')
     await expect(setting).toHaveProperty(['foo/', 'color'])
     await expect(setting['foo/'].color).not.toBeNull()
     await expect(setting['foo/'].color).not.toBeUndefined()

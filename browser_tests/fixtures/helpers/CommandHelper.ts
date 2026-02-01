@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type { KeyCombo } from '../../../src/platform/keybindings'
+import type { KeyCombo } from '../../../src/platform/keybindings/types'
 
 export class CommandHelper {
   constructor(private readonly page: Page) {}

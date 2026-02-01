@@ -1,4 +1,9 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
+import type {
+  APIRequestContext,
+  ExpectMatcherState,
+  Locator,
+  Page
+} from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
 
@@ -134,7 +139,7 @@ class ConfirmDialog {
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
-      () => window.app?.extensionManager?.workflow?.isBusy === false,
+      () => (window.app?.extensionManager as any)?.workflow?.isBusy === false,
       undefined,
       { timeout: 3000 }
     )
@@ -214,7 +219,7 @@ export class ComfyPage {
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
-    this.clipboard = new ClipboardHelper(this.keyboard, this.canvas)
+    this.clipboard = new ClipboardHelper(this.keyboard)
     this.workflow = new WorkflowHelper(this)
     this.contextMenu = new ContextMenu(page)
     this.toast = new ToastHelper(page)
@@ -382,7 +387,7 @@ export class ComfyPage {
 
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      window.app!.extensionManager.focusMode = focusMode
+      ;(window.app!.extensionManager as any).focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
   }
@@ -441,6 +446,7 @@ const makeMatcher = function <T>(
   type: string
 ) {
   return async function (
+    this: ExpectMatcherState,
     node: NodeReference,
     options?: { timeout?: number; intervals?: number[] }
   ) {

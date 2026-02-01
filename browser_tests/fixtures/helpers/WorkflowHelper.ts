@@ -45,7 +45,7 @@ export class WorkflowHelper {
     }
 
     await this.comfyPage.page.evaluate(async () => {
-      await window.app!.extensionManager.workflow.syncWorkflows()
+      await (window.app!.extensionManager as any).workflow.syncWorkflows()
     })
 
     // Wait for Vue to re-render the workflow list

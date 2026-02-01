@@ -3,10 +3,7 @@ import type { Locator } from '@playwright/test'
 import type { KeyboardHelper } from './KeyboardHelper'
 
 export class ClipboardHelper {
-  constructor(
-    private readonly keyboard: KeyboardHelper,
-    private readonly _canvas: Locator
-  ) {}
+  constructor(private readonly keyboard: KeyboardHelper) {}
 
   async copy(locator?: Locator | null): Promise<void> {
     await this.keyboard.ctrlSend('KeyC', locator === undefined ? null : locator)

@@ -632,9 +632,9 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
   })
 
   test('Can pan when dragging a link', async ({ comfyPage, comfyMouse }) => {
-    const posSlot1 = comfyPage.clipTextEncodeNode1InputSlot
+    const posSlot1 = DefaultGraphPositions.clipTextEncodeNode1InputSlot
     await comfyMouse.move(posSlot1)
-    const posEmpty = comfyPage.emptySpace
+    const posEmpty = DefaultGraphPositions.emptySpace
     await comfyMouse.drag(posEmpty)
     await expect(comfyPage.canvas).toHaveScreenshot('dragging-link1.png')
 
@@ -845,7 +845,7 @@ test.describe('Viewport settings', () => {
     const changeTab = async (tab: Locator) => {
       await tab.click()
       await comfyPage.nextFrame()
-      await comfyMouse.move(comfyPage.emptySpace)
+      await comfyMouse.move(DefaultGraphPositions.emptySpace)
 
       // If tooltip is visible, wait for it to hide
       await expect(
@@ -875,7 +875,7 @@ test.describe('Viewport settings', () => {
     const tabB = comfyPage.menu.topbar.getWorkflowTab('Workflow B')
     await changeTab(tabB)
 
-    await comfyMouse.move(comfyPage.emptySpace)
+    await comfyMouse.move(DefaultGraphPositions.emptySpace)
     for (let i = 0; i < 4; i++) {
       await comfyMouse.wheel(0, 60)
     }

@@ -14,14 +14,14 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
         name: 'TestSettingsExtension',
         settings: [
           {
-            id: 'TestHiddenSetting',
+            id: 'TestHiddenSetting' as any,
             name: 'Test Hidden Setting',
             type: 'hidden',
             defaultValue: 'hidden_value',
             category: ['Test', 'Hidden']
           },
           {
-            id: 'TestDeprecatedSetting',
+            id: 'TestDeprecatedSetting' as any,
             name: 'Test Deprecated Setting',
             type: 'text',
             defaultValue: 'deprecated_value',
@@ -29,7 +29,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
             category: ['Test', 'Deprecated']
           },
           {
-            id: 'TestVisibleSetting',
+            id: 'TestVisibleSetting' as any,
             name: 'Test Visible Setting',
             type: 'text',
             defaultValue: 'visible_value',
