@@ -145,9 +145,7 @@ test.describe('Properties panel basic functionality', { tag: ['@ui'] }, () => {
       await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
 
       await expect(propertiesPanel.root.getByText('KSampler')).toBeVisible()
-      await expect(
-        propertiesPanel.root.getByText('VAE Decode')
-      ).toBeVisible()
+      await expect(propertiesPanel.root.getByText('VAE Decode')).toBeVisible()
     })
   })
 })

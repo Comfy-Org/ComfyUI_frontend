@@ -14,20 +14,14 @@ test.describe('Properties panel', () => {
 
     await expect(propertiesPanel.panelTitle).toContainText('3 items selected')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
-    await expect(
-      propertiesPanel.root.getByText('VAE Decode')
-    ).toHaveCount(2)
+    await expect(propertiesPanel.root.getByText('VAE Decode')).toHaveCount(2)
 
     await propertiesPanel.searchBox.fill('seed')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
-    await expect(
-      propertiesPanel.root.getByText('VAE Decode')
-    ).toHaveCount(0)
+    await expect(propertiesPanel.root.getByText('VAE Decode')).toHaveCount(0)
 
     await propertiesPanel.searchBox.fill('')
     await expect(propertiesPanel.root.getByText('KSampler')).toHaveCount(1)
-    await expect(
-      propertiesPanel.root.getByText('VAE Decode')
-    ).toHaveCount(2)
+    await expect(propertiesPanel.root.getByText('VAE Decode')).toHaveCount(2)
   })
 })

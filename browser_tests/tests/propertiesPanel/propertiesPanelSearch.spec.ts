@@ -31,9 +31,7 @@ test.describe('Properties panel search functionality', { tag: ['@ui'] }, () => {
       await propertiesPanel.searchBox.fill('')
 
       await expect(propertiesPanel.root.getByText('KSampler')).toBeVisible()
-      await expect(
-        propertiesPanel.root.getByText('VAE Decode')
-      ).toBeVisible()
+      await expect(propertiesPanel.root.getByText('VAE Decode')).toBeVisible()
     })
 
     test('shows no results message when search matches nothing', async ({
