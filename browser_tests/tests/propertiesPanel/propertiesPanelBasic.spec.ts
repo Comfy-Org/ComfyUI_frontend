@@ -137,9 +137,7 @@ test.describe('Properties panel basic functionality', { tag: ['@ui'] }, () => {
       await expect(propertiesPanel.getTab('Info')).not.toBeVisible()
     })
 
-    test('lists all selected nodes in Nodes tab', async ({
-      comfyPage
-    }) => {
+    test('lists all selected nodes in Nodes tab', async ({ comfyPage }) => {
       const { propertiesPanel } = comfyPage
 
       await comfyPage.selectNodes(['KSampler', 'VAE Decode'])
