@@ -72,8 +72,15 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   }
 
   const toggleBottomPanel = () => {
-    // Legacy method - toggles terminal panel
-    togglePanel('terminal')
+    // Legacy method - toggles terminal panel, falls back to shortcuts if no terminal tabs
+    // Terminal tabs are loaded asynchronously, so may not be available immediately
+    const terminalPanel = panels.value.terminal
+    if (terminalPanel.tabs.length > 0) {
+      togglePanel('terminal')
+    } else {
+      // Fall back to shortcuts panel if terminal tabs aren't loaded yet
+      togglePanel('shortcuts')
+    }
   }
 
   const setActiveTab = (tabId: string) => {

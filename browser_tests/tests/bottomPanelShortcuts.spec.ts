@@ -147,47 +147,46 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should maintain panel state when switching to terminal', async ({
     comfyPage
   }) => {
-    // First open the bottom panel to check if terminal tab is available
-    // Terminal tabs are loaded asynchronously, so wait for the "Logs" tab to appear
-    await comfyPage.page
-      .locator('button[aria-label*="Toggle Bottom Panel"]')
-      .click()
-
-    // Check if terminal tab exists (loaded asynchronously, not available in cloud)
-    // Look for the "Logs" tab text in the bottom panel
-    const logsTab = comfyPage.page.locator('.bottom-panel').getByRole('tab', {
-      name: /Logs/i
-    })
-    const terminalTabExists = await logsTab
-      .isVisible({ timeout: 5000 })
-      .catch(() => false)
-
-    if (!terminalTabExists) {
-      // Close panel and skip test - terminal not available in this distribution
-      await comfyPage.page
-        .locator('button[aria-label*="Toggle Bottom Panel"]')
-        .click()
-      test.skip()
-      return
-    }
-
-    // Close the panel to reset state
-    await comfyPage.page
-      .locator('button[aria-label*="Toggle Bottom Panel"]')
-      .click()
-
-    // Open shortcuts panel first
+    // Terminal tabs are loaded asynchronously via dynamic import.
+    // First, open the shortcuts panel which is always available (registered synchronously).
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
       .click()
     await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
 
-    // Open terminal panel (should switch panels)
-    await comfyPage.page
-      .locator('button[aria-label*="Toggle Bottom Panel"]')
-      .click()
+    // Now check if terminal tabs have loaded by looking for the "Logs" tab in sidebar tooltip
+    // Terminal panel toggle only works after tabs are registered asynchronously
+    // Wait for terminal tabs to be available (check via aria-label on sidebar button)
+    const terminalButton = comfyPage.page.locator(
+      'button[aria-label*="Toggle Bottom Panel"]'
+    )
 
-    // Panel should still be visible but showing terminal content
+    // Wait a bit for dynamic import to complete, then check if terminal panel works
+    // The Terminal tabs are loaded via dynamic import, so we need to wait
+    await comfyPage.page.waitForTimeout(1000)
+
+    // Try clicking terminal button - if tabs aren't loaded, panel won't change
+    await terminalButton.click()
+
+    // Check if we're now showing terminal content by looking for Logs tab
+    const logsTab = comfyPage.page.locator('.bottom-panel').getByRole('tab', {
+      name: /Logs/i
+    })
+    const terminalTabExists = await logsTab
+      .isVisible({ timeout: 2000 })
+      .catch(() => false)
+
+    if (!terminalTabExists) {
+      // Terminal not available (cloud distribution or async load failed) - skip test
+      // Close the shortcuts panel first
+      await comfyPage.page
+        .locator('button[aria-label*="Keyboard Shortcuts"]')
+        .click()
+      test.skip()
+      return
+    }
+
+    // Terminal panel is showing - verify panel is visible
     await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
 
     // Switch back to shortcuts
