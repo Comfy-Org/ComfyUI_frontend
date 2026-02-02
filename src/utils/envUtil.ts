@@ -1,8 +1,8 @@
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
 // Extend Window interface to include electronAPI
-interface ElectronWindow extends Window {
-  electronAPI?: ElectronAPI
+type ElectronWindow = typeof window & {
+  electronAPI: ElectronAPI
 }
 
 export function isElectron() {

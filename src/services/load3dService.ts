@@ -10,7 +10,6 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
 // Type definitions for Load3D node
 interface SceneConfig {
   backgroundImage?: string
-  [key: string]: unknown
 }
 
 interface Load3DNode extends LGraphNode {
