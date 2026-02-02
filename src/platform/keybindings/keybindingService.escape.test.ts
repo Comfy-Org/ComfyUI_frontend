@@ -90,9 +90,6 @@ describe('keybindingService - Escape key handling', () => {
   }
 
   it('should execute Escape keybinding when no dialogs are open', async () => {
-    const dialogStore = useDialogStore()
-    dialogStore.dialogStack.length = 0
-
     const event = createKeyboardEvent('Escape')
     await keybindingService.keybindHandler(event)
 
