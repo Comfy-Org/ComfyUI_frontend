@@ -119,6 +119,9 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   }
 
   const registerCoreBottomPanelTabs = async () => {
+    // Register shortcuts tabs first (synchronous, always available)
+    useShortcutsTab().forEach(registerBottomPanelTab)
+
     // Use __DISTRIBUTION__ directly for proper dead code elimination
     if (__DISTRIBUTION__ !== 'cloud') {
       try {
@@ -132,7 +135,6 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
         console.error('Failed to load terminal tabs:', error)
       }
     }
-    useShortcutsTab().forEach(registerBottomPanelTab)
   }
 
   const registerExtensionBottomPanelTabs = (extension: ComfyExtension) => {
