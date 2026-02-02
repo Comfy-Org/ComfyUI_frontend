@@ -1564,13 +1564,13 @@ export class ComfyApp {
    * @param batchNode
    */
   positionBatchNodes(nodes: LGraphNode[], batchNode: LGraphNode): void {
-    const [x, y, width, nodeHeight] = nodes[0].getBounding()
+    const [x, y, width] = nodes[0].getBounding()
     batchNode.pos = [ x + width + 100, y + 30 ]
 
     // Retrieving Node Height is inconsistent
-    let height = nodeHeight;
+    let height = 0;
     if (nodes[0].type === 'LoadImage') {
-      height = Math.max(344, nodeHeight)
+      height = 344
     }
 
     nodes.forEach((node, index) => {
