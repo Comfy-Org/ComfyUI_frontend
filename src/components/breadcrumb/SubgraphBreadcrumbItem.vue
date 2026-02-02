@@ -1,12 +1,11 @@
 <template>
-  <a
+  <div
     ref="wrapperRef"
     v-tooltip.bottom="{
       value: tooltipText,
       showDelay: 512
     }"
     draggable="false"
-    href="#"
     class="p-breadcrumb-item-link h-8 cursor-pointer px-2"
     :class="{
       'flex items-center gap-1': isActive,
@@ -23,7 +22,7 @@
     <span class="p-breadcrumb-item-label px-2">{{ item.label }}</span>
     <Tag v-if="item.isBlueprint" value="Blueprint" severity="primary" />
     <i v-if="isActive" class="pi pi-angle-down text-[10px]"></i>
-  </a>
+  </div>
   <Menu
     v-if="isActive || isRoot"
     ref="menu"

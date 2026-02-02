@@ -671,11 +671,9 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
       })
 
       // Click breadcrumb to navigate back to parent graph
-      const homeBreadcrumb = comfyPage.page.getByRole('link', {
-        // In the subgraph navigation breadcrumbs, the home/top level
-        // breadcrumb is just the workflow name without the folder path
-        name: 'subgraph-with-promoted-text-widget'
-      })
+      const homeBreadcrumb = comfyPage.page.locator(
+        '.p-breadcrumb-list > :first-child'
+      )
       await homeBreadcrumb.waitFor({ state: 'visible' })
       await homeBreadcrumb.click()
       await comfyPage.nextFrame()
