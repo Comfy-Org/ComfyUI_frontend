@@ -17,6 +17,7 @@ export interface SecretCreateRequest {
 
 export interface SecretUpdateRequest {
   name?: string
+  secret_value?: string
 }
 
 export type SecretErrorCode =

@@ -2900,8 +2900,9 @@
     "providerHint": "Optional. Selecting a provider enables automatic token usage.",
     "secretValue": "Secret Value",
     "secretValuePlaceholder": "Enter your API key",
+    "secretValuePlaceholderEdit": "Enter new value to change",
     "secretValueHint": "This value will be encrypted and cannot be viewed again.",
-    "editNotice": "To change the secret value, delete this secret and create a new one.",
+    "secretValueHintEdit": "Leave blank to keep the current value.",
     "createdAt": "Created {date}",
     "lastUsed": "Last used {date}",
     "deleteConfirmTitle": "Delete Secret",
@@ -2909,6 +2910,7 @@
     "errors": {
       "nameRequired": "Name is required",
       "nameTooLong": "Name must be 255 characters or less",
+      "providerRequired": "Provider is required",
       "secretValueRequired": "Secret value is required",
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"

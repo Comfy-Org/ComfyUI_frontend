@@ -41,39 +41,39 @@
             </SelectItem>
           </SelectContent>
         </Select>
-        <small class="text-muted">{{ $t('secrets.providerHint') }}</small>
+        <small v-if="errors.provider" class="text-red-500">
+          {{ errors.provider }}
+        </small>
       </div>
 
-      <template v-if="mode === 'create'">
-        <div class="flex flex-col gap-1">
-          <label for="secret-value" class="text-sm font-medium">
-            {{ $t('secrets.secretValue') }}
-          </label>
-          <Password
-            id="secret-value"
-            v-model="form.secretValue"
-            :placeholder="$t('secrets.secretValuePlaceholder')"
-            :feedback="false"
-            toggle-mask
-            fluid
-            :class="{ 'p-invalid': errors.secretValue }"
-          />
-          <small v-if="errors.secretValue" class="text-red-500">
-            {{ errors.secretValue }}
-          </small>
-          <small v-else class="text-muted">
-            {{ $t('secrets.secretValueHint') }}
-          </small>
-        </div>
-      </template>
-
-      <template v-else>
-        <div
-          class="rounded-lg border border-base-outline bg-base-surface p-3 text-sm text-muted"
-        >
-          {{ $t('secrets.editNotice') }}
-        </div>
-      </template>
+      <div class="flex flex-col gap-1">
+        <label for="secret-value" class="text-sm font-medium">
+          {{ $t('secrets.secretValue') }}
+        </label>
+        <Password
+          id="secret-value"
+          v-model="form.secretValue"
+          :placeholder="
+            mode === 'edit'
+              ? $t('secrets.secretValuePlaceholderEdit')
+              : $t('secrets.secretValuePlaceholder')
+          "
+          :feedback="false"
+          toggle-mask
+          fluid
+          :class="{ 'p-invalid': errors.secretValue }"
+        />
+        <small v-if="errors.secretValue" class="text-red-500">
+          {{ errors.secretValue }}
+        </small>
+        <small v-else class="text-muted">
+          {{
+            mode === 'edit'
+              ? $t('secrets.secretValueHintEdit')
+              : $t('secrets.secretValueHint')
+          }}
+        </small>
+      </div>
 
       <Message v-if="apiError" severity="error" :closable="false">
         {{ apiError }}
@@ -141,7 +141,8 @@ const form = reactive({
 
 const errors = reactive({
   name: '',
-  secretValue: ''
+  secretValue: '',
+  provider: ''
 })
 
 const providerOptions = computed<
@@ -150,19 +151,32 @@ const providerOptions = computed<
     value: SecretProvider | typeof PROVIDER_NONE
     disabled: boolean
   }[]
->(() => [
-  { label: t('g.none'), value: PROVIDER_NONE, disabled: false },
-  {
-    label: 'HuggingFace',
-    value: 'huggingface' as const,
-    disabled: existingProviders.includes('huggingface')
-  },
-  {
-    label: 'Civitai',
-    value: 'civitai' as const,
-    disabled: existingProviders.includes('civitai')
+>(() => {
+  const options: {
+    label: string
+    value: SecretProvider | typeof PROVIDER_NONE
+    disabled: boolean
+  }[] = [
+    {
+      label: 'HuggingFace',
+      value: 'huggingface' as const,
+      disabled: existingProviders.includes('huggingface')
+    },
+    {
+      label: 'Civitai',
+      value: 'civitai' as const,
+      disabled: existingProviders.includes('civitai')
+    }
+  ]
+  if (mode === 'edit') {
+    options.unshift({
+      label: t('g.none'),
+      value: PROVIDER_NONE,
+      disabled: false
+    })
   }
-])
+  return options
+})
 
 const apiError = computed(() => {
   if (!apiErrorCode.value && !apiErrorMessage.value) return null
@@ -180,6 +194,7 @@ function resetForm() {
   if (mode === 'edit' && secret) {
     form.name = secret.name
     form.provider = secret.provider ?? PROVIDER_NONE
+    form.secretValue = ''
   } else {
     form.name = ''
     form.secretValue = ''
@@ -187,6 +202,7 @@ function resetForm() {
   }
   errors.name = ''
   errors.secretValue = ''
+  errors.provider = ''
   apiErrorCode.value = null
   apiErrorMessage.value = null
 }
@@ -198,6 +214,7 @@ watch(visible, (isVisible) => {
 function validate(): boolean {
   errors.name = ''
   errors.secretValue = ''
+  errors.provider = ''
 
   if (!form.name.trim()) {
     errors.name = t('secrets.errors.nameRequired')
@@ -205,6 +222,10 @@ function validate(): boolean {
   }
   if (form.name.length > 255) {
     errors.name = t('secrets.errors.nameTooLong')
+    return false
+  }
+  if (mode === 'create' && form.provider === PROVIDER_NONE) {
+    errors.provider = t('secrets.errors.providerRequired')
     return false
   }
   if (mode === 'create' && !form.secretValue) {
@@ -233,9 +254,13 @@ async function handleSubmit() {
         provider
       })
     } else if (secret) {
-      await secretsApi.update(secret.id, {
+      const updatePayload: { name: string; secret_value?: string } = {
         name: form.name.trim()
-      })
+      }
+      if (form.secretValue) {
+        updatePayload.secret_value = form.secretValue
+      }
+      await secretsApi.update(secret.id, updatePayload)
     }
     emit('saved')
     visible.value = false
