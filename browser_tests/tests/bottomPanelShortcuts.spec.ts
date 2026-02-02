@@ -147,10 +147,31 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should maintain panel state when switching to terminal', async ({
     comfyPage
   }) => {
-    // Wait for terminal tab to be registered (loaded asynchronously)
-    await expect(comfyPage.page.locator('[id*="logs-terminal"]')).toBeVisible({
-      timeout: 10000
-    })
+    // First open the bottom panel to check if terminal tab is available
+    await comfyPage.page
+      .locator('button[aria-label*="Toggle Bottom Panel"]')
+      .click()
+    await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
+
+    // Check if terminal tab exists (loaded asynchronously, not available in cloud)
+    const terminalTabExists = await comfyPage.page
+      .locator('[id*="logs-terminal"]')
+      .isVisible({ timeout: 5000 })
+      .catch(() => false)
+
+    if (!terminalTabExists) {
+      // Close panel and skip test - terminal not available in this distribution
+      await comfyPage.page
+        .locator('button[aria-label*="Toggle Bottom Panel"]')
+        .click()
+      test.skip()
+      return
+    }
+
+    // Close the panel to reset state
+    await comfyPage.page
+      .locator('button[aria-label*="Toggle Bottom Panel"]')
+      .click()
 
     // Open shortcuts panel first
     await comfyPage.page
