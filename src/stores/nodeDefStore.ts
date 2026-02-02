@@ -3,6 +3,7 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { t } from '@/i18n'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
@@ -408,17 +409,16 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     // Deprecated nodes filter
     registerNodeDefFilter({
       id: 'core.deprecated',
-      name: 'Hide Deprecated Nodes',
-      description: 'Hides nodes marked as deprecated unless explicitly enabled',
+      name: t('nodeFilters.hideDeprecated'),
+      description: t('nodeFilters.hideDeprecatedDescription'),
       predicate: (nodeDef) => showDeprecated.value || !nodeDef.deprecated
     })
 
     // Experimental nodes filter
     registerNodeDefFilter({
       id: 'core.experimental',
-      name: 'Hide Experimental Nodes',
-      description:
-        'Hides nodes marked as experimental unless explicitly enabled',
+      name: t('nodeFilters.hideExperimental'),
+      description: t('nodeFilters.hideExperimentalDescription'),
       predicate: (nodeDef) => showExperimental.value || !nodeDef.experimental
     })
 
@@ -426,9 +426,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
     // Filter out litegraph typed subgraphs, saved blueprints are added in separately
     registerNodeDefFilter({
       id: 'core.subgraph',
-      name: 'Hide Subgraph Nodes',
-      description:
-        'Temporarily hides subgraph nodes from node library and search',
+      name: t('nodeFilters.hideSubgraph'),
+      description: t('nodeFilters.hideSubgraphDescription'),
       predicate: (nodeDef) => {
         // Hide subgraph nodes (identified by category='subgraph' and python_module='nodes')
         return !(
