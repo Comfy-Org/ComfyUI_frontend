@@ -1,0 +1,68 @@
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
+
+import { SecretsApiError, secretsApi } from '../api/secretsApi'
+import type { SecretMetadata, SecretProvider } from '../types'
+
+export function useSecrets() {
+  const { t } = useI18n()
+  const toastStore = useToastStore()
+
+  const loading = ref(false)
+  const secrets = ref<SecretMetadata[]>([])
+  const operatingSecretId = ref<string | null>(null)
+
+  const existingProviders = computed<SecretProvider[]>(() =>
+    secrets.value
+      .map((s) => s.provider)
+      .filter((p): p is SecretProvider => p !== undefined)
+  )
+
+  async function fetchSecrets() {
+    loading.value = true
+    try {
+      secrets.value = await secretsApi.list()
+    } catch (err) {
+      if (err instanceof SecretsApiError) {
+        toastStore.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: err.message,
+          life: 5000
+        })
+      }
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function deleteSecret(secret: SecretMetadata) {
+    operatingSecretId.value = secret.id
+    try {
+      await secretsApi.delete(secret.id)
+      secrets.value = secrets.value.filter((s) => s.id !== secret.id)
+    } catch (err) {
+      if (err instanceof SecretsApiError) {
+        toastStore.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: err.message,
+          life: 5000
+        })
+      }
+    } finally {
+      operatingSecretId.value = null
+    }
+  }
+
+  return {
+    loading,
+    secrets,
+    operatingSecretId,
+    existingProviders,
+    fetchSecrets,
+    deleteSecret
+  }
+}

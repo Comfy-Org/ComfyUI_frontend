@@ -48,7 +48,7 @@
         v-model:visible="createDialogVisible"
         mode="create"
         :existing-providers="existingProviders"
-        @saved="handleSaved"
+        @saved="fetchSecrets"
       />
 
       <SecretFormDialog
@@ -56,7 +56,7 @@
         mode="edit"
         :secret="selectedSecret"
         :existing-providers="existingProviders"
-        @saved="handleSaved"
+        @saved="fetchSecrets"
       />
 
       <ConfirmDialog group="secrets" />
@@ -70,51 +70,31 @@ import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import { useConfirm } from 'primevue/useconfirm'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import { SecretsApiError, secretsApi } from '../api/secretsApi'
-import type { SecretMetadata, SecretProvider } from '../types'
+import { useSecrets } from '../composables/useSecrets'
+import type { SecretMetadata } from '../types'
 import SecretFormDialog from './SecretFormDialog.vue'
 import SecretListItem from './SecretListItem.vue'
 
 const { t } = useI18n()
 const confirm = useConfirm()
-const toastStore = useToastStore()
 
-const loading = ref(false)
-const secrets = ref<SecretMetadata[]>([])
+const {
+  loading,
+  secrets,
+  operatingSecretId,
+  existingProviders,
+  fetchSecrets,
+  deleteSecret
+} = useSecrets()
+
 const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const selectedSecret = ref<SecretMetadata | undefined>()
-const operatingSecretId = ref<string | null>(null)
-
-const existingProviders = computed<SecretProvider[]>(() =>
-  secrets.value
-    .map((s) => s.provider)
-    .filter((p): p is SecretProvider => p !== undefined)
-)
-
-async function fetchSecrets() {
-  loading.value = true
-  try {
-    secrets.value = await secretsApi.list()
-  } catch (err) {
-    if (err instanceof SecretsApiError) {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: err.message,
-        life: 5000
-      })
-    }
-  } finally {
-    loading.value = false
-  }
-}
 
 function openCreateDialog() {
   createDialogVisible.value = true
@@ -133,29 +113,6 @@ function confirmDelete(secret: SecretMetadata) {
     acceptClass: 'p-button-danger',
     accept: () => deleteSecret(secret)
   })
-}
-
-async function deleteSecret(secret: SecretMetadata) {
-  operatingSecretId.value = secret.id
-  try {
-    await secretsApi.delete(secret.id)
-    secrets.value = secrets.value.filter((s) => s.id !== secret.id)
-  } catch (err) {
-    if (err instanceof SecretsApiError) {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: err.message,
-        life: 5000
-      })
-    }
-  } finally {
-    operatingSecretId.value = null
-  }
-}
-
-function handleSaved() {
-  fetchSecrets()
 }
 
 onMounted(() => {

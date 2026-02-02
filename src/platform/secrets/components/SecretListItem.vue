@@ -51,6 +51,8 @@
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+
+import { getProviderLabel } from '../providers'
 import type { SecretMetadata } from '../types'
 
 const {
@@ -68,16 +70,7 @@ const emit = defineEmits<{
   delete: []
 }>()
 
-const providerLabel = computed(() => {
-  switch (secret.provider) {
-    case 'huggingface':
-      return 'HuggingFace'
-    case 'civitai':
-      return 'Civitai'
-    default:
-      return secret.provider
-  }
-})
+const providerLabel = computed(() => getProviderLabel(secret.provider))
 
 function formatDateString(dateString: string): string {
   const date = new Date(dateString)
