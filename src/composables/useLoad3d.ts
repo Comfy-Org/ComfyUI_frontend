@@ -1,5 +1,6 @@
+import type { MaybeRef } from 'vue'
+
 import { toRef } from '@vueuse/core'
-import type { MaybeRef } from '@vueuse/core'
 import { nextTick, ref, toRaw, watch } from 'vue'
 
 import Load3d from '@/extensions/core/load3d/Load3d'
