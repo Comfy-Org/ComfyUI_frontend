@@ -8,7 +8,7 @@ type Pattern = {
 }
 
 const distDir = resolve('dist')
-const allowedExtensions = new Set(['.html', '.js', '.map', '.ts'])
+const allowedExtensions = new Set(['.html', '.js', '.map'])
 const telemetryPatterns: Pattern[] = [
   { label: 'GTM container', regex: /GTM-[A-Z0-9]+/i },
   { label: 'GTM script', regex: /gtm\.js/i },
