@@ -224,13 +224,13 @@ export function useSettingUI(
       creditsPanel,
       userPanel,
       ...(shouldShowWorkspacePanel.value ? [workspacePanel] : []),
-      ...(shouldShowSecretsPanel.value ? [secretsPanel] : []),
       keybindingPanel,
       extensionPanel,
       ...(isElectron() ? [serverConfigPanel] : []),
       ...(shouldShowPlanCreditsPanel.value && subscriptionPanel
         ? [subscriptionPanel]
-        : [])
+        : []),
+      ...(shouldShowSecretsPanel.value ? [secretsPanel] : [])
     ].filter((panel) => panel !== null && panel.component)
   )
 
@@ -263,11 +263,11 @@ export function useSettingUI(
       label: 'Workspace',
       children: [
         ...(shouldShowWorkspacePanel.value ? [workspacePanel.node] : []),
-        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
-          : [])
+          : []),
+        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : [])
       ].map(translateCategory)
     }),
     // General settings - Profile + all core settings + special panels
@@ -303,12 +303,12 @@ export function useSettingUI(
       label: 'Account',
       children: [
         userPanel.node,
-        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         shouldShowPlanCreditsPanel.value &&
         subscriptionPanel
           ? [subscriptionPanel.node]
           : []),
+        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : []),
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
