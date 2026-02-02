@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 export class ContextMenu {
   constructor(public readonly page: Page) {}
@@ -34,9 +34,21 @@ export class ContextMenu {
   }
 
   async waitForHidden(): Promise<void> {
+    const waitIfExists = async (locator: Locator, menuName: string) => {
+      const count = await locator.count()
+      if (count > 0) {
+        await locator.waitFor({ state: 'hidden' }).catch((error: Error) => {
+          console.warn(
+            `[waitForHidden] ${menuName} waitFor failed:`,
+            error.message
+          )
+        })
+      }
+    }
+
     await Promise.all([
-      this.primeVueMenu.waitFor({ state: 'hidden' }).catch(() => {}),
-      this.litegraphMenu.waitFor({ state: 'hidden' }).catch(() => {})
+      waitIfExists(this.primeVueMenu, 'primeVueMenu'),
+      waitIfExists(this.litegraphMenu, 'litegraphMenu')
     ])
   }
 }
