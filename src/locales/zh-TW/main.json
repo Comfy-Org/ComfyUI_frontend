@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP 視覺",
     "CLIP_VISION_OUTPUT": "CLIP 視覺輸出",
+    "COLOR": "顏色",
     "COMBO": "組合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1301,6 +1302,28 @@
     "disabledNodesWontUpdate": "已停用的節點將不會更新",
     "discoverCommunityContent": "探索社群製作的節點包、擴充功能等...",
     "downloads": "下載次數",
+    "emptyState": {
+      "allInstalled": {
+        "message": "你尚未安裝任何擴充功能。",
+        "title": "尚未安裝擴充功能"
+      },
+      "conflicting": {
+        "message": "你的所有擴充功能皆相容。",
+        "title": "未偵測到衝突"
+      },
+      "missing": {
+        "message": "所有必要的節點都已安裝。",
+        "title": "無缺少的節點"
+      },
+      "updateAvailable": {
+        "message": "你的所有擴充功能都是最新的。",
+        "title": "全部為最新版本"
+      },
+      "workflow": {
+        "message": "此工作流程未使用任何擴充節點。",
+        "title": "工作流程中無擴充功能"
+      }
+    },
     "enablePackToChangeVersion": "啟用此套件以變更版本",
     "errorConnecting": "連線至 Comfy Node Registry 時發生錯誤。",
     "extensionsSuccessfullyInstalled": "擴充功能已成功安裝並可使用！",

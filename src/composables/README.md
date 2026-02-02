@@ -85,7 +85,7 @@ The following diagram shows how composables fit into the application architectur
 
 ## Composable Categories
 
-The following tables list ALL composables in the system as of 2025-01-30:
+The following tables list ALL composables in the system as of 2026-01-30:
 
 ### Auth
 

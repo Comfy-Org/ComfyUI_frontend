@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Converte uma cor em um valor inteiro RGB.",
+    "display_name": "Cor para RGB Int",
+    "inputs": {
+      "color": {
+        "name": "cor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combinar Hooks [2]",
     "inputs": {
@@ -10998,6 +11013,25 @@
       }
     }
   },
+  "RecraftCreateStyleNode": {
+    "description": "Crie um estilo personalizado a partir de imagens de referência. Faça upload de 1 a 5 imagens para usar como referência de estilo. O tamanho total de todas as imagens é limitado a 5 MB.",
+    "display_name": "Recraft Criar Estilo",
+    "inputs": {
+      "images": {
+        "name": "imagens"
+      },
+      "style": {
+        "name": "estilo",
+        "tooltip": "O estilo base das imagens geradas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "id_estilo",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftCreativeUpscaleNode": {
     "description": "Aumente a imagem de forma síncrona.\nAprimora uma imagem rasterizada usando a ferramenta de ‘ampliação criativa’, aumentando a resolução com foco no refinamento de pequenos detalhes e rostos.",
     "display_name": "Recraft Ampliação Criativa de Imagem",
@@ -15256,6 +15290,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Gere um vídeo a partir de uma imagem e um prompt opcional.",
+    "display_name": "Geração de Vídeo de Imagem para Vídeo Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "image": {
+        "name": "imagem",
+        "tooltip": "Uma imagem a ser usada como quadro inicial do vídeo gerado."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Um prompt de texto opcional para geração de vídeo (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Gere um vídeo a partir de um prompt de texto.",
+    "display_name": "Geração de Vídeo de Texto para Vídeo Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para geração de vídeo."
+      },
+      "model_aspect_ratio": {
+        "name": "proporção"
+      },
+      "model_audio": {
+        "name": "áudio"
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Uma descrição textual para geração de vídeo, com comprimento máximo de 2000 caracteres."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Estenda um vídeo existente gerando quadros adicionais.",
+    "display_name": "Extensão de Vídeo Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "end_frame": {
+        "name": "quadro_final"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado para extensão de vídeo."
+      },
+      "model_duration": {
+        "name": "duração"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Um prompt de texto opcional para o vídeo estendido (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "O vídeo de origem a ser estendido."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Gera vídeo a partir de uma imagem e prompt opcional",
     "display_name": "Geração de Vídeo a partir de Imagem Vidu",
@@ -15290,6 +15437,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "Semente para geração de vídeo (0 para aleatório)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Gere um vídeo com múltiplas transições de quadros-chave.",
+    "display_name": "Geração de Vídeo com Múltiplos Quadros Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "frames": {
+        "name": "quadros",
+        "tooltip": "Número de transições de quadros-chave (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duração1"
+      },
+      "frames_duration2": {
+        "name": "duração2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente"
+      },
+      "start_image": {
+        "name": "imagem_inicial",
+        "tooltip": "A imagem do quadro inicial. A proporção deve estar entre 1:4 e 4:1."
       }
     },
     "outputs": {

@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "رؤية CLIP",
     "CLIP_VISION_OUTPUT": "خرج رؤية CLIP",
+    "COLOR": "لون",
     "COMBO": "تركيب",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1301,6 +1302,28 @@
     "disabledNodesWontUpdate": "العقد المعطلة لن يتم تحديثها",
     "discoverCommunityContent": "استكشف حزم العقد والامتدادات والمزيد من إبداعات المجتمع...",
     "downloads": "التنزيلات",
+    "emptyState": {
+      "allInstalled": {
+        "message": "لم تقم بتثبيت أي إضافات بعد.",
+        "title": "لا توجد إضافات مثبتة"
+      },
+      "conflicting": {
+        "message": "جميع إضافاتك متوافقة.",
+        "title": "لا توجد تعارضات"
+      },
+      "missing": {
+        "message": "جميع العقد المطلوبة مثبتة.",
+        "title": "لا توجد عقد مفقودة"
+      },
+      "updateAvailable": {
+        "message": "جميع إضافاتك محدّثة.",
+        "title": "كل شيء محدّث"
+      },
+      "workflow": {
+        "message": "هذا سير العمل لا يستخدم أي عقدة إضافة.",
+        "title": "لا توجد إضافات في سير العمل"
+      }
+    },
     "enablePackToChangeVersion": "فعّل هذه الحزمة لتغيير الإصدارات",
     "errorConnecting": "خطأ في الاتصال بسجل عقد Comfy.",
     "extensionsSuccessfullyInstalled": "تم تثبيت الإضافات بنجاح وهي جاهزة للاستخدام!",
