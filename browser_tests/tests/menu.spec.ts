@@ -107,16 +107,12 @@ test.describe('Menu', { tag: '@ui' }, () => {
       // Checkmark should be invisible initially (panel is hidden)
       await expect(checkmark).toHaveClass(/invisible/)
 
-      // Click Bottom Panel to toggle it on
-      // Note: Terminal tabs are loaded asynchronously, so this may show shortcuts panel
-      // as a fallback if terminal tabs aren't loaded yet. Either way, bottom panel should show.
       await bottomPanelItem.click()
 
       // Verify menu is still visible after clicking
       await expect(menu).toBeVisible()
       await expect(viewSubmenu).toBeVisible()
 
-      // Verify bottom panel is now visible (either terminal or shortcuts panel)
       await expect(bottomPanel).toBeVisible()
 
       // Checkmark should now be visible (panel is shown)
