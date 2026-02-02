@@ -391,7 +391,7 @@ echo "Last stable release: $LAST_STABLE"
 
 ```bash
 # Trigger the workflow
-gh workflow run version-bump.yaml -f version_type=${VERSION_TYPE}
+gh workflow run release-version-bump.yaml -f version_type=${VERSION_TYPE}
 
 # Workflow runs quickly - usually creates PR within 30 seconds
 echo "Workflow triggered. Waiting for PR creation..."
@@ -443,13 +443,7 @@ echo "Workflow triggered. Waiting for PR creation..."
    gh pr view ${PR_NUMBER} --json labels | jq -r '.labels[].name' | grep -q "Release" || \
      echo "ERROR: Release label missing! Add it immediately!"
    ```
-2. Check for update-locales commits:
-   ```bash
-   # WARNING: update-locales may add [skip ci] which blocks release workflow!
-   gh pr view ${PR_NUMBER} --json commits | grep -q "skip ci" && \
-     echo "WARNING: [skip ci] detected - release workflow may not trigger!"
-   ```
-3. Verify version number in package.json
+2. Verify version number in package.json
 4. Review all changed files
 5. Ensure no unintended changes included
 6. Wait for required PR checks:
@@ -461,10 +455,9 @@ echo "Workflow triggered. Waiting for PR creation..."
 ### Step 12: Pre-Merge Validation
 
 1. **Review Requirements**: Release PRs require approval
-2. Monitor CI checks - watch for update-locales
-3. **CRITICAL WARNING**: If update-locales adds [skip ci], the release workflow won't trigger!
-4. Check no new commits to main since PR creation
-5. **DEPLOYMENT READINESS**: Ready to merge?
+2. Monitor CI checks
+3. Check no new commits to main since PR creation
+4. **DEPLOYMENT READINESS**: Ready to merge?
 
 ### Step 13: Execute Release
 
