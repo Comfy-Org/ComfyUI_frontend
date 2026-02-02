@@ -1,5 +1,5 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { reactive } from 'vue'
+import { markRaw, reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
@@ -10,6 +10,21 @@ import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
+
+function createTestDialogInstance(
+  key: string,
+  overrides: Partial<DialogInstance> = {}
+): DialogInstance {
+  return {
+    key,
+    visible: true,
+    component: markRaw({ template: '<div />' }),
+    contentProps: {},
+    dialogComponentProps: {},
+    priority: 0,
+    ...overrides
+  }
+}
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: vi.fn(() => ({
@@ -86,7 +101,7 @@ describe('keybindingService - Escape key handling', () => {
 
   it('should NOT execute Escape keybinding when dialogs are open', async () => {
     const dialogStore = useDialogStore()
-    dialogStore.dialogStack.push({ key: 'test-dialog' } as DialogInstance)
+    dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
 
     keybindingService = useKeybindingService()
 
@@ -98,7 +113,7 @@ describe('keybindingService - Escape key handling', () => {
 
   it('should execute Escape keybinding with modifiers regardless of dialog state', async () => {
     const dialogStore = useDialogStore()
-    dialogStore.dialogStack.push({ key: 'test-dialog' } as DialogInstance)
+    dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
 
     const keybindingStore = useKeybindingStore()
     keybindingStore.addDefaultKeybinding(
