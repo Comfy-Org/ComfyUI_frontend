@@ -27,7 +27,7 @@
           v-if="
             !focusMode &&
             !isFullPageTabActive &&
-            (sidebarLocation === 'left' || rightSidePanelVisible)
+            (sidebarLocation === 'left' || anyRightPanelVisible)
           "
           :class="
             sidebarLocation === 'left'
@@ -102,7 +102,7 @@
           v-if="
             !focusMode &&
             !isFullPageTabActive &&
-            (sidebarLocation === 'right' || rightSidePanelVisible)
+            (sidebarLocation === 'right' || anyRightPanelVisible)
           "
           :class="
             sidebarLocation === 'right'
@@ -143,6 +143,7 @@ import { useI18n } from 'vue-i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useSharePanelStore } from '@/stores/workspace/sharePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
@@ -165,6 +166,12 @@ const { activeSidebarTabId, activeSidebarTab, isFullPageTabActive } =
   storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
+const sharePanelStore = useSharePanelStore()
+const { isOpen: sharePanelVisible } = storeToRefs(sharePanelStore)
+
+const anyRightPanelVisible = computed(
+  () => rightSidePanelVisible.value || sharePanelVisible.value
+)
 
 const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
 
@@ -187,7 +194,7 @@ function onResizestart({ originalEvent: event }: SplitterResizeStartEvent) {
  * to recalculate the width and panel order
  */
 const splitterRefreshKey = computed(() => {
-  return `main-splitter${rightSidePanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
+  return `main-splitter${anyRightPanelVisible.value ? '-with-right-panel' : ''}-${sidebarLocation.value}`
 })
 
 const firstPanelStyle = computed(() => {

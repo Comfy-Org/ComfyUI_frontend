@@ -41,7 +41,8 @@
       <BottomPanel />
     </template>
     <template v-if="showUI" #right-side-panel>
-      <NodePropertiesPanel />
+      <SharePanel v-if="sharePanelStore.isOpen" />
+      <NodePropertiesPanel v-else />
     </template>
     <template #graph-canvas-panel>
       <GraphCanvasMenu v-if="canvasMenuEnabled" class="pointer-events-auto" />
@@ -108,6 +109,7 @@ import {
   watchEffect
 } from 'vue'
 
+import SharePanel from '@/components/actionbar/SharePanel.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -161,6 +163,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useSharePanelStore } from '@/stores/workspace/sharePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isNativeWindow } from '@/utils/envUtil'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -185,6 +188,7 @@ const workflowStore = useWorkflowStore()
 const executionStore = useExecutionStore()
 const toastStore = useToastStore()
 const colorPaletteStore = useColorPaletteStore()
+const sharePanelStore = useSharePanelStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
 const bootstrapStore = useBootstrapStore()

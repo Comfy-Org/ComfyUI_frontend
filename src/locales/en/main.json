@@ -27,6 +27,52 @@
       "runWorkflowNotImplemented": "Run workflow is not implemented yet",
       "makeCopyFailed": "Failed to copy workflow: {error}",
       "appNotReady": "ComfyUI is still loading. Please wait and try again."
+    },
+    "share": {
+      "share": "Share",
+      "copyFailed": "Failed to copy link to clipboard",
+      "noActiveWorkflow": "No active workflow to share",
+      "inviteTab": {
+        "title": "Share"
+      },
+      "publishTab": {
+        "title": "Publish",
+        "description": "Publish your workflow to Comfy Hub to share it with the community. Your workflow will be publicly visible and discoverable."
+      },
+      "inviteByEmail": {
+        "description": "Invite someone to view or edit this workflow. They'll receive an email with a link to access it.",
+        "emailLabel": "Email Address",
+        "emailPlaceholder": "colleague@example.com",
+        "roleLabel": "Permission Level",
+        "roles": {
+          "viewOnly": "View Only",
+          "viewOnlyDescription": "Can view and run the workflow, but cannot make changes",
+          "edit": "Can Edit",
+          "editDescription": "Can view, run, and make changes to the workflow"
+        },
+        "sendInvite": "Send Invite",
+        "inviteSent": "Invite Sent",
+        "inviteSentDetail": "An invitation has been sent to {email}",
+        "peopleWithAccess": "People with access",
+        "inviteAnother": "Invite another person"
+      },
+      "publicUrl": {
+        "title": "Share with public link",
+        "description": "Anyone with this link can view and run your workflow, but they cannot edit it."
+      },
+      "publishToHubDialog": {
+        "title": "Publish to Hub",
+        "thumbnail": "Thumbnail",
+        "thumbnailPreview": "Thumbnail preview",
+        "uploadThumbnail": "Click to upload a thumbnail image",
+        "titlePlaceholder": "Enter a title for your workflow",
+        "descriptionPlaceholder": "Describe what your workflow does...",
+        "addTag": "Add a tag and press Enter",
+        "openSource": "Open Source",
+        "openSourceDescription": "Uses only open source models",
+        "publish": "Publish",
+        "notImplemented": "Publishing to Hub is not implemented yet"
+      }
     }
   },
   "g": {
@@ -862,7 +908,8 @@
         "browse": "Browse",
         "bookmarks": "Bookmarks",
         "open": "Open"
-      }
+      },
+      "discoverWorkflows": "Discover Workflows"
     }
   },
   "helpCenter": {

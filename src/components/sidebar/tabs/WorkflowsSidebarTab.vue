@@ -116,6 +116,8 @@
             icon="pi pi-folder"
             :title="$t('g.empty')"
             :message="$t('g.noWorkflowsFound')"
+            :button-label="$t('sideToolbar.workflowTab.discoverWorkflows')"
+            @action="openDiscoverTab"
           />
         </div>
       </div>
@@ -155,6 +157,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
@@ -303,6 +306,12 @@ const selectionKeys = computed(() => ({
 }))
 
 const workflowBookmarkStore = useWorkflowBookmarkStore()
+const sidebarTabStore = useSidebarTabStore()
+
+function openDiscoverTab() {
+  sidebarTabStore.activeSidebarTabId = 'discover'
+}
+
 onMounted(async () => {
   searchBoxRef.value?.focus()
   await workflowBookmarkStore.loadBookmarks()
