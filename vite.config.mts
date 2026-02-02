@@ -419,6 +419,20 @@ export default defineConfig({
     minify: SHOULD_MINIFY,
     target: 'es2022',
     sourcemap: GENERATE_SOURCEMAP,
+    // Exclude heavy optional vendor chunks from initial module preload
+    // These chunks are only needed when their features are used (3D, terminal, etc.)
+    modulePreload: {
+      resolveDependencies: (_filename, deps, { hostType }) => {
+        // Only filter for HTML entry points, not for dynamic imports
+        if (hostType !== 'html') return deps
+
+        // Exclude heavy vendor chunks that should be lazy-loaded
+        const lazyVendors = ['vendor-three', 'vendor-xterm']
+        return deps.filter(
+          (dep) => !lazyVendors.some((vendor) => dep.includes(vendor))
+        )
+      }
+    },
     rolldownOptions: {
       treeshake: {
         manualPureFunctions: [
