@@ -7,7 +7,7 @@ import type {
 import type { WorkspaceStore } from '../../types/globals'
 import type { ComfyPage } from '../ComfyPage'
 
-export type FolderStructure = {
+type FolderStructure = {
   [key: string]: FolderStructure | string
 }
 

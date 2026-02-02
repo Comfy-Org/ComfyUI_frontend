@@ -28,7 +28,12 @@ test.describe(
 
       // Drag the KSampler to the center of the screen
       const nodePos = await ksamplerNodes[0].getPosition()
-      const viewportSize = comfyPage.page.viewportSize()!
+      const viewportSize = comfyPage.page.viewportSize()
+      if (!viewportSize) {
+        throw new Error(
+          'Viewport size is null - page may not be properly initialized'
+        )
+      }
       const centerX = viewportSize.width / 3
       const centerY = viewportSize.height / 2
       await comfyPage.canvasOps.dragAndDrop(

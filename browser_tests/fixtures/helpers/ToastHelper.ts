@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 export class ToastHelper {
@@ -32,10 +33,7 @@ export class ToastHelper {
       await button.click()
     }
 
-    // Wait for toasts to disappear
-    await this.visibleToasts
-      .first()
-      .waitFor({ state: 'hidden', timeout: 1000 })
-      .catch(() => {})
+    // Assert all toasts are closed
+    await expect(this.visibleToasts).toHaveCount(0, { timeout: 1000 })
   }
 }

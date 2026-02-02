@@ -167,7 +167,9 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
     await bottomPanel.keyboardShortcutsButton.click()
 
-    await expect(comfyPage.page.locator('.md\\:grid-cols-3')).toBeVisible()
+    await expect(
+      comfyPage.page.locator('[data-testid="shortcuts-columns"]')
+    ).toBeVisible()
 
     const subcategoryTitles = bottomPanel.shortcuts.subcategoryTitles
     const titleCount = await subcategoryTitles.count()

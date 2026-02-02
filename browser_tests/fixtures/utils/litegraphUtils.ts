@@ -349,16 +349,16 @@ export class NodeReference {
     position: 'title' | 'collapse',
     options?: Parameters<Page['click']>[1] & { moveMouseToEmptyArea?: boolean }
   ) {
-    const nodePos = await this.getPosition()
-    const nodeSize = await this.getSize()
     let clickPos: Position
     switch (position) {
       case 'title':
-        clickPos = { x: nodePos.x + nodeSize.width / 2, y: nodePos.y - 15 }
+        clickPos = await this.getTitlePosition()
         break
-      case 'collapse':
+      case 'collapse': {
+        const nodePos = await this.getPosition()
         clickPos = { x: nodePos.x + 5, y: nodePos.y - 10 }
         break
+      }
       default:
         throw new Error(`Invalid click position ${position}`)
     }

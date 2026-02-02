@@ -15,6 +15,10 @@ export class CommandHelper {
     commandId: string,
     command: (() => void) | (() => Promise<void>)
   ): Promise<void> {
+    // SECURITY: eval() is intentionally used here to deserialize/execute functions
+    // passed from controlled test code across the Node/Playwright browser boundary.
+    // Execution happens in isolated Playwright browser contexts with test-only data.
+    // This pattern is unsafe for production and must not be copied elsewhere.
     await this.page.evaluate(
       ({ commandId, commandStr }) => {
         const app = window.app!
@@ -39,6 +43,10 @@ export class CommandHelper {
     keyCombo: KeyCombo,
     command: () => void
   ): Promise<void> {
+    // SECURITY: eval() is intentionally used here to deserialize/execute functions
+    // passed from controlled test code across the Node/Playwright browser boundary.
+    // Execution happens in isolated Playwright browser contexts with test-only data.
+    // This pattern is unsafe for production and must not be copied elsewhere.
     await this.page.evaluate(
       ({ keyCombo, commandStr }) => {
         const app = window.app!

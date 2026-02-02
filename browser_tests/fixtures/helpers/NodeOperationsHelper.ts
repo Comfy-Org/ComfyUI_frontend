@@ -93,14 +93,17 @@ export class NodeOperationsHelper {
 
   async selectNodes(nodeTitles: string[]): Promise<void> {
     await this.page.keyboard.down('Control')
-    for (const nodeTitle of nodeTitles) {
-      const nodes = await this.getNodeRefsByTitle(nodeTitle)
-      for (const node of nodes) {
-        await node.click('title')
+    try {
+      for (const nodeTitle of nodeTitles) {
+        const nodes = await this.getNodeRefsByTitle(nodeTitle)
+        for (const node of nodes) {
+          await node.click('title')
+        }
       }
+    } finally {
+      await this.page.keyboard.up('Control')
+      await this.comfyPage.nextFrame()
     }
-    await this.page.keyboard.up('Control')
-    await this.comfyPage.nextFrame()
   }
 
   async resizeNode(

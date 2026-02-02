@@ -49,5 +49,3 @@ export const DefaultGraphPositions = {
   loadCheckpoint: { pos: Position; size: { width: number; height: number } }
   emptyLatent: { pos: Position; size: { width: number; height: number } }
 }
-
-export type DefaultGraphPositionsType = typeof DefaultGraphPositions
