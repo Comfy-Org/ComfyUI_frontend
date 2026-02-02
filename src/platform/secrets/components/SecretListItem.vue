@@ -20,24 +20,29 @@
       </div>
     </div>
     <div class="flex items-center gap-2">
-      <Button
-        v-tooltip="{ value: $t('g.edit'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-sm"
-        :aria-label="$t('g.edit')"
-        @click="emit('edit')"
-      >
-        <i class="pi pi-pen-to-square" />
-      </Button>
-      <Button
-        v-tooltip="{ value: $t('g.delete'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon-sm"
-        :aria-label="$t('g.delete')"
-        @click="emit('delete')"
-      >
-        <i class="pi pi-trash" />
-      </Button>
+      <i v-if="loading" class="pi pi-spinner pi-spin text-muted" />
+      <template v-else>
+        <Button
+          v-tooltip="{ value: $t('g.edit'), showDelay: 300 }"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('g.edit')"
+          :disabled="disabled"
+          @click="emit('edit')"
+        >
+          <i class="pi pi-pen-to-square" />
+        </Button>
+        <Button
+          v-tooltip="{ value: $t('g.delete'), showDelay: 300 }"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('g.delete')"
+          :disabled="disabled"
+          @click="emit('delete')"
+        >
+          <i class="pi pi-trash" />
+        </Button>
+      </template>
     </div>
   </div>
 </template>
@@ -48,8 +53,14 @@ import { computed } from 'vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { SecretMetadata } from '../types'
 
-const { secret } = defineProps<{
+const {
+  secret,
+  loading = false,
+  disabled = false
+} = defineProps<{
   secret: SecretMetadata
+  loading?: boolean
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -25,7 +25,10 @@
         <ProgressSpinner class="h-8 w-8" />
       </div>
 
-      <div v-else-if="secrets.length === 0" class="py-8 text-center text-muted">
+      <div
+        v-else-if="secrets.length === 0"
+        class="py-4 text-center text-sm text-muted"
+      >
         {{ $t('secrets.noSecrets') }}
       </div>
 
@@ -34,6 +37,8 @@
           v-for="secret in secrets"
           :key="secret.id"
           :secret="secret"
+          :loading="operatingSecretId === secret.id"
+          :disabled="operatingSecretId !== null"
           @edit="openEditDialog(secret)"
           @delete="confirmDelete(secret)"
         />
@@ -85,6 +90,7 @@ const secrets = ref<SecretMetadata[]>([])
 const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const selectedSecret = ref<SecretMetadata | undefined>()
+const operatingSecretId = ref<string | null>(null)
 
 const existingProviders = computed<SecretProvider[]>(() =>
   secrets.value
@@ -130,6 +136,7 @@ function confirmDelete(secret: SecretMetadata) {
 }
 
 async function deleteSecret(secret: SecretMetadata) {
+  operatingSecretId.value = secret.id
   try {
     await secretsApi.delete(secret.id)
     secrets.value = secrets.value.filter((s) => s.id !== secret.id)
@@ -142,6 +149,8 @@ async function deleteSecret(secret: SecretMetadata) {
         life: 5000
       })
     }
+  } finally {
+    operatingSecretId.value = null
   }
 }
 
