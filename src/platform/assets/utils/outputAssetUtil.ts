@@ -1,5 +1,6 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   getJobDetail,
   getPreviewableOutputsFromJobDetail
@@ -21,7 +22,7 @@ type ResolveOutputAssetItemsOptions = {
 }
 
 type OutputKeyParts = {
-  nodeId?: string | number | null
+  nodeId?: NodeId | null
   subfolder?: string | null
   filename?: string | null
 }
