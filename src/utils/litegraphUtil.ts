@@ -51,7 +51,8 @@ export async function createNode(
   if (newNode && graph) {
     newNode.pos = [ posX, posY ]
     const addedNode = graph.add(newNode) ?? null
-    graph.change()
+
+    if (addedNode) graph.change()
     return addedNode
   } else {
     useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
