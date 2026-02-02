@@ -147,40 +147,25 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should maintain panel state when switching to terminal', async ({
     comfyPage
   }) => {
+    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
+    await logsTab.waitFor({ state: 'attached', timeout: 5000 })
+
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
       .click()
     await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
+    await expect(
+      comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
+    ).toBeVisible()
 
-    const terminalButton = comfyPage.page.locator(
-      'button[aria-label*="Toggle Bottom Panel"]'
-    )
-
-    // Terminal tabs load via dynamic import - wait for them or skip if unavailable
-    const logsTab = comfyPage.page.locator('.bottom-panel').getByRole('tab', {
-      name: /Logs/i
-    })
-    const terminalAvailable = await logsTab
-      .waitFor({ state: 'attached', timeout: 3000 })
-      .then(() => true)
-      .catch(() => false)
-
-    if (!terminalAvailable) {
-      await comfyPage.page
-        .locator('button[aria-label*="Keyboard Shortcuts"]')
-        .click()
-      test.skip()
-      return
-    }
-
-    await terminalButton.click()
+    await comfyPage.page
+      .locator('button[aria-label*="Toggle Bottom Panel"]')
+      .click()
     await expect(logsTab).toBeVisible()
-    await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
 
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
       .click()
-
     await expect(
       comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
     ).toBeVisible()
