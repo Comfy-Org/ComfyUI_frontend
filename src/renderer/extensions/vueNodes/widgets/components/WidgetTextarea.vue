@@ -2,12 +2,7 @@
   <FloatLabel
     variant="on"
     :unstyled="hideLayoutField"
-    :pt="{
-      root: {
-        class:
-          '[&_label]:!bg-transparent [&_label]:!text-[color:var(--p-text-color)]'
-      }
-    }"
+    :pt="{ root: { class: '[&_label]:!bg-transparent [&_label]:!text-muted-foreground' } }"
     :class="
       cn(
         'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
