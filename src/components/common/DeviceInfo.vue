@@ -34,7 +34,11 @@ const formatValue = (value: string | number, field: string) => {
       field
     )
   ) {
-    return formatSize(Number(value))
+    const num = Number(value)
+    if (Number.isFinite(num)) {
+      return formatSize(num)
+    }
+    return value
   }
   return value
 }
