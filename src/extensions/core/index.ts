@@ -13,7 +13,9 @@ import './imageCompare'
 import './imageCrop'
 import './load3d'
 import './maskeditor'
-import './nodeTemplates'
+if (!isCloud) {
+  await import('./nodeTemplates')
+}
 import './noteNode'
 import './previewAny'
 import './rerouteNode'

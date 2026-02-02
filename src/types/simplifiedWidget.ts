@@ -15,7 +15,7 @@ export type WidgetValue =
   | void
   | File[]
 
-const CONTROL_OPTIONS = [
+export const CONTROL_OPTIONS = [
   'fixed',
   'increment',
   'decrement',

@@ -72,10 +72,14 @@ export const useIntWidget = () => {
       ['seed', 'noise_seed'].includes(inputSpec.name)
 
     if (controlAfterGenerate) {
+      const defaultType =
+        typeof inputSpec.control_after_generate === 'string'
+          ? inputSpec.control_after_generate
+          : 'randomize'
       const controlWidget = addValueControlWidget(
         node,
         widget,
-        'randomize',
+        defaultType,
         undefined,
         undefined,
         transformInputSpecV2ToV1(inputSpec)
