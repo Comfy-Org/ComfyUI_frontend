@@ -148,9 +148,9 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     // Wait for terminal tab to be registered (loaded asynchronously)
-    await expect(
-      comfyPage.page.locator('[id*="logs-terminal"]')
-    ).toBeVisible({ timeout: 10000 })
+    await expect(comfyPage.page.locator('[id*="logs-terminal"]')).toBeVisible({
+      timeout: 10000
+    })
 
     // Open shortcuts panel first
     await comfyPage.page
