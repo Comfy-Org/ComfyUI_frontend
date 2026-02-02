@@ -506,7 +506,7 @@ export const useWorkflowTemplatesStore = defineStore(
 
     async function fetchLogoIndex(): Promise<LogoIndex> {
       try {
-        const response = await api.fetchApi('/templates/index_logo.json')
+        const response = await fetch(api.fileURL('/templates/index_logo.json'))
         const contentType = response.headers.get('content-type')
         if (!contentType?.includes('application/json')) return {}
         const data = await response.json()
