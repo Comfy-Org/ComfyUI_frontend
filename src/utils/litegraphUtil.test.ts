@@ -97,7 +97,7 @@ describe('createNode', () => {
 
     const result = await createNode(mockCanvas as LGraphCanvas, 'LoadImage')
 
-    expect(mockNode.pos).toEqual([100, 200])
+    expect(mockNode.pos).toEqual([0, 0])
     expect(result).toBeNull()
   })
 

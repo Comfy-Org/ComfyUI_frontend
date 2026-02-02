@@ -48,10 +48,10 @@ export async function createNode(
   const newNode = LiteGraph.createNode(name)
   await new Promise(r => setTimeout(r, 0))
 
-  if (newNode) {
-    newNode!.pos = [ posX, posY ]
-    const addedNode = graph?.add(newNode!) ?? null
-    graph?.change()
+  if (newNode && graph) {
+    newNode.pos = [ posX, posY ]
+    const addedNode = graph.add(newNode) ?? null
+    graph.change()
     return addedNode
   } else {
     useToastStore().addAlert(t('assetBrowser.failedToCreateNode'))
