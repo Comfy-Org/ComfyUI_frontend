@@ -727,6 +727,7 @@
     "logout": "Logout",
     "queue": "Queue",
     "nodeLibrary": "Node Library",
+    "nodes": "Nodes",
     "workflows": "Workflows",
     "templates": "Templates",
     "assets": "Assets",
@@ -771,6 +772,9 @@
     "openWorkflow": "Open workflow in local file system",
     "newBlankWorkflow": "Create a new blank workflow",
     "nodeLibraryTab": {
+      "essential": "Essential",
+      "allNodes": "All nodes",
+      "custom": "Custom",
       "groupBy": "Group By",
       "sortMode": "Sort Mode",
       "resetView": "Reset View to Default",
@@ -787,6 +791,10 @@
         "originalDesc": "Keep original order",
         "alphabetical": "Alphabetical",
         "alphabeticalDesc": "Sort alphabetically within groups"
+      },
+      "sections": {
+        "favorites": "Favorites",
+        "basics": "Basics"
       }
     },
     "modelLibrary": "Model Library",
