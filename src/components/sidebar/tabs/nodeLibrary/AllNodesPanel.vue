@@ -1,0 +1,79 @@
+<template>
+  <TabsContent value="all" class="min-h-0 flex-1 overflow-y-auto">
+    <!-- Favorites section -->
+    <template v-if="hasFavorites">
+      <h3
+        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+      >
+        {{ $t('sideToolbar.nodeLibraryTab.sections.favorites') }}
+      </h3>
+      <TreeExplorerV2
+        v-model:expanded-keys="expandedKeys"
+        :root="favoritesRoot"
+        @node-click="(node) => emit('nodeClick', node)"
+        @add-to-favorites="handleAddToFavorites"
+      />
+    </template>
+
+    <!-- Node sections -->
+    <div v-for="(section, index) in sections" :key="section.title ?? index">
+      <h3
+        v-if="section.title"
+        class="px-4 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground"
+      >
+        {{ $t(section.title) }}
+      </h3>
+      <TreeExplorerV2
+        v-model:expanded-keys="expandedKeys"
+        :root="section.root"
+        @node-click="(node) => emit('nodeClick', node)"
+        @add-to-favorites="handleAddToFavorites"
+      />
+    </div>
+  </TabsContent>
+</template>
+
+<script setup lang="ts">
+import { TabsContent } from 'reka-ui'
+import { computed } from 'vue'
+
+import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
+import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type {
+  RenderedTreeExplorerNode,
+  TreeNode
+} from '@/types/treeExplorerTypes'
+
+interface Section {
+  title?: string
+  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+}
+
+const { fillNodeInfo } = defineProps<{
+  sections: Section[]
+  fillNodeInfo: (node: TreeNode) => RenderedTreeExplorerNode<ComfyNodeDefImpl>
+}>()
+
+const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })
+
+const emit = defineEmits<{
+  nodeClick: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
+}>()
+
+const nodeBookmarkStore = useNodeBookmarkStore()
+
+const hasFavorites = computed(
+  () => (nodeBookmarkStore.bookmarkedRoot.children?.length ?? 0) > 0
+)
+
+const favoritesRoot = computed(() =>
+  fillNodeInfo(nodeBookmarkStore.bookmarkedRoot)
+)
+
+function handleAddToFavorites(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
+  if (node.data) {
+    nodeBookmarkStore.toggleBookmark(node.data)
+  }
+}
+</script>

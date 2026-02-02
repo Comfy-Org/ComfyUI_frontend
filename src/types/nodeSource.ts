@@ -2,6 +2,7 @@ export enum NodeSourceType {
   Core = 'core',
   CustomNodes = 'custom_nodes',
   Blueprint = 'blueprint',
+  Essentials = 'essentials',
   Unknown = 'unknown'
 }
 
@@ -55,6 +56,14 @@ export const getNodeSource = (python_module?: string): NodeSource => {
       className: 'comfy-custom-nodes',
       displayText: displayName,
       badgeText: displayName
+    }
+  } else if (modules[0] === 'essential') {
+    const moduleName = modules[1]
+    return {
+      type: NodeSourceType.Essentials,
+      className: 'comfy-essentials',
+      displayText: moduleName,
+      badgeText: moduleName
     }
   } else {
     return UNKNOWN_NODE_SOURCE
