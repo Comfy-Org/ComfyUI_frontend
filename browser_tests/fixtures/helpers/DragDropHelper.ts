@@ -98,8 +98,10 @@ export class DragDropHelper {
       )
 
       if (!targetElement) {
-        console.error('No element found at drop position:', params.dropPosition)
-        return { success: false, error: 'No element at position' }
+        throw new Error(
+          `No element found at drop position: (${params.dropPosition.x}, ${params.dropPosition.y}). ` +
+            `document.elementFromPoint returned null. Ensure the target is visible and not obscured.`
+        )
       }
 
       const eventOptions = {

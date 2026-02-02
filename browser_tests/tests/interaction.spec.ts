@@ -728,9 +728,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
     await node.click('collapse')
-    await comfyPage.canvasOps.clickEmptySpace(
-      DefaultGraphPositions.emptySpaceClick
-    )
+    await comfyPage.canvasOps.clickEmptySpace()
     await expect(comfyPage.canvas).toHaveScreenshot(
       'single_ksampler_modified.png'
     )
@@ -1078,9 +1076,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
         await comfyPage.nodeOps.getSelectedGraphNodesCount()
       expect(selectedCountAfterDrag).toBeGreaterThan(0)
 
-      await comfyPage.canvasOps.clickEmptySpace(
-        DefaultGraphPositions.emptySpaceClick
-      )
+      await comfyPage.canvasOps.clickEmptySpace()
       const selectedCountAfterClear =
         await comfyPage.nodeOps.getSelectedGraphNodesCount()
       expect(selectedCountAfterClear).toBe(0)

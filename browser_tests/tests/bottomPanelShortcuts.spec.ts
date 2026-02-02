@@ -100,9 +100,9 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     const { bottomPanel } = comfyPage
 
     await bottomPanel.keyboardShortcutsButton.click()
-    await comfyPage.page.waitForSelector('.key-badge')
 
     const keyBadges = bottomPanel.shortcuts.keyBadges
+    await keyBadges.first().waitFor({ state: 'visible' })
     const count = await keyBadges.count()
     expect(count).toBeGreaterThanOrEqual(1)
 

@@ -369,8 +369,6 @@ test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
     test('Can create subgraph from selected nodes', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('default')
 
-      await getGraphNodeCount(comfyPage)
-
       await comfyPage.keyboard.selectAll()
       await comfyPage.nextFrame()
 

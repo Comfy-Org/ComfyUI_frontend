@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 import type { ComfyApp } from '../../src/scripts/app'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -12,7 +11,7 @@ test.beforeEach(async ({ comfyPage }) => {
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
   test('Can add badge', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window.LGraphBadge
+      const LGraphBadge = window.LGraphBadge!
       const app = window.app as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes
@@ -29,7 +28,7 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
 
   test('Can add multiple badges', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window.LGraphBadge
+      const LGraphBadge = window.LGraphBadge!
       const app = window.app as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes
@@ -49,7 +48,7 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
 
   test('Can add badge left-side', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(() => {
-      const LGraphBadge = window.LGraphBadge
+      const LGraphBadge = window.LGraphBadge!
       const app = window.app as ComfyApp
       const graph = app.graph
       const nodes = graph.nodes
@@ -107,9 +106,7 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'unknown')
       await comfyPage.nextFrame()
       // Click empty space to trigger canvas re-render.
-      await comfyPage.canvasOps.clickEmptySpace(
-        DefaultGraphPositions.emptySpaceClick
-      )
+      await comfyPage.canvasOps.clickEmptySpace()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-unknown-color-palette.png'
       )
@@ -125,9 +122,7 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.nextFrame()
       // Click empty space to trigger canvas re-render.
-      await comfyPage.canvasOps.clickEmptySpace(
-        DefaultGraphPositions.emptySpaceClick
-      )
+      await comfyPage.canvasOps.clickEmptySpace()
       await expect(comfyPage.canvas).toHaveScreenshot(
         'node-badge-light-color-palette.png'
       )

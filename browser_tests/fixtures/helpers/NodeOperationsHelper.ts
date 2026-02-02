@@ -139,7 +139,10 @@ export class NodeOperationsHelper {
   async convertAllNodesToGroupNode(groupNodeName: string): Promise<void> {
     await this.comfyPage.canvas.press('Control+a')
     const node = await this.getFirstNodeRef()
-    await node!.clickContextMenuOption('Convert to Group Node')
+    if (!node) {
+      throw new Error('No nodes found to convert')
+    }
+    await node.clickContextMenuOption('Convert to Group Node')
     await this.fillPromptDialog(groupNodeName)
     await this.comfyPage.nextFrame()
   }

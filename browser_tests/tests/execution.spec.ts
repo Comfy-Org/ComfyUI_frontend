@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -13,9 +12,7 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.canvasOps.disconnectEdge()
-      await comfyPage.canvasOps.clickEmptySpace(
-        DefaultGraphPositions.emptySpaceClick
-      )
+      await comfyPage.canvasOps.clickEmptySpace()
 
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
       await expect(comfyPage.page.locator('.comfy-error-report')).toBeVisible()

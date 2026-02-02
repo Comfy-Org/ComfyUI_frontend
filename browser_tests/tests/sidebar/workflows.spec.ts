@@ -86,14 +86,14 @@ test.describe('Workflows sidebar', () => {
     const originalNodeCount = (await comfyPage.nodeOps.getNodes()).length
 
     await tab.insertWorkflow(tab.getPersistedItem('workflow1.json'))
-    await comfyPage.nextFrame()
-    expect((await comfyPage.nodeOps.getNodes()).length).toEqual(
-      originalNodeCount + 1
-    )
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodes().then((n) => n.length))
+      .toEqual(originalNodeCount + 1)
 
     await tab.getPersistedItem('workflow1.json').click()
-    await comfyPage.nextFrame()
-    expect((await comfyPage.nodeOps.getNodes()).length).toEqual(1)
+    await expect
+      .poll(() => comfyPage.nodeOps.getNodes().then((n) => n.length))
+      .toEqual(1)
   })
 
   test('Can rename nested workflow from opened workflow item', async ({

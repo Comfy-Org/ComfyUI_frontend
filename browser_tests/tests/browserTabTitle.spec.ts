@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 import type { WorkspaceStore } from '../types/globals'
 
 test.describe('Browser tab title', { tag: '@smoke' }, () => {
@@ -34,9 +33,7 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
       const textBox = comfyPage.widgetTextBox
       await textBox.fill('Hello World')
-      await comfyPage.canvasOps.clickEmptySpace(
-        DefaultGraphPositions.emptySpaceClick
-      )
+      await comfyPage.canvasOps.clickEmptySpace()
       expect(await comfyPage.page.title()).toBe(`*test - ComfyUI`)
 
       // Delete the saved workflow for cleanup.

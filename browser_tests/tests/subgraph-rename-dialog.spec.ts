@@ -31,8 +31,14 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
       return graph.inputs?.[0]?.label || graph.inputs?.[0]?.name || null
     })
 
+    if (initialInputLabel === null) {
+      throw new Error(
+        'Expected subgraph to have an input slot label for rightClickInputSlot'
+      )
+    }
+
     // First rename
-    await comfyPage.subgraph.rightClickInputSlot(initialInputLabel!)
+    await comfyPage.subgraph.rightClickInputSlot(initialInputLabel)
     await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
     await comfyPage.nextFrame()
 
@@ -123,8 +129,14 @@ test.describe('Subgraph Slot Rename Dialog', { tag: '@subgraph' }, () => {
       return graph.outputs?.[0]?.label || graph.outputs?.[0]?.name || null
     })
 
+    if (initialOutputLabel === null) {
+      throw new Error(
+        'Expected subgraph to have an output slot label for rightClickOutputSlot'
+      )
+    }
+
     // First rename
-    await comfyPage.subgraph.rightClickOutputSlot(initialOutputLabel!)
+    await comfyPage.subgraph.rightClickOutputSlot(initialOutputLabel)
     await comfyPage.contextMenu.clickLitegraphMenuItem('Rename Slot')
     await comfyPage.nextFrame()
 

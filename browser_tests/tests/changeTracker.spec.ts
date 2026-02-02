@@ -3,7 +3,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../fixtures/ComfyPage'
-import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 
 async function beforeChange(comfyPage: ComfyPage) {
   await comfyPage.page.evaluate(() => {
@@ -91,9 +90,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
     await expect(node).not.toBeCollapsed()
 
     // Prevent clicks registering a double-click
-    await comfyPage.canvasOps.clickEmptySpace(
-      DefaultGraphPositions.emptySpaceClick
-    )
+    await comfyPage.canvasOps.clickEmptySpace()
     await node.click('title')
 
     // Run again, but within a change transaction
@@ -162,9 +159,7 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       window.app!.graph!.extra.foo = 'bar'
     })
     // Click empty space to trigger a change detection.
-    await comfyPage.canvasOps.clickEmptySpace(
-      DefaultGraphPositions.emptySpaceClick
-    )
+    await comfyPage.canvasOps.clickEmptySpace()
     expect(await comfyPage.workflow.getUndoQueueSize()).toBe(1)
   })
 

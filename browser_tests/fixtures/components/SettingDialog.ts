@@ -41,7 +41,7 @@ export class SettingDialog extends BaseDialog {
   }
 
   async goToAboutPanel() {
-    await this.page.getByTestId('settings-tab-about').click()
+    await this.page.getByTestId(TestIds.dialogs.settingsTabAbout).click()
     await this.page
       .getByTestId(TestIds.dialogs.about)
       .waitFor({ state: 'visible' })

@@ -23,6 +23,7 @@ export const TestIds = {
   dialogs: {
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
+    settingsTabAbout: 'settings-tab-about',
     confirm: 'confirm-dialog',
     about: 'about-panel'
   },
