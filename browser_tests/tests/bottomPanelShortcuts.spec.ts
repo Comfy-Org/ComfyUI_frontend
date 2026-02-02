@@ -148,14 +148,17 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     // First open the bottom panel to check if terminal tab is available
+    // Terminal tabs are loaded asynchronously, so wait for the "Logs" tab to appear
     await comfyPage.page
       .locator('button[aria-label*="Toggle Bottom Panel"]')
       .click()
-    await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
 
     // Check if terminal tab exists (loaded asynchronously, not available in cloud)
-    const terminalTabExists = await comfyPage.page
-      .locator('[id*="logs-terminal"]')
+    // Look for the "Logs" tab text in the bottom panel
+    const logsTab = comfyPage.page.locator('.bottom-panel').getByRole('tab', {
+      name: /Logs/i
+    })
+    const terminalTabExists = await logsTab
       .isVisible({ timeout: 5000 })
       .catch(() => false)
 
