@@ -97,13 +97,10 @@ function toggleBaseModelPopover(event: Event) {
 }
 
 function toggleBaseModelSelection(item: FilterOption) {
-  const current = baseModelSelected.value
-  if (current.has(item.value)) {
-    current.delete(item.value)
-  } else {
-    current.add(item.value)
-  }
-  baseModelSelected.value = new Set(current)
+  const current = new Set(baseModelSelected.value)
+  baseModelSelected.value = current.has(item.value)
+    ? new Set([...current].filter((v) => v !== item.value))
+    : new Set([...current, item.value])
 }
 </script>
 
