@@ -57,11 +57,11 @@ class ComfyMenu {
 
   public readonly sideToolbar: Locator
   public readonly propertiesPanel: ComfyPropertiesPanel
-  public readonly themeToggleButton: Locator
+  public readonly modeToggleButton: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
-    this.themeToggleButton = page.getByTestId(TestIds.sidebar.themeToggle)
+    this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
   }
 
@@ -86,7 +86,7 @@ class ComfyMenu {
 
   async toggleTheme() {
     const currentTheme = await this.getThemeId()
-    await this.themeToggleButton.click()
+    await this.modeToggleButton.click()
     await this.page.waitForFunction(
       (prevTheme) => {
         const settings = window.app?.ui?.settings

@@ -13,7 +13,7 @@ function toggleLinearMode() {
 </script>
 <template>
   <div
-    data-testid="theme-toggle"
+    data-testid="mode-toggle"
     class="p-1 bg-secondary-background rounded-lg w-10"
   >
     <Button

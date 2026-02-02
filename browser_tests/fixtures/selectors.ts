@@ -9,7 +9,7 @@ export const TestIds = {
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
     workflows: 'workflows-sidebar',
-    themeToggle: 'theme-toggle'
+    modeToggle: 'mode-toggle'
   },
   tree: {
     folder: 'tree-folder',

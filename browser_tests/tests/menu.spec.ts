@@ -175,7 +175,7 @@ test.describe('Menu', { tag: '@ui' }, () => {
         })
       })
       await comfyPage.menu.topbar.triggerTopbarCommand(['ext', 'foo-command'])
-      expect(await comfyPage.toast.getVisibleToastCount()).toBe(1)
+      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(1)
     })
 
     test('Can navigate Theme menu and switch between Dark and Light themes', async ({

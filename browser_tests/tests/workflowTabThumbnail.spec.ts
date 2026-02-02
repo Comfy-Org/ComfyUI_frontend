@@ -93,7 +93,7 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
       canvasArea!.x + canvasArea!.width - 100,
       100
     )
-    await comfyPage.delay(300) // Wait for the popover to hide
+    await expect(comfyPage.page.locator('.workflow-popover-fade')).toBeHidden()
 
     await comfyPage.canvasOps.rightClick(200, 200)
     await comfyPage.page.getByText('Add Node').click()

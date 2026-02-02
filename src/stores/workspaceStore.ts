@@ -17,7 +17,7 @@ import { useQueueSettingsStore } from './queueStore'
 import { useBottomPanelStore } from './workspace/bottomPanelStore'
 import { useSidebarTabStore } from './workspace/sidebarTabStore'
 
-const workspaceStoreSetup = () => {
+function workspaceStoreSetup() {
   const spinner = ref(false)
   const { shift: shiftDown } = useMagicKeys()
   /**
