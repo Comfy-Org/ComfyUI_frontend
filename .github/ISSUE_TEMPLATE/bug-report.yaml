@@ -10,7 +10,7 @@ body:
       options:
         - label: I am running the latest version of ComfyUI
           required: true
-        - label: This setup includes custom nodes
+        - label: I have custom nodes enabled
 
   - type: textarea
     id: description
