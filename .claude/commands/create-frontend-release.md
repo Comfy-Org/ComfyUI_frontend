@@ -444,13 +444,13 @@ echo "Workflow triggered. Waiting for PR creation..."
      echo "ERROR: Release label missing! Add it immediately!"
    ```
 2. Verify version number in package.json
-4. Review all changed files
-5. Ensure no unintended changes included
-6. Wait for required PR checks:
+3. Review all changed files
+4. Ensure no unintended changes included
+5. Wait for required PR checks:
    ```bash
    gh pr checks ${PR_NUMBER} --watch
    ```
-7. **FINAL CODE REVIEW**: Release label present and no [skip ci]?
+6. **FINAL CODE REVIEW**: Release label present and no [skip ci]?
 
 ### Step 12: Pre-Merge Validation
 
