@@ -1,11 +1,10 @@
 <template>
   <FloatLabel
     variant="on"
-    :unstyled="hideLayoutField"
+    :unstyled="true"
     :class="
       cn(
         'rounded-lg space-y-1 focus-within:ring focus-within:ring-component-node-widget-background-highlighted transition-all',
-        '[&_label]:bg-transparent [&_label]:text-component-node-foreground [&_label]:text-xs',
         widget.borderStyle
       )
     "
