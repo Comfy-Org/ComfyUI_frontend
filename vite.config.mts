@@ -478,7 +478,6 @@ export default defineConfig({
               priority: 20
             },
 
-            // Cloud services - large, stable per version
             {
               name: 'vendor-firebase',
               test: /[\\/]node_modules[\\/](@?firebase|@firebase)[\\/]/,
