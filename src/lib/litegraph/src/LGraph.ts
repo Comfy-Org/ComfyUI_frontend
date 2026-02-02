@@ -244,7 +244,7 @@ export class LGraph
   }
 
   /** Internal only.  Not required for serialisation; calculated on deserialise. */
-  #lastFloatingLinkId: number = 0
+  private _lastFloatingLinkId: number = 0
 
   private readonly floatingLinksInternal: Map<LinkId, LLink> = new Map()
   get floatingLinks(): ReadonlyMap<LinkId, LLink> {
@@ -365,7 +365,7 @@ export class LGraph
     this.reroutes.clear()
     this.floatingLinksInternal.clear()
 
-    this.#lastFloatingLinkId = 0
+    this._lastFloatingLinkId = 0
 
     // other scene stuff
     this._groups = []
@@ -993,6 +993,16 @@ export class LGraph
       }
     }
 
+    // Subgraph cleanup (use local const to avoid type narrowing affecting node.graph assignment)
+    const subgraphNode = node.isSubgraphNode() ? node : null
+    if (subgraphNode) {
+      for (const innerNode of subgraphNode.subgraph.nodes) {
+        innerNode.onRemoved?.()
+        subgraphNode.subgraph.onNodeRemoved?.(innerNode)
+      }
+      this.rootGraph.subgraphs.delete(subgraphNode.subgraph.id)
+    }
+
     // callback
     node.onRemoved?.()
 
@@ -1295,7 +1305,7 @@ export class LGraph
 
   addFloatingLink(link: LLink): LLink {
     if (link.id === -1) {
-      link.id = ++this.#lastFloatingLinkId
+      link.id = ++this._lastFloatingLinkId
     }
     this.floatingLinksInternal.set(link.id, link)
 
@@ -2166,8 +2176,16 @@ export class LGraph
     }
   }
 
+  /**
+   * Custom JSON serialization to prevent circular reference errors.
+   * Called automatically by JSON.stringify().
+   */
+  toJSON(): ISerialisedGraph {
+    return this.serialize()
+  }
+
   /** @returns The drag and scale state of the first attached canvas, otherwise `undefined`. */
-  #getDragAndScale(): DragAndScaleState | undefined {
+  private _getDragAndScale(): DragAndScaleState | undefined {
     const ds = this.list_of_graphcanvas?.at(0)?.ds
     if (ds) return { scale: ds.scale, offset: ds.offset }
   }
@@ -2207,7 +2225,7 @@ export class LGraph
 
     // Save scale and offset
     const extra = { ...this.extra }
-    if (LiteGraph.saveViewportWithGraph) extra.ds = this.#getDragAndScale()
+    if (LiteGraph.saveViewportWithGraph) extra.ds = this._getDragAndScale()
     if (!extra.ds) delete extra.ds
 
     const data: ReturnType<typeof this.asSerialisable> = {
@@ -2397,8 +2415,8 @@ export class LGraph
           const floatingLink = LLink.create(linkData)
           this.addFloatingLink(floatingLink)
 
-          if (floatingLink.id > this.#lastFloatingLinkId)
-            this.#lastFloatingLinkId = floatingLink.id
+          if (floatingLink.id > this._lastFloatingLinkId)
+            this._lastFloatingLinkId = floatingLink.id
         }
       }
 
@@ -2449,13 +2467,13 @@ export class LGraph
     }
   }
 
-  #canvas?: LGraphCanvas
+  private _canvas?: LGraphCanvas
   get primaryCanvas(): LGraphCanvas | undefined {
-    return this.rootGraph.#canvas
+    return this.rootGraph._canvas
   }
 
   set primaryCanvas(canvas: LGraphCanvas) {
-    this.rootGraph.#canvas = canvas
+    this.rootGraph._canvas = canvas
   }
 
   load(url: string | Blob | URL | File, callback: () => void) {
@@ -2524,9 +2542,9 @@ export class Subgraph
   /** A list of node widgets displayed in the parent graph, on the subgraph object. */
   readonly widgets: ExposedWidget[] = []
 
-  #rootGraph: LGraph
+  private _rootGraph: LGraph
   override get rootGraph(): LGraph {
-    return this.#rootGraph
+    return this._rootGraph
   }
 
   constructor(rootGraph: LGraph, data: ExportedSubgraph) {
@@ -2534,11 +2552,11 @@ export class Subgraph
 
     super()
 
-    this.#rootGraph = rootGraph
+    this._rootGraph = rootGraph
 
     const cloned = structuredClone(data)
     this._configureBase(cloned)
-    this.#configureSubgraph(cloned)
+    this._configureSubgraph(cloned)
   }
 
   getIoNodeOnPos(
@@ -2550,7 +2568,7 @@ export class Subgraph
     if (outputNode.containsPoint([x, y])) return outputNode
   }
 
-  #configureSubgraph(
+  private _configureSubgraph(
     data:
       | (ISerialisedGraph & ExportedSubgraph)
       | (SerialisableGraph & ExportedSubgraph)
@@ -2594,7 +2612,7 @@ export class Subgraph
   ): boolean | undefined {
     const r = super.configure(data, keep_old)
 
-    this.#configureSubgraph(data)
+    this._configureSubgraph(data)
     return r
   }
 

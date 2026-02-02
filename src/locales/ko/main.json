@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION 출력",
+    "COLOR": "색상",
     "COMBO": "콤보",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +750,7 @@
     "deleteImage": "이미지 삭제",
     "deprecated": "사용 중단",
     "description": "설명",
+    "devOnly": "개발 전용",
     "devices": "장치",
     "disableAll": "모두 비활성화",
     "disableSelected": "선택 항목 비활성화",
@@ -1300,6 +1302,28 @@
     "disabledNodesWontUpdate": "비활성화된 노드는 업데이트되지 않습니다",
     "discoverCommunityContent": "커뮤니티에서 만든 노드 팩 및 확장 프로그램을 찾아보세요...",
     "downloads": "다운로드",
+    "emptyState": {
+      "allInstalled": {
+        "message": "아직 설치한 확장 프로그램이 없습니다.",
+        "title": "설치된 확장 프로그램 없음"
+      },
+      "conflicting": {
+        "message": "모든 확장 프로그램이 호환됩니다.",
+        "title": "충돌 없음"
+      },
+      "missing": {
+        "message": "필요한 모든 노드가 설치되어 있습니다.",
+        "title": "누락된 노드 없음"
+      },
+      "updateAvailable": {
+        "message": "모든 확장 프로그램이 최신 버전입니다.",
+        "title": "모두 최신 상태"
+      },
+      "workflow": {
+        "message": "이 워크플로는 확장 노드를 사용하지 않습니다.",
+        "title": "워크플로에 확장 프로그램 없음"
+      }
+    },
     "enablePackToChangeVersion": "버전을 변경하려면 이 팩을 활성화하세요",
     "errorConnecting": "Comfy Node Registry에 연결하는 중 오류가 발생했습니다.",
     "extensionsSuccessfullyInstalled": "확장이 성공적으로 설치되어 사용할 준비가 되었습니다!",
@@ -1685,6 +1709,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -2264,6 +2289,7 @@
       "filterBy": "필터 기준",
       "filterCurrentWorkflow": "현재 워크플로우",
       "filterJobs": "작업 필터",
+      "inlineTotalLabel": "총계",
       "interruptAll": "모든 실행 중인 작업 중단",
       "jobQueue": "작업 대기열",
       "jobsCompleted": "{count}개 작업 완료",
@@ -2310,6 +2336,7 @@
   },
   "subgraphStore": {
     "blueprintName": "서브그래프 이름",
+    "cannotDeleteGlobal": "설치된 블루프린트는 삭제할 수 없습니다",
     "confirmDelete": "이 작업은 라이브러리에서 블루프린트를 영구적으로 제거합니다",
     "confirmDeleteTitle": "블루프린트를 삭제하시겠습니까?",
     "hidden": "숨김 / 중첩 매개변수",

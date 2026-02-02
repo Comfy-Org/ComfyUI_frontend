@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
+    "COLOR": "ЦВЕТ",
     "COMBO": "КОМБО",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +750,7 @@
     "deleteImage": "Удалить изображение",
     "deprecated": "Устарело",
     "description": "Описание",
+    "devOnly": "Только для разработчиков",
     "devices": "Устройства",
     "disableAll": "Отключить все",
     "disableSelected": "Отключить выбранное",
@@ -1300,6 +1302,28 @@
     "disabledNodesWontUpdate": "Отключенные ноды не будут обновлены",
     "discoverCommunityContent": "Откройте для себя пакеты узлов, расширения и многое другое, созданные сообществом...",
     "downloads": "Загрузки",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Вы еще не установили ни одного расширения.",
+        "title": "Нет установленных расширений"
+      },
+      "conflicting": {
+        "message": "Все ваши расширения совместимы.",
+        "title": "Конфликтов не обнаружено"
+      },
+      "missing": {
+        "message": "Все необходимые узлы установлены.",
+        "title": "Нет отсутствующих узлов"
+      },
+      "updateAvailable": {
+        "message": "Все ваши расширения обновлены.",
+        "title": "Все обновлено"
+      },
+      "workflow": {
+        "message": "В этом рабочем процессе не используются узлы расширений.",
+        "title": "Нет расширений в рабочем процессе"
+      }
+    },
     "enablePackToChangeVersion": "Включите этот пакет для изменения версий",
     "errorConnecting": "Ошибка подключения к реестру Comfy Node.",
     "extensionsSuccessfullyInstalled": "Расширение(я) успешно установлено и готово к использованию!",
@@ -1685,6 +1709,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -2264,6 +2289,7 @@
       "filterBy": "Фильтровать по",
       "filterCurrentWorkflow": "Текущий рабочий процесс",
       "filterJobs": "Фильтровать задания",
+      "inlineTotalLabel": "Всего",
       "interruptAll": "Остановить все выполняющиеся задания",
       "jobQueue": "Очередь заданий",
       "jobsCompleted": "{count} задание завершено | {count} задания завершено | {count} заданий завершено",
@@ -2310,6 +2336,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Имя подграфа",
+    "cannotDeleteGlobal": "Невозможно удалить установленные blueprints",
     "confirmDelete": "Это действие навсегда удалит подграф из вашей библиотеки",
     "confirmDeleteTitle": "Удалить подграф?",
     "hidden": "Скрытые / вложенные параметры",

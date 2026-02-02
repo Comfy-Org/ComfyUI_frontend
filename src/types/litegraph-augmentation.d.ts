@@ -5,7 +5,10 @@ import type {
   LLink,
   Size
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -210,6 +213,6 @@ declare module '@/lib/litegraph/src/litegraph' {
    * used by litegraph internally. We should remove the dependency on it later.
    */
   interface LGraphNode {
-    widgets_values?: unknown[]
+    widgets_values?: TWidgetValue[]
   }
 }

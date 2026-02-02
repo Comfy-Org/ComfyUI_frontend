@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <!-- Active Jobs Grid -->
     <div
-      v-if="activeJobItems.length"
+      v-if="!isInFolderView && isQueuePanelV2Enabled && activeJobItems.length"
       class="grid max-h-[50%] scrollbar-custom overflow-y-auto"
       :style="gridStyle"
     >
@@ -65,16 +65,19 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isActiveJobState } from '@/utils/queueUtil'
 import { cn } from '@/utils/tailwindUtil'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const {
   assets,
   isSelected,
+  isInFolderView = false,
   assetType = 'output',
   showOutputCount,
   getOutputCount
 } = defineProps<{
   assets: AssetItem[]
   isSelected: (assetId: string) => boolean
+  isInFolderView?: boolean
   assetType?: 'input' | 'output'
   showOutputCount: (asset: AssetItem) => boolean
   getOutputCount: (asset: AssetItem) => number
@@ -90,6 +93,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { jobItems } = useJobList()
+const settingStore = useSettingStore()
+
+const isQueuePanelV2Enabled = computed(() =>
+  settingStore.get('Comfy.Queue.QPOV2')
+)
 
 type AssetGridItem = { key: string; asset: AssetItem }
 

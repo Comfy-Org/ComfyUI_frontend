@@ -134,6 +134,27 @@ describe('contextMenuConverter', () => {
       // Node Info (section 4) should come before or with Color (section 4)
       expect(getIndex('Node Info')).toBeLessThanOrEqual(getIndex('Color'))
     })
+
+    it('should recognize Frame Nodes as a core menu item', () => {
+      const options: MenuOption[] = [
+        { label: 'Rename', source: 'vue' },
+        { label: 'Frame Nodes', source: 'vue' },
+        { label: 'Custom Extension', source: 'vue' }
+      ]
+
+      const result = buildStructuredMenu(options)
+
+      // Frame Nodes should appear in the core items section (before Extensions)
+      const frameNodesIndex = result.findIndex(
+        (opt) => opt.label === 'Frame Nodes'
+      )
+      const extensionsCategoryIndex = result.findIndex(
+        (opt) => opt.label === 'Extensions' && opt.type === 'category'
+      )
+
+      // Frame Nodes should come before Extensions category
+      expect(frameNodesIndex).toBeLessThan(extensionsCategoryIndex)
+    })
   })
 
   describe('convertContextMenuToOptions', () => {

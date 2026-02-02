@@ -63,14 +63,18 @@
             <i class="pi pi-sign-out" />
             {{ $t('auth.signOut.signOut') }}
           </Button>
-          <Button
+          <i18n-t
             v-if="!isApiKeyLogin"
-            class="w-fit"
-            variant="destructive-textonly"
-            @click="handleDeleteAccount"
+            keypath="auth.deleteAccount.contactSupport"
+            tag="p"
+            class="text-muted text-sm"
           >
-            {{ $t('auth.deleteAccount.deleteAccount') }}
-          </Button>
+            <template #email>
+              <a href="mailto:support@comfy.org" class="underline"
+                >support@comfy.org</a
+              >
+            </template>
+          </i18n-t>
         </div>
       </div>
 
@@ -116,7 +120,6 @@ const {
   providerName,
   providerIcon,
   handleSignOut,
-  handleSignIn,
-  handleDeleteAccount
+  handleSignIn
 } = useCurrentUser()
 </script>

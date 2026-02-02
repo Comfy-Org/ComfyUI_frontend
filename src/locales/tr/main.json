@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_ÇIKTISI",
+    "COLOR": "RENK",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +750,7 @@
     "deleteImage": "Görseli sil",
     "deprecated": "ESKİ",
     "description": "Açıklama",
+    "devOnly": "YALNIZCA GELİŞTİRİCİ",
     "devices": "Cihazlar",
     "disableAll": "Tümünü Devre Dışı Bırak",
     "disableSelected": "Seçilenleri Devre Dışı Bırak",
@@ -1300,6 +1302,28 @@
     "disabledNodesWontUpdate": "Devre dışı düğümler güncellenmeyecek",
     "discoverCommunityContent": "Topluluk tarafından yapılmış Düğüm Paketlerini, Uzantıları ve daha fazlasını keşfedin...",
     "downloads": "İndirmeler",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Henüz hiç eklenti yüklemediniz.",
+        "title": "Yüklü Eklenti Yok"
+      },
+      "conflicting": {
+        "message": "Tüm eklentileriniz uyumlu.",
+        "title": "Çakışma Tespit Edilmedi"
+      },
+      "missing": {
+        "message": "Gerekli tüm düğümler yüklü.",
+        "title": "Eksik Düğüm Yok"
+      },
+      "updateAvailable": {
+        "message": "Tüm eklentileriniz güncel.",
+        "title": "Hepsi Güncel"
+      },
+      "workflow": {
+        "message": "Bu iş akışı herhangi bir eklenti düğümü kullanmıyor.",
+        "title": "İş Akışında Eklenti Yok"
+      }
+    },
     "enablePackToChangeVersion": "Sürümleri değiştirmek için bu paketi etkinleştirin",
     "errorConnecting": "Comfy Düğüm Kayıt Defteri'ne bağlanırken hata oluştu.",
     "extensionsSuccessfullyInstalled": "Uzantı(lar) başarıyla yüklendi ve kullanıma hazır!",
@@ -1685,6 +1709,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -2264,6 +2289,7 @@
       "filterBy": "Filtrele",
       "filterCurrentWorkflow": "Mevcut iş akışı",
       "filterJobs": "İşleri filtrele",
+      "inlineTotalLabel": "Toplam",
       "interruptAll": "Tüm çalışan işleri durdur",
       "jobQueue": "İş Kuyruğu",
       "jobsCompleted": "{count} iş tamamlandı | {count} iş tamamlandı",
@@ -2310,6 +2336,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Alt Grafik adı",
+    "cannotDeleteGlobal": "Yüklü şablonlar silinemez",
     "confirmDelete": "Bu işlem taslağı kütüphanenizden kalıcı olarak kaldıracaktır",
     "confirmDeleteTitle": "Taslak silinsin mi?",
     "hidden": "Gizli / iç içe parametreler",

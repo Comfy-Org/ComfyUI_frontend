@@ -16,15 +16,16 @@ useExtensionService().registerExtension({
     const { isLoggedIn } = useCurrentUser()
     const { isActiveSubscription } = useSubscription()
 
-    // Refresh config when subscription status changes
-    // Initial auth-aware refresh happens in WorkspaceAuthGate before app renders
+    // Refresh config when auth or subscription status changes
+    // Primary auth refresh is handled by WorkspaceAuthGate on mount
+    // This watcher handles subscription changes and acts as a backup for auth
     watchDebounced(
       [isLoggedIn, isActiveSubscription],
       () => {
         if (!isLoggedIn.value) return
         void refreshRemoteConfig()
       },
-      { debounce: 256 }
+      { debounce: 256, immediate: true }
     )
 
     // Poll for config updates every 10 minutes (with auth)

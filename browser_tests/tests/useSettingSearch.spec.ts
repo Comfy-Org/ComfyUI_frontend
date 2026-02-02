@@ -6,7 +6,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Settings Search functionality', () => {
+test.describe('Settings Search functionality', { tag: '@settings' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     // Register test settings to verify hidden/deprecated filtering
     await comfyPage.page.evaluate(() => {
