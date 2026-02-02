@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import { cn } from '@/utils/tailwindUtil'
 import { useLocalStorage } from '@vueuse/core'
 import {
   DropdownMenuContent,

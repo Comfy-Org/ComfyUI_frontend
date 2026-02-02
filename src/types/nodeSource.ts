@@ -124,6 +124,14 @@ export const getNodeSource = (
       displayText: displayName,
       badgeText: displayName
     }
+  } else if (modules[0] === 'essential') {
+    const moduleName = modules[1]
+    return {
+      type: NodeSourceType.Essentials,
+      className: 'comfy-essentials',
+      displayText: moduleName,
+      badgeText: moduleName
+    }
   } else {
     return UNKNOWN_NODE_SOURCE
   }
