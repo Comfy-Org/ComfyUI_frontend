@@ -13,7 +13,7 @@
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',
-        'border-1 border-solid border-component-node-border',
+        'border-1 border-solid border-component-node-border bg-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
@@ -28,11 +28,9 @@
             muted,
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
-
         shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
-          : 'pointer-events-none',
-        !isCollapsed && ' pb-1'
+          : 'pointer-events-none'
       )
     "
     :style="[
@@ -88,7 +86,10 @@
       :style="{ width: `${Math.min(progress * 100, 100)}%` }"
     />
 
-    <template v-if="!isCollapsed">
+    <div
+      v-if="!isCollapsed"
+      class="bg-component-node-background rounded-b-2xl pb-1 flex flex-1"
+    >
       <div class="relative mb-1">
         <!-- Progress bar for executing state -->
         <div
@@ -120,32 +121,24 @@
           v-if="shouldShowPreviewImg"
           :image-url="latestPreviewUrl"
         />
-
-        <!-- Show advanced inputs button for subgraph nodes -->
-        <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
-          <button
-            :class="
-              cn(
-                WidgetInputBaseClass,
-                'w-full h-7 flex justify-center items-center gap-2 text-sm px-3 outline-0 ring-0 truncate',
-                'transition-all cursor-pointer hover:bg-accent-background duration-150 active:scale-95'
-              )
-            "
-            @click.stop="showAdvancedState = !showAdvancedState"
-          >
-            <template v-if="showAdvancedState">
-              <i class="icon-[lucide--chevron-up] size-4" />
-              <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
-            </template>
-            <template v-else>
-              <i class="icon-[lucide--settings-2] size-4" />
-              <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
-            </template>
-          </button>
-        </div>
       </div>
-    </template>
-
+    </div>
+    <!-- Show advanced inputs button for subgraph nodes -->
+    <Button
+      v-if="showAdvancedInputsButton"
+      variant="textonly"
+      class="w-full h-10 rounded-b-2xl -mt-5 pt-6 pb-1 -z-1"
+      @click.stop="showAdvancedState = !showAdvancedState"
+    >
+      <template v-if="showAdvancedState">
+        <i class="icon-[lucide--chevron-up] size-4" />
+        <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
+      </template>
+      <template v-else>
+        <i class="icon-[lucide--settings-2] size-4" />
+        <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
+      </template>
+    </Button>
     <!-- Resize handle (bottom-right only) -->
     <div
       v-if="!isCollapsed && nodeData.resizable !== false"
@@ -155,7 +148,21 @@
         cn(baseResizeHandleClasses, '-right-1 -bottom-1 cursor-se-resize')
       "
       @pointerdown.stop="handleResizePointerDown"
-    />
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 12 12"
+        class="w-2/5 h-2/5 top-1 left-1 absolute"
+      >
+        <path
+          d="M11 1L1 11M11 6L6 11"
+          stroke="var(--color-muted-foreground)"
+          stroke-width="0.975"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </div>
   </div>
 </template>
 
@@ -172,6 +179,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -212,7 +220,6 @@ import {
 import { cn } from '@/utils/tailwindUtil'
 
 import { useNodeResize } from '../interactions/resize/useNodeResize'
-import { WidgetInputBaseClass } from '../widgets/components/layout'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -352,7 +359,7 @@ function initSizeStyles() {
 }
 
 const baseResizeHandleClasses =
-  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const MIN_NODE_WIDTH = 225
 
@@ -405,7 +412,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  if (hasAnyError.value) return 'border-node-stroke-error'
+  if (hasAnyError.value) return 'border-node-stroke-error bg-node-stroke-error'
   //FIXME need a better way to detecting transparency
   if (
     !displayHeader.value &&
