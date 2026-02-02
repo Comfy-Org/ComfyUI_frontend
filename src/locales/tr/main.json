@@ -578,6 +578,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_ÇIKTISI",
+    "COLOR": "RENK",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1301,6 +1302,28 @@
     "disabledNodesWontUpdate": "Devre dışı düğümler güncellenmeyecek",
     "discoverCommunityContent": "Topluluk tarafından yapılmış Düğüm Paketlerini, Uzantıları ve daha fazlasını keşfedin...",
     "downloads": "İndirmeler",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Henüz hiç eklenti yüklemediniz.",
+        "title": "Yüklü Eklenti Yok"
+      },
+      "conflicting": {
+        "message": "Tüm eklentileriniz uyumlu.",
+        "title": "Çakışma Tespit Edilmedi"
+      },
+      "missing": {
+        "message": "Gerekli tüm düğümler yüklü.",
+        "title": "Eksik Düğüm Yok"
+      },
+      "updateAvailable": {
+        "message": "Tüm eklentileriniz güncel.",
+        "title": "Hepsi Güncel"
+      },
+      "workflow": {
+        "message": "Bu iş akışı herhangi bir eklenti düğümü kullanmıyor.",
+        "title": "İş Akışında Eklenti Yok"
+      }
+    },
     "enablePackToChangeVersion": "Sürümleri değiştirmek için bu paketi etkinleştirin",
     "errorConnecting": "Comfy Düğüm Kayıt Defteri'ne bağlanırken hata oluştu.",
     "extensionsSuccessfullyInstalled": "Uzantı(lar) başarıyla yüklendi ve kullanıma hazır!",

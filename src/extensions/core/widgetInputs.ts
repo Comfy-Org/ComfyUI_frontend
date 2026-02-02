@@ -110,7 +110,7 @@ export class PrimitiveNode extends LGraphNode {
         for (let i = 0; i < this.widgets_values.length; i++) {
           const w = this.widgets[i]
           if (w) {
-            w.value = this.widgets_values[i] as any
+            w.value = this.widgets_values[i]
           }
         }
       }

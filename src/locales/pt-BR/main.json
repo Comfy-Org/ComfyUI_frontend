@@ -578,6 +578,7 @@
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
     "CLIP_VISION_OUTPUT": "saída de clip visão",
+    "COLOR": "COR",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1301,6 +1302,28 @@
     "disabledNodesWontUpdate": "Nodes desativados não serão atualizados",
     "discoverCommunityContent": "Descubra Node Packs, Extensões e mais criados pela comunidade...",
     "downloads": "Downloads",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Você ainda não instalou nenhuma extensão.",
+        "title": "Nenhuma extensão instalada"
+      },
+      "conflicting": {
+        "message": "Todas as suas extensões são compatíveis.",
+        "title": "Nenhum conflito detectado"
+      },
+      "missing": {
+        "message": "Todos os nós necessários estão instalados.",
+        "title": "Nenhum nó ausente"
+      },
+      "updateAvailable": {
+        "message": "Todas as suas extensões estão atualizadas.",
+        "title": "Tudo atualizado"
+      },
+      "workflow": {
+        "message": "Este fluxo de trabalho não utiliza nenhum nó de extensão.",
+        "title": "Nenhuma extensão no fluxo de trabalho"
+      }
+    },
     "enablePackToChangeVersion": "Ative este pacote para alterar versões",
     "errorConnecting": "Erro ao conectar ao Registro de Nodes do Comfy.",
     "extensionsSuccessfullyInstalled": "Extensão(ões) instalada(s) com sucesso e pronta(s) para uso!",

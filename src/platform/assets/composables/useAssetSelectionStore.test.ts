@@ -68,6 +68,16 @@ describe('useAssetSelectionStore', () => {
       expect(store.selectedCount).toBe(0)
       expect(store.lastSelectedIndex).toBe(-1)
     })
+
+    it('resets lastSelectedAssetId', () => {
+      const store = useAssetSelectionStore()
+      store.addToSelection('asset-1')
+      store.setLastSelectedAssetId('asset-1')
+
+      store.clearSelection()
+
+      expect(store.lastSelectedAssetId).toBe(null)
+    })
   })
 
   describe('toggleSelection', () => {
@@ -103,19 +113,6 @@ describe('useAssetSelectionStore', () => {
       const store = useAssetSelectionStore()
       store.setLastSelectedIndex(10)
       expect(store.lastSelectedIndex).toBe(10)
-    })
-  })
-
-  describe('reset', () => {
-    it('clears selection and resets index', () => {
-      const store = useAssetSelectionStore()
-      store.addToSelection('asset-1')
-      store.setLastSelectedIndex(5)
-
-      store.reset()
-
-      expect(store.selectedCount).toBe(0)
-      expect(store.lastSelectedIndex).toBe(-1)
     })
   })
 

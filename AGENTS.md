@@ -21,7 +21,7 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 - i18n: `src/i18n.ts`,
 - Entry Point: `src/main.ts`.
 - Tests:
-  - unit/component in `tests-ui/` and `src/**/*.test.ts`
+  - unit/component in `src/**/*.test.ts`
   - E2E (Playwright) in `browser_tests/**/*.spec.ts`
 - Public assets: `public/`
 - Build output: `dist/`
@@ -264,7 +264,7 @@ A particular type of complexity is over-engineering, where developers have made 
 
 ## Repository Navigation
 
-- Check README files in key folders (tests-ui, browser_tests, composables, etc.)
+- Check README files in key folders (browser_tests, composables, etc.)
 - Prefer running single tests for performance
 - Use --help for unfamiliar CLI tools
 

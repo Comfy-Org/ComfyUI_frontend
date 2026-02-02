@@ -1,3 +1,16 @@
+export interface LogoInfo {
+  /** Provider name(s) matching index_logo.json. String for single, array for stacked logos. */
+  provider: string | string[]
+  /** Custom label text. If omitted, defaults to provider names joined with " & " */
+  label?: string
+  /** Gap between stacked logos in pixels. Negative for overlap effect. Default: -6 */
+  gap?: number
+  /** Tailwind positioning classes */
+  position?: string
+  /** Opacity 0-1, default 0.85 */
+  opacity?: number
+}
+
 export interface TemplateInfo {
   name: string
   /**
@@ -47,6 +60,10 @@ export interface TemplateInfo {
    * If not specified, the template will be included on all distributions.
    */
   includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
+  /**
+   * Logo overlays to display on the template thumbnail.
+   */
+  logos?: LogoInfo[]
 }
 
 export enum TemplateIncludeOnDistributionEnum {
