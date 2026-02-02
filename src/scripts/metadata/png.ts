@@ -1,26 +1,51 @@
+async function decompressZlib(
+  data: Uint8Array<ArrayBuffer>
+): Promise<Uint8Array<ArrayBuffer>> {
+  const stream = new DecompressionStream('deflate')
+  const writer = stream.writable.getWriter()
+  writer.write(data)
+  writer.close()
+
+  const reader = stream.readable.getReader()
+  const chunks: Uint8Array<ArrayBuffer>[] = []
+  let totalLength = 0
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    chunks.push(value)
+    totalLength += value.length
+  }
+
+  const result = new Uint8Array(totalLength)
+  let offset = 0
+  for (const chunk of chunks) {
+    result.set(chunk, offset)
+    offset += chunk.length
+  }
+  return result
+}
+
 /** @knipIgnoreUnusedButUsedByCustomNodes */
-export function getFromPngBuffer(buffer: ArrayBuffer): Record<string, string> {
-  // Get the PNG data as a Uint8Array
+export async function getFromPngBuffer(
+  buffer: ArrayBuffer
+): Promise<Record<string, string>> {
   const pngData = new Uint8Array(buffer)
   const dataView = new DataView(pngData.buffer)
 
-  // Check that the PNG signature is present
   if (dataView.getUint32(0) !== 0x89504e47) {
     console.error('Not a valid PNG file')
     return {}
   }
 
-  // Start searching for chunks after the PNG signature
   let offset = 8
-  let txt_chunks: Record<string, string> = {}
-  // Loop through the chunks in the PNG file
+  const txt_chunks: Record<string, string> = {}
+
   while (offset < pngData.length) {
-    // Get the length of the chunk
     const length = dataView.getUint32(offset)
-    // Get the chunk type
     const type = String.fromCharCode(...pngData.slice(offset + 4, offset + 8))
-    if (type === 'tEXt' || type == 'comf' || type === 'iTXt') {
-      // Get the keyword
+
+    if (type === 'tEXt' || type === 'comf' || type === 'iTXt') {
       let keyword_end = offset + 8
       while (pngData[keyword_end] !== 0) {
         keyword_end++
@@ -28,24 +53,43 @@ export function getFromPngBuffer(buffer: ArrayBuffer): Record<string, string> {
       const keyword = String.fromCharCode(
         ...pngData.slice(offset + 8, keyword_end)
       )
-      // Get the text
-      // For iTXt chunks, skip compression flag (1), compression method (1),
-      // language tag (null-terminated), and translated keyword (null-terminated)
+
       let textStart = keyword_end + 1
+      let isCompressed = false
+      let compressionMethod = 0
+
       if (type === 'iTXt') {
-        textStart += 2 // Skip compression flag and method
-        // Skip language tag (find null terminator)
+        isCompressed = pngData[textStart] === 1
+        compressionMethod = pngData[textStart + 1]
+        textStart += 2
+
         while (pngData[textStart] !== 0 && textStart < offset + 8 + length) {
           textStart++
         }
-        textStart++ // Skip null terminator
-        // Skip translated keyword (find null terminator)
+        textStart++
+
         while (pngData[textStart] !== 0 && textStart < offset + 8 + length) {
           textStart++
         }
-        textStart++ // Skip null terminator
+        textStart++
       }
-      const contentArraySegment = pngData.slice(textStart, offset + 8 + length)
+
+      let contentArraySegment = pngData.slice(textStart, offset + 8 + length)
+
+      if (isCompressed) {
+        if (compressionMethod === 0) {
+          try {
+            contentArraySegment = await decompressZlib(contentArraySegment)
+          } catch (e) {
+            console.error(`Failed to decompress iTXt chunk "${keyword}":`, e)
+          }
+        } else {
+          console.warn(
+            `Unsupported compression method ${compressionMethod} for iTXt chunk "${keyword}"`
+          )
+        }
+      }
+
       const contentJson = new TextDecoder('utf-8').decode(contentArraySegment)
       txt_chunks[keyword] = contentJson
     }
@@ -55,14 +99,17 @@ export function getFromPngBuffer(buffer: ArrayBuffer): Record<string, string> {
   return txt_chunks
 }
 
-export function getFromPngFile(file: File) {
-  return new Promise<Record<string, string>>((r) => {
+export async function getFromPngFile(
+  file: File
+): Promise<Record<string, string>> {
+  return new Promise<Record<string, string>>((resolve) => {
     const reader = new FileReader()
-    reader.onload = (event) => {
-      // @ts-expect-error fixme ts strict error
-      r(getFromPngBuffer(event.target.result as ArrayBuffer))
+    reader.onload = async (event) => {
+      const result = await getFromPngBuffer(
+        event.target?.result as ArrayBuffer
+      )
+      resolve(result)
     }
-
     reader.readAsArrayBuffer(file)
   })
 }
