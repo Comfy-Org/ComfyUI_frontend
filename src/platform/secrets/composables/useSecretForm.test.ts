@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata } from '../types'
-import { PROVIDER_NONE, useSecretForm } from './useSecretForm'
+import { useSecretForm } from './useSecretForm'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({ t: (key: string) => key })
@@ -46,10 +46,10 @@ describe('useSecretForm', () => {
     vi.clearAllMocks()
   })
 
-  describe('validate', () => {
-    it('requires name in create mode', () => {
+  describe('validation via handleSubmit', () => {
+    it('requires name in create mode', async () => {
       const visible = ref(true)
-      const { form, errors, validate } = useSecretForm({
+      const { form, errors, handleSubmit } = useSecretForm({
         mode: 'create',
         existingProviders: [],
         visible,
@@ -60,13 +60,15 @@ describe('useSecretForm', () => {
       form.provider = 'huggingface'
       form.secretValue = 'secret123'
 
-      expect(validate()).toBe(false)
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
       expect(errors.name).toBe('secrets.errors.nameRequired')
     })
 
-    it('requires name not to exceed 255 characters', () => {
+    it('requires name not to exceed 255 characters', async () => {
       const visible = ref(true)
-      const { form, errors, validate } = useSecretForm({
+      const { form, errors, handleSubmit } = useSecretForm({
         mode: 'create',
         existingProviders: [],
         visible,
@@ -77,13 +79,15 @@ describe('useSecretForm', () => {
       form.provider = 'huggingface'
       form.secretValue = 'secret123'
 
-      expect(validate()).toBe(false)
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
       expect(errors.name).toBe('secrets.errors.nameTooLong')
     })
 
-    it('requires provider in create mode', () => {
+    it('requires provider in create mode', async () => {
       const visible = ref(true)
-      const { form, errors, validate } = useSecretForm({
+      const { form, errors, handleSubmit } = useSecretForm({
         mode: 'create',
         existingProviders: [],
         visible,
@@ -91,16 +95,18 @@ describe('useSecretForm', () => {
       })
 
       form.name = 'My Secret'
-      form.provider = PROVIDER_NONE
+      form.provider = null
       form.secretValue = 'secret123'
 
-      expect(validate()).toBe(false)
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
       expect(errors.provider).toBe('secrets.errors.providerRequired')
     })
 
-    it('requires secret value in create mode', () => {
+    it('requires secret value in create mode', async () => {
       const visible = ref(true)
-      const { form, errors, validate } = useSecretForm({
+      const { form, errors, handleSubmit } = useSecretForm({
         mode: 'create',
         existingProviders: [],
         visible,
@@ -111,45 +117,53 @@ describe('useSecretForm', () => {
       form.provider = 'huggingface'
       form.secretValue = ''
 
-      expect(validate()).toBe(false)
+      await handleSubmit()
+
+      expect(mockCreate).not.toHaveBeenCalled()
       expect(errors.secretValue).toBe('secrets.errors.secretValueRequired')
     })
 
-    it('passes validation with valid create data', () => {
-      const visible = ref(true)
-      const { form, errors, validate } = useSecretForm({
-        mode: 'create',
+    it('allows empty secret value in edit mode', async () => {
+      const visible = ref(false)
+      const secret = createMockSecret()
+      mockUpdate.mockResolvedValue({})
+      const { form, handleSubmit } = useSecretForm({
+        mode: 'edit',
+        secret: () => secret,
         existingProviders: [],
         visible,
         onSaved: vi.fn()
       })
 
-      form.name = 'My Secret'
-      form.provider = 'huggingface'
-      form.secretValue = 'secret123'
+      visible.value = true
+      await Promise.resolve()
 
-      expect(validate()).toBe(true)
-      expect(errors.name).toBe('')
-      expect(errors.provider).toBe('')
-      expect(errors.secretValue).toBe('')
+      form.name = 'Updated Name'
+      form.secretValue = ''
+
+      await handleSubmit()
+
+      expect(mockUpdate).toHaveBeenCalled()
     })
 
-    it('allows empty secret value in edit mode', () => {
+    it('requires provider in edit mode', async () => {
       const visible = ref(true)
-      const secret = createMockSecret()
-      const { form, validate } = useSecretForm({
+      const secret = createMockSecret({ provider: undefined })
+      const { form, errors, handleSubmit } = useSecretForm({
         mode: 'edit',
-        secret,
+        secret: () => secret,
         existingProviders: [],
         visible,
         onSaved: vi.fn()
       })
 
       form.name = 'Updated Name'
-      form.provider = PROVIDER_NONE
-      form.secretValue = ''
+      form.provider = null
 
-      expect(validate()).toBe(true)
+      await handleSubmit()
+
+      expect(mockUpdate).not.toHaveBeenCalled()
+      expect(errors.provider).toBe('secrets.errors.providerRequired')
     })
   })
 
@@ -170,39 +184,6 @@ describe('useSecretForm', () => {
 
       expect(huggingface?.disabled).toBe(true)
       expect(civitai?.disabled).toBe(false)
-    })
-
-    it('includes none option in edit mode', () => {
-      const visible = ref(true)
-      const secret = createMockSecret()
-      const { providerOptions } = useSecretForm({
-        mode: 'edit',
-        secret,
-        existingProviders: [],
-        visible,
-        onSaved: vi.fn()
-      })
-
-      const noneOption = providerOptions.value.find(
-        (o) => o.value === PROVIDER_NONE
-      )
-      expect(noneOption).toBeDefined()
-      expect(noneOption?.label).toBe('g.none')
-    })
-
-    it('excludes none option in create mode', () => {
-      const visible = ref(true)
-      const { providerOptions } = useSecretForm({
-        mode: 'create',
-        existingProviders: [],
-        visible,
-        onSaved: vi.fn()
-      })
-
-      const noneOption = providerOptions.value.find(
-        (o) => o.value === PROVIDER_NONE
-      )
-      expect(noneOption).toBeUndefined()
     })
   })
 
@@ -235,18 +216,21 @@ describe('useSecretForm', () => {
     })
 
     it('calls update API with correct payload', async () => {
-      const visible = ref(true)
+      const visible = ref(false)
       const onSaved = vi.fn()
       const secret = createMockSecret({ id: 'secret-123' })
       mockUpdate.mockResolvedValue({})
 
       const { form, handleSubmit } = useSecretForm({
         mode: 'edit',
-        secret,
+        secret: () => secret,
         existingProviders: [],
         visible,
         onSaved
       })
+
+      visible.value = true
+      await Promise.resolve()
 
       form.name = 'Updated Name'
       form.secretValue = 'newvalue'
@@ -261,17 +245,20 @@ describe('useSecretForm', () => {
     })
 
     it('omits secret_value in update if empty', async () => {
-      const visible = ref(true)
+      const visible = ref(false)
       const secret = createMockSecret({ id: 'secret-123' })
       mockUpdate.mockResolvedValue({})
 
       const { form, handleSubmit } = useSecretForm({
         mode: 'edit',
-        secret,
+        secret: () => secret,
         existingProviders: [],
         visible,
         onSaved: vi.fn()
       })
+
+      visible.value = true
+      await Promise.resolve()
 
       form.name = 'Updated Name'
       form.secretValue = ''
@@ -308,10 +295,10 @@ describe('useSecretForm', () => {
     })
   })
 
-  describe('resetForm', () => {
-    it('resets to empty state in create mode', () => {
+  describe('form reset on visible', () => {
+    it('resets to empty state in create mode when visible becomes true', async () => {
       const visible = ref(false)
-      const { form, errors, resetForm } = useSecretForm({
+      const { form, errors } = useSecretForm({
         mode: 'create',
         existingProviders: [],
         visible,
@@ -322,23 +309,24 @@ describe('useSecretForm', () => {
       form.secretValue = 'some value'
       errors.name = 'some error'
 
-      resetForm()
+      visible.value = true
+      await Promise.resolve()
 
       expect(form.name).toBe('')
       expect(form.secretValue).toBe('')
-      expect(form.provider).toBe(PROVIDER_NONE)
+      expect(form.provider).toBeNull()
       expect(errors.name).toBe('')
     })
 
-    it('resets to secret values in edit mode', () => {
+    it('resets to secret values in edit mode when visible becomes true', async () => {
       const visible = ref(false)
       const secret = createMockSecret({
         name: 'Original Name',
         provider: 'civitai'
       })
-      const { form, resetForm } = useSecretForm({
+      const { form } = useSecretForm({
         mode: 'edit',
-        secret,
+        secret: () => secret,
         existingProviders: [],
         visible,
         onSaved: vi.fn()
@@ -346,7 +334,8 @@ describe('useSecretForm', () => {
 
       form.name = 'Changed Name'
 
-      resetForm()
+      visible.value = true
+      await Promise.resolve()
 
       expect(form.name).toBe('Original Name')
       expect(form.provider).toBe('civitai')

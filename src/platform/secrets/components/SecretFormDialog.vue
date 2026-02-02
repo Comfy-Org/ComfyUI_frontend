@@ -126,7 +126,7 @@ const emit = defineEmits<{
 const { form, errors, loading, apiError, providerOptions, handleSubmit } =
   useSecretForm({
     mode,
-    secret,
+    secret: () => secret,
     existingProviders,
     visible,
     onSaved: () => emit('saved')

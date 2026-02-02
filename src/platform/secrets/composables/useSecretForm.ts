@@ -1,16 +1,16 @@
-import { computed, reactive, ref, watch } from 'vue'
+import { whenever } from '@vueuse/core'
+import type { MaybeRefOrGetter } from 'vue'
+import { computed, reactive, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SecretsApiError, secretsApi } from '../api/secretsApi'
 import { SECRET_PROVIDERS } from '../providers'
 import type { SecretErrorCode, SecretMetadata, SecretProvider } from '../types'
 
-export const PROVIDER_NONE = '__none__' as const
-
 interface SecretFormState {
   name: string
   secretValue: string
-  provider: SecretProvider | typeof PROVIDER_NONE
+  provider: SecretProvider | null
 }
 
 interface SecretFormErrors {
@@ -21,13 +21,13 @@ interface SecretFormErrors {
 
 interface ProviderOption {
   label: string
-  value: SecretProvider | typeof PROVIDER_NONE
+  value: SecretProvider
   disabled: boolean
 }
 
 interface UseSecretFormOptions {
   mode: 'create' | 'edit'
-  secret?: SecretMetadata
+  secret?: MaybeRefOrGetter<SecretMetadata | undefined>
   existingProviders: SecretProvider[]
   visible: { value: boolean }
   onSaved: () => void
@@ -35,7 +35,13 @@ interface UseSecretFormOptions {
 
 export function useSecretForm(options: UseSecretFormOptions) {
   const { t } = useI18n()
-  const { mode, secret, existingProviders, visible, onSaved } = options
+  const {
+    mode,
+    secret: secretRef,
+    existingProviders,
+    visible,
+    onSaved
+  } = options
 
   const loading = ref(false)
   const apiErrorCode = ref<SecretErrorCode | null>(null)
@@ -44,7 +50,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
   const form = reactive<SecretFormState>({
     name: '',
     secretValue: '',
-    provider: PROVIDER_NONE
+    provider: null
   })
 
   const errors = reactive<SecretFormErrors>({
@@ -53,21 +59,13 @@ export function useSecretForm(options: UseSecretFormOptions) {
     provider: ''
   })
 
-  const providerOptions = computed<ProviderOption[]>(() => {
-    const opts: ProviderOption[] = SECRET_PROVIDERS.map((p) => ({
+  const providerOptions = computed<ProviderOption[]>(() =>
+    SECRET_PROVIDERS.map((p) => ({
       label: p.label,
       value: p.value,
-      disabled: existingProviders.includes(p.value)
+      disabled: mode === 'edit' ? false : existingProviders.includes(p.value)
     }))
-    if (mode === 'edit') {
-      opts.unshift({
-        label: t('g.none'),
-        value: PROVIDER_NONE,
-        disabled: false
-      })
-    }
-    return opts
-  })
+  )
 
   const apiError = computed(() => {
     if (!apiErrorCode.value && !apiErrorMessage.value) return null
@@ -82,14 +80,15 @@ export function useSecretForm(options: UseSecretFormOptions) {
   })
 
   function resetForm() {
+    const secret = toValue(secretRef)
     if (mode === 'edit' && secret) {
       form.name = secret.name
-      form.provider = secret.provider ?? PROVIDER_NONE
+      form.provider = secret.provider ?? null
       form.secretValue = ''
     } else {
       form.name = ''
       form.secretValue = ''
-      form.provider = PROVIDER_NONE
+      form.provider = null
     }
     errors.name = ''
     errors.secretValue = ''
@@ -98,12 +97,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     apiErrorMessage.value = null
   }
 
-  watch(
-    () => visible.value,
-    (isVisible) => {
-      if (isVisible) resetForm()
-    }
-  )
+  whenever(() => visible.value, resetForm)
 
   function validate(): boolean {
     errors.name = ''
@@ -118,7 +112,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
       errors.name = t('secrets.errors.nameTooLong')
       return false
     }
-    if (mode === 'create' && form.provider === PROVIDER_NONE) {
+    if (!form.provider) {
       errors.provider = t('secrets.errors.providerRequired')
       return false
     }
@@ -137,15 +131,12 @@ export function useSecretForm(options: UseSecretFormOptions) {
     apiErrorMessage.value = null
 
     try {
+      const secret = toValue(secretRef)
       if (mode === 'create') {
-        const provider =
-          form.provider === PROVIDER_NONE
-            ? undefined
-            : (form.provider as SecretProvider)
         await secretsApi.create({
           name: form.name.trim(),
           secret_value: form.secretValue,
-          provider
+          provider: form.provider!
         })
       } else if (secret) {
         const updatePayload: { name: string; secret_value?: string } = {
@@ -174,8 +165,6 @@ export function useSecretForm(options: UseSecretFormOptions) {
     loading,
     apiError,
     providerOptions,
-    validate,
-    handleSubmit,
-    resetForm
+    handleSubmit
   }
 }

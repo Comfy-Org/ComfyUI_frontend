@@ -8,7 +8,7 @@ interface ProviderConfig {
 export const SECRET_PROVIDERS: ProviderConfig[] = [
   { value: 'huggingface', label: 'HuggingFace' },
   { value: 'civitai', label: 'Civitai' }
-]
+] as const
 
 export function getProviderLabel(provider: SecretProvider | undefined): string {
   if (!provider) return ''

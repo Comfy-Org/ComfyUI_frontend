@@ -70,7 +70,7 @@ import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 import { useConfirm } from 'primevue/useconfirm'
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -115,7 +115,5 @@ function confirmDelete(secret: SecretMetadata) {
   })
 }
 
-onMounted(() => {
-  fetchSecrets()
-})
+fetchSecrets()
 </script>
