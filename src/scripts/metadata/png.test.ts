@@ -20,7 +20,9 @@ function createPngWithChunk(
     translatedKeyword = ''
   } = options
 
-  const signature = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+  const signature = new Uint8Array([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+  ])
   const typeBytes = new TextEncoder().encode(chunkType)
   const keywordBytes = new TextEncoder().encode(keyword)
   const contentBytes = new TextEncoder().encode(content)
@@ -69,16 +71,7 @@ function createPngWithChunk(
   const iendLength = new Uint8Array(4)
   const iendCrc = new Uint8Array(4)
 
-  const total =
-    signature.length +
-    4 +
-    4 +
-    chunkData.length +
-    4 +
-    4 +
-    4 +
-    0 +
-    4
+  const total = signature.length + 4 + 4 + chunkData.length + 4 + 4 + 4 + 0 + 4
   const result = new Uint8Array(total)
 
   let offset = 0

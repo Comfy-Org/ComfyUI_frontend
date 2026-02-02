@@ -105,9 +105,7 @@ export async function getFromPngFile(
   return new Promise<Record<string, string>>((resolve) => {
     const reader = new FileReader()
     reader.onload = async (event) => {
-      const result = await getFromPngBuffer(
-        event.target?.result as ArrayBuffer
-      )
+      const result = await getFromPngBuffer(event.target?.result as ArrayBuffer)
       resolve(result)
     }
     reader.readAsArrayBuffer(file)
