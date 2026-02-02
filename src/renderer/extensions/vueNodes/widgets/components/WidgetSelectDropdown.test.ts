@@ -4,12 +4,19 @@ import type { VueWrapper } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import type { ComponentPublicInstance } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 
 interface WidgetSelectDropdownInstance extends ComponentPublicInstance {
   inputItems: FormDropdownItem[]
@@ -52,7 +59,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         uploadFolder: 'input'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia()]
+        plugins: [PrimeVue, createTestingPinia(), i18n]
       }
     }) as unknown as VueWrapper<WidgetSelectDropdownInstance>
   }
