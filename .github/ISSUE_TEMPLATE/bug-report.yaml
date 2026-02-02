@@ -10,8 +10,7 @@ body:
       options:
         - label: I am running the latest version of ComfyUI
           required: true
-        - label: I have tested with all custom nodes disabled ([see how](https://docs.comfy.org/troubleshooting/custom-node-issues#step-1%3A-test-with-all-custom-nodes-disabled))
-          required: true
+        - label: I'm using custom nodes
 
   - type: textarea
     id: description
