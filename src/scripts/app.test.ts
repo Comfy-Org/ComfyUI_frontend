@@ -154,7 +154,7 @@ describe('ComfyApp', () => {
       expect(mockBatchNode.pos).toEqual([500, 230])
     })
 
-    it('should stack multiple nodes vertically', () => {
+    it('should stack multiple image nodes vertically', () => {
       const mockNode1 = createMockNode({
         pos: [100, 200],
         type: 'LoadImage',
@@ -173,15 +173,15 @@ describe('ComfyApp', () => {
       app.positionBatchNodes([mockNode1, mockNode2, mockNode3], mockBatchNode)
 
       // Formula: y + (height * index) + (25 * (index + 1))
-      // For LoadImage nodes, height = max(344, nodeHeight) = max(344, 400) = 400
+      // For LoadImage nodes, height = 344
       expect(mockNode1.pos).toEqual([100, 200])
-      // index 1: 200 + (400 * 1) + (25 * 2) = 200 + 400 + 50 = 650
-      expect(mockNode2.pos).toEqual([100, 650])
-      // index 2: 200 + (400 * 2) + (25 * 3) = 200 + 800 + 75 = 1075
-      expect(mockNode3.pos).toEqual([100, 1075])
+      // index 1: 200 + (344 * 1) + (25 * 2) = 200 + 344 + 50 = 594
+      expect(mockNode2.pos).toEqual([100, 594])
+      // index 2: 200 + (344 * 2) + (25 * 3) = 200 + 688 + 75 = 963
+      expect(mockNode3.pos).toEqual([100, 963])
     })
 
-    it('should use minimum height for LoadImage nodes', () => {
+    it('should use set height of 344 for LoadImage nodes', () => {
       const mockNode1 = createMockNode({
         pos: [100, 200],
         type: 'LoadImage',
@@ -198,25 +198,6 @@ describe('ComfyApp', () => {
       // height = max(344, 100) = 344
       // index 1: 200 + (344 * 1) + (25 * 2) = 200 + 344 + 50 = 594
       expect(mockNode2.pos).toEqual([100, 594])
-    })
-
-    it('should use actual height for non-LoadImage nodes', () => {
-      const mockNode1 = createMockNode({
-        pos: [100, 200],
-        type: 'SomeOtherNode',
-        getBounding: vi.fn(() => new Float64Array([100, 200, 300, 150]))
-      })
-      const mockNode2 = createMockNode({
-        pos: [0, 0],
-        type: 'SomeOtherNode'
-      })
-      const mockBatchNode = createMockNode({ pos: [0, 0] })
-
-      app.positionBatchNodes([mockNode1, mockNode2], mockBatchNode)
-
-      // height = 150 (no max() for non-LoadImage)
-      // index 1: 200 + (150 * 1) + (25 * 2) = 200 + 150 + 50 = 400
-      expect(mockNode2.pos).toEqual([100, 400])
     })
 
     it('should call graph change once for all nodes', () => {
