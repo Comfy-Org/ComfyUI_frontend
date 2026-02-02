@@ -1,6 +1,6 @@
 <template>
   <FloatLabel
-    variant="in"
+    variant="on"
     :unstyled="hideLayoutField"
     :class="
       cn(
