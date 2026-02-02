@@ -290,6 +290,7 @@
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
+    "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
     "failed": "Failed",
     "failedToInstall": "Failed to Install",
     "installError": "Install Error",
