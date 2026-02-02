@@ -427,7 +427,18 @@ export default defineConfig({
         if (hostType !== 'html') return deps
 
         // Exclude heavy vendor chunks that should be lazy-loaded
-        const lazyVendors = ['vendor-three', 'vendor-xterm']
+        // - vendor-three: 3D preview (Load3D nodes)
+        // - vendor-xterm: Terminal emulator (logs panel)
+        // - vendor-tiptap: Rich text editor (markdown widgets)
+        // - vendor-chart: Chart.js (stats/monitoring)
+        // - vendor-yjs: CRDT library (layout store, loaded on first graph)
+        const lazyVendors = [
+          'vendor-three',
+          'vendor-xterm',
+          'vendor-tiptap',
+          'vendor-chart',
+          'vendor-yjs'
+        ]
         return deps.filter(
           (dep) => !lazyVendors.some((vendor) => dep.includes(vendor))
         )
@@ -455,9 +466,6 @@ export default defineConfig({
           'console.timeLog',
           'console.trace'
         ]
-      },
-      experimental: {
-        strictExecutionOrder: true
       },
       output: {
         keepNames: true,
@@ -513,6 +521,11 @@ export default defineConfig({
             {
               name: 'vendor-xterm',
               test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-yjs',
+              test: /[\\/]node_modules[\\/](yjs|lib0)[\\/]/,
               priority: 15
             },
 

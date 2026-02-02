@@ -194,6 +194,3 @@ export interface LoaderManagerInterface {
   dispose(): void
   loadModel(url: string, originalFileName?: string): Promise<void>
 }
-
-// Re-export from constants for backward compatibility
-export { SUPPORTED_EXTENSIONS } from './constants'

@@ -51,6 +51,3 @@ useExtensionService().registerExtension({
     }
   }
 })
-
-// Export for testing and manual triggering if needed
-export { loadLoad3dExtensions, isLoad3dNodeType }
