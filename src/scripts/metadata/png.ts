@@ -3,18 +3,26 @@ async function decompressZlib(
 ): Promise<Uint8Array<ArrayBuffer>> {
   const stream = new DecompressionStream('deflate')
   const writer = stream.writable.getWriter()
-  writer.write(data)
-  writer.close()
+  try {
+    await writer.write(data)
+    await writer.close()
+  } finally {
+    writer.releaseLock()
+  }
 
   const reader = stream.readable.getReader()
   const chunks: Uint8Array<ArrayBuffer>[] = []
   let totalLength = 0
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    chunks.push(value)
-    totalLength += value.length
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+      totalLength += value.length
+    }
+  } finally {
+    reader.releaseLock()
   }
 
   const result = new Uint8Array(totalLength)
@@ -59,19 +67,20 @@ export async function getFromPngBuffer(
       let compressionMethod = 0
 
       if (type === 'iTXt') {
+        const chunkEnd = offset + 8 + length
         isCompressed = pngData[textStart] === 1
         compressionMethod = pngData[textStart + 1]
         textStart += 2
 
-        while (pngData[textStart] !== 0 && textStart < offset + 8 + length) {
+        while (pngData[textStart] !== 0 && textStart < chunkEnd) {
           textStart++
         }
-        textStart++
+        if (textStart < chunkEnd) textStart++
 
-        while (pngData[textStart] !== 0 && textStart < offset + 8 + length) {
+        while (pngData[textStart] !== 0 && textStart < chunkEnd) {
           textStart++
         }
-        textStart++
+        if (textStart < chunkEnd) textStart++
       }
 
       let contentArraySegment = pngData.slice(textStart, offset + 8 + length)
@@ -82,11 +91,15 @@ export async function getFromPngBuffer(
             contentArraySegment = await decompressZlib(contentArraySegment)
           } catch (e) {
             console.error(`Failed to decompress iTXt chunk "${keyword}":`, e)
+            offset += 12 + length
+            continue
           }
         } else {
           console.warn(
             `Unsupported compression method ${compressionMethod} for iTXt chunk "${keyword}"`
           )
+          offset += 12 + length
+          continue
         }
       }
 
@@ -102,12 +115,18 @@ export async function getFromPngBuffer(
 export async function getFromPngFile(
   file: File
 ): Promise<Record<string, string>> {
-  return new Promise<Record<string, string>>((resolve) => {
+  return new Promise<Record<string, string>>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = async (event) => {
-      const result = await getFromPngBuffer(event.target?.result as ArrayBuffer)
+      const buffer = event.target?.result
+      if (!(buffer instanceof ArrayBuffer)) {
+        reject(new Error('Failed to read file as ArrayBuffer'))
+        return
+      }
+      const result = await getFromPngBuffer(buffer)
       resolve(result)
     }
+    reader.onerror = () => reject(reader.error)
     reader.readAsArrayBuffer(file)
   })
 }

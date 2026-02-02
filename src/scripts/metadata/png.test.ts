@@ -137,4 +137,109 @@ describe('getFromPngBuffer', () => {
     const result = await getFromPngBuffer(buffer)
     expect(result['workflow']).toBe(workflow)
   })
+
+  it('parses compressed iTXt chunk', async () => {
+    const workflow = '{"nodes":[{"id":1,"type":"KSampler"}]}'
+    const contentBytes = new TextEncoder().encode(workflow)
+
+    const stream = new CompressionStream('deflate')
+    const writer = stream.writable.getWriter()
+    await writer.write(contentBytes)
+    await writer.close()
+
+    const reader = stream.readable.getReader()
+    const chunks: Uint8Array[] = []
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+    }
+    const compressedBytes = new Uint8Array(
+      chunks.reduce((acc, c) => acc + c.length, 0)
+    )
+    let pos = 0
+    for (const chunk of chunks) {
+      compressedBytes.set(chunk, pos)
+      pos += chunk.length
+    }
+
+    const buffer = createPngWithCompressedITXt(
+      'workflow',
+      compressedBytes,
+      '',
+      ''
+    )
+    const result = await getFromPngBuffer(buffer)
+    expect(result['workflow']).toBe(workflow)
+  })
 })
+
+function createPngWithCompressedITXt(
+  keyword: string,
+  compressedContent: Uint8Array,
+  languageTag: string,
+  translatedKeyword: string
+): ArrayBuffer {
+  const signature = new Uint8Array([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
+  ])
+  const typeBytes = new TextEncoder().encode('iTXt')
+  const keywordBytes = new TextEncoder().encode(keyword)
+  const langBytes = new TextEncoder().encode(languageTag)
+  const transBytes = new TextEncoder().encode(translatedKeyword)
+
+  const totalLength =
+    keywordBytes.length +
+    1 +
+    2 +
+    langBytes.length +
+    1 +
+    transBytes.length +
+    1 +
+    compressedContent.length
+
+  const chunkData = new Uint8Array(totalLength)
+  let pos = 0
+  chunkData.set(keywordBytes, pos)
+  pos += keywordBytes.length
+  chunkData[pos++] = 0
+  chunkData[pos++] = 1
+  chunkData[pos++] = 0
+  chunkData.set(langBytes, pos)
+  pos += langBytes.length
+  chunkData[pos++] = 0
+  chunkData.set(transBytes, pos)
+  pos += transBytes.length
+  chunkData[pos++] = 0
+  chunkData.set(compressedContent, pos)
+
+  const lengthBytes = new Uint8Array(4)
+  new DataView(lengthBytes.buffer).setUint32(0, chunkData.length, false)
+
+  const crc = new Uint8Array(4)
+  const iendType = new TextEncoder().encode('IEND')
+  const iendLength = new Uint8Array(4)
+  const iendCrc = new Uint8Array(4)
+
+  const total = signature.length + 4 + 4 + chunkData.length + 4 + 4 + 4 + 0 + 4
+  const result = new Uint8Array(total)
+
+  let offset = 0
+  result.set(signature, offset)
+  offset += signature.length
+  result.set(lengthBytes, offset)
+  offset += 4
+  result.set(typeBytes, offset)
+  offset += 4
+  result.set(chunkData, offset)
+  offset += chunkData.length
+  result.set(crc, offset)
+  offset += 4
+  result.set(iendLength, offset)
+  offset += 4
+  result.set(iendType, offset)
+  offset += 4
+  result.set(iendCrc, offset)
+
+  return result.buffer
+}
