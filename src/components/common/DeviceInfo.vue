@@ -34,7 +34,7 @@ const formatValue = (value: string | number, field: string) => {
       field
     )
   ) {
-    return formatSize(value as number)
+    return formatSize(Number(value))
   }
   return value
 }
