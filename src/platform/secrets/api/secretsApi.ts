@@ -10,6 +10,7 @@ import type {
   SecretMetadata,
   SecretUpdateRequest
 } from '../types'
+import { SECRET_ERROR_CODES } from '../types'
 
 interface ListSecretsResponse {
   data: SecretMetadata[]
@@ -47,7 +48,8 @@ async function getAuthHeaderOrThrow() {
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
     const status = err.response?.status
-    const code = err.response?.data?.code as SecretErrorCode | undefined
+    const rawCode = err.response?.data?.code
+    const code = SECRET_ERROR_CODES.includes(rawCode) ? rawCode : undefined
     const message = err.response?.data?.message ?? err.message
     throw new SecretsApiError(message, status, code)
   }

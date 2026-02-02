@@ -20,10 +20,13 @@ export interface SecretUpdateRequest {
   secret_value?: string
 }
 
-export type SecretErrorCode =
-  | 'INVALID_REQUEST'
-  | 'INVALID_PROVIDER'
-  | 'DUPLICATE_NAME'
-  | 'DUPLICATE_PROVIDER'
-  | 'FORBIDDEN'
-  | 'NOT_FOUND'
+export const SECRET_ERROR_CODES = [
+  'INVALID_REQUEST',
+  'INVALID_PROVIDER',
+  'DUPLICATE_NAME',
+  'DUPLICATE_PROVIDER',
+  'FORBIDDEN',
+  'NOT_FOUND'
+] as const
+
+export type SecretErrorCode = (typeof SECRET_ERROR_CODES)[number]
