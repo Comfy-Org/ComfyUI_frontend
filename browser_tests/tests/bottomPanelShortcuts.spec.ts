@@ -147,16 +147,46 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should maintain panel state when switching to terminal', async ({
     comfyPage
   }) => {
-    // Terminal tabs load asynchronously via dynamic import - wait for registration
-    // Open terminal panel first to make tabs visible, then poll for Logs tab
+    // Terminal tabs load asynchronously via dynamic import - wait longer for CI
+    // Check console for debug messages about terminal tab loading
+    const consoleLogs: string[] = []
+    comfyPage.page.on('console', (msg) => {
+      if (msg.text().includes('BottomPanel')) {
+        consoleLogs.push(msg.text())
+      }
+    })
+
+    // Wait for terminal tabs to load by polling the toggle panel button behavior
+    // When terminal tabs are loaded, "Toggle Bottom Panel" opens terminal panel (shows Logs tab)
+    // When not loaded, it falls back to shortcuts panel (shows Essential tab)
     await expect(async () => {
+      // Toggle panel open
       await comfyPage.page
         .locator('button[aria-label*="Toggle Bottom Panel"]')
         .click()
-      await expect(
-        comfyPage.page.getByRole('tab', { name: /Logs/i })
-      ).toBeVisible({ timeout: 1000 })
-    }).toPass({ timeout: 15_000 })
+      await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible({
+        timeout: 1000
+      })
+
+      // Check if Logs tab appeared (terminal panel) vs Essential tab (shortcuts fallback)
+      const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
+      const isLogsVisible = await logsTab.isVisible().catch(() => false)
+
+      if (!isLogsVisible) {
+        // Close panel and retry - terminal tabs not loaded yet
+        await comfyPage.page
+          .locator('button[aria-label*="Toggle Bottom Panel"]')
+          .click()
+        throw new Error(
+          `Logs tab not visible yet. Console: ${consoleLogs.join('; ')}`
+        )
+      }
+    }).toPass({ timeout: 30_000, intervals: [500, 1000, 2000] })
+
+    // Terminal panel is now open with Logs tab visible
+    await expect(
+      comfyPage.page.getByRole('tab', { name: /Logs/i })
+    ).toBeVisible()
 
     // Close the terminal panel
     await comfyPage.page
