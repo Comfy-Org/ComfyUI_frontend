@@ -39,6 +39,7 @@ export class ComfyNodeDefImpl
    * needs to write to it to assign a node to a custom folder.
    */
   category: string
+  readonly main_category?: string
   readonly python_module: string
   readonly description: string
   readonly help: string
@@ -136,6 +137,7 @@ export class ComfyNodeDefImpl
     this.name = obj.name
     this.display_name = obj.display_name
     this.category = obj.category
+    this.main_category = obj.main_category
     this.python_module = obj.python_module
     this.description = obj.description
     this.help = obj.help ?? ''

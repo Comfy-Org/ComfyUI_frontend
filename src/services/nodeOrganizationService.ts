@@ -10,6 +10,7 @@ import type {
 import { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import { sortedTree } from '@/utils/treeUtil'
+import { upperCase } from 'es-toolkit/string'
 
 const DEFAULT_ICON = 'pi pi-sort'
 
@@ -142,24 +143,44 @@ class NodeOrganizationService {
         const customNodes = nodes.filter(
           (nodeDef) => nodeDef.nodeSource.type === NodeSourceType.CustomNodes
         )
-        return [
-          {
-            tree: buildNodeDefTree(customNodes, {
+        const groupedByMainCategory = new Map<string, ComfyNodeDefImpl[]>()
+        for (const node of customNodes) {
+          const mainCategory = node.main_category ?? 'custom_extensions'
+          if (!groupedByMainCategory.has(mainCategory)) {
+            groupedByMainCategory.set(mainCategory, [])
+          }
+          groupedByMainCategory.get(mainCategory)!.push(node)
+        }
+
+        return Array.from(groupedByMainCategory.entries()).map(
+          ([mainCategory, categoryNodes]) => ({
+            title: upperCase(mainCategory),
+            tree: buildNodeDefTree(categoryNodes, {
               pathExtractor: categoryPathExtractor
             })
-          }
-        ]
+          })
+        )
       }
       case 'all':
-      default:
-        return [
-          {
-            title: 'sideToolbar.nodeLibraryTab.sections.basics',
-            tree: buildNodeDefTree(nodes, {
+      default: {
+        const groupedByMainCategory = new Map<string, ComfyNodeDefImpl[]>()
+        for (const node of nodes) {
+          const mainCategory = node.main_category ?? 'basics'
+          if (!groupedByMainCategory.has(mainCategory)) {
+            groupedByMainCategory.set(mainCategory, [])
+          }
+          groupedByMainCategory.get(mainCategory)!.push(node)
+        }
+
+        return Array.from(groupedByMainCategory.entries()).map(
+          ([mainCategory, categoryNodes]) => ({
+            title: upperCase(mainCategory),
+            tree: buildNodeDefTree(categoryNodes, {
               pathExtractor: categoryPathExtractor
             })
-          }
-        ]
+          })
+        )
+      }
     }
   }
 
