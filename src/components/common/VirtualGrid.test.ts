@@ -180,11 +180,12 @@ describe('VirtualGrid', () => {
 
     await nextTick()
 
-    const gridElement = wrapper.find('[style*="grid"]')
+    const gridElement = wrapper.find('[style*="display: grid"]')
     expect(gridElement.exists()).toBe(true)
 
-    const style = gridElement.attributes('style') ?? ''
-    expect(style).toContain('repeat(2')
+    const gridEl = gridElement.element as HTMLElement
+
+    expect(gridEl.style.gridTemplateColumns).toBe('repeat(2, minmax(0, 1fr))')
 
     wrapper.unmount()
   })
