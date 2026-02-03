@@ -105,6 +105,64 @@ describe('VirtualGrid', () => {
     wrapper.unmount()
   })
 
+  it('uses measured row step (including gap) to compute visible range', async () => {
+    const items = createItems(100)
+    mockedWidth.value = 100
+    mockedHeight.value = 60
+    mockedScrollY.value = 110
+
+    const wrapper = mount(VirtualGrid<TestItem>, {
+      props: {
+        items,
+        gridStyle: defaultGridStyle,
+        defaultItemHeight: 50,
+        defaultItemWidth: 100,
+        maxColumns: 1,
+        bufferRows: 0
+      },
+      slots: {
+        item: `<template #item="{ index }">
+          <div class="test-index">{{ index }}</div>
+        </template>`
+      },
+      attachTo: document.body
+    })
+
+    await nextTick()
+
+    const initialIndices = wrapper
+      .findAll('.test-index')
+      .map((node) => node.text())
+    expect(initialIndices[0]).toBe('2')
+
+    const renderedItemEls = wrapper
+      .findAll<HTMLElement>('[data-virtual-grid-item]')
+      .map((node) => node.element)
+
+    expect(renderedItemEls.length).toBeGreaterThanOrEqual(2)
+
+    Object.defineProperty(renderedItemEls[0], 'clientHeight', { value: 50 })
+    Object.defineProperty(renderedItemEls[0], 'clientWidth', { value: 100 })
+    Object.defineProperty(renderedItemEls[0], 'offsetTop', { value: 0 })
+    Object.defineProperty(renderedItemEls[0], 'offsetLeft', { value: 0 })
+
+    Object.defineProperty(renderedItemEls[1], 'clientHeight', { value: 50 })
+    Object.defineProperty(renderedItemEls[1], 'clientWidth', { value: 100 })
+    Object.defineProperty(renderedItemEls[1], 'offsetTop', { value: 60 })
+    Object.defineProperty(renderedItemEls[1], 'offsetLeft', { value: 0 })
+
+    await wrapper.setProps({ items: [...items] })
+    await nextTick()
+    await nextTick()
+
+    const updatedIndices = wrapper
+      .findAll('.test-index')
+      .map((node) => node.text())
+    expect(updatedIndices[0]).toBe('1')
+
+    wrapper.unmount()
+  })
+
   it('respects maxColumns prop', async () => {
     const items = createItems(10)
     mockedWidth.value = 400

@@ -57,8 +57,8 @@ const emit = defineEmits<{
   'approach-end': []
 }>()
 
-const itemHeight = ref(defaultItemHeight)
-const itemWidth = ref(defaultItemWidth)
+const rowHeight = ref(defaultItemHeight)
+const colWidth = ref(defaultItemWidth)
 const container = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
 const { y: scrollY } = useScroll(container, {
@@ -67,7 +67,7 @@ const { y: scrollY } = useScroll(container, {
 })
 
 const cols = computed(() =>
-  Math.min(Math.floor(width.value / itemWidth.value) || 1, maxColumns)
+  Math.min(Math.floor(width.value / colWidth.value) || 1, maxColumns)
 )
 
 const mergedGridStyle = computed<CSSProperties>(() => {
@@ -78,8 +78,8 @@ const mergedGridStyle = computed<CSSProperties>(() => {
   }
 })
 
-const viewRows = computed(() => Math.ceil(height.value / itemHeight.value))
-const offsetRows = computed(() => Math.floor(scrollY.value / itemHeight.value))
+const viewRows = computed(() => Math.ceil(height.value / rowHeight.value))
+const offsetRows = computed(() => Math.floor(scrollY.value / rowHeight.value))
 const isValidGrid = computed(() => height.value && width.value && items?.length)
 
 const state = computed<GridState>(() => {
@@ -101,14 +101,28 @@ const renderedItems = computed(() =>
   isValidGrid.value ? items.slice(state.value.start, state.value.end) : []
 )
 
-function rowsToHeight(rows: number): string {
-  return `${(rows / cols.value) * itemHeight.value}px`
+function spacerRowsToHeight(rows: number): string {
+  return `${rows * rowHeight.value}px`
 }
+
+const topSpacerRows = computed(() => {
+  if (!isValidGrid.value) return 0
+  return Math.floor(state.value.start / cols.value)
+})
+
+const bottomSpacerRows = computed(() => {
+  if (!isValidGrid.value) return 0
+
+  const totalRows = Math.ceil(items.length / cols.value)
+  const renderedEndRow = Math.ceil(state.value.end / cols.value)
+  return Math.max(0, totalRows - renderedEndRow)
+})
+
 const topSpacerStyle = computed<CSSProperties>(() => ({
-  height: rowsToHeight(state.value.start)
+  height: spacerRowsToHeight(topSpacerRows.value)
 }))
 const bottomSpacerStyle = computed<CSSProperties>(() => ({
-  height: rowsToHeight(items.length - state.value.end)
+  height: spacerRowsToHeight(bottomSpacerRows.value)
 }))
 
 whenever(
@@ -118,24 +132,59 @@ whenever(
   }
 )
 
-const updateItemSize = () => {
-  if (container.value) {
-    const firstItem = container.value.querySelector('[data-virtual-grid-item]')
+const ITEM_SIZE_EPSILON_PX = 1
 
-    // Don't update item size if the first item is not rendered yet
-    if (!firstItem?.clientHeight || !firstItem?.clientWidth) return
+/**
+ * Measures the effective grid row/column step (including `gap`) from rendered
+ * items to keep spacer math stable and prevent scroll jitter near the end.
+ */
+function updateItemSize(): void {
+  if (!container.value) return
 
-    if (itemHeight.value !== firstItem.clientHeight) {
-      itemHeight.value = firstItem.clientHeight
-    }
-    if (itemWidth.value !== firstItem.clientWidth) {
-      itemWidth.value = firstItem.clientWidth
-    }
+  const itemElements = Array.from(
+    container.value.querySelectorAll('[data-virtual-grid-item]')
+  ).filter((node): node is HTMLElement => node instanceof HTMLElement)
+
+  const firstItem = itemElements[0]
+
+  if (!firstItem?.clientHeight || !firstItem?.clientWidth) return
+
+  const nextRowItem = itemElements.find(
+    (item) => item.offsetTop > firstItem.offsetTop
+  )
+
+  const measuredRowHeight = nextRowItem
+    ? nextRowItem.offsetTop - firstItem.offsetTop
+    : firstItem.clientHeight
+
+  const nextColItem = itemElements.find(
+    (item) =>
+      item.offsetTop === firstItem.offsetTop &&
+      item.offsetLeft > firstItem.offsetLeft
+  )
+
+  const measuredColWidth = nextColItem
+    ? nextColItem.offsetLeft - firstItem.offsetLeft
+    : firstItem.clientWidth
+
+  if (
+    measuredRowHeight > 0 &&
+    Math.abs(rowHeight.value - measuredRowHeight) >= ITEM_SIZE_EPSILON_PX
+  ) {
+    rowHeight.value = measuredRowHeight
+  }
+
+  if (
+    measuredColWidth > 0 &&
+    Math.abs(colWidth.value - measuredColWidth) >= ITEM_SIZE_EPSILON_PX
+  ) {
+    colWidth.value = measuredColWidth
   }
 }
 const onResize = debounce(updateItemSize, resizeDebounce)
 watch([width, height], onResize, { flush: 'post' })
 whenever(() => items, updateItemSize, { flush: 'post' })
+
 onBeforeUnmount(() => {
   onResize.cancel()
 })
