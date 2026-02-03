@@ -137,6 +137,13 @@ export interface SubscribeResponse {
   payment_method_url?: string
 }
 
+interface CancelSubscriptionRequest {}
+
+export interface CancelSubscriptionResponse {
+  billing_op_id: string
+  cancel_at: string
+}
+
 interface PaymentPortalRequest {
   return_url?: string
 }
@@ -191,6 +198,30 @@ export interface BillingBalanceResponse {
   pending_charges_micros?: number
   effective_balance_micros?: number
   currency: string
+}
+
+interface CreateTopupRequest {
+  amount_cents: number
+}
+
+export type TopupStatus = 'pending' | 'completed' | 'failed'
+
+export interface CreateTopupResponse {
+  topup_id: string
+  status: TopupStatus
+  amount_cents: number
+  credits_cents: number
+}
+
+export type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
+
+export interface BillingOpStatusResponse {
+  op_id: string
+  status: BillingOpStatus
+  op_type: string
+  error_message?: string
+  created_at: string
+  completed_at?: string
 }
 
 class WorkspaceApiError extends Error {
@@ -532,6 +563,25 @@ export const workspaceApi = {
   },
 
   /**
+   * Cancel current subscription
+   * POST /api/billing/subscription/cancel
+   */
+  async cancelSubscription(): Promise<CancelSubscriptionResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response =
+        await workspaceApiClient.post<CancelSubscriptionResponse>(
+          api.apiURL('/billing/subscription/cancel'),
+          {} satisfies CancelSubscriptionRequest,
+          { headers }
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
    * Get Stripe payment portal URL for managing payment methods
    * POST /api/billing/payment-portal
    */
@@ -543,6 +593,41 @@ export const workspaceApi = {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         api.apiURL('/billing/payment-portal'),
         { return_url: returnUrl } satisfies PaymentPortalRequest,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Create a credit top-up
+   * POST /api/billing/topup
+   */
+  async createTopup(amountCents: number): Promise<CreateTopupResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.post<CreateTopupResponse>(
+        api.apiURL('/billing/topup'),
+        { amount_cents: amountCents } satisfies CreateTopupRequest,
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
+   * Get billing operation status
+   * GET /api/billing/ops/:id
+   */
+  async getBillingOpStatus(opId: string): Promise<BillingOpStatusResponse> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.get<BillingOpStatusResponse>(
+        api.apiURL(`/billing/ops/${opId}`),
         { headers }
       )
       return response.data

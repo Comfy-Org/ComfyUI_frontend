@@ -1,6 +1,7 @@
 import { computed, ref, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -50,6 +51,7 @@ import { useWorkspaceBilling } from './useWorkspaceBilling'
  */
 function useBillingContextInternal(): BillingContext {
   const store = useTeamWorkspaceStore()
+  const { flags } = useFeatureFlags()
 
   const legacyBilling = useLegacyBilling()
   const workspaceBilling = useWorkspaceBilling()
@@ -58,9 +60,17 @@ function useBillingContextInternal(): BillingContext {
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
-  const type = computed<BillingType>(() =>
-    store.isInPersonalWorkspace ? 'legacy' : 'workspace'
-  )
+  /**
+   * Determines which billing type to use:
+   * - If team workspaces feature is disabled: always use legacy (/customers)
+   * - If team workspaces feature is enabled:
+   *   - Personal workspace: use legacy (/customers)
+   *   - Team workspace: use workspace (/billing)
+   */
+  const type = computed<BillingType>(() => {
+    if (!flags.teamWorkspacesEnabled) return 'legacy'
+    return store.isInPersonalWorkspace ? 'legacy' : 'workspace'
+  })
 
   const activeContext = computed(() =>
     type.value === 'legacy' ? legacyBilling : workspaceBilling
@@ -149,8 +159,12 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchBalance()
   }
 
-  async function subscribe(planSlug: string) {
-    return activeContext.value.subscribe(planSlug)
+  async function subscribe(
+    planSlug: string,
+    returnUrl?: string,
+    cancelUrl?: string
+  ) {
+    return activeContext.value.subscribe(planSlug, returnUrl, cancelUrl)
   }
 
   async function previewSubscribe(planSlug: string) {
@@ -159,6 +173,10 @@ function useBillingContextInternal(): BillingContext {
 
   async function manageSubscription() {
     return activeContext.value.manageSubscription()
+  }
+
+  async function cancelSubscription() {
+    return activeContext.value.cancelSubscription()
   }
 
   async function fetchPlans() {
@@ -190,6 +208,7 @@ function useBillingContextInternal(): BillingContext {
     subscribe,
     previewSubscribe,
     manageSubscription,
+    cancelSubscription,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog

@@ -202,11 +202,30 @@ const newDisplayPrice = computed(() =>
   (previewData.new_plan.price_cents / 100).toFixed(0)
 )
 
-const currentDisplayCredits = computed(() =>
-  previewData.current_plan ? previewData.current_plan.credits_cents : 0
-)
+const currentDisplayCredits = computed(() => {
+  if (!previewData.current_plan) return 0
+  const totalCredits =
+    previewData.current_plan.seat_summary?.total_credits_cents ??
+    previewData.current_plan.credits_cents
+  const seatCount = previewData.current_plan.seat_summary?.seat_count ?? 1
+  const perSeatCredits = totalCredits / seatCount
+  if (previewData.current_plan.duration === 'ANNUAL') {
+    return Math.round(perSeatCredits / 12)
+  }
+  return Math.round(perSeatCredits)
+})
 
-const newDisplayCredits = computed(() => previewData.new_plan.credits_cents)
+const newDisplayCredits = computed(() => {
+  const totalCredits =
+    previewData.new_plan.seat_summary?.total_credits_cents ??
+    previewData.new_plan.credits_cents
+  const seatCount = previewData.new_plan.seat_summary?.seat_count ?? 1
+  const perSeatCredits = totalCredits / seatCount
+  if (previewData.new_plan.duration === 'ANNUAL') {
+    return Math.round(perSeatCredits / 12)
+  }
+  return Math.round(perSeatCredits)
+})
 
 const currentPeriodEndDate = computed(() =>
   previewData.current_plan?.period_end

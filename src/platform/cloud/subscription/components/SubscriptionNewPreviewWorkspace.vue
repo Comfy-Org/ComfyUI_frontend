@@ -215,7 +215,15 @@ const displayPrice = computed(() => {
 
 const displayCredits = computed(() => {
   if (previewData?.new_plan) {
-    return previewData.new_plan.credits_cents
+    const totalCredits =
+      previewData.new_plan.seat_summary?.total_credits_cents ??
+      previewData.new_plan.credits_cents
+    const seatCount = previewData.new_plan.seat_summary?.seat_count ?? 1
+    const perSeatCredits = totalCredits / seatCount
+    if (previewData.new_plan.duration === 'ANNUAL') {
+      return Math.round(perSeatCredits / 12)
+    }
+    return Math.round(perSeatCredits)
   }
   return getTierCredits(tierKey)
 })

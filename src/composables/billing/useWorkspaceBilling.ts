@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -9,6 +9,7 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 
 import type {
   BalanceInfo,
@@ -24,6 +25,7 @@ import type {
  */
 export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
+  const { toastErrorHandler } = useErrorHandling()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -69,6 +71,67 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const currentPlanSlug = computed(
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
+
+  const pendingCancelOpId = ref<string | null>(null)
+  let cancelPollTimeout: number | null = null
+
+  const stopCancelPolling = () => {
+    if (cancelPollTimeout !== null) {
+      window.clearTimeout(cancelPollTimeout)
+      cancelPollTimeout = null
+    }
+  }
+
+  async function pollCancelStatus(opId: string): Promise<void> {
+    stopCancelPolling()
+
+    const maxAttempts = 6
+    let attempt = 0
+    const poll = async () => {
+      if (pendingCancelOpId.value !== opId) return
+
+      try {
+        const response = await workspaceApi.getBillingOpStatus(opId)
+        if (response.status === 'succeeded') {
+          pendingCancelOpId.value = null
+          stopCancelPolling()
+          await fetchStatus()
+          return
+        }
+
+        if (response.status === 'failed') {
+          pendingCancelOpId.value = null
+          stopCancelPolling()
+          toastErrorHandler(
+            new Error(response.error_message ?? 'Failed to cancel subscription')
+          )
+          return
+        }
+
+        attempt += 1
+        if (attempt >= maxAttempts) {
+          pendingCancelOpId.value = null
+          stopCancelPolling()
+          await fetchStatus()
+          return
+        }
+      } catch (err) {
+        pendingCancelOpId.value = null
+        stopCancelPolling()
+        toastErrorHandler(err)
+        return
+      }
+
+      cancelPollTimeout = window.setTimeout(
+        () => {
+          void poll()
+        },
+        Math.min(5000 * 2 ** attempt, 30000)
+      )
+    }
+
+    await poll()
+  }
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -158,9 +221,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   async function manageSubscription(): Promise<void> {
-    // TODO: Implement workspace billing portal when available
-    // For now, this is a no-op as workspace billing may use a different portal
-    console.warn('Workspace billing portal not yet implemented')
+    isLoading.value = true
+    error.value = null
+    try {
+      const returnUrl = window.location.href
+      const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
+      if (response.url) {
+        window.open(response.url, '_blank')
+      }
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : 'Failed to open billing portal'
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  async function cancelSubscription(): Promise<void> {
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await workspaceApi.cancelSubscription()
+      pendingCancelOpId.value = response.billing_op_id
+      await pollCancelStatus(response.billing_op_id)
+    } catch (err) {
+      error.value =
+        err instanceof Error ? err.message : 'Failed to cancel subscription'
+      toastErrorHandler(err)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
   }
 
   async function fetchPlans(): Promise<void> {
@@ -189,6 +281,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     subscriptionDialog.show()
   }
 
+  onBeforeUnmount(() => {
+    stopCancelPolling()
+  })
+
   return {
     // State
     isInitialized,
@@ -207,6 +303,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     subscribe,
     previewSubscribe,
     manageSubscription,
+    cancelSubscription,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog

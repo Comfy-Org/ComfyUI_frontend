@@ -3,19 +3,17 @@ import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 /**
  * Composable for handling subscription credit calculations and formatting.
  *
- * Uses the appropriate billing source based on workspace type:
- * - Personal workspaces: uses firebaseAuthStore balance (legacy /customers endpoint)
- * - Team workspaces: uses billingContext balance (/billing/balance endpoint)
+ * Uses useBillingContext which automatically selects the correct billing source:
+ * - If team workspaces feature is disabled: uses legacy (/customers)
+ * - If team workspaces feature is enabled:
+ *   - Personal workspace: uses legacy (/customers)
+ *   - Team workspace: uses workspace (/billing)
  */
 export function useSubscriptionCredits() {
-  const authStore = useFirebaseAuthStore()
-  const workspaceStore = useTeamWorkspaceStore()
   const billingContext = useBillingContext()
   const { locale } = useI18n()
 
@@ -34,35 +32,21 @@ export function useSubscriptionCredits() {
   }
 
   const totalCredits = computed(() => {
-    if (workspaceStore.isInPersonalWorkspace) {
-      return formatBalance(authStore.balance?.amount_micros)
-    }
     const balance = toValue(billingContext.balance)
     return formatBalance(balance?.amountMicros)
   })
 
   const monthlyBonusCredits = computed(() => {
-    if (workspaceStore.isInPersonalWorkspace) {
-      return formatBalance(authStore.balance?.cloud_credit_balance_micros)
-    }
     const balance = toValue(billingContext.balance)
     return formatBalance(balance?.cloudCreditBalanceMicros)
   })
 
   const prepaidCredits = computed(() => {
-    if (workspaceStore.isInPersonalWorkspace) {
-      return formatBalance(authStore.balance?.prepaid_balance_micros)
-    }
     const balance = toValue(billingContext.balance)
     return formatBalance(balance?.prepaidBalanceMicros)
   })
 
-  const isLoadingBalance = computed(() => {
-    if (workspaceStore.isInPersonalWorkspace) {
-      return authStore.isFetchingBalance
-    }
-    return toValue(billingContext.isLoading)
-  })
+  const isLoadingBalance = computed(() => toValue(billingContext.isLoading))
 
   return {
     totalCredits,

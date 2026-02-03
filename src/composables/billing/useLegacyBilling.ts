@@ -64,8 +64,13 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
     return {
       amountMicros: legacyBalance.amount_micros ?? 0,
-      currency: 'usd',
-      effectiveBalanceMicros: legacyBalance.amount_micros ?? 0
+      currency: legacyBalance.currency ?? 'usd',
+      effectiveBalanceMicros:
+        legacyBalance.effective_balance_micros ??
+        legacyBalance.amount_micros ??
+        0,
+      prepaidBalanceMicros: legacyBalance.prepaid_balance_micros ?? 0,
+      cloudCreditBalanceMicros: legacyBalance.cloud_credit_balance_micros ?? 0
     }
   })
 
@@ -119,7 +124,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function subscribe(
-    _planSlug: string
+    _planSlug: string,
+    _returnUrl?: string,
+    _cancelUrl?: string
   ): Promise<SubscribeResponse | void> {
     // Legacy billing uses Stripe checkout flow via useSubscription
     await legacySubscribe()
@@ -133,6 +140,10 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function manageSubscription(): Promise<void> {
+    await legacyManageSubscription()
+  }
+
+  async function cancelSubscription(): Promise<void> {
     await legacyManageSubscription()
   }
 
@@ -170,6 +181,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     subscribe,
     previewSubscribe,
     manageSubscription,
+    cancelSubscription,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog

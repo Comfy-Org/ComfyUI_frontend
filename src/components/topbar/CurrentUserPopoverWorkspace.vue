@@ -196,7 +196,7 @@ import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
 import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -205,7 +205,7 @@ import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/components/topbar/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
+
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
@@ -234,9 +234,8 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 
 const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
   useCurrentUser()
-const authActions = useFirebaseAuthActions()
 const dialogService = useDialogService()
-const { isActiveSubscription, subscription, balance, isLoading } =
+const { isActiveSubscription, subscription, balance, isLoading, fetchBalance } =
   useBillingContext()
 const subscriptionDialog = useSubscriptionDialog()
 
@@ -249,13 +248,15 @@ const displayedCredits = computed(() => {
   if (subscription.value === null) return ''
   if (!isActiveSubscription.value) return '0'
 
-  const cents = balance.value?.amountMicros ?? 0
+  // API field is named _micros but contains cents (naming inconsistency)
+  const cents =
+    balance.value?.effectiveBalanceMicros ?? balance.value?.amountMicros ?? 0
   return formatCreditsFromCents({
     cents,
     locale: locale.value,
     numberOptions: {
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0
+      maximumFractionDigits: 2
     }
   })
 })
@@ -331,7 +332,11 @@ const toggleWorkspaceSwitcher = (event: MouseEvent) => {
   workspaceSwitcherPopover.value?.toggle(event)
 }
 
-onMounted(() => {
-  void authActions.fetchBalance()
-})
+const refreshBalance = () => {
+  if (isActiveSubscription.value) {
+    void fetchBalance()
+  }
+}
+
+defineExpose({ refreshBalance })
 </script>

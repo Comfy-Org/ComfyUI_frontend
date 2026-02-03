@@ -33,11 +33,16 @@ export interface BillingActions {
   initialize: () => Promise<void>
   fetchStatus: () => Promise<void>
   fetchBalance: () => Promise<void>
-  subscribe: (planSlug: string) => Promise<SubscribeResponse | void>
+  subscribe: (
+    planSlug: string,
+    returnUrl?: string,
+    cancelUrl?: string
+  ) => Promise<SubscribeResponse | void>
   previewSubscribe: (
     planSlug: string
   ) => Promise<PreviewSubscribeResponse | null>
   manageSubscription: () => Promise<void>
+  cancelSubscription: () => Promise<void>
   fetchPlans: () => Promise<void>
   /**
    * Ensures billing is initialized and subscription is active.

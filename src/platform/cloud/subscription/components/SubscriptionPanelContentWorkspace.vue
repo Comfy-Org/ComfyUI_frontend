@@ -25,7 +25,7 @@
             </Button>
           </template>
 
-          <!-- MEMBER View - read-only, no subscription data yet -->
+          <!-- MEMBER View - read-only, workspace not subscribed -->
           <template v-else-if="isMemberView">
             <div class="flex flex-col gap-2">
               <div class="text-sm font-bold text-text-primary">
@@ -37,7 +37,7 @@
             </div>
           </template>
 
-          <!-- Normal Subscribed State (Owner with subscription) -->
+          <!-- Normal Subscribed State (Owner with subscription, or member viewing subscribed workspace) -->
           <template v-else>
             <div class="flex flex-col gap-2">
               <div class="text-sm font-bold text-text-primary">
@@ -76,11 +76,7 @@
                 size="lg"
                 variant="secondary"
                 class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
-                @click="
-                  async () => {
-                    await authActions.accessBillingPortal()
-                  }
-                "
+                @click="manageSubscription"
               >
                 {{ $t('subscription.managePayment') }}
               </Button>
@@ -253,7 +249,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import {
@@ -267,7 +262,6 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@/utils/tailwindUtil'
 
-const authActions = useFirebaseAuthActions()
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =
   storeToRefs(workspaceStore)
@@ -281,8 +275,13 @@ const showSubscribePrompt = computed(() => {
   return !isWorkspaceSubscribed.value
 })
 
-// MEMBER view - members can't manage subscription, show read-only zero state
-const isMemberView = computed(() => !permissions.value.canManageSubscription)
+// MEMBER view without subscription - members can't manage subscription
+const isMemberView = computed(
+  () =>
+    !permissions.value.canManageSubscription &&
+    !isActiveSubscription.value &&
+    !isWorkspaceSubscribed.value
+)
 
 // Show zero state for credits (no real billing data yet)
 const showZeroState = computed(
@@ -294,8 +293,13 @@ function handleSubscribeWorkspace() {
   showSubscriptionDialog()
 }
 
-const { isActiveSubscription, subscription, showSubscriptionDialog } =
-  useBillingContext()
+const {
+  isActiveSubscription,
+  subscription,
+  showSubscriptionDialog,
+  manageSubscription,
+  cancelSubscription
+} = useBillingContext()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
@@ -340,7 +344,7 @@ const planMenuItems = computed(() => [
     label: t('subscription.cancelSubscription'),
     icon: 'pi pi-times',
     command: async () => {
-      await authActions.accessBillingPortal()
+      await cancelSubscription()
     }
   }
 ])

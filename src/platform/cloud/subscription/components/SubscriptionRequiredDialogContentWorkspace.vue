@@ -177,7 +177,11 @@ async function handleAddCreditCard() {
       selectedBillingCycle.value
     )
     if (!planSlug) return
-    const response = await subscribe(planSlug)
+    const response = await subscribe(
+      planSlug,
+      'https://www.comfy.org/payment/success',
+      'https://www.comfy.org/payment/failed'
+    )
 
     if (!response) return
 
@@ -219,7 +223,11 @@ async function handleConfirmTransition() {
       selectedBillingCycle.value
     )
     if (!planSlug) return
-    const response = await subscribe(planSlug)
+    const response = await subscribe(
+      planSlug,
+      'https://www.comfy.org/payment/success',
+      'https://www.comfy.org/payment/failed'
+    )
 
     if (!response) return
 
