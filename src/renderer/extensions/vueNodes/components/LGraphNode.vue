@@ -429,7 +429,7 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
 )
 
 const borderClass = computed(() => {
-  if (hasAnyError.value) return 'border-node-stroke-error bg-node-stroke-error'
+  if (hasAnyError.value) return 'border-node-stroke-error bg-error'
   //FIXME need a better way to detecting transparency
   if (
     !displayHeader.value &&
