@@ -56,6 +56,11 @@
                     >*</span
                   >
                 </template>
+                <template #after-label="{ node: treeNode }">
+                  <WorkflowExecutionBadge
+                    :workflow="treeNode.data as ComfyWorkflow"
+                  />
+                </template>
                 <template #actions="{ node: treeNode }">
                   <Button
                     class="close-workflow-button"
@@ -149,6 +154,7 @@ import TextDivider from '@/components/common/TextDivider.vue'
 import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
+import WorkflowExecutionBadge from '@/components/sidebar/tabs/workflows/WorkflowExecutionBadge.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'

@@ -1506,6 +1506,18 @@ export class ComfyApp {
               if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
                 executionStore.showErrorOverlay()
               }
+
+              const activeWorkflow = useWorkspaceStore().workflow
+                .activeWorkflow as ComfyWorkflow | undefined
+              const wid =
+                activeWorkflow?.activeState?.id ??
+                activeWorkflow?.initialState?.id
+              if (wid) {
+                executionStore.setWorkflowExecutionResultByWorkflowId(
+                  String(wid),
+                  'error'
+                )
+              }
               this.canvas.draw(true, true)
             }
             break

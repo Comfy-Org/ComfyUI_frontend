@@ -3146,5 +3146,10 @@
       "duplicateName": "A secret with this name already exists",
       "duplicateProvider": "A secret for this provider already exists"
     }
+  },
+  "workflowExecution": {
+    "running": "Workflow is running",
+    "completed": "Workflow completed successfully",
+    "error": "Workflow execution failed"
   }
 }

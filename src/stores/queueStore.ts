@@ -19,6 +19,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
+import type { WorkflowExecutionResult } from '@/stores/executionStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -550,6 +551,31 @@ export const useQueueStore = defineStore('queue', () => {
       const sortedHistory = [...history]
         .sort((a, b) => b.create_time - a.create_time)
         .slice(0, toValue(maxHistoryItems))
+
+      const seenWorkflows = new Set<string>()
+      const batchResults = new Map<string, WorkflowExecutionResult>()
+      for (const job of sortedHistory) {
+        const workflowId = job.workflow_id
+        if (!workflowId || seenWorkflows.has(workflowId)) continue
+        seenWorkflows.add(workflowId)
+        const state =
+          job.status === 'failed'
+            ? 'error'
+            : job.status === 'completed'
+              ? 'completed'
+              : undefined
+        if (!state) continue
+        const existing =
+          executionStore.lastExecutionResultByWorkflowId.get(workflowId)
+        const jobTimestamp = job.create_time * 1000
+        if (existing && existing.timestamp > jobTimestamp) continue
+        batchResults.set(workflowId, {
+          state,
+          timestamp: jobTimestamp,
+          promptId: job.id
+        })
+      }
+      executionStore.batchSetWorkflowExecutionResults(batchResults)
 
       // Reuse existing TaskItemImpl instances or create new
       // Must recreate if outputs_count changed (e.g., API started returning it)

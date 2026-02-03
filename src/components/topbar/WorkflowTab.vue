@@ -14,6 +14,10 @@
     <span class="workflow-label inline-block max-w-[150px] truncate text-sm">
       {{ workflowOption.workflow.filename }}
     </span>
+    <WorkflowExecutionIndicator
+      v-if="showExecutionIndicator"
+      :state="executionState"
+    />
     <div class="relative">
       <span
         v-if="shouldShowStatusIndicator"
@@ -45,6 +49,7 @@ import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useWorkflowExecutionState } from '@/composables/useWorkflowExecutionState'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
@@ -56,6 +61,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
+import WorkflowExecutionIndicator from './WorkflowExecutionIndicator.vue'
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 
 interface WorkflowOption {
@@ -75,6 +81,16 @@ const settingStore = useSettingStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 const popoverRef = ref<InstanceType<typeof WorkflowTabPopover> | null>(null)
 const workflowThumbnail = useWorkflowThumbnail()
+
+const workflowId = computed(() => {
+  const activeState = props.workflowOption.workflow.activeState
+  const initialState = props.workflowOption.workflow.initialState
+  return activeState?.id ?? initialState?.id
+})
+
+const { state: executionState } = useWorkflowExecutionState(workflowId)
+
+const showExecutionIndicator = computed(() => executionState.value !== 'idle')
 
 // Use computed refs to cache autosave settings
 const autoSaveSetting = computed(() =>
