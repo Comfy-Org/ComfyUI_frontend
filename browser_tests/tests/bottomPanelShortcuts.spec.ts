@@ -148,11 +148,21 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     comfyPage
   }) => {
     // Terminal tabs load asynchronously via dynamic import - wait for registration
-    // Use expect().toPass() for auto-retry polling pattern
+    // Open terminal panel first to make tabs visible, then poll for Logs tab
     await expect(async () => {
-      const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-      await expect(logsTab).toBeAttached()
-    }).toPass({ timeout: 10_000 })
+      await comfyPage.page
+        .locator('button[aria-label*="Toggle Bottom Panel"]')
+        .click()
+      await expect(
+        comfyPage.page.getByRole('tab', { name: /Logs/i })
+      ).toBeVisible({ timeout: 1000 })
+    }).toPass({ timeout: 15_000 })
+
+    // Close the terminal panel
+    await comfyPage.page
+      .locator('button[aria-label*="Toggle Bottom Panel"]')
+      .click()
+    await expect(comfyPage.page.locator('.bottom-panel')).not.toBeVisible()
 
     // Open shortcuts panel
     await comfyPage.page
