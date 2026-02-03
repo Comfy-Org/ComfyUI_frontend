@@ -22,7 +22,8 @@ export enum ServerFeatureFlag {
   HUGGINGFACE_MODEL_IMPORT_ENABLED = 'huggingface_model_import_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   ASYNC_MODEL_UPLOAD_ENABLED = 'async_model_upload_enabled',
-  TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled'
+  TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
+  USER_SECRETS_ENABLED = 'user_secrets_enabled'
 }
 
 /**
@@ -115,6 +116,12 @@ export function useFeatureFlags() {
       return (
         remoteConfig.value.team_workspaces_enabled ??
         api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
+      )
+    },
+    get userSecretsEnabled() {
+      return (
+        remoteConfig.value.user_secrets_enabled ??
+        api.getServerFeature(ServerFeatureFlag.USER_SECRETS_ENABLED, false)
       )
     }
   })

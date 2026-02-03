@@ -129,6 +129,7 @@ const { defaultPanel } = defineProps<{
     | 'credits'
     | 'subscription'
     | 'workspace'
+    | 'secrets'
 }>()
 
 const { flags } = useFeatureFlags()
