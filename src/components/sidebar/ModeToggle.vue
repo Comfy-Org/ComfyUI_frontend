@@ -11,9 +11,9 @@ const canvasStore = useCanvasStore()
 const keybindingStore = useKeybindingStore()
 
 const keybindingSuffix = computed(() => {
-  const keybinding =
-    keybindingStore.getKeybindingByCommandId('Comfy.ToggleLinear')
-  return keybinding ? ` (${keybinding.combo.toString()})` : ''
+  const shortcut =
+    keybindingStore.getKeybindingByCommandId('Comfy.ToggleLinear')?.combo.toString()
+  return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 })
 
 function toggleLinearMode() {
