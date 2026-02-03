@@ -132,20 +132,15 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     // Use __DISTRIBUTION__ directly for proper dead code elimination
     if (__DISTRIBUTION__ !== 'cloud') {
       try {
-        console.debug('[BottomPanel] Loading terminal tabs...')
         const { useLogsTerminalTab, useCommandTerminalTab } =
           await import('@/composables/bottomPanelTabs/useTerminalTabs')
-        console.debug('[BottomPanel] Terminal tabs loaded, registering...')
         registerBottomPanelTab(useLogsTerminalTab())
         if (isElectron()) {
           registerBottomPanelTab(useCommandTerminalTab())
         }
-        console.debug('[BottomPanel] Terminal tabs registered')
       } catch (error) {
         console.error('Failed to load terminal tabs:', error)
       }
-    } else {
-      console.debug('[BottomPanel] Skipping terminal tabs (cloud distribution)')
     }
   }
 
