@@ -163,6 +163,7 @@ import WorkflowPreviewCanvas from '@/components/discover/WorkflowPreviewCanvas.v
 import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AlgoliaWorkflowTemplate } from '@/types/discoverTypes'
@@ -210,13 +211,40 @@ function handleRunWorkflow() {
   })
 }
 
-async function handleMakeCopy() {
-  if (!workflow.workflow_url) return
+type WorkflowPayload = Record<string, unknown>
+
+const setLinearModeInWorkflowData = (workflowData: unknown) => {
+  if (
+    !workflowData ||
+    typeof workflowData !== 'object' ||
+    Array.isArray(workflowData)
+  ) {
+    return workflowData
+  }
+
+  const data = workflowData as WorkflowPayload
+  const extraValue = data.extra
+  const extra =
+    extraValue && typeof extraValue === 'object' && !Array.isArray(extraValue)
+      ? (extraValue as WorkflowPayload)
+      : {}
+
+  return {
+    ...data,
+    extra: {
+      ...extra,
+      linearMode: true
+    }
+  }
+}
+
+const loadWorkflowFromUrl = async (options: { enableLinearMode?: boolean }) => {
+  if (!workflow.workflow_url) return false
 
   // Check that app canvas and graph are initialized
   if (!app.canvas?.graph) {
     useToastStore().addAlert(t('discover.detail.appNotReady'))
-    return
+    return false
   }
 
   try {
@@ -225,8 +253,11 @@ async function handleMakeCopy() {
       throw new Error(`Failed to fetch workflow: ${response.status}`)
     }
     const workflowData = await response.json()
+    const graphData = options.enableLinearMode
+      ? setLinearModeInWorkflowData(workflowData)
+      : workflowData
 
-    await app.loadGraphData(workflowData, true, true, workflow.title, {
+    await app.loadGraphData(graphData, true, true, workflow.title, {
       openSource: 'template'
     })
 
@@ -234,15 +265,30 @@ async function handleMakeCopy() {
     useSidebarTabStore().activeSidebarTabId = null
     useHomePanelStore().closePanel()
 
-    emit('makeCopy', workflow)
+    if (options.enableLinearMode) {
+      useCanvasStore().linearMode = true
+    }
+
+    return true
   } catch (error) {
     useToastStore().addAlert(
       t('discover.detail.makeCopyFailed', { error: String(error) })
     )
+    return false
   }
 }
 
-function handleAppMode() {
-  emit('appMode', workflow)
+async function handleMakeCopy() {
+  const didLoad = await loadWorkflowFromUrl({})
+  if (didLoad) {
+    emit('makeCopy', workflow)
+  }
+}
+
+async function handleAppMode() {
+  const didLoad = await loadWorkflowFromUrl({ enableLinearMode: true })
+  if (didLoad) {
+    emit('appMode', workflow)
+  }
 }
 </script>

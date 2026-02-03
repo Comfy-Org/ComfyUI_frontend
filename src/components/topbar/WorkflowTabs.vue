@@ -132,6 +132,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -159,6 +160,7 @@ const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const homePanelStore = useHomePanelStore()
 const sidebarTabStore = useSidebarTabStore()
+const canvasStore = useCanvasStore()
 const { isLoggedIn } = useCurrentUser()
 
 const isIntegratedTabBar = computed(
@@ -208,6 +210,7 @@ const toggleHomePanel = () => {
     return
   }
   sidebarTabStore.activeSidebarTabId = null
+  canvasStore.linearMode = false
   homePanelStore.openPanel()
 }
 
