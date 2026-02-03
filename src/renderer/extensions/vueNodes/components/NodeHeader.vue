@@ -41,9 +41,6 @@
             />
           </Button>
         </div>
-
-        <div v-if="isApiNode" class="icon-[lucide--component] size-4" />
-
         <!-- Node Title -->
         <div
           v-tooltip.top="tooltipConfig"
@@ -155,7 +152,6 @@ const statusBadge = computed((): NodeBadgeProps | undefined =>
 )
 
 const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
-const isApiNode = computed(() => Boolean(nodeData?.apiNode))
 
 const headerShapeClass = computed(() => {
   if (collapsed) {

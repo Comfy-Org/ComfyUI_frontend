@@ -9,7 +9,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-node-component-header-surface lg-node absolute text-sm',
+        'group/node bg-node-component-header-surface lg-node absolute text-sm',
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',
@@ -87,7 +87,7 @@
 
     <div
       v-if="!isCollapsed"
-      class="bg-component-node-background rounded-b-2xl pb-1 flex flex-1"
+      class="bg-component-node-background rounded-b-2xl pb-1 flex-1"
     >
       <div class="relative mb-1">
         <!-- Progress bar for executing state -->
@@ -168,7 +168,10 @@
       role="button"
       :aria-label="t('g.resizeFromBottomRight')"
       :class="
-        cn(baseResizeHandleClasses, '-right-1 -bottom-1 cursor-se-resize')
+        cn(
+          baseResizeHandleClasses,
+          '-right-1 -bottom-1 cursor-se-resize opacity-0 group-hover/node:opacity-100'
+        )
       "
       @pointerdown.stop="handleResizePointerDown"
     >
