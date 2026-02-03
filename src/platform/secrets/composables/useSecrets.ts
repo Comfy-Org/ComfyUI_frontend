@@ -36,6 +36,14 @@ export function useSecrets() {
           detail: err.message,
           life: 5000
         })
+      } else {
+        console.error('Unexpected error fetching secrets:', err)
+        toastStore.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('g.unknownError'),
+          life: 5000
+        })
       }
     } finally {
       loading.value = false
@@ -53,6 +61,14 @@ export function useSecrets() {
           severity: 'error',
           summary: t('g.error'),
           detail: err.message,
+          life: 5000
+        })
+      } else {
+        console.error('Unexpected error deleting secret:', err)
+        toastStore.add({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('g.unknownError'),
           life: 5000
         })
       }
