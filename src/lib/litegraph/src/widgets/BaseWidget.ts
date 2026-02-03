@@ -2,6 +2,7 @@ import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   CanvasPointer,
   LGraphCanvas,
@@ -11,6 +12,7 @@ import type {
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -97,13 +99,38 @@ export abstract class BaseWidget<
     canvas: LGraphCanvas
   ): boolean
 
-  private _value?: TWidget['value']
+  private _internalValue?: TWidget['value']
+  private _nodeId?: NodeId
+
   get value(): TWidget['value'] {
-    return this._value
+    if (this._nodeId !== undefined) {
+      const store = useWidgetValueStore()
+      const storeValue = store.get(this._nodeId, this.name)
+      if (storeValue !== undefined) {
+        return storeValue as TWidget['value']
+      }
+    }
+    return this._internalValue
   }
 
   set value(value: TWidget['value']) {
-    this._value = value
+    this._internalValue = value
+    if (this._nodeId !== undefined) {
+      const store = useWidgetValueStore()
+      store.set(this._nodeId, this.name, value)
+    }
+  }
+
+  /**
+   * Associates this widget with a node ID and seeds the store with the current value.
+   * Once set, value reads/writes will be delegated to the WidgetValueStore.
+   */
+  setNodeId(nodeId: NodeId): void {
+    this._nodeId = nodeId
+    if (this._internalValue !== undefined) {
+      const store = useWidgetValueStore()
+      store.set(nodeId, this.name, this._internalValue)
+    }
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
