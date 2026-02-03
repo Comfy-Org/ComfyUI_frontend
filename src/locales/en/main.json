@@ -40,7 +40,6 @@
         "description": "Publish your workflow to Comfy Hub to share it with the community. Your workflow will be publicly visible and discoverable."
       },
       "inviteByEmail": {
-        "description": "Invite someone to view or edit this workflow. They'll receive an email with a link to access it.",
         "emailLabel": "Email Address",
         "emailPlaceholder": "colleague@example.com",
         "roleLabel": "Permission Level",
@@ -58,7 +57,9 @@
       },
       "publicUrl": {
         "title": "Share with public link",
-        "description": "Anyone with this link can view and run your workflow, but they cannot edit it."
+        "description": "Anyone with this link can view and run your workflow, but they cannot edit it.",
+        "copyLink": "Copy link",
+        "copyLinkAppMode": "Copy link to App mode"
       },
       "publishToHubDialog": {
         "title": "Publish to Hub",

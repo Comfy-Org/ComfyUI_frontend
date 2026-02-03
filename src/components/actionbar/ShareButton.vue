@@ -1,12 +1,13 @@
 <template>
   <Button
     :variant="isOpen ? 'primary' : 'secondary'"
-    size="icon"
+    size="md"
+    class="px-3 text-sm font-semibold"
     :aria-label="$t('discover.share.share')"
     :aria-pressed="isOpen"
     @click="handleClick"
   >
-    <i class="icon-[lucide--share-2] size-4" />
+    {{ $t('discover.share.share') }}
   </Button>
 </template>
 

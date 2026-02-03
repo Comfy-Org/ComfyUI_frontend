@@ -1,9 +1,11 @@
 <template>
   <div class="flex size-full flex-col bg-comfy-menu-bg">
     <!-- Panel Header -->
-    <section class="pt-1">
+    <section
+      class="sticky top-0 z-10 border-b border-border-default bg-comfy-menu-bg/95 pt-1 backdrop-blur"
+    >
       <div class="flex items-center justify-between pl-4 pr-3">
-        <h3 class="my-3.5 text-sm font-semibold">
+        <h3 class="my-3.5 text-base font-semibold tracking-tight">
           {{ $t('discover.share.share') }}
         </h3>
         <Button
@@ -15,23 +17,27 @@
           <i class="icon-[lucide--x] size-4" />
         </Button>
       </div>
-      <nav class="overflow-x-auto px-4 pb-2 pt-1">
-        <TabList v-model="activeTab">
-          <Tab
-            value="invite"
-            class="px-2 py-1 text-sm font-inter transition-all active:scale-95"
-          >
-            <i class="icon-[lucide--users] mr-1.5 size-3.5" />
-            {{ $t('discover.share.inviteTab.title') }}
-          </Tab>
-          <Tab
-            value="publish"
-            class="px-2 py-1 text-sm font-inter transition-all active:scale-95"
-          >
-            <i class="icon-[lucide--upload] mr-1.5 size-3.5" />
-            {{ $t('discover.share.publishTab.title') }}
-          </Tab>
-        </TabList>
+      <nav class="overflow-x-auto px-4 pb-3 pt-1">
+        <div
+          class="inline-flex rounded-full border border-border-default bg-secondary-background/70 p-1 shadow-sm"
+        >
+          <TabList v-model="activeTab" class="gap-1 pb-0">
+            <Tab
+              value="invite"
+              class="rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide transition-all active:scale-95"
+            >
+              <i class="icon-[lucide--users] mr-1.5 size-3.5" />
+              {{ $t('discover.share.inviteTab.title') }}
+            </Tab>
+            <Tab
+              value="publish"
+              class="rounded-full px-3 py-1.5 text-xs font-semibold tracking-wide transition-all active:scale-95"
+            >
+              <i class="icon-[lucide--upload] mr-1.5 size-3.5" />
+              {{ $t('discover.share.publishTab.title') }}
+            </Tab>
+          </TabList>
+        </div>
       </nav>
     </section>
 
@@ -40,21 +46,25 @@
       <!-- Share Tab -->
       <div
         v-if="activeTab === 'invite'"
-        class="flex flex-col gap-4 p-4 max-w-sm"
+        class="mx-auto flex w-full max-w-sm flex-col gap-6 p-4"
       >
         <!-- People with access -->
         <div v-if="invitedUsers.length > 0" class="flex flex-col gap-2">
-          <span class="text-sm text-muted-foreground">
+          <span
+            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             {{ $t('discover.share.inviteByEmail.peopleWithAccess') }}
           </span>
-          <div class="flex flex-col gap-1.5">
+          <div
+            class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-2"
+          >
             <div
               v-for="user in invitedUsers"
               :key="user.email"
-              class="flex items-center gap-3 rounded-lg bg-secondary-background px-3 py-2.5"
+              class="flex items-center gap-3 rounded-lg border border-border-default/70 bg-comfy-menu-bg px-3 py-2.5 shadow-sm transition-colors hover:bg-secondary-background"
             >
               <div
-                class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-500/20 text-sm font-medium text-primary-500"
+                class="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary-500/20 text-sm font-medium text-primary-500 ring-1 ring-primary-500/30"
               >
                 {{ user.email.charAt(0).toUpperCase() }}
               </div>
@@ -83,66 +93,36 @@
         </div>
 
         <!-- Invite section header -->
-        <div
-          v-if="invitedUsers.length > 0"
-          class="border-t border-border-default pt-4"
-        />
-        <p v-else class="text-sm text-muted-foreground">
-          {{ $t('discover.share.inviteByEmail.description') }}
-        </p>
+        <div v-if="invitedUsers.length > 0" class="h-px bg-border-default" />
 
-        <!-- Email input -->
-        <div class="flex flex-col gap-2">
-          <span class="text-sm text-muted-foreground">
+        <!-- Email + role -->
+        <div
+          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+        >
+          <span
+            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             {{ $t('discover.share.inviteByEmail.emailLabel') }}
           </span>
-          <input
-            v-model="email"
-            type="email"
-            class="w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-secondary-foreground"
-            :placeholder="$t('discover.share.inviteByEmail.emailPlaceholder')"
-          />
-        </div>
-
-        <!-- Role selection -->
-        <div class="flex flex-col gap-2">
-          <span class="text-sm text-muted-foreground">
-            {{ $t('discover.share.inviteByEmail.roleLabel') }}
-          </span>
-          <div class="flex flex-col gap-1.5">
-            <button
-              v-for="role in roles"
-              :key="role.value"
-              :class="
-                cn(
-                  'flex w-full cursor-pointer items-start gap-3 rounded-lg border-2 px-3 py-2.5 text-left transition-colors',
-                  selectedRole === role.value
-                    ? 'border-primary-500 bg-primary-500/10'
-                    : 'border-border-default bg-transparent hover:bg-secondary-background'
-                )
-              "
-              @click="selectedRole = role.value"
+          <div class="flex flex-col gap-2 sm:flex-row">
+            <input
+              v-model="email"
+              type="email"
+              class="w-full rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-secondary-foreground hover:border-border-hover"
+              :placeholder="$t('discover.share.inviteByEmail.emailPlaceholder')"
+            />
+            <select
+              v-model="selectedRole"
+              class="w-full rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-secondary-foreground hover:border-border-hover sm:w-40"
+              :aria-label="$t('discover.share.inviteByEmail.roleLabel')"
             >
-              <i
-                :class="
-                  cn(
-                    'mt-0.5 size-4',
-                    role.icon,
-                    selectedRole === role.value
-                      ? 'text-primary-500'
-                      : 'text-muted-foreground'
-                  )
-                "
-              />
-              <div class="flex flex-col gap-0.5">
-                <span class="text-sm font-medium text-base-foreground">
-                  {{ role.label }}
-                </span>
-                <span class="text-xs text-muted-foreground">
-                  {{ role.description }}
-                </span>
-              </div>
-            </button>
+              <option value="view">
+                {{ $t('discover.share.inviteByEmail.roles.viewOnly') }}
+              </option>
+              <option value="edit">
+                {{ $t('discover.share.inviteByEmail.roles.edit') }}
+              </option>
+            </select>
           </div>
         </div>
 
@@ -159,42 +139,52 @@
         </Button>
 
         <!-- Public URL Section -->
-        <div class="border-t border-border-default pt-4">
+        <div
+          class="rounded-xl border border-border-default bg-secondary-background/40 p-3"
+        >
           <div class="flex flex-col gap-3">
             <div class="flex items-center gap-2">
               <i class="icon-[lucide--globe] size-4 text-muted-foreground" />
-              <span class="text-sm font-medium text-base-foreground">
+              <span class="text-sm font-semibold text-base-foreground">
                 {{ $t('discover.share.publicUrl.title') }}
               </span>
             </div>
 
-            <p class="text-sm text-muted-foreground">
+            <p class="text-sm leading-5 text-muted-foreground">
               {{ $t('discover.share.publicUrl.description') }}
             </p>
 
-            <div
-              class="flex items-center gap-2 rounded-lg border border-border-default bg-secondary-background px-3 py-2.5"
-            >
-              <i
-                class="icon-[lucide--link] size-4 shrink-0 text-muted-foreground"
-              />
-              <span class="flex-1 truncate text-sm text-base-foreground">
-                {{ shareUrl }}
-              </span>
+            <div class="flex flex-col gap-2">
               <Button
-                variant="muted-textonly"
-                size="icon-sm"
-                :aria-label="$t('g.copyToClipboard')"
-                @click="copyToClipboard"
+                variant="secondary"
+                size="md"
+                class="w-full justify-between rounded-lg border border-border-default bg-secondary-background/90 px-4 py-3 text-sm font-semibold shadow-sm transition-colors hover:bg-secondary-background-hover"
+                :aria-label="$t('discover.share.publicUrl.copyLink')"
+                @click="copyToClipboard(shareUrl)"
               >
+                <span class="min-w-0 truncate">
+                  {{ $t('discover.share.publicUrl.copyLink') }}
+                </span>
                 <i
                   :class="
                     cn(
-                      'size-4',
+                      'size-3.5',
                       copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
                     )
                   "
                 />
+              </Button>
+              <Button
+                variant="secondary"
+                size="md"
+                class="w-full justify-between rounded-lg border border-border-default bg-secondary-background/90 px-4 py-3 text-sm font-semibold shadow-sm transition-colors hover:bg-secondary-background-hover"
+                :aria-label="$t('discover.share.publicUrl.copyLinkAppMode')"
+                @click="copyToClipboard(appModeShareUrl)"
+              >
+                <span class="min-w-0 truncate">
+                  {{ $t('discover.share.publicUrl.copyLinkAppMode') }}
+                </span>
+                <i class="icon-[lucide--copy] size-3.5" />
               </Button>
             </div>
           </div>
@@ -202,18 +192,27 @@
       </div>
 
       <!-- Publish to Comfy Hub Tab -->
-      <div v-else-if="activeTab === 'publish'" class="flex flex-col gap-4 p-4">
-        <p class="text-sm text-muted-foreground">
+      <div
+        v-else-if="activeTab === 'publish'"
+        class="mx-auto flex w-full max-w-sm flex-col gap-6 p-4"
+      >
+        <p
+          class="rounded-xl border border-border-default bg-secondary-background/40 p-3 text-sm leading-5 text-muted-foreground"
+        >
           {{ $t('discover.share.publishTab.description') }}
         </p>
 
         <!-- Thumbnail upload -->
-        <div class="flex flex-col gap-2">
-          <span class="text-sm text-muted-foreground">
+        <div
+          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+        >
+          <span
+            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             {{ $t('discover.share.publishToHubDialog.thumbnail') }}
           </span>
           <div
-            class="relative flex size-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-border-default bg-secondary-background transition-colors hover:border-border-hover"
+            class="relative flex size-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-border-default bg-comfy-menu-bg transition-colors hover:border-border-hover"
             @click="triggerThumbnailUpload"
           >
             <img
@@ -238,14 +237,18 @@
         </div>
 
         <!-- Title -->
-        <div class="flex flex-col gap-2">
-          <span class="text-sm text-muted-foreground">
+        <div
+          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+        >
+          <span
+            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             {{ $t('g.title') }}
           </span>
           <input
             v-model="publishTitle"
             type="text"
-            class="w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-secondary-foreground"
+            class="w-full rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-secondary-foreground hover:border-border-hover"
             :placeholder="
               $t('discover.share.publishToHubDialog.titlePlaceholder')
             "
@@ -253,14 +256,18 @@
         </div>
 
         <!-- Description -->
-        <div class="flex flex-col gap-2">
-          <span class="text-sm text-muted-foreground">
+        <div
+          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+        >
+          <span
+            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             {{ $t('g.description') }}
           </span>
           <textarea
             v-model="publishDescription"
             rows="3"
-            class="w-full resize-none rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-secondary-foreground"
+            class="w-full resize-none rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-secondary-foreground hover:border-border-hover"
             :placeholder="
               $t('discover.share.publishToHubDialog.descriptionPlaceholder')
             "
@@ -268,12 +275,16 @@
         </div>
 
         <!-- Tags -->
-        <div class="flex flex-col gap-2">
-          <span class="text-sm text-muted-foreground">
+        <div
+          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+        >
+          <span
+            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+          >
             {{ $t('discover.filters.tags') }}
           </span>
           <div
-            class="flex flex-wrap gap-2 rounded-lg border border-border-default bg-transparent px-3 py-2"
+            class="flex flex-wrap gap-2 rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2"
           >
             <span
               v-for="tag in publishTags"
@@ -355,21 +366,6 @@ const publishDescription = ref('')
 const publishTags = ref<string[]>([])
 const newTag = ref('')
 
-const roles = computed(() => [
-  {
-    value: 'view' as const,
-    label: t('discover.share.inviteByEmail.roles.viewOnly'),
-    description: t('discover.share.inviteByEmail.roles.viewOnlyDescription'),
-    icon: 'icon-[lucide--eye]'
-  },
-  {
-    value: 'edit' as const,
-    label: t('discover.share.inviteByEmail.roles.edit'),
-    description: t('discover.share.inviteByEmail.roles.editDescription'),
-    icon: 'icon-[lucide--pencil]'
-  }
-])
-
 const isEmailValid = computed(() => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email.value)
@@ -386,7 +382,17 @@ const shareUrl = computed(() => {
   const workflow = workflowStore.activeWorkflow
   if (!workflow) return baseUrl
   const workflowId = workflow.key.replace(/\.json$/, '').replace(/\//g, '-')
-  return `${baseUrl}/app/${workflowId}`
+  return new URL(`/app/${workflowId}`, baseUrl).toString()
+})
+
+const appModeShareUrl = computed(() => {
+  const baseUrl = window.location.origin
+  const workflow = workflowStore.activeWorkflow
+  if (!workflow) return baseUrl
+  const workflowId = workflow.key.replace(/\.json$/, '').replace(/\//g, '-')
+  const url = new URL(`/app/${workflowId}`, baseUrl)
+  url.searchParams.set('mode', 'linear')
+  return url.toString()
 })
 
 function closePanel() {
@@ -428,9 +434,9 @@ function removeUser(emailToRemove: string) {
   )
 }
 
-async function copyToClipboard() {
+async function copyToClipboard(url: string) {
   try {
-    await navigator.clipboard.writeText(shareUrl.value)
+    await navigator.clipboard.writeText(url)
     copied.value = true
     toastStore.add({
       severity: 'success',
