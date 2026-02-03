@@ -1,5 +1,7 @@
 <template>
-  <div class="flex size-full flex-col bg-comfy-menu-bg text-base-foreground">
+  <div
+    class="flex size-full flex-col overflow-y-auto bg-comfy-menu-bg text-base-foreground"
+  >
     <div
       class="flex shrink-0 items-center gap-4 border-b border-interface-stroke bg-comfy-menu-bg px-6 py-4 text-base-foreground"
     >
@@ -105,7 +107,7 @@
       </div>
     </section>
 
-    <div class="flex-1 overflow-y-auto px-6 py-4 bg-comfy-menu-bg">
+    <div class="px-6 py-4 bg-comfy-menu-bg">
       <div
         class="mx-auto mb-4 flex w-full max-w-5xl flex-wrap items-center gap-3 border-b border-interface-stroke pb-4 text-base-foreground"
       >
