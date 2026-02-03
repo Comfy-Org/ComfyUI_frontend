@@ -22,6 +22,7 @@
     },
     "assetCollection": "Colección de activos",
     "assets": "Recursos",
+    "baseModel": "Modelo base",
     "baseModels": "Modelos base",
     "browseAssets": "Explorar recursos",
     "byType": "Por tipo",
@@ -127,6 +128,7 @@
     "selectProjects": "Seleccionar proyectos",
     "sortAZ": "A-Z",
     "sortBy": "Ordenar por",
+    "sortDefault": "Predeterminado",
     "sortPopular": "Popular",
     "sortRecent": "Reciente",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "Acerca de los sitios no incluidos en la lista blanca"
     },
     "deleteAccount": {
-      "cancel": "Cancelar",
-      "confirm": "Eliminar cuenta",
-      "confirmMessage": "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer y eliminará permanentemente todos tus datos.",
-      "confirmTitle": "Eliminar cuenta",
-      "deleteAccount": "Eliminar cuenta",
-      "success": "Cuenta eliminada",
-      "successDetail": "Tu cuenta ha sido eliminada exitosamente."
+      "contactSupport": "Para eliminar tu cuenta, por favor contacta a {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "El inicio de sesión fue cancelado. Por favor, inténtalo de nuevo.",
@@ -1345,6 +1341,7 @@
     "installingDependencies": "Instalando dependencias...",
     "lastUpdated": "Última Actualización",
     "latestVersion": "Última",
+    "legacyManagerSearchTip": "¿Buscas ComfyUI-Manager? Puedes habilitar la interfaz de administrador heredada iniciando ComfyUI con el parámetro --enable-manager-legacy-ui.",
     "legacyManagerUI": "Usar UI antigua",
     "legacyManagerUIDescription": "Para usar la UI antigua del Manager, inicia ComfyUI con --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "El menú del administrador antiguo no está disponible en esta versión de ComfyUI. Por favor, utiliza el nuevo menú del administrador en su lugar.",
@@ -1810,6 +1807,16 @@
     "render": "Error de renderizado del nodo",
     "slots": "Error de ranuras del nodo",
     "widgets": "Error de widgets del nodo"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Ocultar nodos obsoletos",
+    "hideDeprecatedDescription": "Oculta los nodos marcados como obsoletos a menos que se habiliten explícitamente",
+    "hideDevOnly": "Ocultar nodos solo para desarrolladores",
+    "hideDevOnlyDescription": "Oculta los nodos marcados como solo para desarrolladores a menos que el modo desarrollador esté habilitado",
+    "hideExperimental": "Ocultar nodos experimentales",
+    "hideExperimentalDescription": "Oculta los nodos marcados como experimentales a menos que se habiliten explícitamente",
+    "hideSubgraph": "Ocultar nodos de subgráfica",
+    "hideSubgraphDescription": "Oculta temporalmente los nodos de subgráfica de la biblioteca de nodos y la búsqueda"
   },
   "nodeHelpPage": {
     "documentationPage": "página de documentación",
@@ -2528,6 +2535,9 @@
     "title": "Comienza con una Plantilla",
     "useCaseFilter": "Tareas",
     "useCasesSelected": "{count} casos de uso"
+  },
+  "templates": {
+    "logoProviderSeparator": " y "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "No se puede crear el subgrafo",
