@@ -56,13 +56,12 @@ function handleVideoLoad(event: Event) {
   <div
     :class="
       cn(
-        'flex gap-1 select-none group/item cursor-pointer bg-component-node-widget-background',
-        'transition-[transform,box-shadow,background-color] duration-150',
+        'flex gap-1 select-none group/item cursor-pointer transition-all duration-150',
         {
-          'flex-col text-center': layout === 'grid',
-          'flex-row text-left max-h-16 rounded-lg hover:scale-102 active:scale-98':
+          'flex-col text-center rounded-sm': layout === 'grid',
+          'flex-row text-left max-h-16 rounded-lg bg-component-node-widget-background hover:scale-102 active:scale-98 hover:bg-component-node-widget-background-hovered':
             layout === 'list',
-          'flex-row text-left hover:bg-component-node-widget-background-hovered rounded-lg':
+          'flex-row text-left rounded-lg bg-component-node-widget-background hover:bg-component-node-widget-background-hovered':
             layout === 'list-small',
           // selection
           'ring-2 ring-component-node-widget-background-highlighted':
@@ -79,7 +78,7 @@ function handleVideoLoad(event: Event) {
         cn(
           'relative',
           'w-full aspect-square overflow-hidden outline-1 outline-offset-[-1px] outline-interface-stroke',
-          'transition-[transform,box-shadow] duration-150',
+          'transition-all duration-150',
           {
             'min-w-16 max-w-16 rounded-l-lg': layout === 'list',
             'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
