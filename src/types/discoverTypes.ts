@@ -24,8 +24,6 @@ export interface AlgoliaWorkflowTemplate {
   workflow_url?: string
 }
 
-export type WorkflowTemplateSearchAttribute = keyof AlgoliaWorkflowTemplate
-
 export interface WorkflowTemplateSearchParams {
   query: string
   pageSize: number

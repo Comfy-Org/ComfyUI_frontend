@@ -1,9 +1,9 @@
-export type AuthorProfileStats = {
+type AuthorProfileStats = {
   runs: number
   copies: number
 }
 
-export type AuthorProfile = {
+type AuthorProfile = {
   slug: string
   name: string
   avatarUrl?: string
