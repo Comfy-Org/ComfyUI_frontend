@@ -9,7 +9,6 @@ import {
   createNode,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 vi.mock('@/lib/litegraph/src/litegraph', () => ({
   LiteGraph: {
