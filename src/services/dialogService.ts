@@ -456,10 +456,10 @@ export const useDialogService = () => {
     }
   }
 
-  function showLayoutDialog(options: {
+  function showLayoutDialog<C extends Component>(options: {
     key: string
-    component: Component
-    props: { onClose: () => void } & Record<string, unknown>
+    component: C
+    props: ComponentAttrs<C> & { onClose: () => void }
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
