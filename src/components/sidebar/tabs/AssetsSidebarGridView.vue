@@ -102,7 +102,7 @@ const isQueuePanelV2Enabled = computed(() =>
 type AssetGridItem = { key: string; asset: AssetItem }
 
 const activeJobItems = computed(() =>
-  jobItems.value.filter((item) => isActiveJobState(item.state))
+  jobItems.value.filter((item) => isActiveJobState(item.state)).toReversed()
 )
 
 const assetItems = computed<AssetGridItem[]>(() =>
