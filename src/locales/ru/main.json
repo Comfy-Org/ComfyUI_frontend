@@ -1152,11 +1152,11 @@
     "helpFix": "Помочь исправить это"
   },
   "linearMode": {
-    "beta": "Бета - Оставить отзыв",
+    "beta": "Режим приложения Бета - Оставить отзыв",
     "downloadAll": "Скачать всё",
     "dragAndDropImage": "Перетащите изображение",
     "graphMode": "Графовый режим",
-    "linearMode": "Простой режим",
+    "linearMode": "Режим приложения",
     "rerun": "Перезапустить",
     "reuseParameters": "Повторно использовать параметры",
     "runCount": "Количество запусков:"
@@ -1648,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "Показать/скрыть нижнюю панель логов",
     "Toggle Queue Panel V2": "Переключить панель очереди V2",
     "Toggle Search Box": "Переключить поисковую панель",
-    "Toggle Simple Mode": "Переключить простой режим",
+    "Toggle App Mode": "Переключить режим приложения",
     "Toggle Terminal Bottom Panel": "Показать/скрыть нижнюю панель терминала",
     "Toggle Theme (Dark/Light)": "Переключение темы (Тёмная/Светлая)",
     "Toggle View Controls Bottom Panel": "Показать/скрыть нижнюю панель элементов управления",

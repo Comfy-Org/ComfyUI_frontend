@@ -315,6 +315,7 @@ const zSettings = z.object({
   'Comfy.Node.MiddleClickRerouteNode': z.boolean(),
   'Comfy.Node.ShowDeprecated': z.boolean(),
   'Comfy.Node.ShowExperimental': z.boolean(),
+  'Comfy.NodeReplacement.Enabled': z.boolean(),
   'Comfy.Pointer.ClickBufferTime': z.number(),
   'Comfy.Pointer.ClickDrift': z.number(),
   'Comfy.Pointer.DoubleClickTime': z.number(),

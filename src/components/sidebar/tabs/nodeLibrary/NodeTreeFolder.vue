@@ -1,5 +1,10 @@
 <template>
-  <div ref="container" class="node-lib-node-container">
+  <div
+    ref="container"
+    class="node-lib-node-container"
+    data-testid="node-tree-folder"
+    :data-folder-name="node.label"
+  >
     <TreeExplorerTreeNode :node="node" @item-dropped="handleItemDrop" />
   </div>
 </template>
