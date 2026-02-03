@@ -11,7 +11,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
-import Preview3d from '@/renderer/extensions/linearMode/Preview3d.vue'
+// Lazy-loaded to avoid pulling THREE.js into the main bundle
+const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import {
   getMediaType,
