@@ -219,7 +219,9 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import Load3dViewerContent from '@/components/load3d/Load3dViewerContent.vue'
+// Lazy-loaded to avoid pulling THREE.js into the main bundle
+const Load3dViewerContent = () =>
+  import('@/components/load3d/Load3dViewerContent.vue')
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
