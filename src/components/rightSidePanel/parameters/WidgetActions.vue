@@ -14,7 +14,10 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { getWidgetDefaultValue } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 const {
   widget,
@@ -28,10 +31,15 @@ const {
   isShownOnParents?: boolean
 }>()
 
+const emit = defineEmits<{
+  resetToDefault: [value: WidgetValue]
+}>()
+
 const label = defineModel<string>('label', { required: true })
 
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
+const nodeDefStore = useNodeDefStore()
 const dialogService = useDialogService()
 const { t } = useI18n()
 
@@ -42,6 +50,19 @@ const favoriteNode = computed(() =>
 const isFavorited = computed(() =>
   favoritedWidgetsStore.isFavorited(favoriteNode.value, widget.name)
 )
+
+const inputSpec = computed(() =>
+  nodeDefStore.getInputSpecForWidget(node, widget.name)
+)
+
+const defaultValue = computed(() => getWidgetDefaultValue(inputSpec.value))
+
+const hasDefault = computed(() => defaultValue.value !== undefined)
+
+const isCurrentValueDefault = computed(() => {
+  if (!hasDefault.value) return true
+  return widget.value === defaultValue.value
+})
 
 async function handleRename() {
   const newLabel = await dialogService.prompt({
@@ -95,6 +116,11 @@ function handleShowInput() {
 
 function handleToggleFavorite() {
   favoritedWidgetsStore.toggleFavorite(favoriteNode.value, widget.name)
+}
+
+function handleResetToDefault() {
+  if (!hasDefault.value) return
+  emit('resetToDefault', defaultValue.value)
 }
 
 const buttonClasses = cn([
@@ -161,6 +187,21 @@ const buttonClasses = cn([
           <i class="icon-[lucide--star]" />
           <span>{{ t('rightSidePanel.addFavorite') }}</span>
         </template>
+      </button>
+
+      <button
+        v-if="hasDefault"
+        :class="cn(buttonClasses, isCurrentValueDefault && 'opacity-50')"
+        :disabled="isCurrentValueDefault"
+        @click="
+          () => {
+            handleResetToDefault()
+            close()
+          }
+        "
+      >
+        <i class="icon-[lucide--rotate-ccw] size-4" />
+        <span>{{ t('rightSidePanel.resetToDefault') }}</span>
       </button>
     </template>
   </MoreButton>

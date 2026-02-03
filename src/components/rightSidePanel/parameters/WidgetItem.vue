@@ -43,6 +43,7 @@ const {
 
 const emit = defineEmits<{
   'update:widgetValue': [value: string | number | boolean | object]
+  resetToDefault: [value: string | number | boolean | object | undefined]
 }>()
 
 const { t } = useI18n()
@@ -156,6 +157,7 @@ const displayLabel = customRef((track, trigger) => {
           :node="node"
           :parents="parents"
           :is-shown-on-parents="isShownOnParents"
+          @reset-to-default="emit('resetToDefault', $event)"
         />
       </div>
     </div>
