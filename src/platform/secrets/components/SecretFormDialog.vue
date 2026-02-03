@@ -125,7 +125,7 @@ const { form, errors, loading, apiError, providerOptions, handleSubmit } =
   useSecretForm({
     mode,
     secret: () => secret,
-    existingProviders,
+    existingProviders: () => existingProviders,
     visible,
     onSaved: () => emit('saved')
   })

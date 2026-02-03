@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SecretMetadata } from '../types'
+import type { SecretMetadata, SecretProvider } from '../types'
 import { useSecretForm } from './useSecretForm'
 
 vi.mock('vue-i18n', () => ({
@@ -12,10 +12,8 @@ const mockCreate = vi.fn()
 const mockUpdate = vi.fn()
 
 vi.mock('../api/secretsApi', () => ({
-  secretsApi: {
-    create: (payload: unknown) => mockCreate(payload),
-    update: (id: string, payload: unknown) => mockUpdate(id, payload)
-  },
+  createSecret: (payload: unknown) => mockCreate(payload),
+  updateSecret: (id: string, payload: unknown) => mockUpdate(id, payload),
   SecretsApiError: class SecretsApiError extends Error {
     constructor(
       message: string,
@@ -51,7 +49,7 @@ describe('useSecretForm', () => {
       const visible = ref(true)
       const { form, errors, handleSubmit } = useSecretForm({
         mode: 'create',
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -70,7 +68,7 @@ describe('useSecretForm', () => {
       const visible = ref(true)
       const { form, errors, handleSubmit } = useSecretForm({
         mode: 'create',
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -89,7 +87,7 @@ describe('useSecretForm', () => {
       const visible = ref(true)
       const { form, errors, handleSubmit } = useSecretForm({
         mode: 'create',
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -108,7 +106,7 @@ describe('useSecretForm', () => {
       const visible = ref(true)
       const { form, errors, handleSubmit } = useSecretForm({
         mode: 'create',
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -130,7 +128,7 @@ describe('useSecretForm', () => {
       const { form, handleSubmit } = useSecretForm({
         mode: 'edit',
         secret: () => secret,
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -152,7 +150,7 @@ describe('useSecretForm', () => {
       const { form, errors, handleSubmit } = useSecretForm({
         mode: 'edit',
         secret: () => secret,
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -172,7 +170,7 @@ describe('useSecretForm', () => {
       const visible = ref(true)
       const { providerOptions } = useSecretForm({
         mode: 'create',
-        existingProviders: ['huggingface'],
+        existingProviders: () => ['huggingface'],
         visible,
         onSaved: vi.fn()
       })
@@ -185,6 +183,27 @@ describe('useSecretForm', () => {
       expect(huggingface?.disabled).toBe(true)
       expect(civitai?.disabled).toBe(false)
     })
+
+    it('updates disabled state when existingProviders changes', () => {
+      const visible = ref(true)
+      const existingProviders = ref<SecretProvider[]>(['huggingface'])
+      const { providerOptions } = useSecretForm({
+        mode: 'create',
+        existingProviders: () => existingProviders.value,
+        visible,
+        onSaved: vi.fn()
+      })
+
+      expect(
+        providerOptions.value.find((o) => o.value === 'huggingface')?.disabled
+      ).toBe(true)
+
+      existingProviders.value = []
+
+      expect(
+        providerOptions.value.find((o) => o.value === 'huggingface')?.disabled
+      ).toBe(false)
+    })
   })
 
   describe('handleSubmit', () => {
@@ -195,7 +214,7 @@ describe('useSecretForm', () => {
 
       const { form, handleSubmit } = useSecretForm({
         mode: 'create',
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved
       })
@@ -224,7 +243,7 @@ describe('useSecretForm', () => {
       const { form, handleSubmit } = useSecretForm({
         mode: 'edit',
         secret: () => secret,
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved
       })
@@ -252,7 +271,7 @@ describe('useSecretForm', () => {
       const { form, handleSubmit } = useSecretForm({
         mode: 'edit',
         secret: () => secret,
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -279,7 +298,7 @@ describe('useSecretForm', () => {
 
       const { form, apiError, handleSubmit } = useSecretForm({
         mode: 'create',
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -300,7 +319,7 @@ describe('useSecretForm', () => {
       const visible = ref(false)
       const { form, errors } = useSecretForm({
         mode: 'create',
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })
@@ -327,7 +346,7 @@ describe('useSecretForm', () => {
       const { form } = useSecretForm({
         mode: 'edit',
         secret: () => secret,
-        existingProviders: [],
+        existingProviders: () => [],
         visible,
         onSaved: vi.fn()
       })

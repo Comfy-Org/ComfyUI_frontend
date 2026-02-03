@@ -5,8 +5,14 @@
     <div class="flex flex-col gap-1">
       <div class="flex items-center gap-2">
         <span class="font-medium text-base-foreground">{{ secret.name }}</span>
+        <img
+          v-if="providerLogo"
+          :src="providerLogo"
+          :alt="providerLabel"
+          class="h-5 w-5"
+        />
         <span
-          v-if="secret.provider"
+          v-else-if="secret.provider"
           class="rounded bg-base-surface px-2 py-0.5 text-xs text-muted"
         >
           {{ providerLabel }}
@@ -52,7 +58,7 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 
-import { getProviderLabel } from '../providers'
+import { getProviderLabel, getProviderLogo } from '../providers'
 import type { SecretMetadata } from '../types'
 
 const {
@@ -71,6 +77,7 @@ const emit = defineEmits<{
 }>()
 
 const providerLabel = computed(() => getProviderLabel(secret.provider))
+const providerLogo = computed(() => getProviderLogo(secret.provider))
 
 function formatDateString(dateString: string): string {
   const date = new Date(dateString)
