@@ -5639,6 +5639,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.renderedPaths.clear()
     if (this.links_render_mode === LinkRenderType.HIDDEN_LINK) return
 
+    // Skip link rendering while waiting for slot positions to sync after reconfigure
+    if (LiteGraph.vueNodesMode && layoutStore.pendingSlotSync) {
+      this.#visibleReroutes.clear()
+      return
+    }
+
     const { graph, subgraph } = this
     if (!graph) throw new NullGraphError()
 
