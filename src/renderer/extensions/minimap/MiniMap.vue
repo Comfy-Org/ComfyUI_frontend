@@ -2,7 +2,12 @@
   <div
     v-if="visible && initialized"
     ref="minimapRef"
-    class="minimap-main-container absolute right-0 bottom-[54px] z-1000 flex"
+    :class="
+      cn(
+        'minimap-main-container absolute right-0 bottom-[54px] z-1000 flex',
+        isMobile ? 'flex-col-reverse' : 'flex-row'
+      )
+    "
   >
     <MiniMapPanel
       v-if="showOptionsPanel"
@@ -12,6 +17,7 @@
       :show-groups="showGroups"
       :render-bypass="renderBypass"
       :render-error="renderError"
+      :is-mobile="isMobile"
       @update-option="updateOption"
     />
 
@@ -70,13 +76,17 @@
 </template>
 
 <script setup lang="ts">
+import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import MiniMapPanel from './MiniMapPanel.vue'
+
+const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
 
 const commandStore = useCommandStore()
 const minimapRef = ref<HTMLDivElement>()
