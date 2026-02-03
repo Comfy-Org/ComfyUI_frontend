@@ -8,7 +8,6 @@ import type {
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import { pasteImageNode, pasteImageNodes } from '@/composables/usePaste'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 
 vi.mock('@/utils/litegraphUtil', () => ({
