@@ -5,12 +5,6 @@ import type {
   TelemetryProvider
 } from '../../types'
 
-declare global {
-  interface Window {
-    dataLayer?: Record<string, unknown>[]
-  }
-}
-
 /**
  * Google Tag Manager telemetry provider.
  * Pushes events to the GTM dataLayer for GA4 and marketing integrations.
