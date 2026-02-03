@@ -161,7 +161,7 @@ export class ComfyWorkflow extends UserFile {
   async promptSave(): Promise<string | null> {
     return await useDialogService().prompt({
       title: t('workflowService.saveWorkflow'),
-      message: t('workflowService.enterFilename') + ':',
+      message: t('workflowService.enterFilenamePrompt'),
       defaultValue: this.filename
     })
   }

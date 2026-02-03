@@ -18,7 +18,9 @@
         <SearchBox
           v-model:model-value="searchQuery"
           class="settings-search-box mb-2 w-full"
-          :placeholder="$t('g.searchSettings') + '...'"
+          :placeholder="
+            $t('g.searchPlaceholder', { subject: $t('g.settings') })
+          "
           :debounce-time="128"
           autofocus
           @search="handleSearch"

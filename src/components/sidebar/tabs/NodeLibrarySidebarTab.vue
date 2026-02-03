@@ -91,7 +91,7 @@
             v-model:model-value="searchQuery"
             data-testid="node-library-search"
             class="node-lib-search-box"
-            :placeholder="$t('g.searchNodes') + '...'"
+            :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
             filter-icon="pi pi-filter"
             :filters
             @search="handleSearch"
