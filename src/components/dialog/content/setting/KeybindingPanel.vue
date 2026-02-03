@@ -4,7 +4,7 @@
       <SearchBox
         v-model="filters['global'].value"
         :placeholder="
-          $t('g.searchPlaceholder', { subject: $t('g.searchKeybindings') })
+          $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
         "
       />
     </template>

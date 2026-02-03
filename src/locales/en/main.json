@@ -153,6 +153,8 @@
     "custom": "Custom",
     "command": "Command",
     "keybinding": "Keybinding",
+    "keybindings": "Keybindings",
+    "extensions": "Extensions",
     "upload": "Upload",
     "export": "Export",
     "workflow": "Workflow",
