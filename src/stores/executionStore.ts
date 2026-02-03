@@ -46,6 +46,14 @@ interface QueuedJob {
   workflow?: ComfyWorkflow
 }
 
+export type WorkflowExecutionResult = {
+  state: 'completed' | 'error'
+  timestamp: number
+  promptId?: string
+}
+
+export type WorkflowExecutionState = 'idle' | 'running' | 'completed' | 'error'
+
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
@@ -72,6 +80,95 @@ export const useExecutionStore = defineStore('execution', () => {
   const jobIdToSessionWorkflowPath = shallowRef<Map<string, string>>(new Map())
 
   const initializingJobIds = ref<Set<string>>(new Set())
+
+  /**
+   * Map of workflow ID to last execution result for UI state display.
+   */
+  const lastExecutionResultByWorkflowId = ref<
+    Map<string, WorkflowExecutionResult>
+  >(new Map())
+
+  function clearWorkflowExecutionResult(workflowId: string) {
+    if (!lastExecutionResultByWorkflowId.value.has(workflowId)) return
+    const next = new Map(lastExecutionResultByWorkflowId.value)
+    next.delete(workflowId)
+    lastExecutionResultByWorkflowId.value = next
+  }
+
+  function setWorkflowExecutionResult(
+    jobId: string,
+    state: 'completed' | 'error'
+  ) {
+    const wid = jobIdToWorkflowId.value.get(jobId)
+    if (!wid) {
+      console.warn(
+        `[executionStore] No workflow mapping for job ${jobId}, execution result '${state}' dropped`
+      )
+      return
+    }
+    setWorkflowExecutionResultByWorkflowId(wid, state, jobId)
+  }
+
+  function setWorkflowExecutionResultByWorkflowId(
+    workflowId: string,
+    state: 'completed' | 'error',
+    promptId?: string
+  ) {
+    const next = new Map(lastExecutionResultByWorkflowId.value)
+    next.set(workflowId, {
+      state,
+      timestamp: Date.now(),
+      promptId
+    })
+    lastExecutionResultByWorkflowId.value = next
+  }
+
+  function batchSetWorkflowExecutionResults(
+    results: Map<string, WorkflowExecutionResult>
+  ) {
+    if (results.size === 0) return
+    const next = new Map(lastExecutionResultByWorkflowId.value)
+    for (const [workflowId, result] of results) {
+      next.set(workflowId, result)
+    }
+    lastExecutionResultByWorkflowId.value = next
+  }
+
+  /**
+   * Computed map of workflow ID to execution state for reactive UI updates.
+   */
+  const workflowExecutionStates = computed<Map<string, WorkflowExecutionState>>(
+    () => {
+      const states = new Map<string, WorkflowExecutionState>()
+
+      // Mark running workflows
+      for (const jobId of runningJobIds.value) {
+        const workflowId = jobIdToWorkflowId.value.get(jobId)
+        if (workflowId) {
+          states.set(workflowId, 'running')
+        }
+      }
+
+      // Add completed/error states for workflows not currently running
+      for (const [
+        workflowId,
+        result
+      ] of lastExecutionResultByWorkflowId.value) {
+        if (!states.has(workflowId)) {
+          states.set(workflowId, result.state)
+        }
+      }
+
+      return states
+    }
+  )
+
+  function getWorkflowExecutionState(
+    workflowId: string | undefined
+  ): WorkflowExecutionState {
+    if (!workflowId) return 'idle'
+    return workflowExecutionStates.value.get(workflowId) ?? 'idle'
+  }
 
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
@@ -254,12 +351,13 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
+    const jobId = e.detail.prompt_id
+    setWorkflowExecutionResult(jobId, 'completed')
     if (isCloud && activeJobId.value) {
       useTelemetry()?.trackExecutionSuccess({
         jobId: activeJobId.value
       })
     }
-    const jobId = e.detail.prompt_id
     resetExecutionState(jobId)
   }
 
@@ -328,9 +426,11 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
+    const jobId = e.detail.prompt_id
+    setWorkflowExecutionResult(jobId, 'error')
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
+        jobId,
         nodeId: String(e.detail.node_id),
         nodeType: e.detail.node_type,
         error: e.detail.exception_message
@@ -591,6 +691,13 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeLocatorIdToExecutionId,
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
-    ensureSessionWorkflowPath
+    ensureSessionWorkflowPath,
+    // Workflow execution result tracking
+    lastExecutionResultByWorkflowId,
+    clearWorkflowExecutionResult,
+    setWorkflowExecutionResultByWorkflowId,
+    batchSetWorkflowExecutionResults,
+    workflowExecutionStates,
+    getWorkflowExecutionState
   }
 })

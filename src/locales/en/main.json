@@ -3589,5 +3589,10 @@
   "builderMenu": {
     "enterAppMode": "Enter app mode",
     "exitAppBuilder": "Exit app builder"
+  },
+  "workflowExecution": {
+    "running": "Workflow is running",
+    "completed": "Workflow completed successfully",
+    "error": "Workflow execution failed"
   }
 }
