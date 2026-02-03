@@ -9,11 +9,11 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'bg-component-node-background lg-node absolute text-sm',
+        'bg-node-component-header-surface lg-node absolute text-sm',
         'contain-style contain-layout min-w-[225px] min-h-(--node-height) w-(--node-width)',
         shapeClass,
         'touch-none flex flex-col',
-        'border-1 border-solid border-component-node-border bg-component-node-border',
+        'border-1 border-solid border-component-node-border',
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
@@ -71,7 +71,6 @@
         :collapsed="isCollapsed"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
-        @enter-subgraph="handleEnterSubgraph"
       />
     </div>
 
@@ -123,21 +122,39 @@
         />
       </div>
     </div>
-    <!-- Show advanced inputs button for subgraph nodes -->
     <Button
-      v-if="showAdvancedInputsButton"
       variant="textonly"
-      class="w-full h-10 rounded-b-2xl -mt-5 pt-6 pb-1 -z-1"
-      @click.stop="showAdvancedState = !showAdvancedState"
+      class="w-full h-12 rounded-b-2xl -mt-5 pt-7 pb-2 -z-1 text-xs"
+      as-child
     >
-      <template v-if="showAdvancedState">
-        <i class="icon-[lucide--chevron-up] size-4" />
+      <button
+        v-if="hasAnyError"
+        @click.stop="useRightSidePanelStore().openPanel('error')"
+      >
+        <span>{{ t('g.error') }}</span>
+        <i class="icon-[lucide--info] size-4" />
+      </button>
+      <button
+        v-else-if="lgraphNode?.isSubgraphNode()"
+        @click.stop="handleEnterSubgraph"
+      >
+        <span>{{ t('[ph] Enter Subgraph') }}</span>
+        <i class="icon-[comfy--workflow] size-4" />
+      </button>
+      <button
+        v-else-if="showAdvancedState"
+        @click.stop="showAdvancedState = !showAdvancedState"
+      >
         <span>{{ t('rightSidePanel.hideAdvancedInputsButton') }}</span>
-      </template>
-      <template v-else>
-        <i class="icon-[lucide--settings-2] size-4" />
+        <i class="icon-[lucide--chevron-up] size-4" />
+      </button>
+      <button
+        v-else-if="showAdvancedInputsButton"
+        @click.stop="showAdvancedState = !showAdvancedState"
+      >
         <span>{{ t('rightSidePanel.showAdvancedInputsButton') }} </span>
-      </template>
+        <i class="icon-[lucide--settings-2] size-4" />
+      </button>
     </Button>
     <!-- Resize handle (bottom-right only) -->
     <div
