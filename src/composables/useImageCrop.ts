@@ -22,14 +22,14 @@ const CORNER_SIZE = 10
 const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 2
 
-export const ASPECT_RATIOS: Record<string, number | null> = {
+export const ASPECT_RATIOS = {
   '1:1': 1,
   '3:4': 3 / 4,
   '4:3': 4 / 3,
   '16:9': 16 / 9,
   '9:16': 9 / 16,
   custom: null
-}
+} as const
 
 interface UseImageCropOptions {
   imageEl: Ref<HTMLImageElement | null>
@@ -97,28 +97,36 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const resizeStartCropWidth = ref(0)
   const resizeStartCropHeight = ref(0)
 
-  const selectedRatio = ref<string>('custom')
-  const isLockEnabled = ref(false)
   const lockedRatio = ref<number | null>(null)
 
-  watch(selectedRatio, (ratio) => {
-    if (ratio === 'custom') {
-      isLockEnabled.value = false
-      lockedRatio.value = null
-      return
+  const selectedRatio = computed({
+    get: () => {
+      if (lockedRatio.value == null) return 'custom'
+      const entry = Object.entries(ASPECT_RATIOS).find(
+        ([, v]) => v === lockedRatio.value
+      )
+      return entry ? entry[0] : 'custom'
+    },
+    set: (key: string) => {
+      if (key === 'custom') {
+        lockedRatio.value = null
+        return
+      }
+      lockedRatio.value =
+        ASPECT_RATIOS[key as keyof typeof ASPECT_RATIOS] ?? null
+      applyLockedRatio()
     }
-    lockedRatio.value = ASPECT_RATIOS[ratio] ?? null
-    isLockEnabled.value = true
-    applyLockedRatio()
   })
 
-  watch(isLockEnabled, (locked) => {
-    if (locked && lockedRatio.value == null) {
-      lockedRatio.value = cropWidth.value / cropHeight.value
-    }
-    if (!locked) {
-      selectedRatio.value = 'custom'
-      lockedRatio.value = null
+  const isLockEnabled = computed({
+    get: () => lockedRatio.value != null,
+    set: (locked: boolean) => {
+      if (locked && lockedRatio.value == null) {
+        lockedRatio.value = cropWidth.value / cropHeight.value
+      }
+      if (!locked) {
+        lockedRatio.value = null
+      }
     }
   })
 
