@@ -69,9 +69,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     }
   )
 
-  // Validation
+  // Validation - only enable Continue when URL matches a supported source
   const canFetchMetadata = computed(() => {
-    return wizardData.value.url.trim().length > 0
+    return detectedSource.value !== null
   })
 
   const canUploadModel = computed(() => {
