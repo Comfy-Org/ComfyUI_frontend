@@ -9,13 +9,14 @@ describe('buildAuthMetadata', () => {
   })
 
   it('hashes user id for new users', async () => {
-    const digestSpy = vi
-      .spyOn(globalThis.crypto.subtle, 'digest')
+    const digestMock = vi
+      .fn()
       .mockResolvedValue(new Uint8Array([0, 1, 2, 255]).buffer)
+    vi.stubGlobal('crypto', { subtle: { digest: digestMock } })
 
     const metadata = await buildAuthMetadata('email', true, 'user-123')
 
-    expect(digestSpy).toHaveBeenCalledWith(
+    expect(digestMock).toHaveBeenCalledWith(
       'SHA-256',
       new TextEncoder().encode('user-123')
     )
@@ -27,11 +28,12 @@ describe('buildAuthMetadata', () => {
   })
 
   it('does not hash when user is not new', async () => {
-    const digestSpy = vi.spyOn(globalThis.crypto.subtle, 'digest')
+    const digestMock = vi.fn()
+    vi.stubGlobal('crypto', { subtle: { digest: digestMock } })
 
     const metadata = await buildAuthMetadata('google', false, 'user-123')
 
-    expect(digestSpy).not.toHaveBeenCalled()
+    expect(digestMock).not.toHaveBeenCalled()
     expect(metadata).toMatchObject({
       method: 'google',
       is_new_user: false
