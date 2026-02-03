@@ -2,7 +2,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { WorkflowExecutionResult } from '@/stores/executionStore'
+import type {
+  WorkflowExecutionResult,
+  WorkflowExecutionState
+} from '@/stores/executionStore'
 
 import { useWorkflowExecutionState } from './useWorkflowExecutionState'
 
@@ -17,6 +20,25 @@ const _clearWorkflowExecutionResult = vi.fn((wid: string) => {
   _lastExecutionResultByWorkflowId.value = next
 })
 
+function _getWorkflowExecutionState(
+  workflowId: string | undefined
+): WorkflowExecutionState {
+  if (!workflowId) return 'idle'
+
+  for (const promptId of _runningPromptIds.value) {
+    if (_promptIdToWorkflowId.value.get(promptId) === workflowId) {
+      return 'running'
+    }
+  }
+
+  const lastResult = _lastExecutionResultByWorkflowId.value.get(workflowId)
+  if (lastResult) {
+    return lastResult.state
+  }
+
+  return 'idle'
+}
+
 vi.mock('@/stores/executionStore', () => {
   return {
     useExecutionStore: () => ({
@@ -29,7 +51,8 @@ vi.mock('@/stores/executionStore', () => {
       get lastExecutionResultByWorkflowId() {
         return _lastExecutionResultByWorkflowId.value
       },
-      clearWorkflowExecutionResult: _clearWorkflowExecutionResult
+      clearWorkflowExecutionResult: _clearWorkflowExecutionResult,
+      getWorkflowExecutionState: _getWorkflowExecutionState
     })
   }
 })

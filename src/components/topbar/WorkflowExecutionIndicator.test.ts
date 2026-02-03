@@ -1,35 +1,41 @@
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import type { WorkflowExecutionState } from '@/stores/executionStore'
 
 import WorkflowExecutionIndicator from './WorkflowExecutionIndicator.vue'
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => {
-      const translations: Record<string, string> = {
-        'workflowExecution.running': 'Workflow is running',
-        'workflowExecution.completed': 'Workflow completed successfully',
-        'workflowExecution.error': 'Workflow execution failed'
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      workflowExecution: {
+        running: 'Workflow is running',
+        completed: 'Workflow completed successfully',
+        error: 'Workflow execution failed'
       }
-      return translations[key] ?? key
-    },
-    locale: ref('en')
-  })
-}))
+    }
+  }
+})
 
 describe('WorkflowExecutionIndicator', () => {
-  it('renders nothing for idle state', () => {
-    const wrapper = mount(WorkflowExecutionIndicator, {
-      props: { state: 'idle' }
+  const mountWithI18n = (props: { state: WorkflowExecutionState }) =>
+    mount(WorkflowExecutionIndicator, {
+      props,
+      global: {
+        plugins: [i18n]
+      }
     })
+
+  it('renders nothing for idle state', () => {
+    const wrapper = mountWithI18n({ state: 'idle' })
     expect(wrapper.find('i').exists()).toBe(false)
   })
 
   it('renders spinning loader for running state', () => {
-    const wrapper = mount(WorkflowExecutionIndicator, {
-      props: { state: 'running' }
-    })
+    const wrapper = mountWithI18n({ state: 'running' })
     const icon = wrapper.find('i')
     expect(icon.exists()).toBe(true)
     expect(icon.classes()).toContain('icon-[lucide--loader-circle]')
@@ -38,9 +44,7 @@ describe('WorkflowExecutionIndicator', () => {
   })
 
   it('renders check icon for completed state', () => {
-    const wrapper = mount(WorkflowExecutionIndicator, {
-      props: { state: 'completed' }
-    })
+    const wrapper = mountWithI18n({ state: 'completed' })
     const icon = wrapper.find('i')
     expect(icon.exists()).toBe(true)
     expect(icon.classes()).toContain('icon-[lucide--circle-check]')
@@ -48,9 +52,7 @@ describe('WorkflowExecutionIndicator', () => {
   })
 
   it('renders alert icon for error state', () => {
-    const wrapper = mount(WorkflowExecutionIndicator, {
-      props: { state: 'error' }
-    })
+    const wrapper = mountWithI18n({ state: 'error' })
     const icon = wrapper.find('i')
     expect(icon.exists()).toBe(true)
     expect(icon.classes()).toContain('icon-[lucide--circle-alert]')
@@ -58,9 +60,7 @@ describe('WorkflowExecutionIndicator', () => {
   })
 
   it('has correct aria-label for running state', () => {
-    const wrapper = mount(WorkflowExecutionIndicator, {
-      props: { state: 'running' }
-    })
+    const wrapper = mountWithI18n({ state: 'running' })
     expect(wrapper.find('i').attributes('aria-label')).toBe(
       'Workflow is running'
     )

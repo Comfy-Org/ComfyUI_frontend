@@ -52,6 +52,8 @@ export type WorkflowExecutionResult = {
   promptId: string
 }
 
+export type WorkflowExecutionState = 'idle' | 'running' | 'completed' | 'error'
+
 const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
   const node = graph.getNodeById(id)
   if (node?.isSubgraphNode()) return node.subgraph
@@ -143,6 +145,40 @@ export const useExecutionStore = defineStore('execution', () => {
     const next = new Map(lastExecutionResultByWorkflowId.value)
     next.delete(workflowId)
     lastExecutionResultByWorkflowId.value = next
+  }
+
+  function setWorkflowExecutionResult(
+    promptId: string,
+    state: 'completed' | 'error'
+  ) {
+    const wid = promptIdToWorkflowId.value.get(promptId)
+    if (!wid) return
+    const next = new Map(lastExecutionResultByWorkflowId.value)
+    next.set(wid, {
+      state,
+      timestamp: Date.now(),
+      promptId
+    })
+    lastExecutionResultByWorkflowId.value = next
+  }
+
+  function getWorkflowExecutionState(
+    workflowId: string | undefined
+  ): WorkflowExecutionState {
+    if (!workflowId) return 'idle'
+
+    for (const promptId of runningPromptIds.value) {
+      if (promptIdToWorkflowId.value.get(promptId) === workflowId) {
+        return 'running'
+      }
+    }
+
+    const lastResult = lastExecutionResultByWorkflowId.value.get(workflowId)
+    if (lastResult) {
+      return lastResult.state
+    }
+
+    return 'idle'
   }
 
   const mergeExecutionProgressStates = (
@@ -334,16 +370,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const pid = e.detail.prompt_id
-    const wid = promptIdToWorkflowId.value.get(pid)
-    if (wid) {
-      const next = new Map(lastExecutionResultByWorkflowId.value)
-      next.set(wid, {
-        state: 'completed',
-        timestamp: Date.now(),
-        promptId: pid
-      })
-      lastExecutionResultByWorkflowId.value = next
-    }
+    setWorkflowExecutionResult(pid, 'completed')
     if (isCloud && activePromptId.value) {
       useTelemetry()?.trackExecutionSuccess({
         jobId: activePromptId.value
@@ -418,16 +445,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
     const pid = e.detail.prompt_id
-    const wid = promptIdToWorkflowId.value.get(pid)
-    if (wid) {
-      const next = new Map(lastExecutionResultByWorkflowId.value)
-      next.set(wid, {
-        state: 'error',
-        timestamp: Date.now(),
-        promptId: pid
-      })
-      lastExecutionResultByWorkflowId.value = next
-    }
+    setWorkflowExecutionResult(pid, 'error')
     lastExecutionError.value = e.detail
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
@@ -721,6 +739,7 @@ export const useExecutionStore = defineStore('execution', () => {
     slotHasError,
     // Workflow execution result tracking
     lastExecutionResultByWorkflowId,
-    clearWorkflowExecutionResult
+    clearWorkflowExecutionResult,
+    getWorkflowExecutionState
   }
 })

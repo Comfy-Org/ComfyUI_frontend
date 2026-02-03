@@ -45,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -88,24 +88,7 @@ const workflowId = computed(() => {
   return activeState?.id ?? initialState?.id
 })
 
-const { state: executionState, clearResult } =
-  useWorkflowExecutionState(workflowId)
-
-const clearTimeoutId = ref<ReturnType<typeof setTimeout> | null>(null)
-
-watch(executionState, (newState) => {
-  if (clearTimeoutId.value) {
-    clearTimeout(clearTimeoutId.value)
-    clearTimeoutId.value = null
-  }
-
-  if (newState === 'completed') {
-    clearTimeoutId.value = setTimeout(() => {
-      clearResult()
-      clearTimeoutId.value = null
-    }, 5000)
-  }
-})
+const { state: executionState } = useWorkflowExecutionState(workflowId)
 
 const showExecutionIndicator = computed(() => executionState.value !== 'idle')
 
@@ -212,9 +195,6 @@ usePragmaticDroppable(tabGetter, {
 
 onUnmounted(() => {
   popoverRef.value?.hidePopover()
-  if (clearTimeoutId.value) {
-    clearTimeout(clearTimeoutId.value)
-  }
 })
 </script>
 
