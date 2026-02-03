@@ -2760,7 +2760,14 @@
     "runCount": "Run count:",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
-    "downloadAll": "Download All"
+    "downloadAll": "Download All",
+    "welcome": {
+      "title": "Welcome to App Mode",
+      "intro": "A simplified view that hides the node graph so you can focus on creating.",
+      "layout": "On the left, you'll see your generated images, videos, and outputs. On the right, just the controls you need. Everything complex stays out of sight.",
+      "sharing": "Sharing is easy: create your workflow, open App Mode, right-click the tab, and export. When others open your file, it launches straight into this clean view. You can share powerful workflows as simple tools without anyone needing to understand node graphs.",
+      "widget": "If you want to control which settings appear, convert your top-level nodes into a subgraph, then use widget promotion in the toolbox above it to choose what's exposed."
+    }
   },
   "missingNodes": {
     "cloud": {

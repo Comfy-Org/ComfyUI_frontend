@@ -580,7 +580,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.7',
       category: 'view-controls' as const,
       function: () => {
-        dialogService.showSettingsDialog()
+        void dialogService.showSettingsDialog()
       }
     },
     {
@@ -829,7 +829,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'About ComfyUI',
       versionAdded: '1.6.4',
       function: () => {
-        dialogService.showSettingsDialog('about')
+        void dialogService.showSettingsDialog('about')
       }
     },
     {
