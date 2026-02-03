@@ -198,7 +198,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const newName = await dialogService.prompt({
           title: t('g.rename'),
-          message: t('workflowService.enterFilename') + ':',
+          message: t('workflowService.enterFilenamePrompt'),
           defaultValue: workflow.filename
         })
         if (!newName || newName === workflow.filename) return

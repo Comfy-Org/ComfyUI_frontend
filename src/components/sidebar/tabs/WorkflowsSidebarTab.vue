@@ -21,7 +21,7 @@
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
           class="workflows-search-box"
-          :placeholder="$t('g.searchWorkflows') + '...'"
+          :placeholder="$t('g.searchWorkflowsPlaceholder')"
           @search="handleSearch"
         />
       </div>

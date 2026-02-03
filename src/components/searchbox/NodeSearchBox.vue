@@ -118,7 +118,7 @@ const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
 const placeholder = computed(() => {
-  return filters.length === 0 ? t('g.searchNodes') + '...' : ''
+  return filters.length === 0 ? t('g.searchNodesPlaceholder') : ''
 })
 
 const nodeDefStore = useNodeDefStore()

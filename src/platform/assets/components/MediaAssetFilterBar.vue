@@ -2,7 +2,7 @@
   <div class="flex gap-3 items-center">
     <SearchBox
       :model-value="searchQuery"
-      :placeholder="$t('sideToolbar.searchAssets') + '...'"
+      :placeholder="$t('g.searchAssetsPlaceholder')"
       @update:model-value="handleSearchChange"
     />
     <div class="flex gap-1.5 items-center">

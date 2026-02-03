@@ -90,7 +90,7 @@
             ref="searchBoxRef"
             v-model:model-value="searchQuery"
             class="node-lib-search-box"
-            :placeholder="$t('g.searchNodes') + '...'"
+            :placeholder="$t('g.searchNodesPlaceholder')"
             filter-icon="pi pi-filter"
             :filters
             @search="handleSearch"
