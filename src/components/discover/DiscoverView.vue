@@ -5,6 +5,7 @@
     @back="selectedWorkflow = null"
     @run-workflow="handleRunWorkflow"
     @make-copy="handleMakeCopy"
+    @author-selected="handleAuthorSelected"
   />
   <div v-else class="flex size-full flex-col">
     <!-- Header with search -->
@@ -139,6 +140,7 @@
           v-for="template in results.templates"
           :key="template.objectID"
           size="compact"
+          custom-aspect-ratio="2/3"
           variant="ghost"
           class="hover:bg-base-background"
           @mouseenter="hoveredTemplate = template.objectID"
@@ -146,21 +148,23 @@
           @click="handleTemplateClick(template)"
         >
           <template #top>
-            <CardTop ratio="landscape">
-              <LazyImage
-                :src="template.thumbnail_url"
-                :alt="template.title"
-                class="size-full object-cover transition-transform duration-300"
-                :class="hoveredTemplate === template.objectID && 'scale-105'"
-              />
-              <template #bottom-right>
-                <SquareChip
-                  v-for="tag in template.tags.slice(0, 2)"
-                  :key="tag"
-                  :label="tag"
+            <div class="shrink-0">
+              <CardTop ratio="square">
+                <LazyImage
+                  :src="template.thumbnail_url"
+                  :alt="template.title"
+                  class="size-full rounded-lg object-cover transition-transform duration-300"
+                  :class="hoveredTemplate === template.objectID && 'scale-105'"
                 />
-              </template>
-            </CardTop>
+                <template #bottom-right>
+                  <SquareChip
+                    v-for="tag in template.tags.slice(0, 2)"
+                    :key="tag"
+                    :label="tag"
+                  />
+                </template>
+              </CardTop>
+            </div>
           </template>
           <template #bottom>
             <div class="flex flex-col gap-1.5 p-3">
@@ -170,9 +174,11 @@
               >
                 {{ template.title }}
               </h3>
-              <div
+              <button
                 v-if="template.author_name"
-                class="flex items-center gap-1.5"
+                type="button"
+                class="flex items-center gap-1.5 rounded px-1 -mx-1 border border-transparent bg-transparent text-muted-foreground transition-colors hover:bg-secondary-background hover:text-base-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-subtle"
+                @click.stop="handleAuthorClick(template)"
               >
                 <img
                   :src="
@@ -185,7 +191,7 @@
                 <span class="text-xs text-muted-foreground">
                   {{ template.author_name }}
                 </span>
-              </div>
+              </button>
               <p
                 class="line-clamp-2 text-xs text-muted-foreground"
                 :title="template.description"
@@ -252,6 +258,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
@@ -263,6 +270,7 @@ import MultiSelect from '@/components/input/MultiSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSearch } from '@/composables/discover/useWorkflowTemplateSearch'
 import type { AlgoliaWorkflowTemplate } from '@/types/discoverTypes'
+import { authorNameToSlug } from '@/utils/authorProfileUtil'
 
 const { search, isLoading, results } = useWorkflowTemplateSearch()
 
@@ -270,6 +278,7 @@ const searchQuery = ref('')
 const currentPage = ref(0)
 const hoveredTemplate = ref<string | null>(null)
 const selectedWorkflow = ref<AlgoliaWorkflowTemplate | null>(null)
+const router = useRouter()
 
 const selectedTags = ref<Array<{ name: string; value: string }>>([])
 const selectedModels = ref<Array<{ name: string; value: string }>>([])
@@ -339,6 +348,17 @@ function goToPage(page: number) {
 
 function handleTemplateClick(template: AlgoliaWorkflowTemplate) {
   selectedWorkflow.value = template
+}
+
+function handleAuthorClick(template: AlgoliaWorkflowTemplate) {
+  if (!template.author_name) return
+  const slug = authorNameToSlug(template.author_name)
+  void router.push({ name: 'AuthorProfileView', params: { slug } })
+}
+
+function handleAuthorSelected(author: { name: string; avatarUrl?: string }) {
+  const slug = authorNameToSlug(author.name)
+  void router.push({ name: 'AuthorProfileView', params: { slug } })
 }
 
 function handleRunWorkflow(_workflow: AlgoliaWorkflowTemplate) {

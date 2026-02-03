@@ -28,6 +28,25 @@
       "makeCopyFailed": "Failed to copy workflow: {error}",
       "appNotReady": "ComfyUI is still loading. Please wait and try again."
     },
+    "author": {
+      "title": "Creator",
+      "searchPlaceholder": "Search this creator's workflows",
+      "workflowsCount": "{count} workflow | {count} workflows",
+      "runsLabel": "runs",
+      "copiesLabel": "copies",
+      "rankLabel": "rank",
+      "rankValue": "31",
+      "rankCaption": "Last 30 days",
+      "workflowsTitle": "Workflows",
+      "tagline": "Designing workflows that feel polished, practical, and production-ready.",
+      "aboutTitle": "About",
+      "aboutDescription": "Focused on building clean, reliable workflows with thoughtful defaults and clear documentation.",
+      "badgeCreator": "Creator profile",
+      "badgeOpenSource": "Open-source friendly",
+      "badgeTemplates": "Workflow templates",
+      "noResults": "No workflows found for this creator",
+      "noResultsHint": "Try a different search or check back later."
+    },
     "share": {
       "share": "Share",
       "copyFailed": "Failed to copy link to clipboard",

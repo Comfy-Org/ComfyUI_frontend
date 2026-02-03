@@ -47,7 +47,19 @@
           </div>
 
           <!-- Author -->
-          <div class="flex items-center gap-3">
+          <button
+            type="button"
+            :disabled="!hasAuthor"
+            :class="
+              cn(
+                'flex w-full items-center gap-3 rounded-lg border border-transparent p-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-border-subtle',
+                hasAuthor
+                  ? 'hover:bg-secondary-background'
+                  : 'cursor-default opacity-80'
+              )
+            "
+            @click="handleAuthorClick"
+          >
             <img
               :src="authorAvatar"
               :alt="authorName"
@@ -61,7 +73,7 @@
                 {{ $t('discover.detail.officialWorkflow') }}
               </div>
             </div>
-          </div>
+          </button>
 
           <!-- Stats -->
           <div class="flex items-center gap-4">
@@ -182,6 +194,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { cn } from '@/utils/tailwindUtil'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
@@ -201,7 +214,10 @@ const emit = defineEmits<{
   back: []
   makeCopy: [workflow: AlgoliaWorkflowTemplate]
   appMode: [workflow: AlgoliaWorkflowTemplate]
+  authorSelected: [author: { name: string; avatarUrl?: string }]
 }>()
+
+const hasAuthor = computed(() => !!workflow.author_name)
 
 const authorName = computed(
   () => workflow.author_name ?? t('discover.detail.author')
@@ -231,6 +247,14 @@ function handleRunWorkflow() {
     summary: t('g.comingSoon'),
     detail: t('discover.detail.runWorkflowNotImplemented'),
     life: 3000
+  })
+}
+
+const handleAuthorClick = () => {
+  if (!workflow.author_name) return
+  emit('authorSelected', {
+    name: workflow.author_name,
+    avatarUrl: workflow.author_avatar_url ?? undefined
   })
 }
 
