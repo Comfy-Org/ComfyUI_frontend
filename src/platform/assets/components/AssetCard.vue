@@ -54,7 +54,6 @@
         >
           <template #default>
             <Button
-              v-if="flags.assetDeletionEnabled"
               variant="secondary"
               size="md"
               class="justify-start"
@@ -141,7 +140,6 @@ import MoreButton from '@/components/button/MoreButton.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -167,7 +165,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
-const { flags } = useFeatureFlags()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
 
 const dropdownMenuButton = useTemplateRef<InstanceType<typeof MoreButton>>(
@@ -181,11 +178,7 @@ const displayName = computed(() => getAssetDisplayName(asset))
 
 const isNewlyImported = computed(() => isDownloadedThisSession(asset.id))
 
-const showAssetOptions = computed(
-  () =>
-    (flags.assetDeletionEnabled || flags.assetRenameEnabled) &&
-    !(asset.is_immutable ?? true)
-)
+const showAssetOptions = computed(() => !(asset.is_immutable ?? true))
 
 const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
