@@ -8,7 +8,7 @@
       "openSource": "Open Source models only",
       "cloudOnly": "Cloud only"
     },
-    "resultsCount": "{count} template | {count} templates",
+    "resultsCount": "{count} result | {count} results",
     "noResults": "No templates found",
     "noResultsHint": "Try adjusting your search or filters",
     "detail": {
@@ -75,6 +75,15 @@
         "notImplemented": "Publishing to Hub is not implemented yet"
       }
     }
+  },
+  "home": {
+    "title": "Home",
+    "tabs": {
+      "recents": "Recents",
+      "discover": "Discover"
+    },
+    "recentsStubTitle": "No recent workflows yet",
+    "recentsStubDescription": "Your recently opened workflows will appear here."
   },
   "g": {
     "user": "User",

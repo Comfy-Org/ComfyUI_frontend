@@ -2,7 +2,7 @@
   <div
     class="w-full h-full absolute top-0 left-0 z-999 pointer-events-none flex flex-col"
   >
-    <slot v-if="!isFullPageTabActive" name="workflow-tabs" />
+    <slot v-if="shouldShowWorkflowTabs" name="workflow-tabs" />
 
     <div
       class="pointer-events-none flex flex-1 overflow-hidden"
@@ -26,7 +26,7 @@
         <SplitterPanel
           v-if="
             !focusMode &&
-            !isFullPageTabActive &&
+            !isFullPageOverlayActive &&
             (sidebarLocation === 'left' || anyRightPanelVisible)
           "
           :class="
@@ -58,14 +58,14 @@
         <!-- Main panel (always present) -->
         <SplitterPanel :size="80" class="flex flex-col">
           <slot
-            v-if="!isFullPageTabActive"
+            v-if="!isFullPageOverlayActive"
             name="topmenu"
             :sidebar-panel-visible
           />
 
           <!-- Full page content (replaces graph canvas when active) -->
           <div
-            v-if="isFullPageTabActive"
+            v-if="isFullPageOverlayActive"
             class="pointer-events-auto flex-1 overflow-hidden bg-comfy-menu-bg"
           >
             <slot name="full-page-content" />
@@ -101,7 +101,7 @@
         <SplitterPanel
           v-if="
             !focusMode &&
-            !isFullPageTabActive &&
+            !isFullPageOverlayActive &&
             (sidebarLocation === 'right' || anyRightPanelVisible)
           "
           :class="
@@ -142,6 +142,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSharePanelStore } from '@/stores/workspace/sharePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -166,6 +167,7 @@ const { activeSidebarTabId, activeSidebarTab, isFullPageTabActive } =
   storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
+const { isOpen: homePanelOpen } = storeToRefs(useHomePanelStore())
 const sharePanelStore = useSharePanelStore()
 const { isOpen: sharePanelVisible } = storeToRefs(sharePanelStore)
 
@@ -174,6 +176,12 @@ const anyRightPanelVisible = computed(
 )
 
 const sidebarPanelVisible = computed(() => activeSidebarTab.value !== null)
+const isFullPageOverlayActive = computed(
+  () => isFullPageTabActive.value || homePanelOpen.value
+)
+const shouldShowWorkflowTabs = computed(
+  () => !isFullPageTabActive.value || homePanelOpen.value
+)
 
 const sidebarStateKey = computed(() => {
   return unifiedWidth.value

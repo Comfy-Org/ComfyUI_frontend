@@ -21,18 +21,22 @@
         </div>
       </div>
     </template>
-    <template v-if="showUI" #side-toolbar>
+    <template v-if="showUI && !isHomePanelOpen" #side-toolbar>
       <SideToolbar />
     </template>
-    <template v-if="showUI && !isFullPageTabActive" #side-bar-panel>
+    <template v-if="showUI && !isFullPageOverlayActive" #side-bar-panel>
       <div
         class="sidebar-content-container h-full w-full overflow-x-hidden overflow-y-auto"
       >
         <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
       </div>
     </template>
-    <template v-if="showUI && isFullPageTabActive" #full-page-content>
-      <ExtensionSlot v-if="activeSidebarTab" :extension="activeSidebarTab" />
+    <template v-if="showUI && isFullPageOverlayActive" #full-page-content>
+      <HomePanel v-if="isHomePanelOpen" />
+      <ExtensionSlot
+        v-else-if="activeSidebarTab"
+        :extension="activeSidebarTab"
+      />
     </template>
     <template v-if="showUI" #topmenu>
       <TopMenuSection />
@@ -110,6 +114,7 @@ import {
 } from 'vue'
 
 import SharePanel from '@/components/actionbar/SharePanel.vue'
+import HomePanel from '@/components/home/HomePanel.vue'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import BottomPanel from '@/components/bottomPanel/BottomPanel.vue'
@@ -162,6 +167,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useSharePanelStore } from '@/stores/workspace/sharePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -189,6 +195,7 @@ const executionStore = useExecutionStore()
 const toastStore = useToastStore()
 const colorPaletteStore = useColorPaletteStore()
 const sharePanelStore = useSharePanelStore()
+const homePanelStore = useHomePanelStore()
 const colorPaletteService = useColorPaletteService()
 const canvasInteractions = useCanvasInteractions()
 const bootstrapStore = useBootstrapStore()
@@ -215,6 +222,10 @@ const activeSidebarTab = computed(() => {
 const isFullPageTabActive = computed(() => {
   return workspaceStore.sidebarTab.isFullPageTabActive
 })
+const isHomePanelOpen = computed(() => homePanelStore.isOpen)
+const isFullPageOverlayActive = computed(
+  () => isFullPageTabActive.value || isHomePanelOpen.value
+)
 const showUI = computed(
   () => !workspaceStore.focusMode && betaMenuEnabled.value
 )

@@ -5,6 +5,25 @@
     :class="{ 'workflow-tabs-container-desktop': isDesktop }"
   >
     <Button
+      v-tooltip.bottom="{ value: $t('home.title'), showDelay: 300 }"
+      class="no-drag shrink-0 rounded-none h-full w-auto aspect-square"
+      :class="
+        cn(
+          'transition-colors',
+          homePanelStore.isOpen
+            ? 'bg-secondary-background text-base-foreground'
+            : 'text-muted-foreground hover:bg-secondary-background'
+        )
+      "
+      variant="muted-textonly"
+      size="icon"
+      :aria-label="$t('home.title')"
+      :aria-pressed="homePanelStore.isOpen"
+      @click="toggleHomePanel"
+    >
+      <i class="icon-[lucide--home] size-4" />
+    </Button>
+    <Button
       v-if="showOverflowArrows"
       variant="muted-textonly"
       size="icon"
@@ -113,10 +132,13 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isElectron } from '@/utils/envUtil'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
+import { cn } from '@/utils/tailwindUtil'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
 
@@ -135,6 +157,8 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
+const homePanelStore = useHomePanelStore()
+const sidebarTabStore = useSidebarTabStore()
 const { isLoggedIn } = useCurrentUser()
 
 const isIntegratedTabBar = computed(
@@ -174,7 +198,17 @@ const onWorkflowChange = async (option: WorkflowOption) => {
     return
   }
 
+  homePanelStore.closePanel()
   await workflowService.openWorkflow(option.workflow)
+}
+
+const toggleHomePanel = () => {
+  if (homePanelStore.isOpen) {
+    homePanelStore.closePanel()
+    return
+  }
+  sidebarTabStore.activeSidebarTabId = null
+  homePanelStore.openPanel()
 }
 
 const closeWorkflows = async (options: WorkflowOption[]) => {
