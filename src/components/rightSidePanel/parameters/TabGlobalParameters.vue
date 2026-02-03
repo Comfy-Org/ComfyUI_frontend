@@ -131,11 +131,16 @@ onBeforeUnmount(() => {
   >
     <template #empty>
       <div class="text-sm text-muted-foreground px-4 text-center py-10">
-        {{
-          isSearching
-            ? t('rightSidePanel.noneSearchDesc')
-            : t('rightSidePanel.favoritesNoneDesc')
-        }}
+        <p>
+          {{
+            isSearching
+              ? t('rightSidePanel.noneSearchDesc')
+              : t('rightSidePanel.favoritesNoneDesc')
+          }}
+        </p>
+        <p v-if="!isSearching" class="mt-2 text-xs">
+          {{ t('rightSidePanel.favoritesNoneHint') }}
+        </p>
       </div>
     </template>
   </SectionWidgets>
