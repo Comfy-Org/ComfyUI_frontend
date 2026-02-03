@@ -36,7 +36,9 @@ export const usePriceBadge = () => {
     return badges
   }
 
-  function isCreditsBadge(badge: LGraphBadge | (() => LGraphBadge)): boolean {
+  function isCreditsBadge(
+    badge: Partial<LGraphBadge> | (() => LGraphBadge)
+  ): boolean {
     const badgeInstance = typeof badge === 'function' ? badge() : badge
     return badgeInstance.icon?.image === componentIconSvg
   }
@@ -61,6 +63,7 @@ export const usePriceBadge = () => {
   }
   return {
     getCreditsBadge,
+    isCreditsBadge,
     updateSubgraphCredits
   }
 }

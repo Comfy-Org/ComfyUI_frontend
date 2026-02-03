@@ -63,11 +63,6 @@
       </div>
 
       <div class="flex shrink-0 items-center justify-between gap-2">
-        <NodeBadge
-          v-for="badge of nodeBadges"
-          :key="badge.text"
-          v-bind="badge"
-        />
         <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
         <i-comfy:pin
           v-if="isPinned"
@@ -80,12 +75,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, toValue, watch } from 'vue'
+import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { useNodePricing } from '@/composables/node/useNodePricing'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
@@ -93,7 +87,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -161,69 +154,6 @@ const statusBadge = computed((): NodeBadgeProps | undefined =>
       : undefined
 )
 
-// Use per-node pricing revision to re-compute badges only when this node's pricing updates
-const {
-  getRelevantWidgetNames,
-  hasDynamicPricing,
-  getInputGroupPrefixes,
-  getInputNames,
-  getNodeRevisionRef
-} = useNodePricing()
-// Cache pricing metadata (won't change during node lifetime)
-const isDynamicPricing = computed(() =>
-  nodeData?.apiNode ? hasDynamicPricing(nodeData.type) : false
-)
-const relevantPricingWidgets = computed(() =>
-  nodeData?.apiNode ? getRelevantWidgetNames(nodeData.type) : []
-)
-const inputGroupPrefixes = computed(() =>
-  nodeData?.apiNode ? getInputGroupPrefixes(nodeData.type) : []
-)
-const relevantInputNames = computed(() =>
-  nodeData?.apiNode ? getInputNames(nodeData.type) : []
-)
-const nodeBadges = computed<NodeBadgeProps[]>(() => {
-  // For ALL API nodes: access per-node revision ref to detect when async pricing evaluation completes
-  // This is needed even for static pricing because JSONata 2.x evaluation is async
-  if (nodeData?.apiNode && nodeData?.id != null) {
-    // Access per-node revision ref to establish dependency (each node has its own ref)
-    void getNodeRevisionRef(nodeData.id).value
-
-    // For dynamic pricing, also track widget values and input connections
-    if (isDynamicPricing.value) {
-      // Access only the widget values that affect pricing (from widgetValueStore)
-      const relevantNames = relevantPricingWidgets.value
-      const widgetStore = useWidgetValueStore()
-      if (relevantNames.length > 0 && nodeData?.id != null) {
-        for (const name of relevantNames) {
-          // Access value from store to create reactive dependency
-          void widgetStore.getWidget(nodeData.id, name)?.value
-        }
-      }
-      // Access input connections for regular inputs
-      const inputNames = relevantInputNames.value
-      if (inputNames.length > 0) {
-        nodeData?.inputs?.forEach((inp) => {
-          if (inp.name && inputNames.includes(inp.name)) {
-            void inp.link // Access link to create reactive dependency
-          }
-        })
-      }
-      // Access input connections for input_groups (e.g., autogrow inputs)
-      const groupPrefixes = inputGroupPrefixes.value
-      if (groupPrefixes.length > 0) {
-        nodeData?.inputs?.forEach((inp) => {
-          if (
-            groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))
-          ) {
-            void inp.link // Access link to create reactive dependency
-          }
-        })
-      }
-    }
-  }
-  return [...(nodeData?.badges ?? [])].map(toValue)
-})
 const isPinned = computed(() => Boolean(nodeData?.flags?.pinned))
 const isApiNode = computed(() => Boolean(nodeData?.apiNode))
 

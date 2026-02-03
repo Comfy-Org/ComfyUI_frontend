@@ -120,6 +120,7 @@
           v-if="shouldShowPreviewImg"
           :image-url="latestPreviewUrl"
         />
+        <NodeBadges :node-data />
       </div>
     </div>
     <Button
@@ -219,6 +220,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
