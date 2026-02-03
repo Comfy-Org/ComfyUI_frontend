@@ -3,15 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import FormDropdownMenu from './FormDropdownMenu.vue'
-import type { DropdownItem, LayoutMode } from './types'
+import type { FormDropdownItem, LayoutMode } from './types'
 
-function createItem(id: string, name: string): DropdownItem {
+function createItem(id: string, name: string): FormDropdownItem {
   return {
     id,
-    mediaSrc: '',
     name,
     label: name,
-    metadata: ''
+    preview_url: ''
   }
 }
 
