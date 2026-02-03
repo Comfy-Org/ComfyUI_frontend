@@ -4,53 +4,33 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   })
 
   test('should toggle shortcuts panel visibility', async ({ comfyPage }) => {
-    // Initially shortcuts panel should be hidden
-    await expect(comfyPage.page.locator('.bottom-panel')).not.toBeVisible()
+    const { bottomPanel } = comfyPage
 
-    // Click shortcuts toggle button in sidebar
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
-
-    // Shortcuts panel should now be visible
-    await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
-
-    // Click toggle button again to hide
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
-
-    // Panel should be hidden again
-    await expect(comfyPage.page.locator('.bottom-panel')).not.toBeVisible()
+    await expect(bottomPanel.root).not.toBeVisible()
+    await bottomPanel.keyboardShortcutsButton.click()
+    await expect(bottomPanel.root).toBeVisible()
+    await bottomPanel.keyboardShortcutsButton.click()
+    await expect(bottomPanel.root).not.toBeVisible()
   })
 
   test('should display essentials shortcuts tab', async ({ comfyPage }) => {
-    // Open shortcuts panel
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
+    const { bottomPanel } = comfyPage
 
-    // Essentials tab should be visible and active by default
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /Essential/i })
-    ).toBeVisible()
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /Essential/i })
-    ).toHaveAttribute('aria-selected', 'true')
+    await bottomPanel.keyboardShortcutsButton.click()
 
-    // Should display shortcut categories
-    await expect(
-      comfyPage.page.locator('.subcategory-title').first()
-    ).toBeVisible()
+    await expect(bottomPanel.shortcuts.essentialsTab).toBeVisible()
+    await expect(bottomPanel.shortcuts.essentialsTab).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
 
-    // Should display some keyboard shortcuts
-    await expect(comfyPage.page.locator('.key-badge').first()).toBeVisible()
+    await expect(bottomPanel.shortcuts.subcategoryTitles.first()).toBeVisible()
+    await expect(bottomPanel.shortcuts.keyBadges.first()).toBeVisible()
 
-    // Should have workflow, node, and queue sections
     await expect(
       comfyPage.page.getByRole('heading', { name: 'Workflow' })
     ).toBeVisible()
@@ -63,23 +43,18 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   })
 
   test('should display view controls shortcuts tab', async ({ comfyPage }) => {
-    // Open shortcuts panel
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
+    const { bottomPanel } = comfyPage
 
-    // Click view controls tab
-    await comfyPage.page.getByRole('tab', { name: /View Controls/i }).click()
+    await bottomPanel.keyboardShortcutsButton.click()
+    await bottomPanel.shortcuts.viewControlsTab.click()
 
-    // View controls tab should be active
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /View Controls/i })
-    ).toHaveAttribute('aria-selected', 'true')
+    await expect(bottomPanel.shortcuts.viewControlsTab).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
 
-    // Should display view controls shortcuts
-    await expect(comfyPage.page.locator('.key-badge').first()).toBeVisible()
+    await expect(bottomPanel.shortcuts.keyBadges.first()).toBeVisible()
 
-    // Should have view and panel controls sections
     await expect(
       comfyPage.page.getByRole('heading', { name: 'View' })
     ).toBeVisible()
@@ -89,54 +64,48 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   })
 
   test('should switch between shortcuts tabs', async ({ comfyPage }) => {
-    // Open shortcuts panel
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
+    const { bottomPanel } = comfyPage
 
-    // Essentials should be active initially
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /Essential/i })
-    ).toHaveAttribute('aria-selected', 'true')
+    await bottomPanel.keyboardShortcutsButton.click()
 
-    // Click view controls tab
-    await comfyPage.page.getByRole('tab', { name: /View Controls/i }).click()
+    await expect(bottomPanel.shortcuts.essentialsTab).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
 
-    // View controls should now be active
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /View Controls/i })
-    ).toHaveAttribute('aria-selected', 'true')
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /Essential/i })
-    ).not.toHaveAttribute('aria-selected', 'true')
+    await bottomPanel.shortcuts.viewControlsTab.click()
 
-    // Switch back to essentials
-    await comfyPage.page.getByRole('tab', { name: /Essential/i }).click()
+    await expect(bottomPanel.shortcuts.viewControlsTab).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    await expect(bottomPanel.shortcuts.essentialsTab).not.toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
 
-    // Essentials should be active again
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /Essential/i })
-    ).toHaveAttribute('aria-selected', 'true')
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /View Controls/i })
-    ).not.toHaveAttribute('aria-selected', 'true')
+    await bottomPanel.shortcuts.essentialsTab.click()
+
+    await expect(bottomPanel.shortcuts.essentialsTab).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    await expect(bottomPanel.shortcuts.viewControlsTab).not.toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
   })
 
   test('should display formatted keyboard shortcuts', async ({ comfyPage }) => {
-    // Open shortcuts panel
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
+    const { bottomPanel } = comfyPage
 
-    // Wait for shortcuts to load
-    await comfyPage.page.waitForSelector('.key-badge')
+    await bottomPanel.keyboardShortcutsButton.click()
 
-    // Check for common formatted keys
-    const keyBadges = comfyPage.page.locator('.key-badge')
+    const keyBadges = bottomPanel.shortcuts.keyBadges
+    await keyBadges.first().waitFor({ state: 'visible' })
     const count = await keyBadges.count()
     expect(count).toBeGreaterThanOrEqual(1)
 
-    // Should show formatted modifier keys
     const badgeText = await keyBadges.allTextContents()
     const hasModifiers = badgeText.some((text) =>
       ['Ctrl', 'Cmd', 'Shift', 'Alt'].includes(text)
@@ -147,20 +116,18 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should maintain panel state when switching between panels', async ({
     comfyPage
   }) => {
+    const { bottomPanel } = comfyPage
+
     // Open shortcuts panel first
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
-    await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
+    await bottomPanel.keyboardShortcutsButton.click()
+    await expect(bottomPanel.root).toBeVisible()
     await expect(
       comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
     ).toBeVisible()
 
     // Try to open terminal panel - may show terminal OR close shortcuts
     // depending on whether terminal tabs have loaded (async loading)
-    await comfyPage.page
-      .locator('button[aria-label*="Toggle Bottom Panel"]')
-      .click()
+    await bottomPanel.toggleButton.click()
 
     // Check if terminal tabs loaded (Logs tab visible) or fell back to shortcuts toggle
     const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
@@ -168,12 +135,10 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
 
     if (hasTerminalTabs) {
       // Terminal panel is visible - verify we can switch back to shortcuts
-      await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
+      await expect(bottomPanel.root).toBeVisible()
 
       // Switch back to shortcuts
-      await comfyPage.page
-        .locator('button[aria-label*="Keyboard Shortcuts"]')
-        .click()
+      await bottomPanel.keyboardShortcutsButton.click()
 
       // Should show shortcuts content again
       await expect(
@@ -181,10 +146,8 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
       ).toBeVisible()
     } else {
       // Terminal tabs not loaded - button toggled shortcuts off, reopen for verification
-      await comfyPage.page
-        .locator('button[aria-label*="Keyboard Shortcuts"]')
-        .click()
-      await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
+      await bottomPanel.keyboardShortcutsButton.click()
+      await expect(bottomPanel.root).toBeVisible()
       await expect(
         comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
       ).toBeVisible()
@@ -192,62 +155,47 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   })
 
   test('should handle keyboard navigation', async ({ comfyPage }) => {
-    // Open shortcuts panel
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
+    const { bottomPanel } = comfyPage
 
-    // Focus the first tab
-    await comfyPage.page.getByRole('tab', { name: /Essential/i }).focus()
+    await bottomPanel.keyboardShortcutsButton.click()
+    await bottomPanel.shortcuts.essentialsTab.focus()
 
-    // Use arrow keys to navigate between tabs
     await comfyPage.page.keyboard.press('ArrowRight')
 
-    // View controls tab should now have focus
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /View Controls/i })
-    ).toBeFocused()
+    await expect(bottomPanel.shortcuts.viewControlsTab).toBeFocused()
 
-    // Press Enter to activate the tab
     await comfyPage.page.keyboard.press('Enter')
 
-    // Tab should be selected
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /View Controls/i })
-    ).toHaveAttribute('aria-selected', 'true')
+    await expect(bottomPanel.shortcuts.viewControlsTab).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
   })
 
   test('should close panel by clicking shortcuts button again', async ({
     comfyPage
   }) => {
-    // Open shortcuts panel
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
-    await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
+    const { bottomPanel } = comfyPage
 
-    // Click shortcuts button again to close
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
+    await bottomPanel.keyboardShortcutsButton.click()
+    await expect(bottomPanel.root).toBeVisible()
 
-    // Panel should be hidden
-    await expect(comfyPage.page.locator('.bottom-panel')).not.toBeVisible()
+    await bottomPanel.keyboardShortcutsButton.click()
+    await expect(bottomPanel.root).not.toBeVisible()
   })
 
   test('should display shortcuts in organized columns', async ({
     comfyPage
   }) => {
-    // Open shortcuts panel
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
+    const { bottomPanel } = comfyPage
 
-    // Should have 3-column grid layout
-    await expect(comfyPage.page.locator('.md\\:grid-cols-3')).toBeVisible()
+    await bottomPanel.keyboardShortcutsButton.click()
 
-    // Should have multiple subcategory sections
-    const subcategoryTitles = comfyPage.page.locator('.subcategory-title')
+    await expect(
+      comfyPage.page.locator('[data-testid="shortcuts-columns"]')
+    ).toBeVisible()
+
+    const subcategoryTitles = bottomPanel.shortcuts.subcategoryTitles
     const titleCount = await subcategoryTitles.count()
     expect(titleCount).toBeGreaterThanOrEqual(2)
   })
@@ -255,43 +203,30 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should open shortcuts panel with Ctrl+Shift+K', async ({
     comfyPage
   }) => {
-    // Initially shortcuts panel should be hidden
-    await expect(comfyPage.page.locator('.bottom-panel')).not.toBeVisible()
+    const { bottomPanel } = comfyPage
 
-    // Press Ctrl+Shift+K to open shortcuts panel
+    await expect(bottomPanel.root).not.toBeVisible()
+
     await comfyPage.page.keyboard.press('Control+Shift+KeyK')
 
-    // Shortcuts panel should now be visible
-    await expect(comfyPage.page.locator('.bottom-panel')).toBeVisible()
-
-    // Should show essentials tab by default
-    await expect(
-      comfyPage.page.getByRole('tab', { name: /Essential/i })
-    ).toHaveAttribute('aria-selected', 'true')
+    await expect(bottomPanel.root).toBeVisible()
+    await expect(bottomPanel.shortcuts.essentialsTab).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
   })
 
   test('should open settings dialog when clicking manage shortcuts button', async ({
     comfyPage
   }) => {
-    // Open shortcuts panel
-    await comfyPage.page
-      .locator('button[aria-label*="Keyboard Shortcuts"]')
-      .click()
+    const { bottomPanel } = comfyPage
 
-    // Manage shortcuts button should be visible
-    await expect(
-      comfyPage.page.getByRole('button', { name: /Manage Shortcuts/i })
-    ).toBeVisible()
+    await bottomPanel.keyboardShortcutsButton.click()
 
-    // Click manage shortcuts button
-    await comfyPage.page
-      .getByRole('button', { name: /Manage Shortcuts/i })
-      .click()
+    await expect(bottomPanel.shortcuts.manageButton).toBeVisible()
+    await bottomPanel.shortcuts.manageButton.click()
 
-    // Settings dialog should open with keybinding tab
     await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
-
-    // Should show keybinding settings (check for keybinding-related content)
     await expect(
       comfyPage.page.getByRole('option', { name: 'Keybinding' })
     ).toBeVisible()

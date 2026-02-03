@@ -9,6 +9,7 @@
         'tree-leaf': props.node.leaf
       }
     ]"
+    :data-testid="`tree-node-${node.key}`"
   >
     <div class="node-content">
       <span class="node-label">

@@ -57,6 +57,41 @@
       />
     </div>
 
+    <div class="flex shrink-0 items-center gap-2">
+      <label class="text-xs text-muted-foreground">
+        {{ $t('imageCrop.ratio') }}
+      </label>
+      <Select v-model="selectedRatio">
+        <SelectTrigger class="h-7 w-24 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem v-for="key in ratioKeys" :key="key" :value="key">
+            {{ key === 'custom' ? $t('imageCrop.custom') : key }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+      <Button
+        size="icon"
+        :variant="isLockEnabled ? 'primary' : 'secondary'"
+        class="size-7"
+        :aria-label="
+          isLockEnabled
+            ? $t('imageCrop.unlockRatio')
+            : $t('imageCrop.lockRatio')
+        "
+        @click="isLockEnabled = !isLockEnabled"
+      >
+        <i
+          :class="
+            isLockEnabled
+              ? 'icon-[lucide--lock] size-3.5'
+              : 'icon-[lucide--lock-open] size-3.5'
+          "
+        />
+      </Button>
+    </div>
+
     <WidgetBoundingBox v-model="modelValue" class="shrink-0" />
   </div>
 </template>
@@ -65,7 +100,13 @@
 import { useTemplateRef } from 'vue'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
-import { useImageCrop } from '@/composables/useImageCrop'
+import Button from '@/components/ui/button/Button.vue'
+import Select from '@/components/ui/select/Select.vue'
+import SelectContent from '@/components/ui/select/SelectContent.vue'
+import SelectItem from '@/components/ui/select/SelectItem.vue'
+import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
+import SelectValue from '@/components/ui/select/SelectValue.vue'
+import { ASPECT_RATIOS, useImageCrop } from '@/composables/useImageCrop'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Bounds } from '@/renderer/core/layout/types'
 
@@ -80,9 +121,14 @@ const modelValue = defineModel<Bounds>({
 const imageEl = useTemplateRef<HTMLImageElement>('imageEl')
 const containerEl = useTemplateRef<HTMLDivElement>('containerEl')
 
+const ratioKeys = Object.keys(ASPECT_RATIOS)
+
 const {
   imageUrl,
   isLoading,
+
+  selectedRatio,
+  isLockEnabled,
 
   cropBoxStyle,
   cropImageStyle,

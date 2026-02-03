@@ -2,6 +2,7 @@
   <SidebarTabTemplate
     :title="$t('sideToolbar.workflows')"
     v-bind="$attrs"
+    data-testid="workflows-sidebar"
     class="workflows-sidebar-tab"
   >
     <template #tool-buttons>
