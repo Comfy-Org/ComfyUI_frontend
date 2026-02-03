@@ -41,6 +41,10 @@ const {
   isShownOnParents?: boolean
 }>()
 
+const emit = defineEmits<{
+  'update:widgetValue': [value: string | number | boolean | object]
+}>()
+
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
@@ -83,10 +87,7 @@ const widgetValue = computed({
     return widget.value
   },
   set: (newValue: string | number | boolean | object) => {
-    // eslint-disable-next-line vue/no-mutating-props
-    widget.value = newValue
-    widget.callback?.(newValue)
-    canvasStore.canvas?.setDirty(true, true)
+    emit('update:widgetValue', newValue)
   }
 })
 
