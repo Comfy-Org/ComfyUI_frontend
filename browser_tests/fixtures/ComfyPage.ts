@@ -44,7 +44,7 @@ class ComfyPropertiesPanel {
   readonly searchBox: Locator
 
   constructor(readonly page: Page) {
-    this.root = page.getByTestId('properties-panel')
+    this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder('Search...')
   }
@@ -205,7 +205,7 @@ export class ComfyPage {
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.runButton = page
-      .getByTestId('queue-button')
+      .getByTestId(TestIds.topbar.queueButton)
       .getByRole('button', { name: 'Run' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
 

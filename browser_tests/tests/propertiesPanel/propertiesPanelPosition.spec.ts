@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../../fixtures/ComfyPage'
+import { TestIds } from '../../fixtures/selectors'
 
 test.describe('Properties panel position', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -15,7 +16,9 @@ test.describe('Properties panel position', () => {
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'left')
     await comfyPage.nextFrame()
 
-    const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
+    const propertiesPanel = comfyPage.page.getByTestId(
+      TestIds.propertiesPanel.root
+    )
     const sidebar = comfyPage.page.locator('.side-bar-panel').first()
 
     await expect(propertiesPanel).toBeVisible()
@@ -39,7 +42,9 @@ test.describe('Properties panel position', () => {
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
     await comfyPage.nextFrame()
 
-    const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
+    const propertiesPanel = comfyPage.page.getByTestId(
+      TestIds.propertiesPanel.root
+    )
     const sidebar = comfyPage.page.locator('.side-bar-panel').first()
 
     await expect(propertiesPanel).toBeVisible()
@@ -60,7 +65,9 @@ test.describe('Properties panel position', () => {
   test('close button icon updates based on sidebar location', async ({
     comfyPage
   }) => {
-    const propertiesPanel = comfyPage.page.getByTestId('properties-panel')
+    const propertiesPanel = comfyPage.page.getByTestId(
+      TestIds.propertiesPanel.root
+    )
 
     // When sidebar is on the left, panel is on the right
     await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'left')

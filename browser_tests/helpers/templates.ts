@@ -6,13 +6,14 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '../../src/platform/workflow/templates/types/template'
+import { TestIds } from '../fixtures/selectors'
 
 export class ComfyTemplates {
   readonly content: Locator
   readonly allTemplateCards: Locator
 
   constructor(readonly page: Page) {
-    this.content = page.getByTestId('template-workflows-content')
+    this.content = page.getByTestId(TestIds.templates.content)
     this.allTemplateCards = page.locator('[data-testid^="template-workflow-"]')
   }
 
@@ -26,7 +27,9 @@ export class ComfyTemplates {
   }
 
   async loadTemplate(id: string) {
-    const templateCard = this.content.getByTestId(`template-workflow-${id}`)
+    const templateCard = this.content.getByTestId(
+      TestIds.templates.workflowCard(id)
+    )
     await templateCard.scrollIntoViewIfNeeded()
     await templateCard.getByRole('img').click()
   }

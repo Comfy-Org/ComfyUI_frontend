@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
@@ -19,7 +20,9 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
     'Can toggle link visibility',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      const button = comfyPage.page.getByTestId('toggle-link-visibility-button')
+      const button = comfyPage.page.getByTestId(
+        TestIds.canvas.toggleLinkVisibilityButton
+      )
       await button.click()
       await comfyPage.nextFrame()
       await expect(comfyPage.canvas).toHaveScreenshot(
@@ -46,7 +49,9 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
   test('Toggle minimap button is clickable and has correct test id', async ({
     comfyPage
   }) => {
-    const minimapButton = comfyPage.page.getByTestId('toggle-minimap-button')
+    const minimapButton = comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    )
     await expect(minimapButton).toBeVisible()
     await expect(minimapButton).toBeEnabled()
 

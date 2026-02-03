@@ -3,6 +3,7 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { TestIds } from './selectors'
 import { VueNodeFixture } from './utils/vueNodeFixtures'
 
 export class VueNodeHelpers {
@@ -159,8 +160,8 @@ export class VueNodeHelpers {
   getInputNumberControls(widget: Locator) {
     return {
       input: widget.locator('input'),
-      decrementButton: widget.getByTestId('decrement'),
-      incrementButton: widget.getByTestId('increment')
+      decrementButton: widget.getByTestId(TestIds.widgets.decrement),
+      incrementButton: widget.getByTestId(TestIds.widgets.increment)
     }
   }
 
@@ -170,7 +171,7 @@ export class VueNodeHelpers {
    */
   async enterSubgraph(nodeId?: string): Promise<void> {
     const locator = nodeId ? this.getNodeLocator(nodeId) : this.page
-    const editButton = locator.getByTestId('subgraph-enter-button')
+    const editButton = locator.getByTestId(TestIds.widgets.subgraphEnterButton)
     await editButton.click()
   }
 }

@@ -1,5 +1,7 @@
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import { expect } from '@playwright/test'
+
+import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { TestIds } from '../fixtures/selectors'
 
 test.describe(
   'Mobile Baseline Snapshots',
@@ -30,7 +32,9 @@ test.describe(
         'mobile-settings-dialog.png',
         {
           mask: [
-            comfyPage.settingDialog.root.getByTestId('current-user-indicator')
+            comfyPage.settingDialog.root.getByTestId(
+              TestIds.user.currentUserIndicator
+            )
           ]
         }
       )

@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '../../../../fixtures/ComfyPage'
+import { TestIds } from '../../../../fixtures/selectors'
 
 test.describe('Vue Nodes Renaming', () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -46,7 +47,9 @@ test.describe('Vue Nodes Renaming', () => {
     if (!nodeBbox) throw new Error('Node not found')
     await loadCheckpointNode.dblclick()
 
-    const editingTitleInput = comfyPage.page.getByTestId('node-title-input')
+    const editingTitleInput = comfyPage.page.getByTestId(
+      TestIds.node.titleInput
+    )
     await expect(editingTitleInput).not.toBeVisible()
   })
 })

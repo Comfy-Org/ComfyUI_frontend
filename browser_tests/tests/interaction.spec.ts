@@ -8,6 +8,7 @@ import {
 } from '../fixtures/ComfyPage'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
+import { TestIds } from '../fixtures/selectors'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
@@ -854,7 +855,9 @@ test.describe('Viewport settings', () => {
     // Screenshot the canvas element
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
 
-    const toggleButton = comfyPage.page.getByTestId('toggle-minimap-button')
+    const toggleButton = comfyPage.page.getByTestId(
+      TestIds.canvas.toggleMinimapButton
+    )
     await toggleButton.click()
     await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
 
