@@ -2895,7 +2895,7 @@
     "editSecret": "Edit Secret",
     "noSecrets": "No secrets stored. Add your first API key to get started.",
     "name": "Name",
-    "namePlaceholder": "e.g., My HuggingFace Token",
+    "namePlaceholder": "e.g., My API Key",
     "provider": "Provider",
     "providerHint": "Optional. Selecting a provider enables automatic token usage.",
     "secretValue": "Secret Value",

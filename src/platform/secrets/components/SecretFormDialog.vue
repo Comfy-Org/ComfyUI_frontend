@@ -9,20 +9,6 @@
   >
     <form class="flex flex-col gap-4" @submit.prevent="handleSubmit">
       <div class="flex flex-col gap-1">
-        <label for="secret-name" class="text-sm font-medium">
-          {{ $t('secrets.name') }}
-        </label>
-        <InputText
-          id="secret-name"
-          v-model="form.name"
-          :placeholder="$t('secrets.namePlaceholder')"
-          :class="{ 'p-invalid': errors.name }"
-          autofocus
-        />
-        <small v-if="errors.name" class="text-red-500">{{ errors.name }}</small>
-      </div>
-
-      <div class="flex flex-col gap-1">
         <label for="secret-provider" class="text-sm font-medium">
           {{ $t('secrets.provider') }}
         </label>
@@ -44,6 +30,19 @@
         <small v-if="errors.provider" class="text-red-500">
           {{ errors.provider }}
         </small>
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="secret-name" class="text-sm font-medium">
+          {{ $t('secrets.name') }}
+        </label>
+        <InputText
+          id="secret-name"
+          v-model="form.name"
+          :placeholder="$t('secrets.namePlaceholder')"
+          :class="{ 'p-invalid': errors.name }"
+        />
+        <small v-if="errors.name" class="text-red-500">{{ errors.name }}</small>
       </div>
 
       <div class="flex flex-col gap-1">
@@ -75,9 +74,9 @@
         </small>
       </div>
 
-      <Message v-if="apiError" severity="error" :closable="false">
+      <span v-if="apiError" class="text-sm text-destructive">
         {{ apiError }}
-      </Message>
+      </span>
 
       <div class="flex justify-end gap-2 pt-2">
         <Button variant="secondary" type="button" @click="visible = false">
@@ -94,7 +93,6 @@
 <script setup lang="ts">
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
 import Password from 'primevue/password'
 
 import Button from '@/components/ui/button/Button.vue'
