@@ -107,7 +107,6 @@ test.describe('Menu', { tag: '@ui' }, () => {
       // Checkmark should be invisible initially (panel is hidden)
       await expect(checkmark).toHaveClass(/invisible/)
 
-      // Click Bottom Panel to toggle it on
       await bottomPanelItem.click()
 
       // Verify menu is still visible after clicking
