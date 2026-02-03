@@ -459,7 +459,7 @@ export const useDialogService = () => {
   function showLayoutDialog<C extends Component>(options: {
     key: string
     component: C
-    props: ComponentAttrs<C> & { onClose: () => void }
+    props: ComponentAttrs<C>
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
