@@ -49,22 +49,26 @@ export function upsertEntry(
     [draftKey]: { ...meta, path }
   }
 
-  const order = touchOrder(index.order, draftKey)
+  const touchedOrder = touchOrder(index.order, draftKey)
   const evicted: string[] = []
 
-  while (order.length > effectiveLimit) {
-    const oldest = order.shift()
+  let evictCount = 0
+  while (touchedOrder.length - evictCount > effectiveLimit) {
+    const oldest = touchedOrder[evictCount]
     if (oldest && oldest !== draftKey) {
       delete entries[oldest]
       evicted.push(oldest)
     }
+    evictCount++
   }
+
+  const finalOrder = touchedOrder.slice(evictCount)
 
   return {
     index: {
       v: 2,
       updatedAt: Date.now(),
-      order,
+      order: finalOrder,
       entries
     },
     evicted
