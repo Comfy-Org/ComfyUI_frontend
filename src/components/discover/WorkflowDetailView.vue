@@ -163,6 +163,7 @@ import WorkflowPreviewCanvas from '@/components/discover/WorkflowPreviewCanvas.v
 import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
+import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AlgoliaWorkflowTemplate } from '@/types/discoverTypes'
 
@@ -229,8 +230,9 @@ async function handleMakeCopy() {
       openSource: 'template'
     })
 
-    // Close the sidebar to show the new workflow
+    // Close overlay panels to show the new workflow
     useSidebarTabStore().activeSidebarTabId = null
+    useHomePanelStore().closePanel()
 
     emit('makeCopy', workflow)
   } catch (error) {
