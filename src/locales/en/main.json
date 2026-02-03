@@ -20,6 +20,7 @@
       "author": "Comfy Org",
       "runWorkflow": "Run Workflow",
       "makeCopy": "Make a Copy",
+      "openInHub": "Open in Hub",
       "appMode": "App Mode",
       "workflowPreview": "Workflow Preview",
       "previewError": "Failed to load preview",
@@ -44,6 +45,7 @@
       "badgeCreator": "Creator profile",
       "badgeOpenSource": "Open-source friendly",
       "badgeTemplates": "Workflow templates",
+      "openInHub": "Open in Hub",
       "noResults": "No workflows found for this creator",
       "noResultsHint": "Try a different search or check back later."
     },

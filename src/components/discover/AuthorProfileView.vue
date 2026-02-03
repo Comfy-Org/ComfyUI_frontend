@@ -32,6 +32,10 @@
               <h1 class="truncate text-3xl font-semibold text-base-foreground">
                 {{ authorName }}
               </h1>
+              <Button variant="secondary" size="md" @click="openHubProfile">
+                <i class="icon-[lucide--external-link] size-4" />
+                {{ $t('discover.author.openInHub') }}
+              </Button>
               <div
                 class="flex items-center gap-2 rounded-full border border-border-subtle bg-comfy-menu-bg px-3 py-1 text-xs text-base-foreground/80"
               >
@@ -303,6 +307,8 @@ const searchQuery = ref('')
 const currentPage = ref(0)
 const hoveredTemplate = ref<string | null>(null)
 
+const hubProfileUrl = 'https://pr-2289.testenvs.comfy.org/profile/Comfy%20Org'
+
 const authorAvatar = computed(
   () => authorAvatarUrl ?? '/assets/images/comfy-logo-single.svg'
 )
@@ -317,6 +323,10 @@ const formattedCopies = computed(() =>
 const totalWorkflows = computed(() => results.value?.totalHits ?? 0)
 
 const authorFacetFilters = computed(() => [[`author_name:${authorName}`]])
+
+function openHubProfile() {
+  window.location.assign(hubProfileUrl)
+}
 
 async function performSearch() {
   await search({

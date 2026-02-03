@@ -258,7 +258,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
@@ -270,7 +269,6 @@ import MultiSelect from '@/components/input/MultiSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useWorkflowTemplateSearch } from '@/composables/discover/useWorkflowTemplateSearch'
 import type { AlgoliaWorkflowTemplate } from '@/types/discoverTypes'
-import { authorNameToSlug } from '@/utils/authorProfileUtil'
 
 const { search, isLoading, results } = useWorkflowTemplateSearch()
 
@@ -278,7 +276,6 @@ const searchQuery = ref('')
 const currentPage = ref(0)
 const hoveredTemplate = ref<string | null>(null)
 const selectedWorkflow = ref<AlgoliaWorkflowTemplate | null>(null)
-const router = useRouter()
 
 const selectedTags = ref<Array<{ name: string; value: string }>>([])
 const selectedModels = ref<Array<{ name: string; value: string }>>([])
@@ -352,13 +349,19 @@ function handleTemplateClick(template: AlgoliaWorkflowTemplate) {
 
 function handleAuthorClick(template: AlgoliaWorkflowTemplate) {
   if (!template.author_name) return
-  const slug = authorNameToSlug(template.author_name)
-  void router.push({ name: 'AuthorProfileView', params: { slug } })
+  window.open(
+    `https://comfy-hub.vercel.app/profile/${encodeURIComponent(
+      template.author_name
+    )}`,
+    '_blank'
+  )
 }
 
 function handleAuthorSelected(author: { name: string; avatarUrl?: string }) {
-  const slug = authorNameToSlug(author.name)
-  void router.push({ name: 'AuthorProfileView', params: { slug } })
+  window.open(
+    `https://comfy-hub.vercel.app/profile/${encodeURIComponent(author.name)}`,
+    '_blank'
+  )
 }
 
 function handleRunWorkflow(_workflow: AlgoliaWorkflowTemplate) {

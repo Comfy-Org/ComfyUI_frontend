@@ -12,17 +12,13 @@
         {{ workflow.title }}
       </h1>
       <div class="flex items-center gap-2">
-        <Button variant="secondary" size="md" @click="handleMakeCopy">
+        <Button variant="primary" size="md" @click="handleMakeCopy">
           <i class="icon-[lucide--copy]" />
           {{ $t('discover.detail.makeCopy') }}
         </Button>
-        <Button variant="secondary" size="md" @click="handleAppMode">
-          <i class="icon-[lucide--layout-template]" />
-          {{ $t('discover.detail.appMode') }}
-        </Button>
-        <Button variant="primary" size="md" @click="handleRunWorkflow">
-          <i class="icon-[lucide--play]" />
-          {{ $t('discover.detail.runWorkflow') }}
+        <Button variant="secondary" size="md" @click="openHubWorkflow">
+          <i class="icon-[lucide--external-link] size-4" />
+          {{ $t('discover.detail.openInHub') }}
         </Button>
       </div>
     </div>
@@ -30,10 +26,7 @@
     <!-- Two-column layout -->
     <div class="flex flex-1 overflow-hidden">
       <!-- Left column: Workflow info -->
-      <div
-        v-if="!showLinearPlaceholder"
-        class="flex w-80 shrink-0 flex-col border-r border-interface-stroke"
-      >
+      <div class="flex w-80 shrink-0 flex-col border-r border-interface-stroke">
         <div class="flex-1 space-y-5 overflow-y-auto p-4">
           <!-- Thumbnail -->
           <div
@@ -162,29 +155,14 @@
 
       <!-- Right column: Workflow preview -->
       <div class="min-h-0 min-w-0 flex-1">
-        <div
-          v-if="showLinearPlaceholder"
-          class="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"
-        >
-          <i class="icon-[lucide--panels-top-left] size-10 opacity-60" />
-          <div class="text-base font-medium text-base-foreground">
-            {{ $t('g.comingSoon') }}
-          </div>
-          <div class="text-sm text-muted-foreground">
-            {{ $t('linearMode.linearMode') }}
-          </div>
-          <div class="text-sm text-muted-foreground">
-            {{ $t('g.appModePlaceholderDescription') }}
-          </div>
-        </div>
-        <WorkflowPreviewCanvas v-else :workflow-url="workflow.workflow_url" />
+        <WorkflowPreviewCanvas :workflow-url="workflow.workflow_url" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SquareChip from '@/components/chip/SquareChip.vue'
@@ -193,19 +171,13 @@ import WorkflowPreviewCanvas from '@/components/discover/WorkflowPreviewCanvas.v
 import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
-import { useCommandStore } from '@/stores/commandStore'
 import { cn } from '@/utils/tailwindUtil'
 
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AlgoliaWorkflowTemplate } from '@/types/discoverTypes'
 
 const { t } = useI18n()
-const commandStore = useCommandStore()
-const canvasStore = useCanvasStore()
-const showLinearPlaceholder = ref(false)
-
 const { workflow } = defineProps<{
   workflow: AlgoliaWorkflowTemplate
 }>()
@@ -213,8 +185,6 @@ const { workflow } = defineProps<{
 const emit = defineEmits<{
   back: []
   makeCopy: [workflow: AlgoliaWorkflowTemplate]
-  appMode: [workflow: AlgoliaWorkflowTemplate]
-  authorSelected: [author: { name: string; avatarUrl?: string }]
 }>()
 
 const hasAuthor = computed(() => !!workflow.author_name)
@@ -226,6 +196,8 @@ const authorName = computed(
 const authorAvatar = computed(
   () => workflow.author_avatar_url ?? '/assets/images/comfy-logo-single.svg'
 )
+
+const hubWorkflowBaseUrl = 'https://comfy-hub.vercel.app/workflows'
 
 const runCount = computed(() => workflow.run_count ?? 1_234)
 const viewCount = computed(() => workflow.view_count ?? 5_678)
@@ -241,51 +213,21 @@ function formatCount(count: number): string {
   return count.toString()
 }
 
-function handleRunWorkflow() {
-  useToastStore().add({
-    severity: 'info',
-    summary: t('g.comingSoon'),
-    detail: t('discover.detail.runWorkflowNotImplemented'),
-    life: 3000
-  })
-}
-
 const handleAuthorClick = () => {
   if (!workflow.author_name) return
-  emit('authorSelected', {
-    name: workflow.author_name,
-    avatarUrl: workflow.author_avatar_url ?? undefined
-  })
+  window.open(
+    `https://comfy-hub.vercel.app/profile/${encodeURIComponent(
+      workflow.author_name
+    )}`,
+    '_blank'
+  )
 }
 
-type WorkflowPayload = Record<string, unknown>
-
-const setLinearModeInWorkflowData = (workflowData: unknown) => {
-  if (
-    !workflowData ||
-    typeof workflowData !== 'object' ||
-    Array.isArray(workflowData)
-  ) {
-    return workflowData
-  }
-
-  const data = workflowData as WorkflowPayload
-  const extraValue = data.extra
-  const extra =
-    extraValue && typeof extraValue === 'object' && !Array.isArray(extraValue)
-      ? (extraValue as WorkflowPayload)
-      : {}
-
-  return {
-    ...data,
-    extra: {
-      ...extra,
-      linearMode: true
-    }
-  }
+const openHubWorkflow = () => {
+  window.open(`${hubWorkflowBaseUrl}/${workflow.objectID}`, '_blank')
 }
 
-const loadWorkflowFromUrl = async (options: { enableLinearMode?: boolean }) => {
+const loadWorkflowFromUrl = async () => {
   if (!workflow.workflow_url) return false
 
   // Check that app canvas and graph are initialized
@@ -300,23 +242,13 @@ const loadWorkflowFromUrl = async (options: { enableLinearMode?: boolean }) => {
       throw new Error(`Failed to fetch workflow: ${response.status}`)
     }
     const workflowData = await response.json()
-    const graphData = options.enableLinearMode
-      ? setLinearModeInWorkflowData(workflowData)
-      : workflowData
-
-    await app.loadGraphData(graphData, true, true, workflow.title, {
+    await app.loadGraphData(workflowData, true, true, workflow.title, {
       openSource: 'template'
     })
 
     // Close overlay panels to show the new workflow
     useSidebarTabStore().activeSidebarTabId = null
     useHomePanelStore().closePanel()
-
-    if (options.enableLinearMode && !canvasStore.linearMode) {
-      commandStore.execute('Comfy.ToggleLinear', {
-        metadata: { source: 'appMode' }
-      })
-    }
 
     return true
   } catch (error) {
@@ -328,14 +260,9 @@ const loadWorkflowFromUrl = async (options: { enableLinearMode?: boolean }) => {
 }
 
 async function handleMakeCopy() {
-  const didLoad = await loadWorkflowFromUrl({})
+  const didLoad = await loadWorkflowFromUrl()
   if (didLoad) {
     emit('makeCopy', workflow)
   }
-}
-
-async function handleAppMode() {
-  showLinearPlaceholder.value = true
-  emit('appMode', workflow)
 }
 </script>
