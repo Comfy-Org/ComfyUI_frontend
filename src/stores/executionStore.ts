@@ -46,6 +46,12 @@ interface QueuedPrompt {
   workflow?: ComfyWorkflow
 }
 
+export type WorkflowExecutionResult = {
+  state: 'completed' | 'error'
+  timestamp: number
+  promptId: string
+}
+
 const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
   const node = graph.getNodeById(id)
   if (node?.isSubgraphNode()) return node.subgraph
@@ -124,6 +130,20 @@ export const useExecutionStore = defineStore('execution', () => {
   const promptIdToWorkflowId = ref<Map<string, string>>(new Map())
 
   const initializingPromptIds = ref<Set<string>>(new Set())
+
+  /**
+   * Map of workflow ID to last execution result for UI state display.
+   */
+  const lastExecutionResultByWorkflowId = ref<
+    Map<string, WorkflowExecutionResult>
+  >(new Map())
+
+  function clearWorkflowExecutionResult(workflowId: string) {
+    if (!lastExecutionResultByWorkflowId.value.has(workflowId)) return
+    const next = new Map(lastExecutionResultByWorkflowId.value)
+    next.delete(workflowId)
+    lastExecutionResultByWorkflowId.value = next
+  }
 
   const mergeExecutionProgressStates = (
     currentState: NodeProgressState | undefined,
@@ -313,12 +333,22 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
+    const pid = e.detail.prompt_id
+    const wid = promptIdToWorkflowId.value.get(pid)
+    if (wid) {
+      const next = new Map(lastExecutionResultByWorkflowId.value)
+      next.set(wid, {
+        state: 'completed',
+        timestamp: Date.now(),
+        promptId: pid
+      })
+      lastExecutionResultByWorkflowId.value = next
+    }
     if (isCloud && activePromptId.value) {
       useTelemetry()?.trackExecutionSuccess({
         jobId: activePromptId.value
       })
     }
-    const pid = e.detail.prompt_id
     resetExecutionState(pid)
   }
 
@@ -387,17 +417,28 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
+    const pid = e.detail.prompt_id
+    const wid = promptIdToWorkflowId.value.get(pid)
+    if (wid) {
+      const next = new Map(lastExecutionResultByWorkflowId.value)
+      next.set(wid, {
+        state: 'error',
+        timestamp: Date.now(),
+        promptId: pid
+      })
+      lastExecutionResultByWorkflowId.value = next
+    }
     lastExecutionError.value = e.detail
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
+        jobId: pid,
         nodeId: String(e.detail.node_id),
         nodeType: e.detail.node_type,
         error: e.detail.exception_message
       })
     }
-    clearInitializationByPromptId(e.detail.prompt_id)
-    resetExecutionState(e.detail.prompt_id)
+    clearInitializationByPromptId(pid)
+    resetExecutionState(pid)
   }
 
   /**
@@ -677,6 +718,9 @@ export const useExecutionStore = defineStore('execution', () => {
     promptIdToWorkflowId,
     // Node error lookup helpers
     getNodeErrors,
-    slotHasError
+    slotHasError,
+    // Workflow execution result tracking
+    lastExecutionResultByWorkflowId,
+    clearWorkflowExecutionResult
   }
 })
