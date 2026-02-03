@@ -124,7 +124,12 @@
     </div>
     <Button
       variant="textonly"
-      class="w-full h-12 rounded-b-2xl -mt-5 pt-7 pb-2 -z-1 text-xs"
+      :class="
+        cn(
+          'w-full h-12 rounded-b-2xl -mt-5 pt-7 pb-2 -z-1 text-xs',
+          hasAnyError && 'hover:bg-destructive-background-hover'
+        )
+      "
       as-child
     >
       <button
