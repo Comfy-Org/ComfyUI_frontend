@@ -46,7 +46,7 @@ function onChange(
 }
 
 export const useSettingStore = defineStore('setting', () => {
-  const settingValues = ref<Record<string, any>>({})
+  const settingValues = ref<Record<string, unknown>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
 
   const {
@@ -118,7 +118,9 @@ export const useSettingStore = defineStore('setting', () => {
    */
   function get<K extends keyof Settings>(key: K): Settings[K] {
     // Clone the value when returning to prevent external mutations
-    return _.cloneDeep(settingValues.value[key] ?? getDefaultValue(key))
+    const storedValue = settingValues.value[key] as Settings[K] | undefined
+    const value = storedValue ?? getDefaultValue(key)
+    return _.cloneDeep(value) as Settings[K]
   }
 
   /**

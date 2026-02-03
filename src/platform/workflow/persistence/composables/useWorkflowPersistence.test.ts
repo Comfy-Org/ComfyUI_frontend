@@ -191,7 +191,7 @@ describe('useWorkflowPersistence', () => {
 
     const drafts = JSON.parse(
       localStorage.getItem('Comfy.Workflow.Drafts') ?? '{}'
-    ) as Record<string, any>
+    ) as Record<string, unknown>
 
     expect(Object.keys(drafts).length).toBe(32)
     expect(drafts['workflows/Draft0.json']).toBeUndefined()

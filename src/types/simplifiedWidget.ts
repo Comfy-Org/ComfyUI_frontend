@@ -39,7 +39,7 @@ export type SafeControlWidget = {
 
 export interface SimplifiedWidget<
   T extends WidgetValue = WidgetValue,
-  O = Record<string, any>
+  O = Record<string, unknown>
 > {
   /** Display name of the widget */
   name: string
@@ -68,7 +68,7 @@ export interface SimplifiedWidget<
   nodeType?: string
 
   /** Optional serialization method for custom value handling */
-  serializeValue?: () => any
+  serializeValue?: () => unknown
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
@@ -78,7 +78,7 @@ export interface SimplifiedWidget<
 
 export interface SimplifiedControlWidget<
   T extends WidgetValue = WidgetValue,
-  O = Record<string, any>
+  O = Record<string, unknown>
 > extends SimplifiedWidget<T, O> {
   controlWidget: SafeControlWidget
 }

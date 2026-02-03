@@ -5,6 +5,7 @@ import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
 export interface IWidgetOptions<TValues = unknown[]> {
+  [key: string]: unknown
   on?: string
   off?: string
   max?: number

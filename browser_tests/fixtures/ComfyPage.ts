@@ -1,4 +1,9 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
+import type {
+  APIRequestContext,
+  Locator,
+  Page,
+  TestInfo
+} from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
 import * as fs from 'fs'
@@ -229,7 +234,7 @@ export class ComfyPage {
     return await this.page.evaluate(() => {
       return (
         window['app']?.graph?.nodes?.filter(
-          (node: any) => node.is_selected === true
+          (node: LGraphNode) => node.is_selected === true
         ).length || 0
       )
     })
@@ -285,7 +290,7 @@ export class ComfyPage {
     return await resp.json()
   }
 
-  async setupSettings(settings: Record<string, any>) {
+  async setupSettings(settings: Record<string, unknown>) {
     const resp = await this.request.post(
       `${this.url}/api/devtools/set_settings`,
       {
@@ -408,7 +413,7 @@ export class ComfyPage {
     )
   }
 
-  async setSetting(settingId: string, settingValue: any) {
+  async setSetting(settingId: string, settingValue: unknown) {
     return await this.page.evaluate(
       async ({ id, value }) => {
         await window['app'].extensionManager.setting.set(id, value)
@@ -1213,7 +1218,7 @@ export class ComfyPage {
    * @param options Optional screenshot options (defaults to page screenshot)
    */
   async debugAttachScreenshot(
-    testInfo: any,
+    testInfo: TestInfo,
     name: string,
     options?: {
       fullPage?: boolean

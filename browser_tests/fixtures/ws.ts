@@ -1,7 +1,11 @@
 import { test as base } from '@playwright/test'
 
+interface TestWindow extends Window {
+  __ws__?: Record<string, WebSocket>
+}
+
 export const webSocketFixture = base.extend<{
-  ws: { trigger(data: any, url?: string): Promise<void> }
+  ws: { trigger(data: unknown, url?: string): Promise<void> }
 }>({
   ws: [
     async ({ page }, use) => {
@@ -10,7 +14,9 @@ export const webSocketFixture = base.extend<{
         await page.evaluate(function () {
           // Create a wrapper for WebSocket that stores them globally
           // so we can look it up to trigger messages
-          const store: Record<string, WebSocket> = ((window as any).__ws__ = {})
+          const store: Record<string, WebSocket> = ((
+            window as TestWindow
+          ).__ws__ = {})
           window.WebSocket = class extends window.WebSocket {
             constructor(
               ...rest: ConstructorParameters<typeof window.WebSocket>
@@ -34,7 +40,18 @@ export const webSocketFixture = base.extend<{
                 u.pathname = '/'
                 url = u.toString() + 'ws'
               }
-              const ws: WebSocket = (window as any).__ws__[url]
+              const wsStore = (window as TestWindow).__ws__
+              if (!wsStore) {
+                throw new Error(
+                  'TestWindow.__ws__ is not initialized. The WebSocket fixture may not have been properly set up.'
+                )
+              }
+              const ws = wsStore[url]
+              if (!ws) {
+                throw new Error(
+                  `WebSocket not found for URL: ${url}. Available URLs: ${Object.keys(wsStore).join(', ')}`
+                )
+              }
               ws.dispatchEvent(
                 new MessageEvent('message', {
                   data

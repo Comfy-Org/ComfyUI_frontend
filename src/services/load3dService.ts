@@ -16,7 +16,7 @@ interface Load3DNode extends LGraphNode {
   syncLoad3dConfig?: () => void
 }
 
-const viewerInstances = new Map<NodeId, any>()
+const viewerInstances = new Map<NodeId, ReturnType<typeof useLoad3dViewer>>()
 
 export class Load3dService {
   private static instance: Load3dService
@@ -63,12 +63,14 @@ export class Load3dService {
     }
   }
 
-  getOrCreateViewer(node: LGraphNode) {
-    if (!viewerInstances.has(node.id)) {
-      viewerInstances.set(node.id, useLoad3dViewer(node))
+  getOrCreateViewer(node: LGraphNode): ReturnType<typeof useLoad3dViewer> {
+    let viewer = viewerInstances.get(node.id)
+    if (!viewer) {
+      viewer = useLoad3dViewer(node)
+      viewerInstances.set(node.id, viewer)
     }
 
-    return viewerInstances.get(node.id)
+    return viewer
   }
 
   removeViewer(node: LGraphNode) {
@@ -185,6 +187,7 @@ export class Load3dService {
 
   async handleViewerClose(node: LGraphNode) {
     const viewer = useLoad3dService().getOrCreateViewer(node)
+    if (!viewer) return
 
     if (viewer.needApplyChanges.value) {
       await viewer.applyChanges()

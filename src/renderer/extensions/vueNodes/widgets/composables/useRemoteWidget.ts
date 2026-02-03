@@ -32,7 +32,7 @@ async function getAuthHeaders() {
   return {}
 }
 
-const dataCache = new Map<string, CacheEntry<any>>()
+const dataCache = new Map<string, CacheEntry<unknown>>()
 
 const createCacheKey = (config: RemoteWidgetConfig): string => {
   const { route, query_params = {}, refresh = 0 } = config
@@ -128,9 +128,9 @@ export function useRemoteWidget<
     return !isLoaded && isInitialized(dataCache.get(cacheKey))
   }
 
-  const onFirstLoad = (data: T[]) => {
+  const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
-    widget.value = data[0]
+    widget.value = Array.isArray(data) ? data[0] : data
     widget.callback?.(widget.value)
     node.graph?.setDirtyCanvas(true)
   }
@@ -138,13 +138,16 @@ export function useRemoteWidget<
   const fetchValue = async () => {
     const entry = dataCache.get(cacheKey)
 
-    if (isFailed(entry)) return entry!.data
+    if (isFailed(entry)) return entry!.data as T
 
     const isValid =
       isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
-    if (isValid || isBackingOff(entry) || isFetching(entry)) return entry!.data
+    if (isValid || isBackingOff(entry) || isFetching(entry))
+      return entry!.data as T
 
-    const currentEntry: CacheEntry<T> = entry || { data: defaultValue }
+    const currentEntry: CacheEntry<T> = (entry as
+      | CacheEntry<T>
+      | undefined) || { data: defaultValue }
     dataCache.set(cacheKey, currentEntry)
 
     try {

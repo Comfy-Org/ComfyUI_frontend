@@ -158,7 +158,7 @@ export const Queued: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -217,7 +217,7 @@ export const QueuedParallel: Story = {
             prompt_id: 'p2'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -258,7 +258,7 @@ export const Running: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -303,7 +303,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },
@@ -360,7 +360,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
             prompt_id: 'p2'
           }
         }
-      } as any
+      }
 
       return { args: { ...args, jobId } }
     },

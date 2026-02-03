@@ -57,7 +57,8 @@ provide(
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    return props.widget.options?.values?.[0] || ''
+    const values = props.widget.options?.values as string[] | undefined
+    return values?.[0] || ''
   }
 })
 
@@ -73,7 +74,9 @@ const combinedProps = computed(() => ({
 }))
 
 const getAssetData = () => {
-  const nodeType = props.widget.options?.nodeType ?? props.nodeType
+  const nodeType = (props.widget.options?.nodeType ?? props.nodeType) as
+    | string
+    | undefined
   if (props.isAssetMode && nodeType) {
     return useAssetWidgetData(toRef(nodeType))
   }
@@ -116,7 +119,9 @@ const selectedSet = ref<Set<string>>(new Set())
  * returns undefined/null, or throws an error.
  */
 function getDisplayLabel(value: string): string {
-  const getOptionLabel = props.widget.options?.getOptionLabel
+  const getOptionLabel = props.widget.options?.getOptionLabel as
+    | ((value?: string | null) => string)
+    | undefined
   if (!getOptionLabel) return value
 
   try {
@@ -281,7 +286,7 @@ const mediaPlaceholder = computed(() => {
   const options = props.widget.options
 
   if (options?.placeholder) {
-    return options.placeholder
+    return options.placeholder as string
   }
 
   switch (props.assetKind) {
