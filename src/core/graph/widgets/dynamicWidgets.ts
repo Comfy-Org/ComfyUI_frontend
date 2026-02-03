@@ -557,7 +557,7 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       if (!autogrowGroup) return
       if (app.configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
-      if (iscon && linf) {
+      if (iscon) {
         if (swappingConnection || !linf) return
         autogrowInputConnected(slot, this)
       } else {

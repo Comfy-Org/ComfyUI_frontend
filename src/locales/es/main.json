@@ -22,6 +22,7 @@
     },
     "assetCollection": "Colección de activos",
     "assets": "Recursos",
+    "baseModel": "Modelo base",
     "baseModels": "Modelos base",
     "browseAssets": "Explorar recursos",
     "byType": "Por tipo",
@@ -127,6 +128,7 @@
     "selectProjects": "Seleccionar proyectos",
     "sortAZ": "A-Z",
     "sortBy": "Ordenar por",
+    "sortDefault": "Predeterminado",
     "sortPopular": "Popular",
     "sortRecent": "Reciente",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "Acerca de los sitios no incluidos en la lista blanca"
     },
     "deleteAccount": {
-      "cancel": "Cancelar",
-      "confirm": "Eliminar cuenta",
-      "confirmMessage": "¿Estás seguro de que deseas eliminar tu cuenta? Esta acción no se puede deshacer y eliminará permanentemente todos tus datos.",
-      "confirmTitle": "Eliminar cuenta",
-      "deleteAccount": "Eliminar cuenta",
-      "success": "Cuenta eliminada",
-      "successDetail": "Tu cuenta ha sido eliminada exitosamente."
+      "contactSupport": "Para eliminar tu cuenta, por favor contacta a {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "El inicio de sesión fue cancelado. Por favor, inténtalo de nuevo.",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "SALIDA_CLIP_VISION",
+    "COLOR": "COLOR",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +746,7 @@
     "deleteImage": "Eliminar imagen",
     "deprecated": "DEPR",
     "description": "Descripción",
+    "devOnly": "DEV",
     "devices": "Dispositivos",
     "disableAll": "Deshabilitar todo",
     "disableSelected": "Deshabilitar seleccionados",
@@ -1154,11 +1152,11 @@
     "helpFix": "Ayuda a Solucionar Esto"
   },
   "linearMode": {
-    "beta": "Beta - Enviar comentarios",
+    "beta": "Modo App Beta - Enviar comentarios",
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
     "graphMode": "Modo gráfico",
-    "linearMode": "Modo simple",
+    "linearMode": "Modo App",
     "rerun": "Volver a ejecutar",
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:"
@@ -1300,6 +1298,28 @@
     "disabledNodesWontUpdate": "Los nodos deshabilitados no se actualizarán",
     "discoverCommunityContent": "Descubre paquetes de nodos, extensiones y más creados por la comunidad...",
     "downloads": "Descargas",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Aún no has instalado ninguna extensión.",
+        "title": "No hay extensiones instaladas"
+      },
+      "conflicting": {
+        "message": "Todas tus extensiones son compatibles.",
+        "title": "No se detectaron conflictos"
+      },
+      "missing": {
+        "message": "Todos los nodos requeridos están instalados.",
+        "title": "No hay nodos faltantes"
+      },
+      "updateAvailable": {
+        "message": "Todas tus extensiones están actualizadas.",
+        "title": "Todo actualizado"
+      },
+      "workflow": {
+        "message": "Este flujo de trabajo no utiliza ningún nodo de extensión.",
+        "title": "Sin extensiones en el flujo de trabajo"
+      }
+    },
     "enablePackToChangeVersion": "Habilita este paquete para cambiar versiones",
     "errorConnecting": "Error al conectar con el Registro de Nodos Comfy.",
     "extensionsSuccessfullyInstalled": "¡Extensión(es) instalada(s) exitosamente y lista(s) para usar!",
@@ -1321,6 +1341,7 @@
     "installingDependencies": "Instalando dependencias...",
     "lastUpdated": "Última Actualización",
     "latestVersion": "Última",
+    "legacyManagerSearchTip": "¿Buscas ComfyUI-Manager? Puedes habilitar la interfaz de administrador heredada iniciando ComfyUI con el parámetro --enable-manager-legacy-ui.",
     "legacyManagerUI": "Usar UI antigua",
     "legacyManagerUIDescription": "Para usar la UI antigua del Manager, inicia ComfyUI con --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "El menú del administrador antiguo no está disponible en esta versión de ComfyUI. Por favor, utiliza el nuevo menú del administrador en su lugar.",
@@ -1627,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
     "Toggle Queue Panel V2": "Alternar panel de cola V2",
     "Toggle Search Box": "Alternar caja de búsqueda",
-    "Toggle Simple Mode": "Alternar modo simple",
+    "Toggle App Mode": "Alternar modo App",
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
     "Toggle View Controls Bottom Panel": "Alternar panel inferior de controles de vista",
@@ -1685,6 +1706,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1785,6 +1807,16 @@
     "render": "Error de renderizado del nodo",
     "slots": "Error de ranuras del nodo",
     "widgets": "Error de widgets del nodo"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Ocultar nodos obsoletos",
+    "hideDeprecatedDescription": "Oculta los nodos marcados como obsoletos a menos que se habiliten explícitamente",
+    "hideDevOnly": "Ocultar nodos solo para desarrolladores",
+    "hideDevOnlyDescription": "Oculta los nodos marcados como solo para desarrolladores a menos que el modo desarrollador esté habilitado",
+    "hideExperimental": "Ocultar nodos experimentales",
+    "hideExperimentalDescription": "Oculta los nodos marcados como experimentales a menos que se habiliten explícitamente",
+    "hideSubgraph": "Ocultar nodos de subgráfica",
+    "hideSubgraphDescription": "Oculta temporalmente los nodos de subgráfica de la biblioteca de nodos y la búsqueda"
   },
   "nodeHelpPage": {
     "documentationPage": "página de documentación",
@@ -2264,6 +2296,7 @@
       "filterBy": "Filtrar por",
       "filterCurrentWorkflow": "Flujo de trabajo actual",
       "filterJobs": "Filtrar trabajos",
+      "inlineTotalLabel": "Total",
       "interruptAll": "Interrumpir todos los trabajos en ejecución",
       "jobQueue": "Cola de trabajos",
       "jobsCompleted": "{count} trabajo completado | {count} trabajos completados",
@@ -2310,6 +2343,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Nombre del subgrafo",
+    "cannotDeleteGlobal": "No se pueden eliminar los blueprints instalados",
     "confirmDelete": "Esta acción eliminará permanentemente el subgrafo de tu biblioteca",
     "confirmDeleteTitle": "¿Eliminar subgrafo?",
     "hidden": "Parámetros ocultos/anidados",
@@ -2501,6 +2535,9 @@
     "title": "Comienza con una Plantilla",
     "useCaseFilter": "Tareas",
     "useCasesSelected": "{count} casos de uso"
+  },
+  "templates": {
+    "logoProviderSeparator": " y "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "No se puede crear el subgrafo",

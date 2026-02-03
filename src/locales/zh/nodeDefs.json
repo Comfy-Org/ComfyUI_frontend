@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "将颜色转换为RGB整数值。",
+    "display_name": "颜色转RGB整数",
+    "inputs": {
+      "color": {
+        "name": "颜色"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb整数",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "组合约束 [2]",
     "inputs": {
@@ -3385,6 +3400,142 @@
       },
       "2": {
         "name": "帧率",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "根据文本提示修改现有图像",
+    "display_name": "Grok 图像编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "要生成的编辑图像数量"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于生成图像的文本提示"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "使用 Grok 根据文本提示生成图像",
+    "display_name": "Grok 图像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "number_of_images": {
+        "name": "number_of_images",
+        "tooltip": "要生成的图像数量"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于生成图像的文本提示"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "根据文本提示编辑现有视频。",
+    "display_name": "Grok 视频编辑",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "所需视频的文本描述。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "最大支持时长为 8.7 秒，文件大小为 50MB。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "根据提示或图像生成视频",
+    "display_name": "Grok 视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "输出视频的宽高比。"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "输出视频的时长（秒）。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "model"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "所需视频的文本描述。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "输出视频的分辨率。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于确定节点是否应重新运行的种子；无论种子如何，实际结果都是非确定性的。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10862,6 +11013,25 @@
       }
     }
   },
+  "RecraftCreateStyleNode": {
+    "description": "从参考图像创建自定义风格。上传1-5张图片作为风格参考。所有图片的总大小限制为5MB。",
+    "display_name": "Recraft创建风格",
+    "inputs": {
+      "images": {
+        "name": "图片"
+      },
+      "style": {
+        "name": "风格",
+        "tooltip": "生成图像的基础风格。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "风格ID",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftCreativeUpscaleNode": {
     "description": "同步放大图像。\n使用“创意放大”工具增强给定的光栅图像，提升分辨率，重点优化细节和人脸。",
     "display_name": "Recraft 创意放大图像",
@@ -15120,6 +15290,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "根据图像和可选提示生成视频。",
+    "display_name": "Vidu Q3 图像转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "用作生成视频起始帧的图像。"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于视频生成的可选文本提示（最多2000字符）。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "根据文本提示生成视频。",
+    "display_name": "Vidu Q3 文本转视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于视频生成的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于视频生成的文本描述，最大长度为2000字符。"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "通过生成额外帧来扩展已有视频。",
+    "display_name": "Vidu 视频扩展",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于视频扩展的模型。"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "用于扩展视频的可选文本提示（最多2000字符）。"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "要扩展的源视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "从图像和可选提示生成视频",
     "display_name": "Vidu 图像转视频生成",
@@ -15154,6 +15437,49 @@
       "seed": {
         "name": "随机种",
         "tooltip": "视频生成的种子值（0 表示随机）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "生成包含多个关键帧过渡的视频。",
+    "display_name": "Vidu 多帧视频生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "关键帧过渡数量（2-9）。"
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "起始帧图像。宽高比需在1:4到4:1之间。"
       }
     },
     "outputs": {

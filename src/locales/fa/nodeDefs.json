@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "تبدیل یک رنگ به مقدار صحیح RGB.",
+    "display_name": "تبدیل رنگ به مقدار صحیح RGB",
+    "inputs": {
+      "color": {
+        "name": "رنگ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مقدار صحیح RGB",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "ترکیب هوک‌ها [۲]",
     "inputs": {
@@ -3385,6 +3400,142 @@
       },
       "2": {
         "name": "نرخ فریم",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "ویرایش یک تصویر موجود بر اساس یک متن راهنما",
+    "display_name": "ویرایش تصویر Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "number_of_images": {
+        "name": "تعداد تصاویر",
+        "tooltip": "تعداد تصاویر ویرایش‌شده برای تولید"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "تولید تصویر با استفاده از Grok بر اساس یک متن راهنما",
+    "display_name": "تصویر Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "number_of_images": {
+        "name": "تعداد تصاویر",
+        "tooltip": "تعداد تصاویر برای تولید"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر استفاده می‌شود"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "ویرایش یک ویدیوی موجود بر اساس یک متن راهنما.",
+    "display_name": "ویرایش ویدیو Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی از ویدیوی مورد نظر."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "حداکثر مدت زمان پشتیبانی‌شده ۸.۷ ثانیه و حجم فایل ۵۰ مگابایت است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "تولید ویدیو از یک راهنما یا تصویر",
+    "display_name": "ویدیو Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد",
+        "tooltip": "نسبت ابعاد ویدیوی خروجی."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان",
+        "tooltip": "مدت زمان ویدیوی خروجی بر حسب ثانیه."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "توضیح متنی از ویدیوی مورد نظر."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح ویدیوی خروجی."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10862,6 +11013,25 @@
       }
     }
   },
+  "RecraftCreateStyleNode": {
+    "description": "ایجاد یک استایل سفارشی از تصاویر مرجع. ۱ تا ۵ تصویر را برای استفاده به عنوان مرجع استایل بارگذاری کنید. مجموع حجم تمام تصاویر حداکثر ۵ مگابایت است.",
+    "display_name": "ایجاد استایل سفارشی Recraft",
+    "inputs": {
+      "images": {
+        "name": "تصاویر"
+      },
+      "style": {
+        "name": "استایل",
+        "tooltip": "استایل پایه تصاویر تولید شده."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه استایل",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftCreativeUpscaleNode": {
     "description": "بزرگ‌نمایی تصویر به صورت همزمان.\nیک تصویر شطرنجی را با ابزار «بزرگ‌نمایی خلاقانه» بهبود می‌بخشد و وضوح را با تمرکز بر جزئیات کوچک و چهره‌ها افزایش می‌دهد.",
     "display_name": "بزرگ‌نمایی خلاقانه تصویر Recraft",
@@ -15120,6 +15290,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "تولید یک ویدیو از یک تصویر و یک پرامپت اختیاری.",
+    "display_name": "تولید ویدیو از تصویر Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویری که به عنوان فریم ابتدایی ویدیوی تولیدشده استفاده می‌شود."
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "یک پرامپت متنی اختیاری برای تولید ویدیو (حداکثر ۲۰۰۰ کاراکتر)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "تولید ویدیو از یک پرامپت متنی.",
+    "display_name": "تولید ویدیو از متن Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای تولید ویدیو استفاده می‌شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_audio": {
+        "name": "صدا"
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح متنی برای تولید ویدیو، با حداکثر طول ۲۰۰۰ کاراکتر."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "افزایش طول یک ویدیوی موجود با تولید فریم‌های اضافی.",
+    "display_name": "افزایش طول ویدیو Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "end_frame": {
+        "name": "فریم پایانی"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که برای افزایش طول ویدیو استفاده می‌شود."
+      },
+      "model_duration": {
+        "name": "مدت زمان"
+      },
+      "model_resolution": {
+        "name": "رزولوشن"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "یک پرامپت متنی اختیاری برای ویدیوی افزایش‌یافته (حداکثر ۲۰۰۰ کاراکتر)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی منبع برای افزایش طول."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "تولید ویدیو از یک تصویر و متن اختیاری",
     "display_name": "تولید ویدیو از تصویر با Vidu",
@@ -15154,6 +15437,49 @@
       "seed": {
         "name": "بذر",
         "tooltip": "بذر برای تولید ویدیو (۰ برای تصادفی)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "تولید ویدیو با چندین انتقال کلیدی بین فریم‌ها.",
+    "display_name": "تولید ویدیو چندفریمی Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "frames": {
+        "name": "فریم‌ها",
+        "tooltip": "تعداد انتقال‌های کلیدی بین فریم‌ها (۲ تا ۹)."
+      },
+      "frames_duration1": {
+        "name": "مدت زمان ۱"
+      },
+      "frames_duration2": {
+        "name": "مدت زمان ۲"
+      },
+      "frames_prompt1": {
+        "name": "پرامپت ۱"
+      },
+      "frames_prompt2": {
+        "name": "پرامپت ۲"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "resolution": {
+        "name": "رزولوشن"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "تصویر شروع",
+        "tooltip": "تصویر فریم ابتدایی. نسبت تصویر باید بین ۱:۴ تا ۴:۱ باشد."
       }
     },
     "outputs": {

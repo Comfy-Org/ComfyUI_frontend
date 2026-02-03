@@ -114,7 +114,7 @@ export class PrimitiveNode extends LGraphNode {
         for (let i = 0; i < this.widgets_values.length; i++) {
           const w = this.widgets[i]
           if (w) {
-            w.value = this.widgets_values[i] as any
+            w.value = this.widgets_values[i]
           }
         }
       }
@@ -562,7 +562,7 @@ export function mergeIfValid(
 
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  async beforeRegisterNodeDef(nodeType, _nodeData, app) {
+  async beforeRegisterNodeDef(nodeType, _nodeData) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
       console.warn(

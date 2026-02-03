@@ -17,21 +17,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4.1.0
-        with:
-          version: 10
-
-      - name: Install Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '24.x'
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
 
       - name: Build project
         run: pnpm build
@@ -46,7 +35,7 @@ jobs:
           echo ${{ github.base_ref }} > ./temp/size/base.txt
 
       - name: Upload size data
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: size-data
           path: temp/size

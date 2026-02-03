@@ -1,7 +1,9 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { GlobalSubgraphData } from '@/scripts/api'
+import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -12,6 +14,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestingPinia } from '@pinia/testing'
 
 // Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
 vi.mock('@/platform/telemetry', () => ({
@@ -24,6 +27,7 @@ vi.mock('@/scripts/api', () => ({
     getUserData: vi.fn(),
     storeUserData: vi.fn(),
     listUserDataFullInfo: vi.fn(),
+    getGlobalSubgraphs: vi.fn(),
     apiURL: vi.fn(),
     addEventListener: vi.fn()
   }
@@ -59,7 +63,10 @@ const mockGraph = {
 
 describe('useSubgraphStore', () => {
   let store: ReturnType<typeof useSubgraphStore>
-  const mockFetch = async (filenames: Record<string, unknown>) => {
+  async function mockFetch(
+    filenames: Record<string, unknown>,
+    globalSubgraphs: Record<string, GlobalSubgraphData> = {}
+  ) {
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
       Object.keys(filenames).map((filename) => ({
         path: filename,
@@ -67,18 +74,18 @@ describe('useSubgraphStore', () => {
         size: 1 // size !== -1 for remote workflows
       }))
     )
-    vi.mocked(api).getUserData = vi.fn(
-      (f) =>
-        ({
-          status: 200,
-          text: () => JSON.stringify(filenames[f.slice(10)])
-        }) as any
+    vi.mocked(api).getUserData = vi.fn((f) =>
+      Promise.resolve({
+        status: 200,
+        text: () => Promise.resolve(JSON.stringify(filenames[f.slice(10)]))
+      } as Response)
     )
+    vi.mocked(api.getGlobalSubgraphs).mockResolvedValue(globalSubgraphs)
     return await store.fetchSubgraphs()
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSubgraphStore()
     vi.clearAllMocks()
   })
@@ -90,10 +97,18 @@ describe('useSubgraphStore', () => {
     const graph = subgraphNode.graph
     graph.add(subgraphNode)
     vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
-    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => ({
-      nodes: [subgraphNode.serialize()],
-      subgraphs: [subgraph.serialize() as any]
-    }))
+    vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {
+      const serializedSubgraph = {
+        ...subgraph.serialize(),
+        links: [],
+        groups: [],
+        version: 1
+      } as Partial<ExportedSubgraph> as ExportedSubgraph
+      return {
+        nodes: [subgraphNode.serialize()],
+        subgraphs: [serializedSubgraph]
+      }
+    })
     //mock saving of file
     vi.mocked(api.storeUserData).mockResolvedValue({
       status: 200,
@@ -113,7 +128,7 @@ describe('useSubgraphStore', () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(
       useNodeDefStore().nodeDefs.filter(
-        (d) => d.category == 'Subgraph Blueprints'
+        (d) => d.category === 'Subgraph Blueprints/User'
       )
     ).toHaveLength(1)
   })
@@ -130,5 +145,26 @@ describe('useSubgraphStore', () => {
       name: 'SubgraphBlueprint.test'
     } as ComfyNodeDefV1)
     expect(res).toBeTruthy()
+  })
+  it('should identify user blueprints as non-global', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    expect(store.isGlobalBlueprint('test')).toBe(false)
+  })
+  it('should identify global blueprints loaded from getGlobalSubgraphs', async () => {
+    await mockFetch(
+      {},
+      {
+        global_test: {
+          name: 'Global Test Blueprint',
+          info: { node_pack: 'comfy_essentials' },
+          data: JSON.stringify(mockGraph)
+        }
+      }
+    )
+    expect(store.isGlobalBlueprint('global_test')).toBe(true)
+  })
+  it('should return false for non-existent blueprints', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    expect(store.isGlobalBlueprint('nonexistent')).toBe(false)
   })
 })

@@ -23,15 +23,15 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     return !!this.widget
   }
 
-  #widget: WeakRef<IBaseWidget> | undefined
+  private _widgetRef: WeakRef<IBaseWidget> | undefined
 
   /** Internal use only; API is not finalised and may change at any time. */
   get _widget(): IBaseWidget | undefined {
-    return this.#widget?.deref()
+    return this._widgetRef?.deref()
   }
 
   set _widget(widget: IBaseWidget | undefined) {
-    this.#widget = widget ? new WeakRef(widget) : undefined
+    this._widgetRef = widget ? new WeakRef(widget) : undefined
   }
 
   get collapsedPos(): Readonly<Point> {
@@ -78,5 +78,13 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
     })
 
     ctx.textAlign = textAlign
+  }
+
+  override toJSON(): INodeInputSlot {
+    return {
+      ...super.toJSON(),
+      link: this.link,
+      widget: this.widget
+    }
   }
 }

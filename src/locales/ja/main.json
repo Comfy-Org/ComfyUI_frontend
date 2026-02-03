@@ -22,6 +22,7 @@
     },
     "assetCollection": "アセットコレクション",
     "assets": "アセット",
+    "baseModel": "ベースモデル",
     "baseModels": "ベースモデル",
     "browseAssets": "アセットを閲覧",
     "byType": "タイプ別",
@@ -127,6 +128,7 @@
     "selectProjects": "プロジェクトを選択",
     "sortAZ": "A-Z",
     "sortBy": "並び替え",
+    "sortDefault": "デフォルト",
     "sortPopular": "人気",
     "sortRecent": "最新",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "ホワイトリストに登録されていないサイトについて"
     },
     "deleteAccount": {
-      "cancel": "キャンセル",
-      "confirm": "アカウントを削除",
-      "confirmMessage": "本当にアカウントを削除しますか？この操作は元に戻せず、すべてのデータが完全に削除されます。",
-      "confirmTitle": "アカウントを削除",
-      "deleteAccount": "アカウントを削除",
-      "success": "アカウントが削除されました",
-      "successDetail": "アカウントは正常に削除されました。"
+      "contactSupport": "アカウントを削除するには、{email} までご連絡ください"
     },
     "errors": {
       "auth/cancelled-popup-request": "サインインがキャンセルされました。もう一度お試しください。",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
+    "COLOR": "カラー",
     "COMBO": "コンボ",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +746,7 @@
     "deleteImage": "画像を削除",
     "deprecated": "非推奨",
     "description": "説明",
+    "devOnly": "DEV",
     "devices": "デバイス",
     "disableAll": "すべて無効にする",
     "disableSelected": "選択したものを無効化",
@@ -1154,11 +1152,11 @@
     "helpFix": "これを修正するのを助ける"
   },
   "linearMode": {
-    "beta": "ベータ版 - フィードバックを送る",
+    "beta": "アプリモード ベータ版 - フィードバックを送る",
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
     "graphMode": "グラフモード",
-    "linearMode": "シンプルモード",
+    "linearMode": "アプリモード",
     "rerun": "再実行",
     "reuseParameters": "パラメータを再利用",
     "runCount": "実行回数："
@@ -1300,6 +1298,28 @@
     "disabledNodesWontUpdate": "無効なノードは更新されません",
     "discoverCommunityContent": "コミュニティが作成したノードパック、拡張機能などを探す...",
     "downloads": "ダウンロード",
+    "emptyState": {
+      "allInstalled": {
+        "message": "まだ拡張機能をインストールしていません。",
+        "title": "拡張機能がインストールされていません"
+      },
+      "conflicting": {
+        "message": "すべての拡張機能は互換性があります。",
+        "title": "競合は検出されませんでした"
+      },
+      "missing": {
+        "message": "必要なノードはすべてインストールされています。",
+        "title": "不足しているノードはありません"
+      },
+      "updateAvailable": {
+        "message": "すべての拡張機能は最新の状態です。",
+        "title": "すべて最新です"
+      },
+      "workflow": {
+        "message": "このワークフローでは拡張ノードが使用されていません。",
+        "title": "ワークフローに拡張機能がありません"
+      }
+    },
     "enablePackToChangeVersion": "このパックを有効にしてバージョンを変更してください",
     "errorConnecting": "Comfy Node Registryへの接続エラー。",
     "extensionsSuccessfullyInstalled": "拡張機能のインストールが完了し、使用可能になりました！",
@@ -1321,6 +1341,7 @@
     "installingDependencies": "依存関係をインストール中...",
     "lastUpdated": "最終更新日",
     "latestVersion": "最新",
+    "legacyManagerSearchTip": "ComfyUI-Managerをお探しですか？ComfyUIを--enable-manager-legacy-uiフラグ付きで起動すると、レガシーマネージャーUIを有効にできます。",
     "legacyManagerUI": "レガシーUIを使用する",
     "legacyManagerUIDescription": "レガシーManager UIを使用するには、--enable-manager-legacy-uiを付けてComfyUIを起動してください",
     "legacyMenuNotAvailable": "このバージョンのComfyUIでは、レガシーマネージャーメニューは利用できません。新しいマネージャーメニューを使用してください。",
@@ -1627,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "ログ下部パネルの切り替え",
     "Toggle Queue Panel V2": "キューパネルV2を切り替え",
     "Toggle Search Box": "検索ボックスの切り替え",
-    "Toggle Simple Mode": "シンプルモードを切り替え",
+    "Toggle App Mode": "アプリモードを切り替え",
     "Toggle Terminal Bottom Panel": "ターミナル下部パネルの切り替え",
     "Toggle Theme (Dark/Light)": "テーマを切り替え（ダーク/ライト）",
     "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
@@ -1685,6 +1706,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1785,6 +1807,16 @@
     "render": "ノードレンダリングエラー",
     "slots": "ノードスロットエラー",
     "widgets": "ノードウィジェットエラー"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "非推奨ノードを非表示",
+    "hideDeprecatedDescription": "明示的に有効化しない限り、非推奨としてマークされたノードを非表示にします",
+    "hideDevOnly": "開発者専用ノードを非表示",
+    "hideDevOnlyDescription": "開発者モードが有効でない限り、開発者専用ノードを非表示にします",
+    "hideExperimental": "実験的ノードを非表示",
+    "hideExperimentalDescription": "明示的に有効化しない限り、実験的としてマークされたノードを非表示にします",
+    "hideSubgraph": "サブグラフノードを一時的に非表示",
+    "hideSubgraphDescription": "ノードライブラリと検索からサブグラフノードを一時的に非表示にします"
   },
   "nodeHelpPage": {
     "documentationPage": "ドキュメントページ",
@@ -2264,6 +2296,7 @@
       "filterBy": "フィルター条件",
       "filterCurrentWorkflow": "現在のワークフロー",
       "filterJobs": "ジョブをフィルター",
+      "inlineTotalLabel": "合計",
       "interruptAll": "すべての実行中ジョブを中断",
       "jobQueue": "ジョブキュー",
       "jobsCompleted": "{count}件のジョブが完了",
@@ -2310,6 +2343,7 @@
   },
   "subgraphStore": {
     "blueprintName": "サブグラフ名",
+    "cannotDeleteGlobal": "インストール済みのブループリントは削除できません",
     "confirmDelete": "この操作により、ライブラリからサブグラフが完全に削除されます",
     "confirmDeleteTitle": "サブグラフを削除しますか？",
     "hidden": "非表示／ネストされたパラメータ",
@@ -2501,6 +2535,9 @@
     "title": "テンプレートを利用して開始",
     "useCaseFilter": "タスク",
     "useCasesSelected": "{count}件のユースケース"
+  },
+  "templates": {
+    "logoProviderSeparator": " ＆ "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "サブグラフを作成できません",

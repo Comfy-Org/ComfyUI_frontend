@@ -5,14 +5,14 @@ import {
 
 test.describe('Vue Integer Widget', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.setup()
   })
 
   test('should be disabled and not allow changing value when link connected to slot', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('vueNodes/linked-int-widget')
+    await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
     await comfyPage.vueNodes.waitForNodes()
 
     const seedWidget = comfyPage.vueNodes

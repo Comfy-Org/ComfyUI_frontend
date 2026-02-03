@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Convertir une couleur en une valeur entière RGB.",
+    "display_name": "Couleur vers RGB Int",
+    "inputs": {
+      "color": {
+        "name": "couleur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combiner Hooks [2]",
     "inputs": {
@@ -3380,6 +3395,142 @@
       },
       "2": {
         "name": "ips",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "Modifiez une image existante à partir d'une invite textuelle",
+    "display_name": "Grok Image Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "number_of_images": {
+        "name": "nombre d'images",
+        "tooltip": "Nombre d'images modifiées à générer"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "L'invite textuelle utilisée pour générer l'image"
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes, quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "Générez des images avec Grok à partir d'une invite textuelle",
+    "display_name": "Grok Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect"
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "number_of_images": {
+        "name": "nombre d'images",
+        "tooltip": "Nombre d'images à générer"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "L'invite textuelle utilisée pour générer l'image"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes, quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "Modifiez une vidéo existante à partir d'une invite textuelle.",
+    "display_name": "Grok Video Edit",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle de la vidéo souhaitée."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes, quelle que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "La durée maximale prise en charge est de 8,7 secondes et la taille du fichier de 50 Mo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "Générez une vidéo à partir d'une invite ou d'une image",
+    "display_name": "Grok Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapport d'aspect",
+        "tooltip": "Le rapport d'aspect de la vidéo générée."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "duration": {
+        "name": "durée",
+        "tooltip": "La durée de la vidéo générée en secondes."
+      },
+      "image": {
+        "name": "image"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle de la vidéo souhaitée."
+      },
+      "resolution": {
+        "name": "résolution",
+        "tooltip": "La résolution de la vidéo générée."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes, quelle que soit la graine."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10846,6 +10997,25 @@
       }
     }
   },
+  "RecraftCreateStyleNode": {
+    "description": "Créez un style personnalisé à partir d’images de référence. Téléchargez 1 à 5 images à utiliser comme références de style. La taille totale de toutes les images est limitée à 5 Mo.",
+    "display_name": "Créer un style Recraft",
+    "inputs": {
+      "images": {
+        "name": "images"
+      },
+      "style": {
+        "name": "style",
+        "tooltip": "Le style de base des images générées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftCreativeUpscaleNode": {
     "description": "Agrandit l'image de manière synchrone.\nAméliore une image matricielle donnée à l'aide de l'outil « creative upscale », augmentant la résolution avec un accent sur l'affinement des petits détails et des visages.",
     "display_name": "Recraft Creative Upscale Image",
@@ -15093,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Générez une vidéo à partir d’une image et d’une invite optionnelle.",
+    "display_name": "Génération d’image en vidéo Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Une image à utiliser comme première image de la vidéo générée."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de vidéo."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une invite textuelle optionnelle pour la génération de vidéo (max. 2000 caractères)."
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Générez une vidéo à partir d’une invite textuelle.",
+    "display_name": "Génération de vidéo à partir de texte Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de vidéo."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport d’aspect"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Description textuelle pour la génération de vidéo, longueur maximale de 2000 caractères."
+      },
+      "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Prolongez une vidéo existante en générant des images supplémentaires.",
+    "display_name": "Extension de vidéo Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "end_frame": {
+        "name": "image_finale"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour l’extension de la vidéo."
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Une invite textuelle optionnelle pour la vidéo étendue (max. 2000 caractères)."
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "La vidéo source à prolonger."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Générer une vidéo à partir d'une image et d'un éventuel prompt",
     "display_name": "Génération vidéo Vidu à partir d'image",
@@ -15127,6 +15410,49 @@
       "seed": {
         "name": "graine",
         "tooltip": "Graine pour la génération vidéo (0 pour aléatoire)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Générez une vidéo avec plusieurs transitions d’images clés.",
+    "display_name": "Génération de vidéo multi-images Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "frames": {
+        "name": "images",
+        "tooltip": "Nombre de transitions d’images clés (2-9)."
+      },
+      "frames_duration1": {
+        "name": "durée1"
+      },
+      "frames_duration2": {
+        "name": "durée2"
+      },
+      "frames_prompt1": {
+        "name": "invite1"
+      },
+      "frames_prompt2": {
+        "name": "invite2"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
+      },
+      "start_image": {
+        "name": "image_de_départ",
+        "tooltip": "L’image de départ. Le rapport d’aspect doit être compris entre 1:4 et 4:1."
       }
     },
     "outputs": {

@@ -22,6 +22,7 @@
     },
     "assetCollection": "Coleção de ativos",
     "assets": "Ativos",
+    "baseModel": "Modelo base",
     "baseModels": "Modelos base",
     "browseAssets": "Explorar Ativos",
     "byType": "Por tipo",
@@ -127,6 +128,7 @@
     "selectProjects": "Selecione Projetos",
     "sortAZ": "A-Z",
     "sortBy": "Ordenar por",
+    "sortDefault": "Padrão",
     "sortPopular": "Popular",
     "sortRecent": "Recentes",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "Sobre sites não permitidos"
     },
     "deleteAccount": {
-      "cancel": "Cancelar",
-      "confirm": "Excluir conta",
-      "confirmMessage": "Tem certeza de que deseja excluir sua conta? Esta ação não pode ser desfeita e removerá permanentemente todos os seus dados.",
-      "confirmTitle": "Excluir conta",
-      "deleteAccount": "Excluir conta",
-      "success": "Conta excluída",
-      "successDetail": "Sua conta foi excluída com sucesso."
+      "contactSupport": "Para excluir sua conta, entre em contato com {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "Login cancelado. Por favor, tente novamente.",
@@ -578,6 +574,7 @@
     "CLIP": "clip",
     "CLIP_VISION": "clip visão",
     "CLIP_VISION_OUTPUT": "saída de clip visão",
+    "COLOR": "COR",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +746,7 @@
     "deleteImage": "Excluir imagem",
     "deprecated": "OBSOLETO",
     "description": "Descrição",
+    "devOnly": "DEV",
     "devices": "Dispositivos",
     "disableAll": "Desativar tudo",
     "disableSelected": "Desativar selecionados",
@@ -1154,11 +1152,11 @@
     "helpFix": "Ajude a Corrigir Isto"
   },
   "linearMode": {
-    "beta": "Beta - Envie seu feedback",
+    "beta": "Modo App Beta - Envie seu feedback",
     "downloadAll": "Baixar tudo",
     "dragAndDropImage": "Arraste e solte uma imagem",
     "graphMode": "Modo Gráfico",
-    "linearMode": "Modo Simples",
+    "linearMode": "Modo App",
     "rerun": "Executar novamente",
     "reuseParameters": "Reutilizar parâmetros",
     "runCount": "Número de execuções:"
@@ -1300,6 +1298,28 @@
     "disabledNodesWontUpdate": "Nodes desativados não serão atualizados",
     "discoverCommunityContent": "Descubra Node Packs, Extensões e mais criados pela comunidade...",
     "downloads": "Downloads",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Você ainda não instalou nenhuma extensão.",
+        "title": "Nenhuma extensão instalada"
+      },
+      "conflicting": {
+        "message": "Todas as suas extensões são compatíveis.",
+        "title": "Nenhum conflito detectado"
+      },
+      "missing": {
+        "message": "Todos os nós necessários estão instalados.",
+        "title": "Nenhum nó ausente"
+      },
+      "updateAvailable": {
+        "message": "Todas as suas extensões estão atualizadas.",
+        "title": "Tudo atualizado"
+      },
+      "workflow": {
+        "message": "Este fluxo de trabalho não utiliza nenhum nó de extensão.",
+        "title": "Nenhuma extensão no fluxo de trabalho"
+      }
+    },
     "enablePackToChangeVersion": "Ative este pacote para alterar versões",
     "errorConnecting": "Erro ao conectar ao Registro de Nodes do Comfy.",
     "extensionsSuccessfullyInstalled": "Extensão(ões) instalada(s) com sucesso e pronta(s) para uso!",
@@ -1321,6 +1341,7 @@
     "installingDependencies": "Instalando dependências...",
     "lastUpdated": "Última Atualização",
     "latestVersion": "Mais Recente",
+    "legacyManagerSearchTip": "Procurando pelo ComfyUI-Manager? Você pode ativar a interface legada do gerenciador iniciando o ComfyUI com a flag --enable-manager-legacy-ui.",
     "legacyManagerUI": "Usar UI Legada",
     "legacyManagerUIDescription": "Para usar a UI Legada do Gerenciador, inicie o ComfyUI com --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "O menu do gerenciador legado não está disponível, usando o novo menu do gerenciador por padrão.",
@@ -1627,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "Alternar painel inferior de logs",
     "Toggle Queue Panel V2": "Alternar painel de fila V2",
     "Toggle Search Box": "Alternar caixa de pesquisa",
-    "Toggle Simple Mode": "Alternar Modo Simples",
+    "Toggle App Mode": "Alternar Modo App",
     "Toggle Terminal Bottom Panel": "Alternar painel inferior do terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Escuro/Claro)",
     "Toggle View Controls Bottom Panel": "Alternar painel inferior de controles de visualização",
@@ -1685,6 +1706,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1785,6 +1807,16 @@
     "render": "Erro de Renderização do Nó",
     "slots": "Erro de Slots do Nó",
     "widgets": "Erro de Widgets do Nó"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Ocultar nós obsoletos",
+    "hideDeprecatedDescription": "Oculta nós marcados como obsoletos, a menos que estejam explicitamente habilitados",
+    "hideDevOnly": "Ocultar nós apenas para desenvolvedores",
+    "hideDevOnlyDescription": "Oculta nós marcados como apenas para desenvolvedores, a menos que o modo de desenvolvedor esteja ativado",
+    "hideExperimental": "Ocultar nós experimentais",
+    "hideExperimentalDescription": "Oculta nós marcados como experimentais, a menos que estejam explicitamente habilitados",
+    "hideSubgraph": "Ocultar nós de subgrafo",
+    "hideSubgraphDescription": "Oculta temporariamente nós de subgrafo da biblioteca de nós e da busca"
   },
   "nodeHelpPage": {
     "documentationPage": "página de documentação",
@@ -2275,6 +2307,7 @@
       "filterBy": "Filtrar por",
       "filterCurrentWorkflow": "Workflow atual",
       "filterJobs": "Filtrar trabalhos",
+      "inlineTotalLabel": "Total",
       "interruptAll": "Interromper todos os trabalhos em execução",
       "jobQueue": "Fila de trabalhos",
       "jobsCompleted": "{count} trabalho concluído | {count} trabalhos concluídos",
@@ -2321,6 +2354,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Nome do subgrafo",
+    "cannotDeleteGlobal": "Não é possível excluir blueprints instalados",
     "confirmDelete": "Esta ação removerá permanentemente o blueprint da sua biblioteca",
     "confirmDeleteTitle": "Excluir blueprint?",
     "hidden": "Parâmetros ocultos/aninhados",
@@ -2512,6 +2546,9 @@
     "title": "Comece com um Modelo",
     "useCaseFilter": "Tarefas",
     "useCasesSelected": "{count} Casos de Uso"
+  },
+  "templates": {
+    "logoProviderSeparator": " & "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Não é possível criar subgrafo",

@@ -5,11 +5,11 @@ export class ComfyDialog<
 > extends EventTarget {
   element: T
   textElement!: HTMLElement
-  #buttons: HTMLButtonElement[] | null
+  private _buttons: HTMLButtonElement[] | null
 
   constructor(type = 'div', buttons: HTMLButtonElement[] | null = null) {
     super()
-    this.#buttons = buttons
+    this._buttons = buttons
     this.element = $el(type + '.comfy-modal', { parent: document.body }, [
       $el('div.comfy-modal-content', [
         $el('p', { $: (p) => (this.textElement = p) }),
@@ -20,7 +20,7 @@ export class ComfyDialog<
 
   createButtons() {
     return (
-      this.#buttons ?? [
+      this._buttons ?? [
         $el('button', {
           type: 'button',
           textContent: 'Close',
