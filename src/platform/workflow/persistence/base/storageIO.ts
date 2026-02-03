@@ -15,12 +15,16 @@ import { StorageKeys } from './storageKeys'
 /** Flag indicating if storage is available */
 let storageAvailable = true
 
-/** @knipIgnoreUsedByStackedPR Used by workflowPersistenceV2.ts (PR #3) */
+/**
+ * Returns whether storage operations are available.
+ */
 export function isStorageAvailable(): boolean {
   return storageAvailable
 }
 
-/** @knipIgnoreUsedByStackedPR Used by workflowPersistenceV2.ts (PR #3) */
+/**
+ * Marks storage as unavailable (e.g., after unrecoverable quota error).
+ */
 export function markStorageUnavailable(): void {
   storageAvailable = false
 }
