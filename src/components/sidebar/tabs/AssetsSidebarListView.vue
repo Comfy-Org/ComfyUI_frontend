@@ -179,7 +179,7 @@ const isQueuePanelV2Enabled = computed(() =>
 const hoveredJobId = ref<string | null>(null)
 const hoveredAssetId = ref<string | null>(null)
 const activeJobItems = computed(() =>
-  jobItems.value.filter((item) => isActiveJobState(item.state))
+  jobItems.value.filter((item) => isActiveJobState(item.state)).toReversed()
 )
 const hoveredJob = computed(() =>
   hoveredJobId.value
