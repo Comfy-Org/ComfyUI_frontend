@@ -155,5 +155,72 @@ describe('useCanvasInteractions', () => {
       expect(mockEvent.preventDefault).not.toHaveBeenCalled()
       expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
     })
+    it('should forward wheel events to canvas when capture element is NOT focused', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('legacy')
+
+      const captureElement = document.createElement('div')
+      captureElement.setAttribute('data-capture-wheel', 'true')
+      const textarea = document.createElement('textarea')
+      captureElement.appendChild(textarea)
+      document.body.appendChild(captureElement)
+
+      const { handleWheel } = useCanvasInteractions()
+      const mockEvent = createMockWheelEvent()
+      Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+
+      document.body.removeChild(captureElement)
+    })
+
+    it('should NOT forward wheel events when capture element IS focused', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('legacy')
+
+      const captureElement = document.createElement('div')
+      captureElement.setAttribute('data-capture-wheel', 'true')
+      const textarea = document.createElement('textarea')
+      captureElement.appendChild(textarea)
+      document.body.appendChild(captureElement)
+      textarea.focus()
+
+      const { handleWheel } = useCanvasInteractions()
+      const mockEvent = createMockWheelEvent()
+      Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).not.toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).not.toHaveBeenCalled()
+
+      document.body.removeChild(captureElement)
+    })
+
+    it('should forward ctrl+wheel to canvas when capture element IS focused in standard mode', () => {
+      const { get } = useSettingStore()
+      vi.mocked(get).mockReturnValue('standard')
+
+      const captureElement = document.createElement('div')
+      captureElement.setAttribute('data-capture-wheel', 'true')
+      const textarea = document.createElement('textarea')
+      captureElement.appendChild(textarea)
+      document.body.appendChild(captureElement)
+      textarea.focus()
+
+      const { handleWheel } = useCanvasInteractions()
+      const mockEvent = createMockWheelEvent(true)
+      Object.defineProperty(mockEvent, 'target', { value: textarea })
+
+      handleWheel(mockEvent)
+
+      expect(mockEvent.preventDefault).toHaveBeenCalled()
+      expect(mockEvent.stopPropagation).toHaveBeenCalled()
+
+      document.body.removeChild(captureElement)
+    })
   })
 })

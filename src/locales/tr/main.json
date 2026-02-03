@@ -22,6 +22,7 @@
     },
     "assetCollection": "Varlık koleksiyonu",
     "assets": "Varlıklar",
+    "baseModel": "Temel model",
     "baseModels": "Temel modeller",
     "browseAssets": "Varlıklara Göz At",
     "byType": "Türe göre",
@@ -127,6 +128,7 @@
     "selectProjects": "Projeleri Seçin",
     "sortAZ": "A-Z",
     "sortBy": "Sırala",
+    "sortDefault": "Varsayılan",
     "sortPopular": "Popüler",
     "sortRecent": "En yeni",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "Beyaz listede olmayan siteler hakkında"
     },
     "deleteAccount": {
-      "cancel": "İptal",
-      "confirm": "Hesabı Sil",
-      "confirmMessage": "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve tüm verilerinizi kalıcı olarak silecektir.",
-      "confirmTitle": "Hesabı Sil",
-      "deleteAccount": "Hesabı Sil",
-      "success": "Hesap Silindi",
-      "successDetail": "Hesabınız başarıyla silindi."
+      "contactSupport": "Hesabınızı silmek için lütfen {email} adresiyle iletişime geçin"
     },
     "errors": {
       "auth/cancelled-popup-request": "Giriş iptal edildi. Lütfen tekrar deneyin.",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_ÇIKTISI",
+    "COLOR": "RENK",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1301,6 +1298,28 @@
     "disabledNodesWontUpdate": "Devre dışı düğümler güncellenmeyecek",
     "discoverCommunityContent": "Topluluk tarafından yapılmış Düğüm Paketlerini, Uzantıları ve daha fazlasını keşfedin...",
     "downloads": "İndirmeler",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Henüz hiç eklenti yüklemediniz.",
+        "title": "Yüklü Eklenti Yok"
+      },
+      "conflicting": {
+        "message": "Tüm eklentileriniz uyumlu.",
+        "title": "Çakışma Tespit Edilmedi"
+      },
+      "missing": {
+        "message": "Gerekli tüm düğümler yüklü.",
+        "title": "Eksik Düğüm Yok"
+      },
+      "updateAvailable": {
+        "message": "Tüm eklentileriniz güncel.",
+        "title": "Hepsi Güncel"
+      },
+      "workflow": {
+        "message": "Bu iş akışı herhangi bir eklenti düğümü kullanmıyor.",
+        "title": "İş Akışında Eklenti Yok"
+      }
+    },
     "enablePackToChangeVersion": "Sürümleri değiştirmek için bu paketi etkinleştirin",
     "errorConnecting": "Comfy Düğüm Kayıt Defteri'ne bağlanırken hata oluştu.",
     "extensionsSuccessfullyInstalled": "Uzantı(lar) başarıyla yüklendi ve kullanıma hazır!",
@@ -1322,6 +1341,7 @@
     "installingDependencies": "Bağımlılıklar yükleniyor...",
     "lastUpdated": "Son Güncelleme",
     "latestVersion": "En Son",
+    "legacyManagerSearchTip": "ComfyUI-Manager'ı mı arıyorsunuz? Eski yönetici arayüzünü etkinleştirmek için ComfyUI'yi --enable-manager-legacy-ui bayrağı ile başlatabilirsiniz.",
     "legacyManagerUI": "Eski Arayüzü Kullan",
     "legacyManagerUIDescription": "Eski Yönetici Arayüzünü kullanmak için ComfyUI'yi --enable-manager-legacy-ui ile başlatın",
     "legacyMenuNotAvailable": "Eski yönetici menüsü mevcut değil, yeni yönetici menüsüne varsayılan olarak geçiliyor.",
@@ -1787,6 +1807,16 @@
     "render": "Düğüm Oluşturma Hatası",
     "slots": "Düğüm Slot Hatası",
     "widgets": "Düğüm Widget Hatası"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Kullanımdan Kaldırılan Düğümleri Gizle",
+    "hideDeprecatedDescription": "Açıkça etkinleştirilmedikçe kullanımdan kaldırılmış olarak işaretlenen düğümleri gizler",
+    "hideDevOnly": "Yalnızca Geliştirici Düğümlerini Gizle",
+    "hideDevOnlyDescription": "Geliştirici modu etkin değilse yalnızca geliştiriciye özel düğümleri gizler",
+    "hideExperimental": "Deneysel Düğümleri Gizle",
+    "hideExperimentalDescription": "Açıkça etkinleştirilmedikçe deneysel olarak işaretlenen düğümleri gizler",
+    "hideSubgraph": "Alt Grafik Düğümlerini Gizle",
+    "hideSubgraphDescription": "Alt grafik düğümlerini geçici olarak düğüm kütüphanesinden ve aramadan gizler"
   },
   "nodeHelpPage": {
     "documentationPage": "belgelendirme sayfası",
@@ -2505,6 +2535,9 @@
     "title": "Bir Şablonla Başlayın",
     "useCaseFilter": "Görevler",
     "useCasesSelected": "{count} Kullanım Senaryosu"
+  },
+  "templates": {
+    "logoProviderSeparator": " & "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Alt grafik oluşturulamıyor",

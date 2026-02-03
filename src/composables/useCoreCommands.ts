@@ -863,7 +863,7 @@ export function useCoreCommands(): ComfyCommand[] {
           userEmail: userEmail.value,
           userId: resolvedUserInfo.value?.id
         })
-        window.open(supportUrl, '_blank')
+        window.open(supportUrl, '_blank', 'noopener,noreferrer')
       }
     },
     {

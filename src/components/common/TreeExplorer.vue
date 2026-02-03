@@ -221,7 +221,7 @@ const wrapCommandWithErrorHandler = (
 ) => {
   return isAsync
     ? errorHandling.wrapWithErrorHandlingAsync(
-        command as (...args: any[]) => Promise<any>,
+        command as (event: MenuItemCommandEvent) => Promise<void>,
         menuTargetNode.value?.handleError
       )
     : errorHandling.wrapWithErrorHandling(
