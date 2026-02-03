@@ -151,9 +151,9 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
-  const shortcut = keybindingStore.getKeybindingByCommandId(
-    `Workspace.ToggleSidebarTab.${tab.id}`
-  )?.combo.toString()
+  const shortcut = keybindingStore
+    .getKeybindingByCommandId(`Workspace.ToggleSidebarTab.${tab.id}`)
+    ?.combo.toString()
   return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 }
 
