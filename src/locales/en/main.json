@@ -290,6 +290,7 @@
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
+    "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
     "failed": "Failed",
     "failedToInstall": "Failed to Install",
     "installError": "Install Error",
@@ -2850,5 +2851,15 @@
       "label": "Preview Version",
       "tooltip": "You are using a nightly version of ComfyUI. Please use the feedback button to share your thoughts about these features."
     }
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Hide Deprecated Nodes",
+    "hideDeprecatedDescription": "Hides nodes marked as deprecated unless explicitly enabled",
+    "hideExperimental": "Hide Experimental Nodes",
+    "hideExperimentalDescription": "Hides nodes marked as experimental unless explicitly enabled",
+    "hideDevOnly": "Hide Dev-Only Nodes",
+    "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
+    "hideSubgraph": "Hide Subgraph Nodes",
+    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search"
   }
 }
