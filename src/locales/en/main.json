@@ -1243,7 +1243,7 @@
     "Experimental: Enable AssetAPI": "Experimental: Enable AssetAPI",
     "Canvas Performance": "Canvas Performance",
     "Help Center": "Help Center",
-    "Toggle Simple Mode": "Toggle Simple Mode",
+    "Toggle App Mode": "Toggle App Mode",
     "Toggle Queue Panel V2": "Toggle Queue Panel V2",
     "Toggle Theme (Dark/Light)": "Toggle Theme (Dark/Light)",
     "Undo": "Undo",
@@ -2757,8 +2757,8 @@
     "message": "Switch back to Nodes 2.0 anytime from the main menu."
   },
   "linearMode": {
-    "linearMode": "Simple Mode",
-    "beta": "Simple Mode in Beta - Feedback",
+    "linearMode": "App Mode",
+    "beta": "App Mode in Beta - Feedback",
     "graphMode": "Graph Mode",
     "dragAndDropImage": "Click to browse or drag an image",
     "runCount": "Run count:",

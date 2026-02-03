@@ -1233,7 +1233,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
-      label: 'Toggle Simple Mode',
+      label: 'Toggle App Mode',
       function: (metadata?: Record<string, unknown>) => {
         const source =
           typeof metadata?.source === 'string' ? metadata.source : 'keybind'

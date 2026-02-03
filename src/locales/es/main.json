@@ -1152,11 +1152,11 @@
     "helpFix": "Ayuda a Solucionar Esto"
   },
   "linearMode": {
-    "beta": "Beta - Enviar comentarios",
+    "beta": "Modo App Beta - Enviar comentarios",
     "downloadAll": "Descargar todo",
     "dragAndDropImage": "Arrastra y suelta una imagen",
     "graphMode": "Modo gráfico",
-    "linearMode": "Modo simple",
+    "linearMode": "Modo App",
     "rerun": "Volver a ejecutar",
     "reuseParameters": "Reutilizar parámetros",
     "runCount": "Número de ejecuciones:"
@@ -1648,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "Alternar panel inferior de registros",
     "Toggle Queue Panel V2": "Alternar panel de cola V2",
     "Toggle Search Box": "Alternar caja de búsqueda",
-    "Toggle Simple Mode": "Alternar modo simple",
+    "Toggle App Mode": "Alternar modo App",
     "Toggle Terminal Bottom Panel": "Alternar panel inferior de terminal",
     "Toggle Theme (Dark/Light)": "Alternar tema (Oscuro/Claro)",
     "Toggle View Controls Bottom Panel": "Alternar panel inferior de controles de vista",
