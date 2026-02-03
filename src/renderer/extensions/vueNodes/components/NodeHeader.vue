@@ -42,7 +42,6 @@
           </Button>
         </div>
 
-        <div v-if="isSubgraphNode" class="icon-[comfy--workflow] size-4" />
         <div v-if="isApiNode" class="icon-[lucide--component] size-4" />
 
         <!-- Node Title -->
@@ -75,19 +74,6 @@
           class="size-5"
           data-testid="node-pin-indicator"
         />
-        <Button
-          v-if="isSubgraphNode"
-          v-tooltip.top="enterSubgraphTooltipConfig"
-          variant="textonly"
-          size="sm"
-          data-testid="subgraph-enter-button"
-          class="text-node-component-header h-5 px-0.5"
-          @click.stop="handleEnterSubgraph"
-          @dblclick.stop
-        >
-          <span>{{ $t('g.edit') }}</span>
-          <i class="icon-[lucide--scaling] size-5" />
-        </Button>
       </div>
     </div>
   </div>
@@ -107,11 +93,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { app } from '@/scripts/app'
-import {
-  getLocatorIdFromNodeData,
-  getNodeByLocatorId
-} from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -127,7 +108,6 @@ const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
 const emit = defineEmits<{
   collapse: []
   'update:title': [newTitle: string]
-  'enter-subgraph': []
 }>()
 
 // Error boundary implementation
@@ -153,10 +133,6 @@ const tooltipConfig = computed(() => {
   }
   const description = getNodeDescription.value
   return createTooltipConfig(description)
-})
-
-const enterSubgraphTooltipConfig = computed(() => {
-  return createTooltipConfig(st('enterSubgraph', 'Enter Subgraph'))
 })
 
 const resolveTitle = (info: VueNodeData | undefined) => {
@@ -269,22 +245,6 @@ const headerShapeClass = computed(() => {
   }
 })
 
-// Subgraph detection
-const isSubgraphNode = computed(() => {
-  if (!nodeData?.id) return false
-
-  // Get the underlying LiteGraph node
-  const graph = app.rootGraph
-  if (!graph) return false
-
-  const locatorId = getLocatorIdFromNodeData(nodeData)
-
-  const litegraphNode = getNodeByLocatorId(graph, locatorId)
-
-  // Use the official type guard method
-  return litegraphNode?.isSubgraphNode() ?? false
-})
-
 // Watch for external changes to the node title or type
 watch(
   () => [nodeData?.title, nodeData?.type] as const,
@@ -316,9 +276,5 @@ const handleTitleEdit = (newTitle: string) => {
 
 const handleTitleCancel = () => {
   isEditing.value = false
-}
-
-const handleEnterSubgraph = () => {
-  emit('enter-subgraph')
 }
 </script>
