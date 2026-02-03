@@ -260,6 +260,7 @@ export const zComfyNodeDef = z.object({
   description: z.string(),
   help: z.string().optional(),
   category: z.string(),
+  main_category: z.string().optional(),
   output_node: z.boolean(),
   python_module: z.string(),
   deprecated: z.boolean().optional(),

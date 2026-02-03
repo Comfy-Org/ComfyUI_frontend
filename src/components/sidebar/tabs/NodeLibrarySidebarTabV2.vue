@@ -175,6 +175,7 @@ const customSections = computed(() => {
 
 const renderedCustomSections = computed(() => {
   return customSections.value.map((section) => ({
+    title: section.title,
     root: fillNodeInfo(section.tree)
   }))
 })
