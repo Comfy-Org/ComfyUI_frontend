@@ -16,7 +16,6 @@ declare global {
  * Pushes events to the GTM dataLayer for GA4 and marketing integrations.
  *
  * Only implements events relevant to GTM/GA4 tracking.
- * Other methods are no-ops (not implemented since interface is optional).
  */
 export class GtmTelemetryProvider implements TelemetryProvider {
   private dataLayer: Record<string, unknown>[] = []
