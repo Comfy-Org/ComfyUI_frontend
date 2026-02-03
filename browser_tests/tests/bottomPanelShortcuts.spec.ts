@@ -147,9 +147,14 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
   test('should maintain panel state when switching to terminal', async ({
     comfyPage
   }) => {
-    const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
-    await logsTab.waitFor({ state: 'attached', timeout: 5000 })
+    // Terminal tabs load asynchronously via dynamic import - wait for registration
+    // Use expect().toPass() for auto-retry polling pattern
+    await expect(async () => {
+      const logsTab = comfyPage.page.getByRole('tab', { name: /Logs/i })
+      await expect(logsTab).toBeAttached()
+    }).toPass({ timeout: 10_000 })
 
+    // Open shortcuts panel
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
       .click()
@@ -158,11 +163,15 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
       comfyPage.page.locator('[id*="tab_shortcuts-essentials"]')
     ).toBeVisible()
 
+    // Switch to terminal panel
     await comfyPage.page
       .locator('button[aria-label*="Toggle Bottom Panel"]')
       .click()
-    await expect(logsTab).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('tab', { name: /Logs/i })
+    ).toBeVisible()
 
+    // Switch back to shortcuts panel - should remember essentials was active
     await comfyPage.page
       .locator('button[aria-label*="Keyboard Shortcuts"]')
       .click()
