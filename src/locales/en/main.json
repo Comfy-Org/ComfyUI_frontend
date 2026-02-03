@@ -62,7 +62,7 @@
       },
       "inviteByEmail": {
         "emailLabel": "Email Address",
-        "emailPlaceholder": "colleague@example.com",
+        "emailPlaceholder": "colleague{'@'}example.com",
         "roleLabel": "Permission Level",
         "roles": {
           "viewOnly": "View Only",
