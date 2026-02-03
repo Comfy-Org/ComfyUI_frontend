@@ -92,6 +92,7 @@
     "empty": "Empty",
     "noWorkflowsFound": "No workflows found.",
     "comingSoon": "Coming Soon",
+    "appModePlaceholderDescription": "Will show the workflow in app mode and you will be able to run it",
     "download": "Download",
     "downloadImage": "Download image",
     "downloadVideo": "Download video",

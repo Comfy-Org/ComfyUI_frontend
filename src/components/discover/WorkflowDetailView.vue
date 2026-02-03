@@ -30,7 +30,10 @@
     <!-- Two-column layout -->
     <div class="flex flex-1 overflow-hidden">
       <!-- Left column: Workflow info -->
-      <div class="flex w-80 shrink-0 flex-col border-r border-interface-stroke">
+      <div
+        v-if="!showLinearPlaceholder"
+        class="flex w-80 shrink-0 flex-col border-r border-interface-stroke"
+      >
         <div class="flex-1 space-y-5 overflow-y-auto p-4">
           <!-- Thumbnail -->
           <div
@@ -147,14 +150,29 @@
 
       <!-- Right column: Workflow preview -->
       <div class="min-h-0 min-w-0 flex-1">
-        <WorkflowPreviewCanvas :workflow-url="workflow.workflow_url" />
+        <div
+          v-if="showLinearPlaceholder"
+          class="flex h-full flex-col items-center justify-center gap-3 text-muted-foreground"
+        >
+          <i class="icon-[lucide--panels-top-left] size-10 opacity-60" />
+          <div class="text-base font-medium text-base-foreground">
+            {{ $t('g.comingSoon') }}
+          </div>
+          <div class="text-sm text-muted-foreground">
+            {{ $t('linearMode.linearMode') }}
+          </div>
+          <div class="text-sm text-muted-foreground">
+            {{ $t('g.appModePlaceholderDescription') }}
+          </div>
+        </div>
+        <WorkflowPreviewCanvas v-else :workflow-url="workflow.workflow_url" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SquareChip from '@/components/chip/SquareChip.vue'
@@ -163,12 +181,17 @@ import WorkflowPreviewCanvas from '@/components/discover/WorkflowPreviewCanvas.v
 import Button from '@/components/ui/button/Button.vue'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
+import { useCommandStore } from '@/stores/commandStore'
+
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useHomePanelStore } from '@/stores/workspace/homePanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AlgoliaWorkflowTemplate } from '@/types/discoverTypes'
 
 const { t } = useI18n()
+const commandStore = useCommandStore()
+const canvasStore = useCanvasStore()
+const showLinearPlaceholder = ref(false)
 
 const { workflow } = defineProps<{
   workflow: AlgoliaWorkflowTemplate
@@ -265,8 +288,10 @@ const loadWorkflowFromUrl = async (options: { enableLinearMode?: boolean }) => {
     useSidebarTabStore().activeSidebarTabId = null
     useHomePanelStore().closePanel()
 
-    if (options.enableLinearMode) {
-      useCanvasStore().linearMode = true
+    if (options.enableLinearMode && !canvasStore.linearMode) {
+      commandStore.execute('Comfy.ToggleLinear', {
+        metadata: { source: 'appMode' }
+      })
     }
 
     return true
@@ -286,9 +311,7 @@ async function handleMakeCopy() {
 }
 
 async function handleAppMode() {
-  const didLoad = await loadWorkflowFromUrl({ enableLinearMode: true })
-  if (didLoad) {
-    emit('appMode', workflow)
-  }
+  showLinearPlaceholder.value = true
+  emit('appMode', workflow)
 }
 </script>
