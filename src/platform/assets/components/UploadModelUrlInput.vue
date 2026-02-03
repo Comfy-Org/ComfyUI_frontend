@@ -55,15 +55,6 @@
         <p v-if="error" class="text-sm text-error">
           {{ error }}
         </p>
-        <p v-else-if="!flags.asyncModelUploadEnabled" class="text-foreground">
-          <i18n-t keypath="assetBrowser.maxFileSize" tag="span">
-            <template #size>
-              <span class="font-bold italic">{{
-                $t('assetBrowser.maxFileSizeValue')
-              }}</span>
-            </template>
-          </i18n-t>
-        </p>
       </div>
     </div>
 
