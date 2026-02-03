@@ -47,6 +47,7 @@
               boundingRect: [0, 0, 0, 0]
             }"
             :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :has-error="widget.hasError"
             :index="widget.slotMetadata.index"
             :socketless="widget.simplified.spec?.socketless"
             dot-only
@@ -60,7 +61,12 @@
           :widget="widget.simplified"
           :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
           :node-type="nodeType"
-          class="col-span-2"
+          :class="
+            cn(
+              'col-span-2',
+              widget.hasError && 'text-node-stroke-error font-bold'
+            )
+          "
           @update:model-value="widget.updateHandler"
         />
       </div>
@@ -95,6 +101,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -109,6 +116,7 @@ const { nodeData } = defineProps<NodeWidgetsProps>()
 const { shouldHandleNodePointerEvents, forwardEventToCanvas } =
   useCanvasInteractions()
 const { bringNodeToFront } = useNodeZIndex()
+const executionStore = useExecutionStore()
 
 function handleWidgetPointerEvent(event: PointerEvent) {
   if (shouldHandleNodePointerEvents.value) return
@@ -146,13 +154,14 @@ const { getWidgetTooltip, createTooltipConfig } = useNodeTooltips(
 const widgetValueStore = useWidgetValueStore()
 
 interface ProcessedWidget {
+  hasError: boolean
   name: string
-  type: string
-  vueComponent: Component
   simplified: SimplifiedWidget
-  value: WidgetValue
-  updateHandler: (value: WidgetValue) => void
   tooltipConfig: TooltipOptions
+  type: string
+  updateHandler: (value: WidgetValue) => void
+  value: WidgetValue
+  vueComponent: Component
   slotMetadata?: WidgetSlotMetadata
   hidden: boolean
   advanced: boolean
@@ -161,6 +170,7 @@ interface ProcessedWidget {
 
 const processedWidgets = computed((): ProcessedWidget[] => {
   if (!nodeData?.widgets) return []
+  const nodeErrors = executionStore.lastNodeErrors?.[nodeData.id ?? '']
 
   const nodeId = nodeData.id
   const { widgets } = nodeData
@@ -220,6 +230,10 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const tooltipConfig = createTooltipConfig(tooltipText)
 
     result.push({
+      hasError:
+        nodeErrors?.errors?.some(
+          (error) => error.extra_info?.input_name === widget.name
+        ) ?? false,
       name: widget.name,
       type: widget.type,
       vueComponent,
