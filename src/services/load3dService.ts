@@ -187,7 +187,6 @@ export class Load3dService {
 
   async handleViewerClose(node: LGraphNode) {
     const viewer = useLoad3dService().getOrCreateViewer(node)
-    if (!viewer) return
 
     if (viewer.needApplyChanges.value) {
       await viewer.applyChanges()

@@ -47,8 +47,8 @@ const props = defineProps<Props>()
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    const values = props.widget.options?.values as string[] | undefined
-    return values?.[0] || ''
+    const values = props.widget.options?.values
+    return Array.isArray(values) ? (values[0] ?? '') : ''
   }
 })
 

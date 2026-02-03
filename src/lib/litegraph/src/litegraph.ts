@@ -104,7 +104,6 @@ export type {
 } from './interfaces'
 export {
   LGraph,
-  type GraphOrSubgraph,
   type GroupNodeConfigEntry,
   type GroupNodeWorkflowData,
   type LGraphTriggerAction,

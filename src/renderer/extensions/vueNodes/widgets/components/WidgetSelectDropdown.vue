@@ -57,8 +57,8 @@ provide(
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    const values = props.widget.options?.values as string[] | undefined
-    return values?.[0] || ''
+    const values = props.widget.options?.values
+    return Array.isArray(values) ? (values[0] ?? '') : ''
   }
 })
 
@@ -119,10 +119,8 @@ const selectedSet = ref<Set<string>>(new Set())
  * returns undefined/null, or throws an error.
  */
 function getDisplayLabel(value: string): string {
-  const getOptionLabel = props.widget.options?.getOptionLabel as
-    | ((value?: string | null) => string)
-    | undefined
-  if (!getOptionLabel) return value
+  const getOptionLabel = props.widget.options?.getOptionLabel
+  if (typeof getOptionLabel !== 'function') return value
 
   try {
     return getOptionLabel(value) || value

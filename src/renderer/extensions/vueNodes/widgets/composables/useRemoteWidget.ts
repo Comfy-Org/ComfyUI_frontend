@@ -130,7 +130,9 @@ export function useRemoteWidget<
 
   const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
-    widget.value = Array.isArray(data) ? data[0] : data
+    const nextValue =
+      Array.isArray(data) && data.length > 0 ? data[0] : undefined
+    widget.value = nextValue ?? (Array.isArray(data) ? defaultValue : data)
     widget.callback?.(widget.value)
     node.graph?.setDirtyCanvas(true)
   }

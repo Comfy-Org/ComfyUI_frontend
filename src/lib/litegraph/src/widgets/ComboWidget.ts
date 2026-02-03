@@ -35,10 +35,8 @@ export class ComboWidget
   override get _displayValue() {
     if (this.computedDisabled) return ''
 
-    const getOptionLabel = this.options.getOptionLabel as
-      | ((value?: string | null) => string)
-      | undefined
-    if (getOptionLabel) {
+    const getOptionLabel = this.options.getOptionLabel
+    if (typeof getOptionLabel === 'function') {
       try {
         return getOptionLabel(this.value ? String(this.value) : null)
       } catch (e) {
@@ -156,14 +154,13 @@ export class ComboWidget
       }
       const menu = new LiteGraph.ContextMenu([], menuOptions)
 
-      const getOptionLabel = this.options.getOptionLabel as
-        | ((value?: string | null) => string)
-        | undefined
+      const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
         try {
-          const label = getOptionLabel
-            ? getOptionLabel(String(value))
-            : String(value)
+          const label =
+            typeof getOptionLabel === 'function'
+              ? getOptionLabel(String(value))
+              : String(value)
           menu.addItem(label, value, menuOptions)
         } catch (err) {
           console.error('Failed to map value:', err)

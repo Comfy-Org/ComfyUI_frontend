@@ -13,11 +13,11 @@ import GridSkeleton from './GridSkeleton.vue'
 import PackCardSkeleton from './PackCardSkeleton.vue'
 
 describe('GridSkeleton', () => {
-  const mountComponent = ({
+  function mountComponent({
     props = {}
   }: {
     props?: Partial<ComponentProps<typeof GridSkeleton>>
-  } = {}): VueWrapper => {
+  } = {}): VueWrapper {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
