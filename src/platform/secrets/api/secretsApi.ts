@@ -1,8 +1,4 @@
-import axios from 'axios'
-
-import { t } from '@/i18n'
 import { api } from '@/scripts/api'
-import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 
 import type {
   SecretCreateRequest,
@@ -16,6 +12,11 @@ interface ListSecretsResponse {
   data: SecretMetadata[]
 }
 
+interface ErrorResponse {
+  message?: string
+  code?: string
+}
+
 export class SecretsApiError extends Error {
   constructor(
     message: string,
@@ -27,99 +28,67 @@ export class SecretsApiError extends Error {
   }
 }
 
-const secretsApiClient = axios.create({
-  headers: {
-    'Content-Type': 'application/json'
-  }
-})
-
-async function getAuthHeaderOrThrow() {
-  const authHeader = await useFirebaseAuthStore().getAuthHeader()
-  if (!authHeader) {
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    let errorData: ErrorResponse = {}
+    try {
+      errorData = await response.json()
+    } catch {
+      // Response body is not JSON
+    }
+    const code = SECRET_ERROR_CODES.includes(
+      errorData.code as (typeof SECRET_ERROR_CODES)[number]
+    )
+      ? (errorData.code as SecretErrorCode)
+      : undefined
     throw new SecretsApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'FORBIDDEN'
+      errorData.message ?? response.statusText,
+      response.status,
+      code
     )
   }
-  return authHeader
+  return response.json()
 }
 
-function handleAxiosError(err: unknown): never {
-  if (axios.isAxiosError(err)) {
-    const status = err.response?.status
-    const rawCode = err.response?.data?.code
-    const code = SECRET_ERROR_CODES.includes(rawCode) ? rawCode : undefined
-    const message = err.response?.data?.message ?? err.message
-    throw new SecretsApiError(message, status, code)
-  }
-  throw err
+export async function listSecrets(): Promise<SecretMetadata[]> {
+  const response = await api.fetchApi('/secrets')
+  const data = await handleResponse<ListSecretsResponse>(response)
+  return data.data
 }
 
-export const secretsApi = {
-  async list(): Promise<SecretMetadata[]> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await secretsApiClient.get<ListSecretsResponse>(
-        api.apiURL('/secrets'),
-        { headers }
-      )
-      return response.data.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
+export async function getSecret(id: string): Promise<SecretMetadata> {
+  const response = await api.fetchApi(`/secrets/${id}`)
+  return handleResponse<SecretMetadata>(response)
+}
 
-  async get(id: string): Promise<SecretMetadata> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await secretsApiClient.get<SecretMetadata>(
-        api.apiURL(`/secrets/${id}`),
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
+export async function createSecret(
+  payload: SecretCreateRequest
+): Promise<SecretMetadata> {
+  const response = await api.fetchApi('/secrets', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  return handleResponse<SecretMetadata>(response)
+}
 
-  async create(payload: SecretCreateRequest): Promise<SecretMetadata> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await secretsApiClient.post<SecretMetadata>(
-        api.apiURL('/secrets'),
-        payload,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
+export async function updateSecret(
+  id: string,
+  payload: SecretUpdateRequest
+): Promise<SecretMetadata> {
+  const response = await api.fetchApi(`/secrets/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  return handleResponse<SecretMetadata>(response)
+}
 
-  async update(
-    id: string,
-    payload: SecretUpdateRequest
-  ): Promise<SecretMetadata> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      const response = await secretsApiClient.patch<SecretMetadata>(
-        api.apiURL(`/secrets/${id}`),
-        payload,
-        { headers }
-      )
-      return response.data
-    } catch (err) {
-      handleAxiosError(err)
-    }
-  },
-
-  async delete(id: string): Promise<void> {
-    const headers = await getAuthHeaderOrThrow()
-    try {
-      await secretsApiClient.delete(api.apiURL(`/secrets/${id}`), { headers })
-    } catch (err) {
-      handleAxiosError(err)
-    }
+export async function deleteSecret(id: string): Promise<void> {
+  const response = await api.fetchApi(`/secrets/${id}`, {
+    method: 'DELETE'
+  })
+  if (!response.ok) {
+    await handleResponse<void>(response)
   }
 }

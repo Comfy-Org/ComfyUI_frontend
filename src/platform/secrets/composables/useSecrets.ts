@@ -3,7 +3,11 @@ import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import { SecretsApiError, secretsApi } from '../api/secretsApi'
+import {
+  deleteSecret as deleteSecretApi,
+  listSecrets,
+  SecretsApiError
+} from '../api/secretsApi'
 import type { SecretMetadata, SecretProvider } from '../types'
 
 export function useSecrets() {
@@ -23,7 +27,7 @@ export function useSecrets() {
   async function fetchSecrets() {
     loading.value = true
     try {
-      secrets.value = await secretsApi.list()
+      secrets.value = await listSecrets()
     } catch (err) {
       if (err instanceof SecretsApiError) {
         toastStore.add({
@@ -41,7 +45,7 @@ export function useSecrets() {
   async function deleteSecret(secret: SecretMetadata) {
     operatingSecretId.value = secret.id
     try {
-      await secretsApi.delete(secret.id)
+      await deleteSecretApi(secret.id)
       secrets.value = secrets.value.filter((s) => s.id !== secret.id)
     } catch (err) {
       if (err instanceof SecretsApiError) {

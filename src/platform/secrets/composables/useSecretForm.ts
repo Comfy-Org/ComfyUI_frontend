@@ -3,7 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, reactive, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { SecretsApiError, secretsApi } from '../api/secretsApi'
+import { createSecret, SecretsApiError, updateSecret } from '../api/secretsApi'
 import { SECRET_PROVIDERS } from '../providers'
 import type { SecretErrorCode, SecretMetadata, SecretProvider } from '../types'
 
@@ -133,7 +133,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
     try {
       const secret = toValue(secretRef)
       if (mode === 'create') {
-        await secretsApi.create({
+        await createSecret({
           name: form.name.trim(),
           secret_value: form.secretValue,
           provider: form.provider!
@@ -145,7 +145,7 @@ export function useSecretForm(options: UseSecretFormOptions) {
         if (form.secretValue) {
           updatePayload.secret_value = form.secretValue
         }
-        await secretsApi.update(secret.id, updatePayload)
+        await updateSecret(secret.id, updatePayload)
       }
       onSaved()
       visible.value = false
