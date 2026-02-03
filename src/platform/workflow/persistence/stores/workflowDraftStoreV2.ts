@@ -313,6 +313,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       }
     }
 
+    // Legacy fallbacks are NOT workspace-scoped and must only be used for
+    // personal workspace to prevent cross-workspace data leakage.
+    // These exist only for migration from V1 and should be removed after 2026-07-15.
+    if (workspaceId !== 'personal') {
+      return false
+    }
+
     // 3. Legacy fallback: sessionStorage payload (remove after 2026-07-15)
     const clientId = api.initialClientId ?? api.clientId
     if (clientId) {
