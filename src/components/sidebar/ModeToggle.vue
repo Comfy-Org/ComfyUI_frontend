@@ -12,7 +12,10 @@ function toggleLinearMode() {
 }
 </script>
 <template>
-  <div class="p-1 bg-secondary-background rounded-lg w-10">
+  <div
+    data-testid="mode-toggle"
+    class="p-1 bg-secondary-background rounded-lg w-10"
+  >
     <Button
       v-tooltip="{
         value: t('linearMode.linearMode'),

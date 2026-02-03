@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 import type { ComfyPage } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe(
@@ -12,15 +12,16 @@ test.describe(
   { tag: '@ui' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.Canvas.SelectionToolbox', true)
-      await comfyPage.loadWorkflow('nodes/single_ksampler')
+      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
       await comfyPage.nextFrame()
-      await comfyPage.selectNodes(['KSampler'])
+      await comfyPage.nodeOps.selectNodes(['KSampler'])
       await comfyPage.nextFrame()
     })
 
     const openMoreOptions = async (comfyPage: ComfyPage) => {
-      const ksamplerNodes = await comfyPage.getNodeRefsByTitle('KSampler')
+      const ksamplerNodes =
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       if (ksamplerNodes.length === 0) {
         throw new Error('No KSampler nodes found')
       }
@@ -28,9 +29,14 @@ test.describe(
       // Drag the KSampler to the center of the screen
       const nodePos = await ksamplerNodes[0].getPosition()
       const viewportSize = comfyPage.page.viewportSize()
+      if (!viewportSize) {
+        throw new Error(
+          'Viewport size is null - page may not be properly initialized'
+        )
+      }
       const centerX = viewportSize.width / 3
       const centerY = viewportSize.height / 2
-      await comfyPage.dragAndDrop(
+      await comfyPage.canvasOps.dragAndDrop(
         { x: nodePos.x, y: nodePos.y },
         { x: centerX, y: centerY }
       )
@@ -85,7 +91,9 @@ test.describe(
     })
 
     test('changes node shape via Shape submenu', async ({ comfyPage }) => {
-      const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
       const initialShape = await nodeRef.getProperty<number>('shape')
 
       await openMoreOptions(comfyPage)
@@ -106,7 +114,9 @@ test.describe(
     test('changes node color via Color submenu swatch', async ({
       comfyPage
     }) => {
-      const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
       const initialColor = await nodeRef.getProperty<string | undefined>(
         'color'
       )
@@ -126,7 +136,9 @@ test.describe(
     })
 
     test('renames a node using Rename action', async ({ comfyPage }) => {
-      const nodeRef = (await comfyPage.getNodeRefsByTitle('KSampler'))[0]
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
       await openMoreOptions(comfyPage)
       await comfyPage.page
         .getByText('Rename', { exact: true })
