@@ -469,7 +469,6 @@ export default defineConfig({
       },
       output: {
         keepNames: true,
-        strictExecutionOrder: true,
         codeSplitting: {
           groups: [
             // Framework core - highest priority, very stable
