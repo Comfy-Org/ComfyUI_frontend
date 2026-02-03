@@ -72,13 +72,16 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   }
 
   const toggleBottomPanel = () => {
-    // Legacy method - toggles terminal panel, falls back to shortcuts if no terminal tabs
+    // Toggles the terminal panel if available, otherwise falls back to shortcuts
     // Terminal tabs are loaded asynchronously, so may not be available immediately
     const terminalPanel = panels.value.terminal
     if (terminalPanel.tabs.length > 0) {
       togglePanel('terminal')
     } else {
-      // Fall back to shortcuts panel if terminal tabs aren't loaded yet
+      // Terminal tabs not loaded yet - fall back to shortcuts panel
+      // If no panel is open, open shortcuts
+      // If shortcuts is already open, close it
+      // If another panel is open (shouldn't happen), switch to shortcuts
       togglePanel('shortcuts')
     }
   }
