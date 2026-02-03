@@ -34,7 +34,7 @@ class ComfyPropertiesPanel {
   constructor(readonly page: Page) {
     this.root = page.getByTestId('properties-panel')
     this.panelTitle = this.root.locator('h3')
-    this.searchBox = this.root.getByPlaceholder('Search...')
+    this.searchBox = this.root.getByPlaceholder(/^Search/)
   }
 }
 
