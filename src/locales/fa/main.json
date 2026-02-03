@@ -1152,11 +1152,11 @@
     "helpFix": "کمک به رفع این مشکل"
   },
   "linearMode": {
-    "beta": "بتا - ارسال بازخورد",
+    "beta": "حالت برنامه بتا - ارسال بازخورد",
     "downloadAll": "دانلود همه",
     "dragAndDropImage": "تصویر را بکشید و رها کنید",
     "graphMode": "حالت گراف",
-    "linearMode": "حالت ساده",
+    "linearMode": "حالت برنامه",
     "rerun": "اجرای مجدد",
     "reuseParameters": "استفاده مجدد از پارامترها",
     "runCount": "تعداد اجرا: "
@@ -1648,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "تغییر وضعیت پنل لاگ پایین",
     "Toggle Queue Panel V2": "تغییر وضعیت پنل صف V2",
     "Toggle Search Box": "تغییر وضعیت جعبه جستجو",
-    "Toggle Simple Mode": "تغییر حالت ساده",
+    "Toggle App Mode": "تغییر حالت برنامه",
     "Toggle Terminal Bottom Panel": "تغییر وضعیت پنل ترمینال پایین",
     "Toggle Theme (Dark/Light)": "تغییر وضعیت تم (تاریک/روشن)",
     "Toggle View Controls Bottom Panel": "تغییر وضعیت کنترل‌های نمای پایین",

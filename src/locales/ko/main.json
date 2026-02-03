@@ -1152,11 +1152,11 @@
     "helpFix": "이 문제 해결에 도움을 주세요"
   },
   "linearMode": {
-    "beta": "베타 - 피드백 보내기",
+    "beta": "앱 모드 베타 - 피드백 보내기",
     "downloadAll": "모두 다운로드",
     "dragAndDropImage": "이미지를 드래그 앤 드롭하세요",
     "graphMode": "그래프 모드",
-    "linearMode": "간단 모드",
+    "linearMode": "앱 모드",
     "rerun": "다시 실행",
     "reuseParameters": "파라미터 재사용",
     "runCount": "실행 횟수:"
@@ -1648,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "로그 하단 패널 전환",
     "Toggle Queue Panel V2": "대기열 패널 V2 전환",
     "Toggle Search Box": "검색 상자 전환",
-    "Toggle Simple Mode": "간단 모드 전환",
+    "Toggle App Mode": "앱 모드 전환",
     "Toggle Terminal Bottom Panel": "터미널 하단 패널 전환",
     "Toggle Theme (Dark/Light)": "테마 전환 (어두운/밝은)",
     "Toggle View Controls Bottom Panel": "뷰 컨트롤 하단 패널 전환",

@@ -1152,11 +1152,11 @@
     "helpFix": "これを修正するのを助ける"
   },
   "linearMode": {
-    "beta": "ベータ版 - フィードバックを送る",
+    "beta": "アプリモード ベータ版 - フィードバックを送る",
     "downloadAll": "すべてダウンロード",
     "dragAndDropImage": "画像をドラッグ＆ドロップ",
     "graphMode": "グラフモード",
-    "linearMode": "シンプルモード",
+    "linearMode": "アプリモード",
     "rerun": "再実行",
     "reuseParameters": "パラメータを再利用",
     "runCount": "実行回数："
@@ -1648,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "ログ下部パネルの切り替え",
     "Toggle Queue Panel V2": "キューパネルV2を切り替え",
     "Toggle Search Box": "検索ボックスの切り替え",
-    "Toggle Simple Mode": "シンプルモードを切り替え",
+    "Toggle App Mode": "アプリモードを切り替え",
     "Toggle Terminal Bottom Panel": "ターミナル下部パネルの切り替え",
     "Toggle Theme (Dark/Light)": "テーマを切り替え（ダーク/ライト）",
     "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",

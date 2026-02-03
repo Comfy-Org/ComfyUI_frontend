@@ -1152,11 +1152,11 @@
     "helpFix": "協助修復此問題"
   },
   "linearMode": {
-    "beta": "Beta - 提供回饋",
+    "beta": "App 模式 Beta - 提供回饋",
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
     "graphMode": "圖形模式",
-    "linearMode": "簡易模式",
+    "linearMode": "App 模式",
     "rerun": "重新執行",
     "reuseParameters": "重用參數",
     "runCount": "執行次數："
@@ -1648,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "切換日誌底部面板",
     "Toggle Queue Panel V2": "切換佇列面板 V2",
     "Toggle Search Box": "切換搜尋框",
-    "Toggle Simple Mode": "切換簡易模式",
+    "Toggle App Mode": "切換 App 模式",
     "Toggle Terminal Bottom Panel": "切換終端機底部面板",
     "Toggle Theme (Dark/Light)": "切換主題（深色/淺色）",
     "Toggle View Controls Bottom Panel": "切換檢視控制底部面板",

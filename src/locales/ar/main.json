@@ -1152,11 +1152,11 @@
     "helpFix": "المساعدة في الإصلاح"
   },
   "linearMode": {
-    "beta": "تجريبي - أرسل ملاحظاتك",
+    "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
     "graphMode": "وضع الرسم البياني",
-    "linearMode": "الوضع البسيط",
+    "linearMode": "وضع التطبيق",
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
     "runCount": "عدد مرات التشغيل:"
@@ -1648,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "تبديل لوحة السجلات السفلية",
     "Toggle Queue Panel V2": "تبديل لوحة قائمة الانتظار V2",
     "Toggle Search Box": "تبديل مربع البحث",
-    "Toggle Simple Mode": "تبديل وضع البسيط",
+    "Toggle App Mode": "تبديل وضع التطبيق",
     "Toggle Terminal Bottom Panel": "تبديل لوحة الطرفية السفلية",
     "Toggle Theme (Dark/Light)": "تبديل السمة (داكن/فاتح)",
     "Toggle View Controls Bottom Panel": "تبديل لوحة عناصر التحكم في العرض السفلية",

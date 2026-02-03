@@ -1152,11 +1152,11 @@
     "helpFix": "Bunu Düzeltmeye Yardım Et"
   },
   "linearMode": {
-    "beta": "Beta - Geri Bildirim Verin",
+    "beta": "Uygulama Modu Beta - Geri Bildirim Verin",
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
     "graphMode": "Grafik Modu",
-    "linearMode": "Basit Mod",
+    "linearMode": "Uygulama Modu",
     "rerun": "Tekrar Çalıştır",
     "reuseParameters": "Parametreleri Yeniden Kullan",
     "runCount": "Çalıştırma sayısı:"
@@ -1648,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "Kayıtlar Alt Panelini Aç/Kapat",
     "Toggle Queue Panel V2": "Kuyruk Paneli V2'yi Aç/Kapat",
     "Toggle Search Box": "Arama Kutusunu Aç/Kapat",
-    "Toggle Simple Mode": "Basit Modu Aç/Kapat",
+    "Toggle App Mode": "Uygulama Modunu Aç/Kapat",
     "Toggle Terminal Bottom Panel": "Terminal Alt Panelini Aç/Kapat",
     "Toggle Theme (Dark/Light)": "Temayı Değiştir (Karanlık/Açık)",
     "Toggle View Controls Bottom Panel": "Görünüm Kontrolleri Alt Panelini Aç/Kapat",
