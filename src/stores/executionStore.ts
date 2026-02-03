@@ -15,6 +15,7 @@ import type {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
+  ExecutingWsMessage,
   ExecutionCachedWsMessage,
   ExecutionErrorWsMessage,
   ExecutionInterruptedWsMessage,
@@ -45,6 +46,30 @@ interface QueuedPrompt {
    */
   workflow?: ComfyWorkflow
 }
+
+interface PromptExecutionState extends QueuedPrompt {
+  nodeProgressStates: Record<string, NodeProgressState>
+  executingNodeProgress: ProgressWsMessage | null
+  isRunning: boolean
+  startedAt?: number
+  lastUpdatedAt: number
+}
+
+type PromptProgress = {
+  totalNodes: number
+  executedNodes: number
+  progress: number
+}
+
+type ExecutingEventDetail =
+  | ExecutingWsMessage
+  | {
+      node: NodeId | null
+      display_node?: NodeId
+      prompt_id?: string | null
+    }
+  | NodeId
+  | null
 
 const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
   const node = graph.getNodeById(id)
@@ -108,15 +133,10 @@ export const useExecutionStore = defineStore('execution', () => {
   const canvasStore = useCanvasStore()
 
   const clientId = ref<string | null>(null)
-  const activePromptId = ref<string | null>(null)
-  const queuedPrompts = ref<Record<NodeId, QueuedPrompt>>({})
+  const promptStates = ref<Record<string, PromptExecutionState>>({})
+  const lastStartedPromptId = ref<string | null>(null)
   const lastNodeErrors = ref<Record<NodeId, NodeError> | null>(null)
   const lastExecutionError = ref<ExecutionErrorWsMessage | null>(null)
-  // This is the progress of all nodes in the currently executing workflow
-  const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
-  const nodeProgressStatesByPrompt = ref<
-    Record<string, Record<string, NodeProgressState>>
-  >({})
 
   /**
    * Map of prompt_id to workflow ID for quick lookup across the app.
@@ -153,6 +173,209 @@ export const useExecutionStore = defineStore('execution', () => {
 
     return mergedState
   }
+
+  const createPromptState = (startedAt?: number): PromptExecutionState => ({
+    nodes: {},
+    nodeProgressStates: {},
+    executingNodeProgress: null,
+    isRunning: false,
+    startedAt,
+    lastUpdatedAt: startedAt ?? Date.now()
+  })
+
+  const getPromptState = (
+    promptId: string | number | null | undefined
+  ): PromptExecutionState | undefined => {
+    if (!promptId) return undefined
+    return promptStates.value[String(promptId)]
+  }
+
+  const ensurePromptState = (
+    promptId: string,
+    startedAt?: number
+  ): PromptExecutionState => {
+    const existing = promptStates.value[promptId]
+    if (existing) {
+      if (startedAt && !existing.startedAt) {
+        existing.startedAt = startedAt
+      }
+      return existing
+    }
+
+    const nextState = createPromptState(startedAt)
+    promptStates.value = {
+      ...promptStates.value,
+      [promptId]: nextState
+    }
+    return nextState
+  }
+
+  const touchPromptState = (
+    promptState: PromptExecutionState,
+    timestamp?: number
+  ) => {
+    promptState.lastUpdatedAt = timestamp ?? Date.now()
+  }
+
+  const isPromptRunning = (promptState: PromptExecutionState) =>
+    promptState.isRunning ||
+    Object.values(promptState.nodeProgressStates).some(
+      (node) => node.state === 'running'
+    )
+
+  const getPromptSortTimestamp = (promptState: PromptExecutionState) =>
+    promptState.startedAt ?? promptState.lastUpdatedAt ?? 0
+
+  const getMostRecentPromptId = (promptIds: string[]): string | null => {
+    let bestPromptId: string | null = null
+    let bestTimestamp = -1
+    for (const promptId of promptIds) {
+      const state = promptStates.value[promptId]
+      if (!state) continue
+      const timestamp = getPromptSortTimestamp(state)
+      if (timestamp >= bestTimestamp) {
+        bestTimestamp = timestamp
+        bestPromptId = promptId
+      }
+    }
+    return bestPromptId
+  }
+
+  const activeWorkflowId = computed(() => {
+    const activeWorkflow = workflowStore.activeWorkflow
+    return (
+      activeWorkflow?.activeState?.id ??
+      activeWorkflow?.initialState?.id ??
+      null
+    )
+  })
+
+  const applyNodeProgressStatesByPrompt = (
+    next: Record<string, Record<string, NodeProgressState>>
+  ) => {
+    const nextStates: Record<string, PromptExecutionState> = {}
+    for (const [promptId, nodes] of Object.entries(next)) {
+      const current = promptStates.value[promptId]
+      const hasRunningNode = Object.values(nodes).some(
+        (node) => node.state === 'running'
+      )
+      nextStates[promptId] = {
+        nodes: current?.nodes ?? {},
+        workflow: current?.workflow,
+        nodeProgressStates: nodes,
+        executingNodeProgress: current?.executingNodeProgress ?? null,
+        isRunning: (current?.isRunning ?? false) || hasRunningNode,
+        startedAt: current?.startedAt,
+        lastUpdatedAt: Date.now()
+      }
+    }
+    promptStates.value = nextStates
+  }
+
+  const nodeProgressStatesByPrompt = computed<
+    Record<string, Record<string, NodeProgressState>>
+  >({
+    get: () => {
+      const result: Record<string, Record<string, NodeProgressState>> = {}
+      for (const [promptId, state] of Object.entries(promptStates.value)) {
+        result[promptId] = state.nodeProgressStates
+      }
+      return result
+    },
+    set: (next) => applyNodeProgressStatesByPrompt(next)
+  })
+
+  const setNodeProgressStatesByPrompt = (
+    next: Record<string, Record<string, NodeProgressState>>
+  ) => {
+    applyNodeProgressStatesByPrompt(next)
+  }
+
+  const getPromptNodeProgressStates = (
+    promptId: string | number | null | undefined
+  ): Record<string, NodeProgressState> =>
+    getPromptState(promptId)?.nodeProgressStates ?? {}
+
+  const getPromptProgress = (
+    promptId: string | number | null | undefined
+  ): PromptProgress | null => {
+    const promptState = getPromptState(promptId)
+    if (!promptState) return null
+    const totalNodes = Object.values(promptState.nodes).length
+    const executedNodes = Object.values(promptState.nodes).filter(
+      Boolean
+    ).length
+    return {
+      totalNodes,
+      executedNodes,
+      progress: totalNodes > 0 ? executedNodes / totalNodes : 0
+    }
+  }
+
+  const getWorkflowRunningPromptIds = (workflowId: string | null) => {
+    if (!workflowId) return []
+    return Object.entries(promptStates.value)
+      .filter(([promptId, state]) => {
+        return (
+          promptIdToWorkflowId.value.get(promptId) === workflowId &&
+          isPromptRunning(state)
+        )
+      })
+      .map(([promptId]) => promptId)
+  }
+
+  const getActivePromptForWorkflow = (workflowId: string | null) => {
+    const runningPrompts = getWorkflowRunningPromptIds(workflowId)
+    if (runningPrompts.length === 0) return null
+    return getMostRecentPromptId(runningPrompts)
+  }
+
+  const runningPromptIds = computed<string[]>(() => {
+    return Object.entries(promptStates.value)
+      .filter(([_, state]) => isPromptRunning(state))
+      .map(([promptId]) => promptId)
+  })
+
+  const runningWorkflowCount = computed<number>(
+    () => runningPromptIds.value.length
+  )
+
+  const activePromptId = computed<string | null>(() => {
+    if (runningPromptIds.value.length === 0) return null
+
+    const activeWorkflowPrompt = getActivePromptForWorkflow(
+      activeWorkflowId.value
+    )
+    if (activeWorkflowPrompt) return activeWorkflowPrompt
+
+    if (
+      lastStartedPromptId.value &&
+      runningPromptIds.value.includes(lastStartedPromptId.value)
+    ) {
+      return lastStartedPromptId.value
+    }
+
+    return getMostRecentPromptId(runningPromptIds.value)
+  })
+
+  const activePrompt = computed<PromptExecutionState | undefined>(() =>
+    getPromptState(activePromptId.value)
+  )
+
+  const nodeProgressStates = computed<Record<string, NodeProgressState>>(() =>
+    getPromptNodeProgressStates(activePromptId.value)
+  )
+
+  const queuedPrompts = computed<Record<NodeId, QueuedPrompt>>(() => {
+    const result: Record<NodeId, QueuedPrompt> = {}
+    for (const [promptId, state] of Object.entries(promptStates.value)) {
+      result[promptId] = {
+        nodes: state.nodes,
+        workflow: state.workflow
+      }
+    }
+    return result
+  })
 
   const nodeLocationProgressStates = computed<
     Record<NodeLocatorId, NodeProgressState>
@@ -211,34 +434,27 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   // This is the progress of the currently executing node (for backward compatibility)
-  const _executingNodeProgress = ref<ProgressWsMessage | null>(null)
+  const _executingNodeProgress = computed<ProgressWsMessage | null>(() => {
+    return getPromptState(activePromptId.value)?.executingNodeProgress ?? null
+  })
   const executingNodeProgress = computed(() =>
     _executingNodeProgress.value
       ? _executingNodeProgress.value.value / _executingNodeProgress.value.max
       : null
   )
 
-  const activePrompt = computed<QueuedPrompt | undefined>(
-    () => queuedPrompts.value[activePromptId.value ?? '']
-  )
-
   const totalNodesToExecute = computed<number>(() => {
-    if (!activePrompt.value) return 0
-    return Object.values(activePrompt.value.nodes).length
+    return getPromptProgress(activePromptId.value)?.totalNodes ?? 0
   })
 
-  const isIdle = computed<boolean>(() => !activePromptId.value)
+  const isIdle = computed<boolean>(() => runningPromptIds.value.length === 0)
 
   const nodesExecuted = computed<number>(() => {
-    if (!activePrompt.value) return 0
-    return Object.values(activePrompt.value.nodes).filter(Boolean).length
+    return getPromptProgress(activePromptId.value)?.executedNodes ?? 0
   })
 
   const executionProgress = computed<number>(() => {
-    if (!activePrompt.value) return 0
-    const total = totalNodesToExecute.value
-    const done = nodesExecuted.value
-    return total > 0 ? done / total : 0
+    return getPromptProgress(activePromptId.value)?.progress ?? 0
   })
 
   const lastExecutionErrorNodeLocatorId = computed(() => {
@@ -286,62 +502,76 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
     lastExecutionError.value = null
-    activePromptId.value = e.detail.prompt_id
-    queuedPrompts.value[activePromptId.value] ??= { nodes: {} }
-    clearInitializationByPromptId(activePromptId.value)
+    const promptId = e.detail.prompt_id
+    const promptState = ensurePromptState(promptId, e.detail.timestamp)
+    promptState.isRunning = true
+    promptState.executingNodeProgress = null
+    touchPromptState(promptState, e.detail.timestamp)
+    lastStartedPromptId.value = promptId
+    clearInitializationByPromptId(promptId)
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
-    if (!activePrompt.value) return
+    const promptState = ensurePromptState(e.detail.prompt_id)
     for (const n of e.detail.nodes) {
-      activePrompt.value.nodes[n] = true
+      promptState.nodes[n] = true
     }
+    touchPromptState(promptState)
   }
 
   function handleExecutionInterrupted(
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const pid = e.detail.prompt_id
-    if (activePromptId.value)
-      clearInitializationByPromptId(activePromptId.value)
+    clearInitializationByPromptId(pid)
     resetExecutionState(pid)
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
-    if (!activePrompt.value) return
-    activePrompt.value.nodes[e.detail.node] = true
+    const promptState = ensurePromptState(e.detail.prompt_id)
+    promptState.nodes[e.detail.node] = true
+    touchPromptState(promptState)
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
-    if (isCloud && activePromptId.value) {
+    if (isCloud) {
       useTelemetry()?.trackExecutionSuccess({
-        jobId: activePromptId.value
+        jobId: e.detail.prompt_id
       })
     }
     const pid = e.detail.prompt_id
     resetExecutionState(pid)
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>): void {
-    // Clear the current node progress when a new node starts executing
-    _executingNodeProgress.value = null
+  function handleExecuting(e: CustomEvent<ExecutingEventDetail>): void {
+    const detail = e.detail
+    const promptId =
+      detail && typeof detail === 'object'
+        ? detail.prompt_id
+        : (activePromptId.value ?? lastStartedPromptId.value)
+    if (!promptId) return
 
-    if (!activePrompt.value) return
+    const nodeId =
+      detail && typeof detail === 'object'
+        ? (detail.display_node ?? detail.node ?? null)
+        : detail
 
-    // Update the executing nodes list
-    if (typeof e.detail !== 'string') {
-      if (activePromptId.value) {
-        delete queuedPrompts.value[activePromptId.value]
-      }
-      activePromptId.value = null
+    const promptState = ensurePromptState(String(promptId))
+    promptState.executingNodeProgress = null
+    const hasNode = nodeId !== null && nodeId !== undefined
+    promptState.isRunning = promptState.isRunning || hasNode
+    if (!hasNode) {
+      promptState.isRunning = false
     }
+    touchPromptState(promptState)
   }
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const { nodes, prompt_id: pid } = e.detail
+    const promptState = ensurePromptState(pid)
 
     // Revoke previews for nodes that are starting to execute
-    const previousForPrompt = nodeProgressStatesByPrompt.value[pid] || {}
+    const previousForPrompt = promptState.nodeProgressStates
     for (const nodeId in nodes) {
       const nodeState = nodes[nodeId]
       if (nodeState.state === 'running' && !previousForPrompt[nodeId]) {
@@ -355,16 +585,18 @@ export const useExecutionStore = defineStore('execution', () => {
     }
 
     // Update the progress states for all nodes
-    nodeProgressStatesByPrompt.value = {
-      ...nodeProgressStatesByPrompt.value,
-      [pid]: nodes
+    promptState.nodeProgressStates = nodes
+    if (Object.values(nodes).some((node) => node.state === 'running')) {
+      promptState.isRunning = true
     }
-    nodeProgressStates.value = nodes
+    touchPromptState(promptState)
 
-    // If we have progress for the currently executing node, update it for backwards compatibility
-    if (executingNodeId.value && nodes[executingNodeId.value]) {
-      const nodeState = nodes[executingNodeId.value]
-      _executingNodeProgress.value = {
+    const runningNodeId = Object.entries(nodes).find(
+      ([, nodeState]) => nodeState.state === 'running'
+    )?.[0]
+    if (runningNodeId) {
+      const nodeState = nodes[runningNodeId]
+      promptState.executingNodeProgress = {
         value: nodeState.value,
         max: nodeState.max,
         prompt_id: nodeState.prompt_id,
@@ -374,7 +606,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
-    _executingNodeProgress.value = e.detail
+    const promptState = ensurePromptState(e.detail.prompt_id)
+    promptState.executingNodeProgress = e.detail
+    promptState.isRunning = true
+    touchPromptState(promptState)
   }
 
   function handleStatus() {
@@ -448,18 +683,14 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(pid?: string | null) {
-    nodeProgressStates.value = {}
     const promptId = pid ?? activePromptId.value ?? null
-    if (promptId) {
-      const map = { ...nodeProgressStatesByPrompt.value }
-      delete map[promptId]
-      nodeProgressStatesByPrompt.value = map
+    if (!promptId) return
+    const nextStates = { ...promptStates.value }
+    delete nextStates[promptId]
+    promptStates.value = nextStates
+    if (lastStartedPromptId.value === promptId) {
+      lastStartedPromptId.value = null
     }
-    if (activePromptId.value) {
-      delete queuedPrompts.value[activePromptId.value]
-    }
-    activePromptId.value = null
-    _executingNodeProgress.value = null
   }
 
   function getNodeIdIfExecuting(nodeId: string | number) {
@@ -490,16 +721,16 @@ export const useExecutionStore = defineStore('execution', () => {
     id: string
     workflow: ComfyWorkflow
   }) {
-    queuedPrompts.value[id] ??= { nodes: {} }
-    const queuedPrompt = queuedPrompts.value[id]
-    queuedPrompt.nodes = {
+    const promptState = ensurePromptState(id)
+    promptState.nodes = {
       ...nodes.reduce((p: Record<string, boolean>, n) => {
         p[n] = false
         return p
       }, {}),
-      ...queuedPrompt.nodes
+      ...promptState.nodes
     }
-    queuedPrompt.workflow = workflow
+    promptState.workflow = workflow
+    touchPromptState(promptState)
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       promptIdToWorkflowId.value.set(String(id), String(wid))
@@ -528,22 +759,6 @@ export const useExecutionStore = defineStore('execution', () => {
     const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
     return executionId
   }
-
-  const runningPromptIds = computed<string[]>(() => {
-    const result: string[] = []
-    for (const [pid, nodes] of Object.entries(
-      nodeProgressStatesByPrompt.value
-    )) {
-      if (Object.values(nodes).some((n) => n.state === 'running')) {
-        result.push(pid)
-      }
-    }
-    return result
-  })
-
-  const runningWorkflowCount = computed<number>(
-    () => runningPromptIds.value.length
-  )
 
   /** Map of node errors indexed by locator ID. */
   const nodeErrorsByLocatorId = computed<Record<NodeLocatorId, NodeError>>(
@@ -643,6 +858,7 @@ export const useExecutionStore = defineStore('execution', () => {
     isIdle,
     clientId,
     activePromptId,
+    promptStates,
     queuedPrompts,
     lastNodeErrors,
     lastExecutionError,
@@ -658,6 +874,11 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStates,
     nodeLocationProgressStates,
     nodeProgressStatesByPrompt,
+    setNodeProgressStatesByPrompt,
+    getPromptProgress,
+    getPromptNodeProgressStates,
+    getWorkflowRunningPromptIds,
+    getActivePromptForWorkflow,
     runningPromptIds,
     runningWorkflowCount,
     initializingPromptIds,

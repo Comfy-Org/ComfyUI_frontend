@@ -199,12 +199,22 @@ type AsCustomEvents<T> = {
   readonly [K in keyof T]: CustomEvent<T[K]>
 }
 
+type ExecutingEventDetail =
+  | ExecutingWsMessage
+  | {
+      node: NodeId | null
+      display_node?: NodeId
+      prompt_id?: string | null
+    }
+  | NodeId
+  | null
+
 /** Handles differing event and API signatures. */
 type ApiToEventType<T = ApiCalls> = {
   [K in keyof T]: K extends 'status'
     ? StatusWsMessageStatus
     : K extends 'executing'
-      ? NodeId
+      ? ExecutingEventDetail
       : T[K]
 }
 
@@ -662,10 +672,7 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
             case 'executing':
-              this.dispatchCustomEvent(
-                'executing',
-                msg.data.display_node || msg.data.node
-              )
+              this.dispatchCustomEvent('executing', msg.data)
               break
             case 'execution_start':
             case 'execution_error':

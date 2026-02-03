@@ -37,7 +37,7 @@ function resetStores() {
   queue.runningTasks = []
   queue.historyTasks = []
 
-  exec.nodeProgressStatesByPrompt = {}
+  exec.setNodeProgressStatesByPrompt({})
 }
 
 function makeTask(
@@ -148,7 +148,7 @@ export const Queued: Story = {
       // Queued at (in metadata on prompt[4])
 
       // One running workflow
-      exec.nodeProgressStatesByPrompt = {
+      exec.setNodeProgressStatesByPrompt({
         p1: {
           '1': {
             value: 1,
@@ -158,7 +158,7 @@ export const Queued: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      } as any)
 
       return { args: { ...args, jobId } }
     },
@@ -198,7 +198,7 @@ export const QueuedParallel: Story = {
       ]
 
       // Two parallel workflows running
-      exec.nodeProgressStatesByPrompt = {
+      exec.setNodeProgressStatesByPrompt({
         p1: {
           '1': {
             value: 1,
@@ -217,7 +217,7 @@ export const QueuedParallel: Story = {
             prompt_id: 'p2'
           }
         }
-      } as any
+      } as any)
 
       return { args: { ...args, jobId } }
     },
@@ -248,7 +248,7 @@ export const Running: Story = {
         makeHistoryTask('hist-r3', 252, 60, true)
       ]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.setNodeProgressStatesByPrompt({
         p1: {
           '1': {
             value: 5,
@@ -258,7 +258,7 @@ export const Running: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      } as any)
 
       return { args: { ...args, jobId } }
     },
@@ -293,7 +293,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
 
       queue.runningTasks = [makeRunningTaskWithStart('running-1', 505, 20)]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.setNodeProgressStatesByPrompt({
         p1: {
           '1': {
             value: 1,
@@ -303,7 +303,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
             prompt_id: 'p1'
           }
         }
-      } as any
+      } as any)
 
       return { args: { ...args, jobId } }
     },
@@ -341,7 +341,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
         makeRunningTaskWithStart('running-b', 507, 10)
       ]
 
-      exec.nodeProgressStatesByPrompt = {
+      exec.setNodeProgressStatesByPrompt({
         p1: {
           '1': {
             value: 2,
@@ -360,7 +360,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
             prompt_id: 'p2'
           }
         }
-      } as any
+      } as any)
 
       return { args: { ...args, jobId } }
     },
