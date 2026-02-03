@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -19,8 +19,13 @@ type RightSidePanelSection = 'advanced-inputs' | string
 export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   const settingStore = useSettingStore()
 
+  const isLegacyMenu = computed(
+    () => settingStore.get('Comfy.UseNewMenu') === 'Disabled'
+  )
+
   const isOpen = computed({
-    get: () => settingStore.get('Comfy.RightSidePanel.IsOpen'),
+    get: () =>
+      !isLegacyMenu.value && settingStore.get('Comfy.RightSidePanel.IsOpen'),
     set: (value: boolean) =>
       settingStore.set('Comfy.RightSidePanel.IsOpen', value)
   })
@@ -29,7 +34,15 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   const focusedSection = ref<RightSidePanelSection | null>(null)
   const searchQuery = ref('')
 
+  // Auto-close panel when switching to legacy menu mode
+  watch(isLegacyMenu, (legacy) => {
+    if (legacy) {
+      void settingStore.set('Comfy.RightSidePanel.IsOpen', false)
+    }
+  })
+
   function openPanel(tab?: RightSidePanelTab) {
+    if (isLegacyMenu.value) return
     isOpen.value = true
     if (tab) {
       activeTab.value = tab

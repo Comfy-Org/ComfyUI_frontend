@@ -35,14 +35,14 @@ export class SubgraphInput extends SubgraphSlot {
   events = new CustomEventTarget<SubgraphInputEventMap>()
 
   /** The linked widget that this slot is connected to. */
-  #widgetRef?: WeakRef<IBaseWidget>
+  private _widgetRef?: WeakRef<IBaseWidget>
 
   get _widget() {
-    return this.#widgetRef?.deref()
+    return this._widgetRef?.deref()
   }
 
   set _widget(widget) {
-    this.#widgetRef = widget ? new WeakRef(widget) : undefined
+    this._widgetRef = widget ? new WeakRef(widget) : undefined
   }
 
   override connect(
@@ -187,7 +187,7 @@ export class SubgraphInput extends SubgraphSlot {
    * @returns `true` if the connection is valid, otherwise `false`.
    */
   matchesWidget(otherWidget: IBaseWidget): boolean {
-    const widget = this.#widgetRef?.deref()
+    const widget = this._widgetRef?.deref()
     if (!widget) return true
 
     if (

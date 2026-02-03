@@ -276,7 +276,7 @@ describe('useSelectedLiteGraphItems', () => {
       expect(selectedNodes).toContainEqual(subNode2)
     })
 
-    it('toggleSelectedNodesMode should apply unified state to subgraph children', () => {
+    it('toggleSelectedNodesMode should not apply state to subgraph children', () => {
       const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
       const subNode1 = { id: 11, mode: LGraphEventMode.ALWAYS } as LGraphNode
       const subNode2 = { id: 12, mode: LGraphEventMode.NEVER } as LGraphNode
@@ -294,9 +294,8 @@ describe('useSelectedLiteGraphItems', () => {
       // regularNode: BYPASS -> NEVER (since BYPASS != NEVER)
       expect(regularNode.mode).toBe(LGraphEventMode.NEVER)
 
-      // Subgraph children get unified state (same as their parent):
-      // Both children should now be NEVER, regardless of their previous states
-      expect(subNode1.mode).toBe(LGraphEventMode.NEVER) // was ALWAYS, now NEVER
+      // Subgraph children do not change state
+      expect(subNode1.mode).toBe(LGraphEventMode.ALWAYS) // was ALWAYS, stays ALWAYS
       expect(subNode2.mode).toBe(LGraphEventMode.NEVER) // was NEVER, stays NEVER
     })
 
@@ -317,9 +316,9 @@ describe('useSelectedLiteGraphItems', () => {
       // Selected subgraph should toggle to ALWAYS (since it was already NEVER)
       expect(subgraphNode.mode).toBe(LGraphEventMode.ALWAYS)
 
-      // All children should also get ALWAYS (unified with parent's new state)
+      // All children should be unchanged
       expect(subNode1.mode).toBe(LGraphEventMode.ALWAYS)
-      expect(subNode2.mode).toBe(LGraphEventMode.ALWAYS)
+      expect(subNode2.mode).toBe(LGraphEventMode.BYPASS)
     })
   })
 

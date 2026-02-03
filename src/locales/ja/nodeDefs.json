@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "カラーをRGB整数値に変換します。",
+    "display_name": "カラーをRGB整数に変換",
+    "inputs": {
+      "color": {
+        "name": "カラー"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb整数値",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "フックを組み合わせる [2]",
     "inputs": {
@@ -10982,6 +10997,25 @@
       }
     }
   },
+  "RecraftCreateStyleNode": {
+    "description": "参照画像からカスタムスタイルを作成します。スタイル参照として1～5枚の画像をアップロードしてください。すべての画像の合計サイズは5MBまでです。",
+    "display_name": "Recraft スタイル作成",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "style": {
+        "name": "スタイル",
+        "tooltip": "生成される画像の基本スタイルです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "スタイルID",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftCreativeUpscaleNode": {
     "description": "画像を同期的にアップスケールします。\n「creative upscale」ツールを使用して指定されたラスタ画像を強化し、解像度を高めながら細部や顔の精細さに重点を置いて向上させます。",
     "display_name": "Recraft Creative アップスケール画像",
@@ -15229,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "画像とオプションのプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 画像から動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "生成される動画の開始フレームとして使用する画像。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_audio": {
+        "name": "オーディオ"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画生成用のオプションのテキストプロンプト（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "テキストプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 テキストから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_audio": {
+        "name": "オーディオ"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画生成用のテキスト説明（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "既存の動画を拡張して追加フレームを生成します。",
+    "display_name": "Vidu 動画拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "end_frame": {
+        "name": "終了フレーム"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画拡張に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "拡張動画用のオプションのテキストプロンプト（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "拡張する元の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "画像とオプションのプロンプトからビデオを生成",
     "display_name": "Vidu 画像からビデオ生成",
@@ -15263,6 +15410,49 @@
       "seed": {
         "name": "シード",
         "tooltip": "ビデオ生成のシード値（0でランダム）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "複数のキーフレーム遷移を持つ動画を生成します。",
+    "display_name": "Vidu マルチフレーム動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "frames": {
+        "name": "フレーム数",
+        "tooltip": "キーフレーム遷移の数（2～9）。"
+      },
+      "frames_duration1": {
+        "name": "長さ1"
+      },
+      "frames_duration2": {
+        "name": "長さ2"
+      },
+      "frames_prompt1": {
+        "name": "プロンプト1"
+      },
+      "frames_prompt2": {
+        "name": "プロンプト2"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "start_image": {
+        "name": "開始画像",
+        "tooltip": "開始フレーム画像。アスペクト比は1:4から4:1の間である必要があります。"
       }
     },
     "outputs": {

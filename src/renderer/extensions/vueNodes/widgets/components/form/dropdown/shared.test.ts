@@ -1,20 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
 import { defaultSearcher, getDefaultSortOptions } from './shared'
-import type { DropdownItem } from './types'
+import type { FormDropdownItem } from './types'
 
-function createItem(name: string, label?: string): DropdownItem {
+function createItem(name: string, label?: string): FormDropdownItem {
   return {
     id: name,
-    mediaSrc: '',
+    preview_url: '',
     name,
-    label,
-    metadata: ''
+    label
   }
 }
 
 describe('defaultSearcher', () => {
-  const items: DropdownItem[] = [
+  const items: FormDropdownItem[] = [
     createItem('apple.png'),
     createItem('banana.jpg'),
     createItem('cherry.gif')
@@ -74,7 +73,7 @@ describe('getDefaultSortOptions', () => {
   })
 
   describe('A-Z sorter', () => {
-    const azSorter = sortOptions.find((o) => o.id === 'a-z')!.sorter
+    const azSorter = sortOptions.find((o) => o.id === 'name-asc')!.sorter
 
     it('sorts items alphabetically by name', () => {
       const items = [

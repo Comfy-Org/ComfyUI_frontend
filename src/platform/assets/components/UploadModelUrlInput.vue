@@ -45,36 +45,37 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <div class="relative">
-          <InputText
-            v-model="url"
-            autofocus
-            :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
-            class="w-full border-0 bg-secondary-background p-4 pr-10"
-            data-attr="upload-model-step1-url-input"
-          />
-          <i
-            v-if="isValidUrl"
-            class="icon-[lucide--circle-check-big] absolute top-1/2 right-3 size-5 -translate-y-1/2 text-green-500"
-          />
-        </div>
+        <InputText
+          v-model="url"
+          autofocus
+          :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
+          class="w-full border-0 bg-secondary-background p-4"
+          data-attr="upload-model-step1-url-input"
+        />
         <p v-if="error" class="text-sm text-error">
           {{ error }}
-        </p>
-        <p v-else-if="!flags.asyncModelUploadEnabled" class="text-foreground">
-          <i18n-t keypath="assetBrowser.maxFileSize" tag="span">
-            <template #size>
-              <span class="font-bold italic">{{
-                $t('assetBrowser.maxFileSizeValue')
-              }}</span>
-            </template>
-          </i18n-t>
         </p>
       </div>
     </div>
 
-    <div class="text-sm text-muted">
-      {{ $t('assetBrowser.uploadModelHelpFooterText') }}
+    <div class="flex flex-col gap-6 text-sm text-muted-foreground">
+      <div v-if="showSecretsHint">
+        <i18n-t keypath="assetBrowser.apiKeyHint" tag="span">
+          <template #link>
+            <Button
+              variant="textonly"
+              size="unset"
+              class="text-muted-foreground underline p-0"
+              @click="openSecretsSettings"
+            >
+              {{ $t('assetBrowser.apiKeyHintLink') }}
+            </Button>
+          </template>
+        </i18n-t>
+      </div>
+      <div>
+        {{ $t('assetBrowser.uploadModelHelpFooterText') }}
+      </div>
     </div>
   </div>
 </template>
@@ -83,12 +84,18 @@
 import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
-import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
-import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
+import { useDialogService } from '@/services/dialogService'
 
 const { flags } = useFeatureFlags()
+const dialogService = useDialogService()
+
+const showSecretsHint = computed(() => flags.userSecretsEnabled)
+
+function openSecretsSettings() {
+  dialogService.showSettingsDialog('secrets')
+}
 
 const props = defineProps<{
   modelValue: string
@@ -102,14 +109,6 @@ const emit = defineEmits<{
 const url = computed({
   get: () => props.modelValue,
   set: (value: string) => emit('update:modelValue', value)
-})
-
-const importSources = [civitaiImportSource, huggingfaceImportSource]
-
-const isValidUrl = computed(() => {
-  const trimmedUrl = url.value.trim()
-  if (!trimmedUrl) return false
-  return importSources.some((source) => validateSourceUrl(trimmedUrl, source))
 })
 
 const civitaiIcon = '/assets/images/civitai.svg'

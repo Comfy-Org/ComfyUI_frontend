@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Преобразовать цвет в целочисленное значение RGB.",
+    "display_name": "Преобразование цвета в RGB Int",
+    "inputs": {
+      "color": {
+        "name": "цвет"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Объединить хуки [2]",
     "inputs": {
@@ -10982,6 +10997,25 @@
       }
     }
   },
+  "RecraftCreateStyleNode": {
+    "description": "Создайте пользовательский стиль на основе референсных изображений. Загрузите 1–5 изображений для использования в качестве референсов стиля. Общий размер всех изображений ограничен 5 МБ.",
+    "display_name": "Recraft Создать стиль",
+    "inputs": {
+      "images": {
+        "name": "изображения"
+      },
+      "style": {
+        "name": "стиль",
+        "tooltip": "Базовый стиль сгенерированных изображений."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftCreativeUpscaleNode": {
     "description": "Масштабирует изображение синхронно.\nУлучшает заданное растровое изображение с помощью инструмента «creative upscale», повышая разрешение с акцентом на детализацию мелких элементов и лиц.",
     "display_name": "Recraft Creative Upscale Image",
@@ -15229,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Создайте видео из изображения и необязательной текстовой подсказки.",
+    "display_name": "Vidu Q3: генерация видео из изображения",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Изображение, используемое в качестве первого кадра генерируемого видео."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Необязательная текстовая подсказка для генерации видео (максимум 2000 символов)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Создайте видео по текстовой подсказке.",
+    "display_name": "Vidu Q3: генерация видео по тексту",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для генерации видео."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Текстовое описание для генерации видео, максимум 2000 символов."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Расширьте существующее видео, сгенерировав дополнительные кадры.",
+    "display_name": "Vidu: расширение видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Модель для расширения видео."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Необязательная текстовая подсказка для расширенного видео (максимум 2000 символов)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Исходное видео для расширения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Генерация видео из изображения и необязательного промпта",
     "display_name": "Vidu Image To Video Generation",
@@ -15263,6 +15410,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для генерации видео (0 для случайного)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Создайте видео с несколькими переходами между ключевыми кадрами.",
+    "display_name": "Vidu: генерация видео с несколькими ключевыми кадрами",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "Количество переходов между ключевыми кадрами (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "Изображение начального кадра. Соотношение сторон должно быть от 1:4 до 4:1."
       }
     },
     "outputs": {

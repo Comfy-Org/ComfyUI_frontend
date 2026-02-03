@@ -83,7 +83,7 @@
 <script setup lang="ts">
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
-const { result } = defineProps<{
+defineProps<{
   result: 'processing' | 'success' | 'error'
   error?: string
   metadata?: AssetMetadata

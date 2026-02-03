@@ -16,6 +16,7 @@ test.describe(
       'no_workflow.webp',
       'large_workflow.webp',
       'workflow_prompt_parameters.png',
+      'workflow_itxt.png',
       'workflow.webm',
       // Skipped due to 3d widget unstable visual result.
       // 3d widget shows grid after fully loaded.

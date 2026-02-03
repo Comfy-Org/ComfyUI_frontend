@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'
-import type { FilterState } from '@/platform/assets/components/AssetFilterBar.vue'
+import type { AssetFilterState } from '@/platform/assets/types/filterTypes'
 import {
   createAssetWithSpecificBaseModel,
   createAssetWithSpecificExtension,
@@ -142,15 +142,16 @@ describe('AssetFilterBar', () => {
       expect(emitted!.length).toBeGreaterThanOrEqual(3)
 
       // Check final state
-      const finalState: FilterState = emitted![
+      const finalState: AssetFilterState = emitted![
         emitted!.length - 1
-      ][0] as FilterState
+      ][0] as AssetFilterState
       expect(finalState.fileFormats).toEqual(['ckpt', 'safetensors'])
       expect(finalState.baseModels).toEqual(['sdxl'])
       expect(finalState.sortBy).toBe('name-desc')
+      expect(finalState.ownership).toBe('all')
     })
 
-    it('ensures FilterState interface compliance', async () => {
+    it('ensures AssetFilterState interface compliance', async () => {
       // Provide assets with options so filters are visible
       const assets = [
         createAssetWithSpecificExtension('safetensors'),
@@ -167,7 +168,7 @@ describe('AssetFilterBar', () => {
       await nextTick()
 
       const emitted = wrapper.emitted('filterChange')
-      const filterState = emitted![0][0] as FilterState
+      const filterState = emitted![0][0] as AssetFilterState
 
       // Type and structure assertions
       expect(Array.isArray(filterState.fileFormats)).toBe(true)

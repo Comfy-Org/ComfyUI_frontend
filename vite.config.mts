@@ -53,11 +53,7 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
 
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
-const IS_NIGHTLY =
-  process.env.IS_NIGHTLY === 'true' ||
-  (process.env.IS_NIGHTLY !== 'false' &&
-    process.env.CI === 'true' &&
-    process.env.GITHUB_REF_NAME === 'main')
+const IS_NIGHTLY = process.env.IS_NIGHTLY === 'true'
 
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
@@ -423,6 +419,31 @@ export default defineConfig({
     minify: SHOULD_MINIFY,
     target: 'es2022',
     sourcemap: GENERATE_SOURCEMAP,
+    // Exclude heavy optional vendor chunks from initial module preload
+    // These chunks are only needed when their features are used (3D, terminal, etc.)
+    modulePreload: {
+      resolveDependencies: (_filename, deps, { hostType }) => {
+        // Only filter for HTML entry points, not for dynamic imports
+        if (hostType !== 'html') return deps
+
+        // Exclude heavy vendor chunks that should be lazy-loaded
+        // - vendor-three: 3D preview (Load3D nodes)
+        // - vendor-xterm: Terminal emulator (logs panel)
+        // - vendor-tiptap: Rich text editor (markdown widgets)
+        // - vendor-chart: Chart.js (stats/monitoring)
+        // - vendor-yjs: CRDT library (layout store, loaded on first graph)
+        const lazyVendors = [
+          'vendor-three',
+          'vendor-xterm',
+          'vendor-tiptap',
+          'vendor-chart',
+          'vendor-yjs'
+        ]
+        return deps.filter(
+          (dep) => !lazyVendors.some((vendor) => dep.includes(vendor))
+        )
+      }
+    },
     rolldownOptions: {
       treeshake: {
         manualPureFunctions: [
@@ -446,52 +467,100 @@ export default defineConfig({
           'console.trace'
         ]
       },
-      experimental: {
-        strictExecutionOrder: true
-      },
       output: {
         keepNames: true,
         codeSplitting: {
           groups: [
+            // Framework core - highest priority, very stable
+            {
+              name: 'vendor-vue-core',
+              test: /[\\/]node_modules[\\/](vue|@vue|pinia|vue-router)[\\/]/,
+              priority: 20
+            },
+
+            {
+              name: 'vendor-firebase',
+              test: /[\\/]node_modules[\\/](@?firebase|@firebase)[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-sentry',
+              test: /[\\/]node_modules[\\/]@sentry[\\/]/,
+              priority: 15
+            },
+
+            // UI component libraries
             {
               name: 'vendor-primevue',
               test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
-              priority: 10
-            },
-            {
-              name: 'vendor-tiptap',
-              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
-              priority: 10
-            },
-            {
-              name: 'vendor-chart',
-              test: /[\\/]node_modules[\\/]chart\.js[\\/]/,
-              priority: 10
-            },
-            {
-              name: 'vendor-three',
-              test: /[\\/]node_modules[\\/](three|@sparkjsdev)[\\/]/,
-              priority: 10
-            },
-            {
-              name: 'vendor-xterm',
-              test: /[\\/]node_modules[\\/]@xterm[\\/]/,
-              priority: 10
-            },
-            {
-              name: 'vendor-vue',
-              test: /[\\/]node_modules[\\/](vue|pinia)[\\/]/,
-              priority: 10
+              priority: 15
             },
             {
               name: 'vendor-reka-ui',
               test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
-              priority: 10
+              priority: 15
             },
+
+            // Heavy optional features
+            {
+              name: 'vendor-three',
+              test: /[\\/]node_modules[\\/](three|@sparkjsdev)[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-tiptap',
+              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-chart',
+              test: /[\\/]node_modules[\\/]chart\.js[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-xterm',
+              test: /[\\/]node_modules[\\/]@xterm[\\/]/,
+              priority: 15
+            },
+            {
+              name: 'vendor-yjs',
+              test: /[\\/]node_modules[\\/](yjs|lib0)[\\/]/,
+              priority: 15
+            },
+
+            // Utilities and validation
+            {
+              name: 'vendor-vueuse',
+              test: /[\\/]node_modules[\\/]@vueuse[\\/]/,
+              priority: 12
+            },
+            {
+              name: 'vendor-i18n',
+              test: /[\\/]node_modules[\\/](vue-i18n|@intlify)[\\/]/,
+              priority: 12
+            },
+            {
+              name: 'vendor-zod',
+              test: /[\\/]node_modules[\\/](zod|zod-validation-error)[\\/]/,
+              priority: 12
+            },
+            {
+              name: 'vendor-axios',
+              test: /[\\/]node_modules[\\/]axios[\\/]/,
+              priority: 12
+            },
+            {
+              name: 'vendor-markdown',
+              test: /[\\/]node_modules[\\/](marked|dompurify)[\\/]/,
+              priority: 12
+            },
+
+            // Catch-all for remaining node_modules
             {
               name: 'vendor-other',
               test: /[\\/]node_modules[\\/]/,
-              priority: 0
+              priority: 0,
+              minSize: 10000
             }
           ]
         }

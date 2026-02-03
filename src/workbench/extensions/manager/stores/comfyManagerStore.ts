@@ -59,14 +59,18 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
   const managerQueue = useManagerQueue(taskHistory, taskQueue, installedPacks)
 
   // Listen for task completion events to clean up installing state
-  useEventListener(app.api, 'cm-task-completed', (event: any) => {
-    const taskId = event.detail?.ui_id
-    if (taskId && taskIdToPackId.value.has(taskId)) {
-      const packId = taskIdToPackId.value.get(taskId)!
-      installingPacksIds.value.delete(packId)
-      taskIdToPackId.value.delete(taskId)
+  useEventListener(
+    app.api,
+    'cm-task-completed',
+    (event: CustomEvent<{ ui_id?: string }>) => {
+      const taskId = event.detail?.ui_id
+      if (taskId && taskIdToPackId.value.has(taskId)) {
+        const packId = taskIdToPackId.value.get(taskId)!
+        installingPacksIds.value.delete(packId)
+        taskIdToPackId.value.delete(taskId)
+      }
     }
-  })
+  )
 
   const setStale = () => {
     isStale.value = true

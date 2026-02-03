@@ -64,7 +64,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     }
   })
 
-  it('fetches assets and transforms to dropdown items', async () => {
+  it('fetches assets for a given node type', async () => {
     const mockAssets: AssetItem[] = [
       createMockAsset(
         'asset-1',
@@ -87,8 +87,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     )
 
     const nodeType = ref('CheckpointLoaderSimple')
-    const { category, assets, dropdownItems, isLoading } =
-      useAssetWidgetData(nodeType)
+    const { category, assets, isLoading } = useAssetWidgetData(nodeType)
 
     await nextTick()
     await vi.waitFor(() => !isLoading.value)
@@ -98,13 +97,10 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     )
     expect(category.value).toBe('checkpoints')
     expect(assets.value).toEqual(mockAssets)
-
-    expect(dropdownItems.value).toHaveLength(2)
-    const item = dropdownItems.value[0]
-    expect(item.id).toBe('asset-1')
-    expect(item.name).toBe('models/beautiful_model.safetensors')
-    expect(item.label).toBe('Beautiful Model')
-    expect(item.mediaSrc).toBe('/api/preview/asset-1')
+    expect(assets.value).toHaveLength(2)
+    expect(assets.value[0].id).toBe('asset-1')
+    expect(assets.value[0].name).toBe('Beautiful Model')
+    expect(assets.value[0].preview_url).toBe('/api/preview/asset-1')
   })
 
   it('handles API errors gracefully', async () => {
@@ -238,7 +234,7 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
     })
 
     it('handles undefined node type gracefully', async () => {
-      const { category, assets, dropdownItems, isLoading, error } =
+      const { category, assets, isLoading, error } =
         useAssetWidgetData(undefined)
 
       await nextTick()
@@ -246,7 +242,6 @@ describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
       expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
       expect(category.value).toBeUndefined()
       expect(assets.value).toEqual([])
-      expect(dropdownItems.value).toEqual([])
       expect(isLoading.value).toBe(false)
       expect(error.value).toBeNull()
     })

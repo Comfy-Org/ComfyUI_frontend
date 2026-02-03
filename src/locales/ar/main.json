@@ -22,6 +22,7 @@
     },
     "assetCollection": "مجموعة الأصول",
     "assets": "الأصول",
+    "baseModel": "النموذج الأساسي",
     "baseModels": "النماذج الأساسية",
     "browseAssets": "تصفح الأصول",
     "byType": "حسب النوع",
@@ -127,6 +128,7 @@
     "selectProjects": "اختر المشاريع",
     "sortAZ": "أ-ي",
     "sortBy": "ترتيب حسب",
+    "sortDefault": "الافتراضي",
     "sortPopular": "الأكثر شعبية",
     "sortRecent": "الأحدث",
     "sortZA": "ي-أ",
@@ -177,13 +179,7 @@
       "whitelistInfo": "حول المواقع غير المدرجة في القائمة البيضاء"
     },
     "deleteAccount": {
-      "cancel": "إلغاء",
-      "confirm": "حذف الحساب",
-      "confirmMessage": "هل أنت متأكد أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء وسيتم حذف جميع بياناتك نهائيًا.",
-      "confirmTitle": "حذف الحساب",
-      "deleteAccount": "حذف الحساب",
-      "success": "تم حذف الحساب",
-      "successDetail": "تم حذف حسابك بنجاح."
+      "contactSupport": "لحذف حسابك، يرجى التواصل مع {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "رؤية CLIP",
     "CLIP_VISION_OUTPUT": "خرج رؤية CLIP",
+    "COLOR": "لون",
     "COMBO": "تركيب",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1301,6 +1298,28 @@
     "disabledNodesWontUpdate": "العقد المعطلة لن يتم تحديثها",
     "discoverCommunityContent": "استكشف حزم العقد والامتدادات والمزيد من إبداعات المجتمع...",
     "downloads": "التنزيلات",
+    "emptyState": {
+      "allInstalled": {
+        "message": "لم تقم بتثبيت أي إضافات بعد.",
+        "title": "لا توجد إضافات مثبتة"
+      },
+      "conflicting": {
+        "message": "جميع إضافاتك متوافقة.",
+        "title": "لا توجد تعارضات"
+      },
+      "missing": {
+        "message": "جميع العقد المطلوبة مثبتة.",
+        "title": "لا توجد عقد مفقودة"
+      },
+      "updateAvailable": {
+        "message": "جميع إضافاتك محدّثة.",
+        "title": "كل شيء محدّث"
+      },
+      "workflow": {
+        "message": "هذا سير العمل لا يستخدم أي عقدة إضافة.",
+        "title": "لا توجد إضافات في سير العمل"
+      }
+    },
     "enablePackToChangeVersion": "فعّل هذه الحزمة لتغيير الإصدارات",
     "errorConnecting": "خطأ في الاتصال بسجل عقد Comfy.",
     "extensionsSuccessfullyInstalled": "تم تثبيت الإضافات بنجاح وهي جاهزة للاستخدام!",
@@ -1322,6 +1341,7 @@
     "installingDependencies": "جاري تثبيت التبعيات...",
     "lastUpdated": "آخر تحديث",
     "latestVersion": "الأحدث",
+    "legacyManagerSearchTip": "هل تبحث عن ComfyUI-Manager؟ يمكنك تفعيل واجهة المدير القديمة عن طريق تشغيل ComfyUI مع الخيار --enable-manager-legacy-ui.",
     "legacyManagerUI": "استخدام الواجهة القديمة",
     "legacyManagerUIDescription": "لاستخدام واجهة مدير الإصدارات القديمة، ابدأ ComfyUI مع --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "قائمة مدير الإصدارات القديمة غير متوفرة، سيتم التبديل إلى القائمة الجديدة.",
@@ -1787,6 +1807,16 @@
     "render": "خطأ في عرض العقدة",
     "slots": "خطأ في فتحات العقدة",
     "widgets": "خطأ في عناصر العقدة"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "إخفاء العقد المهملة",
+    "hideDeprecatedDescription": "يخفي العقد التي تم تعليمها كمهملة ما لم يتم تفعيلها صراحة",
+    "hideDevOnly": "إخفاء عقد المطور فقط",
+    "hideDevOnlyDescription": "يخفي العقد المخصصة للمطورين فقط ما لم يتم تفعيل وضع المطور",
+    "hideExperimental": "إخفاء العقد التجريبية",
+    "hideExperimentalDescription": "يخفي العقد التي تم تعليمها كتجريبية ما لم يتم تفعيلها صراحة",
+    "hideSubgraph": "إخفاء عقد الرسم البياني الفرعي",
+    "hideSubgraphDescription": "يخفي مؤقتًا عقد الرسم البياني الفرعي من مكتبة العقد والبحث"
   },
   "nodeHelpPage": {
     "documentationPage": "صفحة التوثيق",
@@ -2505,6 +2535,9 @@
     "title": "ابدأ باستخدام قالب",
     "useCaseFilter": "المهام",
     "useCasesSelected": "{count} حالات استخدام"
+  },
+  "templates": {
+    "logoProviderSeparator": " و "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",

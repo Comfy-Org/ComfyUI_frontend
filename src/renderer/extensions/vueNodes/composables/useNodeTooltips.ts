@@ -12,6 +12,11 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
 
+// PrimeVue adds this internal property to elements with tooltips
+interface PrimeVueTooltipElement extends Element {
+  $_ptooltipId?: string
+}
+
 /**
  * Hide all visible tooltips by dispatching mouseleave events
  *
@@ -41,7 +46,7 @@ const hideTooltipsGlobally = () => {
     // Find the target element that owns this tooltip
     const targetElements = document.querySelectorAll('[data-pd-tooltip="true"]')
     for (const targetEl of targetElements) {
-      if ((targetEl as any).$_ptooltipId === tooltipId) {
+      if ((targetEl as PrimeVueTooltipElement).$_ptooltipId === tooltipId) {
         ;(targetEl as HTMLElement).dispatchEvent(
           new MouseEvent('mouseleave', { bubbles: true })
         )

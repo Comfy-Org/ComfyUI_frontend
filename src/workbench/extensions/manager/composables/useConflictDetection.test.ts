@@ -8,6 +8,7 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import type { ConflictAcknowledgmentState } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -121,13 +122,17 @@ describe('useConflictDetection', () => {
     getImportFailInfoBulk: vi.fn(),
     isLoading: ref(false),
     error: ref<string | null>(null)
-  } as unknown as ReturnType<typeof useComfyManagerService>
+  } as Partial<ReturnType<typeof useComfyManagerService>> as ReturnType<
+    typeof useComfyManagerService
+  >
 
   const mockRegistryService = {
     getBulkNodeVersions: vi.fn(),
     isLoading: ref(false),
     error: ref<string | null>(null)
-  } as unknown as ReturnType<typeof useComfyRegistryService>
+  } as Partial<ReturnType<typeof useComfyRegistryService>> as ReturnType<
+    typeof useComfyRegistryService
+  >
 
   // Create a ref that can be modified in tests
   const mockInstalledPacksWithVersions = ref<{ id: string; version: string }[]>(
@@ -143,35 +148,43 @@ describe('useConflictDetection', () => {
     isReady: ref(false),
     isLoading: ref(false),
     error: ref<unknown>(null)
-  } as unknown as ReturnType<typeof useInstalledPacks>
+  } as Partial<ReturnType<typeof useInstalledPacks>> as ReturnType<
+    typeof useInstalledPacks
+  >
 
   const mockManagerStore = {
     isPackEnabled: vi.fn()
-  } as unknown as ReturnType<typeof useComfyManagerStore>
+  } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
+    typeof useComfyManagerStore
+  >
 
   // Create refs that can be used to control computed properties
-  const mockConflictedPackages = ref<ConflictDetectionResult[]>([])
+  let mockConflictedPackages: ConflictDetectionResult[] = []
 
   const mockConflictStore = {
-    hasConflicts: computed(() =>
-      mockConflictedPackages.value.some((p) => p.has_conflict)
-    ),
-    conflictedPackages: mockConflictedPackages,
-    bannedPackages: computed(() =>
-      mockConflictedPackages.value.filter((p) =>
+    get hasConflicts() {
+      return mockConflictedPackages.some((p) => p.has_conflict)
+    },
+    get conflictedPackages() {
+      return mockConflictedPackages
+    },
+    get bannedPackages() {
+      return mockConflictedPackages.filter((p) =>
         p.conflicts?.some((c) => c.type === 'banned')
       )
-    ),
-    securityPendingPackages: computed(() =>
-      mockConflictedPackages.value.filter((p) =>
+    },
+    get securityPendingPackages() {
+      return mockConflictedPackages.filter((p) =>
         p.conflicts?.some((c) => c.type === 'pending')
       )
-    ),
+    },
     setConflictedPackages: vi.fn(),
     clearConflicts: vi.fn()
-  } as unknown as ReturnType<typeof useConflictDetectionStore>
+  } as Partial<ReturnType<typeof useConflictDetectionStore>> as ReturnType<
+    typeof useConflictDetectionStore
+  >
 
-  const mockIsInitialized = ref(true)
+  const mockIsInitialized = true
   const mockSystemStatsStore = {
     systemStats: {
       system: {
@@ -199,26 +212,26 @@ describe('useConflictDetection', () => {
       ]
     },
     isInitialized: mockIsInitialized,
-    $state: {} as never,
-    $patch: vi.fn(),
-    $reset: vi.fn(),
-    $subscribe: vi.fn(),
-    $onAction: vi.fn(),
-    $dispose: vi.fn(),
-    $id: 'systemStats',
+
     _customProperties: new Set<string>()
-  } as unknown as ReturnType<typeof useSystemStatsStore>
+  } as Partial<ReturnType<typeof useSystemStatsStore>> as ReturnType<
+    typeof useSystemStatsStore
+  >
 
   const mockAcknowledgment = {
     checkComfyUIVersionChange: vi.fn(),
-    acknowledgmentState: computed(() => ({})),
+    acknowledgmentState: computed(
+      () => ({}) as Partial<ConflictAcknowledgmentState>
+    ),
     shouldShowConflictModal: computed(() => false),
     shouldShowRedDot: computed(() => false),
     shouldShowManagerBanner: computed(() => false),
     dismissRedDotNotification: vi.fn(),
     dismissWarningBanner: vi.fn(),
     markConflictsAsSeen: vi.fn()
-  } as unknown as ReturnType<typeof useConflictAcknowledgment>
+  } as Partial<ReturnType<typeof useConflictAcknowledgment>> as ReturnType<
+    typeof useConflictAcknowledgment
+  >
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -249,7 +262,7 @@ describe('useConflictDetection', () => {
     // Reset the installedPacksWithVersions data
     mockInstalledPacksWithVersions.value = []
     // Reset conflicted packages
-    mockConflictedPackages.value = []
+    mockConflictedPackages = []
   })
 
   afterEach(() => {
@@ -414,7 +427,7 @@ describe('useConflictDetection', () => {
           error: 'Import error',
           name: 'fail-pack',
           path: '/path/to/pack'
-        } as any // The actual API returns different structure than types
+        } as { error?: string; traceback?: string } | null // The actual API returns different structure than types
       })
 
       // Mock registry response for the package
@@ -437,7 +450,7 @@ describe('useConflictDetection', () => {
 
   describe('computed properties', () => {
     it('should expose conflict status from store', () => {
-      mockConflictedPackages.value = [
+      mockConflictedPackages = [
         {
           package_id: 'test',
           package_name: 'Test',
@@ -450,8 +463,8 @@ describe('useConflictDetection', () => {
       useConflictDetection()
 
       // The hasConflicts computed should be true since we have a conflict
-      expect(mockConflictedPackages.value).toHaveLength(1)
-      expect(mockConflictedPackages.value[0].has_conflict).toBe(true)
+      expect(mockConflictedPackages).toHaveLength(1)
+      expect(mockConflictedPackages[0].has_conflict).toBe(true)
     })
   })
 

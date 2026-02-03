@@ -122,7 +122,7 @@ export const useCustomerEventsService = () => {
       .join(' ')
   }
 
-  function formatJsonValue(value: any) {
+  function formatJsonValue(value: unknown) {
     if (typeof value === 'number') {
       // Format numbers with commas and decimals if needed
       return value.toLocaleString()

@@ -53,8 +53,10 @@ watch(
 )
 
 function handleFocus(event: FocusEvent) {
-  const target = event.target as HTMLInputElement
-  target.select()
+  const target = event.target
+  if (target instanceof HTMLInputElement) {
+    target.select()
+  }
 }
 </script>
 

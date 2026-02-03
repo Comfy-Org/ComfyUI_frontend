@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 
+import LazyImage from '@/components/common/LazyImage.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import { AssetKindKey } from './types'
@@ -9,10 +10,9 @@ import type { LayoutMode } from './types'
 interface Props {
   index: number
   selected: boolean
-  mediaSrc: string
+  previewUrl: string
   name: string
   label?: string
-  metadata?: string
   layout?: LayoutMode
 }
 
@@ -100,19 +100,18 @@ function handleVideoLoad(event: Event) {
         />
       </div>
       <video
-        v-if="mediaSrc && isVideo"
-        :src="mediaSrc"
+        v-if="previewUrl && isVideo"
+        :src="previewUrl"
         class="size-full object-cover"
         preload="metadata"
         muted
         @loadeddata="handleVideoLoad"
       />
-      <img
-        v-else-if="mediaSrc"
-        :src="mediaSrc"
+      <LazyImage
+        v-else-if="previewUrl"
+        :src="previewUrl"
         :alt="name"
-        draggable="false"
-        class="size-full object-cover"
+        image-class="size-full object-cover"
         @load="handleImageLoad"
       />
       <div
@@ -145,9 +144,9 @@ function handleVideoLoad(event: Event) {
         {{ label ?? name }}
       </span>
       <!-- Meta Data -->
-      <span class="text-secondary block text-xs">{{
-        metadata || actualDimensions
-      }}</span>
+      <span v-if="actualDimensions" class="text-secondary block text-xs">
+        {{ actualDimensions }}
+      </span>
     </div>
   </div>
 </template>

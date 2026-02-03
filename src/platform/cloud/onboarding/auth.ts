@@ -18,9 +18,9 @@ function captureApiError(
   errorType: 'http_error' | 'network_error',
   httpStatus?: number,
   operation?: string,
-  extraContext?: Record<string, any>
+  extraContext?: Record<string, unknown>
 ) {
-  const tags: Record<string, any> = {
+  const tags: Record<string, string | number> = {
     api_endpoint: endpoint,
     error_type: errorType
   }
@@ -33,7 +33,7 @@ function captureApiError(
     tags.operation = operation
   }
 
-  const sentryOptions: any = {
+  const sentryOptions: Sentry.ExclusiveEventHintOrCaptureContext = {
     tags,
     extra: extraContext ? { ...extraContext } : undefined
   }

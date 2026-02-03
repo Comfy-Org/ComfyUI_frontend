@@ -50,6 +50,7 @@ jobs:
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
           ENABLE_MINIFY: 'true'
           USE_PROD_CONFIG: 'true'
+          IS_NIGHTLY: ${{  case(github.ref == 'refs/heads/main', 'true', 'false') }}
         run: |
           pnpm install --frozen-lockfile
           pnpm build

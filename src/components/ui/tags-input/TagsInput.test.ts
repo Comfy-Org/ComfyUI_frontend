@@ -119,26 +119,28 @@ describe('TagsInput with child components', () => {
   })
 
   it('exits edit mode when clicking outside', async () => {
+    const outsideElement = document.createElement('div')
+    document.body.appendChild(outsideElement)
     const wrapper = mount<typeof TagsInput<string>>(TagsInput, {
       props: {
         modelValue: ['tag1']
       },
       slots: {
         default: () => h(TagsInputInput, { placeholder: 'Add tag...' })
-      },
-      attachTo: document.body
+      }
     })
 
     await wrapper.trigger('click')
     await nextTick()
     expect(wrapper.find('input').exists()).toBe(true)
 
-    document.body.click()
+    outsideElement.dispatchEvent(new PointerEvent('click', { bubbles: true }))
     await nextTick()
 
     expect(wrapper.find('input').exists()).toBe(false)
 
     wrapper.unmount()
+    outsideElement.remove()
   })
 
   it('shows placeholder when modelValue is empty', async () => {

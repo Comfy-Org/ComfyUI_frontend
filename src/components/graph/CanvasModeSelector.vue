@@ -55,6 +55,7 @@
 
 <script setup lang="ts">
 import Popover from 'primevue/popover'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -66,7 +67,7 @@ interface Props {
 }
 
 defineProps<Props>()
-const buttonRef = ref<InstanceType<typeof Button>>()
+const buttonRef = ref<ComponentPublicInstance | null>(null)
 const popover = ref<InstanceType<typeof Popover>>()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
@@ -92,7 +93,7 @@ const lockCommandText = computed(() =>
 )
 
 const toggle = (event: Event) => {
-  const el = (buttonRef.value as any)?.$el || buttonRef.value
+  const el = buttonRef.value?.$el || buttonRef.value
   popover.value?.toggle(event, el)
 }
 

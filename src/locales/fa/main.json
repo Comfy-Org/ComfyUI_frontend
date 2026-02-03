@@ -22,6 +22,7 @@
     },
     "assetCollection": "مجموعه دارایی‌ها",
     "assets": "دارایی‌ها",
+    "baseModel": "مدل پایه",
     "baseModels": "مدل‌های پایه",
     "browseAssets": "مرور دارایی‌ها",
     "byType": "بر اساس نوع",
@@ -127,6 +128,7 @@
     "selectProjects": "پروژه‌ها را انتخاب کنید",
     "sortAZ": "الف-ی",
     "sortBy": "مرتب‌سازی بر اساس",
+    "sortDefault": "پیش‌فرض",
     "sortPopular": "محبوب",
     "sortRecent": "جدیدترین",
     "sortZA": "ی-الف",
@@ -177,13 +179,7 @@
       "whitelistInfo": "درباره سایت‌های غیرمجاز"
     },
     "deleteAccount": {
-      "cancel": "انصراف",
-      "confirm": "حذف حساب کاربری",
-      "confirmMessage": "آیا مطمئن هستید که می‌خواهید حساب کاربری خود را حذف کنید؟ این عملیات غیرقابل بازگشت است و تمام داده‌های شما به طور دائمی حذف خواهد شد.",
-      "confirmTitle": "حذف حساب کاربری",
-      "deleteAccount": "حذف حساب کاربری",
-      "success": "حساب کاربری حذف شد",
-      "successDetail": "حساب کاربری شما با موفقیت حذف شد."
+      "contactSupport": "برای حذف حساب کاربری خود، لطفاً با {email} تماس بگیرید."
     },
     "errors": {
       "auth/cancelled-popup-request": "ورود لغو شد. لطفاً دوباره تلاش کنید.",
@@ -578,6 +574,7 @@
     "CLIP": "clip",
     "CLIP_VISION": "بینایی clip",
     "CLIP_VISION_OUTPUT": "خروجی بینایی clip",
+    "COLOR": "رنگ",
     "COMBO": "ترکیبی",
     "COMFY_AUTOGROW_V3": "Comfy AutoGrow V3",
     "COMFY_DYNAMICCOMBO_V3": "Comfy DynamicCombo V3",
@@ -1301,6 +1298,28 @@
     "disabledNodesWontUpdate": "نودهای غیرفعال به‌روزرسانی نخواهند شد",
     "discoverCommunityContent": "بسته‌های نود، افزونه‌ها و محتوای ساخته‌شده توسط جامعه را کشف کنید...",
     "downloads": "دانلودها",
+    "emptyState": {
+      "allInstalled": {
+        "message": "شما هنوز هیچ افزونه‌ای نصب نکرده‌اید.",
+        "title": "افزونه‌ای نصب نشده است"
+      },
+      "conflicting": {
+        "message": "تمام افزونه‌های شما سازگار هستند.",
+        "title": "تعارضی شناسایی نشد"
+      },
+      "missing": {
+        "message": "تمام nodeهای مورد نیاز نصب شده‌اند.",
+        "title": "node گمشده‌ای وجود ندارد"
+      },
+      "updateAvailable": {
+        "message": "تمام افزونه‌های شما به‌روز هستند.",
+        "title": "همه به‌روز هستند"
+      },
+      "workflow": {
+        "message": "این گردش‌کار از هیچ node افزونه‌ای استفاده نمی‌کند.",
+        "title": "افزونه‌ای در گردش‌کار وجود ندارد"
+      }
+    },
     "enablePackToChangeVersion": "برای تغییر نسخه، این بسته را فعال کنید",
     "errorConnecting": "خطا در اتصال به رجیستری نود Comfy.",
     "extensionsSuccessfullyInstalled": "افزونه(ها) با موفقیت نصب شدند و آماده استفاده هستند!",
@@ -1322,6 +1341,7 @@
     "installingDependencies": "در حال نصب وابستگی‌ها...",
     "lastUpdated": "آخرین به‌روزرسانی",
     "latestVersion": "آخرین نسخه",
+    "legacyManagerSearchTip": "دنبال ComfyUI-Manager هستید؟ می‌توانید رابط کاربری مدیر قدیمی را با اجرای ComfyUI و استفاده از پرچم --enable-manager-legacy-ui فعال کنید.",
     "legacyManagerUI": "استفاده از رابط کاربری قدیمی",
     "legacyManagerUIDescription": "برای استفاده از رابط کاربری قدیمی مدیریت، ComfyUI را با --enable-manager-legacy-ui اجرا کنید.",
     "legacyMenuNotAvailable": "منوی مدیریت قدیمی در دسترس نیست، به منوی جدید مدیریت منتقل می‌شود.",
@@ -1787,6 +1807,16 @@
     "render": "خطای رندر node",
     "slots": "خطای slotهای node",
     "widgets": "خطای widgetهای node"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "مخفی کردن nodeهای منسوخ",
+    "hideDeprecatedDescription": "nodeهایی که به عنوان منسوخ علامت‌گذاری شده‌اند را مگر در صورت فعال‌سازی صریح، مخفی می‌کند.",
+    "hideDevOnly": "مخفی کردن nodeهای مخصوص توسعه‌دهنده",
+    "hideDevOnlyDescription": "nodeهایی که فقط مخصوص توسعه‌دهنده هستند را مگر در صورت فعال بودن حالت توسعه، مخفی می‌کند.",
+    "hideExperimental": "مخفی کردن nodeهای آزمایشی",
+    "hideExperimentalDescription": "nodeهایی که به عنوان آزمایشی علامت‌گذاری شده‌اند را مگر در صورت فعال‌سازی صریح، مخفی می‌کند.",
+    "hideSubgraph": "مخفی کردن nodeهای زیرگراف",
+    "hideSubgraphDescription": "به طور موقت nodeهای زیرگراف را از کتابخانه node و جستجو مخفی می‌کند."
   },
   "nodeHelpPage": {
     "documentationPage": "صفحه مستندات",
@@ -2516,6 +2546,9 @@
     "title": "شروع با یک قالب",
     "useCaseFilter": "وظایف",
     "useCasesSelected": "{count} وظیفه"
+  },
+  "templates": {
+    "logoProviderSeparator": " و "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "امکان ایجاد subgraph وجود ندارد",

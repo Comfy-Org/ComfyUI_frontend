@@ -92,8 +92,13 @@ const createLicenseUrl = (filename: string, repoUrl: string): string => {
   return `${baseRepoUrl}/blob/main/${licenseFile}`
 }
 
+interface LicenseObject {
+  file?: string
+  text?: string
+}
+
 const parseLicenseObject = (
-  licenseObj: any
+  licenseObj: LicenseObject
 ): { text: string; isUrl: boolean } => {
   const licenseFile = licenseObj.file || licenseObj.text
 

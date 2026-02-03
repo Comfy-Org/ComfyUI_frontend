@@ -5,7 +5,6 @@ import {
   GoogleAuthProvider,
   browserLocalPersistence,
   createUserWithEmailAndPassword,
-  deleteUser,
   getAdditionalUserInfo,
   onAuthStateChanged,
   onIdTokenChanged,
@@ -429,14 +428,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     await updatePassword(currentUser.value, newPassword)
   }
 
-  /** Delete the current user account */
-  const _deleteAccount = async (): Promise<void> => {
-    if (!currentUser.value) {
-      throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
-    await deleteUser(currentUser.value)
-  }
-
   const addCredits = async (
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
@@ -536,7 +527,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     accessBillingPortal,
     sendPasswordReset,
     updatePassword: _updatePassword,
-    deleteAccount: _deleteAccount,
     getAuthHeader,
     getFirebaseAuthHeader,
     getAuthToken

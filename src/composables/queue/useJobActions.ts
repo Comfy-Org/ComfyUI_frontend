@@ -13,6 +13,8 @@ export type JobAction = {
   variant: 'destructive' | 'secondary' | 'textonly'
 }
 
+const CANCELLABLE_STATES: JobState[] = ['pending', 'initialization', 'running']
+
 export function useJobActions(
   job: MaybeRefOrGetter<JobListItem | null | undefined>
 ) {
@@ -26,8 +28,6 @@ export function useJobActions(
     variant: 'destructive'
   }
 
-  const cancellableStates: JobState[] = ['pending', 'initialization', 'running']
-
   const jobRef = computed(() => toValue(job) ?? null)
 
   const canCancelJob = computed(() => {
@@ -38,7 +38,7 @@ export function useJobActions(
 
     return (
       currentJob.showClear !== false &&
-      cancellableStates.includes(currentJob.state)
+      CANCELLABLE_STATES.includes(currentJob.state)
     )
   })
 

@@ -1,16 +1,25 @@
 import { uniqWith } from 'es-toolkit'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { SelectOption } from '@/components/input/types'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { OwnershipFilterOption } from '@/platform/assets/types/filterTypes'
 import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'
 
 /**
  * Composable that extracts available filter options from asset data
- * Provides reactive computed properties for file formats and base models
+ * Provides reactive computed properties for file formats, base models, and ownership
  */
 export function useAssetFilterOptions(assets: MaybeRefOrGetter<AssetItem[]>) {
+  const { t } = useI18n()
+
+  const ownershipOptions = computed<OwnershipFilterOption[]>(() => [
+    { name: t('assetBrowser.ownershipAll'), value: 'all' },
+    { name: t('assetBrowser.ownershipMyModels'), value: 'my-models' },
+    { name: t('assetBrowser.ownershipPublicModels'), value: 'public-models' }
+  ])
   /**
    * Extract unique file formats from asset names
    * Returns sorted SelectOption array with extensions
@@ -50,6 +59,7 @@ export function useAssetFilterOptions(assets: MaybeRefOrGetter<AssetItem[]>) {
 
   return {
     availableFileFormats,
-    availableBaseModels
+    availableBaseModels,
+    ownershipOptions
   }
 }

@@ -76,25 +76,27 @@ const getOptionValue = (option: T, index: number): ModelValue => {
   }
 
   const valueField = props.optionValue
+  const optionRecord = option as Record<string, unknown>
   const value =
-    (option as any)[valueField] ??
+    optionRecord[valueField] ??
     option.value ??
-    (option as any).name ??
+    optionRecord.name ??
     option.label ??
     index
-  return value
+  return value as ModelValue
 }
 
 // for display with PrimeVue compatibility
 const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
     const labelField = props.optionLabel
-    return (
-      (option as any)[labelField] ??
-      option.label ??
-      (option as any).name ??
-      option.value ??
-      String(option)
+    const optionRecord = option as Record<string, unknown>
+    return String(
+      optionRecord[labelField] ??
+        option.label ??
+        optionRecord.name ??
+        option.value ??
+        option
     )
   }
   return String(option)

@@ -3,8 +3,15 @@ import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import type { SelectProps } from 'primevue/select'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
@@ -74,7 +81,7 @@ describe('WidgetSelect Value Binding', () => {
         readonly
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia()],
+        plugins: [PrimeVue, createTestingPinia(), i18n],
         components: { SelectPlus }
       }
     })
@@ -226,7 +233,7 @@ describe('WidgetSelect Value Binding', () => {
           nodeType: 'CheckpointLoaderSimple'
         },
         global: {
-          plugins: [PrimeVue, createTestingPinia()],
+          plugins: [PrimeVue, createTestingPinia(), i18n],
           components: { SelectPlus }
         }
       })
@@ -245,7 +252,7 @@ describe('WidgetSelect Value Binding', () => {
           nodeType: 'KSampler'
         },
         global: {
-          plugins: [PrimeVue, createTestingPinia()],
+          plugins: [PrimeVue, createTestingPinia(), i18n],
           components: { SelectPlus }
         }
       })
@@ -269,7 +276,7 @@ describe('WidgetSelect Value Binding', () => {
           nodeType: 'CheckpointLoaderSimple'
         },
         global: {
-          plugins: [PrimeVue, createTestingPinia()],
+          plugins: [PrimeVue, createTestingPinia(), i18n],
           components: { SelectPlus }
         }
       })
@@ -288,7 +295,7 @@ describe('WidgetSelect Value Binding', () => {
           nodeType: 'CheckpointLoaderSimple'
         },
         global: {
-          plugins: [PrimeVue, createTestingPinia()],
+          plugins: [PrimeVue, createTestingPinia(), i18n],
           components: { SelectPlus }
         }
       })

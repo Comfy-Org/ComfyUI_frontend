@@ -119,14 +119,14 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   /** @inheritdoc */
   _dragging?: boolean
 
-  #color?: CanvasColour | null
+  private _color?: CanvasColour | null
   /** Custom colour for this link only */
   public get color(): CanvasColour | null | undefined {
-    return this.#color
+    return this._color
   }
 
   public set color(value: CanvasColour) {
-    this.#color = value === '' ? null : value
+    this._color = value === '' ? null : value
   }
 
   public get isFloatingOutput(): boolean {

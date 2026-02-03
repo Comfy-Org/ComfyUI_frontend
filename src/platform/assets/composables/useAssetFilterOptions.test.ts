@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
+
 import {
   createAssetWithSpecificBaseModel,
   createAssetWithSpecificExtension,
@@ -8,6 +9,12 @@ import {
   createAssetWithoutExtension,
   createAssetWithoutUserMetadata
 } from '@/platform/assets/fixtures/ui-mock-assets'
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key
+  })
+}))
 
 describe('useAssetFilterOptions', () => {
   describe('File Format Extraction', () => {

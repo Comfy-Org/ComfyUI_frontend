@@ -72,7 +72,7 @@ export function useHelpCenter(
    * Show the node conflict dialog with current conflict data
    */
   const showConflictModal = () => {
-    showNodeConflictDialog({
+    void showNodeConflictDialog({
       showAfterWhatsNew: true,
       dialogComponentProps: {
         onClose: () => {
