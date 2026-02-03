@@ -19,7 +19,6 @@ declare global {
  * Other methods are no-ops (not implemented since interface is optional).
  */
 export class GtmTelemetryProvider implements TelemetryProvider {
-  private dataLayer: Record<string, unknown>[] = []
   private initialized = false
 
   constructor() {
@@ -38,9 +37,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     }
 
     window.dataLayer = window.dataLayer || []
-    this.dataLayer = window.dataLayer
 
-    this.dataLayer.push({
+    window.dataLayer.push({
       'gtm.start': new Date().getTime(),
       event: 'gtm.js'
     })
@@ -55,7 +53,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   private pushEvent(event: string, properties?: Record<string, unknown>): void {
     if (!this.initialized) return
-    this.dataLayer.push({ event, ...properties })
+    window.dataLayer?.push({ event, ...properties })
   }
 
   trackPageView(pageName: string, properties?: PageViewMetadata): void {
