@@ -3,7 +3,9 @@
     <template #header>
       <SearchBox
         v-model="filters['global'].value"
-        :placeholder="$t('g.searchKeybindingsPlaceholder')"
+        :placeholder="
+          $t('g.searchPlaceholder', { subject: $t('g.searchKeybindings') })
+        "
       />
     </template>
 

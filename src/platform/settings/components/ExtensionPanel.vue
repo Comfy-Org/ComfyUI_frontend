@@ -3,7 +3,9 @@
     <template #header>
       <SearchBox
         v-model="filters['global'].value"
-        :placeholder="$t('g.searchExtensionsPlaceholder')"
+        :placeholder="
+          $t('g.searchPlaceholder', { subject: $t('g.searchExtensions') })
+        "
       />
       <Message
         v-if="hasChanges"
