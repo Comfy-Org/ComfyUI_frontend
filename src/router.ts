@@ -37,7 +37,7 @@ function getBasePath(): string {
 
 const basePath = getBasePath()
 
-function pushPageView(): void {
+function trackPageView(): void {
   if (!isCloud || typeof window === 'undefined') return
 
   useTelemetry()?.trackPageView(document.title, {
@@ -103,7 +103,7 @@ installPreservedQueryTracker(router, [
 ])
 
 router.afterEach(() => {
-  pushPageView()
+  trackPageView()
 })
 
 if (isCloud) {
