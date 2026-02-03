@@ -2837,6 +2837,7 @@
     "groupSettings": "Group Settings",
     "groups": "Groups",
     "favoritesNoneDesc": "Inputs you favorite will show up here",
+    "favoritesNoneHint": "In the Parameters tab, click {moreIcon} on any input to add it here",
     "noneSearchDesc": "No items match your search",
     "nodesNoneDesc": "NO NODES",
     "fallbackGroupTitle": "Group",
