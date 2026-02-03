@@ -1,6 +1,6 @@
 import { computed, reactive, readonly } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig
@@ -84,6 +84,8 @@ export function useFeatureFlags() {
       )
     },
     get linearToggleEnabled() {
+      if (isNightly) return true
+
       return (
         remoteConfig.value.linear_toggle_enabled ??
         api.getServerFeature(ServerFeatureFlag.LINEAR_TOGGLE_ENABLED, false)
