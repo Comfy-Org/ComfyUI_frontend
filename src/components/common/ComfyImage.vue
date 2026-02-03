@@ -38,7 +38,10 @@ const {
   alt = 'Image content'
 } = defineProps<{
   src: string
-  class?: any
+  class?:
+    | string
+    | Record<string, boolean>
+    | (string | Record<string, boolean>)[]
   contain?: boolean
   alt?: string
 }>()

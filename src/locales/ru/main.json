@@ -22,6 +22,7 @@
     },
     "assetCollection": "Коллекция ассетов",
     "assets": "Ресурсы",
+    "baseModel": "Базовая модель",
     "baseModels": "Базовые модели",
     "browseAssets": "Просмотр ресурсов",
     "byType": "По типу",
@@ -127,6 +128,7 @@
     "selectProjects": "Выберите проекты",
     "sortAZ": "А-Я",
     "sortBy": "Сортировать по",
+    "sortDefault": "По умолчанию",
     "sortPopular": "Популярные",
     "sortRecent": "Недавние",
     "sortZA": "Я-А",
@@ -177,13 +179,7 @@
       "whitelistInfo": "О не включённых в белый список сайтах"
     },
     "deleteAccount": {
-      "cancel": "Отмена",
-      "confirm": "Удалить аккаунт",
-      "confirmMessage": "Вы уверены, что хотите удалить свой аккаунт? Это действие необратимо и приведёт к безвозвратному удалению всех ваших данных.",
-      "confirmTitle": "Удалить аккаунт",
-      "deleteAccount": "Удалить аккаунт",
-      "success": "Аккаунт удалён",
-      "successDetail": "Ваш аккаунт был успешно удалён."
+      "contactSupport": "Чтобы удалить свою учетную запись, пожалуйста, свяжитесь с {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "Вход был отменен. Пожалуйста, попробуйте еще раз.",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
+    "COLOR": "ЦВЕТ",
     "COMBO": "КОМБО",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1301,6 +1298,28 @@
     "disabledNodesWontUpdate": "Отключенные ноды не будут обновлены",
     "discoverCommunityContent": "Откройте для себя пакеты узлов, расширения и многое другое, созданные сообществом...",
     "downloads": "Загрузки",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Вы еще не установили ни одного расширения.",
+        "title": "Нет установленных расширений"
+      },
+      "conflicting": {
+        "message": "Все ваши расширения совместимы.",
+        "title": "Конфликтов не обнаружено"
+      },
+      "missing": {
+        "message": "Все необходимые узлы установлены.",
+        "title": "Нет отсутствующих узлов"
+      },
+      "updateAvailable": {
+        "message": "Все ваши расширения обновлены.",
+        "title": "Все обновлено"
+      },
+      "workflow": {
+        "message": "В этом рабочем процессе не используются узлы расширений.",
+        "title": "Нет расширений в рабочем процессе"
+      }
+    },
     "enablePackToChangeVersion": "Включите этот пакет для изменения версий",
     "errorConnecting": "Ошибка подключения к реестру Comfy Node.",
     "extensionsSuccessfullyInstalled": "Расширение(я) успешно установлено и готово к использованию!",
@@ -1322,6 +1341,7 @@
     "installingDependencies": "Установка зависимостей...",
     "lastUpdated": "Последнее обновление",
     "latestVersion": "Последняя",
+    "legacyManagerSearchTip": "Ищете ComfyUI-Manager? Вы можете включить устаревший интерфейс менеджера, запустив ComfyUI с флагом --enable-manager-legacy-ui.",
     "legacyManagerUI": "Использовать устаревший UI",
     "legacyManagerUIDescription": "Чтобы использовать устаревший UI менеджера, запустите ComfyUI с --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "Устаревшее меню менеджера недоступно в этой версии ComfyUI. Пожалуйста, используйте новое меню менеджера.",
@@ -1787,6 +1807,16 @@
     "render": "Ошибка рендеринга узла",
     "slots": "Ошибка слотов узла",
     "widgets": "Ошибка виджетов узла"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Скрыть устаревшие узлы",
+    "hideDeprecatedDescription": "Скрывает узлы, помеченные как устаревшие, если они не включены явно",
+    "hideDevOnly": "Скрыть только для разработчиков",
+    "hideDevOnlyDescription": "Скрывает узлы, предназначенные только для разработчиков, если не включён режим разработчика",
+    "hideExperimental": "Скрыть экспериментальные узлы",
+    "hideExperimentalDescription": "Скрывает узлы, помеченные как экспериментальные, если они не включены явно",
+    "hideSubgraph": "Скрыть узлы подграфа",
+    "hideSubgraphDescription": "Временно скрывает узлы подграфа из библиотеки узлов и поиска"
   },
   "nodeHelpPage": {
     "documentationPage": "страницу документации",
@@ -2505,6 +2535,9 @@
     "title": "Начните с шаблона",
     "useCaseFilter": "Задачи",
     "useCasesSelected": "{count} вариантов использования"
+  },
+  "templates": {
+    "logoProviderSeparator": " & "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Невозможно создать подграф",

@@ -2466,13 +2466,13 @@ export class LGraph
     }
   }
 
-  #canvas?: LGraphCanvas
+  private _canvas?: LGraphCanvas
   get primaryCanvas(): LGraphCanvas | undefined {
-    return this.rootGraph.#canvas
+    return this.rootGraph._canvas
   }
 
   set primaryCanvas(canvas: LGraphCanvas) {
-    this.rootGraph.#canvas = canvas
+    this.rootGraph._canvas = canvas
   }
 
   load(url: string | Blob | URL | File, callback: () => void) {
@@ -2541,9 +2541,9 @@ export class Subgraph
   /** A list of node widgets displayed in the parent graph, on the subgraph object. */
   readonly widgets: ExposedWidget[] = []
 
-  #rootGraph: LGraph
+  private _rootGraph: LGraph
   override get rootGraph(): LGraph {
-    return this.#rootGraph
+    return this._rootGraph
   }
 
   constructor(rootGraph: LGraph, data: ExportedSubgraph) {
@@ -2551,11 +2551,11 @@ export class Subgraph
 
     super()
 
-    this.#rootGraph = rootGraph
+    this._rootGraph = rootGraph
 
     const cloned = structuredClone(data)
     this._configureBase(cloned)
-    this.#configureSubgraph(cloned)
+    this._configureSubgraph(cloned)
   }
 
   getIoNodeOnPos(
@@ -2567,7 +2567,7 @@ export class Subgraph
     if (outputNode.containsPoint([x, y])) return outputNode
   }
 
-  #configureSubgraph(
+  private _configureSubgraph(
     data:
       | (ISerialisedGraph & ExportedSubgraph)
       | (SerialisableGraph & ExportedSubgraph)
@@ -2611,7 +2611,7 @@ export class Subgraph
   ): boolean | undefined {
     const r = super.configure(data, keep_old)
 
-    this.#configureSubgraph(data)
+    this._configureSubgraph(data)
     return r
   }
 
