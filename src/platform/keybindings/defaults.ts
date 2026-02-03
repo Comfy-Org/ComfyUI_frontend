@@ -1,4 +1,4 @@
-import type { Keybinding } from '@/schemas/keyBindingSchema'
+import type { Keybinding } from './types'
 
 export const CORE_KEYBINDINGS: Keybinding[] = [
   {
@@ -76,7 +76,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     },
     commandId: 'Comfy.ShowSettingsDialog'
   },
-  // For '=' both holding shift and not holding shift
   {
     combo: {
       key: '=',
@@ -94,7 +93,6 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     commandId: 'Comfy.Canvas.ZoomIn',
     targetElementId: 'graph-canvas'
   },
-  // For number pad '+'
   {
     combo: {
       key: '+',

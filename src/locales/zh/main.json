@@ -22,6 +22,7 @@
     },
     "assetCollection": "资产合集",
     "assets": "资产",
+    "baseModel": "基础模型",
     "baseModels": "基础模型",
     "browseAssets": "浏览资产",
     "byType": "按类型",
@@ -127,6 +128,7 @@
     "selectProjects": "选择项目",
     "sortAZ": "A-Z",
     "sortBy": "排序方式",
+    "sortDefault": "默认",
     "sortPopular": "最受欢迎",
     "sortRecent": "最近",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "关于非白名单网站"
     },
     "deleteAccount": {
-      "cancel": "取消",
-      "confirm": "删除账户",
-      "confirmMessage": "您确定要删除您的账户吗？此操作无法撤销，并且会永久删除您的所有数据。",
-      "confirmTitle": "删除账户",
-      "deleteAccount": "删除账户",
-      "success": "账户已删除",
-      "successDetail": "您的账户已成功删除。"
+      "contactSupport": "如需删除您的账户，请联系 {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "登录已取消。请重试。",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
+    "COLOR": "颜色",
     "COMBO": "组合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +746,7 @@
     "deleteImage": "删除图片",
     "deprecated": "已弃用",
     "description": "描述",
+    "devOnly": "开发专用",
     "devices": "设备",
     "disableAll": "禁用全部",
     "disableSelected": "禁用选中项",
@@ -1300,6 +1298,28 @@
     "disabledNodesWontUpdate": "已禁用的节点不会被更新",
     "discoverCommunityContent": "发现社区制作的节点包，扩展等等...",
     "downloads": "下载",
+    "emptyState": {
+      "allInstalled": {
+        "message": "你还没有安装任何扩展。",
+        "title": "未安装扩展"
+      },
+      "conflicting": {
+        "message": "你的所有扩展均兼容。",
+        "title": "未检测到冲突"
+      },
+      "missing": {
+        "message": "所有必需节点均已安装。",
+        "title": "无缺失节点"
+      },
+      "updateAvailable": {
+        "message": "你的所有扩展都是最新的。",
+        "title": "全部已是最新"
+      },
+      "workflow": {
+        "message": "此工作流未使用任何扩展节点。",
+        "title": "工作流中无扩展"
+      }
+    },
     "enablePackToChangeVersion": "启用此包以更改版本",
     "errorConnecting": "连接到Comfy节点注册表时出错。",
     "extensionsSuccessfullyInstalled": "扩展已成功安装并可使用！",
@@ -1321,6 +1341,7 @@
     "installingDependencies": "正在安装依赖项...",
     "lastUpdated": "最后更新",
     "latestVersion": "最新",
+    "legacyManagerSearchTip": "在找 ComfyUI-Manager？你可以通过启动 ComfyUI 并添加 --enable-manager-legacy-ui 参数来启用旧版管理器界面。",
     "legacyManagerUI": "使用传统界面",
     "legacyManagerUIDescription": "如需使用传统管理器界面，请以 --enable-manager-legacy-ui 参数启动 ComfyUI",
     "legacyMenuNotAvailable": "传统管理器菜单不可用，已切换为新管理器菜单。",
@@ -1685,6 +1706,7 @@
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1785,6 +1807,16 @@
     "render": "节点渲染错误",
     "slots": "节点接口错误",
     "widgets": "节点组件错误"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "隐藏已弃用节点",
+    "hideDeprecatedDescription": "隐藏标记为已弃用的节点，除非明确启用",
+    "hideDevOnly": "隐藏仅开发者可见节点",
+    "hideDevOnlyDescription": "隐藏标记为仅开发者可见的节点，除非启用开发者模式",
+    "hideExperimental": "隐藏实验性节点",
+    "hideExperimentalDescription": "隐藏标记为实验性的节点，除非明确启用",
+    "hideSubgraph": "隐藏子图节点",
+    "hideSubgraphDescription": "暂时从节点库和搜索中隐藏子图节点"
   },
   "nodeHelpPage": {
     "documentationPage": "文档页面",
@@ -2275,6 +2307,7 @@
       "filterBy": "筛选方式",
       "filterCurrentWorkflow": "当前工作流",
       "filterJobs": "筛选任务",
+      "inlineTotalLabel": "总计",
       "interruptAll": "中断全部正在运行的任务",
       "jobQueue": "任务队列",
       "jobsCompleted": "{count} 任务完成 | {count} 任务完成",
@@ -2321,6 +2354,7 @@
   },
   "subgraphStore": {
     "blueprintName": "子工作流名称",
+    "cannotDeleteGlobal": "无法删除已安装的蓝图",
     "confirmDelete": "此操作将永久从您的库中移除该子工作流",
     "confirmDeleteTitle": "删除子工作流？",
     "hidden": "隐藏/嵌套参数",
@@ -2512,6 +2546,9 @@
     "title": "从模板开始",
     "useCaseFilter": "使用例",
     "useCasesSelected": "已选 {count} 个用例"
+  },
+  "templates": {
+    "logoProviderSeparator": " 与 "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "无法创建子工作流",

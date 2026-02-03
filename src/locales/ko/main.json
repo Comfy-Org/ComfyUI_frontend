@@ -22,6 +22,7 @@
     },
     "assetCollection": "에셋 컬렉션",
     "assets": "에셋",
+    "baseModel": "베이스 모델",
     "baseModels": "베이스 모델",
     "browseAssets": "에셋 탐색",
     "byType": "유형별",
@@ -127,6 +128,7 @@
     "selectProjects": "프로젝트 선택",
     "sortAZ": "가나다순",
     "sortBy": "정렬 기준",
+    "sortDefault": "기본값",
     "sortPopular": "인기순",
     "sortRecent": "최근",
     "sortZA": "가나다 역순",
@@ -177,13 +179,7 @@
       "whitelistInfo": "비허용 사이트에 대하여"
     },
     "deleteAccount": {
-      "cancel": "취소",
-      "confirm": "계정 삭제",
-      "confirmMessage": "정말로 계정을 삭제하시겠습니까? 이 작업은 되돌릴 수 없으며 모든 데이터가 영구적으로 삭제됩니다.",
-      "confirmTitle": "계정 삭제",
-      "deleteAccount": "계정 삭제",
-      "success": "계정이 삭제되었습니다",
-      "successDetail": "계정이 성공적으로 삭제되었습니다."
+      "contactSupport": "계정을 삭제하려면 {email}으로 문의해 주세요."
     },
     "errors": {
       "auth/cancelled-popup-request": "로그인이 취소되었습니다. 다시 시도해 주세요.",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION 출력",
+    "COLOR": "색상",
     "COMBO": "콤보",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +746,7 @@
     "deleteImage": "이미지 삭제",
     "deprecated": "사용 중단",
     "description": "설명",
+    "devOnly": "개발 전용",
     "devices": "장치",
     "disableAll": "모두 비활성화",
     "disableSelected": "선택 항목 비활성화",
@@ -1300,6 +1298,28 @@
     "disabledNodesWontUpdate": "비활성화된 노드는 업데이트되지 않습니다",
     "discoverCommunityContent": "커뮤니티에서 만든 노드 팩 및 확장 프로그램을 찾아보세요...",
     "downloads": "다운로드",
+    "emptyState": {
+      "allInstalled": {
+        "message": "아직 설치한 확장 프로그램이 없습니다.",
+        "title": "설치된 확장 프로그램 없음"
+      },
+      "conflicting": {
+        "message": "모든 확장 프로그램이 호환됩니다.",
+        "title": "충돌 없음"
+      },
+      "missing": {
+        "message": "필요한 모든 노드가 설치되어 있습니다.",
+        "title": "누락된 노드 없음"
+      },
+      "updateAvailable": {
+        "message": "모든 확장 프로그램이 최신 버전입니다.",
+        "title": "모두 최신 상태"
+      },
+      "workflow": {
+        "message": "이 워크플로는 확장 노드를 사용하지 않습니다.",
+        "title": "워크플로에 확장 프로그램 없음"
+      }
+    },
     "enablePackToChangeVersion": "버전을 변경하려면 이 팩을 활성화하세요",
     "errorConnecting": "Comfy Node Registry에 연결하는 중 오류가 발생했습니다.",
     "extensionsSuccessfullyInstalled": "확장이 성공적으로 설치되어 사용할 준비가 되었습니다!",
@@ -1321,6 +1341,7 @@
     "installingDependencies": "종속성 설치 중...",
     "lastUpdated": "마지막 업데이트",
     "latestVersion": "최신",
+    "legacyManagerSearchTip": "ComfyUI-Manager를 찾고 계신가요? ComfyUI를 --enable-manager-legacy-ui 플래그와 함께 시작하면 레거시 매니저 UI를 활성화할 수 있습니다.",
     "legacyManagerUI": "구버전 매니저 UI 사용",
     "legacyManagerUIDescription": "구버전 매니저 UI를 사용하려면, ComfyUI를 --enable-manager-legacy-ui로 시작하세요",
     "legacyMenuNotAvailable": "이 버전의 ComfyUI에서는 구버전 매니저 메뉴를 사용할 수 없습니다. 대신 새로운 매니저 메뉴를 사용하십시오.",
@@ -1685,6 +1706,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1785,6 +1807,16 @@
     "render": "노드 렌더 오류",
     "slots": "노드 슬롯 오류",
     "widgets": "노드 위젯 오류"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "사용 중단 노드 숨기기",
+    "hideDeprecatedDescription": "명시적으로 활성화하지 않는 한 사용 중단된 노드를 숨깁니다.",
+    "hideDevOnly": "개발자 전용 노드 숨기기",
+    "hideDevOnlyDescription": "개발자 모드가 활성화되지 않은 경우 개발자 전용 노드를 숨깁니다.",
+    "hideExperimental": "실험적 노드 숨기기",
+    "hideExperimentalDescription": "명시적으로 활성화하지 않는 한 실험적 노드를 숨깁니다.",
+    "hideSubgraph": "서브그래프 노드 숨기기",
+    "hideSubgraphDescription": "노드 라이브러리와 검색에서 서브그래프 노드를 임시로 숨깁니다."
   },
   "nodeHelpPage": {
     "documentationPage": "문서 페이지",
@@ -2264,6 +2296,7 @@
       "filterBy": "필터 기준",
       "filterCurrentWorkflow": "현재 워크플로우",
       "filterJobs": "작업 필터",
+      "inlineTotalLabel": "총계",
       "interruptAll": "모든 실행 중인 작업 중단",
       "jobQueue": "작업 대기열",
       "jobsCompleted": "{count}개 작업 완료",
@@ -2310,6 +2343,7 @@
   },
   "subgraphStore": {
     "blueprintName": "서브그래프 이름",
+    "cannotDeleteGlobal": "설치된 블루프린트는 삭제할 수 없습니다",
     "confirmDelete": "이 작업은 라이브러리에서 블루프린트를 영구적으로 제거합니다",
     "confirmDeleteTitle": "블루프린트를 삭제하시겠습니까?",
     "hidden": "숨김 / 중첩 매개변수",
@@ -2501,6 +2535,9 @@
     "title": "템플릿으로 시작하기",
     "useCaseFilter": "작업",
     "useCasesSelected": "{count}개 사용 사례"
+  },
+  "templates": {
+    "logoProviderSeparator": " & "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "서브그래프를 생성할 수 없습니다",

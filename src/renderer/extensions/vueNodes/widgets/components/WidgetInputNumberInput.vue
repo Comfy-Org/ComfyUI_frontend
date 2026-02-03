@@ -138,6 +138,7 @@ function updateValueBy(delta: number) {
 const dragValue = ref<number>()
 const dragDelta = ref(0)
 function handleMouseDown(e: PointerEvent) {
+  if (e.button > 0) return
   if (props.widget.options?.disabled) return
   const { target } = e
   if (!(target instanceof HTMLElement)) return

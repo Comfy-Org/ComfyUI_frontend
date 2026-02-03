@@ -8,7 +8,7 @@ test.beforeEach(async ({ comfyPage }) => {
   await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Group Node', () => {
+test.describe('Group Node', { tag: '@node' }, () => {
   test.describe('Node library sidebar', () => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     const groupNodeCategory = 'group nodes>workflow'
@@ -89,16 +89,20 @@ test.describe('Group Node', () => {
   // does not have a v-model on the query, so we cannot observe the raw
   // query update, and thus cannot set the spinning state between the raw query
   // update and the debounced search update.
-  test.skip('Can be added to canvas using search', async ({ comfyPage }) => {
-    const groupNodeName = 'DefautWorkflowGroupNode'
-    await comfyPage.convertAllNodesToGroupNode(groupNodeName)
-    await comfyPage.doubleClickCanvas()
-    await comfyPage.nextFrame()
-    await comfyPage.searchBox.fillAndSelectFirstNode(groupNodeName)
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'group-node-copy-added-from-search.png'
-    )
-  })
+  test.skip(
+    'Can be added to canvas using search',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const groupNodeName = 'DefautWorkflowGroupNode'
+      await comfyPage.convertAllNodesToGroupNode(groupNodeName)
+      await comfyPage.doubleClickCanvas()
+      await comfyPage.nextFrame()
+      await comfyPage.searchBox.fillAndSelectFirstNode(groupNodeName)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'group-node-copy-added-from-search.png'
+      )
+    }
+  )
 
   test('Displays tooltip on title hover', async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.EnableTooltips', true)

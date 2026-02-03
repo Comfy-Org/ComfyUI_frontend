@@ -24,7 +24,7 @@
 import { promiseTimeout, until } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import ProgressSpinner from 'primevue/progressspinner'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
@@ -120,7 +120,10 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
-// Start initialization immediately during component setup
-// (not in onMounted, so initialization starts before DOM is ready)
-void initialize()
+// Initialize on mount. This gate should be placed on the authenticated layout
+// (LayoutDefault) so it mounts fresh after login and unmounts on logout.
+// The router guard ensures only authenticated users reach this layout.
+onMounted(() => {
+  void initialize()
+})
 </script>

@@ -205,7 +205,7 @@ defineExpose({ runButtonClick })
             <NodeWidgets
               :node-data
               :style="{ background: applyLightThemeColor(nodeData.bgcolor) }"
-              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg max-w-100"
+              class="py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg max-w-100"
             />
           </template>
         </div>
@@ -237,7 +237,7 @@ defineExpose({ runButtonClick })
               :node-data
               :class="
                 cn(
-                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 not-has-[textarea]:flex-0 rounded-lg',
+                  'py-3 gap-y-3 **:[.col-span-2]:grid-cols-1 *:has-[textarea]:h-50 rounded-lg',
                   nodeData.hasErrors &&
                     'ring-2 ring-inset ring-node-stroke-error'
                 )

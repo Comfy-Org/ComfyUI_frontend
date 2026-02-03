@@ -103,9 +103,7 @@ describe('useMinimapRenderer', () => {
     expect(vi.mocked(renderMinimapToCanvas)).not.toHaveBeenCalled()
   })
 
-  it('should only render when redraw is needed', async () => {
-    const { renderMinimapToCanvas } =
-      await import('@/renderer/extensions/minimap/minimapCanvasRenderer')
+  it('should only render when redraw is needed', () => {
     const canvasRef = ref(mockCanvas)
     const graphRef = ref(mockGraph) as Ref<LGraph | null>
     const boundsRef = ref({ minX: 0, minY: 0, width: 100, height: 100 })

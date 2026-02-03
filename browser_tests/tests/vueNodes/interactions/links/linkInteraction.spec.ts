@@ -98,7 +98,7 @@ async function connectSlots(
   await nextFrame()
 }
 
-test.describe('Vue Node Link Interaction', () => {
+test.describe('Vue Node Link Interaction', { tag: '@screenshot' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)

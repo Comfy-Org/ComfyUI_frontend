@@ -121,6 +121,7 @@
     "customize": "Customize",
     "experimental": "BETA",
     "deprecated": "DEPR",
+    "devOnly": "DEV",
     "loadWorkflow": "Load Workflow",
     "goToNode": "Go to Node",
     "setAsBackground": "Set as Background",
@@ -289,6 +290,7 @@
     "legacyMenuNotAvailable": "Legacy manager menu is not available, defaulting to the new manager menu.",
     "legacyManagerUI": "Use Legacy UI",
     "legacyManagerUIDescription": "To use the legacy Manager UI, start ComfyUI with --enable-manager-legacy-ui",
+    "legacyManagerSearchTip": "Looking for ComfyUI-Manager? You can enable the legacy manager UI by starting ComfyUI with the --enable-manager-legacy-ui flag.",
     "failed": "Failed",
     "failedToInstall": "Failed to Install",
     "installError": "Install Error",
@@ -342,6 +344,28 @@
     "errorConnecting": "Error connecting to the Comfy Node Registry.",
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
+    "emptyState": {
+      "allInstalled": {
+        "title": "No Extensions Installed",
+        "message": "You haven't installed any extensions yet."
+      },
+      "updateAvailable": {
+        "title": "All Up to Date",
+        "message": "All your extensions are up to date."
+      },
+      "conflicting": {
+        "title": "No Conflicts Detected",
+        "message": "All your extensions are compatible."
+      },
+      "workflow": {
+        "title": "No Extensions in Workflow",
+        "message": "This workflow doesn't use any extension nodes."
+      },
+      "missing": {
+        "title": "No Missing Nodes",
+        "message": "All required nodes are installed."
+      }
+    },
     "tryAgainLater": "Please try again later.",
     "gettingInfo": "Getting info...",
     "nodePack": "Node Pack",
@@ -756,6 +780,7 @@
       "title": "Queue Progress",
       "total": "Total: {percent}",
       "colonPercent": ": {percent}",
+      "inlineTotalLabel": "Total",
       "currentNode": "Current node:",
       "viewAllJobs": "View all jobs",
       "viewList": "List view",
@@ -942,6 +967,9 @@
       "searchPlaceholder": "Search..."
     }
   },
+  "templates": {
+    "logoProviderSeparator": " & "
+  },
   "graphCanvasMenu": {
     "zoomIn": "Zoom In",
     "zoomOut": "Zoom Out",
@@ -993,7 +1021,8 @@
     "showAll": "Show all",
     "hidden": "Hidden / nested parameters",
     "hideAll": "Hide all",
-    "showRecommended": "Show recommended widgets"
+    "showRecommended": "Show recommended widgets",
+    "cannotDeleteGlobal": "Cannot delete installed blueprints"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
@@ -1303,7 +1332,8 @@
     "Execution": "Execution",
     "PLY": "PLY",
     "Workspace": "Workspace",
-    "Other": "Other"
+    "Other": "Other",
+    "Secrets": "Secrets"
   },
   "serverConfigItems": {
     "listen": {
@@ -1490,6 +1520,7 @@
     "Gemini": "Gemini",
     "video_models": "video_models",
     "gligen": "gligen",
+    "Grok": "Grok",
     "sd": "sd",
     "Ideogram": "Ideogram",
     "postprocessing": "postprocessing",
@@ -1551,6 +1582,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_OUTPUT",
+    "COLOR": "COLOR",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -1922,13 +1954,7 @@
       "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again."
     },
     "deleteAccount": {
-      "deleteAccount": "Delete Account",
-      "confirmTitle": "Delete Account",
-      "confirmMessage": "Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.",
-      "confirm": "Delete Account",
-      "cancel": "Cancel",
-      "success": "Account Deleted",
-      "successDetail": "Your account has been successfully deleted."
+      "contactSupport": "To delete your account, please contact {email}"
     },
     "reauthRequired": {
       "title": "Re-authentication Required",
@@ -2480,6 +2506,7 @@
     "imported": "Imported",
     "assetCollection": "Asset collection",
     "assets": "Assets",
+    "baseModel": "Base model",
     "baseModels": "Base models",
     "browseAssets": "Browse Assets",
     "checkpoints": "Checkpoints",
@@ -2491,13 +2518,34 @@
     "civitaiLinkPlaceholder": "Paste link here",
     "confirmModelDetails": "Confirm Model Details",
     "connectionError": "Please check your connection and try again",
+    "errorAccessForbidden": "Access to this resource is forbidden.",
+    "errorConnectionRefused": "Unable to connect to the source. Please try again later.",
+    "errorDownloadCancelled": "Download was cancelled.",
     "errorFileTooLarge": "File exceeds the maximum allowed size limit",
     "errorFormatNotAllowed": "Only SafeTensor format is allowed",
+    "errorHttpError": "An error occurred while fetching metadata.",
+    "errorInternalError": "An unexpected error occurred. Please try again.",
+    "errorInvalidHost": "The source URL hostname could not be resolved.",
+    "errorInvalidUrl": "Please provide a URL.",
+    "errorInvalidUrlFormat": "The URL format is invalid. Please check and try again.",
+    "errorMetadataFetchFailed": "Failed to fetch file information from the source.",
     "errorModelTypeNotSupported": "This model type is not supported",
+    "errorNetworkError": "A network error occurred. Please check your connection and try again.",
+    "errorNetworkTimeout": "Request timed out. Please try again.",
+    "errorRateLimited": "Too many requests. Please try again in a few minutes.",
+    "errorRequestCancelled": "Request was cancelled.",
+    "errorResourceNotFound": "The file was not found. Please check the URL and try again.",
+    "errorServiceUnavailable": "Service temporarily unavailable. Please try again later.",
+    "errorSourceServerError": "The source server is experiencing issues. Please try again later.",
+    "errorUnauthorized": "Please sign in to continue.",
+    "errorUnauthorizedSource": "This resource requires authentication. Please add your API token in settings.",
     "errorUnknown": "An unexpected error occurred",
     "errorUnsafePickleScan": "CivitAI detected potentially unsafe code in this file",
     "errorUnsafeVirusScan": "CivitAI detected malware or suspicious content in this file",
+    "errorUnsupportedSource": "This URL is not supported. Only Hugging Face and Civitai URLs are allowed.",
     "errorUploadFailed": "Failed to import asset. Please try again.",
+    "errorUserTokenAccessDenied": "Your API token does not have access to this resource. Please check your token permissions.",
+    "errorUserTokenInvalid": "Your stored API token is invalid or expired. Please update your token in settings.",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
     "fileFormats": "File formats",
     "fileName": "File Name",
@@ -2534,6 +2582,7 @@
     "selectModelType": "Select model type",
     "selectProjects": "Select Projects",
     "sortAZ": "A-Z",
+    "sortDefault": "Default",
     "sortBy": "Sort by",
     "sortingType": "Sorting Type",
     "sortPopular": "Popular",
@@ -2544,11 +2593,13 @@
     "tagsPlaceholder": "e.g., models, checkpoint",
     "tryAdjustingFilters": "Try adjusting your search or filters",
     "unknown": "Unknown",
-    "unsupportedUrlSource": "Only URLs from {sources} are supported",
+    "unsupportedUrlSource": "This URL is not supported. Use a direct model link from {sources}. See the how-to videos below for help.",
     "upgradeFeatureDescription": "This feature is only available with Creator or Pro plans.",
     "upgradeToUnlockFeature": "Upgrade to unlock this feature",
     "upload": "Import",
     "uploadFailed": "Import failed",
+    "apiKeyHint": "Importing private or gated models? {link}.",
+    "apiKeyHintLink": "Add your API keys in Settings",
     "uploadingModel": "Importing model...",
     "uploadModel": "Import",
     "uploadModelDescription1": "Paste a Civitai model download link to add it to your library.",
@@ -2709,7 +2760,14 @@
     "runCount": "Run count:",
     "rerun": "Rerun",
     "reuseParameters": "Reuse Parameters",
-    "downloadAll": "Download All"
+    "downloadAll": "Download All",
+    "welcome": {
+      "title": "Welcome to App Mode",
+      "intro": "A simplified view that hides the node graph so you can focus on creating.",
+      "layout": "On the left, you'll see your generated images, videos, and outputs. On the right, just the controls you need. Everything complex stays out of sight.",
+      "sharing": "Sharing is easy: create your workflow, open App Mode, right-click the tab, and export. When others open your file, it launches straight into this clean view. You can share powerful workflows as simple tools without anyone needing to understand node graphs.",
+      "widget": "If you want to control which settings appear, convert your top-level nodes into a subgraph, then use widget promotion in the toolbox above it to choose what's exposed."
+    }
   },
   "missingNodes": {
     "cloud": {
@@ -2823,6 +2881,46 @@
     "badge": {
       "label": "Preview Version",
       "tooltip": "You are using a nightly version of ComfyUI. Please use the feedback button to share your thoughts about these features."
+    }
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Hide Deprecated Nodes",
+    "hideDeprecatedDescription": "Hides nodes marked as deprecated unless explicitly enabled",
+    "hideExperimental": "Hide Experimental Nodes",
+    "hideExperimentalDescription": "Hides nodes marked as experimental unless explicitly enabled",
+    "hideDevOnly": "Hide Dev-Only Nodes",
+    "hideDevOnlyDescription": "Hides nodes marked as dev-only unless dev mode is enabled",
+    "hideSubgraph": "Hide Subgraph Nodes",
+    "hideSubgraphDescription": "Temporarily hides subgraph nodes from node library and search"
+  },
+  "secrets": {
+    "title": "API Keys & Secrets",
+    "description": "Secrets are encrypted and used for sensitive data like API keys.",
+    "descriptionUsage": "Store your tokens here to enable downloading private and gated models from supported providers.",
+    "modelProviders": "Model Providers",
+    "addSecret": "Add Secret",
+    "editSecret": "Edit Secret",
+    "noSecrets": "No secrets stored. Add your first API key to get started.",
+    "name": "Name",
+    "namePlaceholder": "e.g., My API Key",
+    "provider": "Provider",
+    "providerHint": "Optional. Selecting a provider enables automatic token usage.",
+    "secretValue": "Secret Value",
+    "secretValuePlaceholder": "Enter your API key",
+    "secretValuePlaceholderEdit": "Enter new value to change",
+    "secretValueHint": "This value will be encrypted and cannot be viewed again.",
+    "secretValueHintEdit": "Leave blank to keep the current value.",
+    "createdAt": "Created {date}",
+    "lastUsed": "Last used {date}",
+    "deleteConfirmTitle": "Delete Secret",
+    "deleteConfirmMessage": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "errors": {
+      "nameRequired": "Name is required",
+      "nameTooLong": "Name must be 255 characters or less",
+      "providerRequired": "Provider is required",
+      "secretValueRequired": "Secret value is required",
+      "duplicateName": "A secret with this name already exists",
+      "duplicateProvider": "A secret for this provider already exists"
     }
   }
 }

@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { toRef } from 'vue'
 
 import type { JobAction } from '@/composables/queue/useJobActions'
 import type { JobListItem } from '@/composables/queue/useJobList'
+import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { setMockJobActions } from '@/storybook/mocks/useJobActions'
 import { setMockJobItems } from '@/storybook/mocks/useJobList'
@@ -138,16 +140,33 @@ function renderAssetsSidebarListView(args: StoryArgs) {
     setup() {
       setMockJobItems(args.jobs)
       setMockJobActions(args.actionsByJobId ?? {})
+      const { assetItems, selectableAssets, isStackExpanded, toggleStack } =
+        useOutputStacks({
+          assets: toRef(args, 'assets')
+        })
       const selectedIds = new Set(args.selectedAssetIds ?? [])
       function isSelected(assetId: string) {
         return selectedIds.has(assetId)
       }
 
-      return { args, isSelected }
+      return {
+        args,
+        assetItems,
+        selectableAssets,
+        isSelected,
+        isStackExpanded,
+        toggleStack
+      }
     },
     template: `
       <div class="h-[520px] w-[320px] overflow-hidden rounded-lg border border-panel-border">
-        <AssetsSidebarListView :assets="args.assets" :is-selected="isSelected" />
+        <AssetsSidebarListView
+          :asset-items="assetItems"
+          :selectable-assets="selectableAssets"
+          :is-selected="isSelected"
+          :is-stack-expanded="isStackExpanded"
+          :toggle-stack="toggleStack"
+        />
       </div>
     `
   }

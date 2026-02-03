@@ -1,3 +1,4 @@
+import { createSharedComposable } from '@vueuse/core'
 import { computed, onUnmounted, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,9 +10,8 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import type { components } from '@/types/comfyRegistryTypes'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodePacks } from '@/workbench/extensions/manager/composables/nodePack/useNodePacks'
-import type { UseNodePacksOptions } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-type WorkflowPack = {
+export type WorkflowPack = {
   id:
     | ComfyWorkflowJSON['nodes'][number]['properties']['cnr_id']
     | ComfyWorkflowJSON['nodes'][number]['properties']['aux_id']
@@ -22,9 +22,10 @@ const CORE_NODES_PACK_NAME = 'comfy-core'
 
 /**
  * Handles parsing node pack metadata from nodes on the graph and fetching the
- * associated node packs from the registry
+ * associated node packs from the registry.
+ * This is a shared singleton composable - all components use the same instance.
  */
-export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
+const _useWorkflowPacks = () => {
   const nodeDefStore = useNodeDefStore()
   const systemStatsStore = useSystemStatsStore()
   const { inferPackFromNodeName } = useComfyRegistryStore()
@@ -129,7 +130,7 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
   )
 
   const { startFetch, cleanup, error, isLoading, nodePacks, isReady } =
-    useNodePacks(workflowPacksIds, options)
+    useNodePacks(workflowPacksIds)
 
   const isIdInWorkflow = (packId: string) =>
     workflowPacksIds.value.includes(packId)
@@ -153,3 +154,5 @@ export const useWorkflowPacks = (options: UseNodePacksOptions = {}) => {
     filterWorkflowPack
   }
 }
+
+export const useWorkflowPacks = createSharedComposable(_useWorkflowPacks)

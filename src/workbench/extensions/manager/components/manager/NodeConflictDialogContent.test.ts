@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import Button from '@/components/ui/button/Button.vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
@@ -44,11 +45,11 @@ vi.mock(
 )
 
 describe('NodeConflictDialogContent', () => {
-  let pinia: ReturnType<typeof createPinia>
+  let pinia: ReturnType<typeof createTestingPinia>
 
   beforeEach(() => {
     vi.clearAllMocks()
-    pinia = createPinia()
+    pinia = createTestingPinia({ stubActions: false })
     setActivePinia(pinia)
     // Reset mock data
     mockConflictData.value = []

@@ -10,6 +10,7 @@
     </div>
 
     <Panel
+      ref="panelRef"
       class="pointer-events-auto"
       :style="style"
       :class="panelClass"
@@ -18,7 +19,7 @@
         content: { class: isDocked ? 'p-0' : 'p-1' }
       }"
     >
-      <div ref="panelRef" class="flex items-center select-none gap-2">
+      <div class="relative flex items-center select-none gap-2">
         <span
           ref="dragHandleRef"
           :class="
@@ -43,6 +44,14 @@
         </Button>
       </div>
     </Panel>
+
+    <Teleport v-if="inlineProgressTarget" :to="inlineProgressTarget">
+      <QueueInlineProgress
+        :hidden="queueOverlayExpanded"
+        :radius-class="cn(isDocked ? 'rounded-[7px]' : 'rounded-[5px]')"
+        data-testid="queue-inline-progress"
+      />
+    </Teleport>
   </div>
 </template>
 
@@ -51,14 +60,17 @@ import {
   useDraggable,
   useEventListener,
   useLocalStorage,
+  unrefElement,
   watchDebounced
 } from '@vueuse/core'
 import { clamp } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import Panel from 'primevue/panel'
 import { computed, nextTick, ref, watch } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -69,6 +81,15 @@ import { cn } from '@/utils/tailwindUtil'
 
 import ComfyRunButton from './ComfyRunButton'
 
+const { topMenuContainer, queueOverlayExpanded = false } = defineProps<{
+  topMenuContainer?: HTMLElement | null
+  queueOverlayExpanded?: boolean
+}>()
+
+const emit = defineEmits<{
+  (event: 'update:progressTarget', target: HTMLElement | null): void
+}>()
+
 const settingsStore = useSettingStore()
 const commandStore = useCommandStore()
 const { t } = useI18n()
@@ -76,15 +97,22 @@ const { isIdle: isExecutionIdle } = storeToRefs(useExecutionStore())
 
 const position = computed(() => settingsStore.get('Comfy.UseNewMenu'))
 const visible = computed(() => position.value !== 'Disabled')
+const isQueuePanelV2Enabled = computed(() =>
+  settingsStore.get('Comfy.Queue.QPOV2')
+)
 
-const panelRef = ref<HTMLElement | null>(null)
+const panelRef = ref<ComponentPublicInstance | null>(null)
+const panelElement = computed<HTMLElement | null>(() => {
+  const element = unrefElement(panelRef)
+  return element instanceof HTMLElement ? element : null
+})
 const dragHandleRef = ref<HTMLElement | null>(null)
 const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0
 })
-const { x, y, style, isDragging } = useDraggable(panelRef, {
+const { x, y, style, isDragging } = useDraggable(panelElement, {
   initialValue: { x: 0, y: 0 },
   handle: dragHandleRef,
   containerElement: document.body
@@ -101,11 +129,12 @@ watchDebounced(
 
 // Set initial position to bottom center
 const setInitialPosition = () => {
-  if (panelRef.value) {
+  const panel = panelElement.value
+  if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = panel.offsetWidth
+    const menuHeight = panel.offsetHeight
 
     if (menuWidth === 0 || menuHeight === 0) {
       return
@@ -181,11 +210,12 @@ watch(
 )
 
 const adjustMenuPosition = () => {
-  if (panelRef.value) {
+  const panel = panelElement.value
+  if (panel) {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    const menuWidth = panelRef.value.offsetWidth
-    const menuHeight = panelRef.value.offsetHeight
+    const menuWidth = panel.offsetWidth
+    const menuHeight = panel.offsetHeight
 
     // Calculate distances to all edges
     const distanceLeft = lastDragState.value.x
@@ -251,6 +281,19 @@ const onMouseLeaveDropZone = () => {
     isMouseOverDropZone.value = false
   }
 }
+
+const inlineProgressTarget = computed(() => {
+  if (!visible.value || !isQueuePanelV2Enabled.value) return null
+  if (isDocked.value) return topMenuContainer ?? null
+  return panelElement.value
+})
+watch(
+  panelElement,
+  (target) => {
+    emit('update:progressTarget', target)
+  },
+  { immediate: true }
+)
 
 // Handle drag state changes
 watch(isDragging, (dragging) => {

@@ -36,6 +36,7 @@ describe('useAssetBrowser', () => {
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-01-01T00:00:00Z',
     last_access_time: '2024-01-01T00:00:00Z',
+    is_immutable: false,
     ...overrides
   })
 
@@ -84,14 +85,14 @@ describe('useAssetBrowser', () => {
       expect(result.name).toBe(apiAsset.name)
 
       // Adds display properties
-      expect(result.description).toBe('Test model')
+      expect(result.secondaryText).toBe('test-asset.safetensors')
       expect(result.badges).toContainEqual({
         label: 'checkpoints',
         type: 'type'
       })
     })
 
-    it('creates fallback description from tags when metadata missing', () => {
+    it('creates secondaryText from filename when metadata missing', () => {
       const apiAsset = createApiAsset({
         tags: ['models', 'loras'],
         user_metadata: undefined
@@ -100,7 +101,7 @@ describe('useAssetBrowser', () => {
       const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
       const result = filteredAssets.value[0]
 
-      expect(result.description).toBe('loras model')
+      expect(result.secondaryText).toBe('test-asset.safetensors')
     })
 
     it('removes category prefix from badge labels', () => {
@@ -295,7 +296,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: ['safetensors'],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -330,7 +332,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: ['SDXL']
+        baseModels: ['SDXL'],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -384,7 +387,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -408,7 +412,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'recent',
         fileFormats: [],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -440,7 +445,8 @@ describe('useAssetBrowser', () => {
       updateFilters({
         sortBy: 'name-asc',
         fileFormats: [],
-        baseModels: []
+        baseModels: [],
+        ownership: 'all'
       })
       await nextTick()
 
@@ -457,6 +463,12 @@ describe('useAssetBrowser', () => {
         createApiAsset({
           name: 'another-my-model.safetensors',
           is_immutable: false
+        }),
+        // Need a second category so typeCategories.length > 1
+        createApiAsset({
+          name: 'lora.safetensors',
+          is_immutable: true,
+          tags: ['models', 'loras']
         })
       ]
 
@@ -492,6 +504,127 @@ describe('useAssetBrowser', () => {
       await nextTick()
 
       expect(filteredAssets.value).toHaveLength(3)
+    })
+
+    it('filters by ownership via filter bar - my-models', async () => {
+      const assets = [
+        createApiAsset({
+          name: 'my-model.safetensors',
+          is_immutable: false,
+          tags: ['models', 'checkpoints']
+        }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true,
+          tags: ['models', 'checkpoints']
+        }),
+        createApiAsset({
+          name: 'another-my-model.safetensors',
+          is_immutable: false,
+          tags: ['models', 'checkpoints']
+        })
+      ]
+
+      const { selectedNavItem, updateFilters, filteredAssets } =
+        useAssetBrowser(ref(assets))
+
+      // Must select a specific category for ownership filter to apply
+      selectedNavItem.value = 'checkpoints'
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'my-models'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(2)
+      expect(filteredAssets.value.every((asset) => !asset.is_immutable)).toBe(
+        true
+      )
+    })
+
+    it('filters by ownership via filter bar - public-models', async () => {
+      const assets = [
+        createApiAsset({
+          name: 'my-model.safetensors',
+          is_immutable: false,
+          tags: ['models', 'loras']
+        }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true,
+          tags: ['models', 'loras']
+        }),
+        createApiAsset({
+          name: 'another-public-model.safetensors',
+          is_immutable: true,
+          tags: ['models', 'loras']
+        })
+      ]
+
+      const { selectedNavItem, updateFilters, filteredAssets } =
+        useAssetBrowser(ref(assets))
+
+      // Must select a specific category for ownership filter to apply
+      selectedNavItem.value = 'loras'
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'public-models'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(2)
+      expect(filteredAssets.value.every((asset) => asset.is_immutable)).toBe(
+        true
+      )
+    })
+
+    it('nav imported selection overrides filter bar ownership', async () => {
+      const assets = [
+        createApiAsset({
+          name: 'my-model.safetensors',
+          is_immutable: false,
+          tags: ['models', 'checkpoints']
+        }),
+        createApiAsset({
+          name: 'public-model.safetensors',
+          is_immutable: true,
+          tags: ['models', 'checkpoints']
+        }),
+        // Need a second category so typeCategories.length > 1
+        createApiAsset({
+          name: 'lora.safetensors',
+          is_immutable: true,
+          tags: ['models', 'loras']
+        })
+      ]
+
+      const { selectedNavItem, updateFilters, filteredAssets } =
+        useAssetBrowser(ref(assets))
+
+      // Must select a specific category for ownership filter to apply
+      selectedNavItem.value = 'checkpoints'
+      // Set filter bar to public-models
+      updateFilters({
+        sortBy: 'name-asc',
+        fileFormats: [],
+        baseModels: [],
+        ownership: 'public-models'
+      })
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(1)
+      expect(filteredAssets.value[0].is_immutable).toBe(true)
+
+      // Nav selection to 'imported' should override filter bar
+      selectedNavItem.value = 'imported'
+      await nextTick()
+
+      expect(filteredAssets.value).toHaveLength(1)
+      expect(filteredAssets.value[0].is_immutable).toBe(false)
     })
   })
 

@@ -22,6 +22,7 @@
     },
     "assetCollection": "Collection d'actifs",
     "assets": "Ressources",
+    "baseModel": "Modèle de base",
     "baseModels": "Modèles de base",
     "browseAssets": "Parcourir les ressources",
     "byType": "Par type",
@@ -127,6 +128,7 @@
     "selectProjects": "Sélectionner les projets",
     "sortAZ": "A-Z",
     "sortBy": "Trier par",
+    "sortDefault": "Par défaut",
     "sortPopular": "Populaire",
     "sortRecent": "Récent",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "À propos des sites non autorisés"
     },
     "deleteAccount": {
-      "cancel": "Annuler",
-      "confirm": "Supprimer le compte",
-      "confirmMessage": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et supprimera définitivement toutes vos données.",
-      "confirmTitle": "Supprimer le compte",
-      "deleteAccount": "Supprimer le compte",
-      "success": "Compte supprimé",
-      "successDetail": "Votre compte a été supprimé avec succès."
+      "contactSupport": "Pour supprimer votre compte, veuillez contacter {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "La connexion a été annulée. Veuillez réessayer.",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "SORTIE_CLIP_VISION",
+    "COLOR": "COULEUR",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +746,7 @@
     "deleteImage": "Supprimer l'image",
     "deprecated": "DEPR",
     "description": "Description",
+    "devOnly": "DEV",
     "devices": "Appareils",
     "disableAll": "Désactiver tout",
     "disableSelected": "Désactiver la sélection",
@@ -1300,6 +1298,28 @@
     "disabledNodesWontUpdate": "Les nœuds désactivés ne seront pas mis à jour",
     "discoverCommunityContent": "Découvrez les packs de nœuds, extensions et plus encore créés par la communauté...",
     "downloads": "Téléchargements",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Vous n'avez pas encore installé d'extensions.",
+        "title": "Aucune extension installée"
+      },
+      "conflicting": {
+        "message": "Toutes vos extensions sont compatibles.",
+        "title": "Aucun conflit détecté"
+      },
+      "missing": {
+        "message": "Tous les nœuds requis sont installés.",
+        "title": "Aucun nœud manquant"
+      },
+      "updateAvailable": {
+        "message": "Toutes vos extensions sont à jour.",
+        "title": "Tout est à jour"
+      },
+      "workflow": {
+        "message": "Ce workflow n'utilise aucun nœud d'extension.",
+        "title": "Aucune extension dans le workflow"
+      }
+    },
     "enablePackToChangeVersion": "Activez ce pack pour changer de version",
     "errorConnecting": "Erreur de connexion au registre de nœuds Comfy.",
     "extensionsSuccessfullyInstalled": "Extension(s) installée(s) avec succès et prête(s) à l'emploi !",
@@ -1321,6 +1341,7 @@
     "installingDependencies": "Installation des dépendances...",
     "lastUpdated": "Dernière mise à jour",
     "latestVersion": "Dernière",
+    "legacyManagerSearchTip": "Vous cherchez ComfyUI-Manager ? Vous pouvez activer l’interface du gestionnaire hérité en lançant ComfyUI avec le paramètre --enable-manager-legacy-ui.",
     "legacyManagerUI": "Utiliser l'interface utilisateur héritée",
     "legacyManagerUIDescription": "Pour utiliser l'interface utilisateur de gestion héritée, démarrez ComfyUI avec --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "Le menu du gestionnaire de l'ancienne version n'est pas disponible dans cette version de ComfyUI. Veuillez utiliser le nouveau menu du gestionnaire à la place.",
@@ -1685,6 +1706,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1785,6 +1807,16 @@
     "render": "Erreur de rendu du nœud",
     "slots": "Erreur de slots du nœud",
     "widgets": "Erreur de widgets du nœud"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Masquer les nœuds obsolètes",
+    "hideDeprecatedDescription": "Masque les nœuds marqués comme obsolètes sauf si explicitement activés",
+    "hideDevOnly": "Masquer les nœuds développeur uniquement",
+    "hideDevOnlyDescription": "Masque les nœuds réservés au développement sauf si le mode développeur est activé",
+    "hideExperimental": "Masquer les nœuds expérimentaux",
+    "hideExperimentalDescription": "Masque les nœuds marqués comme expérimentaux sauf si explicitement activés",
+    "hideSubgraph": "Masquer les nœuds de sous-graphe",
+    "hideSubgraphDescription": "Masque temporairement les nœuds de sous-graphe de la bibliothèque de nœuds et de la recherche"
   },
   "nodeHelpPage": {
     "documentationPage": "page de documentation",
@@ -2264,6 +2296,7 @@
       "filterBy": "Filtrer par",
       "filterCurrentWorkflow": "Workflow actuel",
       "filterJobs": "Filtrer les travaux",
+      "inlineTotalLabel": "Total",
       "interruptAll": "Interrompre tous les travaux en cours",
       "jobQueue": "File d’attente des travaux",
       "jobsCompleted": "{count} travail terminé | {count} travaux terminés",
@@ -2310,6 +2343,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Nom du sous-graphe",
+    "cannotDeleteGlobal": "Impossible de supprimer les blueprints installés",
     "confirmDelete": "Cette action supprimera définitivement le plan de votre bibliothèque",
     "confirmDeleteTitle": "Supprimer le plan ?",
     "hidden": "Paramètres cachés / imbriqués",
@@ -2501,6 +2535,9 @@
     "title": "Commencez avec un modèle",
     "useCaseFilter": "Tâches",
     "useCasesSelected": "{count} Cas d'usage"
+  },
+  "templates": {
+    "logoProviderSeparator": " & "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Impossible de créer le sous-graphe",

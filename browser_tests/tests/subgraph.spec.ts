@@ -16,7 +16,7 @@ const SELECTORS = {
   domWidget: '.comfy-multiline-input'
 } as const
 
-test.describe('Subgraph Operations', () => {
+test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
   })

@@ -171,26 +171,27 @@ export function createModelNodeFromAsset(
     }
   }
 
-  const widget = node.widgets?.find((w) => w.name === provider.key)
-  if (!widget) {
-    console.error(
-      `Widget ${provider.key} not found on node ${provider.nodeDef.name}`
-    )
-    return {
-      success: false,
-      error: {
-        code: 'MISSING_WIDGET',
-        message: `Widget ${provider.key} not found on node ${provider.nodeDef.name}`,
-        assetId: validAsset.id,
-        details: { widgetName: provider.key, nodeType: provider.nodeDef.name }
+  // Set widget value if provider specifies a key (some nodes auto-load models without a widget)
+  if (provider.key) {
+    const widget = node.widgets?.find((w) => w.name === provider.key)
+    if (!widget) {
+      console.error(
+        `Widget ${provider.key} not found on node ${provider.nodeDef.name}`
+      )
+      return {
+        success: false,
+        error: {
+          code: 'MISSING_WIDGET',
+          message: `Widget ${provider.key} not found on node ${provider.nodeDef.name}`,
+          assetId: validAsset.id,
+          details: { widgetName: provider.key, nodeType: provider.nodeDef.name }
+        }
       }
     }
+    widget.value = filename
   }
 
-  // Set widget value BEFORE adding to graph so the node is created with correct value
-  widget.value = filename
-
-  // Now add the node to the graph with the correct widget value already set
+  // Add the node to the graph
   targetGraph.add(node)
 
   return { success: true, value: node }

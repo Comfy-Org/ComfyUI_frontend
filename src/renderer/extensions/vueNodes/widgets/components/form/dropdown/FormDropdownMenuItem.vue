@@ -10,10 +10,9 @@ import type { LayoutMode } from './types'
 interface Props {
   index: number
   selected: boolean
-  mediaSrc: string
+  previewUrl: string
   name: string
   label?: string
-  metadata?: string
   layout?: LayoutMode
 }
 
@@ -102,16 +101,16 @@ function handleVideoLoad(event: Event) {
         />
       </div>
       <video
-        v-if="mediaSrc && isVideo"
-        :src="mediaSrc"
+        v-if="previewUrl && isVideo"
+        :src="previewUrl"
         class="size-full object-cover"
         preload="metadata"
         muted
         @loadeddata="handleVideoLoad"
       />
       <LazyImage
-        v-else-if="mediaSrc"
-        :src="mediaSrc"
+        v-else-if="previewUrl"
+        :src="previewUrl"
         :alt="name"
         image-class="size-full object-cover"
         @load="handleImageLoad"
@@ -146,9 +145,9 @@ function handleVideoLoad(event: Event) {
         {{ label ?? name }}
       </span>
       <!-- Meta Data -->
-      <span class="text-secondary block text-xs">{{
-        metadata || actualDimensions
-      }}</span>
+      <span v-if="actualDimensions" class="text-secondary block text-xs">
+        {{ actualDimensions }}
+      </span>
     </div>
   </div>
 </template>

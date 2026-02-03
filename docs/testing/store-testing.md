@@ -18,7 +18,8 @@ Basic setup for testing Pinia stores:
 
 ```typescript
 // Example from: tests-ui/tests/store/workflowStore.test.ts
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useWorkflowStore } from '@/domains/workflow/ui/stores/workflowStore'
@@ -27,8 +28,8 @@ describe('useWorkflowStore', () => {
   let store: ReturnType<typeof useWorkflowStore>
 
   beforeEach(() => {
-    // Create a fresh pinia and activate it for each test
-    setActivePinia(createPinia())
+    // Create a fresh testing pinia and activate it for each test
+    setActivePinia(createTestingPinia({ stubActions: false }))
 
     // Initialize the store
     store = useWorkflowStore()
