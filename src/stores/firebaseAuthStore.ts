@@ -26,7 +26,7 @@ import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { AuthMetadata } from '@/platform/telemetry/types'
+import { buildAuthMetadata } from '@/platform/telemetry/utils/authMetadata'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -81,37 +81,6 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   const lastTokenUserId = ref<string | null>(null)
 
   const buildApiUrl = (path: string) => `${getComfyApiBaseUrl()}${path}`
-
-  async function hashSha256(value: string): Promise<string | undefined> {
-    if (typeof crypto === 'undefined' || !crypto.subtle) return
-    if (typeof TextEncoder === 'undefined') return
-    const data = new TextEncoder().encode(value)
-    const hash = await crypto.subtle.digest('SHA-256', data)
-    return Array.from(new Uint8Array(hash))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('')
-  }
-
-  async function buildAuthMetadata(
-    method: 'email' | 'google' | 'github',
-    isNewUser: boolean,
-    userId?: string
-  ): Promise<AuthMetadata> {
-    const metadata: AuthMetadata = { method, is_new_user: isNewUser }
-
-    if (isNewUser && userId) {
-      try {
-        const userIdHash = await hashSha256(userId)
-        if (userIdHash) {
-          metadata.user_id_hash = userIdHash
-        }
-      } catch (error) {
-        console.warn('Failed to hash user id for telemetry', error)
-      }
-    }
-
-    return metadata
-  }
 
   // Providers
   const googleProvider = new GoogleAuthProvider()
