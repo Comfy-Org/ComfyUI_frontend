@@ -13,14 +13,12 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: mockAdd })
 }))
 
-const mockList = vi.fn()
-const mockDelete = vi.fn()
+const mockListSecrets = vi.fn()
+const mockDeleteSecret = vi.fn()
 
 vi.mock('../api/secretsApi', () => ({
-  secretsApi: {
-    list: () => mockList(),
-    delete: (id: string) => mockDelete(id)
-  },
+  listSecrets: () => mockListSecrets(),
+  deleteSecret: (id: string) => mockDeleteSecret(id),
   SecretsApiError: class SecretsApiError extends Error {
     constructor(
       message: string,
@@ -57,7 +55,7 @@ describe('useSecrets', () => {
         createMockSecret({ id: '1', name: 'Secret 1' }),
         createMockSecret({ id: '2', name: 'Secret 2' })
       ]
-      mockList.mockResolvedValue(mockSecrets)
+      mockListSecrets.mockResolvedValue(mockSecrets)
 
       const { secrets, loading, fetchSecrets } = useSecrets()
 
@@ -73,7 +71,9 @@ describe('useSecrets', () => {
 
     it('shows error toast on API failure', async () => {
       const { SecretsApiError } = await import('../api/secretsApi')
-      mockList.mockRejectedValue(new SecretsApiError('Network error', 500))
+      mockListSecrets.mockRejectedValue(
+        new SecretsApiError('Network error', 500)
+      )
 
       const { secrets, fetchSecrets } = useSecrets()
 
@@ -93,8 +93,8 @@ describe('useSecrets', () => {
     it('deletes secret and removes from list', async () => {
       const secretToDelete = createMockSecret({ id: '1' })
       const remainingSecret = createMockSecret({ id: '2' })
-      mockList.mockResolvedValue([secretToDelete, remainingSecret])
-      mockDelete.mockResolvedValue(undefined)
+      mockListSecrets.mockResolvedValue([secretToDelete, remainingSecret])
+      mockDeleteSecret.mockResolvedValue(undefined)
 
       const { secrets, operatingSecretId, fetchSecrets, deleteSecret } =
         useSecrets()
@@ -110,14 +110,16 @@ describe('useSecrets', () => {
       expect(operatingSecretId.value).toBe(null)
       expect(secrets.value).toHaveLength(1)
       expect(secrets.value[0].id).toBe('2')
-      expect(mockDelete).toHaveBeenCalledWith('1')
+      expect(mockDeleteSecret).toHaveBeenCalledWith('1')
     })
 
     it('shows error toast on delete failure', async () => {
       const { SecretsApiError } = await import('../api/secretsApi')
       const secret = createMockSecret()
-      mockList.mockResolvedValue([secret])
-      mockDelete.mockRejectedValue(new SecretsApiError('Delete failed', 500))
+      mockListSecrets.mockResolvedValue([secret])
+      mockDeleteSecret.mockRejectedValue(
+        new SecretsApiError('Delete failed', 500)
+      )
 
       const { secrets, fetchSecrets, deleteSecret } = useSecrets()
 
@@ -136,7 +138,7 @@ describe('useSecrets', () => {
 
   describe('existingProviders', () => {
     it('returns list of providers from secrets', async () => {
-      mockList.mockResolvedValue([
+      mockListSecrets.mockResolvedValue([
         createMockSecret({ id: '1', provider: 'huggingface' }),
         createMockSecret({ id: '2', provider: 'civitai' }),
         createMockSecret({ id: '3', provider: undefined })

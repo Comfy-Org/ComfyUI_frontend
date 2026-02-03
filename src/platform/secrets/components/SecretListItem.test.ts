@@ -1,8 +1,17 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { SecretMetadata } from '../types'
 import SecretListItem from './SecretListItem.vue'
+
+vi.mock('../providers', () => ({
+  getProviderLabel: (provider: string | undefined) => {
+    if (provider === 'huggingface') return 'HuggingFace'
+    if (provider === 'civitai') return 'Civitai'
+    return ''
+  },
+  getProviderLogo: () => undefined
+}))
 
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
