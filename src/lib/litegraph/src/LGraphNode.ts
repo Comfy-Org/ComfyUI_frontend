@@ -1957,6 +1957,11 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
+
+    if ('setNodeId' in widget && typeof widget.setNodeId === 'function') {
+      widget.setNodeId(this.id)
+    }
+
     return widget
   }
 
