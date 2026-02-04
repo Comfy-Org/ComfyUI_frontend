@@ -19,6 +19,7 @@
     >
       <div ref="topToolbarRef" :class="groupClasses">
         <ComfyMenuButton />
+        <SidebarTemplatesButton :is-small="isSmall" />
         <SidebarIcon
           v-for="tab in tabs"
           :key="tab.id"
@@ -63,6 +64,7 @@ import ModeToggle from '@/components/sidebar/ModeToggle.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import SidebarTemplatesButton from '@/components/sidebar/SidebarTemplatesButton.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'

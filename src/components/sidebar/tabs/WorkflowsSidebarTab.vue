@@ -116,8 +116,8 @@
             icon="pi pi-folder"
             :title="$t('g.empty')"
             :message="$t('g.noWorkflowsFound')"
-            :button-label="$t('sideToolbar.workflowTab.discoverWorkflows')"
-            @action="openDiscoverTab"
+            :button-label="$t('sideToolbar.browseTemplates')"
+            @action="openTemplates"
           />
         </div>
       </div>
@@ -157,7 +157,7 @@ import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { TreeExplorerNode, TreeNode } from '@/types/treeExplorerTypes'
 import { appendJsonExt } from '@/utils/formatUtil'
@@ -306,10 +306,10 @@ const selectionKeys = computed(() => ({
 }))
 
 const workflowBookmarkStore = useWorkflowBookmarkStore()
-const sidebarTabStore = useSidebarTabStore()
+const { show } = useWorkflowTemplateSelectorDialog()
 
-function openDiscoverTab() {
-  sidebarTabStore.activeSidebarTabId = 'discover'
+function openTemplates() {
+  show('sidebar')
 }
 
 onMounted(async () => {
