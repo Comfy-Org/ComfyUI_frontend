@@ -85,6 +85,8 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
     for (const badge of unpartitionedBadges.value) {
+      if (!badge.text) continue
+
       if (badge.text[0] === '#' && badge.bgColor === '#0F1F0F') {
         const [id, source] = splitAroundFirstSpace(badge.text)
         core.push({ text: id })
