@@ -10,6 +10,17 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
+function createMockResponse(
+  status: number,
+  data?: { name: string; subfolder?: string }
+) {
+  return {
+    status,
+    statusText: status === 200 ? 'OK' : 'Error',
+    json: vi.fn().mockResolvedValue(data ?? {})
+  } as unknown as Response
+}
+
 describe('uploadService', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -18,16 +29,8 @@ describe('uploadService', () => {
   describe('uploadMedia', () => {
     it('uploads File successfully', async () => {
       const mockFile = new File(['content'], 'test.png', { type: 'image/png' })
-      const mockResponse = {
-        status: 200,
-        json: vi.fn().mockResolvedValue({
-          name: 'test.png',
-          subfolder: 'uploads'
-        })
-      }
-
       vi.mocked(api.fetchApi).mockResolvedValue(
-        mockResponse as Partial<Response> as Response
+        createMockResponse(200, { name: 'test.png', subfolder: 'uploads' })
       )
 
       const result = await uploadMedia({ source: mockFile })
@@ -40,16 +43,8 @@ describe('uploadService', () => {
 
     it('uploads Blob successfully', async () => {
       const mockBlob = new Blob(['content'], { type: 'image/png' })
-      const mockResponse = {
-        status: 200,
-        json: vi.fn().mockResolvedValue({
-          name: 'upload-123.png',
-          subfolder: ''
-        })
-      }
-
       vi.mocked(api.fetchApi).mockResolvedValue(
-        mockResponse as Partial<Response> as Response
+        createMockResponse(200, { name: 'upload-123.png', subfolder: '' })
       )
 
       const result = await uploadMedia({ source: mockBlob })
@@ -64,16 +59,8 @@ describe('uploadService', () => {
         blob: () => Promise.resolve(new Blob(['content']))
       } as Response)
 
-      const mockResponse = {
-        status: 200,
-        json: vi.fn().mockResolvedValue({
-          name: 'upload-456.png',
-          subfolder: ''
-        })
-      }
-
       vi.mocked(api.fetchApi).mockResolvedValue(
-        mockResponse as Partial<Response> as Response
+        createMockResponse(200, { name: 'upload-456.png', subfolder: '' })
       )
 
       try {
@@ -95,13 +82,8 @@ describe('uploadService', () => {
 
     it('includes subfolder in FormData', async () => {
       const mockFile = new File(['content'], 'test.png')
-      const mockResponse = {
-        status: 200,
-        json: vi.fn().mockResolvedValue({ name: 'test.png' })
-      }
-
       vi.mocked(api.fetchApi).mockResolvedValue(
-        mockResponse as Partial<Response> as Response
+        createMockResponse(200, { name: 'test.png' })
       )
 
       await uploadMedia(
@@ -134,14 +116,10 @@ describe('uploadService', () => {
 
     it('handles upload errors', async () => {
       const mockFile = new File(['content'], 'test.png')
-      const mockResponse = {
+      vi.mocked(api.fetchApi).mockResolvedValue({
         status: 500,
         statusText: 'Internal Server Error'
-      }
-
-      vi.mocked(api.fetchApi).mockResolvedValue(
-        mockResponse as Partial<Response> as Response
-      )
+      } as unknown as Response)
 
       const result = await uploadMedia({ source: mockFile })
 
@@ -162,13 +140,8 @@ describe('uploadService', () => {
 
     it('includes originalRef for mask uploads', async () => {
       const mockFile = new File(['content'], 'mask.png')
-      const mockResponse = {
-        status: 200,
-        json: vi.fn().mockResolvedValue({ name: 'mask.png' })
-      }
-
       vi.mocked(api.fetchApi).mockResolvedValue(
-        mockResponse as Partial<Response> as Response
+        createMockResponse(200, { name: 'mask.png' })
       )
 
       const originalRef = {
@@ -189,25 +162,26 @@ describe('uploadService', () => {
   })
 
   describe('uploadMediaBatch', () => {
+    it('returns empty array for empty input', async () => {
+      const results = await uploadMediaBatch([])
+
+      expect(results).toHaveLength(0)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    })
+
     it('uploads multiple files', async () => {
       const mockFiles = [
         new File(['1'], 'file1.png'),
         new File(['2'], 'file2.png')
       ]
 
-      const mockResponse1 = {
-        status: 200,
-        json: vi.fn().mockResolvedValue({ name: 'file1.png', subfolder: '' })
-      }
-
-      const mockResponse2 = {
-        status: 200,
-        json: vi.fn().mockResolvedValue({ name: 'file2.png', subfolder: '' })
-      }
-
       vi.mocked(api.fetchApi)
-        .mockResolvedValueOnce(mockResponse1 as Partial<Response> as Response)
-        .mockResolvedValueOnce(mockResponse2 as Partial<Response> as Response)
+        .mockResolvedValueOnce(
+          createMockResponse(200, { name: 'file1.png', subfolder: '' })
+        )
+        .mockResolvedValueOnce(
+          createMockResponse(200, { name: 'file2.png', subfolder: '' })
+        )
 
       const results = await uploadMediaBatch(
         mockFiles.map((source) => ({ source }))
