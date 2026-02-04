@@ -55,7 +55,7 @@ export const BADGE_EXCLUDED_PROPS = [
  * @param excludeList - List of property names to exclude
  * @returns Filtered props object
  */
-export function filterWidgetProps<T extends Record<string, unknown>>(
+export function filterWidgetProps<T extends object>(
   props: T | undefined,
   excludeList: readonly string[]
 ): Partial<T> {
