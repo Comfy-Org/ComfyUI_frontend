@@ -7,7 +7,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
 
-export type WidgetKey = `${NodeId}:${string}`
+type WidgetKey = `${NodeId}:${string}`
 
 export interface WidgetState {
   nodeId: NodeId
