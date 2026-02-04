@@ -20,7 +20,7 @@
   >
     <div class="flex items-center justify-between gap-2.5 min-w-0">
       <!-- Collapse/Expand Button -->
-      <div class="relative grow-1 flex items-center gap-2.5 min-w-0 flex-1">
+      <div class="relative flex items-center gap-2.5 min-w-0 shrink-1">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
@@ -47,7 +47,7 @@
           class="flex min-w-0 flex-1 items-center gap-2"
           data-testid="node-title"
         >
-          <div class="truncate min-w-0 flex-1">
+          <div class="truncate flex-1">
             <EditableText
               :model-value="displayTitle"
               :is-editing="isEditing"
@@ -59,14 +59,25 @@
         </div>
       </div>
 
-      <div class="flex shrink-0 items-center justify-between gap-2">
-        <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
-        <i-comfy:pin
-          v-if="isPinned"
-          class="size-5"
-          data-testid="node-pin-indicator"
-        />
-      </div>
+      <template v-for="badge in priceBadges ?? []" :key="badge.required">
+        <span
+          class="flex h-5 bg-component-node-widget-background rounded-full p-1 items-center text-xs min-w-10 max-w-max grow-1 basis-0"
+        >
+          <i class="h-full icon-[lucide--component] bg-[#FABC25] shrink-0" />
+          <span class="shrink-0" v-text="badge.required" />
+          <span
+            v-if="badge.rest"
+            class="truncate ml-1 flex-1"
+            v-text="badge.rest"
+          />
+        </span>
+      </template>
+      <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
+      <i-comfy:pin
+        v-if="isPinned"
+        class="size-5"
+        data-testid="node-pin-indicator"
+      />
     </div>
   </div>
 </template>
@@ -92,6 +103,7 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: VueNodeData
   collapsed?: boolean
+  priceBadges?: { required: string; rest?: string }[]
 }
 
 const { nodeData, collapsed } = defineProps<NodeHeaderProps>()
