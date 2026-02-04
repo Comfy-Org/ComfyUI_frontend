@@ -11,7 +11,10 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetType
+} from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export interface DrawWidgetOptions {
@@ -198,15 +201,27 @@ export abstract class BaseWidget<
   }
 
   /**
-   * Associates this widget with a node ID and seeds the store with the current value.
-   * Once set, value reads/writes will be delegated to the WidgetValueStore.
+   * Associates this widget with a node ID and registers it in the WidgetValueStore.
+   * Once set, value reads/writes will be delegated to the store.
    */
   setNodeId(nodeId: NodeId): void {
     this._nodeId = nodeId
-    if (this._internalValue !== undefined) {
-      const store = useWidgetValueStore()
-      store.set(nodeId, this.name, this._internalValue)
-    }
+    const store = useWidgetValueStore()
+    store.registerWidget(
+      nodeId,
+      this.name,
+      this.type as TWidgetType,
+      this._internalValue,
+      {
+        label: this._label,
+        hidden: this._hidden,
+        disabled: this._disabled,
+        advanced: this._advanced,
+        promoted: this._promoted,
+        serialize: this.serialize,
+        widgetOptions: this.options
+      }
+    )
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

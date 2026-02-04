@@ -19,7 +19,7 @@ export interface WidgetState {
   disabled: boolean
   advanced: boolean
   promoted: boolean
-  options: IWidgetOptions
+  options: IWidgetOptions<unknown>
   serialize: boolean
 }
 
@@ -67,7 +67,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         WidgetState,
         'label' | 'hidden' | 'disabled' | 'advanced' | 'promoted' | 'serialize'
       >
-    > & { widgetOptions?: IWidgetOptions } = {}
+    > & { widgetOptions?: IWidgetOptions<unknown> } = {}
   ): WidgetState {
     const key = makeKey(nodeId, name)
     const state: WidgetState = {
