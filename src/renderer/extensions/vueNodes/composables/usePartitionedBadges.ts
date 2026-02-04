@@ -95,8 +95,7 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
         continue
       }
       if (isCreditsBadge(badge)) {
-        const [required, rest] = splitAroundFirstSpace(badge.text)
-        pricing.push({ required, rest })
+        pricing.push({ text: badge.text })
         continue
       }
       extension.push(badge)
