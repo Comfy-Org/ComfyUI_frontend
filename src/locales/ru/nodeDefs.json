@@ -2205,6 +2205,23 @@
       }
     }
   },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "размер_пакета",
+        "tooltip": "Количество латентных изображений в пакете."
+      },
+      "seconds": {
+        "name": "секунды"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
     "display_name": "EmptyAceStepLatentAudio",
     "inputs": {
@@ -3546,6 +3563,50 @@
       },
       "tapered_corners": {
         "name": "заостренные_углы"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "Увеличение разрешения низкокачественных изображений до сверхвысокого, устранение артефактов и шума. Максимальный выход: 32 мегапикселя.",
+    "display_name": "HitPaw General Image Enhance",
+    "inputs": {
+      "auto_downscale": {
+        "name": "авто_понижение_разрешения",
+        "tooltip": "Автоматически понижать разрешение входного изображения, если выход превышает лимит."
+      },
+      "image": {
+        "name": "изображение"
+      },
+      "model": {
+        "name": "модель"
+      },
+      "upscale_factor": {
+        "name": "коэффициент_масштабирования"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "Увеличение разрешения низкокачественных видео до высокого, устранение артефактов и шума. Цена указана за секунду видео.",
+    "display_name": "HitPaw Video Enhance",
+    "inputs": {
+      "model": {
+        "name": "модель"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "video": {
+        "name": "видео"
       }
     },
     "outputs": {
@@ -6357,7 +6418,6 @@
   "Load3D": {
     "display_name": "Загрузить 3D",
     "inputs": {
-      "clear": {},
       "height": {
         "name": "высота"
       },
@@ -6367,8 +6427,6 @@
       "model_file": {
         "name": "файл модели"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
       "width": {
         "name": "ширина"
       }
@@ -7252,12 +7310,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: Изображение в модель",
@@ -7303,16 +7366,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Мульти-изображение в модель",
@@ -7358,16 +7423,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "Улучшить ранее созданную черновую модель.",
@@ -7392,16 +7459,18 @@
         "tooltip": "Введите текстовый запрос для управления процессом текстурирования. Максимум 600 символов. Не может использоваться одновременно с 'texture_image'."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "Предоставляет персонажа с риггингом в стандартных форматах. Автоматический риггинг в настоящее время не подходит для моделей без текстур, не-гуманоидных объектов или гуманоидов с нечеткой структурой конечностей и тела.",
@@ -7419,16 +7488,18 @@
         "tooltip": "UV-развернутая текстура базового цвета модели."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: Текст в Модель",
@@ -7467,16 +7538,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: Модель текстуры",
@@ -7503,16 +7576,18 @@
         "tooltip": "Опишите желаемый стиль текстуры объекта с помощью текста. Максимум 600 символов. Нельзя использовать одновременно с 'image_style'."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "Создает видео из промпта с возможностью использования начального кадра с помощью новой модели MiniMax Hailuo-02.",
@@ -10709,11 +10784,9 @@
       "camera_info": {
         "name": "информация_камеры"
       },
-      "image": {
-        "name": "изображение"
-      },
       "model_file": {
-        "name": "файл_модели"
+        "name": "файл_модели",
+        "tooltip": "Файл 3D-модели или строка пути"
       }
     }
   },
@@ -11354,6 +11427,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "Этот узел задаёт эталонное аудио для тембра (для ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "Извлечение по регулярному выражению",
     "inputs": {
@@ -11682,12 +11772,13 @@
         "name": "Сид"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -11709,12 +11800,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -11733,12 +11825,13 @@
         "name": "Сид"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -11751,12 +11844,13 @@
         "name": "Сид"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "Создание 3D-объектов с помощью Rodin API",
@@ -11775,12 +11869,13 @@
         "name": "Сид"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Путь к 3D-модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "Загрузите первый и последний ключевые кадры, составьте промпт и создайте видео. Более сложные переходы, например, когда последний кадр полностью отличается от первого, могут выиграть от более длительной продолжительности в 10 секунд. Это даст генерации больше времени для плавного перехода между двумя входными данными. Прежде чем начать, ознакомьтесь с лучшими практиками, чтобы убедиться, что ваши входные данные обеспечат успешный результат: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12507,11 +12602,9 @@
       "filename_prefix": {
         "name": "префикс_имени_файла"
       },
-      "image": {
-        "name": "изображение"
-      },
       "mesh": {
-        "name": "сетка"
+        "name": "сетка",
+        "tooltip": "Меш или GLB-файл для сохранения"
       }
     }
   },
@@ -13764,12 +13857,17 @@
         "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: Текст в модель (Pro)",
@@ -13799,12 +13897,17 @@
         "tooltip": "Seed управляет тем, будет ли узел запускаться повторно; результаты всегда недетерминированы, независимо от seed."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13820,6 +13923,46 @@
       },
       "tags": {
         "name": "теги"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "bpm"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "duration": {
+        "name": "длительность"
+      },
+      "keyscale": {
+        "name": "тональность"
+      },
+      "language": {
+        "name": "язык"
+      },
+      "lyrics": {
+        "name": "текст песни"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "tags": {
+        "name": "теги"
+      },
+      "timesignature": {
+        "name": "размер"
       }
     },
     "outputs": {
@@ -14383,16 +14526,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Мультивью в модель",
@@ -14444,16 +14585,14 @@
         "name": "сид_текстуры"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "идентификатор_задачи_модели",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "Уточнение черновой модели, созданной только моделями Tripo v1.4.",
@@ -14464,16 +14603,14 @@
         "tooltip": "Должна быть модель Tripo v1.4"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "идентификатор_задачи_модели",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: Перепривязка ригнутой модели",
@@ -14485,16 +14622,14 @@
         "name": "идентификатор_задачи_исходной_модели"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "идентификатор_задачи_перепривязки",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: Риггинг модели",
@@ -14503,16 +14638,14 @@
         "name": "идентификатор_задачи_исходной_модели"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "файл_модели",
-        "tooltip": null
-      },
-      "1": {
-        "name": "идентификатор_задачи_риггинга",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Текст в модель",
@@ -14557,16 +14690,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: Модель текстур",
@@ -14590,16 +14721,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "Обрезать текст",

@@ -2207,6 +2207,23 @@
       }
     }
   },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 潜空间音频",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小",
+        "tooltip": "批次中的潜空间图像数量。"
+      },
+      "seconds": {
+        "name": "秒数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
     "display_name": "空Latent音频（AceStep）",
     "inputs": {
@@ -3551,6 +3568,50 @@
       },
       "tapered_corners": {
         "name": "倒角"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "将低分辨率图像放大至超分辨率，消除伪影和噪点。最大输出：3200万像素。",
+    "display_name": "HitPaw 通用图像增强",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自动缩小",
+        "tooltip": "如果输出超出限制，自动缩小输入图像。"
+      },
+      "image": {
+        "name": "图像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "upscale_factor": {
+        "name": "放大倍数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "将低分辨率视频放大至高分辨率，消除伪影和噪点。价格按视频每秒计费。",
+    "display_name": "HitPaw 视频增强",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "model_resolution": {
+        "name": "分辨率"
+      },
+      "video": {
+        "name": "视频"
       }
     },
     "outputs": {
@@ -6366,7 +6427,6 @@
   "Load3D": {
     "display_name": "加载3D",
     "inputs": {
-      "clear": {},
       "height": {
         "name": "高度"
       },
@@ -6376,8 +6436,6 @@
       "model_file": {
         "name": "模型文件"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
       "width": {
         "name": "宽度"
       }
@@ -7268,12 +7326,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy：图像转模型",
@@ -7319,16 +7382,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多图像转模型",
@@ -7374,16 +7439,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "对先前创建的草稿模型进行精细化处理。",
@@ -7408,16 +7475,18 @@
         "tooltip": "提供文本提示以引导材质生成。最多600个字符。不能与'texture_image'同时使用。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "以标准格式提供带骨骼的角色模型。自动骨骼绑定目前不适用于无贴图网格、非类人资产或肢体结构不清晰的类人资产。",
@@ -7435,16 +7504,18 @@
         "tooltip": "模型的UV展开基础色贴图。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy：文本生成模型",
@@ -7483,16 +7554,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy：纹理模型",
@@ -7519,16 +7592,18 @@
         "tooltip": "用文本描述你想要的物体纹理风格。最多600个字符。不能与“image_style”同时使用。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "使用新的 MiniMax Hailuo-02 模型从提示词生成视频，可选择起始帧。",
@@ -10725,11 +10800,9 @@
       "camera_info": {
         "name": "相机信息"
       },
-      "image": {
-        "name": "图像"
-      },
       "model_file": {
-        "name": "模型文件"
+        "name": "模型文件",
+        "tooltip": "3D模型文件或路径字符串"
       }
     }
   },
@@ -11370,6 +11443,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "此节点设置音色参考音频（用于 ace step 1.5）",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "条件"
+      },
+      "latent": {
+        "name": "潜空间"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "正则表达式提取",
     "inputs": {
@@ -11698,12 +11788,13 @@
         "name": "种子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D模型路径",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "使用Rodin API生成3D资源",
@@ -11725,12 +11816,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D模型路径",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "使用Rodin API生成3D资源",
@@ -11749,12 +11841,13 @@
         "name": "种子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D模型路径",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "使用Rodin API生成3D资源",
@@ -11767,12 +11860,13 @@
         "name": "种子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D模型路径",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "使用Rodin API生成3D资源",
@@ -11791,12 +11885,13 @@
         "name": "种子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D模型路径",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "上传首尾关键帧，草拟提示词，生成视频。对于更复杂的过渡（例如尾帧与首帧完全不同的情况），较长的10秒时长可能更有利，这能为生成过程提供更多时间在两个输入之间平滑过渡。开始前，请查看这些最佳实践以确保您的输入选择能为生成成功奠定基础：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
@@ -12528,11 +12623,9 @@
       "filename_prefix": {
         "name": "文件名前缀"
       },
-      "image": {
-        "name": "图像"
-      },
       "mesh": {
-        "name": "网格"
+        "name": "网格",
+        "tooltip": "要保存的网格或GLB文件"
       }
     }
   },
@@ -13791,12 +13884,17 @@
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D：文本转模型（专业版）",
@@ -13826,12 +13924,17 @@
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "文本音频编码（AceStep）",
@@ -13847,6 +13950,46 @@
       },
       "tags": {
         "name": "标签"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "每分钟节拍数"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长"
+      },
+      "keyscale": {
+        "name": "调式"
+      },
+      "language": {
+        "name": "语言"
+      },
+      "lyrics": {
+        "name": "歌词"
+      },
+      "seed": {
+        "name": "种子"
+      },
+      "tags": {
+        "name": "标签"
+      },
+      "timesignature": {
+        "name": "拍号"
       }
     },
     "outputs": {
@@ -14410,16 +14553,14 @@
         "name": "纹理种子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任务ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
@@ -14471,16 +14612,14 @@
         "name": "纹理种子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任务ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "仅精修由v1.4 Tripo模型创建的草稿模型。",
@@ -14491,16 +14630,14 @@
         "tooltip": "必须是v1.4 Tripo模型"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任务ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重定向绑定模型",
@@ -14512,16 +14649,14 @@
         "name": "原始模型任务ID"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
-        "tooltip": null
-      },
-      "1": {
-        "name": "重定向任务ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: 绑定模型",
@@ -14530,16 +14665,14 @@
         "name": "原始模型任务ID"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
-        "tooltip": null
-      },
-      "1": {
-        "name": "绑定任务ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 文本转模型",
@@ -14584,16 +14717,14 @@
         "name": "纹理种子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任务ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: 纹理化模型",
@@ -14617,16 +14748,14 @@
         "name": "纹理种子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型文件",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任务ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "截断文本",

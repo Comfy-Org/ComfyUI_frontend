@@ -2209,8 +2209,25 @@
       }
     }
   },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "seconds": {
+        "name": "seconds"
+      },
+      "batch_size": {
+        "name": "batch_size",
+        "tooltip": "The number of latent images in the batch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
-    "display_name": "EmptyAceStepLatentAudio",
+    "display_name": "Empty Ace Step 1.0 Latent Audio",
     "inputs": {
       "seconds": {
         "name": "seconds"
@@ -3553,6 +3570,50 @@
       },
       "tapered_corners": {
         "name": "tapered_corners"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "display_name": "HitPaw General Image Enhance",
+    "description": "Upscale low-resolution images to super-resolution, eliminate artifacts and noise. Maximum output: 32 megapixels.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "upscale_factor": {
+        "name": "upscale_factor"
+      },
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "Automatically downscale input image if output would exceed the limit."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "display_name": "HitPaw Video Enhance",
+    "description": "Upscale low-resolution videos to high resolution, eliminate artifacts and noise. Prices shown are per second of video.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "video": {
+        "name": "video"
+      },
+      "model_resolution": {
+        "name": "resolution"
       }
     },
     "outputs": {
@@ -6014,10 +6075,7 @@
       },
       "height": {
         "name": "height"
-      },
-      "clear": {},
-      "upload 3d model": {},
-      "upload extra resources": {}
+      }
     },
     "outputs": {
       "0": {
@@ -7274,6 +7332,14 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7328,6 +7394,14 @@
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7384,6 +7458,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7418,6 +7500,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7444,6 +7534,14 @@
       },
       "1": {
         "name": "rig_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -7493,6 +7591,14 @@
       "1": {
         "name": "meshy_task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
+        "tooltip": null
       }
     }
   },
@@ -7528,6 +7634,14 @@
       },
       "1": {
         "name": "meshy_task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "3": {
+        "name": "FBX",
         "tooltip": null
       }
     }
@@ -10722,16 +10836,14 @@
     "display_name": "Preview 3D & Animation",
     "inputs": {
       "model_file": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": "3D model file or path string"
       },
       "camera_info": {
         "name": "camera_info"
       },
       "bg_image": {
         "name": "bg_image"
-      },
-      "image": {
-        "name": "image"
       }
     }
   },
@@ -11372,6 +11484,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "display_name": "ReferenceTimbreAudio",
+    "description": "This node sets the reference audio for timbre (for ace step 1.5)",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "Regex Extract",
     "inputs": {
@@ -11704,6 +11833,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11731,6 +11864,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11755,6 +11892,10 @@
       "0": {
         "name": "3D Model Path",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -11772,6 +11913,10 @@
     "outputs": {
       "0": {
         "name": "3D Model Path",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -11796,6 +11941,10 @@
     "outputs": {
       "0": {
         "name": "3D Model Path",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -12392,13 +12541,11 @@
     "display_name": "SaveGLB",
     "inputs": {
       "mesh": {
-        "name": "mesh"
+        "name": "mesh",
+        "tooltip": "Mesh or GLB file to save"
       },
       "filename_prefix": {
         "name": "filename_prefix"
-      },
-      "image": {
-        "name": "image"
       }
     }
   },
@@ -13797,6 +13944,14 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -13832,6 +13987,14 @@
       "0": {
         "name": "model_file",
         "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": null
+      },
+      "2": {
+        "name": "OBJ",
+        "tooltip": null
       }
     }
   },
@@ -13849,6 +14012,46 @@
       },
       "lyrics_strength": {
         "name": "lyrics_strength"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "tags": {
+        "name": "tags"
+      },
+      "lyrics": {
+        "name": "lyrics"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "bpm": {
+        "name": "bpm"
+      },
+      "duration": {
+        "name": "duration"
+      },
+      "timesignature": {
+        "name": "timesignature"
+      },
+      "language": {
+        "name": "language"
+      },
+      "keyscale": {
+        "name": "keyscale"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -14420,6 +14623,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14481,6 +14688,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14500,6 +14711,10 @@
       },
       "1": {
         "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14522,6 +14737,10 @@
       "1": {
         "name": "retarget task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14539,6 +14758,10 @@
       },
       "1": {
         "name": "rig task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }
@@ -14594,6 +14817,10 @@
       "1": {
         "name": "model task_id",
         "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
       }
     }
   },
@@ -14626,6 +14853,10 @@
       },
       "1": {
         "name": "model task_id",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
         "tooltip": null
       }
     }

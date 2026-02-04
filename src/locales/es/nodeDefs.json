@@ -2205,6 +2205,23 @@
       }
     }
   },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "tamaño de lote",
+        "tooltip": "El número de imágenes latentes en el lote."
+      },
+      "seconds": {
+        "name": "segundos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
     "display_name": "EmptyAceStepLatentAudio",
     "inputs": {
@@ -3546,6 +3563,50 @@
       },
       "tapered_corners": {
         "name": "esquinas_afiladas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "Aumenta la resolución de imágenes de baja calidad a superresolución, elimina artefactos y ruido. Salida máxima: 32 megapíxeles.",
+    "display_name": "HitPaw General Image Enhance",
+    "inputs": {
+      "auto_downscale": {
+        "name": "reducción automática",
+        "tooltip": "Reduce automáticamente la imagen de entrada si la salida supera el límite."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "upscale_factor": {
+        "name": "factor de escalado"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "Aumenta la resolución de videos de baja calidad a alta resolución, elimina artefactos y ruido. Los precios mostrados son por segundo de video.",
+    "display_name": "HitPaw Video Enhance",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -6357,7 +6418,6 @@
   "Load3D": {
     "display_name": "Cargar 3D",
     "inputs": {
-      "clear": {},
       "height": {
         "name": "alto"
       },
@@ -6367,8 +6427,6 @@
       "model_file": {
         "name": "archivo_modelo"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
       "width": {
         "name": "ancho"
       }
@@ -7252,12 +7310,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: Imagen a Modelo",
@@ -7303,16 +7366,18 @@
         "name": "modo de simetría"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Multi-Imagen a Modelo",
@@ -7358,16 +7423,18 @@
         "name": "modo de simetría"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "Refina un modelo borrador previamente creado.",
@@ -7392,16 +7459,18 @@
         "tooltip": "Proporcione un texto para guiar el proceso de texturizado. Máximo 600 caracteres. No se puede usar al mismo tiempo que 'texture_image'."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "Proporciona un personaje riggeado en formatos estándar. El auto-rigging actualmente no es adecuado para mallas sin textura, activos no humanoides o activos humanoides con estructura de extremidades y cuerpo poco clara.",
@@ -7419,16 +7488,18 @@
         "tooltip": "Imagen de textura de color base UV-desplegada del modelo."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: Texto a Modelo",
@@ -7467,16 +7538,18 @@
         "name": "modo_simetría"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: Modelo de Textura",
@@ -7503,16 +7576,18 @@
         "tooltip": "Describe el estilo de textura deseado para el objeto usando texto. Máximo 600 caracteres. No se puede usar al mismo tiempo que 'image_style'."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "Genera videos a partir de un prompt, con opción de usar un fotograma inicial utilizando el nuevo modelo MiniMax Hailuo-02.",
@@ -10709,11 +10784,9 @@
       "camera_info": {
         "name": "camera_info"
       },
-      "image": {
-        "name": "imagen"
-      },
       "model_file": {
-        "name": "archivo_modelo"
+        "name": "archivo_modelo",
+        "tooltip": "Archivo de modelo 3D o ruta del archivo"
       }
     }
   },
@@ -11354,6 +11427,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "Este nodo establece el audio de referencia para el timbre (para ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamiento"
+      },
+      "latent": {
+        "name": "latente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "Extracción Regex",
     "inputs": {
@@ -11682,12 +11772,13 @@
         "name": "Semilla"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta Modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "Generar activos 3D usando la API de Rodin",
@@ -11709,12 +11800,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta Modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "Generar activos 3D usando la API de Rodin",
@@ -11733,12 +11825,13 @@
         "name": "Semilla"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta Modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "Generar activos 3D usando la API de Rodin",
@@ -11751,12 +11844,13 @@
         "name": "Semilla"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta del modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "Generar activos 3D usando la API de Rodin",
@@ -11775,12 +11869,13 @@
         "name": "Semilla"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta del modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "Sube los primeros y últimos fotogramas clave, redacta un prompt y genera un video. Las transiciones más complejas, como casos donde el último fotograma es completamente diferente del primero, pueden beneficiarse de la duración más larga de 10s. Esto le daría a la generación más tiempo para transicionar suavemente entre las dos entradas. Antes de comenzar, revisa estas mejores prácticas para asegurar que tus selecciones de entrada preparen tu generación para el éxito: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12507,11 +12602,9 @@
       "filename_prefix": {
         "name": "prefijo_nombre_archivo"
       },
-      "image": {
-        "name": "imagen"
-      },
       "mesh": {
-        "name": "malla"
+        "name": "malla",
+        "tooltip": "Malla o archivo GLB para guardar"
       }
     }
   },
@@ -13764,12 +13857,17 @@
         "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: Texto a Modelo (Pro)",
@@ -13799,12 +13897,17 @@
         "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13820,6 +13923,46 @@
       },
       "tags": {
         "name": "etiquetas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "bpm"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "duration": {
+        "name": "duración"
+      },
+      "keyscale": {
+        "name": "escala tonal"
+      },
+      "language": {
+        "name": "idioma"
+      },
+      "lyrics": {
+        "name": "letra"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "tags": {
+        "name": "etiquetas"
+      },
+      "timesignature": {
+        "name": "compás"
       }
     },
     "outputs": {
@@ -14383,16 +14526,14 @@
         "name": "semilla_textura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multivista a Modelo",
@@ -14444,16 +14585,14 @@
         "name": "semilla_de_textura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "Refina un modelo borrador creado únicamente por modelos Tripo v1.4.",
@@ -14464,16 +14603,14 @@
         "tooltip": "Debe ser un modelo Tripo v1.4"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: Redireccionar modelo con rig",
@@ -14485,16 +14622,14 @@
         "name": "ID_de_tarea_del_modelo_original"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_de_redireccionamiento",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: Modelo con rig",
@@ -14503,16 +14638,14 @@
         "name": "ID_de_tarea_del_modelo_original"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_de_rig",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Texto a Modelo",
@@ -14557,16 +14690,14 @@
         "name": "semilla_de_textura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_del_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: Modelo de textura",
@@ -14590,16 +14721,14 @@
         "name": "semilla_de_textura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_del_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "Truncar texto",

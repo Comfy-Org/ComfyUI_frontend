@@ -2205,6 +2205,23 @@
       }
     }
   },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة",
+        "tooltip": "عدد صور latent في الدفعة."
+      },
+      "seconds": {
+        "name": "ثواني"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
     "display_name": "خطوة الصوت الكامن الفارغ",
     "inputs": {
@@ -3546,6 +3563,50 @@
       },
       "tapered_corners": {
         "name": "زوايا_منحدرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "تكبير الصور منخفضة الدقة إلى دقة فائقة، إزالة الشوائب والضوضاء. الحد الأقصى للإخراج: ٣٢ ميغابيكسل.",
+    "display_name": "تحسين الصورة العام من HitPaw",
+    "inputs": {
+      "auto_downscale": {
+        "name": "تصغير تلقائي",
+        "tooltip": "تصغير الصورة المدخلة تلقائياً إذا تجاوز الإخراج الحد المسموح."
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "upscale_factor": {
+        "name": "عامل التكبير"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "تكبير مقاطع الفيديو منخفضة الدقة إلى دقة عالية، إزالة الشوائب والضوضاء. الأسعار لكل ثانية من الفيديو.",
+    "display_name": "تحسين الفيديو العام من HitPaw",
+    "inputs": {
+      "model": {
+        "name": "النموذج"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "video": {
+        "name": "الفيديو"
       }
     },
     "outputs": {
@@ -6357,7 +6418,6 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
-      "clear": {},
       "height": {
         "name": "الارتفاع"
       },
@@ -6367,8 +6427,6 @@
       "model_file": {
         "name": "ملف النموذج"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
       "width": {
         "name": "العرض"
       }
@@ -7252,12 +7310,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: من صورة إلى نموذج",
@@ -7303,16 +7366,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: من صور متعددة إلى نموذج",
@@ -7358,16 +7423,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "تحسين نموذج أولي تم إنشاؤه مسبقًا.",
@@ -7392,16 +7459,18 @@
         "tooltip": "أدخل نصًا لتوجيه عملية الإكساء. الحد الأقصى ٦٠٠ حرف. لا يمكن استخدامه مع 'texture_image' في نفس الوقت."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "يوفر شخصية مجهزة بالحركة بصيغ قياسية. التجهيز التلقائي غير مناسب حاليًا للنماذج غير المكسوة، أو الأصول غير البشرية، أو الأصول البشرية ذات البنية غير الواضحة للأطراف والجسم.",
@@ -7419,16 +7488,18 @@
         "tooltip": "صورة الإكساء الأساسية (UV-unwrapped) للنموذج."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: تحويل النص إلى نموذج",
@@ -7467,16 +7538,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: نموذج النسيج",
@@ -7503,16 +7576,18 @@
         "tooltip": "صف نمط النسيج المطلوب للكائن باستخدام النص. الحد الأقصى ٦٠٠ حرف. لا يمكن استخدامه مع 'image_style' في نفس الوقت."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف النموذج",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "معرّف مهمة Meshy",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "ينشئ مقاطع فيديو من المُوجِّه، مع إطار أول اختياري باستخدام نموذج MiniMax Hailuo-02 الجديد.",
@@ -10709,11 +10784,9 @@
       "camera_info": {
         "name": "معلومات الكاميرا"
       },
-      "image": {
-        "name": "الصورة"
-      },
       "model_file": {
-        "name": "ملف النموذج"
+        "name": "ملف النموذج",
+        "tooltip": "ملف النموذج ثلاثي الأبعاد أو مسار الملف"
       }
     }
   },
@@ -11354,6 +11427,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "تحدد هذه العقدة الصوت المرجعي للـ timbre (لـ ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "تهيئة"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "استخراج التعبير النمطي",
     "inputs": {
@@ -11682,12 +11772,13 @@
         "name": "البذرة"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسار_النموذج_ثلاثي_الأبعاد",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "توليد أصول ثلاثية الأبعاد باستخدام واجهة برمجة تطبيقات رودين",
@@ -11709,12 +11800,13 @@
         "name": "وضعية_TAP"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسار النموذج ثلاثي الأبعاد",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "توليد أصول ثلاثية الأبعاد باستخدام واجهة برمجة تطبيقات رودين",
@@ -11733,12 +11825,13 @@
         "name": "البذرة"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسار النموذج ثلاثي الأبعاد",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "توليد أصول ثلاثية الأبعاد باستخدام واجهة برمجة تطبيقات رودين",
@@ -11751,12 +11844,13 @@
         "name": "البذرة"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسار النموذج ثلاثي الأبعاد",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "توليد أصول ثلاثية الأبعاد باستخدام واجهة برمجة تطبيقات رودين",
@@ -11775,12 +11869,13 @@
         "name": "البذرة"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسار النموذج ثلاثي الأبعاد",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "قم برفع الإطارات الرئيسية الأولى والأخيرة، واكتب موجهًا، وقم بتوليد فيديو. قد تستفيد التحولات الأكثر تعقيدًا، مثل الحالات التي يختلف فيها الإطار الأخير تمامًا عن الإطار الأول، من المدة الأطول البالغة 10 ثوانٍ. سيمنح هذا التوليد مزيدًا من الوقت للانتقال بسلاسة بين المدخلين. قبل البدء، راجع أفضل الممارسات هذه لضمان أن اختياراتك للمدخلات ستؤدي إلى نجاح التوليد: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12507,11 +12602,9 @@
       "filename_prefix": {
         "name": "بادئة اسم الملف"
       },
-      "image": {
-        "name": "الصورة"
-      },
       "mesh": {
-        "name": "الشبكة"
+        "name": "الشبكة",
+        "tooltip": "شبكة أو ملف GLB للحفظ"
       }
     }
   },
@@ -13764,12 +13857,17 @@
         "tooltip": "البذرة تتحكم فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف النموذج",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: من نص إلى نموذج (احترافي)",
@@ -13799,12 +13897,17 @@
         "tooltip": "البذرة تتحكم فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف النموذج",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13820,6 +13923,46 @@
       },
       "tags": {
         "name": "علامات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "الإيقاع (BPM)"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "duration": {
+        "name": "المدة"
+      },
+      "keyscale": {
+        "name": "المقام الموسيقي"
+      },
+      "language": {
+        "name": "اللغة"
+      },
+      "lyrics": {
+        "name": "كلمات الأغنية"
+      },
+      "seed": {
+        "name": "البذرة"
+      },
+      "tags": {
+        "name": "الوسوم"
+      },
+      "timesignature": {
+        "name": "توقيع الإيقاع"
       }
     },
     "outputs": {
@@ -14383,16 +14526,14 @@
         "name": "بذرة النسيج"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: متعدد المناظر إلى نموذج",
@@ -14444,16 +14585,14 @@
         "name": "بذرة_الملمس"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_النموذج",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "تحسين نموذج مسود تم إنشاؤه بواسطة نماذج Tripo الإصدار 1.4 فقط.",
@@ -14464,16 +14603,14 @@
         "tooltip": "يجب أن يكون نموذج Tripo الإصدار 1.4"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_النموذج",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: إعادة توجيه النموذج المجهز",
@@ -14485,16 +14622,14 @@
         "name": "معرف_مهمة_النموذج_الأصلي"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_إعادة_التوجيه",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: تجهيز النموذج",
@@ -14503,16 +14638,14 @@
         "name": "معرف_مهمة_النموذج_الأصلي"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_التجهيز",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: النص إلى نموذج",
@@ -14557,16 +14690,14 @@
         "name": "بذرة_الملمس"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_النموذج",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: نموذج الملمس",
@@ -14590,16 +14721,14 @@
         "name": "بذرة_الملمس"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "ملف_النموذج",
-        "tooltip": null
-      },
-      "1": {
-        "name": "معرف_مهمة_النموذج",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "اقتطاع النص",
