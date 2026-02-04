@@ -3,6 +3,7 @@ import { computed, inject, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type {
@@ -67,6 +68,8 @@ function handleResetAllWidgets() {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
     if (defaultValue !== undefined) {
+      // Ensure Vue reactivity is set up for this widget before updating
+      getSharedWidgetEnhancements(widgetNode, widget)
       widget.value = defaultValue
       widget.callback?.(defaultValue)
     }
