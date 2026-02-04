@@ -123,7 +123,12 @@ const telemetry = useTelemetry()
 const dialogStore = useDialogStore()
 
 /**
- * Locate the node on the canvas.
+ * Locates the node associated with the error on the canvas.
+ *
+ * This function handles multi-graph navigation, ensuring that if a node resides
+ * within a subgraph, the canvas correctly switches context before animating.
+ * It uses a sequence of nextTick and requestAnimationFrame to ensure LiteGraph
+ * has completed its layout and initial draw before calculating bounds for animation.
  */
 async function handleLocateNode() {
   if (!error.nodeId) {
@@ -155,7 +160,8 @@ async function handleLocateNode() {
 
   const canvas = canvasStore.canvas
   if (graphNode.graph && canvas.graph !== graphNode.graph) {
-    // If the node is in a different graph (e.g. inside a subgraph), navigate to it first
+    // If the node is in a different graph (e.g. inside a subgraph), navigate to it first.
+    // We update the subgraph context and set the active graph.
     const targetGraph = graphNode.graph as LGraph
     canvas.subgraph =
       !targetGraph.isRootGraph && targetGraph instanceof Subgraph
@@ -163,14 +169,16 @@ async function handleLocateNode() {
         : undefined
     canvas.setGraph(targetGraph)
 
-    // Wait for the navigation to pick up and stores to update
+    // Wait for the navigation to pick up and stores to update.
     await nextTick()
-    // Wait for two animation frames to ensure LiteGraph has performed layout and initial draw
+    // Wait for two animation frames to ensure LiteGraph has performed layout and initial draw.
+    // This is crucial because graph elements are not immediately available after context switch.
     await new Promise((resolve) =>
       requestAnimationFrame(() => requestAnimationFrame(resolve))
     )
   }
 
+  // Animate the canvas view to comfortably fit the node's bounding rectangle.
   canvas.animateToBounds(graphNode.boundingRect)
   dialogStore.closeDialog()
 }

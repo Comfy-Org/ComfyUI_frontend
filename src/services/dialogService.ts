@@ -216,6 +216,7 @@ export const useDialogService = () => {
   function showPromptExecutionErrorDialog(
     executionError: ExecutionErrorDialogInput
   ) {
+    // Prepare properties for the generic ErrorDialogContent component.
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: t('errorDialog.promptExecutionError'),
@@ -227,6 +228,7 @@ export const useDialogService = () => {
       }
     }
 
+    // Display the global error dialog with telemetry tracking for closure.
     dialogStore.showDialog({
       key: 'global-error',
       component: ErrorDialogContent,

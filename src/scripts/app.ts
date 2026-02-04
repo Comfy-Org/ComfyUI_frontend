@@ -1424,6 +1424,7 @@ export class ComfyApp {
               const missingNodeType = createMissingNodeTypeFromError(extraInfo)
               this.showMissingNodesError([missingNodeType])
             } else if (
+              // Specific handling for prompt validation failures
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object' &&
               error.response.error?.type === 'prompt_outputs_failed_validation'
@@ -1438,6 +1439,8 @@ export class ComfyApp {
                   reportType: 'promptExecutionError'
                 })
               } else {
+                // Focus on the first identified node causing the validation failure.
+                // This provides the user with a direct starting point for fixing the workflow.
                 const firstNodeId = nodeIds[0]
                 const nodeError = nodeErrors[firstNodeId]
 
@@ -1446,7 +1449,7 @@ export class ComfyApp {
                   exception_message: error.toString(),
                   node_id: firstNodeId,
                   node_type: nodeError?.class_type ?? '',
-                  traceback: []
+                  traceback: [] // Validation errors usually don't have server-side backtraces
                 })
               }
             } else {
