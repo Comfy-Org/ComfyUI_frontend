@@ -41,7 +41,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   ): WidgetState<TValue> {
     const key = makeKey(state.nodeId, state.name)
     widgetStates.value.set(key, state)
-    return state
+    return widgetStates.value.get(key) as WidgetState<TValue>
   }
 
   function unregisterWidget(nodeId: NodeId, widgetName: string): void {

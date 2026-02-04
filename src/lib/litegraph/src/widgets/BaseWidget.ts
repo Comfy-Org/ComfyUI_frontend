@@ -148,7 +148,7 @@ export abstract class BaseWidget<
    */
   setNodeId(nodeId: NodeId): void {
     this._state.nodeId = nodeId
-    useWidgetValueStore().registerWidget(this._state)
+    this._state = useWidgetValueStore().registerWidget(this._state)
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
