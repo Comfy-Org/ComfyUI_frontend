@@ -16,7 +16,7 @@ catalog:
   '@nx/storybook': 22.2.4
   '@nx/vite': 22.2.6
   '@pinia/testing': ^1.0.3
-  '@playwright/test': ^1.57.0
+  '@playwright/test': ^1.58.1
   '@primeuix/forms': 0.0.2
   '@primeuix/styled': 0.3.2
   '@primeuix/utils': ^0.3.2
@@ -41,8 +41,8 @@ catalog:
   '@vitest/coverage-v8': ^4.0.16
   '@vitest/ui': ^4.0.16
   '@vue/test-utils': ^2.4.6
-  '@vueuse/core': ^11.0.0
-  '@vueuse/integrations': ^13.9.0
+  '@vueuse/core': ^14.2.0
+  '@vueuse/integrations': ^14.2.0
   '@webgpu/types': ^0.1.66
   algoliasearch: ^5.21.0
   axios: ^1.8.2
@@ -62,8 +62,8 @@ catalog:
   happy-dom: ^20.0.11
   husky: ^9.1.7
   jiti: 2.6.1
-  jsonata: ^2.1.0
   jsdom: ^27.4.0
+  jsonata: ^2.1.0
   knip: ^5.75.1
   lint-staged: ^16.2.7
   markdown-table: ^3.0.4

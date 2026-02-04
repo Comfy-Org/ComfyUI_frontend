@@ -141,6 +141,20 @@ class LayoutStoreImpl implements LayoutStore {
   // Vue resizing state to prevent drag from activating during resize
   public isResizingVueNodes = ref(false)
 
+  /**
+   * Flag indicating slot positions are pending sync after graph reconfiguration.
+   * When true, link rendering should be skipped to avoid drawing with stale positions.
+   */
+  private _pendingSlotSync = false
+
+  get pendingSlotSync(): boolean {
+    return this._pendingSlotSync
+  }
+
+  setPendingSlotSync(value: boolean): void {
+    this._pendingSlotSync = value
+  }
+
   constructor() {
     // Initialize Yjs data structures
     this.ynodes = this.ydoc.getMap('nodes')

@@ -63,11 +63,18 @@ export const graphToPrompt = async (
       ? new ExecutableGroupNodeDTO(node, [], nodeDtoMap)
       : new ExecutableNodeDTO(node, [], nodeDtoMap)
 
+    nodeDtoMap.set(dto.id, dto)
+
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    ) {
+      continue
+    }
+
     for (const innerNode of dto.getInnerNodes()) {
       nodeDtoMap.set(innerNode.id, innerNode)
     }
-
-    nodeDtoMap.set(dto.id, dto)
   }
 
   const output: ComfyApiWorkflow = {}

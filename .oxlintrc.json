@@ -110,6 +110,17 @@
       "rules": {
         "no-console": "allow"
       }
+    },
+    {
+      "files": ["browser_tests/**/*.ts"],
+      "rules": {
+        "typescript/no-explicit-any": "error",
+        "no-async-promise-executor": "error",
+        "no-control-regex": "error",
+        "no-useless-rename": "error",
+        "no-unused-private-class-members": "error",
+        "unicorn/no-empty-file": "error"
+      }
     }
   ]
 }

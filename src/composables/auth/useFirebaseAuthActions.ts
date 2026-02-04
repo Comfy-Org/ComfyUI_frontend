@@ -206,21 +206,6 @@ export const useFirebaseAuthActions = () => {
     [createReauthenticationRecovery<[string], void>()]
   )
 
-  const deleteAccount = wrapWithErrorHandlingAsync(
-    async () => {
-      await authStore.deleteAccount()
-      toastStore.add({
-        severity: 'success',
-        summary: t('auth.deleteAccount.success'),
-        detail: t('auth.deleteAccount.successDetail'),
-        life: 5000
-      })
-    },
-    reportError,
-    undefined,
-    [createReauthenticationRecovery<[], void>()]
-  )
-
   return {
     logout,
     sendPasswordReset,
@@ -232,7 +217,6 @@ export const useFirebaseAuthActions = () => {
     signInWithEmail,
     signUpWithEmail,
     updatePassword,
-    deleteAccount,
     accessError,
     reportError
   }
