@@ -104,7 +104,7 @@ const tabs = computed<RightSidePanelTabList>(() => {
   const list: RightSidePanelTabList = []
   if (selectedNodeErrors.value.length) {
     list.push({
-      label: () => 'Error',
+      label: () => t('g.error'),
       value: 'error',
       icon: 'icon-[lucide--octagon-alert] bg-node-stroke-error ml-1'
     })
