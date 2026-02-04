@@ -57,8 +57,7 @@ provide(
 
 const modelValue = defineModel<string | undefined>({
   default(props: Props) {
-    const values = props.widget.options?.values
-    return Array.isArray(values) ? (values[0] ?? '') : ''
+    return props.widget.options?.values?.[0] ?? ''
   }
 })
 
@@ -120,7 +119,7 @@ const selectedSet = ref<Set<string>>(new Set())
  */
 function getDisplayLabel(value: string): string {
   const getOptionLabel = props.widget.options?.getOptionLabel
-  if (typeof getOptionLabel !== 'function') return value
+  if (!getOptionLabel) return value
 
   try {
     return getOptionLabel(value) || value
@@ -137,7 +136,7 @@ const inputItems = computed<FormDropdownItem[]>(() => {
     return []
   }
 
-  return values.map((value: string, index: number) => ({
+  return (values as string[]).map((value, index) => ({
     id: `input-${index}`,
     preview_url: getMediaUrl(value, 'input'),
     name: value,

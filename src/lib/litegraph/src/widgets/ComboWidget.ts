@@ -36,7 +36,7 @@ export class ComboWidget
     if (this.computedDisabled) return ''
 
     const getOptionLabel = this.options.getOptionLabel
-    if (typeof getOptionLabel === 'function') {
+    if (getOptionLabel) {
       try {
         return getOptionLabel(this.value ? String(this.value) : null)
       } catch (e) {
@@ -157,10 +157,9 @@ export class ComboWidget
       const getOptionLabel = this.options.getOptionLabel
       for (const value of values_list) {
         try {
-          const label =
-            typeof getOptionLabel === 'function'
-              ? getOptionLabel(String(value))
-              : String(value)
+          const label = getOptionLabel
+            ? getOptionLabel(String(value))
+            : String(value)
           menu.addItem(label, value, menuOptions)
         } catch (err) {
           console.error('Failed to map value:', err)
