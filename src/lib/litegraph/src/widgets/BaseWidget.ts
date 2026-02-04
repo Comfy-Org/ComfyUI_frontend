@@ -15,6 +15,7 @@ import type {
   IBaseWidget,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export interface DrawWidgetOptions {
@@ -78,90 +79,41 @@ export abstract class BaseWidget<
   computedDisabled?: boolean
   tooltip?: string
 
-  private _label?: string
-  private _hidden?: boolean
-  private _disabled?: boolean
-  private _advanced?: boolean
-  private _promoted?: boolean
+  private _state: WidgetState
 
   get label(): string | undefined {
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) return state.label
-    }
-    return this._label
+    return this._state.label
   }
-
   set label(value: string | undefined) {
-    this._label = value
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) state.label = value
-    }
+    this._state.label = value
   }
 
   get hidden(): boolean | undefined {
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) return state.hidden
-    }
-    return this._hidden
+    return this._state.hidden
   }
-
   set hidden(value: boolean | undefined) {
-    this._hidden = value
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) state.hidden = value ?? false
-    }
+    this._state.hidden = value ?? false
   }
 
   get disabled(): boolean | undefined {
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) return state.disabled
-    }
-    return this._disabled
+    return this._state.disabled
   }
-
   set disabled(value: boolean | undefined) {
-    this._disabled = value
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) state.disabled = value ?? false
-    }
+    this._state.disabled = value ?? false
   }
 
   get advanced(): boolean | undefined {
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) return state.advanced
-    }
-    return this._advanced
+    return this._state.advanced
   }
-
   set advanced(value: boolean | undefined) {
-    this._advanced = value
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) state.advanced = value ?? false
-    }
+    this._state.advanced = value ?? false
   }
 
   get promoted(): boolean | undefined {
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) return state.promoted
-    }
-    return this._promoted
+    return this._state.promoted
   }
-
   set promoted(value: boolean | undefined) {
-    this._promoted = value
-    if (this._nodeId !== undefined) {
-      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
-      if (state) state.promoted = value ?? false
-    }
+    this._state.promoted = value ?? false
   }
   element?: HTMLElement
   callback?(
@@ -183,27 +135,11 @@ export abstract class BaseWidget<
     canvas: LGraphCanvas
   ): boolean
 
-  private _internalValue?: TWidget['value']
-  private _nodeId?: NodeId
-
   get value(): TWidget['value'] {
-    if (this._nodeId !== undefined) {
-      const store = useWidgetValueStore()
-      const storeValue = store.getWidget(this._nodeId, this.name)?.value
-      if (storeValue !== undefined) {
-        return storeValue as TWidget['value']
-      }
-    }
-    return this._internalValue
+    return this._state.value as TWidget['value']
   }
-
   set value(value: TWidget['value']) {
-    this._internalValue = value
-    if (this._nodeId !== undefined) {
-      const store = useWidgetValueStore()
-      const state = store.getWidget(this._nodeId, this.name)
-      if (state) state.value = value
-    }
+    this._state.value = value
   }
 
   /**
@@ -211,21 +147,8 @@ export abstract class BaseWidget<
    * Once set, value reads/writes will be delegated to the store.
    */
   setNodeId(nodeId: NodeId): void {
-    this._nodeId = nodeId
-    const store = useWidgetValueStore()
-    store.registerWidget({
-      nodeId,
-      name: this.name,
-      type: this.type as TWidgetType,
-      value: this._internalValue,
-      label: this._label,
-      hidden: this._hidden,
-      disabled: this._disabled,
-      advanced: this._advanced,
-      promoted: this._promoted,
-      serialize: this.serialize,
-      options: this.options
-    })
+    this._state.nodeId = nodeId
+    useWidgetValueStore().registerWidget(this._state)
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
@@ -268,17 +191,26 @@ export abstract class BaseWidget<
       disabled,
       advanced,
       promoted,
+      value,
       linkedWidgets,
       ...safeValues
     } = widget
 
     Object.assign(this, safeValues)
 
-    this._label = label
-    this._hidden = hidden
-    this._disabled = disabled
-    this._advanced = advanced
-    this._promoted = promoted
+    this._state = {
+      nodeId: undefined as unknown as NodeId,
+      name: this.name,
+      type: this.type as TWidgetType,
+      value,
+      label,
+      hidden: hidden ?? false,
+      disabled: disabled ?? false,
+      advanced: advanced ?? false,
+      promoted: promoted ?? false,
+      serialize: this.serialize,
+      options: this.options
+    }
   }
 
   get outline_color() {
