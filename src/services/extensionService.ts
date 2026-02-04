@@ -137,32 +137,40 @@ export const useExtensionService = () => {
     }
   }
 
-  type FunctionPropertyNames<T> = {
-    [K in keyof T]: T[K] extends (...args: unknown[]) => unknown ? K : never
-  }[keyof T]
   type RemoveLastAppParam<T> = T extends (
     ...args: [...infer Rest, ComfyApp]
   ) => infer R
     ? (...args: Rest) => R
     : T
 
-  type ComfyExtensionParamsWithoutApp<T extends keyof ComfyExtension> =
-    RemoveLastAppParam<ComfyExtension[T]>
+  type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol> &
+    string
+
+  type ComfyExtensionMethod<T extends KnownExtensionMethods> =
+    ComfyExtension[T] extends (...args: unknown[]) => unknown
+      ? ComfyExtension[T]
+      : (...args: unknown[]) => unknown
+
+  type ComfyExtensionParamsWithoutApp<T extends KnownExtensionMethods> =
+    RemoveLastAppParam<ComfyExtensionMethod<T>>
   /**
    * Invoke an extension callback
    * @param {keyof ComfyExtension} method The extension callback to execute
    * @param  {unknown[]} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensions = <T extends FunctionPropertyNames<ComfyExtension>>(
+  const invokeExtensions = <T extends KnownExtensionMethods>(
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
-    const results: ReturnType<ComfyExtension[T]>[] = []
+    const results: ReturnType<ComfyExtensionMethod<T>>[] = []
     for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
         try {
-          results.push(ext[method](...args, app))
+          const fn = ext[method]
+          if (typeof fn === 'function') {
+            results.push(fn(...args, app))
+          }
         } catch (error) {
           console.error(
             `Error calling extension '${ext.name}' method '${method}'`,
@@ -183,9 +191,7 @@ export const useExtensionService = () => {
    * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensionsAsync = async <
-    T extends FunctionPropertyNames<ComfyExtension>
-  >(
+  const invokeExtensionsAsync = async <T extends KnownExtensionMethods>(
     method: T,
     ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
@@ -193,12 +199,17 @@ export const useExtensionService = () => {
       extensionStore.enabledExtensions.map(async (ext) => {
         if (method in ext) {
           try {
+            const fn = ext[method]
+            if (typeof fn !== 'function') {
+              return
+            }
+
             // Set current extension name for legacy compatibility tracking
             if (method === 'setup') {
               legacyMenuCompat.setCurrentExtension(ext.name)
             }
 
-            const result = await ext[method](...args, app)
+            const result = await fn(...args, app)
 
             // Clear current extension after setup
             if (method === 'setup') {

@@ -1,3 +1,4 @@
+import type { ComfyExtension } from '@/types/comfy'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { app } from '../../scripts/app'
@@ -5,10 +6,17 @@ import { ComfyWidgets } from '../../scripts/widgets'
 
 // Adds defaults for quickly adding nodes with middle click on the input/output
 
+interface SlotDefaultsExtension extends ComfyExtension {
+  suggestionsNumber: { value: number } | null
+  slot_types_default_out: Record<string, string[]>
+  slot_types_default_in: Record<string, string[]>
+  setDefaults(maxNum?: number | null): void
+}
+
 app.registerExtension({
   name: 'Comfy.SlotDefaults',
   suggestionsNumber: null,
-  init() {
+  init(this: SlotDefaultsExtension) {
     LiteGraph.search_filter_enabled = true
     LiteGraph.middle_click_slot_add_default_node = true
     this.suggestionsNumber = app.ui.settings.addSetting({
@@ -30,7 +38,7 @@ app.registerExtension({
   },
   slot_types_default_out: {},
   slot_types_default_in: {},
-  async beforeRegisterNodeDef(nodeType, nodeData) {
+  async beforeRegisterNodeDef(this: SlotDefaultsExtension, nodeType, nodeData) {
     var nodeId = nodeData.name
     const inputs = nodeData['input']?.['required'] //only show required inputs to reduce the mess also not logical to create node with optional inputs
     for (const inputKey in inputs) {
@@ -83,22 +91,23 @@ app.registerExtension({
       }
     }
 
-    var maxNum = this.suggestionsNumber.value
+    var maxNum = this.suggestionsNumber?.value
     this.setDefaults(maxNum)
   },
-  setDefaults(maxNum?: number | null) {
+  setDefaults(this: SlotDefaultsExtension, maxNum?: number | null) {
     LiteGraph.slot_types_default_out = {}
     LiteGraph.slot_types_default_in = {}
 
+    const max = maxNum ?? undefined
     for (const type in this.slot_types_default_out) {
       LiteGraph.slot_types_default_out[type] = this.slot_types_default_out[
         type
-      ].slice(0, maxNum)
+      ].slice(0, max)
     }
     for (const type in this.slot_types_default_in) {
       LiteGraph.slot_types_default_in[type] = this.slot_types_default_in[
         type
-      ].slice(0, maxNum)
+      ].slice(0, max)
     }
   }
 })
