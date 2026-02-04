@@ -80,7 +80,7 @@ export type SubscriptionTier =
   | 'PRO'
   | 'FOUNDERS_EDITION'
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
-export type PlanAvailabilityReason =
+type PlanAvailabilityReason =
   | 'same_plan'
   | 'incompatible_transition'
   | 'requires_team'
@@ -114,7 +114,7 @@ interface BillingPlansResponse {
   plans: Plan[]
 }
 
-export type SubscriptionTransitionType =
+type SubscriptionTransitionType =
   | 'new_subscription'
   | 'upgrade'
   | 'downgrade'
@@ -131,10 +131,7 @@ interface SubscribeRequest {
   cancel_url?: string
 }
 
-export type SubscribeStatus =
-  | 'subscribed'
-  | 'needs_payment_method'
-  | 'pending_payment'
+type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
 
 export interface SubscribeResponse {
   billing_op_id: string
@@ -147,7 +144,7 @@ interface CancelSubscriptionRequest {
   idempotency_key?: string
 }
 
-export interface CancelSubscriptionResponse {
+interface CancelSubscriptionResponse {
   billing_op_id: string
   cancel_at: string
 }
@@ -156,7 +153,7 @@ interface ResubscribeRequest {
   idempotency_key?: string
 }
 
-export interface ResubscribeResponse {
+interface ResubscribeResponse {
   billing_op_id: string
   status: 'active'
   message?: string
@@ -166,11 +163,11 @@ interface PaymentPortalRequest {
   return_url?: string
 }
 
-export interface PaymentPortalResponse {
+interface PaymentPortalResponse {
   url: string
 }
 
-export interface PreviewPlanInfo {
+interface PreviewPlanInfo {
   slug: string
   tier: SubscriptionTier
   duration: SubscriptionDuration
@@ -195,13 +192,9 @@ export interface PreviewSubscribeResponse {
   new_plan: PreviewPlanInfo
 }
 
-export type BillingSubscriptionStatus =
-  | 'active'
-  | 'scheduled'
-  | 'ended'
-  | 'canceled'
+type BillingSubscriptionStatus = 'active' | 'scheduled' | 'ended' | 'canceled'
 
-export type BillingStatus =
+type BillingStatus =
   | 'awaiting_payment_method'
   | 'pending_payment'
   | 'paid'
@@ -233,16 +226,16 @@ interface CreateTopupRequest {
   idempotency_key?: string
 }
 
-export type TopupStatus = 'pending' | 'completed' | 'failed'
+type TopupStatus = 'pending' | 'completed' | 'failed'
 
-export interface CreateTopupResponse {
+interface CreateTopupResponse {
   billing_op_id: string
   topup_id: string
   status: TopupStatus
   amount_cents: number
 }
 
-export interface TopupStatusResponse {
+interface TopupStatusResponse {
   topup_id: string
   status: TopupStatus
   amount_cents: number
@@ -251,7 +244,7 @@ export interface TopupStatusResponse {
   completed_at?: string
 }
 
-export type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
+type BillingOpStatus = 'pending' | 'succeeded' | 'failed'
 
 export interface BillingOpStatusResponse {
   id: string
@@ -261,14 +254,14 @@ export interface BillingOpStatusResponse {
   completed_at?: string
 }
 
-export interface BillingEvent {
+interface BillingEvent {
   event_type: string
   event_id: string
   params?: Record<string, unknown>
   createdAt: string
 }
 
-export interface BillingEventsResponse {
+interface BillingEventsResponse {
   total: number
   events: BillingEvent[]
   page: number
@@ -276,7 +269,7 @@ export interface BillingEventsResponse {
   totalPages: number
 }
 
-export interface GetBillingEventsParams {
+interface GetBillingEventsParams {
   page?: number
   limit?: number
 }

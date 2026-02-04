@@ -1,29 +1,16 @@
 import { onBeforeUnmount, ref } from 'vue'
-import type { Ref } from 'vue'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 const MAX_ATTEMPTS = 100
 const POLL_INTERVAL_MS = 300
 
-export interface UseSubscribePollingOptions {
+interface UseSubscribePollingOptions {
   onSuccess?: () => void | Promise<void>
   onError?: (errorMessage: string) => void
 }
 
-export interface UseSubscribePollingReturn {
-  isPending: Ref<boolean>
-  isSuccess: Ref<boolean>
-  isFailed: Ref<boolean>
-  isTimeout: Ref<boolean>
-  errorMessage: Ref<string | null>
-  startPolling: (billingOpId: string) => void
-  stopPolling: () => void
-}
-
-export function useSubscribePolling(
-  options: UseSubscribePollingOptions = {}
-): UseSubscribePollingReturn {
+export function useSubscribePolling(options: UseSubscribePollingOptions = {}) {
   const { onSuccess, onError } = options
 
   const isPending = ref(false)

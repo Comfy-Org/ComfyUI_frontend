@@ -1,28 +1,16 @@
 import { onBeforeUnmount, ref } from 'vue'
-import type { Ref } from 'vue'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 const MAX_ATTEMPTS = 100
 const POLL_INTERVAL_MS = 300
 
-export interface UseTopupPollingOptions {
+interface UseTopupPollingOptions {
   onSuccess?: () => void | Promise<void>
   onError?: (errorMessage: string) => void
 }
 
-export interface UseTopupPollingReturn {
-  isPending: Ref<boolean>
-  isSuccess: Ref<boolean>
-  isFailed: Ref<boolean>
-  errorMessage: Ref<string | null>
-  startPolling: (billingOpId: string) => void
-  stopPolling: () => void
-}
-
-export function useTopupPolling(
-  options: UseTopupPollingOptions = {}
-): UseTopupPollingReturn {
+export function useTopupPolling(options: UseTopupPollingOptions = {}) {
   const { onSuccess, onError } = options
 
   const isPending = ref(false)
