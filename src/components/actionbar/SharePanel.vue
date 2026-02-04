@@ -196,131 +196,165 @@
         v-else-if="activeTab === 'publish'"
         class="mx-auto flex w-full max-w-sm flex-col gap-6 p-4"
       >
-        <p
-          class="rounded-xl border border-border-default bg-secondary-background/40 p-3 text-sm leading-5 text-muted-foreground"
-        >
-          {{ $t('discover.share.publishTab.description') }}
-        </p>
-
-        <!-- Thumbnail upload -->
         <div
-          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+          v-if="publishSuccessUrl"
+          class="flex flex-col gap-4 rounded-xl border border-border-default bg-secondary-background/40 p-4"
         >
-          <span
-            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-          >
-            {{ $t('discover.share.publishToHubDialog.thumbnail') }}
-          </span>
+          <div class="flex items-center gap-2 text-base font-semibold">
+            <i class="icon-[lucide--check-circle] size-5 text-success" />
+            {{ $t('discover.share.publishToHubDialog.successTitle') }}
+          </div>
+          <p class="text-sm text-muted-foreground">
+            {{ $t('discover.share.publishToHubDialog.successDescription') }}
+          </p>
           <div
-            class="relative flex size-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-border-default bg-comfy-menu-bg transition-colors hover:border-border-hover"
-            @click="triggerThumbnailUpload"
+            class="rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground"
           >
-            <img
-              v-if="thumbnailPreview"
-              :src="thumbnailPreview"
-              :alt="$t('discover.share.publishToHubDialog.thumbnailPreview')"
-              class="size-full object-cover"
-            />
-            <div v-else class="flex flex-col items-center gap-1 text-center">
-              <i
-                class="icon-[lucide--image-plus] size-6 text-muted-foreground"
-              />
-            </div>
-            <input
-              ref="thumbnailInput"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              @change="handleThumbnailChange"
-            />
+            {{ publishSuccessUrl }}
+          </div>
+          <div class="flex flex-col gap-2 sm:flex-row">
+            <Button variant="primary" size="md" @click="openPublishedWorkflow">
+              <i class="icon-[lucide--external-link] size-4" />
+              {{ $t('discover.share.publishToHubDialog.successOpen') }}
+            </Button>
+            <Button
+              variant="secondary"
+              size="md"
+              @click="copyToClipboard(publishSuccessUrl)"
+            >
+              <i class="icon-[lucide--copy] size-4" />
+              {{ $t('discover.share.publishToHubDialog.successCopy') }}
+            </Button>
           </div>
         </div>
 
-        <!-- Title -->
-        <div
-          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
-        >
-          <span
-            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+        <template v-else>
+          <p
+            class="rounded-xl border border-border-default bg-secondary-background/40 p-3 text-sm leading-5 text-muted-foreground"
           >
-            {{ $t('g.title') }}
-          </span>
-          <input
-            v-model="publishTitle"
-            type="text"
-            class="w-full rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-secondary-foreground hover:border-border-hover"
-            :placeholder="
-              $t('discover.share.publishToHubDialog.titlePlaceholder')
-            "
-          />
-        </div>
+            {{ $t('discover.share.publishTab.description') }}
+          </p>
 
-        <!-- Description -->
-        <div
-          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
-        >
-          <span
-            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-          >
-            {{ $t('g.description') }}
-          </span>
-          <textarea
-            v-model="publishDescription"
-            rows="3"
-            class="w-full resize-none rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-secondary-foreground hover:border-border-hover"
-            :placeholder="
-              $t('discover.share.publishToHubDialog.descriptionPlaceholder')
-            "
-          />
-        </div>
-
-        <!-- Tags -->
-        <div
-          class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
-        >
-          <span
-            class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-          >
-            {{ $t('discover.filters.tags') }}
-          </span>
+          <!-- Thumbnail upload -->
           <div
-            class="flex flex-wrap gap-2 rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2"
+            class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
           >
             <span
-              v-for="tag in publishTags"
-              :key="tag"
-              class="flex items-center gap-1 rounded-full bg-secondary-background px-2 py-0.5 text-xs text-base-foreground"
+              class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
             >
-              {{ tag }}
-              <button
-                class="cursor-pointer border-none bg-transparent p-0 text-muted-foreground hover:text-base-foreground"
-                :aria-label="$t('g.removeTag')"
-                @click="removeTag(tag)"
-              >
-                <i class="icon-[lucide--x] size-3" />
-              </button>
+              {{ $t('discover.share.publishToHubDialog.thumbnail') }}
+            </span>
+            <div
+              class="relative flex size-24 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-dashed border-border-default bg-comfy-menu-bg transition-colors hover:border-border-hover"
+              @click="triggerThumbnailUpload"
+            >
+              <img
+                v-if="thumbnailPreview"
+                :src="thumbnailPreview"
+                :alt="$t('discover.share.publishToHubDialog.thumbnailPreview')"
+                class="size-full object-cover"
+              />
+              <div v-else class="flex flex-col items-center gap-1 text-center">
+                <i
+                  class="icon-[lucide--image-plus] size-6 text-muted-foreground"
+                />
+              </div>
+              <input
+                ref="thumbnailInput"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="handleThumbnailChange"
+              />
+            </div>
+          </div>
+
+          <!-- Title -->
+          <div
+            class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+          >
+            <span
+              class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              {{ $t('g.title') }}
             </span>
             <input
-              v-model="newTag"
+              v-model="publishTitle"
               type="text"
-              class="min-w-20 flex-1 border-none bg-transparent text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none"
-              :placeholder="$t('discover.share.publishToHubDialog.addTag')"
-              @keydown.enter.prevent="addTag"
+              class="w-full rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-secondary-foreground hover:border-border-hover"
+              :placeholder="
+                $t('discover.share.publishToHubDialog.titlePlaceholder')
+              "
             />
           </div>
-        </div>
 
-        <Button
-          variant="primary"
-          size="md"
-          class="w-full"
-          :loading="publishing"
-          :disabled="!isPublishValid"
-          @click="handlePublishToHub"
-        >
-          <i class="icon-[lucide--upload] size-4" />
-          {{ $t('discover.share.publishToHubDialog.publish') }}
-        </Button>
+          <!-- Description -->
+          <div
+            class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+          >
+            <span
+              class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              {{ $t('g.description') }}
+            </span>
+            <textarea
+              v-model="publishDescription"
+              rows="3"
+              class="w-full resize-none rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground transition-colors focus:outline-none focus:ring-1 focus:ring-secondary-foreground hover:border-border-hover"
+              :placeholder="
+                $t('discover.share.publishToHubDialog.descriptionPlaceholder')
+              "
+            />
+          </div>
+
+          <!-- Tags -->
+          <div
+            class="flex flex-col gap-2 rounded-xl border border-border-default bg-secondary-background/40 p-3"
+          >
+            <span
+              class="text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+            >
+              {{ $t('discover.filters.tags') }}
+            </span>
+            <div
+              class="flex flex-wrap gap-2 rounded-lg border border-border-default bg-comfy-menu-bg px-3 py-2"
+            >
+              <span
+                v-for="tag in publishTags"
+                :key="tag"
+                class="flex items-center gap-1 rounded-full bg-secondary-background px-2 py-0.5 text-xs text-base-foreground"
+              >
+                {{ tag }}
+                <button
+                  class="cursor-pointer border-none bg-transparent p-0 text-muted-foreground hover:text-base-foreground"
+                  :aria-label="$t('g.removeTag')"
+                  @click="removeTag(tag)"
+                >
+                  <i class="icon-[lucide--x] size-3" />
+                </button>
+              </span>
+              <input
+                v-model="newTag"
+                type="text"
+                class="min-w-20 flex-1 border-none bg-transparent text-sm text-base-foreground placeholder:text-muted-foreground focus:outline-none"
+                :placeholder="$t('discover.share.publishToHubDialog.addTag')"
+                @keydown.enter.prevent="addTag"
+              />
+            </div>
+          </div>
+
+          <Button
+            variant="primary"
+            size="md"
+            class="w-full"
+            :loading="publishing"
+            :disabled="!isPublishValid"
+            @click="handlePublishToHub"
+          >
+            <i class="icon-[lucide--upload] size-4" />
+            {{ $t('discover.share.publishToHubDialog.publish') }}
+          </Button>
+        </template>
       </div>
     </div>
   </div>
@@ -365,6 +399,7 @@ const publishTitle = ref('')
 const publishDescription = ref('')
 const publishTags = ref<string[]>([])
 const newTag = ref('')
+const publishSuccessUrl = ref<string | null>(null)
 
 const isEmailValid = computed(() => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -479,14 +514,20 @@ async function handlePublishToHub() {
   publishing.value = true
   try {
     await new Promise((resolve) => setTimeout(resolve, 1000))
-    toastStore.add({
-      severity: 'info',
-      summary: t('g.comingSoon'),
-      detail: t('discover.share.publishToHubDialog.notImplemented'),
-      life: 3000
-    })
+    const title = publishTitle.value.trim()
+    const slug = title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    const fakeId = slug ? `${slug}-preview` : 'workflow-preview'
+    publishSuccessUrl.value = `https://comfy-hub.vercel.app/workflows/${fakeId}`
   } finally {
     publishing.value = false
   }
+}
+
+function openPublishedWorkflow() {
+  if (!publishSuccessUrl.value) return
+  window.open(publishSuccessUrl.value, '_blank')
 }
 </script>

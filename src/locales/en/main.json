@@ -93,7 +93,11 @@
         "openSource": "Open Source",
         "openSourceDescription": "Uses only open source models",
         "publish": "Publish",
-        "notImplemented": "Publishing to Hub is not implemented yet"
+        "notImplemented": "Publishing to Hub is not implemented yet",
+        "successTitle": "Published to Hub",
+        "successDescription": "Your workflow is live on Comfy Hub.",
+        "successOpen": "Open in Hub",
+        "successCopy": "Copy link"
       }
     }
   },
