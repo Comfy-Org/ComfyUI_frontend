@@ -6,7 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import NodeConflictDialogContent from '@/workbench/extensions/manager/components/manager/NodeConflictDialogContent.vue'
-import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
+import type {
+  ConflictDetail,
+  ConflictDetectionResult
+} from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 // Mock getConflictMessage utility
 vi.mock('@/utils/conflictMessageUtil', () => ({
@@ -454,7 +457,9 @@ describe('NodeConflictDialogContent', () => {
       const vm = wrapper.vm as any
       expect(vm.allConflictDetails).toHaveLength(3) // Should not include import_failed
       expect(
-        vm.allConflictDetails.every((c: any) => c.type !== 'import_failed')
+        vm.allConflictDetails.every(
+          (c: ConflictDetail) => c.type !== 'import_failed'
+        )
       ).toBe(true)
     })
 
