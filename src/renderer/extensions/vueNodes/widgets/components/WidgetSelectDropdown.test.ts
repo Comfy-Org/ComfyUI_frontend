@@ -31,7 +31,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     value: string = 'img_001.png',
     options: {
       values?: string[]
-      getOptionLabel?: (value: string | null) => string
+      getOptionLabel?: (value?: string | null) => string
     } = {},
     spec?: ComboInputSpec
   ): SimplifiedWidget<string | undefined> => ({
@@ -82,7 +82,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
   describe('when custom labels are provided via getOptionLabel', () => {
     it('displays custom labels while preserving original values', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (!value) return 'No file'
         const mapping: Record<string, string> = {
           'img_001.png': 'Vacation Photo',
@@ -112,7 +112,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('emits original values when items with custom labels are selected', async () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (!value) return 'No file'
         return `Custom: ${value}`
       })
@@ -134,7 +134,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('falls back to original value when label mapping fails', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (value === 'photo_abc.jpg') {
           throw new Error('Mapping failed')
         }
@@ -163,7 +163,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('falls back to original value when label mapping returns empty string', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (value === 'photo_abc.jpg') {
           return ''
         }
@@ -185,7 +185,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('falls back to original value when label mapping returns undefined', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (value === 'hash789.png') {
           return undefined as unknown as string
         }
@@ -209,7 +209,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
   describe('output items with custom label mapping', () => {
     it('applies custom label mapping to output items from queue history', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (!value) return 'No file'
         return `Output: ${value}`
       })
