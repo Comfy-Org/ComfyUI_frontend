@@ -1030,7 +1030,10 @@
     "hidden": "Hidden / nested parameters",
     "hideAll": "Hide all",
     "showRecommended": "Show recommended widgets",
-    "cannotDeleteGlobal": "Cannot delete installed blueprints"
+    "cannotDeleteGlobal": "Cannot delete installed blueprints",
+    "enterDescription": "Enter a description",
+    "searchAliases": "Search Aliases",
+    "enterSearchAliases": "Enter search aliases (comma separated)"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",

@@ -234,6 +234,7 @@ export type GlobalSubgraphData = {
   info: {
     node_pack: string
     category?: string
+    search_aliases?: string[]
   }
   data: string | Promise<string>
 }
