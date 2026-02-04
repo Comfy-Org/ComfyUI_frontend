@@ -304,7 +304,7 @@ export class PrimitiveNode extends LGraphNode {
 
   private _createAssetWidget(
     targetNode: LGraphNode,
-    _widgetName: string,
+    targetInputName: string,
     inputData: InputSpec
   ): IBaseWidget {
     const defaultValue = inputData[1]?.default as string | undefined
@@ -312,6 +312,7 @@ export class PrimitiveNode extends LGraphNode {
       node: this,
       widgetName: 'value',
       nodeTypeForBrowser: targetNode.comfyClass ?? '',
+      inputNameForBrowser: targetInputName,
       defaultValue,
       onValueChange: (widget, newValue, oldValue) => {
         widget.callback?.(
