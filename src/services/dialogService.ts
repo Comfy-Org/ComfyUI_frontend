@@ -207,6 +207,12 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Show a dialog when a prompt submission returns an error (e.g. 400 Bad Request from /prompt).
+   * error.type: "prompt_outputs_failed_validation"
+   * Common validation errors: "value_not_in_list", "required_input_missing", etc.
+   * @param executionError the error information from the prompt execution.
+   */
   function showPromptExecutionErrorDialog(
     executionError: ExecutionErrorDialogInput
   ) {
