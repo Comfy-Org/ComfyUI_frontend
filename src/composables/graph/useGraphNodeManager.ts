@@ -3,7 +3,7 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
-import { customRef, reactive, shallowReactive } from 'vue'
+import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
@@ -94,23 +94,6 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
-function widgetWithVueTrack(
-  widget: IBaseWidget
-): asserts widget is IBaseWidget & { vueTrack: () => void } {
-  if (widget.vueTrack) return
-
-  customRef((track, trigger) => {
-    widget.callback = useChainCallback(widget.callback, trigger)
-    widget.vueTrack = track
-    return { get() {}, set() {} }
-  })
-}
-function useReactiveWidgetValue(widget: IBaseWidget) {
-  widgetWithVueTrack(widget)
-  widget.vueTrack()
-  return widget.value
-}
-
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   const cagWidget = widget.linkedWidgets?.find(
     (w) => w.name == 'control_after_generate'
@@ -160,7 +143,7 @@ export function getSharedWidgetEnhancements(
   const nodeDefStore = useNodeDefStore()
 
   return {
-    value: useReactiveWidgetValue(widget),
+    value: widget.value,
     controlWidget: getControlWidget(widget),
     spec: nodeDefStore.getInputSpecForWidget(node, widget.name),
     nodeType: getNodeType(node, widget),

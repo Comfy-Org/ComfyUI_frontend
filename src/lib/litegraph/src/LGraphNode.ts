@@ -1958,7 +1958,14 @@ export class LGraphNode
     const widget = toConcreteWidget(custom_widget, this, false) ?? custom_widget
     this.widgets.push(widget)
 
-    if ('setNodeId' in widget && typeof widget.setNodeId === 'function') {
+    // Only register with store if node has a valid ID (is already in a graph).
+    // If the node isn't in a graph yet (id === -1), registration happens
+    // when the node is added via LGraph.add() -> node.onAdded.
+    if (
+      this.id !== -1 &&
+      'setNodeId' in widget &&
+      typeof widget.setNodeId === 'function'
+    ) {
       widget.setNodeId(this.id)
     }
 

@@ -914,6 +914,16 @@ export class LGraph
       }
     }
 
+    // Register all widgets with the WidgetValueStore now that node has a valid ID.
+    // Widgets added before the node was in the graph deferred their setNodeId call.
+    if (node.widgets) {
+      for (const widget of node.widgets) {
+        if ('setNodeId' in widget && typeof widget.setNodeId === 'function') {
+          widget.setNodeId(node.id)
+        }
+      }
+    }
+
     node.graph = this
     this._version++
 

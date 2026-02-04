@@ -82,10 +82,7 @@ const favoriteNode = computed(() =>
 )
 
 const widgetValue = computed({
-  get: () => {
-    widget.vueTrack?.()
-    return widget.value
-  },
+  get: () => widget.value,
   set: (newValue: string | number | boolean | object) => {
     emit('update:widgetValue', newValue)
   }
