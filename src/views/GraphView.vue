@@ -198,7 +198,7 @@ useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
 useSidebarTabStore().registerCoreSidebarTabs()
-useBottomPanelStore().registerCoreBottomPanelTabs()
+void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()

@@ -130,7 +130,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     override async promptSave(): Promise<string | null> {
       return await useDialogService().prompt({
         title: t('subgraphStore.saveBlueprint'),
-        message: t('subgraphStore.blueprintName') + ':',
+        message: t('subgraphStore.blueprintNamePrompt'),
         defaultValue: this.filename
       })
     }
@@ -270,7 +270,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     //prompt name
     const name = await useDialogService().prompt({
       title: t('subgraphStore.saveBlueprint'),
-      message: t('subgraphStore.blueprintName') + ':',
+      message: t('subgraphStore.blueprintNamePrompt'),
       defaultValue: subgraphNode.title
     })
     if (!name) return

@@ -393,6 +393,10 @@ export class LGraphNode
   action_call?: string
   execute_triggered?: number
   action_triggered?: number
+  /**
+   * @deprecated This property is unsupported and will be removed in a future release.
+   * Use `widgets_start_y` or a custom `arrange()` override instead.
+   */
   widgets_up?: boolean
   widgets_start_y?: number
   lostFocusAt?: number
@@ -892,6 +896,14 @@ export class LGraphNode
 
     // Sync the state of this.resizable.
     if (this.pinned) this.resizable = false
+
+    if (this.widgets_up) {
+      console.warn(
+        `[LiteGraph] Node type "${this.type}" uses deprecated property "widgets_up". ` +
+          'This property is unsupported and will be removed. ' +
+          'Use "widgets_start_y" or a custom arrange() override instead.'
+      )
+    }
 
     this.onConfigure?.(info)
   }

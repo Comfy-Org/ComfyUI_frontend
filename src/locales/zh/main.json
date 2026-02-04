@@ -22,6 +22,7 @@
     },
     "assetCollection": "资产合集",
     "assets": "资产",
+    "baseModel": "基础模型",
     "baseModels": "基础模型",
     "browseAssets": "浏览资产",
     "byType": "按类型",
@@ -127,6 +128,7 @@
     "selectProjects": "选择项目",
     "sortAZ": "A-Z",
     "sortBy": "排序方式",
+    "sortDefault": "默认",
     "sortPopular": "最受欢迎",
     "sortRecent": "最近",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "关于非白名单网站"
     },
     "deleteAccount": {
-      "cancel": "取消",
-      "confirm": "删除账户",
-      "confirmMessage": "您确定要删除您的账户吗？此操作无法撤销，并且会永久删除您的所有数据。",
-      "confirmTitle": "删除账户",
-      "deleteAccount": "删除账户",
-      "success": "账户已删除",
-      "successDetail": "您的账户已成功删除。"
+      "contactSupport": "如需删除您的账户，请联系 {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "登录已取消。请重试。",
@@ -1156,11 +1152,11 @@
     "helpFix": "帮助修复这个"
   },
   "linearMode": {
-    "beta": "测试版 - 提供反馈",
+    "beta": "App 模式测试版 - 提供反馈",
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
     "graphMode": "图形模式",
-    "linearMode": "简易模式",
+    "linearMode": "App 模式",
     "rerun": "重新运行",
     "reuseParameters": "复用参数",
     "runCount": "运行次数："
@@ -1345,6 +1341,7 @@
     "installingDependencies": "正在安装依赖项...",
     "lastUpdated": "最后更新",
     "latestVersion": "最新",
+    "legacyManagerSearchTip": "在找 ComfyUI-Manager？你可以通过启动 ComfyUI 并添加 --enable-manager-legacy-ui 参数来启用旧版管理器界面。",
     "legacyManagerUI": "使用传统界面",
     "legacyManagerUIDescription": "如需使用传统管理器界面，请以 --enable-manager-legacy-ui 参数启动 ComfyUI",
     "legacyMenuNotAvailable": "传统管理器菜单不可用，已切换为新管理器菜单。",
@@ -1651,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "切换日志底部面板",
     "Toggle Queue Panel V2": "切换队列面板 V2",
     "Toggle Search Box": "切换搜索框",
-    "Toggle Simple Mode": "切换简易模式",
+    "Toggle App Mode": "切换 App 模式",
     "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
@@ -1810,6 +1807,16 @@
     "render": "节点渲染错误",
     "slots": "节点接口错误",
     "widgets": "节点组件错误"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "隐藏已弃用节点",
+    "hideDeprecatedDescription": "隐藏标记为已弃用的节点，除非明确启用",
+    "hideDevOnly": "隐藏仅开发者可见节点",
+    "hideDevOnlyDescription": "隐藏标记为仅开发者可见的节点，除非启用开发者模式",
+    "hideExperimental": "隐藏实验性节点",
+    "hideExperimentalDescription": "隐藏标记为实验性的节点，除非明确启用",
+    "hideSubgraph": "隐藏子图节点",
+    "hideSubgraphDescription": "暂时从节点库和搜索中隐藏子图节点"
   },
   "nodeHelpPage": {
     "documentationPage": "文档页面",
@@ -2539,6 +2546,9 @@
     "title": "从模板开始",
     "useCaseFilter": "使用例",
     "useCasesSelected": "已选 {count} 个用例"
+  },
+  "templates": {
+    "logoProviderSeparator": " 与 "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "无法创建子工作流",

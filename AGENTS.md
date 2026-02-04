@@ -44,7 +44,7 @@ The project uses **Nx** for build orchestration and task management
 - `pnpm build`: Type-check then production build to `dist/`
 - `pnpm preview`: Preview the production build locally
 - `pnpm test:unit`: Run Vitest unit tests
-- `pnpm test:browser`: Run Playwright E2E tests (`browser_tests/`)
+- `pnpm test:browser:local`: Run Playwright E2E tests (`browser_tests/`)
 - `pnpm lint` / `pnpm lint:fix`: Lint (ESLint)
 - `pnpm format` / `pnpm format:check`: oxfmt
 - `pnpm typecheck`: Vue TSC type checking

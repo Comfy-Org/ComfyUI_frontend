@@ -5,6 +5,7 @@ import {
   ServerFeatureFlag,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
+import * as distributionTypes from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 
 // Mock the API module
@@ -12,6 +13,12 @@ vi.mock('@/scripts/api', () => ({
   api: {
     getServerFeature: vi.fn()
   }
+}))
+
+// Mock the distribution types module
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: false,
+  isNightly: false
 }))
 
 describe('useFeatureFlags', () => {
@@ -129,6 +136,43 @@ describe('useFeatureFlags', () => {
       const maxUploadSize = featureFlag(ServerFeatureFlag.MAX_UPLOAD_SIZE)
 
       expect(maxUploadSize.value).toBe(104857600)
+    })
+  })
+
+  describe('linearToggleEnabled', () => {
+    it('should return true when isNightly is true', () => {
+      vi.mocked(distributionTypes).isNightly = true
+
+      const { flags } = useFeatureFlags()
+      expect(flags.linearToggleEnabled).toBe(true)
+      expect(api.getServerFeature).not.toHaveBeenCalled()
+    })
+
+    it('should check remote config and server feature when isNightly is false', () => {
+      vi.mocked(distributionTypes).isNightly = false
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.LINEAR_TOGGLE_ENABLED) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.linearToggleEnabled).toBe(true)
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
+        false
+      )
+    })
+
+    it('should return false when isNightly is false and flag is disabled', () => {
+      vi.mocked(distributionTypes).isNightly = false
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.linearToggleEnabled).toBe(false)
     })
   })
 })

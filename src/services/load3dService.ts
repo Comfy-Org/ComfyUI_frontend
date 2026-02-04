@@ -1,11 +1,76 @@
+/**
+ * Load3D Service - provides access to Load3D instances
+ *
+ * This service uses lazy imports to avoid pulling THREE.js into the main bundle.
+ * The nodeToLoad3dMap is accessed lazily - it will only be available after
+ * the load3d extension has been loaded.
+ */
 import { toRaw } from 'vue'
-import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils'
 
-import { nodeToLoad3dMap } from '@/composables/useLoad3d'
-import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { Object3D } from 'three'
+
+// Type for the useLoad3dViewer composable function
+// Using explicit type to avoid import() type annotations (lint rule)
+type UseLoad3dViewerFn = (node?: LGraphNode) => {
+  initializeViewer: (containerRef: HTMLElement, source: Load3d) => Promise<void>
+  initializeStandaloneViewer: (
+    containerRef: HTMLElement,
+    modelUrl: string
+  ) => Promise<void>
+  cleanup: () => void
+  handleResize: () => void
+  handleMouseEnter: () => void
+  handleMouseLeave: () => void
+  applyChanges: () => Promise<boolean>
+  restoreInitialState: () => void
+  refreshViewport: () => void
+  exportModel: (format: string) => Promise<void>
+  handleBackgroundImageUpdate: (file: File | null) => Promise<void>
+  handleModelDrop: (file: File) => Promise<void>
+  handleSeek: (progress: number) => void
+  needApplyChanges: { value: boolean }
+  [key: string]: unknown
+}
+
+// Type for SkeletonUtils module
+type SkeletonUtilsModule = { clone: (source: Object3D) => Object3D }
+
+// Cache for lazy-loaded modules
+let cachedNodeToLoad3dMap: Map<LGraphNode, Load3d> | null = null
+let cachedUseLoad3dViewer: UseLoad3dViewerFn | null = null
+let cachedSkeletonUtils: SkeletonUtilsModule | null = null
+
+// Sync accessor - returns null if module not yet loaded
+function getNodeToLoad3dMapSync(): Map<LGraphNode, Load3d> | null {
+  return cachedNodeToLoad3dMap
+}
+
+// Async loader for nodeToLoad3dMap - also caches for sync access
+async function loadNodeToLoad3dMap(): Promise<Map<LGraphNode, Load3d>> {
+  if (!cachedNodeToLoad3dMap) {
+    const module = await import('@/composables/useLoad3d')
+    cachedNodeToLoad3dMap = module.nodeToLoad3dMap
+  }
+  return cachedNodeToLoad3dMap
+}
+
+async function loadUseLoad3dViewer() {
+  if (!cachedUseLoad3dViewer) {
+    const module = await import('@/composables/useLoad3dViewer')
+    cachedUseLoad3dViewer = module.useLoad3dViewer
+  }
+  return cachedUseLoad3dViewer
+}
+
+async function loadSkeletonUtils() {
+  if (!cachedSkeletonUtils) {
+    cachedSkeletonUtils = await import('three/examples/jsm/utils/SkeletonUtils')
+  }
+  return cachedSkeletonUtils
+}
 
 // Type definitions for Load3D node
 interface SceneConfig {
@@ -30,14 +95,30 @@ export class Load3dService {
     return Load3dService.instance
   }
 
+  /**
+   * Get Load3d instance for a node (synchronous).
+   * Returns null if the load3d module hasn't been loaded yet.
+   */
   getLoad3d(node: LGraphNode): Load3d | null {
     const rawNode = toRaw(node)
+    const map = getNodeToLoad3dMapSync()
+    if (!map) return null
+    return map.get(rawNode) || null
+  }
 
-    return nodeToLoad3dMap.get(rawNode) || null
+  /**
+   * Get Load3d instance for a node (async, loads module if needed).
+   */
+  async getLoad3dAsync(node: LGraphNode): Promise<Load3d | null> {
+    const rawNode = toRaw(node)
+    const map = await loadNodeToLoad3dMap()
+    return map.get(rawNode) || null
   }
 
   getNodeByLoad3d(load3d: Load3d): LGraphNode | null {
-    for (const [node, instance] of nodeToLoad3dMap) {
+    const map = getNodeToLoad3dMapSync()
+    if (!map) return null
+    for (const [node, instance] of map) {
       if (instance === load3d) {
         return node
       }
@@ -47,30 +128,49 @@ export class Load3dService {
 
   removeLoad3d(node: LGraphNode) {
     const rawNode = toRaw(node)
+    const map = getNodeToLoad3dMapSync()
+    if (!map) return
 
-    const instance = nodeToLoad3dMap.get(rawNode)
+    const instance = map.get(rawNode)
 
     if (instance) {
       instance.remove()
-
-      nodeToLoad3dMap.delete(rawNode)
+      map.delete(rawNode)
     }
   }
 
   clear() {
-    for (const [node] of nodeToLoad3dMap) {
+    const map = getNodeToLoad3dMapSync()
+    if (!map) return
+    for (const [node] of map) {
       this.removeLoad3d(node)
     }
   }
 
-  getOrCreateViewer(node: LGraphNode): ReturnType<typeof useLoad3dViewer> {
-    let viewer = viewerInstances.get(node.id)
-    if (!viewer) {
-      viewer = useLoad3dViewer(node)
-      viewerInstances.set(node.id, viewer)
+  /**
+   * Get or create viewer (async, loads module if needed).
+   * Use this for initial viewer creation.
+   */
+  async getOrCreateViewer(node: LGraphNode) {
+    if (!viewerInstances.has(node.id)) {
+      const useLoad3dViewer = await loadUseLoad3dViewer()
+      viewerInstances.set(node.id, useLoad3dViewer(node))
     }
 
-    return viewer
+    return viewerInstances.get(node.id)
+  }
+
+  /**
+   * Get or create viewer (sync version).
+   * Only works after useLoad3dViewer has been loaded.
+   * Returns null if module not yet loaded - use async version instead.
+   */
+  getOrCreateViewerSync(node: LGraphNode, useLoad3dViewer: UseLoad3dViewerFn) {
+    if (!viewerInstances.has(node.id)) {
+      viewerInstances.set(node.id, useLoad3dViewer(node))
+    }
+
+    return viewerInstances.get(node.id)
   }
 
   removeViewer(node: LGraphNode) {
@@ -100,6 +200,7 @@ export class Load3dService {
         }
       } else {
         // Use SkeletonUtils.clone for proper skeletal animation support
+        const SkeletonUtils = await loadSkeletonUtils()
         const modelClone = SkeletonUtils.clone(sourceModel)
 
         target.getModelManager().currentModel = modelClone
@@ -186,7 +287,8 @@ export class Load3dService {
   }
 
   async handleViewerClose(node: LGraphNode) {
-    const viewer = useLoad3dService().getOrCreateViewer(node)
+    const viewer = await useLoad3dService().getOrCreateViewer(node)
+    if (!viewer) return
 
     if (viewer.needApplyChanges.value) {
       await viewer.applyChanges()

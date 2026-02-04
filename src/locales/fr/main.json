@@ -22,6 +22,7 @@
     },
     "assetCollection": "Collection d'actifs",
     "assets": "Ressources",
+    "baseModel": "Modèle de base",
     "baseModels": "Modèles de base",
     "browseAssets": "Parcourir les ressources",
     "byType": "Par type",
@@ -127,6 +128,7 @@
     "selectProjects": "Sélectionner les projets",
     "sortAZ": "A-Z",
     "sortBy": "Trier par",
+    "sortDefault": "Par défaut",
     "sortPopular": "Populaire",
     "sortRecent": "Récent",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "À propos des sites non autorisés"
     },
     "deleteAccount": {
-      "cancel": "Annuler",
-      "confirm": "Supprimer le compte",
-      "confirmMessage": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et supprimera définitivement toutes vos données.",
-      "confirmTitle": "Supprimer le compte",
-      "deleteAccount": "Supprimer le compte",
-      "success": "Compte supprimé",
-      "successDetail": "Votre compte a été supprimé avec succès."
+      "contactSupport": "Pour supprimer votre compte, veuillez contacter {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "La connexion a été annulée. Veuillez réessayer.",
@@ -1156,11 +1152,11 @@
     "helpFix": "Aidez à résoudre cela"
   },
   "linearMode": {
-    "beta": "Bêta - Donnez votre avis",
+    "beta": "Mode App Bêta - Donnez votre avis",
     "downloadAll": "Tout télécharger",
     "dragAndDropImage": "Glissez-déposez une image",
     "graphMode": "Mode graphique",
-    "linearMode": "Mode simple",
+    "linearMode": "Mode App",
     "rerun": "Relancer",
     "reuseParameters": "Réutiliser les paramètres",
     "runCount": "Nombre d’exécutions :"
@@ -1345,6 +1341,7 @@
     "installingDependencies": "Installation des dépendances...",
     "lastUpdated": "Dernière mise à jour",
     "latestVersion": "Dernière",
+    "legacyManagerSearchTip": "Vous cherchez ComfyUI-Manager ? Vous pouvez activer l’interface du gestionnaire hérité en lançant ComfyUI avec le paramètre --enable-manager-legacy-ui.",
     "legacyManagerUI": "Utiliser l'interface utilisateur héritée",
     "legacyManagerUIDescription": "Pour utiliser l'interface utilisateur de gestion héritée, démarrez ComfyUI avec --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "Le menu du gestionnaire de l'ancienne version n'est pas disponible dans cette version de ComfyUI. Veuillez utiliser le nouveau menu du gestionnaire à la place.",
@@ -1651,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "Basculer le panneau inférieur des journaux",
     "Toggle Queue Panel V2": "Basculer le panneau de file d’attente V2",
     "Toggle Search Box": "Basculer la boîte de recherche",
-    "Toggle Simple Mode": "Basculer en mode simple",
+    "Toggle App Mode": "Basculer en mode App",
     "Toggle Terminal Bottom Panel": "Basculer le panneau inférieur du terminal",
     "Toggle Theme (Dark/Light)": "Basculer le thème (Sombre/Clair)",
     "Toggle View Controls Bottom Panel": "Basculer le panneau inférieur des contrôles d’affichage",
@@ -1810,6 +1807,16 @@
     "render": "Erreur de rendu du nœud",
     "slots": "Erreur de slots du nœud",
     "widgets": "Erreur de widgets du nœud"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Masquer les nœuds obsolètes",
+    "hideDeprecatedDescription": "Masque les nœuds marqués comme obsolètes sauf si explicitement activés",
+    "hideDevOnly": "Masquer les nœuds développeur uniquement",
+    "hideDevOnlyDescription": "Masque les nœuds réservés au développement sauf si le mode développeur est activé",
+    "hideExperimental": "Masquer les nœuds expérimentaux",
+    "hideExperimentalDescription": "Masque les nœuds marqués comme expérimentaux sauf si explicitement activés",
+    "hideSubgraph": "Masquer les nœuds de sous-graphe",
+    "hideSubgraphDescription": "Masque temporairement les nœuds de sous-graphe de la bibliothèque de nœuds et de la recherche"
   },
   "nodeHelpPage": {
     "documentationPage": "page de documentation",
@@ -2528,6 +2535,9 @@
     "title": "Commencez avec un modèle",
     "useCaseFilter": "Tâches",
     "useCasesSelected": "{count} Cas d'usage"
+  },
+  "templates": {
+    "logoProviderSeparator": " & "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "Impossible de créer le sous-graphe",

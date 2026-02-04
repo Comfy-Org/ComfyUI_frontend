@@ -85,7 +85,7 @@ export function getExtraOptionsForWidget(
       callback: async () => {
         const newLabel = await useDialogService().prompt({
           title: t('g.rename'),
-          message: t('g.enterNewName') + ':',
+          message: t('g.enterNewNamePrompt'),
           defaultValue: widget.label,
           placeholder: widget.name
         })

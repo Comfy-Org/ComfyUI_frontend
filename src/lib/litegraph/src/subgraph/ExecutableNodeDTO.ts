@@ -194,6 +194,10 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         }
       }
 
+      if (!subgraphNode.graph)
+        throw new NullGraphError(
+          `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
+        )
       const outerLink = subgraphNode.graph.getLink(linkId)
       if (!outerLink)
         throw new InvalidLinkError(

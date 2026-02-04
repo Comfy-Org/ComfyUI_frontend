@@ -17,7 +17,13 @@
         overlay: 'w-fit min-w-full'
       }"
       data-capture-wheel="true"
-    />
+    >
+      <template #dropdownicon>
+        <i
+          class="icon-[lucide--chevron-down] size-4 text-component-node-foreground-secondary"
+        />
+      </template>
+    </SelectPlus>
     <div class="absolute top-5 right-8 h-4 w-7 -translate-y-4/5 flex">
       <slot />
     </div>
