@@ -1,4 +1,5 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -154,7 +155,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 describe('useMediaAssetActions', () => {
   beforeEach(() => {
     vi.resetModules()
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     capturedFilenames.values = []
     mockIsCloud.value = false

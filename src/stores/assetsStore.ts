@@ -628,13 +628,15 @@ export const useAssetsStore = defineStore('assets', () => {
       async function invalidateModelsForCategory(
         category: string
       ): Promise<void> {
-        const providers = modelToNodeStore
+        const nodeTypeUpdates = modelToNodeStore
           .getAllNodeProviders(category)
-          .filter((provider) => provider.nodeDef?.name)
-
-        const nodeTypeUpdates = providers.map((provider) =>
-          updateModelsForNodeType(provider.nodeDef.name)
-        )
+          .filter(
+            (
+              provider
+            ): provider is typeof provider & { nodeDef: { name: string } } =>
+              !!provider.nodeDef?.name
+          )
+          .map((provider) => updateModelsForNodeType(provider.nodeDef.name))
 
         const tagUpdates = [
           updateModelsForTag(category),
