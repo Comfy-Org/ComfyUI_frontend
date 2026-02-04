@@ -151,51 +151,6 @@
     },
     "tooltip": "Tuvaldeki düğümler arasındaki bağlantı çizgilerinin görünümünü ve görünürlüğünü kontrol eder."
   },
-  "Comfy_Load3D_3DViewerEnable": {
-    "name": "3D Görüntüleyiciyi Etkinleştir (Beta)",
-    "tooltip": "Seçili düğümler için 3D Görüntüleyiciyi (Beta) etkinleştirir. Bu özellik, 3D modelleri doğrudan tam boyutlu 3D görüntüleyici içinde görselleştirmenize ve etkileşimde bulunmanıza olanak tanır."
-  },
-  "Comfy_Load3D_BackgroundColor": {
-    "name": "Başlangıç Arka Plan Rengi",
-    "tooltip": "3D sahnenin varsayılan arka plan rengini kontrol eder. Bu ayar, yeni bir 3D widget oluşturulduğunda arka plan görünümünü belirler, ancak oluşturulduktan sonra her widget için ayrı ayrı ayarlanabilir."
-  },
-  "Comfy_Load3D_CameraType": {
-    "name": "Başlangıç Kamera Tipi",
-    "options": {
-      "orthographic": "ortografik",
-      "perspective": "perspektif"
-    },
-    "tooltip": "Yeni bir 3D widget oluşturulduğunda kameranın varsayılan olarak perspektif mi yoksa ortografik mi olacağını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
-  },
-  "Comfy_Load3D_LightAdjustmentIncrement": {
-    "name": "Işık Ayarlama Artışı",
-    "tooltip": "3D sahnelerde ışık yoğunluğunu ayarlarken artış boyutunu kontrol eder. Daha küçük bir adım değeri, aydınlatma ayarlamaları üzerinde daha ince kontrol sağlarken, daha büyük bir değer ayarlama başına daha belirgin değişikliklere neden olur."
-  },
-  "Comfy_Load3D_LightIntensity": {
-    "name": "Başlangıç Işık Yoğunluğu",
-    "tooltip": "3D sahnedeki aydınlatmanın varsayılan parlaklık seviyesini ayarlar. Bu değer, yeni bir 3D widget oluşturulduğunda ışıkların nesneleri ne kadar yoğun aydınlatacağını belirler, ancak oluşturulduktan sonra her widget için ayrı ayrı ayarlanabilir."
-  },
-  "Comfy_Load3D_LightIntensityMaximum": {
-    "name": "Maksimum Işık Yoğunluğu",
-    "tooltip": "3D sahneler için izin verilen maksimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D widget'ta aydınlatma ayarlanırken ayarlanabilecek üst parlaklık sınırını tanımlar."
-  },
-  "Comfy_Load3D_LightIntensityMinimum": {
-    "name": "Minimum Işık Yoğunluğu",
-    "tooltip": "3D sahneler için izin verilen minimum ışık yoğunluğu değerini ayarlar. Bu, herhangi bir 3D widget'ta aydınlatma ayarlanırken ayarlanabilecek alt parlaklık sınırını tanımlar."
-  },
-  "Comfy_Load3D_PLYEngine": {
-    "name": "PLY Motoru",
-    "options": {
-      "fastply": "fastply",
-      "sparkjs": "sparkjs",
-      "threejs": "threejs"
-    },
-    "tooltip": "PLY dosyalarını yüklemek için motoru seçin. \"threejs\" yerel Three.js PLYLoader'ı kullanır (mesh PLY dosyaları için en iyisi). \"fastply\" ASCII nokta bulutu PLY dosyaları için optimize edilmiş bir yükleyici kullanır. \"sparkjs\" ise 3D Gaussian Splatting PLY dosyaları için Spark.js kullanır."
-  },
-  "Comfy_Load3D_ShowGrid": {
-    "name": "Başlangıç Izgara Görünürlüğü",
-    "tooltip": "Yeni bir 3D widget oluşturulduğunda ızgaranın varsayılan olarak görünür olup olmadığını kontrol eder. Bu varsayılan, oluşturulduktan sonra her widget için ayrı ayrı değiştirilebilir."
-  },
   "Comfy_Locale": {
     "name": "Dil"
   },
@@ -243,6 +198,10 @@
   },
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "API düğüm fiyatlandırma rozetini göster"
+  },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "Otomatik düğüm değiştirmeyi etkinleştir",
+    "tooltip": "Etkinleştirildiğinde, eksik düğümler için bir değiştirme eşlemesi varsa otomatik olarak daha yeni karşılıklarıyla değiştirilebilir."
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "Düğüm arama kutusu uygulaması",
