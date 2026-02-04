@@ -95,7 +95,8 @@ export abstract class BaseWidget<
   set label(value: string | undefined) {
     this._label = value
     if (this._nodeId !== undefined) {
-      useWidgetValueStore().setLabel(this._nodeId, this.name, value)
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) state.label = value
     }
   }
 
@@ -110,7 +111,8 @@ export abstract class BaseWidget<
   set hidden(value: boolean | undefined) {
     this._hidden = value
     if (this._nodeId !== undefined) {
-      useWidgetValueStore().setHidden(this._nodeId, this.name, value ?? false)
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) state.hidden = value ?? false
     }
   }
 
@@ -125,7 +127,8 @@ export abstract class BaseWidget<
   set disabled(value: boolean | undefined) {
     this._disabled = value
     if (this._nodeId !== undefined) {
-      useWidgetValueStore().setDisabled(this._nodeId, this.name, value ?? false)
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) state.disabled = value ?? false
     }
   }
 
@@ -140,7 +143,8 @@ export abstract class BaseWidget<
   set advanced(value: boolean | undefined) {
     this._advanced = value
     if (this._nodeId !== undefined) {
-      useWidgetValueStore().setAdvanced(this._nodeId, this.name, value ?? false)
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) state.advanced = value ?? false
     }
   }
 
@@ -155,7 +159,8 @@ export abstract class BaseWidget<
   set promoted(value: boolean | undefined) {
     this._promoted = value
     if (this._nodeId !== undefined) {
-      useWidgetValueStore().setPromoted(this._nodeId, this.name, value ?? false)
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) state.promoted = value ?? false
     }
   }
   element?: HTMLElement

@@ -185,60 +185,61 @@ describe('useWidgetValueStore', () => {
     })
   })
 
-  describe('metadata setters', () => {
-    it('setHidden updates widget hidden state', () => {
+  describe('direct property mutation', () => {
+    it('hidden can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'seed', 'number', 100))
+      const state = store.registerWidget(
+        widget('node-1', 'seed', 'number', 100)
+      )
 
-      store.setHidden('node-1', 'seed', true)
+      state.hidden = true
       expect(store.getWidget('node-1', 'seed')?.hidden).toBe(true)
 
-      store.setHidden('node-1', 'seed', false)
+      state.hidden = false
       expect(store.getWidget('node-1', 'seed')?.hidden).toBe(false)
     })
 
-    it('setDisabled updates widget disabled state', () => {
+    it('disabled can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'seed', 'number', 100))
+      const state = store.registerWidget(
+        widget('node-1', 'seed', 'number', 100)
+      )
 
-      store.setDisabled('node-1', 'seed', true)
+      state.disabled = true
       expect(store.getWidget('node-1', 'seed')?.disabled).toBe(true)
     })
 
-    it('setAdvanced updates widget advanced state', () => {
+    it('advanced can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'seed', 'number', 100))
+      const state = store.registerWidget(
+        widget('node-1', 'seed', 'number', 100)
+      )
 
-      store.setAdvanced('node-1', 'seed', true)
+      state.advanced = true
       expect(store.getWidget('node-1', 'seed')?.advanced).toBe(true)
     })
 
-    it('setPromoted updates widget promoted state', () => {
+    it('promoted can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'seed', 'number', 100))
+      const state = store.registerWidget(
+        widget('node-1', 'seed', 'number', 100)
+      )
 
-      store.setPromoted('node-1', 'seed', true)
+      state.promoted = true
       expect(store.getWidget('node-1', 'seed')?.promoted).toBe(true)
     })
 
-    it('setLabel updates widget label', () => {
+    it('label can be set directly via getWidget', () => {
       const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'seed', 'number', 100))
+      const state = store.registerWidget(
+        widget('node-1', 'seed', 'number', 100)
+      )
 
-      store.setLabel('node-1', 'seed', 'Random Seed')
+      state.label = 'Random Seed'
       expect(store.getWidget('node-1', 'seed')?.label).toBe('Random Seed')
 
-      store.setLabel('node-1', 'seed', undefined)
+      state.label = undefined
       expect(store.getWidget('node-1', 'seed')?.label).toBeUndefined()
-    })
-
-    it('setters silently do nothing for missing widgets', () => {
-      const store = useWidgetValueStore()
-      expect(() => store.setHidden('missing', 'widget', true)).not.toThrow()
-      expect(() => store.setDisabled('missing', 'widget', true)).not.toThrow()
-      expect(() => store.setAdvanced('missing', 'widget', true)).not.toThrow()
-      expect(() => store.setPromoted('missing', 'widget', true)).not.toThrow()
-      expect(() => store.setLabel('missing', 'widget', 'test')).not.toThrow()
     })
   })
 })

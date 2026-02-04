@@ -48,12 +48,16 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetStates.value.delete(makeKey(nodeId, widgetName))
   }
 
-  function unregisterNode(nodeId: NodeId): void {
+  function getNodeWidgets(nodeId: NodeId): WidgetState[] {
     const prefix = `${nodeId}:`
-    for (const key of widgetStates.value.keys()) {
-      if (key.startsWith(prefix)) {
-        widgetStates.value.delete(key)
-      }
+    return [...widgetStates.value]
+      .filter(([key]) => key.startsWith(prefix))
+      .map(([, state]) => state)
+  }
+
+  function unregisterNode(nodeId: NodeId): void {
+    for (const { name } of getNodeWidgets(nodeId)) {
+      widgetStates.value.delete(makeKey(nodeId, name))
     }
   }
 
@@ -62,17 +66,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgetName: string
   ): WidgetState | undefined {
     return widgetStates.value.get(makeKey(nodeId, widgetName))
-  }
-
-  function getNodeWidgets(nodeId: NodeId): WidgetState[] {
-    const prefix = `${nodeId}:`
-    const result: WidgetState[] = []
-    for (const [key, state] of widgetStates.value) {
-      if (key.startsWith(prefix)) {
-        result.push(state)
-      }
-    }
-    return result
   }
 
   function getVisibleWidgets(nodeId: NodeId): WidgetState[] {
@@ -87,61 +80,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getNodeWidgets(nodeId).filter((w) => w.promoted)
   }
 
-  function setHidden(
-    nodeId: NodeId,
-    widgetName: string,
-    hidden: boolean
-  ): void {
-    const state = getWidget(nodeId, widgetName)
-    if (state) {
-      state.hidden = hidden
-    }
-  }
-
-  function setDisabled(
-    nodeId: NodeId,
-    widgetName: string,
-    disabled: boolean
-  ): void {
-    const state = getWidget(nodeId, widgetName)
-    if (state) {
-      state.disabled = disabled
-    }
-  }
-
-  function setAdvanced(
-    nodeId: NodeId,
-    widgetName: string,
-    advanced: boolean
-  ): void {
-    const state = getWidget(nodeId, widgetName)
-    if (state) {
-      state.advanced = advanced
-    }
-  }
-
-  function setPromoted(
-    nodeId: NodeId,
-    widgetName: string,
-    promoted: boolean
-  ): void {
-    const state = getWidget(nodeId, widgetName)
-    if (state) {
-      state.promoted = promoted
-    }
-  }
-
-  function setLabel(
-    nodeId: NodeId,
-    widgetName: string,
-    label: string | undefined
-  ): void {
-    const state = getWidget(nodeId, widgetName)
-    if (state) {
-      state.label = label
-    }
-  }
-
   return {
     widgetStates,
     registerWidget,
@@ -151,11 +89,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getNodeWidgets,
     getVisibleWidgets,
     getAdvancedWidgets,
-    getPromotedWidgets,
-    setHidden,
-    setDisabled,
-    setAdvanced,
-    setPromoted,
-    setLabel
+    getPromotedWidgets
   }
 })

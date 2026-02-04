@@ -115,7 +115,7 @@ describe('useWidget', () => {
     store.getWidget(1, 'test_widget')!.value = true
     expect(value.value).toBe(true)
 
-    store.setHidden(1, 'test_widget', true)
+    store.getWidget(1, 'test_widget')!.hidden = true
     expect(isHidden.value).toBe(true)
   })
 
