@@ -4,9 +4,22 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { useWidget } from './useWidget'
+
+function widget<T>(
+  nodeId: NodeId,
+  name: string,
+  type: string,
+  value: T,
+  extra: Partial<
+    Omit<WidgetState<T>, 'nodeId' | 'name' | 'type' | 'value'>
+  > = {}
+): WidgetState<T> {
+  return { nodeId, name, type, value, options: {}, ...extra }
+}
 
 describe('useWidget', () => {
   beforeEach(() => {
@@ -27,18 +40,23 @@ describe('useWidget', () => {
 
   it('returns widget state when registered', () => {
     const store = useWidgetValueStore()
-    store.registerWidget(1, 'test_widget', 'text', 'initial_value', {
-      hidden: true,
-      advanced: true,
-      label: 'Custom Label'
-    })
-
-    const { widget, value, isHidden, isAdvanced, label } = useWidget(
-      1,
-      'test_widget'
+    store.registerWidget(
+      widget(1, 'test_widget', 'text', 'initial_value', {
+        hidden: true,
+        advanced: true,
+        label: 'Custom Label'
+      })
     )
 
-    expect(widget.value).toBeDefined()
+    const {
+      widget: widgetState,
+      value,
+      isHidden,
+      isAdvanced,
+      label
+    } = useWidget(1, 'test_widget')
+
+    expect(widgetState.value).toBeDefined()
     expect(value.value).toBe('initial_value')
     expect(isHidden.value).toBe(true)
     expect(isAdvanced.value).toBe(true)
@@ -47,7 +65,7 @@ describe('useWidget', () => {
 
   it('allows setting value through writable computed', () => {
     const store = useWidgetValueStore()
-    store.registerWidget(1, 'test_widget', 'number', 42)
+    store.registerWidget(widget(1, 'test_widget', 'number', 42))
 
     const { value } = useWidget(1, 'test_widget')
 
@@ -59,8 +77,8 @@ describe('useWidget', () => {
 
   it('reacts to nodeId ref changes', () => {
     const store = useWidgetValueStore()
-    store.registerWidget(1, 'shared_widget', 'text', 'node1_value')
-    store.registerWidget(2, 'shared_widget', 'text', 'node2_value')
+    store.registerWidget(widget(1, 'shared_widget', 'text', 'node1_value'))
+    store.registerWidget(widget(2, 'shared_widget', 'text', 'node2_value'))
 
     const nodeId = ref<NodeId>(1)
     const { value } = useWidget(nodeId, 'shared_widget')
@@ -73,8 +91,8 @@ describe('useWidget', () => {
 
   it('reacts to widgetName ref changes', () => {
     const store = useWidgetValueStore()
-    store.registerWidget(1, 'widget_a', 'text', 'value_a')
-    store.registerWidget(1, 'widget_b', 'text', 'value_b')
+    store.registerWidget(widget(1, 'widget_a', 'text', 'value_a'))
+    store.registerWidget(widget(1, 'widget_b', 'text', 'value_b'))
 
     const widgetName = ref('widget_a')
     const { value } = useWidget(1, widgetName)
@@ -87,7 +105,7 @@ describe('useWidget', () => {
 
   it('reacts to store state changes', () => {
     const store = useWidgetValueStore()
-    store.registerWidget(1, 'test_widget', 'toggle', false)
+    store.registerWidget(widget(1, 'test_widget', 'toggle', false))
 
     const { value, isHidden } = useWidget(1, 'test_widget')
 
@@ -103,10 +121,12 @@ describe('useWidget', () => {
 
   it('returns correct disabled and promoted states', () => {
     const store = useWidgetValueStore()
-    store.registerWidget(1, 'test_widget', 'text', 'value', {
-      disabled: true,
-      promoted: true
-    })
+    store.registerWidget(
+      widget(1, 'test_widget', 'text', 'value', {
+        disabled: true,
+        promoted: true
+      })
+    )
 
     const { isDisabled, isPromoted } = useWidget(1, 'test_widget')
 

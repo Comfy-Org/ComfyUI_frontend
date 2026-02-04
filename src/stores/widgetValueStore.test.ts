@@ -2,7 +2,20 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { WidgetState } from './widgetValueStore'
 import { useWidgetValueStore } from './widgetValueStore'
+
+function widget<T>(
+  nodeId: string,
+  name: string,
+  type: string,
+  value: T,
+  extra: Partial<
+    Omit<WidgetState<T>, 'nodeId' | 'name' | 'type' | 'value'>
+  > = {}
+): WidgetState<T> {
+  return { nodeId, name, type, value, options: {}, ...extra }
+}
 
 describe('useWidgetValueStore', () => {
   beforeEach(() => {
@@ -17,7 +30,9 @@ describe('useWidgetValueStore', () => {
 
     it('widgetState.value can be read and written directly', () => {
       const store = useWidgetValueStore()
-      const state = store.registerWidget('node-1', 'seed', 'number', 100)
+      const state = store.registerWidget(
+        widget('node-1', 'seed', 'number', 100)
+      )
       expect(state.value).toBe(100)
 
       state.value = 200
@@ -26,10 +41,10 @@ describe('useWidgetValueStore', () => {
 
     it('stores different value types', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'text', 'string', 'hello')
-      store.registerWidget('node-1', 'number', 'number', 42)
-      store.registerWidget('node-1', 'boolean', 'toggle', true)
-      store.registerWidget('node-1', 'array', 'combo', [1, 2, 3])
+      store.registerWidget(widget('node-1', 'text', 'string', 'hello'))
+      store.registerWidget(widget('node-1', 'number', 'number', 42))
+      store.registerWidget(widget('node-1', 'boolean', 'toggle', true))
+      store.registerWidget(widget('node-1', 'array', 'combo', [1, 2, 3]))
 
       expect(store.getWidget('node-1', 'text')?.value).toBe('hello')
       expect(store.getWidget('node-1', 'number')?.value).toBe(42)
@@ -39,33 +54,37 @@ describe('useWidgetValueStore', () => {
   })
 
   describe('widget registration', () => {
-    it('registers a widget with default options', () => {
+    it('registers a widget with minimal properties', () => {
       const store = useWidgetValueStore()
-      const state = store.registerWidget('node-1', 'seed', 'number', 12345)
+      const state = store.registerWidget(
+        widget('node-1', 'seed', 'number', 12345)
+      )
 
       expect(state.nodeId).toBe('node-1')
       expect(state.name).toBe('seed')
       expect(state.type).toBe('number')
       expect(state.value).toBe(12345)
-      expect(state.hidden).toBe(false)
-      expect(state.disabled).toBe(false)
-      expect(state.advanced).toBe(false)
-      expect(state.promoted).toBe(false)
-      expect(state.serialize).toBe(true)
+      expect(state.hidden).toBeUndefined()
+      expect(state.disabled).toBeUndefined()
+      expect(state.advanced).toBeUndefined()
+      expect(state.promoted).toBeUndefined()
+      expect(state.serialize).toBeUndefined()
       expect(state.options).toEqual({})
     })
 
-    it('registers a widget with custom options', () => {
+    it('registers a widget with all properties', () => {
       const store = useWidgetValueStore()
-      const state = store.registerWidget('node-1', 'prompt', 'string', 'test', {
-        label: 'Prompt Text',
-        hidden: true,
-        disabled: true,
-        advanced: true,
-        promoted: true,
-        serialize: false,
-        widgetOptions: { multiline: true }
-      })
+      const state = store.registerWidget(
+        widget('node-1', 'prompt', 'string', 'test', {
+          label: 'Prompt Text',
+          hidden: true,
+          disabled: true,
+          advanced: true,
+          promoted: true,
+          serialize: false,
+          options: { multiline: true }
+        })
+      )
 
       expect(state.label).toBe('Prompt Text')
       expect(state.hidden).toBe(true)
@@ -78,7 +97,7 @@ describe('useWidgetValueStore', () => {
 
     it('unregisters a widget', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 100)
+      store.registerWidget(widget('node-1', 'seed', 'number', 100))
 
       store.unregisterWidget('node-1', 'seed')
 
@@ -87,9 +106,9 @@ describe('useWidgetValueStore', () => {
 
     it('unregisters all widgets for a node', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 1)
-      store.registerWidget('node-1', 'steps', 'number', 20)
-      store.registerWidget('node-2', 'seed', 'number', 2)
+      store.registerWidget(widget('node-1', 'seed', 'number', 1))
+      store.registerWidget(widget('node-1', 'steps', 'number', 20))
+      store.registerWidget(widget('node-2', 'seed', 'number', 2))
 
       store.unregisterNode('node-1')
 
@@ -102,12 +121,12 @@ describe('useWidgetValueStore', () => {
   describe('widget getters', () => {
     it('getWidget returns widget state', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 100)
+      store.registerWidget(widget('node-1', 'seed', 'number', 100))
 
-      const widget = store.getWidget('node-1', 'seed')
-      expect(widget).toBeDefined()
-      expect(widget?.name).toBe('seed')
-      expect(widget?.value).toBe(100)
+      const state = store.getWidget('node-1', 'seed')
+      expect(state).toBeDefined()
+      expect(state?.name).toBe('seed')
+      expect(state?.value).toBe(100)
     })
 
     it('getWidget returns undefined for missing widget', () => {
@@ -117,9 +136,9 @@ describe('useWidgetValueStore', () => {
 
     it('getNodeWidgets returns all widgets for a node', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 1)
-      store.registerWidget('node-1', 'steps', 'number', 20)
-      store.registerWidget('node-2', 'cfg', 'number', 7)
+      store.registerWidget(widget('node-1', 'seed', 'number', 1))
+      store.registerWidget(widget('node-1', 'steps', 'number', 20))
+      store.registerWidget(widget('node-2', 'cfg', 'number', 7))
 
       const widgets = store.getNodeWidgets('node-1')
       expect(widgets).toHaveLength(2)
@@ -128,8 +147,10 @@ describe('useWidgetValueStore', () => {
 
     it('getVisibleWidgets filters out hidden widgets', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'visible', 'number', 1)
-      store.registerWidget('node-1', 'hidden', 'number', 2, { hidden: true })
+      store.registerWidget(widget('node-1', 'visible', 'number', 1))
+      store.registerWidget(
+        widget('node-1', 'hidden', 'number', 2, { hidden: true })
+      )
 
       const visible = store.getVisibleWidgets('node-1')
       expect(visible).toHaveLength(1)
@@ -138,9 +159,13 @@ describe('useWidgetValueStore', () => {
 
     it('getAdvancedWidgets returns only advanced widgets', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'basic', 'number', 1)
-      store.registerWidget('node-1', 'adv1', 'number', 2, { advanced: true })
-      store.registerWidget('node-1', 'adv2', 'string', 'x', { advanced: true })
+      store.registerWidget(widget('node-1', 'basic', 'number', 1))
+      store.registerWidget(
+        widget('node-1', 'adv1', 'number', 2, { advanced: true })
+      )
+      store.registerWidget(
+        widget('node-1', 'adv2', 'string', 'x', { advanced: true })
+      )
 
       const advanced = store.getAdvancedWidgets('node-1')
       expect(advanced).toHaveLength(2)
@@ -149,8 +174,10 @@ describe('useWidgetValueStore', () => {
 
     it('getPromotedWidgets returns only promoted widgets', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'normal', 'number', 1)
-      store.registerWidget('node-1', 'promo', 'string', 'x', { promoted: true })
+      store.registerWidget(widget('node-1', 'normal', 'number', 1))
+      store.registerWidget(
+        widget('node-1', 'promo', 'string', 'x', { promoted: true })
+      )
 
       const promoted = store.getPromotedWidgets('node-1')
       expect(promoted).toHaveLength(1)
@@ -161,7 +188,7 @@ describe('useWidgetValueStore', () => {
   describe('metadata setters', () => {
     it('setHidden updates widget hidden state', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 100)
+      store.registerWidget(widget('node-1', 'seed', 'number', 100))
 
       store.setHidden('node-1', 'seed', true)
       expect(store.getWidget('node-1', 'seed')?.hidden).toBe(true)
@@ -172,7 +199,7 @@ describe('useWidgetValueStore', () => {
 
     it('setDisabled updates widget disabled state', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 100)
+      store.registerWidget(widget('node-1', 'seed', 'number', 100))
 
       store.setDisabled('node-1', 'seed', true)
       expect(store.getWidget('node-1', 'seed')?.disabled).toBe(true)
@@ -180,7 +207,7 @@ describe('useWidgetValueStore', () => {
 
     it('setAdvanced updates widget advanced state', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 100)
+      store.registerWidget(widget('node-1', 'seed', 'number', 100))
 
       store.setAdvanced('node-1', 'seed', true)
       expect(store.getWidget('node-1', 'seed')?.advanced).toBe(true)
@@ -188,7 +215,7 @@ describe('useWidgetValueStore', () => {
 
     it('setPromoted updates widget promoted state', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 100)
+      store.registerWidget(widget('node-1', 'seed', 'number', 100))
 
       store.setPromoted('node-1', 'seed', true)
       expect(store.getWidget('node-1', 'seed')?.promoted).toBe(true)
@@ -196,7 +223,7 @@ describe('useWidgetValueStore', () => {
 
     it('setLabel updates widget label', () => {
       const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 100)
+      store.registerWidget(widget('node-1', 'seed', 'number', 100))
 
       store.setLabel('node-1', 'seed', 'Random Seed')
       expect(store.getWidget('node-1', 'seed')?.label).toBe('Random Seed')

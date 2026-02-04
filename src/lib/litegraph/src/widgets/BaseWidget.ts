@@ -208,21 +208,19 @@ export abstract class BaseWidget<
   setNodeId(nodeId: NodeId): void {
     this._nodeId = nodeId
     const store = useWidgetValueStore()
-    store.registerWidget(
+    store.registerWidget({
       nodeId,
-      this.name,
-      this.type as TWidgetType,
-      this._internalValue,
-      {
-        label: this._label,
-        hidden: this._hidden,
-        disabled: this._disabled,
-        advanced: this._advanced,
-        promoted: this._promoted,
-        serialize: this.serialize,
-        widgetOptions: this.options
-      }
-    )
+      name: this.name,
+      type: this.type as TWidgetType,
+      value: this._internalValue,
+      label: this._label,
+      hidden: this._hidden,
+      disabled: this._disabled,
+      advanced: this._advanced,
+      promoted: this._promoted,
+      serialize: this.serialize,
+      options: this.options
+    })
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

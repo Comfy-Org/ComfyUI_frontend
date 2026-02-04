@@ -3,24 +3,30 @@ import { ref } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
-  IWidgetOptions,
-  TWidgetType
+  IBaseWidget,
+  IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 
 type WidgetKey = `${NodeId}:${string}`
 
-export interface WidgetState {
+export interface WidgetState<
+  TValue = unknown,
+  TType extends string = string,
+  TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
+> extends Pick<
+  IBaseWidget<TValue, TType, TOptions>,
+  | 'name'
+  | 'type'
+  | 'value'
+  | 'options'
+  | 'label'
+  | 'serialize'
+  | 'disabled'
+  | 'hidden'
+  | 'advanced'
+  | 'promoted'
+> {
   nodeId: NodeId
-  name: string
-  type: TWidgetType
-  value: unknown
-  label?: string
-  hidden: boolean
-  disabled: boolean
-  advanced: boolean
-  promoted: boolean
-  options: IWidgetOptions<unknown>
-  serialize: boolean
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
@@ -30,32 +36,10 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return `${nodeId}:${widgetName}`
   }
 
-  function registerWidget(
-    nodeId: NodeId,
-    name: string,
-    type: TWidgetType,
-    value: unknown,
-    options: Partial<
-      Pick<
-        WidgetState,
-        'label' | 'hidden' | 'disabled' | 'advanced' | 'promoted' | 'serialize'
-      >
-    > & { widgetOptions?: IWidgetOptions<unknown> } = {}
-  ): WidgetState {
-    const key = makeKey(nodeId, name)
-    const state: WidgetState = {
-      nodeId,
-      name,
-      type,
-      value,
-      label: options.label,
-      hidden: options.hidden ?? false,
-      disabled: options.disabled ?? false,
-      advanced: options.advanced ?? false,
-      promoted: options.promoted ?? false,
-      options: options.widgetOptions ?? {},
-      serialize: options.serialize ?? true
-    }
+  function registerWidget<TValue = unknown>(
+    state: WidgetState<TValue>
+  ): WidgetState<TValue> {
+    const key = makeKey(state.nodeId, state.name)
     widgetStates.value.set(key, state)
     return state
   }
