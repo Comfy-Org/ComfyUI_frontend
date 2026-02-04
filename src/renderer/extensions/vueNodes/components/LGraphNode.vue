@@ -86,10 +86,7 @@
       :style="{ width: `${Math.min(progress * 100, 100)}%` }"
     />
 
-    <div
-      v-if="!isCollapsed"
-      class="bg-component-node-background rounded-b-2xl pb-1 flex-1 flex"
-    >
+    <template v-if="!isCollapsed">
       <div class="relative mb-1">
         <!-- Progress bar for executing state -->
         <div
@@ -106,7 +103,7 @@
       </div>
 
       <div
-        class="flex flex-1 flex-col gap-1 pb-2"
+        class="flex flex-1 flex-col gap-1 pb-3 bg-component-node-background rounded-b-2xl"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <NodeSlots :node-data="nodeData" />
@@ -123,7 +120,7 @@
         />
         <NodeBadges v-bind="badges" :pricing="undefined" />
       </div>
-    </div>
+    </template>
     <Button
       variant="textonly"
       :class="
@@ -172,7 +169,7 @@
       :class="
         cn(
           baseResizeHandleClasses,
-          '-right-1 -bottom-1 cursor-se-resize opacity-0 group-hover/node:opacity-100'
+          '-right-1 -bottom-1 cursor-se-resize group-hover/node:opacity-100'
         )
       "
       @pointerdown.stop="handleResizePointerDown"
@@ -390,7 +387,7 @@ function initSizeStyles() {
 }
 
 const baseResizeHandleClasses =
-  'absolute h-5 w-5 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
+  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40'
 
 const MIN_NODE_WIDTH = 225
 
