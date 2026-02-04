@@ -15,13 +15,9 @@ describe('NodeWidgets', () => {
   ): SafeWidgetData => ({
     name: 'test_widget',
     type: 'combo',
-    value: 'test_value',
-    options: {
-      values: ['option1', 'option2']
-    },
+    options: undefined,
     callback: undefined,
     spec: undefined,
-    label: undefined,
     isDOMWidget: false,
     slotMetadata: undefined,
     ...overrides

@@ -108,6 +108,7 @@ import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
@@ -214,12 +215,14 @@ const nodeBadges = computed<NodeBadgeProps[]>(() => {
 
     // For dynamic pricing, also track widget values and input connections
     if (isDynamicPricing.value) {
-      // Access only the widget values that affect pricing
+      // Access only the widget values that affect pricing (from widgetValueStore)
       const relevantNames = relevantPricingWidgets.value
-      if (relevantNames.length > 0) {
-        nodeData?.widgets?.forEach((w) => {
-          if (relevantNames.includes(w.name)) w.value
-        })
+      const widgetStore = useWidgetValueStore()
+      if (relevantNames.length > 0 && nodeData?.id != null) {
+        for (const name of relevantNames) {
+          // Access value from store to create reactive dependency
+          void widgetStore.get(nodeData.id, name)
+        }
       }
       // Access input connections for regular inputs
       const inputNames = relevantInputNames.value

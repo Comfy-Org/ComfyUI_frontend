@@ -11,10 +11,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
@@ -41,19 +38,31 @@ export interface WidgetSlotMetadata {
   linked: boolean
 }
 
+/**
+ * Minimal render-specific widget data extracted from LiteGraph widgets.
+ * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
+ */
 export interface SafeWidgetData {
   name: string
   type: string
-  value: WidgetValue
-  borderStyle?: string
+  /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
+  /** Control widget for seed randomization/increment/decrement */
   controlWidget?: SafeControlWidget
+  /** Whether widget has custom layout size computation */
   hasLayoutSize?: boolean
+  /** Whether widget is a DOM widget */
   isDOMWidget?: boolean
-  label?: string
+  /** Node type (for subgraph promoted widgets) */
   nodeType?: string
-  options?: IWidgetOptions<unknown>
+  /**
+   * Widget options needed for render decisions.
+   * Note: Most metadata should be accessed via widgetValueStore.getWidget().
+   */
+  options?: { canvasOnly?: boolean; advanced?: boolean; read_only?: boolean }
+  /** Input specification from node definition */
   spec?: InputSpec
+  /** Input slot metadata (index and link status) */
   slotMetadata?: WidgetSlotMetadata
 }
 
@@ -115,26 +124,18 @@ function getNodeType(node: LGraphNode, widget: IBaseWidget) {
  * Shared widget enhancements used by both safeWidgetMapper and Right Side Panel
  */
 interface SharedWidgetEnhancements {
-  /** Reactive widget value that updates when the widget changes */
-  value: WidgetValue
   /** Control widget for seed randomization/increment/decrement */
   controlWidget?: SafeControlWidget
   /** Input specification from node definition */
   spec?: InputSpec
   /** Node type (for subgraph promoted widgets) */
   nodeType?: string
-  /** Border style for promoted/advanced widgets */
-  borderStyle?: string
-  /** Widget label */
-  label?: string
-  /** Widget options */
-  options?: Record<string, any>
 }
 
 /**
  * Extracts common widget enhancements shared across different rendering contexts.
- * This function centralizes the logic for extracting metadata and reactive values
- * from widgets, ensuring consistency between Nodes 2.0 and Right Side Panel.
+ * This function centralizes the logic for extracting metadata from widgets.
+ * Note: Value and metadata (label, options, hidden, etc.) are accessed via widgetValueStore.
  */
 export function getSharedWidgetEnhancements(
   node: LGraphNode,
@@ -143,17 +144,9 @@ export function getSharedWidgetEnhancements(
   const nodeDefStore = useNodeDefStore()
 
   return {
-    value: widget.value,
     controlWidget: getControlWidget(widget),
     spec: nodeDefStore.getInputSpecForWidget(node, widget.name),
-    nodeType: getNodeType(node, widget),
-    borderStyle: widget.promoted
-      ? 'ring ring-component-node-widget-promoted'
-      : widget.advanced
-        ? 'ring ring-component-node-widget-advanced'
-        : undefined,
-    label: widget.label,
-    options: widget.options
+    nodeType: getNodeType(node, widget)
   }
 }
 
@@ -194,7 +187,7 @@ function safeWidgetMapper(
 ): (widget: IBaseWidget) => SafeWidgetData {
   return function (widget) {
     try {
-      // Get shared enhancements used by both Nodes 2.0 and Right Side Panel
+      // Get shared enhancements (controlWidget, spec, nodeType)
       const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
       const slotInfo = slotMetadata.get(widget.name)
 
@@ -210,6 +203,14 @@ function safeWidgetMapper(
         node.widgets?.forEach((w) => w.triggerDraw?.())
       }
 
+      // Extract only render-critical options (canvasOnly, advanced)
+      const options = widget.options
+        ? {
+            canvasOnly: widget.options.canvasOnly,
+            advanced: widget.advanced
+          }
+        : undefined
+
       return {
         name: widget.name,
         type: widget.type,
@@ -217,13 +218,13 @@ function safeWidgetMapper(
         callback,
         hasLayoutSize: typeof widget.computeLayoutSize === 'function',
         isDOMWidget: isDOMWidget(widget),
+        options,
         slotMetadata: slotInfo
       }
     } catch (error) {
       return {
         name: widget.name || 'unknown',
-        type: widget.type || 'text',
-        value: undefined
+        type: widget.type || 'text'
       }
     }
   }
