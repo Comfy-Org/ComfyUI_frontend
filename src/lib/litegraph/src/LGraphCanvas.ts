@@ -8221,7 +8221,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           callback: LGraphCanvas.onMenuNodeCollapse
         })
       }
-      if (node.widgets?.some((w) => w.advanced)) {
+      if (node.hasAdvancedWidgets()) {
         options.push({
           content: node.showAdvanced ? 'Hide Advanced' : 'Show Advanced',
           callback: LGraphCanvas.onMenuToggleAdvanced
