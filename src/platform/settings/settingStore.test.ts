@@ -117,7 +117,7 @@ describe('useSettingStore', () => {
         name: 'test.setting',
         type: 'text',
         defaultValue: 'default',
-        migrateDeprecatedValue: (value: string) => value.toUpperCase()
+        migrateDeprecatedValue: (val: unknown) => (val as string).toUpperCase()
       }
 
       store.settingValues['test.setting'] = 'oldvalue'

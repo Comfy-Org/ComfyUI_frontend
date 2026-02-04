@@ -32,7 +32,7 @@ app.registerExtension({
       },
       defaultValue: 5,
       onChange: (newVal) => {
-        this.setDefaults(newVal)
+        this.setDefaults(newVal as number)
       }
     })
   },

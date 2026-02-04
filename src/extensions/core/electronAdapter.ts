@@ -18,7 +18,7 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
   const toastStore = useToastStore()
   const { staticUrls, buildDocsUrl } = useExternalLink()
 
-  const onChangeRestartApp = (newValue: string, oldValue: string) => {
+  const onChangeRestartApp = (newValue: unknown, oldValue: unknown) => {
     // Add a delay to allow changes to take effect before restarting.
     if (oldValue !== undefined && newValue !== oldValue) {
       electronAPI.restartApp('Restart ComfyUI to apply changes.', 1500)
@@ -53,13 +53,10 @@ import { electronAPI as getElectronAPI, isElectron } from '@/utils/envUtil'
         experimental: true,
         defaultValue: 'default',
         options: ['default', 'custom'],
-        onChange: (
-          newValue: 'default' | 'custom',
-          oldValue?: 'default' | 'custom'
-        ) => {
+        onChange: (newValue: unknown, oldValue?: unknown) => {
           if (!oldValue) return
 
-          electronAPI.Config.setWindowStyle(newValue)
+          electronAPI.Config.setWindowStyle(newValue as 'default' | 'custom')
         }
       },
       {
