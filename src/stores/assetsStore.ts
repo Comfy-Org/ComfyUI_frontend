@@ -622,28 +622,13 @@ export const useAssetsStore = defineStore('assets', () => {
 
       /**
        * Invalidate model caches for a given category (e.g., 'checkpoints', 'loras')
-       * Refreshes all node types that provide this category plus tag-based caches
+       * Clears the category cache and tag-based caches so next access triggers refetch
        * @param category The model category to invalidate (e.g., 'checkpoints')
        */
-      async function invalidateModelsForCategory(
-        category: string
-      ): Promise<void> {
-        const nodeTypeUpdates = modelToNodeStore
-          .getAllNodeProviders(category)
-          .filter(
-            (
-              provider
-            ): provider is typeof provider & { nodeDef: { name: string } } =>
-              !!provider.nodeDef?.name
-          )
-          .map((provider) => updateModelsForNodeType(provider.nodeDef.name))
-
-        const tagUpdates = [
-          updateModelsForTag(category),
-          updateModelsForTag('models')
-        ]
-
-        await Promise.allSettled([...nodeTypeUpdates, ...tagUpdates])
+      function invalidateModelsForCategory(category: string): void {
+        invalidateCategory(category)
+        invalidateCategory(`tag:${category}`)
+        invalidateCategory('tag:models')
       }
 
       return {
@@ -675,7 +660,7 @@ export const useAssetsStore = defineStore('assets', () => {
       updateModelsForTag: async () => {},
       updateAssetMetadata: async () => {},
       updateAssetTags: async () => {},
-      invalidateModelsForCategory: async () => {}
+      invalidateModelsForCategory: () => {}
     }
   }
 

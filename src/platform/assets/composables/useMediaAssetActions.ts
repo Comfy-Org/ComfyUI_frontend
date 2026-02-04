@@ -601,11 +601,9 @@ export function useMediaAssetActions() {
                 }
               }
 
-              await Promise.allSettled(
-                [...modelCategories].map((category) =>
-                  assetsStore.invalidateModelsForCategory(category)
-                )
-              )
+              for (const category of modelCategories) {
+                assetsStore.invalidateModelsForCategory(category)
+              }
 
               // Show appropriate feedback based on results
               if (failed.length === 0) {

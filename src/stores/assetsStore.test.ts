@@ -797,7 +797,7 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('invalidateModelsForCategory', () => {
-    it('should refresh node type providers for the category', async () => {
+    it('should clear cache for category and trigger refetch on next access', async () => {
       const store = useAssetsStore()
       const initialAssets = [createMockAsset('initial-1')]
       const refreshedAssets = [
@@ -811,37 +811,43 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
       expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(1)
 
+      store.invalidateModelsForCategory('checkpoints')
+
+      // Cache should be cleared
+      expect(store.hasCategory('checkpoints')).toBe(false)
+      expect(store.getAssets('CheckpointLoaderSimple')).toEqual([])
+
+      // Next fetch should get fresh data
       vi.mocked(assetService.getAssetsForNodeType).mockResolvedValueOnce(
         refreshedAssets
       )
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([])
-
-      await store.invalidateModelsForCategory('checkpoints')
-
+      await store.updateModelsForNodeType('CheckpointLoaderSimple')
       expect(store.getAssets('CheckpointLoaderSimple')).toHaveLength(2)
     })
 
-    it('should refresh tag-based caches', async () => {
+    it('should clear tag-based caches', async () => {
       const store = useAssetsStore()
       const tagAssets = [createMockAsset('tag-1'), createMockAsset('tag-2')]
 
-      vi.mocked(assetService.getAssetsForNodeType).mockResolvedValue([])
       vi.mocked(assetService.getAssetsByTag).mockResolvedValue(tagAssets)
-
-      await store.invalidateModelsForCategory('checkpoints')
+      await store.updateModelsForTag('checkpoints')
+      await store.updateModelsForTag('models')
 
       expect(store.getAssets('tag:checkpoints')).toHaveLength(2)
       expect(store.getAssets('tag:models')).toHaveLength(2)
+
+      store.invalidateModelsForCategory('checkpoints')
+
+      expect(store.getAssets('tag:checkpoints')).toEqual([])
+      expect(store.getAssets('tag:models')).toEqual([])
     })
 
-    it('should handle categories with no providers gracefully', async () => {
+    it('should handle unknown categories gracefully', () => {
       const store = useAssetsStore()
 
-      vi.mocked(assetService.getAssetsByTag).mockResolvedValue([])
-
-      await expect(
+      expect(() =>
         store.invalidateModelsForCategory('unknown-category')
-      ).resolves.not.toThrow()
+      ).not.toThrow()
     })
   })
 })
