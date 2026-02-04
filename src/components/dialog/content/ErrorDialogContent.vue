@@ -1,29 +1,34 @@
 <template>
   <div class="comfy-error-report flex flex-col gap-4 relative">
-    <Button
-      v-if="error.nodeId"
-      variant="secondary"
-      size="sm"
-      :title="t('errorDialog.locateNode')"
-      class="absolute top-0 right-0 font-mono"
-      @click="handleLocateNode"
-    >
-      <i class="icon-[lucide--locate] size-3" />
-      <span class="break-words text-base font-bold"
-        >{{ error.nodeType }} (#{{ error.nodeId }})</span
-      >
-    </Button>
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
       :title="title"
       :message="error.exceptionMessage"
       text-class="break-words max-w-[60vw]"
-    />
+    >
+      <div v-if="error.nodeId" class="mt-4 flex flex-col items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          class="font-mono rounded-full px-4"
+          @click="handleLocateNode"
+        >
+          <i class="icon-[lucide--locate] size-3" />
+          #{{ error.nodeId }}
+          <span class="ml-1 text-xs opacity-70"
+            >({{ t('errorDialog.locateNode') }})</span
+          >
+        </Button>
+      </div>
+    </NoResultsPlaceholder>
+
     <template v-if="error.extensionFile">
-      <span>{{ t('errorDialog.extensionFileHint') }}:</span>
-      <br />
-      <span class="font-bold">{{ error.extensionFile }}</span>
+      <div class="px-8">
+        <span>{{ t('errorDialog.extensionFileHint') }}:</span>
+        <br />
+        <span class="font-bold">{{ error.extensionFile }}</span>
+      </div>
     </template>
 
     <div class="flex justify-center gap-2">
