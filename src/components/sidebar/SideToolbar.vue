@@ -66,6 +66,7 @@ import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPa
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -151,10 +152,10 @@ const onTabClick = async (item: SidebarTabExtension) => {
 
 const keybindingStore = useKeybindingStore()
 const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
-  const keybinding = keybindingStore.getKeybindingByCommandId(
-    `Workspace.ToggleSidebarTab.${tab.id}`
-  )
-  return keybinding ? ` (${keybinding.combo.toString()})` : ''
+  const shortcut = keybindingStore
+    .getKeybindingByCommandId(`Workspace.ToggleSidebarTab.${tab.id}`)
+    ?.combo.toString()
+  return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 }
 
 const isOverflowing = ref(false)

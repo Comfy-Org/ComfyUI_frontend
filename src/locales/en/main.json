@@ -1,5 +1,6 @@
 {
   "g": {
+    "shortcutSuffix": " ({shortcut})",
     "user": "User",
     "you": "You",
     "currentUser": "Current user",
