@@ -1,30 +1,42 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
+import type {
+  APIRequestContext,
+  ExpectMatcherState,
+  Locator,
+  Page
+} from '@playwright/test'
 import { test as base, expect } from '@playwright/test'
 import dotenv from 'dotenv'
-import * as fs from 'fs'
 
-import type { LGraphNode, LGraph } from '../../src/lib/litegraph/src/litegraph'
-import type { NodeId } from '../../src/platform/workflow/validation/schemas/workflowSchema'
-import type { KeyCombo } from '../../src/platform/keybindings'
-import type { useWorkspaceStore } from '../../src/stores/workspaceStore'
+import { TestIds } from './selectors'
 import { NodeBadgeMode } from '../../src/types/nodeSource'
 import { ComfyActionbar } from '../helpers/actionbar'
 import { ComfyTemplates } from '../helpers/templates'
 import { ComfyMouse } from './ComfyMouse'
 import { VueNodeHelpers } from './VueNodeHelpers'
 import { ComfyNodeSearchBox } from './components/ComfyNodeSearchBox'
+import { ContextMenu } from './components/ContextMenu'
 import { SettingDialog } from './components/SettingDialog'
+import { BottomPanel } from './components/BottomPanel'
 import {
   NodeLibrarySidebarTab,
   WorkflowsSidebarTab
 } from './components/SidebarTab'
 import { Topbar } from './components/Topbar'
-import type { Position, Size } from './types'
-import { NodeReference, SubgraphSlotReference } from './utils/litegraphUtils'
+import { CanvasHelper } from './helpers/CanvasHelper'
+import { ClipboardHelper } from './helpers/ClipboardHelper'
+import { CommandHelper } from './helpers/CommandHelper'
+import { DebugHelper } from './helpers/DebugHelper'
+import { DragDropHelper } from './helpers/DragDropHelper'
+import { KeyboardHelper } from './helpers/KeyboardHelper'
+import { NodeOperationsHelper } from './helpers/NodeOperationsHelper'
+import { SettingsHelper } from './helpers/SettingsHelper'
+import { SubgraphHelper } from './helpers/SubgraphHelper'
+import { ToastHelper } from './helpers/ToastHelper'
+import { WorkflowHelper } from './helpers/WorkflowHelper'
+import type { NodeReference } from './utils/litegraphUtils'
+import type { WorkspaceStore } from '../types/globals'
 
 dotenv.config()
-
-type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
 
 class ComfyPropertiesPanel {
   readonly root: Locator
@@ -32,9 +44,9 @@ class ComfyPropertiesPanel {
   readonly searchBox: Locator
 
   constructor(readonly page: Page) {
-    this.root = page.getByTestId('properties-panel')
+    this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
-    this.searchBox = this.root.getByPlaceholder('Search...')
+    this.searchBox = this.root.getByPlaceholder(/^Search/)
   }
 }
 
@@ -45,16 +57,12 @@ class ComfyMenu {
 
   public readonly sideToolbar: Locator
   public readonly propertiesPanel: ComfyPropertiesPanel
-  public readonly themeToggleButton: Locator
-  public readonly saveButton: Locator
+  public readonly modeToggleButton: Locator
 
   constructor(public readonly page: Page) {
-    this.sideToolbar = page.locator('.side-tool-bar-container')
-    this.themeToggleButton = page.locator('.comfy-vue-theme-toggle')
+    this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
+    this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
     this.propertiesPanel = new ComfyPropertiesPanel(page)
-    this.saveButton = page
-      .locator('button[title="Save the current workflow"]')
-      .nth(0)
   }
 
   get buttons() {
@@ -77,31 +85,26 @@ class ComfyMenu {
   }
 
   async toggleTheme() {
-    await this.themeToggleButton.click()
-    await this.page.evaluate(() => {
-      return new Promise((resolve) => {
-        window['app'].ui.settings.addEventListener(
-          'Comfy.ColorPalette.change',
-          resolve,
-          { once: true }
+    const currentTheme = await this.getThemeId()
+    await this.modeToggleButton.click()
+    await this.page.waitForFunction(
+      (prevTheme) => {
+        const settings = window.app?.ui?.settings
+        return (
+          settings &&
+          settings.getSettingValue('Comfy.ColorPalette') !== prevTheme
         )
-
-        setTimeout(resolve, 5000)
-      })
-    })
+      },
+      currentTheme,
+      { timeout: 5000 }
+    )
   }
 
   async getThemeId() {
     return await this.page.evaluate(async () => {
-      return await window['app'].ui.settings.getSettingValue(
-        'Comfy.ColorPalette'
-      )
+      return await window.app!.ui.settings.getSettingValue('Comfy.ColorPalette')
     })
   }
-}
-
-type FolderStructure = {
-  [key: string]: FolderStructure | string
 }
 
 type KeysOfType<T, Match> = {
@@ -125,7 +128,7 @@ class ConfirmDialog {
 
   async click(locator: KeysOfType<ConfirmDialog, Locator>) {
     const loc = this[locator]
-    await expect(loc).toBeVisible()
+    await loc.waitFor({ state: 'visible' })
     await loc.click()
 
     // Wait for the dialog mask to disappear after confirming
@@ -137,7 +140,9 @@ class ConfirmDialog {
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
-      () => window['app']?.extensionManager?.workflow?.isBusy === false,
+      () =>
+        (window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
+          ?.isBusy === false,
       undefined,
       { timeout: 3000 }
     )
@@ -159,9 +164,6 @@ export class ComfyPage {
   // Inputs
   public readonly workflowUploadInput: Locator
 
-  // Toasts
-  public readonly visibleToasts: Locator
-
   // Components
   public readonly searchBox: ComfyNodeSearchBox
   public readonly menu: ComfyMenu
@@ -170,6 +172,19 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly vueNodes: VueNodeHelpers
+  public readonly debug: DebugHelper
+  public readonly subgraph: SubgraphHelper
+  public readonly canvasOps: CanvasHelper
+  public readonly nodeOps: NodeOperationsHelper
+  public readonly settings: SettingsHelper
+  public readonly keyboard: KeyboardHelper
+  public readonly clipboard: ClipboardHelper
+  public readonly workflow: WorkflowHelper
+  public readonly contextMenu: ContextMenu
+  public readonly toast: ToastHelper
+  public readonly dragDrop: DragDropHelper
+  public readonly command: CommandHelper
+  public readonly bottomPanel: BottomPanel
 
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
@@ -190,10 +205,9 @@ export class ComfyPage {
     this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.runButton = page
-      .getByTestId('queue-button')
+      .getByTestId(TestIds.topbar.queueButton)
       .getByRole('button', { name: 'Run' })
     this.workflowUploadInput = page.locator('#comfy-file-input')
-    this.visibleToasts = page.locator('.p-toast-message:visible')
 
     this.searchBox = new ComfyNodeSearchBox(page)
     this.menu = new ComfyMenu(page)
@@ -202,62 +216,23 @@ export class ComfyPage {
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.vueNodes = new VueNodeHelpers(page)
+    this.debug = new DebugHelper(page, this.canvas)
+    this.subgraph = new SubgraphHelper(this)
+    this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
+    this.nodeOps = new NodeOperationsHelper(this)
+    this.settings = new SettingsHelper(page)
+    this.keyboard = new KeyboardHelper(page, this.canvas)
+    this.clipboard = new ClipboardHelper(this.keyboard)
+    this.workflow = new WorkflowHelper(this)
+    this.contextMenu = new ContextMenu(page)
+    this.toast = new ToastHelper(page)
+    this.dragDrop = new DragDropHelper(page, this.assetPath.bind(this))
+    this.command = new CommandHelper(page)
+    this.bottomPanel = new BottomPanel(page)
   }
 
-  convertLeafToContent(structure: FolderStructure): FolderStructure {
-    const result: FolderStructure = {}
-
-    for (const [key, value] of Object.entries(structure)) {
-      if (typeof value === 'string') {
-        const filePath = this.assetPath(value)
-        result[key] = fs.readFileSync(filePath, 'utf-8')
-      } else {
-        result[key] = this.convertLeafToContent(value)
-      }
-    }
-
-    return result
-  }
-
-  async getGraphNodesCount(): Promise<number> {
-    return await this.page.evaluate(() => {
-      return window['app']?.graph?.nodes?.length || 0
-    })
-  }
-
-  async getSelectedGraphNodesCount(): Promise<number> {
-    return await this.page.evaluate(() => {
-      return (
-        window['app']?.graph?.nodes?.filter(
-          (node: any) => node.is_selected === true
-        ).length || 0
-      )
-    })
-  }
-
-  async setupWorkflowsDirectory(structure: FolderStructure) {
-    const resp = await this.request.post(
-      `${this.url}/api/devtools/setup_folder_structure`,
-      {
-        data: {
-          tree_structure: this.convertLeafToContent(structure),
-          base_path: `user/${this.id}/workflows`
-        }
-      }
-    )
-
-    if (resp.status() !== 200) {
-      throw new Error(
-        `Failed to setup workflows directory: ${await resp.text()}`
-      )
-    }
-
-    await this.page.evaluate(async () => {
-      await window['app'].extensionManager.workflow.syncWorkflows()
-    })
-
-    // Wait for Vue to re-render the workflow list
-    await this.nextFrame()
+  get visibleToasts() {
+    return this.toast.visibleToasts
   }
 
   async setupUser(username: string) {
@@ -285,7 +260,7 @@ export class ComfyPage {
     return await resp.json()
   }
 
-  async setupSettings(settings: Record<string, any>) {
+  async setupSettings(settings: Record<string, unknown>) {
     const resp = await this.request.post(
       `${this.url}/api/devtools/set_settings`,
       {
@@ -338,9 +313,9 @@ export class ComfyPage {
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.page.waitForFunction(
       () =>
-        // window['app'] => GraphCanvas ready
-        // window['app'].extensionManager => GraphView ready
-        window['app'] && window['app'].extensionManager
+        // window.app => GraphCanvas ready
+        // window.app.extensionManager => GraphView ready
+        window.app && window.app.extensionManager
     )
     await this.page.waitForSelector('.p-blockui-mask', { state: 'hidden' })
     await this.nextFrame()
@@ -348,84 +323,6 @@ export class ComfyPage {
 
   public assetPath(fileName: string) {
     return `./browser_tests/assets/${fileName}`
-  }
-
-  async executeCommand(commandId: string, metadata?: Record<string, unknown>) {
-    await this.page.evaluate(
-      ({ commandId, metadata }) => {
-        return window['app'].extensionManager.command.execute(commandId, {
-          metadata
-        })
-      },
-      { commandId, metadata }
-    )
-  }
-
-  async registerCommand(
-    commandId: string,
-    command: (() => void) | (() => Promise<void>)
-  ) {
-    await this.page.evaluate(
-      ({ commandId, commandStr }) => {
-        const app = window['app']
-        const randomSuffix = Math.random().toString(36).substring(2, 8)
-        const extensionName = `TestExtension_${randomSuffix}`
-
-        app.registerExtension({
-          name: extensionName,
-          commands: [
-            {
-              id: commandId,
-              function: eval(commandStr)
-            }
-          ]
-        })
-      },
-      { commandId, commandStr: command.toString() }
-    )
-  }
-
-  async registerKeybinding(keyCombo: KeyCombo, command: () => void) {
-    await this.page.evaluate(
-      ({ keyCombo, commandStr }) => {
-        const app = window['app']
-        const randomSuffix = Math.random().toString(36).substring(2, 8)
-        const extensionName = `TestExtension_${randomSuffix}`
-        const commandId = `TestCommand_${randomSuffix}`
-
-        app.registerExtension({
-          name: extensionName,
-          keybindings: [
-            {
-              combo: keyCombo,
-              commandId: commandId
-            }
-          ],
-          commands: [
-            {
-              id: commandId,
-              function: eval(commandStr)
-            }
-          ]
-        })
-      },
-      { keyCombo, commandStr: command.toString() }
-    )
-  }
-
-  async setSetting(settingId: string, settingValue: any) {
-    return await this.page.evaluate(
-      async ({ id, value }) => {
-        await window['app'].extensionManager.setting.set(id, value)
-      },
-      { id: settingId, value: settingValue }
-    )
-  }
-
-  async getSetting(settingId: string) {
-    return await this.page.evaluate(async (id) => {
-      return await window['app'].extensionManager.setting.get(id)
-    }, settingId)
   }
 
   async goto() {
@@ -440,37 +337,6 @@ export class ComfyPage {
 
   async delay(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
-  }
-
-  async loadWorkflow(workflowName: string) {
-    await this.workflowUploadInput.setInputFiles(
-      this.assetPath(`${workflowName}.json`)
-    )
-    await this.nextFrame()
-  }
-
-  async deleteWorkflow(
-    workflowName: string,
-    whenMissing: 'ignoreMissing' | 'throwIfMissing' = 'ignoreMissing'
-  ) {
-    // Open workflows tab
-    const { workflowsTab } = this.menu
-    await workflowsTab.open()
-
-    // Action to take if workflow missing
-    if (whenMissing === 'ignoreMissing') {
-      const workflows = await workflowsTab.getTopLevelSavedWorkflowNames()
-      if (!workflows.includes(workflowName)) return
-    }
-
-    // Delete workflow
-    await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
-    await this.clickContextMenuItem('Delete')
-    await this.confirmDialog.delete.click()
-
-    // Clear toast & close tab
-    await this.closeToasts(1)
-    await workflowsTab.close()
   }
 
   /**
@@ -499,1080 +365,22 @@ export class ComfyPage {
     })
   }
 
-  async resetView() {
-    if (await this.resetViewButton.isVisible()) {
-      await this.resetViewButton.click()
-    }
-    // Avoid "Reset View" button highlight.
-    await this.page.mouse.move(10, 10)
-    await this.nextFrame()
-  }
-
-  async getToastErrorCount() {
-    return await this.page
-      .locator('.p-toast-message.p-toast-message-error')
-      .count()
-  }
-
-  async getVisibleToastCount() {
-    return await this.visibleToasts.count()
-  }
-
-  async closeToasts(requireCount = 0) {
-    if (requireCount) await expect(this.visibleToasts).toHaveCount(requireCount)
-
-    // Clear all toasts
-    const toastCloseButtons = await this.page
-      .locator('.p-toast-close-button')
-      .all()
-    for (const button of toastCloseButtons) {
-      await button.click()
-    }
-    await expect(this.visibleToasts).toHaveCount(0)
-  }
-
-  async clickTextEncodeNode1() {
-    await this.canvas.click({
-      position: {
-        x: 618,
-        y: 191
-      }
-    })
-    await this.nextFrame()
-  }
-
-  async clickTextEncodeNodeToggler() {
-    await this.canvas.click({
-      position: {
-        x: 430,
-        y: 171
-      }
-    })
-    await this.nextFrame()
-  }
-
-  async clickTextEncodeNode2() {
-    await this.canvas.click({
-      position: {
-        x: 622,
-        y: 400
-      }
-    })
-    await this.nextFrame()
-  }
-
-  async clickEmptySpace() {
-    await this.canvas.click({
-      position: {
-        x: 35,
-        y: 31
-      }
-    })
-    await this.nextFrame()
-  }
-
-  async dragAndDrop(source: Position, target: Position) {
-    await this.page.mouse.move(source.x, source.y)
-    await this.page.mouse.down()
-    await this.page.mouse.move(target.x, target.y, { steps: 100 })
-    await this.page.mouse.up()
-    await this.nextFrame()
-  }
-
-  async dragAndDropExternalResource(
-    options: {
-      fileName?: string
-      url?: string
-      dropPosition?: Position
-      waitForUpload?: boolean
-    } = {}
-  ) {
-    const {
-      dropPosition = { x: 100, y: 100 },
-      fileName,
-      url,
-      waitForUpload = false
-    } = options
-
-    if (!fileName && !url)
-      throw new Error('Must provide either fileName or url')
-
-    const evaluateParams: {
-      dropPosition: Position
-      fileName?: string
-      fileType?: string
-      buffer?: Uint8Array | number[]
-      url?: string
-    } = { dropPosition }
-
-    // Dropping a file from the filesystem
-    if (fileName) {
-      const filePath = this.assetPath(fileName)
-      const buffer = fs.readFileSync(filePath)
-
-      const getFileType = (fileName: string) => {
-        if (fileName.endsWith('.png')) return 'image/png'
-        if (fileName.endsWith('.svg')) return 'image/svg+xml'
-        if (fileName.endsWith('.webp')) return 'image/webp'
-        if (fileName.endsWith('.webm')) return 'video/webm'
-        if (fileName.endsWith('.json')) return 'application/json'
-        if (fileName.endsWith('.glb')) return 'model/gltf-binary'
-        if (fileName.endsWith('.avif')) return 'image/avif'
-        return 'application/octet-stream'
-      }
-
-      evaluateParams.fileName = fileName
-      evaluateParams.fileType = getFileType(fileName)
-      evaluateParams.buffer = [...new Uint8Array(buffer)]
-    }
-
-    // Dropping a URL (e.g., dropping image across browser tabs in Firefox)
-    if (url) evaluateParams.url = url
-
-    // Set up response waiter for file uploads before triggering the drop
-    const uploadResponsePromise = waitForUpload
-      ? this.page.waitForResponse(
-          (resp) => resp.url().includes('/upload/') && resp.status() === 200,
-          { timeout: 10000 }
-        )
-      : null
-
-    // Execute the drag and drop in the browser
-    await this.page.evaluate(async (params) => {
-      const dataTransfer = new DataTransfer()
-
-      // Add file if provided
-      if (params.buffer && params.fileName && params.fileType) {
-        const file = new File(
-          [new Uint8Array(params.buffer)],
-          params.fileName,
-          {
-            type: params.fileType
-          }
-        )
-        dataTransfer.items.add(file)
-      }
-
-      // Add URL data if provided
-      if (params.url) {
-        dataTransfer.setData('text/uri-list', params.url)
-        dataTransfer.setData('text/x-moz-url', params.url)
-      }
-
-      const targetElement = document.elementFromPoint(
-        params.dropPosition.x,
-        params.dropPosition.y
-      )
-
-      if (!targetElement) {
-        console.error('No element found at drop position:', params.dropPosition)
-        return { success: false, error: 'No element at position' }
-      }
-
-      const eventOptions = {
-        bubbles: true,
-        cancelable: true,
-        dataTransfer,
-        clientX: params.dropPosition.x,
-        clientY: params.dropPosition.y
-      }
-
-      const dragOverEvent = new DragEvent('dragover', eventOptions)
-      const dropEvent = new DragEvent('drop', eventOptions)
-
-      Object.defineProperty(dropEvent, 'preventDefault', {
-        value: () => {},
-        writable: false
-      })
-
-      Object.defineProperty(dropEvent, 'stopPropagation', {
-        value: () => {},
-        writable: false
-      })
-
-      targetElement.dispatchEvent(dragOverEvent)
-      targetElement.dispatchEvent(dropEvent)
-
-      return {
-        success: true,
-        targetInfo: {
-          tagName: targetElement.tagName,
-          id: targetElement.id,
-          classList: Array.from(targetElement.classList)
-        }
-      }
-    }, evaluateParams)
-
-    // Wait for file upload to complete
-    if (uploadResponsePromise) {
-      await uploadResponsePromise
-    }
-
-    await this.nextFrame()
-  }
-
-  async dragAndDropFile(
-    fileName: string,
-    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
-  ) {
-    return this.dragAndDropExternalResource({ fileName, ...options })
-  }
-
-  async dragAndDropURL(url: string, options: { dropPosition?: Position } = {}) {
-    return this.dragAndDropExternalResource({ url, ...options })
-  }
-
-  async dragNode2() {
-    await this.dragAndDrop({ x: 622, y: 400 }, { x: 622, y: 300 })
-    await this.nextFrame()
-  }
-
-  // Default graph positions
-  get clipTextEncodeNode1InputSlot(): Position {
-    return { x: 427, y: 198 }
-  }
-
-  get clipTextEncodeNode2InputSlot(): Position {
-    return { x: 422, y: 402 }
-  }
-
-  // A point on input edge.
-  get clipTextEncodeNode2InputLinkPath(): Position {
-    return {
-      x: 395,
-      y: 422
-    }
-  }
-
-  get loadCheckpointNodeClipOutputSlot(): Position {
-    return { x: 332, y: 509 }
-  }
-
-  get emptySpace(): Position {
-    return { x: 427, y: 98 }
-  }
-
-  get promptDialogInput() {
-    return this.page.locator('.p-dialog-content input[type="text"]')
-  }
-
-  async fillPromptDialog(value: string) {
-    await this.promptDialogInput.fill(value)
-    await this.page.keyboard.press('Enter')
-    await this.promptDialogInput.waitFor({ state: 'hidden' })
-    await this.nextFrame()
-  }
-
-  async disconnectEdge() {
-    await this.dragAndDrop(this.clipTextEncodeNode1InputSlot, this.emptySpace)
-  }
-
-  async connectEdge(
-    options: {
-      reverse?: boolean
-    } = {}
-  ) {
-    const { reverse = false } = options
-    const start = reverse
-      ? this.clipTextEncodeNode1InputSlot
-      : this.loadCheckpointNodeClipOutputSlot
-    const end = reverse
-      ? this.loadCheckpointNodeClipOutputSlot
-      : this.clipTextEncodeNode1InputSlot
-
-    await this.dragAndDrop(start, end)
-  }
-
-  async adjustWidgetValue() {
-    // Adjust Empty Latent Image's width input.
-    const page = this.page
-    await page.locator('#graph-canvas').click({
-      position: {
-        x: 724,
-        y: 645
-      }
-    })
-    const dialogInput = page.locator('.graphdialog input[type="text"]')
-    await dialogInput.click()
-    await dialogInput.fill('128')
-    await dialogInput.press('Enter')
-    await this.nextFrame()
-  }
-
-  async zoom(deltaY: number, steps: number = 1) {
-    await this.page.mouse.move(10, 10)
-    for (let i = 0; i < steps; i++) {
-      await this.page.mouse.wheel(0, deltaY)
-    }
-    await this.nextFrame()
-  }
-
-  async pan(offset: Position, safeSpot?: Position) {
-    safeSpot = safeSpot || { x: 10, y: 10 }
-    await this.page.mouse.move(safeSpot.x, safeSpot.y)
-    await this.page.mouse.down()
-    await this.page.mouse.move(offset.x + safeSpot.x, offset.y + safeSpot.y)
-    await this.page.mouse.up()
-    await this.nextFrame()
-  }
-
-  async panWithTouch(offset: Position, safeSpot?: Position) {
-    safeSpot = safeSpot || { x: 10, y: 10 }
-    const client = await this.page.context().newCDPSession(this.page)
-    await client.send('Input.dispatchTouchEvent', {
-      type: 'touchStart',
-      touchPoints: [safeSpot]
-    })
-    await client.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      touchPoints: [{ x: offset.x + safeSpot.x, y: offset.y + safeSpot.y }]
-    })
-    await client.send('Input.dispatchTouchEvent', {
-      type: 'touchEnd',
-      touchPoints: []
-    })
-    await this.nextFrame()
-  }
-
-  async rightClickCanvas(x: number = 10, y: number = 10) {
-    await this.page.mouse.click(x, y, { button: 'right' })
-    await this.nextFrame()
-  }
-
-  async clickContextMenuItem(name: string): Promise<void> {
-    await this.page.getByRole('menuitem', { name }).click()
-    await this.nextFrame()
-  }
-
-  /**
-   * Clicks on a litegraph context menu item (uses .litemenu-entry selector).
-   * Use this for canvas/node context menus, not PrimeVue menus.
-   */
-  async clickLitegraphContextMenuItem(name: string): Promise<void> {
-    await this.page.locator(`.litemenu-entry:has-text("${name}")`).click()
-    await this.nextFrame()
-  }
-
-  /**
-   * Core helper method for interacting with subgraph I/O slots.
-   * Handles both input/output slots and both right-click/double-click actions.
-   *
-   * @param slotType - 'input' or 'output'
-   * @param action - 'rightClick' or 'doubleClick'
-   * @param slotName - Optional specific slot name to target
-   * @private
-   */
-  private async interactWithSubgraphSlot(
-    slotType: 'input' | 'output',
-    action: 'rightClick' | 'doubleClick',
-    slotName?: string
-  ): Promise<void> {
-    const foundSlot = await this.page.evaluate(
-      async (params) => {
-        const { slotType, action, targetSlotName } = params
-        const app = window['app']
-        const currentGraph = app.canvas.graph
-
-        // Check if we're in a subgraph
-        if (currentGraph.constructor.name !== 'Subgraph') {
-          throw new Error(
-            'Not in a subgraph - this method only works inside subgraphs'
-          )
-        }
-
-        // Get the appropriate node and slots
-        const node =
-          slotType === 'input'
-            ? currentGraph.inputNode
-            : currentGraph.outputNode
-        const slots =
-          slotType === 'input' ? currentGraph.inputs : currentGraph.outputs
-
-        if (!node) {
-          throw new Error(`No ${slotType} node found in subgraph`)
-        }
-
-        if (!slots || slots.length === 0) {
-          throw new Error(`No ${slotType} slots found in subgraph`)
-        }
-
-        // Filter slots based on target name and action type
-        const slotsToTry = targetSlotName
-          ? slots.filter((slot) => slot.name === targetSlotName)
-          : action === 'rightClick'
-            ? slots
-            : [slots[0]] // Right-click tries all, double-click uses first
-
-        if (slotsToTry.length === 0) {
-          throw new Error(
-            targetSlotName
-              ? `${slotType} slot '${targetSlotName}' not found`
-              : `No ${slotType} slots available to try`
-          )
-        }
-
-        // Handle the interaction based on action type
-        if (action === 'rightClick') {
-          // Right-click: try each slot until one works
-          for (const slot of slotsToTry) {
-            if (!slot.pos) continue
-
-            const event = {
-              canvasX: slot.pos[0],
-              canvasY: slot.pos[1],
-              button: 2, // Right mouse button
-              preventDefault: () => {},
-              stopPropagation: () => {}
-            }
-
-            if (node.onPointerDown) {
-              node.onPointerDown(
-                event,
-                app.canvas.pointer,
-                app.canvas.linkConnector
-              )
-            }
-
-            // Wait briefly for menu to appear
-            await new Promise((resolve) => setTimeout(resolve, 100))
-
-            // Check if context menu appeared
-            const menuExists = document.querySelector('.litemenu-entry')
-            if (menuExists) {
-              return {
-                success: true,
-                slotName: slot.name,
-                x: slot.pos[0],
-                y: slot.pos[1]
-              }
-            }
-          }
-        } else if (action === 'doubleClick') {
-          // Double-click: use first slot with bounding rect center
-          const slot = slotsToTry[0]
-          if (!slot.boundingRect) {
-            throw new Error(`${slotType} slot bounding rect not found`)
-          }
-
-          const rect = slot.boundingRect
-          const testX = rect[0] + rect[2] / 2 // x + width/2
-          const testY = rect[1] + rect[3] / 2 // y + height/2
-
-          const event = {
-            canvasX: testX,
-            canvasY: testY,
-            button: 0, // Left mouse button
-            preventDefault: () => {},
-            stopPropagation: () => {}
-          }
-
-          if (node.onPointerDown) {
-            node.onPointerDown(
-              event,
-              app.canvas.pointer,
-              app.canvas.linkConnector
-            )
-
-            // Trigger double-click
-            if (app.canvas.pointer.onDoubleClick) {
-              app.canvas.pointer.onDoubleClick(event)
-            }
-          }
-
-          // Wait briefly for dialog to appear
-          await new Promise((resolve) => setTimeout(resolve, 200))
-
-          return { success: true, slotName: slot.name, x: testX, y: testY }
-        }
-
-        return { success: false }
-      },
-      { slotType, action, targetSlotName: slotName }
-    )
-
-    if (!foundSlot.success) {
-      const actionText =
-        action === 'rightClick' ? 'open context menu for' : 'double-click'
-      throw new Error(
-        slotName
-          ? `Could not ${actionText} ${slotType} slot '${slotName}'`
-          : `Could not find any ${slotType} slot to ${actionText}`
-      )
-    }
-
-    // Wait for the appropriate UI element to appear
-    if (action === 'rightClick') {
-      await this.page.waitForSelector('.litemenu-entry', {
-        state: 'visible',
-        timeout: 5000
-      })
-    } else {
-      await this.nextFrame()
-    }
-  }
-
-  /**
-   * Right-clicks on a subgraph input slot to open the context menu.
-   * Must be called when inside a subgraph.
-   *
-   * This method uses the actual slot positions from the subgraph.inputs array,
-   * which contain the correct coordinates for each input slot. These positions
-   * are different from the visual node positions and are specifically where
-   * the slots are rendered on the input node.
-   *
-   * @param inputName Optional name of the specific input slot to target (e.g., 'text').
-   *                  If not provided, tries all available input slots until one works.
-   * @returns Promise that resolves when the context menu appears
-   */
-  async rightClickSubgraphInputSlot(inputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('input', 'rightClick', inputName)
-  }
-
-  /**
-   * Right-clicks on a subgraph output slot to open the context menu.
-   * Must be called when inside a subgraph.
-   *
-   * Similar to rightClickSubgraphInputSlot but for output slots.
-   *
-   * @param outputName Optional name of the specific output slot to target.
-   *                   If not provided, tries all available output slots until one works.
-   * @returns Promise that resolves when the context menu appears
-   */
-  async rightClickSubgraphOutputSlot(outputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('output', 'rightClick', outputName)
-  }
-
-  /**
-   * Double-clicks on a subgraph input slot to rename it.
-   * Must be called when inside a subgraph.
-   *
-   * @param inputName Optional name of the specific input slot to target (e.g., 'text').
-   *                  If not provided, tries the first available input slot.
-   * @returns Promise that resolves when the rename dialog appears
-   */
-  async doubleClickSubgraphInputSlot(inputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('input', 'doubleClick', inputName)
-  }
-
-  /**
-   * Double-clicks on a subgraph output slot to rename it.
-   * Must be called when inside a subgraph.
-   *
-   * @param outputName Optional name of the specific output slot to target.
-   *                   If not provided, tries the first available output slot.
-   * @returns Promise that resolves when the rename dialog appears
-   */
-  async doubleClickSubgraphOutputSlot(outputName?: string): Promise<void> {
-    return this.interactWithSubgraphSlot('output', 'doubleClick', outputName)
-  }
-
-  /**
-   * Get a reference to a subgraph input slot
-   */
-  async getSubgraphInputSlot(
-    slotName?: string
-  ): Promise<SubgraphSlotReference> {
-    return new SubgraphSlotReference('input', slotName || '', this)
-  }
-
-  /**
-   * Get a reference to a subgraph output slot
-   */
-  async getSubgraphOutputSlot(
-    slotName?: string
-  ): Promise<SubgraphSlotReference> {
-    return new SubgraphSlotReference('output', slotName || '', this)
-  }
-
-  /**
-   * Connect a regular node output to a subgraph input.
-   * This creates a new input slot on the subgraph if targetInputName is not provided.
-   */
-  async connectToSubgraphInput(
-    sourceNode: NodeReference,
-    sourceSlotIndex: number,
-    targetInputName?: string
-  ): Promise<void> {
-    const sourceSlot = await sourceNode.getOutput(sourceSlotIndex)
-    const targetSlot = await this.getSubgraphInputSlot(targetInputName)
-
-    const targetPosition = targetInputName
-      ? await targetSlot.getPosition() // Connect to existing slot
-      : await targetSlot.getOpenSlotPosition() // Create new slot
-
-    await this.dragAndDrop(await sourceSlot.getPosition(), targetPosition)
-    await this.nextFrame()
-  }
-
-  /**
-   * Connect a subgraph input to a regular node input.
-   * This creates a new input slot on the subgraph if sourceInputName is not provided.
-   */
-  async connectFromSubgraphInput(
-    targetNode: NodeReference,
-    targetSlotIndex: number,
-    sourceInputName?: string
-  ): Promise<void> {
-    const sourceSlot = await this.getSubgraphInputSlot(sourceInputName)
-    const targetSlot = await targetNode.getInput(targetSlotIndex)
-
-    const sourcePosition = sourceInputName
-      ? await sourceSlot.getPosition() // Connect from existing slot
-      : await sourceSlot.getOpenSlotPosition() // Create new slot
-
-    const targetPosition = await targetSlot.getPosition()
-
-    await this.dragAndDrop(sourcePosition, targetPosition)
-    await this.nextFrame()
-  }
-
-  /**
-   * Connect a regular node output to a subgraph output.
-   * This creates a new output slot on the subgraph if targetOutputName is not provided.
-   */
-  async connectToSubgraphOutput(
-    sourceNode: NodeReference,
-    sourceSlotIndex: number,
-    targetOutputName?: string
-  ): Promise<void> {
-    const sourceSlot = await sourceNode.getOutput(sourceSlotIndex)
-    const targetSlot = await this.getSubgraphOutputSlot(targetOutputName)
-
-    const targetPosition = targetOutputName
-      ? await targetSlot.getPosition() // Connect to existing slot
-      : await targetSlot.getOpenSlotPosition() // Create new slot
-
-    await this.dragAndDrop(await sourceSlot.getPosition(), targetPosition)
-    await this.nextFrame()
-  }
-
-  /**
-   * Connect a subgraph output to a regular node input.
-   * This creates a new output slot on the subgraph if sourceOutputName is not provided.
-   */
-  async connectFromSubgraphOutput(
-    targetNode: NodeReference,
-    targetSlotIndex: number,
-    sourceOutputName?: string
-  ): Promise<void> {
-    const sourceSlot = await this.getSubgraphOutputSlot(sourceOutputName)
-    const targetSlot = await targetNode.getInput(targetSlotIndex)
-
-    const sourcePosition = sourceOutputName
-      ? await sourceSlot.getPosition() // Connect from existing slot
-      : await sourceSlot.getOpenSlotPosition() // Create new slot
-
-    await this.dragAndDrop(sourcePosition, await targetSlot.getPosition())
-    await this.nextFrame()
-  }
-
-  /**
-   * Add a visual marker at a position for debugging
-   */
-  async debugAddMarker(
-    position: Position,
-    id: string = 'debug-marker'
-  ): Promise<void> {
-    await this.page.evaluate(
-      ([pos, markerId]) => {
-        // Remove existing marker if present
-        const existing = document.getElementById(markerId)
-        if (existing) existing.remove()
-
-        // Create marker
-        const marker = document.createElement('div')
-        marker.id = markerId
-        marker.style.position = 'fixed'
-        marker.style.left = `${pos.x - 10}px`
-        marker.style.top = `${pos.y - 10}px`
-        marker.style.width = '20px'
-        marker.style.height = '20px'
-        marker.style.border = '2px solid red'
-        marker.style.borderRadius = '50%'
-        marker.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'
-        marker.style.pointerEvents = 'none'
-        marker.style.zIndex = '10000'
-        document.body.appendChild(marker)
-      },
-      [position, id] as const
-    )
-  }
-
-  /**
-   * Remove debug markers
-   */
-  async debugRemoveMarkers(): Promise<void> {
-    await this.page.evaluate(() => {
-      document
-        .querySelectorAll('[id^="debug-marker"]')
-        .forEach((el) => el.remove())
-    })
-  }
-
-  /**
-   * Take a screenshot and attach it to the test report for debugging
-   * This is a convenience method that combines screenshot capture and test attachment
-   *
-   * @param testInfo The Playwright TestInfo object (from test parameters)
-   * @param name Name for the attachment
-   * @param options Optional screenshot options (defaults to page screenshot)
-   */
-  async debugAttachScreenshot(
-    testInfo: any,
-    name: string,
-    options?: {
-      fullPage?: boolean
-      element?: 'canvas' | 'page'
-      markers?: Array<{ position: Position; id?: string }>
-    }
-  ): Promise<void> {
-    // Add markers if requested
-    if (options?.markers) {
-      for (const marker of options.markers) {
-        await this.debugAddMarker(marker.position, marker.id)
-      }
-    }
-
-    // Take screenshot - default to page if not specified
-    let screenshot: Buffer
-    const targetElement = options?.element || 'page'
-
-    if (targetElement === 'canvas') {
-      screenshot = await this.canvas.screenshot()
-    } else if (options?.fullPage) {
-      screenshot = await this.page.screenshot({ fullPage: true })
-    } else {
-      screenshot = await this.page.screenshot()
-    }
-
-    // Attach to test report
-    await testInfo.attach(name, {
-      body: screenshot,
-      contentType: 'image/png'
-    })
-
-    // Clean up markers if we added any
-    if (options?.markers) {
-      await this.debugRemoveMarkers()
-    }
-  }
-
-  async doubleClickCanvas() {
-    await this.page.mouse.dblclick(10, 10, { delay: 5 })
-    await this.nextFrame()
-  }
-
-  /**
-   * Capture the canvas as a PNG and save it for debugging
-   */
-  async debugSaveCanvasScreenshot(filename: string): Promise<void> {
-    await this.page.evaluate(async (filename) => {
-      const canvas = document.getElementById(
-        'graph-canvas'
-      ) as HTMLCanvasElement
-      if (!canvas) {
-        throw new Error('Canvas not found')
-      }
-
-      // Convert canvas to blob
-      return new Promise<void>((resolve) => {
-        canvas.toBlob(async (blob) => {
-          if (!blob) {
-            throw new Error('Failed to create blob from canvas')
-          }
-
-          // Create a download link and trigger it
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = filename
-          document.body.appendChild(a)
-          a.click()
-          document.body.removeChild(a)
-          URL.revokeObjectURL(url)
-          resolve()
-        }, 'image/png')
-      })
-    }, filename)
-  }
-
-  /**
-   * Capture canvas as base64 data URL for inspection
-   */
-  async debugGetCanvasDataURL(): Promise<string> {
-    return await this.page.evaluate(() => {
-      const canvas = document.getElementById(
-        'graph-canvas'
-      ) as HTMLCanvasElement
-      if (!canvas) {
-        throw new Error('Canvas not found')
-      }
-      return canvas.toDataURL('image/png')
-    })
-  }
-
-  /**
-   * Create an overlay div with the canvas image for easier Playwright screenshot
-   */
-  async debugShowCanvasOverlay(): Promise<void> {
-    await this.page.evaluate(() => {
-      const canvas = document.getElementById(
-        'graph-canvas'
-      ) as HTMLCanvasElement
-      if (!canvas) {
-        throw new Error('Canvas not found')
-      }
-
-      // Remove existing overlay if present
-      const existingOverlay = document.getElementById('debug-canvas-overlay')
-      if (existingOverlay) {
-        existingOverlay.remove()
-      }
-
-      // Create overlay div
-      const overlay = document.createElement('div')
-      overlay.id = 'debug-canvas-overlay'
-      overlay.style.position = 'fixed'
-      overlay.style.top = '0'
-      overlay.style.left = '0'
-      overlay.style.zIndex = '9999'
-      overlay.style.backgroundColor = 'white'
-      overlay.style.padding = '10px'
-      overlay.style.border = '2px solid red'
-
-      // Create image from canvas
-      const img = document.createElement('img')
-      img.src = canvas.toDataURL('image/png')
-      img.style.maxWidth = '800px'
-      img.style.maxHeight = '600px'
-      overlay.appendChild(img)
-
-      document.body.appendChild(overlay)
-    })
-  }
-
-  /**
-   * Remove the debug canvas overlay
-   */
-  async debugHideCanvasOverlay(): Promise<void> {
-    await this.page.evaluate(() => {
-      const overlay = document.getElementById('debug-canvas-overlay')
-      if (overlay) {
-        overlay.remove()
-      }
-    })
-  }
-
-  async clickEmptyLatentNode() {
-    await this.canvas.click({
-      position: {
-        x: 724,
-        y: 625
-      }
-    })
-    await this.page.mouse.move(10, 10)
-    await this.nextFrame()
-  }
-
-  async rightClickEmptyLatentNode() {
-    await this.canvas.click({
-      position: {
-        x: 724,
-        y: 645
-      },
-      button: 'right'
-    })
-    await this.page.mouse.move(10, 10)
-    await this.nextFrame()
-  }
-
-  async selectNodes(nodeTitles: string[]) {
-    await this.page.keyboard.down('Control')
-    for (const nodeTitle of nodeTitles) {
-      const nodes = await this.getNodeRefsByTitle(nodeTitle)
-      for (const node of nodes) {
-        await node.click('title')
-      }
-    }
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
-  }
-
-  async select2Nodes() {
-    // Select 2 CLIP nodes.
-    await this.page.keyboard.down('Control')
-    await this.clickTextEncodeNode1()
-    await this.clickTextEncodeNode2()
-    await this.page.keyboard.up('Control')
-    await this.nextFrame()
-  }
-
-  async ctrlSend(keyToPress: string, locator: Locator | null = this.canvas) {
-    const target = locator ?? this.page.keyboard
-    await target.press(`Control+${keyToPress}`)
-    await this.nextFrame()
-  }
-
-  async ctrlA(locator?: Locator | null) {
-    await this.ctrlSend('KeyA', locator)
-  }
-
-  async ctrlB(locator?: Locator | null) {
-    await this.ctrlSend('KeyB', locator)
-  }
-
-  async ctrlC(locator?: Locator | null) {
-    await this.ctrlSend('KeyC', locator)
-  }
-
-  async ctrlV(locator?: Locator | null) {
-    await this.ctrlSend('KeyV', locator)
-  }
-
-  async ctrlZ(locator?: Locator | null) {
-    await this.ctrlSend('KeyZ', locator)
-  }
-
-  async ctrlY(locator?: Locator | null) {
-    await this.ctrlSend('KeyY', locator)
-  }
-
-  async ctrlArrowUp(locator?: Locator | null) {
-    await this.ctrlSend('ArrowUp', locator)
-  }
-
-  async ctrlArrowDown(locator?: Locator | null) {
-    await this.ctrlSend('ArrowDown', locator)
-  }
-
   async closeMenu() {
     await this.page.click('button.comfy-close-menu-btn')
     await this.nextFrame()
-  }
-
-  async closeDialog() {
-    await this.page.locator('.p-dialog-close-button').click({ force: true })
-    await expect(this.page.locator('.p-dialog')).toBeHidden()
-  }
-
-  async resizeNode(
-    nodePos: Position,
-    nodeSize: Size,
-    ratioX: number,
-    ratioY: number,
-    revertAfter: boolean = false
-  ) {
-    const bottomRight = {
-      x: nodePos.x + nodeSize.width,
-      y: nodePos.y + nodeSize.height
-    }
-    const target = {
-      x: nodePos.x + nodeSize.width * ratioX,
-      y: nodePos.y + nodeSize.height * ratioY
-    }
-    // -1 to be inside the node.  -2 because nodes currently get an arbitrary +1 to width.
-    await this.dragAndDrop(
-      { x: bottomRight.x - 2, y: bottomRight.y - 1 },
-      target
-    )
-    await this.nextFrame()
-    if (revertAfter) {
-      await this.dragAndDrop({ x: target.x - 2, y: target.y - 1 }, bottomRight)
-      await this.nextFrame()
-    }
-  }
-
-  async resizeKsamplerNode(
-    percentX: number,
-    percentY: number,
-    revertAfter: boolean = false
-  ) {
-    const ksamplerPos = {
-      x: 863,
-      y: 156
-    }
-    const ksamplerSize = {
-      width: 315,
-      height: 292
-    }
-    return this.resizeNode(
-      ksamplerPos,
-      ksamplerSize,
-      percentX,
-      percentY,
-      revertAfter
-    )
-  }
-
-  async resizeLoadCheckpointNode(
-    percentX: number,
-    percentY: number,
-    revertAfter: boolean = false
-  ) {
-    const loadCheckpointPos = {
-      x: 26,
-      y: 444
-    }
-    const loadCheckpointSize = {
-      width: 315,
-      height: 127
-    }
-    return this.resizeNode(
-      loadCheckpointPos,
-      loadCheckpointSize,
-      percentX,
-      percentY,
-      revertAfter
-    )
-  }
-
-  async resizeEmptyLatentNode(
-    percentX: number,
-    percentY: number,
-    revertAfter: boolean = false
-  ) {
-    const emptyLatentPos = {
-      x: 473,
-      y: 579
-    }
-    const emptyLatentSize = {
-      width: 315,
-      height: 136
-    }
-    return this.resizeNode(
-      emptyLatentPos,
-      emptyLatentSize,
-      percentX,
-      percentY,
-      revertAfter
-    )
   }
 
   async clickDialogButton(prompt: string, buttonText: string = 'Yes') {
     const modal = this.page.locator(
       `.comfy-modal-content:has-text("${prompt}")`
     )
-    await expect(modal).toBeVisible()
+    await modal.waitFor({ state: 'visible' })
     await modal
       .locator('.comfyui-button', {
         hasText: buttonText
       })
       .click()
-    await expect(modal).toBeHidden()
-  }
-
-  async convertAllNodesToGroupNode(groupNodeName: string) {
-    await this.canvas.press('Control+a')
-    const node = await this.getFirstNodeRef()
-    await node!.clickContextMenuOption('Convert to Group Node')
-    await this.fillPromptDialog(groupNodeName)
-    await this.nextFrame()
-  }
-
-  async convertOffsetToCanvas(pos: [number, number]) {
-    return this.page.evaluate((pos) => {
-      return window['app'].canvas.ds.convertOffsetToCanvas(pos)
-    }, pos)
+    await modal.waitFor({ state: 'hidden' })
   }
 
   /** Get number of DOM widgets on the canvas. */
@@ -1580,141 +388,11 @@ export class ComfyPage {
     return await this.page.locator('.dom-widget').count()
   }
 
-  async getNodeRefById(id: NodeId) {
-    return new NodeReference(id, this)
-  }
-  async getNodes(): Promise<LGraphNode[]> {
-    return await this.page.evaluate(() => {
-      return window['app'].graph.nodes
-    })
-  }
-  async waitForGraphNodes(count: number) {
-    await this.page.waitForFunction((count) => {
-      return window['app']?.canvas.graph?.nodes?.length === count
-    }, count)
-  }
-  async getNodeRefsByType(
-    type: string,
-    includeSubgraph: boolean = false
-  ): Promise<NodeReference[]> {
-    return Promise.all(
-      (
-        await this.page.evaluate(
-          ({ type, includeSubgraph }) => {
-            const graph = (
-              includeSubgraph ? window['app'].canvas.graph : window['app'].graph
-            ) as LGraph
-            const nodes = graph.nodes
-            return nodes
-              .filter((n: LGraphNode) => n.type === type)
-              .map((n: LGraphNode) => n.id)
-          },
-          { type, includeSubgraph }
-        )
-      ).map((id: NodeId) => this.getNodeRefById(id))
-    )
-  }
-  async getNodeRefsByTitle(title: string): Promise<NodeReference[]> {
-    return Promise.all(
-      (
-        await this.page.evaluate((title) => {
-          return window['app'].graph.nodes
-            .filter((n: LGraphNode) => n.title === title)
-            .map((n: LGraphNode) => n.id)
-        }, title)
-      ).map((id: NodeId) => this.getNodeRefById(id))
-    )
-  }
-
-  async getFirstNodeRef(): Promise<NodeReference | null> {
-    const id = await this.page.evaluate(() => {
-      return window['app'].graph.nodes[0]?.id
-    })
-    if (!id) return null
-    return this.getNodeRefById(id)
-  }
-  async moveMouseToEmptyArea() {
-    await this.page.mouse.move(10, 10)
-  }
-  async getUndoQueueSize() {
-    return this.page.evaluate(() => {
-      const workflow = (window['app'].extensionManager as WorkspaceStore)
-        .workflow.activeWorkflow
-      return workflow?.changeTracker.undoQueue.length
-    })
-  }
-  async getRedoQueueSize() {
-    return this.page.evaluate(() => {
-      const workflow = (window['app'].extensionManager as WorkspaceStore)
-        .workflow.activeWorkflow
-      return workflow?.changeTracker.redoQueue.length
-    })
-  }
-  async isCurrentWorkflowModified() {
-    return this.page.evaluate(() => {
-      return (window['app'].extensionManager as WorkspaceStore).workflow
-        .activeWorkflow?.isModified
-    })
-  }
-  async getExportedWorkflow({ api = false }: { api?: boolean } = {}) {
-    return this.page.evaluate(async (api) => {
-      return (await window['app'].graphToPrompt())[api ? 'output' : 'workflow']
-    }, api)
-  }
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      window['app'].extensionManager.focusMode = focusMode
+      ;(window.app!.extensionManager as WorkspaceStore).focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
-  }
-
-  /**
-   * Get the position of a group by title.
-   * @param title The title of the group to find
-   * @returns The group's canvas position
-   * @throws Error if group not found
-   */
-  async getGroupPosition(title: string): Promise<Position> {
-    const pos = await this.page.evaluate((title) => {
-      const groups = window['app'].graph.groups
-      const group = groups.find((g: { title: string }) => g.title === title)
-      if (!group) return null
-      return { x: group.pos[0], y: group.pos[1] }
-    }, title)
-    if (!pos) throw new Error(`Group "${title}" not found`)
-    return pos
-  }
-
-  /**
-   * Drag a group by its title.
-   * @param options.name The title of the group to drag
-   * @param options.deltaX Horizontal drag distance in screen pixels
-   * @param options.deltaY Vertical drag distance in screen pixels
-   */
-  async dragGroup(options: {
-    name: string
-    deltaX: number
-    deltaY: number
-  }): Promise<void> {
-    const { name, deltaX, deltaY } = options
-    const screenPos = await this.page.evaluate((title) => {
-      const app = window['app']
-      const groups = app.graph.groups
-      const group = groups.find((g: { title: string }) => g.title === title)
-      if (!group) return null
-      // Position in the title area of the group
-      const clientPos = app.canvasPosToClientPos([
-        group.pos[0] + 50,
-        group.pos[1] + 15
-      ])
-      return { x: clientPos[0], y: clientPos[1] }
-    }, name)
-    if (!screenPos) throw new Error(`Group "${name}" not found`)
-
-    await this.dragAndDrop(screenPos, {
-      x: screenPos.x + deltaX,
-      y: screenPos.y + deltaY
-    })
   }
 }
 
@@ -1771,6 +449,7 @@ const makeMatcher = function <T>(
   type: string
 ) {
   return async function (
+    this: ExpectMatcherState,
     node: NodeReference,
     options?: { timeout?: number; intervals?: number[] }
   ) {

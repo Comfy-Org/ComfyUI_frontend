@@ -4,15 +4,16 @@ import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 async function createSubgraphAndNavigateInto(comfyPage: ComfyPage) {
-  await comfyPage.loadWorkflow('default')
+  await comfyPage.workflow.loadWorkflow('default')
   await comfyPage.nextFrame()
 
-  const ksampler = await comfyPage.getNodeRefById('3')
+  const ksampler = await comfyPage.nodeOps.getNodeRefById('3')
   await ksampler.click('title')
   await ksampler.convertToSubgraph()
   await comfyPage.nextFrame()
 
-  const subgraphNodes = await comfyPage.getNodeRefsByTitle('New Subgraph')
+  const subgraphNodes =
+    await comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph')
   expect(subgraphNodes.length).toBe(1)
   const subgraphNode = subgraphNodes[0]
 
@@ -29,12 +30,12 @@ async function exitSubgraphAndPublish(
   await comfyPage.nextFrame()
 
   await subgraphNode.click('title')
-  await comfyPage.executeCommand('Comfy.PublishSubgraph', {
+  await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
     name: blueprintName
   })
 
   await expect(comfyPage.visibleToasts).toHaveCount(1, { timeout: 5000 })
-  await comfyPage.closeToasts(1)
+  await comfyPage.toast.closeToasts(1)
 }
 
 async function searchAndExpectResult(
@@ -42,7 +43,7 @@ async function searchAndExpectResult(
   searchTerm: string,
   expectedResult: string
 ) {
-  await comfyPage.executeCommand('Workspace.SearchBox.Toggle')
+  await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
   await expect(comfyPage.searchBox.input).toHaveCount(1)
   await comfyPage.searchBox.input.fill(searchTerm)
   await expect(comfyPage.searchBox.findResult(expectedResult)).toBeVisible({
@@ -52,8 +53,8 @@ async function searchAndExpectResult(
 
 test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   })
 
   test('Can set search aliases on subgraph and find via search', async ({
@@ -61,7 +62,7 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
   }) => {
     const subgraphNode = await createSubgraphAndNavigateInto(comfyPage)
 
-    await comfyPage.executeCommand('Comfy.Subgraph.SetSearchAliases', {
+    await comfyPage.command.executeCommand('Comfy.Subgraph.SetSearchAliases', {
       aliases: 'qwerty,unicorn'
     })
 
@@ -73,7 +74,7 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
   test('Can set description on subgraph', async ({ comfyPage }) => {
     await createSubgraphAndNavigateInto(comfyPage)
 
-    await comfyPage.executeCommand('Comfy.Subgraph.SetDescription', {
+    await comfyPage.command.executeCommand('Comfy.Subgraph.SetDescription', {
       description: 'This is a test description'
     })
     // Verify the description was set on the subgraph's extra
@@ -89,7 +90,7 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
   }) => {
     const subgraphNode = await createSubgraphAndNavigateInto(comfyPage)
 
-    await comfyPage.executeCommand('Comfy.Subgraph.SetSearchAliases', {
+    await comfyPage.command.executeCommand('Comfy.Subgraph.SetSearchAliases', {
       aliases: 'dragon, fire breather'
     })
 

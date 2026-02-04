@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
                     {{
                       isTaskInProgress(index)
                         ? t('g.inProgress')
-                        : t('g.completed') + ' ✓'
+                        : t('g.completedWithCheckmark')
                     }}
                   </span>
                 </div>

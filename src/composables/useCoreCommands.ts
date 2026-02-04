@@ -8,6 +8,7 @@ import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
 } from '@/constants/coreColorPalettes'
+
 import { tryToggleWidgetPromotion } from '@/core/graph/subgraph/proxyWidgetUtils'
 import { t } from '@/i18n'
 import {
@@ -199,7 +200,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         const newName = await dialogService.prompt({
           title: t('g.rename'),
-          message: t('workflowService.enterFilename') + ':',
+          message: t('workflowService.enterFilenamePrompt'),
           defaultValue: workflow.filename
         })
         if (!newName || newName === workflow.filename) return
@@ -1294,7 +1295,7 @@ export function useCoreCommands(): ComfyCommand[] {
     {
       id: 'Comfy.ToggleLinear',
       icon: 'pi pi-database',
-      label: 'Toggle Simple Mode',
+      label: 'Toggle App Mode',
       function: (metadata?: Record<string, unknown>) => {
         const source =
           typeof metadata?.source === 'string' ? metadata.source : 'keybind'

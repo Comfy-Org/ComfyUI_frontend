@@ -1,16 +1,18 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { WorkspaceStore } from '../types/globals'
 
 test.describe('Browser tab title', { tag: '@smoke' }, () => {
   test.describe('Beta Menu', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     })
 
     test('Can display workflow name', async ({ comfyPage }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return window['app'].extensionManager.workflow.activeWorkflow.filename
+        return (window.app!.extensionManager as WorkspaceStore).workflow
+          .activeWorkflow?.filename
       })
       expect(await comfyPage.page.title()).toBe(`*${workflowName} - ComfyUI`)
     })
@@ -21,7 +23,8 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
       comfyPage
     }) => {
       const workflowName = await comfyPage.page.evaluate(async () => {
-        return window['app'].extensionManager.workflow.activeWorkflow.filename
+        return (window.app!.extensionManager as WorkspaceStore).workflow
+          .activeWorkflow?.filename
       })
       expect(await comfyPage.page.title()).toBe(`${workflowName} - ComfyUI`)
 
@@ -30,19 +33,21 @@ test.describe('Browser tab title', { tag: '@smoke' }, () => {
 
       const textBox = comfyPage.widgetTextBox
       await textBox.fill('Hello World')
-      await comfyPage.clickEmptySpace()
+      await comfyPage.canvasOps.clickEmptySpace()
       expect(await comfyPage.page.title()).toBe(`*test - ComfyUI`)
 
       // Delete the saved workflow for cleanup.
       await comfyPage.page.evaluate(async () => {
-        return window['app'].extensionManager.workflow.activeWorkflow.delete()
+        return (
+          window.app!.extensionManager as WorkspaceStore
+        ).workflow.activeWorkflow?.delete()
       })
     })
   })
 
   test.describe('Legacy Menu', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
     })
 
     test('Can display default title', async ({ comfyPage }) => {
