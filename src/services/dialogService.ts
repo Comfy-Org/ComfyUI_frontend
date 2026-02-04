@@ -177,7 +177,14 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Shows an error dialog for a runtime graph execution error (server-side).
+   * These errors are received from the WebSocket 'execution_error' event
+   * during the node processing phase of a generation.
+   * @param executionError Structured error information including traceback and node context.
+   */
   function showExecutionErrorDialog(executionError: ExecutionErrorDialogInput) {
+    // Set up the error properties, ensuring a localized fallback for empty stack traces.
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: executionError.exception_type,
@@ -193,6 +200,7 @@ export const useDialogService = () => {
       }
     }
 
+    // Display the global error dialog with telemetry tracking for closure.
     dialogStore.showDialog({
       key: 'global-execution-error',
       component: ErrorDialogContent,
@@ -216,14 +224,17 @@ export const useDialogService = () => {
   function showPromptExecutionErrorDialog(
     executionError: ExecutionErrorDialogInput
   ) {
-    // Prepare properties for the generic ErrorDialogContent component.
+    // Set up the error properties, ensuring a localized fallback for empty stack traces.
     const props: ComponentAttrs<typeof ErrorDialogContent> = {
       error: {
         exceptionType: t('errorDialog.promptExecutionError'),
         exceptionMessage: executionError.exception_message,
         nodeId: executionError.node_id?.toString(),
         nodeType: executionError.node_type,
-        traceback: executionError.traceback.join('\n'),
+        traceback:
+          executionError.traceback.length > 0
+            ? executionError.traceback.join('\n')
+            : t('errorDialog.noStackTrace'),
         reportType: 'promptExecutionError'
       }
     }
