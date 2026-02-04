@@ -14,7 +14,7 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
 3. **Use premade JSON workflow assets** instead of building workflows programmatically.
    - Assets live in `browser_tests/assets/`
    - Load with `await comfyPage.workflow.loadWorkflow('feature/my_workflow')`
-   - Create new assets by exporting from ComfyUI UI
+   - Create new assets by starting with `browser_tests/assets/default.json` and manually editing the JSON to match your desired graph state
 
 ## Vue Nodes vs LiteGraph: Decision Guide
 
@@ -32,7 +32,7 @@ await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 await comfyPage.vueNodes.waitForNodes()
 ```
 
-**Vue Node state uses CSS classes** (non-obvious):
+**Vue Node state uses CSS classes:**
 ```typescript
 const BYPASS_CLASS = /before:bg-bypass\/60/
 await expect(node).toHaveClass(BYPASS_CLASS)
@@ -42,7 +42,7 @@ await expect(node).toHaveClass(BYPASS_CLASS)
 
 | Issue                       | Symptom                              | Fix                                          |
 | --------------------------- | ------------------------------------ | -------------------------------------------- |
-| **Missing nextFrame()**     | Test passes locally, fails in CI    | Add `await comfyPage.nextFrame()` after canvas ops |
+| **Missing nextFrame()**     | Test passes locally, fails in CI    | Add `await comfyPage.nextFrame()` after canvas ops (not needed after `loadWorkflow()`) |
 | **Missing focus**           | Keyboard shortcuts don't work        | Add `await comfyPage.canvas.click()` first   |
 | **Double-click timing**     | Double-click doesn't trigger         | Add `{ delay: 5 }` option                    |
 | **Drag animation**          | Elements end up in wrong position    | Use `{ steps: 10 }` not `{ steps: 1 }`       |
@@ -107,6 +107,7 @@ await expect(async () => {
 2. Extract and view trace: `npx playwright show-trace trace.zip`
 3. CI deploys HTML report to Cloudflare Pages (link in PR comment)
 4. Reproduce CI: `CI=true pnpm test:browser`
+5. Local runs: `pnpm test:browser:local`
 
 ## Anti-Patterns
 
@@ -140,7 +141,6 @@ test.describe('FeatureName', { tag: ['@canvas'] }, () => {
 
   test('should do something', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('myWorkflow')
-    await comfyPage.nextFrame()
 
     const node = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     // ... test logic

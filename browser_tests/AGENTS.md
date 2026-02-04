@@ -36,12 +36,6 @@ browser_tests/
 - Run `pnpm exec eslint browser_tests/path/to/file.ts` to lint specific files
 - Run `pnpm exec oxlint browser_tests/path/to/file.ts` to check with oxlint
 
-## After Making Changes
-
-- Run `pnpm typecheck:browser` after modifying TypeScript files in this directory
-- Run `pnpm exec eslint browser_tests/path/to/file.ts` to lint specific files
-- Run `pnpm exec oxlint browser_tests/path/to/file.ts` to check with oxlint
-
 ## Skill Documentation
 
 A Playwright test-writing skill exists at `.claude/skills/writing-playwright-tests/SKILL.md`.
