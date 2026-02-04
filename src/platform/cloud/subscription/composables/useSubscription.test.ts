@@ -23,8 +23,7 @@ const {
   ),
   mockTelemetry: {
     trackSubscription: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn(),
-    trackSubscriptionPurchase: vi.fn()
+    trackMonthlySubscriptionCancelled: vi.fn()
   },
   mockUserId: { value: 'user-123' }
 }))
@@ -118,7 +117,6 @@ describe('useSubscription', () => {
     mockIsLoggedIn.value = false
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
-    mockTelemetry.trackSubscriptionPurchase.mockReset()
     mockUserId.value = 'user-123'
     mockIsCloud.value = true
     window.__CONFIG__ = {
@@ -247,158 +245,6 @@ describe('useSubscription', () => {
           })
         })
       )
-    })
-
-    it('pushes purchase event after a pending subscription completes', async () => {
-      localStorage.setItem(
-        'pending_subscription_purchase',
-        JSON.stringify({
-          firebaseUid: 'user-123',
-          tierKey: 'creator',
-          billingCycle: 'monthly',
-          timestamp: Date.now(),
-          previous_status: {
-            is_active: false
-          }
-        })
-      )
-
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          subscription_tier: 'CREATOR',
-          subscription_duration: 'MONTHLY'
-        })
-      } as Response)
-
-      mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscriptionWithScope()
-
-      await fetchStatus()
-
-      expect(mockTelemetry.trackSubscriptionPurchase).toHaveBeenCalledTimes(1)
-      expect(mockTelemetry.trackSubscriptionPurchase).toHaveBeenCalledWith(
-        expect.objectContaining({
-          transaction_id: 'sub_123',
-          currency: 'USD',
-          value: expect.any(Number),
-          items: [
-            expect.objectContaining({
-              item_id: 'monthly_creator',
-              item_variant: 'monthly',
-              item_category: 'subscription',
-              quantity: 1
-            })
-          ]
-        })
-      )
-      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
-    })
-
-    it('skips purchase tracking outside cloud distribution', async () => {
-      localStorage.setItem(
-        'pending_subscription_purchase',
-        JSON.stringify({
-          firebaseUid: 'user-123',
-          tierKey: 'creator',
-          billingCycle: 'monthly',
-          timestamp: Date.now(),
-          previous_status: {
-            is_active: false
-          }
-        })
-      )
-
-      mockIsCloud.value = false
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          subscription_tier: 'CREATOR',
-          subscription_duration: 'MONTHLY'
-        })
-      } as Response)
-
-      mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscriptionWithScope()
-
-      await fetchStatus()
-
-      expect(mockTelemetry.trackSubscriptionPurchase).not.toHaveBeenCalled()
-      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
-    })
-
-    it('ignores pending purchase when user does not match', async () => {
-      localStorage.setItem(
-        'pending_subscription_purchase',
-        JSON.stringify({
-          firebaseUid: 'user-123',
-          tierKey: 'creator',
-          billingCycle: 'monthly',
-          timestamp: Date.now(),
-          previous_status: {
-            is_active: false
-          }
-        })
-      )
-
-      mockUserId.value = 'user-456'
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          subscription_tier: 'CREATOR',
-          subscription_duration: 'MONTHLY'
-        })
-      } as Response)
-
-      mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscriptionWithScope()
-
-      await fetchStatus()
-
-      expect(mockTelemetry.trackSubscriptionPurchase).not.toHaveBeenCalled()
-      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
-    })
-
-    it('skips purchase when subscription was already active and unchanged', async () => {
-      localStorage.setItem(
-        'pending_subscription_purchase',
-        JSON.stringify({
-          firebaseUid: 'user-123',
-          tierKey: 'creator',
-          billingCycle: 'monthly',
-          timestamp: Date.now(),
-          previous_status: {
-            is_active: true,
-            subscription_id: 'sub_123',
-            subscription_tier: 'CREATOR',
-            subscription_duration: 'MONTHLY'
-          }
-        })
-      )
-
-      vi.mocked(global.fetch).mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          is_active: true,
-          subscription_id: 'sub_123',
-          subscription_tier: 'CREATOR',
-          subscription_duration: 'MONTHLY'
-        })
-      } as Response)
-
-      mockIsLoggedIn.value = true
-      const { fetchStatus } = useSubscriptionWithScope()
-
-      await fetchStatus()
-
-      expect(mockTelemetry.trackSubscriptionPurchase).not.toHaveBeenCalled()
-      expect(localStorage.getItem('pending_subscription_purchase')).toBeNull()
     })
 
     it('should handle fetch errors gracefully', async () => {

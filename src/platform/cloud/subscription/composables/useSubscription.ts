@@ -8,20 +8,12 @@ import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { SubscriptionPurchaseMetadata } from '@/platform/telemetry/types'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import { useDialogService } from '@/services/dialogService'
-import {
-  getTierPrice,
-  TIER_TO_KEY
-} from '@/platform/cloud/subscription/constants/tierPricing'
-import {
-  clearPendingSubscriptionPurchase,
-  getPendingSubscriptionPurchase
-} from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
+import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
 
@@ -104,92 +96,6 @@ function useSubscriptionInternal() {
 
   function buildApiUrl(path: string): string {
     return `${getComfyApiBaseUrl()}${path}`
-  }
-
-  function trackSubscriptionPurchase(
-    status: CloudSubscriptionStatusResponse | null
-  ): void {
-    if (!status?.is_active || !status.subscription_id) return
-
-    if (!firebaseAuthStore.userId) return
-
-    const pendingPurchase = getPendingSubscriptionPurchase(
-      firebaseAuthStore.userId
-    )
-    if (!pendingPurchase) return
-
-    const statusTierKey = status.subscription_tier
-      ? TIER_TO_KEY[status.subscription_tier]
-      : null
-    const statusBillingCycle =
-      status.subscription_duration === 'ANNUAL'
-        ? 'yearly'
-        : status.subscription_duration === 'MONTHLY'
-          ? 'monthly'
-          : null
-
-    if (
-      statusTierKey &&
-      statusBillingCycle &&
-      (statusTierKey !== pendingPurchase.tierKey ||
-        statusBillingCycle !== pendingPurchase.billingCycle)
-    ) {
-      clearPendingSubscriptionPurchase()
-      return
-    }
-
-    const previousStatus = pendingPurchase.previous_status
-    const wasActive = previousStatus?.is_active
-    const hasSubscriptionIdChange =
-      previousStatus?.subscription_id !== undefined &&
-      previousStatus.subscription_id !== status.subscription_id
-    const hasTierChange =
-      previousStatus?.subscription_tier !== undefined &&
-      previousStatus.subscription_tier !== status.subscription_tier
-    const hasDurationChange =
-      previousStatus?.subscription_duration !== undefined &&
-      previousStatus.subscription_duration !== status.subscription_duration
-    const hasSubscriptionChange =
-      hasSubscriptionIdChange || hasTierChange || hasDurationChange
-
-    if (wasActive !== false && !hasSubscriptionChange) {
-      clearPendingSubscriptionPurchase()
-      return
-    }
-
-    const { tierKey, billingCycle } = pendingPurchase
-    const isYearly = billingCycle === 'yearly'
-    const itemId = `${billingCycle}_${tierKey}`
-    const itemName = `${billingCycle === 'yearly' ? 'Yearly' : 'Monthly'} ${
-      tierKey.charAt(0).toUpperCase() + tierKey.slice(1)
-    }`
-    const unitPrice = getTierPrice(tierKey, isYearly)
-    const value = isYearly && tierKey !== 'founder' ? unitPrice * 12 : unitPrice
-    const metadata: SubscriptionPurchaseMetadata = {
-      transaction_id: status.subscription_id,
-      value,
-      currency: 'USD',
-      items: [
-        {
-          item_id: itemId,
-          item_name: itemName,
-          item_category: 'subscription',
-          item_variant: billingCycle,
-          price: value,
-          quantity: 1
-        }
-      ]
-    }
-
-    if (isCloud) {
-      try {
-        telemetry?.trackSubscriptionPurchase(metadata)
-      } catch (error) {
-        console.error('Failed to track subscription purchase', error)
-      }
-    }
-
-    clearPendingSubscriptionPurchase()
   }
 
   const fetchStatus = wrapWithErrorHandlingAsync(
@@ -292,11 +198,6 @@ function useSubscriptionInternal() {
     const statusData = await response.json()
     subscriptionStatus.value = statusData
 
-    try {
-      await trackSubscriptionPurchase(statusData)
-    } catch (error) {
-      console.error('Failed to track subscription purchase', error)
-    }
     return statusData
   }
 

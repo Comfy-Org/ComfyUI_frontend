@@ -1,13 +1,12 @@
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
 } from '@/stores/firebaseAuthStore'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { startSubscriptionPurchaseTracking } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
-import type { SubscriptionStatusSnapshot } from '@/platform/cloud/subscription/utils/subscriptionPurchaseTracker'
 import type { BillingCycle } from './subscriptionTierRank'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
@@ -33,12 +32,12 @@ const getCheckoutTier = (
 export async function performSubscriptionCheckout(
   tierKey: TierKey,
   currentBillingCycle: BillingCycle,
-  openInNewTab: boolean = true,
-  previousStatus?: SubscriptionStatusSnapshot
+  openInNewTab: boolean = true
 ): Promise<void> {
   if (!isCloud) return
 
   const { getFirebaseAuthHeader, userId } = useFirebaseAuthStore()
+  const telemetry = useTelemetry()
   const authHeader = await getFirebaseAuthHeader()
 
   if (!authHeader) {
@@ -82,12 +81,11 @@ export async function performSubscriptionCheckout(
 
   if (data.checkout_url) {
     if (userId) {
-      startSubscriptionPurchaseTracking(
-        tierKey,
-        currentBillingCycle,
-        userId,
-        previousStatus
-      )
+      telemetry?.trackBeginCheckout({
+        user_id: userId,
+        tier: tierKey,
+        cycle: currentBillingCycle
+      })
     }
     if (openInNewTab) {
       window.open(data.checkout_url, '_blank')

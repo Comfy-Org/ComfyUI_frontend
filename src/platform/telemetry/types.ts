@@ -12,6 +12,8 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
 
 /**
@@ -20,7 +22,7 @@ import type { AuditLog } from '@/services/customerEventsService'
 export interface AuthMetadata {
   method?: 'email' | 'google' | 'github'
   is_new_user?: boolean
-  user_id_hash?: string
+  user_id?: string
   referrer_url?: string
   utm_source?: string
   utm_medium?: string
@@ -279,20 +281,10 @@ export interface PageViewMetadata {
   [key: string]: unknown
 }
 
-interface SubscriptionPurchaseItem {
-  item_id: string
-  item_name: string
-  item_category: string
-  item_variant: string
-  price: number
-  quantity: number
-}
-
-export interface SubscriptionPurchaseMetadata extends Record<string, unknown> {
-  transaction_id: string
-  value: number
-  currency: string
-  items: SubscriptionPurchaseItem[]
+export interface BeginCheckoutMetadata extends Record<string, unknown> {
+  user_id: string
+  tier: TierKey
+  cycle: BillingCycle
 }
 
 /**
@@ -307,9 +299,9 @@ export interface TelemetryProvider {
 
   // Subscription flow events
   trackSubscription?(event: 'modal_opened' | 'subscribe_clicked'): void
+  trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
   trackMonthlySubscriptionSucceeded?(): void
   trackMonthlySubscriptionCancelled?(): void
-  trackSubscriptionPurchase?(metadata: SubscriptionPurchaseMetadata): void
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void

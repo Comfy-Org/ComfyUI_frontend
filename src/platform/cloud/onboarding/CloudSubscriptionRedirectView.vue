@@ -20,8 +20,7 @@ const router = useRouter()
 const { reportError, accessBillingPortal } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
-const { isActiveSubscription, isInitialized, subscriptionStatus } =
-  useSubscription()
+const { isActiveSubscription, isInitialized } = useSubscription()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
@@ -84,8 +83,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     await performSubscriptionCheckout(
       tierKey,
       cycleParam as BillingCycle,
-      false,
-      subscriptionStatus.value ?? undefined
+      false
     )
   }
 }, reportError)

@@ -2,6 +2,7 @@ import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
   AuthMetadata,
+  BeginCheckoutMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
@@ -14,7 +15,6 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
-  SubscriptionPurchaseMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -69,16 +69,16 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSubscription?.(event))
   }
 
+  trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
+    this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
+  }
+
   trackMonthlySubscriptionSucceeded(): void {
     this.dispatch((provider) => provider.trackMonthlySubscriptionSucceeded?.())
   }
 
   trackMonthlySubscriptionCancelled(): void {
     this.dispatch((provider) => provider.trackMonthlySubscriptionCancelled?.())
-  }
-
-  trackSubscriptionPurchase(metadata: SubscriptionPurchaseMetadata): void {
-    this.dispatch((provider) => provider.trackSubscriptionPurchase?.(metadata))
   }
 
   trackAddApiCreditButtonClicked(): void {

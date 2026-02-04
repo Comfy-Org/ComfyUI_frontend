@@ -328,12 +328,8 @@ const tiers: PricingTierConfig[] = [
 ]
 
 const { n } = useI18n()
-const {
-  isActiveSubscription,
-  subscriptionStatus,
-  subscriptionTier,
-  isYearlySubscription
-} = useSubscription()
+const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
+  useSubscription()
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -437,8 +433,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
         await performSubscriptionCheckout(
           tierKey,
           currentBillingCycle.value,
-          true,
-          subscriptionStatus.value ?? undefined
+          true
         )
       }
     } finally {

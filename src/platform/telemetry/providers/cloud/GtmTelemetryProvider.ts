@@ -1,7 +1,7 @@
 import type {
   AuthMetadata,
+  BeginCheckoutMetadata,
   PageViewMetadata,
-  SubscriptionPurchaseMetadata,
   TelemetryProvider
 } from '../../types'
 
@@ -60,7 +60,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackAuth(metadata: AuthMetadata): void {
     const basePayload = {
       method: metadata.method,
-      ...(metadata.user_id_hash ? { user_id: metadata.user_id_hash } : {})
+      ...(metadata.user_id ? { user_id: metadata.user_id } : {})
     }
 
     if (metadata.is_new_user) {
@@ -71,7 +71,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent('login', basePayload)
   }
 
-  trackSubscriptionPurchase(metadata: SubscriptionPurchaseMetadata): void {
-    this.pushEvent('purchase', metadata)
+  trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
+    this.pushEvent('begin_checkout', metadata)
   }
 }

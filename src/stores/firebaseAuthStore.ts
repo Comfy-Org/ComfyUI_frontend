@@ -25,7 +25,6 @@ import { t } from '@/i18n'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/auth/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { buildAuthMetadata } from '@/platform/telemetry/utils/authMetadata'
 import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -350,7 +349,8 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       useTelemetry()?.trackAuth({
         method: 'email',
-        is_new_user: false
+        is_new_user: false,
+        user_id: result.user.uid
       })
     }
 
@@ -368,8 +368,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     )
 
     if (isCloud) {
-      const metadata = await buildAuthMetadata('email', true, result.user.uid)
-      useTelemetry()?.trackAuth(metadata)
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: true,
+        user_id: result.user.uid
+      })
     }
 
     return result
@@ -384,12 +387,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      const metadata = await buildAuthMetadata(
-        'google',
-        isNewUser,
-        result.user.uid
-      )
-      useTelemetry()?.trackAuth(metadata)
+      useTelemetry()?.trackAuth({
+        method: 'google',
+        is_new_user: isNewUser,
+        user_id: result.user.uid
+      })
     }
 
     return result
@@ -404,12 +406,11 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser = additionalUserInfo?.isNewUser ?? false
-      const metadata = await buildAuthMetadata(
-        'github',
-        isNewUser,
-        result.user.uid
-      )
-      useTelemetry()?.trackAuth(metadata)
+      useTelemetry()?.trackAuth({
+        method: 'github',
+        is_new_user: isNewUser,
+        user_id: result.user.uid
+      })
     }
 
     return result
