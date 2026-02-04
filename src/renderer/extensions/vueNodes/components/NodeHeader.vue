@@ -60,15 +60,23 @@
       </div>
 
       <template v-for="badge in priceBadges ?? []" :key="badge.required">
-          <i class="h-3 icon-[lucide--component] bg-[#FABC25] shrink-0 -mr-2" />
-          <span
-            class="shrink-0"
-            v-text="badge.required"
-          />
-          <span
-            class="truncate ml-1 grow-1 max-w-max min-w-0 basis-0"
-            v-text="badge.rest"
-          />
+        <span
+          :class="
+            cn(
+              'flex h-5 bg-component-node-widget-background p-1 items-center text-xs shrink-0',
+              badge.rest ? 'rounded-l-full pr-1' : 'rounded-full'
+            )
+          "
+        >
+          <i class="h-full icon-[lucide--component] bg-[#FABC25]" />
+          <span class="truncate" v-text="badge.required" />
+        </span>
+        <span
+          v-if="badge.rest"
+          class="truncate -ml-2.5 grow-1 basis-0 bg-component-node-widget-background rounded-r-full max-w-max min-w-0"
+        >
+          <span class="pr-2" v-text="badge.rest" />
+        </span>
       </template>
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i-comfy:pin
