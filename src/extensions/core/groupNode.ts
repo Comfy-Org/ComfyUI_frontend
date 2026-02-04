@@ -292,10 +292,10 @@ export class GroupNodeConfig {
       this.processNode(node, seenInputs, seenOutputs)
     }
 
-    for (const p of this.#convertedToProcess) {
+    for (const p of this._convertedToProcess) {
       p()
     }
-    this.#convertedToProcess = []
+    this._convertedToProcess = []
     if (!this.nodeDef) return
     await app.registerNodeDef(`${PREFIX}${SEPARATOR}` + this.name, this.nodeDef)
     useNodeDefStore().addNodeDef(this.nodeDef)
@@ -773,7 +773,7 @@ export class GroupNodeConfig {
     }
   }
 
-  #convertedToProcess: (() => void)[] = []
+  private _convertedToProcess: (() => void)[] = []
   processNodeInputs(
     node: GroupNodeData,
     seenInputs: Record<string, number>,
@@ -804,7 +804,7 @@ export class GroupNodeConfig {
     )
 
     // Converted inputs have to be processed after all other nodes as they'll be at the end of the list
-    this.#convertedToProcess.push(() =>
+    this._convertedToProcess.push(() =>
       this.processConvertedWidgets(
         inputs,
         node,

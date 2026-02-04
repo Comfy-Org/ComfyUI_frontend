@@ -6,6 +6,7 @@ import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   findActiveIndex,
   getJobDetail,
@@ -194,6 +195,89 @@ describe('jobOutputCache', () => {
     })
   })
 
+  describe('getPreviewableOutputsFromJobDetail', () => {
+    it('returns empty array when job detail or outputs are missing', async () => {
+      const { getPreviewableOutputsFromJobDetail } =
+        await import('@/services/jobOutputCache')
+
+      expect(getPreviewableOutputsFromJobDetail(undefined)).toEqual([])
+
+      const jobDetail: JobDetail = {
+        id: 'job-empty',
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0
+      }
+
+      expect(getPreviewableOutputsFromJobDetail(jobDetail)).toEqual([])
+    })
+
+    it('maps previewable outputs and skips animated/text entries', async () => {
+      const { getPreviewableOutputsFromJobDetail } =
+        await import('@/services/jobOutputCache')
+      const jobDetail: JobDetail = {
+        id: 'job-previewable',
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0,
+        outputs: {
+          'node-1': {
+            images: [
+              { filename: 'image.png', subfolder: '', type: 'output' },
+              { filename: 'image.webp', subfolder: '', type: 'temp' }
+            ],
+            animated: [true],
+            text: 'hello'
+          },
+          'node-2': {
+            video: [{ filename: 'clip.mp4', subfolder: '', type: 'output' }],
+            audio: [{ filename: 'sound.mp3', subfolder: '', type: 'output' }]
+          }
+        }
+      }
+
+      const result = getPreviewableOutputsFromJobDetail(jobDetail)
+
+      expect(result).toHaveLength(4)
+      expect(result.map((item) => item.filename).sort()).toEqual(
+        ['image.png', 'image.webp', 'clip.mp4', 'sound.mp3'].sort()
+      )
+
+      const image = result.find((item) => item.filename === 'image.png')
+      const video = result.find((item) => item.filename === 'clip.mp4')
+      const { ResultItemImpl: ResultItemImplClass } =
+        await import('@/stores/queueStore')
+
+      expect(image).toBeInstanceOf(ResultItemImplClass)
+      expect(image?.nodeId).toBe('node-1')
+      expect(image?.mediaType).toBe('images')
+      expect(video?.nodeId).toBe('node-2')
+      expect(video?.mediaType).toBe('video')
+    })
+
+    it('filters non-previewable outputs and non-object items', async () => {
+      const { getPreviewableOutputsFromJobDetail } =
+        await import('@/services/jobOutputCache')
+      const jobDetail: JobDetail = {
+        id: 'job-filter',
+        status: 'completed',
+        create_time: Date.now(),
+        priority: 0,
+        outputs: {
+          'node-3': {
+            images: [{ filename: 'valid.png', subfolder: '', type: 'output' }],
+            text: ['not-object'],
+            unknown: [{ filename: 'data.bin', subfolder: '', type: 'output' }]
+          }
+        }
+      }
+
+      const result = getPreviewableOutputsFromJobDetail(jobDetail)
+
+      expect(result.map((item) => item.filename)).toEqual(['valid.png'])
+    })
+  })
+
   describe('getJobDetail', () => {
     it('fetches and caches job detail', async () => {
       const jobId = uniqueId('job')
@@ -257,10 +341,12 @@ describe('jobOutputCache', () => {
         priority: 0,
         outputs: {}
       }
-      const mockWorkflow = { version: 1 }
+      const mockWorkflow = { version: 1 } as Partial<ComfyWorkflowJSON>
 
       vi.mocked(api.getJobDetail).mockResolvedValue(mockDetail)
-      vi.mocked(extractWorkflow).mockResolvedValue(mockWorkflow as any)
+      vi.mocked(extractWorkflow).mockResolvedValue(
+        mockWorkflow as ComfyWorkflowJSON
+      )
 
       const result = await getJobWorkflow(jobId)
 

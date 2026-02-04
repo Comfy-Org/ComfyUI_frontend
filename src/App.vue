@@ -46,6 +46,8 @@ onMounted(() => {
     document.addEventListener('contextmenu', showContextMenu)
   }
 
+  // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
+  // See: https://vite.dev/guide/build#load-error-handling
   window.addEventListener('vite:preloadError', (event) => {
     event.preventDefault()
     // eslint-disable-next-line no-undef

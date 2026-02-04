@@ -62,7 +62,7 @@ import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
-import { useKeybindingService } from '@/services/keybindingService'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -198,7 +198,7 @@ useCommandStore().registerCommands(coreCommands)
 useMenuItemStore().registerCoreMenuCommands()
 useKeybindingService().registerCoreKeybindings()
 useSidebarTabStore().registerCoreSidebarTabs()
-useBottomPanelStore().registerCoreBottomPanelTabs()
+void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()

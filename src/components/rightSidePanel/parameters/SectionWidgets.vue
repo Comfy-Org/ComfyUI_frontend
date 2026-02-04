@@ -118,6 +118,15 @@ function handleLocateNode() {
   }
 }
 
+function handleWidgetValueUpdate(
+  widget: IBaseWidget,
+  newValue: string | number | boolean | object
+) {
+  widget.value = newValue
+  widget.callback?.(newValue)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 defineExpose({
   widgetsContainer,
   rootElement
@@ -179,6 +188,7 @@ defineExpose({
             :show-node-name="showNodeName"
             :parents="parents"
             :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
+            @update:widget-value="handleWidgetValueUpdate(widget, $event)"
           />
         </TransitionGroup>
       </div>

@@ -6,6 +6,7 @@
       color: fgColor,
       backgroundColor: bgColor
     }"
+    @click="(e) => onClick?.(e)"
   >
     {{ text }}
     <i v-if="cssIcon" :class="cn(cssIcon)" />
@@ -20,6 +21,7 @@ export interface NodeBadgeProps {
   fgColor?: LGraphBadge['fgColor']
   bgColor?: LGraphBadge['bgColor']
   cssIcon?: string
+  onClick?: (e: MouseEvent) => void
 }
 
 const {

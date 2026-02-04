@@ -22,6 +22,7 @@
     },
     "assetCollection": "資產收藏",
     "assets": "資產",
+    "baseModel": "基礎模型",
     "baseModels": "基礎模型",
     "browseAssets": "瀏覽資產",
     "byType": "依類型",
@@ -127,6 +128,7 @@
     "selectProjects": "選擇專案",
     "sortAZ": "A-Z",
     "sortBy": "排序依據",
+    "sortDefault": "預設",
     "sortPopular": "熱門",
     "sortRecent": "最近",
     "sortZA": "Z-A",
@@ -177,13 +179,7 @@
       "whitelistInfo": "關於未列入白名單的網站"
     },
     "deleteAccount": {
-      "cancel": "取消",
-      "confirm": "刪除帳號",
-      "confirmMessage": "您確定要刪除您的帳號嗎？此操作無法復原，且將永久移除您所有的資料。",
-      "confirmTitle": "刪除帳號",
-      "deleteAccount": "刪除帳號",
-      "success": "帳號已刪除",
-      "successDetail": "您的帳號已成功刪除。"
+      "contactSupport": "若要刪除你的帳號，請聯絡 {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "登入已取消。請再試一次。",
@@ -578,6 +574,7 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP 視覺",
     "CLIP_VISION_OUTPUT": "CLIP 視覺輸出",
+    "COLOR": "顏色",
     "COMBO": "組合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
@@ -749,6 +746,7 @@
     "deleteImage": "刪除圖片",
     "deprecated": "已棄用",
     "description": "描述",
+    "devOnly": "開發專用",
     "devices": "裝置",
     "disableAll": "全部停用",
     "disableSelected": "停用所選",
@@ -1154,11 +1152,11 @@
     "helpFix": "協助修復此問題"
   },
   "linearMode": {
-    "beta": "Beta - 提供回饋",
+    "beta": "App 模式 Beta - 提供回饋",
     "downloadAll": "全部下載",
     "dragAndDropImage": "拖曳圖片到此",
     "graphMode": "圖形模式",
-    "linearMode": "簡易模式",
+    "linearMode": "App 模式",
     "rerun": "重新執行",
     "reuseParameters": "重用參數",
     "runCount": "執行次數："
@@ -1300,6 +1298,28 @@
     "disabledNodesWontUpdate": "已停用的節點將不會更新",
     "discoverCommunityContent": "探索社群製作的節點包、擴充功能等...",
     "downloads": "下載次數",
+    "emptyState": {
+      "allInstalled": {
+        "message": "你尚未安裝任何擴充功能。",
+        "title": "尚未安裝擴充功能"
+      },
+      "conflicting": {
+        "message": "你的所有擴充功能皆相容。",
+        "title": "未偵測到衝突"
+      },
+      "missing": {
+        "message": "所有必要的節點都已安裝。",
+        "title": "無缺少的節點"
+      },
+      "updateAvailable": {
+        "message": "你的所有擴充功能都是最新的。",
+        "title": "全部為最新版本"
+      },
+      "workflow": {
+        "message": "此工作流程未使用任何擴充節點。",
+        "title": "工作流程中無擴充功能"
+      }
+    },
     "enablePackToChangeVersion": "啟用此套件以變更版本",
     "errorConnecting": "連線至 Comfy Node Registry 時發生錯誤。",
     "extensionsSuccessfullyInstalled": "擴充功能已成功安裝並可使用！",
@@ -1321,6 +1341,7 @@
     "installingDependencies": "正在安裝相依套件...",
     "lastUpdated": "最後更新",
     "latestVersion": "最新版本",
+    "legacyManagerSearchTip": "正在尋找 ComfyUI-Manager？你可以在啟動 ComfyUI 時加上 --enable-manager-legacy-ui 參數來啟用舊版管理介面。",
     "legacyManagerUI": "使用舊版介面",
     "legacyManagerUIDescription": "若要使用舊版管理介面，請以 --enable-manager-legacy-ui 啟動 ComfyUI",
     "legacyMenuNotAvailable": "舊版管理選單不可用，已預設切換至新版管理選單。",
@@ -1627,7 +1648,7 @@
     "Toggle Logs Bottom Panel": "切換日誌底部面板",
     "Toggle Queue Panel V2": "切換佇列面板 V2",
     "Toggle Search Box": "切換搜尋框",
-    "Toggle Simple Mode": "切換簡易模式",
+    "Toggle App Mode": "切換 App 模式",
     "Toggle Terminal Bottom Panel": "切換終端機底部面板",
     "Toggle Theme (Dark/Light)": "切換主題（深色/淺色）",
     "Toggle View Controls Bottom Panel": "切換檢視控制底部面板",
@@ -1685,6 +1706,7 @@
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Gemini": "雙子星",
+    "Grok": "Grok",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1785,6 +1807,16 @@
     "render": "節點渲染錯誤",
     "slots": "節點插槽錯誤",
     "widgets": "節點元件錯誤"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "隱藏已棄用節點",
+    "hideDeprecatedDescription": "隱藏標記為已棄用的節點，除非明確啟用",
+    "hideDevOnly": "隱藏僅限開發者節點",
+    "hideDevOnlyDescription": "隱藏標記為僅限開發者的節點，除非啟用開發者模式",
+    "hideExperimental": "隱藏實驗性節點",
+    "hideExperimentalDescription": "隱藏標記為實驗性的節點，除非明確啟用",
+    "hideSubgraph": "隱藏子圖節點",
+    "hideSubgraphDescription": "暫時從節點庫與搜尋中隱藏子圖節點"
   },
   "nodeHelpPage": {
     "documentationPage": "說明文件頁面",
@@ -2264,6 +2296,7 @@
       "filterBy": "篩選依據",
       "filterCurrentWorkflow": "目前工作流程",
       "filterJobs": "篩選作業",
+      "inlineTotalLabel": "總計",
       "interruptAll": "中斷所有執行中作業",
       "jobQueue": "作業佇列",
       "jobsCompleted": "{count} 個作業已完成",
@@ -2310,6 +2343,7 @@
   },
   "subgraphStore": {
     "blueprintName": "子圖名稱",
+    "cannotDeleteGlobal": "無法刪除已安裝的藍圖",
     "confirmDelete": "此操作將永久從您的程式庫中移除藍圖",
     "confirmDeleteTitle": "刪除藍圖？",
     "hidden": "隱藏 / 巢狀參數",
@@ -2501,6 +2535,9 @@
     "title": "從範本開始",
     "useCaseFilter": "任務",
     "useCasesSelected": "{count} 個使用案例"
+  },
+  "templates": {
+    "logoProviderSeparator": " ＆ "
   },
   "toastMessages": {
     "cannotCreateSubgraph": "無法建立子圖",

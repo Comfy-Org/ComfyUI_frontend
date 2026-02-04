@@ -28,6 +28,7 @@ import {
   triggerCallbackOnAllNodes,
   visitGraphNodes
 } from '@/utils/graphTraversalUtil'
+import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
 // Mock node factory
 function createMockNode(
@@ -39,13 +40,13 @@ function createMockNode(
     graph?: LGraph
   } = {}
 ): LGraphNode {
-  const node = {
+  const node = createMockLGraphNode({
     id,
     isSubgraphNode: options.isSubgraph ? () => true : undefined,
     subgraph: options.subgraph,
     onExecutionStart: options.callback,
     graph: options.graph
-  } as unknown as LGraphNode
+  }) satisfies Partial<LGraphNode> as LGraphNode
   options.graph?.nodes?.push(node)
   return node
 }
@@ -58,7 +59,7 @@ function createMockGraph(nodes: LGraphNode[]): LGraph {
     isRootGraph: true,
     getNodeById: (id: string | number) =>
       nodes.find((n) => String(n.id) === String(id)) || null
-  } as unknown as LGraph
+  } satisfies Partial<LGraph> as LGraph
 }
 
 // Mock subgraph factory
@@ -75,7 +76,7 @@ function createMockSubgraph(
     rootGraph,
     getNodeById: (nodeId: string | number) =>
       nodes.find((n) => String(n.id) === String(nodeId)) || null
-  } as unknown as Subgraph
+  } satisfies Partial<Subgraph> as Subgraph
   return graph
 }
 
@@ -96,8 +97,8 @@ describe('graphTraversalUtil', () => {
 
       it('should return null for invalid input', () => {
         expect(parseExecutionId('')).toBeNull()
-        expect(parseExecutionId(null as any)).toBeNull()
-        expect(parseExecutionId(undefined as any)).toBeNull()
+        expect(parseExecutionId(null!)).toBeNull()
+        expect(parseExecutionId(undefined!)).toBeNull()
       })
     })
 
@@ -415,7 +416,7 @@ describe('graphTraversalUtil', () => {
 
         // Add a title property to each node
         forEachNode(graph, (node) => {
-          ;(node as any).title = `Node ${node.id}`
+          node.title = `Node ${node.id}`
         })
 
         expect(nodes[0]).toHaveProperty('title', 'Node 1')
@@ -653,7 +654,7 @@ describe('graphTraversalUtil', () => {
       it('should return root graph from subgraph', () => {
         const rootGraph = createMockGraph([])
         const subgraph = createMockSubgraph('sub-uuid', [])
-        ;(subgraph as any).rootGraph = rootGraph
+        ;(subgraph as Subgraph & { rootGraph: LGraph }).rootGraph = rootGraph
 
         expect(getRootGraph(subgraph)).toBe(rootGraph)
       })
@@ -662,9 +663,10 @@ describe('graphTraversalUtil', () => {
         const rootGraph = createMockGraph([])
         const midSubgraph = createMockSubgraph('mid-uuid', [])
         const deepSubgraph = createMockSubgraph('deep-uuid', [])
-
-        ;(midSubgraph as any).rootGraph = rootGraph
-        ;(deepSubgraph as any).rootGraph = midSubgraph
+        ;(midSubgraph as Subgraph & { rootGraph: LGraph }).rootGraph = rootGraph
+        ;(
+          deepSubgraph as Subgraph & { rootGraph: LGraph | Subgraph }
+        ).rootGraph = midSubgraph
 
         expect(getRootGraph(deepSubgraph)).toBe(rootGraph)
       })
@@ -726,7 +728,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph(nodes)
 
         forEachSubgraphNode(graph, subgraphId, (node) => {
-          ;(node as any).title = 'Updated Title'
+          node.title = 'Updated Title'
         })
 
         expect(nodes[0]).toHaveProperty('title', 'Updated Title')

@@ -19,6 +19,8 @@ interface CreateAssetWidgetParams {
   widgetName: string
   /** The node type to show in asset browser (may differ from node.comfyClass for PrimitiveNode) */
   nodeTypeForBrowser: string
+  /** Input name for asset browser filtering (defaults to widgetName if not provided) */
+  inputNameForBrowser?: string
   /** Default value for the widget */
   defaultValue?: string
   /** Callback when widget value changes */
@@ -39,8 +41,14 @@ interface CreateAssetWidgetParams {
 export function createAssetWidget(
   params: CreateAssetWidgetParams
 ): IBaseWidget {
-  const { node, widgetName, nodeTypeForBrowser, defaultValue, onValueChange } =
-    params
+  const {
+    node,
+    widgetName,
+    nodeTypeForBrowser,
+    inputNameForBrowser,
+    defaultValue,
+    onValueChange
+  } = params
 
   const displayLabel = defaultValue ?? t('widgets.selectModel')
   const assetBrowserDialog = useAssetBrowserDialog()
@@ -50,7 +58,7 @@ export function createAssetWidget(
 
     await assetBrowserDialog.show({
       nodeType: nodeTypeForBrowser,
-      inputName: widgetName,
+      inputName: inputNameForBrowser ?? widgetName,
       currentValue: widget.value as string,
       onAssetSelected: (asset) => {
         const validatedAsset = assetItemSchema.safeParse(asset)

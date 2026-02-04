@@ -35,7 +35,7 @@ export const useWorkflowService = () => {
     if (settingStore.get('Comfy.PromptFilename')) {
       let filename = await dialogService.prompt({
         title: t('workflowService.exportWorkflow'),
-        message: t('workflowService.enterFilename') + ':',
+        message: t('workflowService.enterFilenamePrompt'),
         defaultValue: defaultName
       })
       if (!filename) return null

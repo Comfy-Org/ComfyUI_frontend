@@ -191,7 +191,6 @@ if (canvas.state.hoveringOver & CanvasItem.ResizeSe) element.style.cursor = 'se-
 All are unused and incomplete. Have bugs beyond just typescript typing, and are (currently) not worth maintaining. If any of these features are desired down the track, they can be reimplemented.
 
 - Live mode
-- Subgraph
 - `dragged_node`
 
 ## LiteGraph

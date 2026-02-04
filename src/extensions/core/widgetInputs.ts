@@ -114,7 +114,7 @@ export class PrimitiveNode extends LGraphNode {
         for (let i = 0; i < this.widgets_values.length; i++) {
           const w = this.widgets[i]
           if (w) {
-            w.value = this.widgets_values[i] as any
+            w.value = this.widgets_values[i]
           }
         }
       }
@@ -304,7 +304,7 @@ export class PrimitiveNode extends LGraphNode {
 
   private _createAssetWidget(
     targetNode: LGraphNode,
-    _widgetName: string,
+    targetInputName: string,
     inputData: InputSpec
   ): IBaseWidget {
     const defaultValue = inputData[1]?.default as string | undefined
@@ -312,6 +312,7 @@ export class PrimitiveNode extends LGraphNode {
       node: this,
       widgetName: 'value',
       nodeTypeForBrowser: targetNode.comfyClass ?? '',
+      inputNameForBrowser: targetInputName,
       defaultValue,
       onValueChange: (widget, newValue, oldValue) => {
         widget.callback?.(
@@ -562,7 +563,7 @@ export function mergeIfValid(
 
 app.registerExtension({
   name: 'Comfy.WidgetInputs',
-  async beforeRegisterNodeDef(nodeType, _nodeData, app) {
+  async beforeRegisterNodeDef(nodeType, _nodeData) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
       console.warn(

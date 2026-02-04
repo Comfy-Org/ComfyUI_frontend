@@ -8,7 +8,7 @@ const PIN_INDICATOR = '[data-testid="node-pin-indicator"]'
 
 test.describe('Vue Node Pin', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 
@@ -55,7 +55,7 @@ test.describe('Vue Node Pin', () => {
     // Try to drag the node
     const headerPos = await checkpointNodeHeader.boundingBox()
     if (!headerPos) throw new Error('Failed to get header position')
-    await comfyPage.dragAndDrop(
+    await comfyPage.canvasOps.dragAndDrop(
       { x: headerPos.x, y: headerPos.y },
       { x: headerPos.x + 256, y: headerPos.y + 256 }
     )
@@ -71,7 +71,7 @@ test.describe('Vue Node Pin', () => {
     await comfyPage.page.keyboard.press(PIN_HOTKEY)
 
     // Try to drag the node again
-    await comfyPage.dragAndDrop(
+    await comfyPage.canvasOps.dragAndDrop(
       { x: headerPos.x, y: headerPos.y },
       { x: headerPos.x + 256, y: headerPos.y + 256 }
     )

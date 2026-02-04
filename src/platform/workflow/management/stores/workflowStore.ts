@@ -161,7 +161,7 @@ export class ComfyWorkflow extends UserFile {
   async promptSave(): Promise<string | null> {
     return await useDialogService().prompt({
       title: t('workflowService.saveWorkflow'),
-      message: t('workflowService.enterFilename') + ':',
+      message: t('workflowService.enterFilenamePrompt'),
       defaultValue: this.filename
     })
   }
@@ -387,11 +387,12 @@ export const useWorkflowStore = defineStore('workflow', () => {
     ) as ComfyWorkflowJSON
     state.id = id
 
-    const workflow: ComfyWorkflow = new (existingWorkflow.constructor as any)({
-      path,
-      modified: Date.now(),
-      size: -1
-    })
+    const workflow: ComfyWorkflow =
+      new (existingWorkflow.constructor as typeof ComfyWorkflow)({
+        path,
+        modified: Date.now(),
+        size: -1
+      })
     workflow.originalContent = workflow.content = JSON.stringify(state)
     workflowLookup.value[workflow.path] = workflow
     return workflow

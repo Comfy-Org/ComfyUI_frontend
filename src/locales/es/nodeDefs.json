@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Convierte un color a un valor entero RGB.",
+    "display_name": "Color a RGB Int",
+    "inputs": {
+      "color": {
+        "name": "color"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combinar Hooks [2]",
     "inputs": {
@@ -3380,6 +3395,142 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageEditNode": {
+    "description": "Modifica una imagen existente según una indicación de texto",
+    "display_name": "Edición de imagen Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "number_of_images": {
+        "name": "número de imágenes",
+        "tooltip": "Cantidad de imágenes editadas a generar"
+      },
+      "prompt": {
+        "name": "indicación",
+        "tooltip": "La indicación de texto utilizada para generar la imagen"
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokImageNode": {
+    "description": "Genera imágenes usando Grok a partir de una indicación de texto",
+    "display_name": "Imagen Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "relación de aspecto"
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "number_of_images": {
+        "name": "número de imágenes",
+        "tooltip": "Cantidad de imágenes a generar"
+      },
+      "prompt": {
+        "name": "indicación",
+        "tooltip": "La indicación de texto utilizada para generar la imagen"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoEditNode": {
+    "description": "Edita un video existente según una indicación de texto.",
+    "display_name": "Edición de video Grok",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "prompt": {
+        "name": "indicación",
+        "tooltip": "Descripción en texto del video deseado."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "La duración máxima admitida es de 8,7 segundos y el tamaño máximo de archivo es de 50MB."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GrokVideoNode": {
+    "description": "Genera video a partir de una indicación o una imagen",
+    "display_name": "Video Grok",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "relación de aspecto",
+        "tooltip": "La relación de aspecto del video de salida."
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "duration": {
+        "name": "duración",
+        "tooltip": "La duración del video de salida en segundos."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "prompt": {
+        "name": "indicación",
+        "tooltip": "Descripción en texto del video deseado."
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "La resolución del video de salida."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para determinar si el nodo debe ejecutarse de nuevo; los resultados reales son no deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -10846,6 +10997,25 @@
       }
     }
   },
+  "RecraftCreateStyleNode": {
+    "description": "Crea un estilo personalizado a partir de imágenes de referencia. Sube de 1 a 5 imágenes para usar como referencias de estilo. El tamaño total de todas las imágenes está limitado a 5 MB.",
+    "display_name": "Recraft Crear Estilo",
+    "inputs": {
+      "images": {
+        "name": "imágenes"
+      },
+      "style": {
+        "name": "estilo",
+        "tooltip": "El estilo base de las imágenes generadas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "id_estilo",
+        "tooltip": null
+      }
+    }
+  },
   "RecraftCreativeUpscaleNode": {
     "description": "Aumenta la imagen de forma sincrónica.\nMejora una imagen ráster dada utilizando la herramienta de ‘creative upscale’, aumentando la resolución con un enfoque en refinar pequeños detalles y rostros.",
     "display_name": "Recraft Creative Upscale Image",
@@ -15093,6 +15263,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Genera un video a partir de una imagen y un prompt opcional.",
+    "display_name": "Generación de video de imagen a video Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Una imagen que se usará como el primer fotograma del video generado."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Un prompt de texto opcional para la generación de video (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Genera un video a partir de un prompt de texto.",
+    "display_name": "Generación de video de texto a video Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Una descripción textual para la generación de video, con una longitud máxima de 2000 caracteres."
+      },
+      "seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Extiende un video existente generando fotogramas adicionales.",
+    "display_name": "Extensión de video Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "end_frame": {
+        "name": "fotograma_final"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la extensión de video."
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Un prompt de texto opcional para el video extendido (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "El video fuente a extender."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Generar video a partir de imagen y texto opcional",
     "display_name": "Generación de Video a partir de Imagen Vidu",
@@ -15127,6 +15410,49 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para la generación de video (0 para aleatorio)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Genera un video con múltiples transiciones de fotogramas clave.",
+    "display_name": "Generación de video multifotograma Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "frames": {
+        "name": "fotogramas",
+        "tooltip": "Número de transiciones de fotogramas clave (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duración1"
+      },
+      "frames_duration2": {
+        "name": "duración2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "start_image": {
+        "name": "imagen_inicial",
+        "tooltip": "La imagen del fotograma inicial. La relación de aspecto debe estar entre 1:4 y 4:1."
       }
     },
     "outputs": {
