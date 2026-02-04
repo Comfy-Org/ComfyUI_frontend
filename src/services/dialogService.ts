@@ -203,6 +203,34 @@ export const useDialogService = () => {
     })
   }
 
+  function showPromptExecutionErrorDialog(
+    executionError: ExecutionErrorDialogInput
+  ) {
+    const props: ComponentAttrs<typeof ErrorDialogContent> = {
+      error: {
+        exceptionType: t('errorDialog.promptExecutionError'),
+        exceptionMessage: executionError.exception_message,
+        nodeId: executionError.node_id?.toString(),
+        nodeType: executionError.node_type,
+        traceback: executionError.traceback.join('\n'),
+        reportType: 'promptExecutionError'
+      }
+    }
+
+    dialogStore.showDialog({
+      key: 'global-error',
+      component: ErrorDialogContent,
+      props,
+      dialogComponentProps: {
+        onClose: () => {
+          useTelemetry()?.trackUiButtonClicked({
+            button_id: 'error_dialog_closed'
+          })
+        }
+      }
+    })
+  }
+
   function parseError(error: Error) {
     const filename =
       'fileName' in error
@@ -735,6 +763,7 @@ export const useDialogService = () => {
     showSettingsDialog,
     showAboutDialog,
     showExecutionErrorDialog,
+    showPromptExecutionErrorDialog,
     showApiNodesSignInDialog,
     showSignInDialog,
     showSubscriptionRequiredDialog,

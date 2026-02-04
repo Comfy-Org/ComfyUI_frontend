@@ -1,5 +1,18 @@
 <template>
-  <div class="comfy-error-report flex flex-col gap-4">
+  <div class="comfy-error-report flex flex-col gap-4 relative">
+    <Button
+      v-if="error.nodeId"
+      variant="secondary"
+      size="sm"
+      :title="t('errorDialog.locateNode')"
+      class="absolute top-0 right-0 font-mono"
+      @click="handleLocateNode"
+    >
+      <i class="icon-[lucide--locate] size-3" />
+      <span class="break-words text-base font-bold"
+        >{{ error.nodeType }} (#{{ error.nodeId }})</span
+      >
+    </Button>
     <NoResultsPlaceholder
       class="pb-0"
       icon="pi pi-exclamation-circle"
@@ -57,10 +70,12 @@ import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'
@@ -95,7 +110,22 @@ const showReport = () => {
 const toast = useToast()
 const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
+const canvasStore = useCanvasStore()
 const telemetry = useTelemetry()
+const dialogStore = useDialogStore()
+
+/**
+ * Locate the node on the canvas.
+ */
+function handleLocateNode() {
+  if (!error.nodeId || !canvasStore.canvas) return
+
+  const graphNode = canvasStore.canvas.graph?.getNodeById(error.nodeId)
+  if (graphNode) {
+    canvasStore.canvas.animateToBounds(graphNode.boundingRect)
+  }
+  dialogStore.closeDialog()
+}
 
 const title = computed<string>(
   () => error.nodeType ?? error.exceptionType ?? t('errorDialog.defaultTitle')

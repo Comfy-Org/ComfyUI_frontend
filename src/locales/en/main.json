@@ -1702,7 +1702,8 @@
     "loadWorkflowTitle": "Loading aborted due to error reloading workflow data",
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
-    "promptExecutionError": "Prompt execution failed"
+    "promptExecutionError": "Prompt execution failed",
+    "locateNode": "Locate node on canvas"
   },
   "apiNodesSignInDialog": {
     "title": "Sign In Required to Use API Nodes",
