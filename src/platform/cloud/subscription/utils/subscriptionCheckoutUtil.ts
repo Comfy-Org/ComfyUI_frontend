@@ -84,7 +84,8 @@ export async function performSubscriptionCheckout(
       telemetry?.trackBeginCheckout({
         user_id: userId,
         tier: tierKey,
-        cycle: currentBillingCycle
+        cycle: currentBillingCycle,
+        checkout_type: 'new'
       })
     }
     if (openInNewTab) {

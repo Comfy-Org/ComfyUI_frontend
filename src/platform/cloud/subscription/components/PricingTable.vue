@@ -266,6 +266,8 @@ import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils
 import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
+import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
 type SubscriptionTier = components['schemas']['SubscriptionTier']
@@ -330,6 +332,8 @@ const tiers: PricingTierConfig[] = [
 const { n } = useI18n()
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
+const telemetry = useTelemetry()
+const { userId } = useFirebaseAuthStore()
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -410,6 +414,17 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (isActiveSubscription.value) {
+        if (userId) {
+          telemetry?.trackBeginCheckout({
+            user_id: userId,
+            tier: tierKey,
+            cycle: currentBillingCycle.value,
+            checkout_type: 'change',
+            ...(currentTierKey.value
+              ? { previous_tier: currentTierKey.value }
+              : {})
+          })
+        }
         // Pass the target tier to create a deep link to subscription update confirmation
         const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle.value)
         const targetPlan = {

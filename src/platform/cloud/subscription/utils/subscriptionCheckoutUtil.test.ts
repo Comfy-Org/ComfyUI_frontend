@@ -61,7 +61,8 @@ describe('performSubscriptionCheckout', () => {
     expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-123',
       tier: 'pro',
-      cycle: 'yearly'
+      cycle: 'yearly',
+      checkout_type: 'new'
     })
     expect(openSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })

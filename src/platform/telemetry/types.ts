@@ -285,6 +285,8 @@ export interface BeginCheckoutMetadata extends Record<string, unknown> {
   user_id: string
   tier: TierKey
   cycle: BillingCycle
+  checkout_type: 'new' | 'change'
+  previous_tier?: TierKey
 }
 
 /**

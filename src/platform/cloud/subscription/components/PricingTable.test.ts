@@ -14,6 +14,7 @@ const mockSubscriptionTier = ref<
 const mockIsYearlySubscription = ref(false)
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
+const mockTrackBeginCheckout = vi.fn()
 const mockGetFirebaseAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
@@ -54,9 +55,16 @@ vi.mock('@/composables/useErrorHandling', () => ({
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
   useFirebaseAuthStore: () => ({
-    getFirebaseAuthHeader: mockGetFirebaseAuthHeader
+    getFirebaseAuthHeader: mockGetFirebaseAuthHeader,
+    userId: 'user-123'
   }),
   FirebaseAuthStoreError: class extends Error {}
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackBeginCheckout: mockTrackBeginCheckout
+  })
 }))
 
 vi.mock('@/platform/distribution/types', () => ({
@@ -127,6 +135,7 @@ describe('PricingTable', () => {
     mockIsActiveSubscription.value = false
     mockSubscriptionTier.value = null
     mockIsYearlySubscription.value = false
+    mockTrackBeginCheckout.mockReset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
       json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
@@ -149,6 +158,13 @@ describe('PricingTable', () => {
       await creatorButton?.trigger('click')
       await flushPromises()
 
+      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+        user_id: 'user-123',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'change',
+        previous_tier: 'standard'
+      })
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
     })
 
