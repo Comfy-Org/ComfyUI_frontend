@@ -72,10 +72,7 @@ import FormItem from '@/components/common/FormItem.vue'
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import type {
-  ServerConfig,
-  ServerConfigValue
-} from '@/constants/serverConfig'
+import type { ServerConfig, ServerConfigValue } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { FormItem as FormItemType } from '@/platform/settings/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'

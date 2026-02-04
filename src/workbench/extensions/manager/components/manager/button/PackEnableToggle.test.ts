@@ -76,7 +76,9 @@ describe('PackEnableToggle', () => {
       enablePack: mockEnablePack,
       disablePack: mockDisablePack,
       installedPacks
-    } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<typeof useComfyManagerStore>)
+    } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<
+      typeof useComfyManagerStore
+    >)
 
     return mount(PackEnableToggle, {
       props: {

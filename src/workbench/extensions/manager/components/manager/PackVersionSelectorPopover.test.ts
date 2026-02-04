@@ -481,7 +481,9 @@ describe('PackVersionSelectorPopover', () => {
       mockCheckNodeCompatibility.mockClear()
 
       // Trigger compatibility check by accessing getVersionCompatibility
-      const vm = wrapper.vm as unknown as { getVersionCompatibility: (version: string) => unknown }
+      const vm = wrapper.vm as unknown as {
+        getVersionCompatibility: (version: string) => unknown
+      }
       vm.getVersionCompatibility('1.0.0')
 
       // Verify that checkNodeCompatibility was called with correct data
@@ -569,7 +571,9 @@ describe('PackVersionSelectorPopover', () => {
       })
       await waitForPromises()
 
-      const vm = wrapper.vm as unknown as { getVersionCompatibility: (version: string) => unknown }
+      const vm = wrapper.vm as unknown as {
+        getVersionCompatibility: (version: string) => unknown
+      }
 
       // Clear previous calls from component mounting/rendering
       mockCheckNodeCompatibility.mockClear()
