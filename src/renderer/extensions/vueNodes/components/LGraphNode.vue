@@ -69,6 +69,7 @@
       <NodeHeader
         :node-data="nodeData"
         :collapsed="isCollapsed"
+        :price-badges="badges.pricing"
         @collapse="handleCollapse"
         @update:title="handleHeaderTitleUpdate"
       />
@@ -119,7 +120,7 @@
         <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
           <LivePreview :image-url="latestPreviewUrl || null" />
         </div>
-        <NodeBadges :node-data />
+        <NodeBadges v-bind="badges" :pricing="undefined" />
       </div>
     </div>
     <Button
@@ -227,6 +228,7 @@ import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotCon
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
+import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -330,6 +332,7 @@ const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData.id)
 const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
 const { startDrag } = useNodeDrag()
+const badges = usePartitionedBadges(nodeData)
 
 async function nodeOnPointerdown(event: PointerEvent) {
   if (event.altKey && lgraphNode.value) {
