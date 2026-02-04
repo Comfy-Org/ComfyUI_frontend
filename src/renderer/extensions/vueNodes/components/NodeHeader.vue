@@ -64,11 +64,9 @@
           class="flex h-5 bg-component-node-widget-background rounded-full p-1 items-center text-xs min-w-10 max-w-max grow-1 basis-0"
         >
           <i class="h-full icon-[lucide--component] bg-[#FABC25] shrink-0" />
-          <span class="shrink-0" v-text="badge.required" />
           <span
-            v-if="badge.rest"
             class="truncate ml-1 flex-1"
-            v-text="badge.rest"
+            v-text="badge.text"
           />
         </span>
       </template>
