@@ -9,7 +9,10 @@ defineProps<{
 }>()
 </script>
 <template>
-  <div class="flex h-5 w-full gap-2 mx-2 text-muted-foreground">
+  <div
+    v-if="hasComfyBadge || core.length || extension.length"
+    class="flex h-5 w-full gap-2 mx-2 text-muted-foreground"
+  >
     <div
       v-if="hasComfyBadge"
       class="rounded-full bg-component-node-widget-background size-6 flex justify-center items-center"
