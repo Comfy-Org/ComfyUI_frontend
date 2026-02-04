@@ -88,7 +88,7 @@
 
     <div
       v-if="!isCollapsed"
-      class="bg-component-node-background rounded-b-2xl pb-1 flex-1"
+      class="bg-component-node-background rounded-b-2xl pb-1 flex-1 flex"
     >
       <div class="relative mb-1">
         <!-- Progress bar for executing state -->
