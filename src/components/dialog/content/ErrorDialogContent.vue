@@ -63,7 +63,7 @@
 import Divider from 'primevue/divider'
 import ScrollPanel from 'primevue/scrollpanel'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
@@ -77,8 +77,11 @@ import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
 const { error } = defineProps<{
   error: Omit<ErrorReportData, 'workflow' | 'systemStats' | 'serverLogs'> & {
@@ -117,12 +120,53 @@ const dialogStore = useDialogStore()
 /**
  * Locate the node on the canvas.
  */
-function handleLocateNode() {
-  if (!error.nodeId || !canvasStore.canvas) return
+async function handleLocateNode() {
+  if (!error.nodeId) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('errorDialog.nodeIdNotFound')
+    })
+    return
+  }
+  if (!canvasStore.canvas) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('errorDialog.canvasNotInitialized')
+    })
+    return
+  }
 
-  const graphNode = canvasStore.canvas.graph?.getNodeById(error.nodeId)
-  if (!graphNode) return
-  canvasStore.canvas.animateToBounds(graphNode.boundingRect)
+  const graphNode = getNodeByExecutionId(app.rootGraph, String(error.nodeId))
+  if (!graphNode) {
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('errorDialog.nodeNotFound')
+    })
+    return
+  }
+
+  const canvas = canvasStore.canvas
+  if (graphNode.graph && canvas.graph !== graphNode.graph) {
+    // If the node is in a different graph (e.g. inside a subgraph), navigate to it first
+    const targetGraph = graphNode.graph as LGraph
+    canvas.subgraph =
+      !targetGraph.isRootGraph && targetGraph instanceof Subgraph
+        ? targetGraph
+        : undefined
+    canvas.setGraph(targetGraph)
+
+    // Wait for the navigation to pick up and stores to update
+    await nextTick()
+    // Wait for two animation frames to ensure LiteGraph has performed layout and initial draw
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
+    )
+  }
+
+  canvas.animateToBounds(graphNode.boundingRect)
   dialogStore.closeDialog()
 }
 

@@ -184,7 +184,11 @@ export const useDialogService = () => {
         exceptionMessage: executionError.exception_message,
         nodeId: executionError.node_id?.toString(),
         nodeType: executionError.node_type,
-        traceback: executionError.traceback.join('\n'),
+        traceback:
+          executionError.traceback.length > 0
+            ? executionError.traceback.join('\n')
+            : t('errorDialog.noStackTrace'),
+
         reportType: 'graphExecutionError'
       }
     }
