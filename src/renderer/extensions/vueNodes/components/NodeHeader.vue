@@ -20,7 +20,7 @@
   >
     <div class="flex items-center justify-between gap-2.5 min-w-0">
       <!-- Collapse/Expand Button -->
-      <div class="relative flex items-center gap-2.5 min-w-0 shrink-1">
+      <div class="relative flex items-center gap-2.5 min-w-0 shrink-1 mr-auto">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
@@ -60,15 +60,15 @@
       </div>
 
       <template v-for="badge in priceBadges ?? []" :key="badge.required">
-        <span
-          class="flex h-5 bg-component-node-widget-background rounded-full p-1 items-center text-xs min-w-10 max-w-max grow-1 basis-0"
-        >
-          <i class="h-full icon-[lucide--component] bg-[#FABC25] shrink-0" />
+          <i class="h-3 icon-[lucide--component] bg-[#FABC25] shrink-0 -mr-2" />
           <span
-            class="truncate ml-1 flex-1"
-            v-text="badge.text"
+            class="shrink-0"
+            v-text="badge.required"
           />
-        </span>
+          <span
+            class="truncate ml-1 grow-1 max-w-max min-w-0 basis-0"
+            v-text="badge.rest"
+          />
       </template>
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i-comfy:pin
