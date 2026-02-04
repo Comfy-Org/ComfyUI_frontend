@@ -68,17 +68,93 @@ export abstract class BaseWidget<
   linkedWidgets?: IBaseWidget[]
   name: string
   options: TWidget['options']
-  label?: string
   type: TWidget['type']
   y: number = 0
   last_y?: number
   width?: number
-  disabled?: boolean
   computedDisabled?: boolean
-  hidden?: boolean
-  advanced?: boolean
-  promoted?: boolean
   tooltip?: string
+
+  private _label?: string
+  private _hidden?: boolean
+  private _disabled?: boolean
+  private _advanced?: boolean
+  private _promoted?: boolean
+
+  get label(): string | undefined {
+    if (this._nodeId !== undefined) {
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) return state.label
+    }
+    return this._label
+  }
+
+  set label(value: string | undefined) {
+    this._label = value
+    if (this._nodeId !== undefined) {
+      useWidgetValueStore().setLabel(this._nodeId, this.name, value)
+    }
+  }
+
+  get hidden(): boolean | undefined {
+    if (this._nodeId !== undefined) {
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) return state.hidden
+    }
+    return this._hidden
+  }
+
+  set hidden(value: boolean | undefined) {
+    this._hidden = value
+    if (this._nodeId !== undefined) {
+      useWidgetValueStore().setHidden(this._nodeId, this.name, value ?? false)
+    }
+  }
+
+  get disabled(): boolean | undefined {
+    if (this._nodeId !== undefined) {
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) return state.disabled
+    }
+    return this._disabled
+  }
+
+  set disabled(value: boolean | undefined) {
+    this._disabled = value
+    if (this._nodeId !== undefined) {
+      useWidgetValueStore().setDisabled(this._nodeId, this.name, value ?? false)
+    }
+  }
+
+  get advanced(): boolean | undefined {
+    if (this._nodeId !== undefined) {
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) return state.advanced
+    }
+    return this._advanced
+  }
+
+  set advanced(value: boolean | undefined) {
+    this._advanced = value
+    if (this._nodeId !== undefined) {
+      useWidgetValueStore().setAdvanced(this._nodeId, this.name, value ?? false)
+    }
+  }
+
+  get promoted(): boolean | undefined {
+    if (this._nodeId !== undefined) {
+      const state = useWidgetValueStore().getWidget(this._nodeId, this.name)
+      if (state) return state.promoted
+    }
+    return this._promoted
+  }
+
+  set promoted(value: boolean | undefined) {
+    this._promoted = value
+    if (this._nodeId !== undefined) {
+      useWidgetValueStore().setPromoted(this._nodeId, this.name, value ?? false)
+    }
+  }
   element?: HTMLElement
   callback?(
     value: TWidget['value'],
@@ -168,12 +244,22 @@ export abstract class BaseWidget<
       displayValue,
       // @ts-expect-error Prevent naming conflicts with custom nodes.
       labelBaseline,
+      label,
+      hidden,
+      disabled,
+      advanced,
       promoted,
       linkedWidgets,
       ...safeValues
     } = widget
 
     Object.assign(this, safeValues)
+
+    this._label = label
+    this._hidden = hidden
+    this._disabled = disabled
+    this._advanced = advanced
+    this._promoted = promoted
   }
 
   get outline_color() {
