@@ -46,7 +46,7 @@ async function convertToFile(
 
   if (source instanceof Blob) {
     const name = filename || `upload-${Date.now()}.png`
-    return new File([source], name, { type: mimeType })
+    return new File([source], name, { type: source.type || mimeType })
   }
 
   // dataURL string
