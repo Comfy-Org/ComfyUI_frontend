@@ -1109,7 +1109,14 @@ export function useCoreCommands(): ComfyCommand[] {
         const extra = (subgraph.extra ??= {}) as Record<string, unknown>
         const currentDescription = (extra.BlueprintDescription as string) ?? ''
 
-        let description = metadata?.description as string | null | undefined
+        let description: string | null | undefined
+        const rawDescription = metadata?.description
+        if (rawDescription != null) {
+          description =
+            typeof rawDescription === 'string'
+              ? rawDescription
+              : String(rawDescription)
+        }
         description ??= await dialogService.prompt({
           title: t('g.description'),
           message: t('subgraphStore.enterDescription'),
@@ -1131,25 +1138,27 @@ export function useCoreCommands(): ComfyCommand[] {
         const subgraph = canvas.subgraph
         if (!subgraph) return
 
-        const extra = (subgraph.extra ??= {}) as Record<string, unknown>
-        const currentAliases = (extra.BlueprintSearchAliases as string[]) ?? []
+        const parseAliases = (value: unknown): string[] =>
+          (Array.isArray(value) ? value.map(String) : String(value).split(','))
+            .map((s) => s.trim())
+            .filter(Boolean)
 
-        let aliases = metadata?.aliases as string | string[] | null | undefined
-        if (aliases == null) {
+        const extra = (subgraph.extra ??= {}) as Record<string, unknown>
+
+        let aliases: string[]
+        const rawAliases = metadata?.aliases
+        if (rawAliases == null) {
           const input = await dialogService.prompt({
             title: t('subgraphStore.searchAliases'),
             message: t('subgraphStore.enterSearchAliases'),
-            defaultValue: currentAliases.join(', ')
+            defaultValue: parseAliases(extra.BlueprintSearchAliases ?? '').join(
+              ', '
+            )
           })
           if (input === null) return
-          aliases = input
-        }
-
-        if (!Array.isArray(aliases)) {
-          aliases = aliases
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean)
+          aliases = parseAliases(input)
+        } else {
+          aliases = parseAliases(rawAliases)
         }
 
         extra.BlueprintSearchAliases = aliases.length > 0 ? aliases : undefined
