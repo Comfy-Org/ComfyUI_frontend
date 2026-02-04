@@ -13,10 +13,10 @@
           {{ $t('secrets.provider') }}
         </label>
         <Select v-model="form.provider" :disabled="mode === 'edit'">
-          <SelectTrigger id="secret-provider" class="w-full">
+          <SelectTrigger id="secret-provider" class="w-full" autofocus>
             <SelectValue :placeholder="$t('g.none')" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent disable-portal>
             <SelectItem
               v-for="option in providerOptions"
               :key="option.value || 'none'"
@@ -79,10 +79,15 @@
       </span>
 
       <div class="flex justify-end gap-2 pt-2">
-        <Button variant="secondary" type="button" @click="visible = false">
+        <Button
+          variant="secondary"
+          type="button"
+          tabindex="0"
+          @click="visible = false"
+        >
           {{ $t('g.cancel') }}
         </Button>
-        <Button type="submit" :loading="loading">
+        <Button type="submit" tabindex="0" :loading="loading">
           {{ $t('g.save') }}
         </Button>
       </div>
