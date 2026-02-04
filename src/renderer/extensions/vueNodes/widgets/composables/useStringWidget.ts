@@ -4,6 +4,7 @@ import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
@@ -20,14 +21,19 @@ function addMultilineWidget(
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      return inputEl.value
+      return (
+        (useWidgetValueStore().getWidget(node.id, name)?.value as string) ??
+        inputEl.value
+      )
     },
     setValue(v: string) {
       inputEl.value = v
+      const widgetState = useWidgetValueStore().getWidget(node.id, name)
+      if (widgetState) widgetState.value = v
     }
   })
 
-  widget.inputEl = inputEl
+  widget.element = inputEl
   widget.options.minNodeSize = [400, 200]
 
   inputEl.addEventListener('input', () => {

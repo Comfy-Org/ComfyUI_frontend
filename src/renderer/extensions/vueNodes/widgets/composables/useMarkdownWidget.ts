@@ -11,6 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 function addMarkdownWidget(
   node: LGraphNode,
@@ -43,14 +44,19 @@ function addMarkdownWidget(
 
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
-      return textarea.value
+      return (
+        (useWidgetValueStore().getWidget(node.id, name)?.value as string) ??
+        textarea.value
+      )
     },
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
+      const widgetState = useWidgetValueStore().getWidget(node.id, name)
+      if (widgetState) widgetState.value = v
     }
   })
-  widget.inputEl = inputEl
+  widget.element = inputEl
   widget.options.minNodeSize = [400, 200]
 
   inputEl.addEventListener('dblclick', () => {
