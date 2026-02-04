@@ -17,17 +17,18 @@ const setupComfyPage = async (comfyPage) => {
   await comfyPage.setSetting('Comfy.NodeSearchBoxImpl', 'default')
   if (comfyPage.closeMenu) await comfyPage.closeMenu()
   if (comfyPage.closeDialog) await comfyPage.closeDialog()
-  await comfyPage.page.waitForTimeout(500)
+  await comfyPage.nextFrame()
   // Focus canvas
   const canvas = comfyPage.canvas
+  await expect(canvas).toBeVisible({ timeout: 5000 })
   const box = await canvas.boundingBox()
-  if (box) {
-    await comfyPage.page.mouse.click(
-      box.x + box.width / 2,
-      box.y + box.height / 2
-    )
-    await comfyPage.page.waitForTimeout(100)
+  if (!box) {
+    throw new Error('Canvas not found for focus')
   }
+  await comfyPage.page.mouse.click(
+    box.x + box.width / 2,
+    box.y + box.height / 2
+  )
 }
 
 test.describe('API Integration - Workflow CRUD', () => {
@@ -55,9 +56,6 @@ test.describe('API Integration - Workflow CRUD', () => {
     await comfyPage.searchBox.fillAndSelectFirstNode(NODE_TYPE)
     await comfyPage.nextFrame()
 
-    // Wait for node to be fully loaded
-    await comfyPage.page.waitForTimeout(1000)
-
     // Interact with widget inputs to test API-backed UI interactions
     const nodeInput = comfyPage.page
       .locator(
@@ -66,13 +64,13 @@ test.describe('API Integration - Workflow CRUD', () => {
       .first()
 
     if ((await nodeInput.count()) > 0) {
+      await expect(nodeInput).toBeVisible({ timeout: 5000 })
       const value = await nodeInput.inputValue()
-      await nodeInput.fill(value === '' ? '1' : String(Number(value) + 1))
-      await comfyPage.page.waitForTimeout(500)
+      const nextValue = value === '' ? '1' : String(Number(value) + 1)
+      await nodeInput.fill(nextValue)
 
       // Verify the value was set
-      const newValue = await nodeInput.inputValue()
-      expect(newValue).toBe(value === '' ? '1' : String(Number(value) + 1))
+      await expect(nodeInput).toHaveValue(nextValue)
     }
 
     // Verify node is still present after interaction

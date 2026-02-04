@@ -33,6 +33,7 @@ import { SettingsHelper } from './helpers/SettingsHelper'
 import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
+import type { Position, Size } from './types'
 import type { NodeReference } from './utils/litegraphUtils'
 import type { WorkspaceStore } from '../types/globals'
 

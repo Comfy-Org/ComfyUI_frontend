@@ -1,28 +1,13 @@
 import { expect, test } from '@playwright/test'
 import { z } from 'zod'
 
-import { zSystemStats as baseZSystemStats } from '../../src/schemas/apiSchema'
+import { zSystemStats } from '../../src/schemas/apiSchema'
 
 // Locally define the user data schema (not exported from apiSchema.ts)
 // const zUserData = z.array(z.array(z.string(), z.string()))
 
 // Configurable backend base URL
 const BASE_URL = process.env.COMFYUI_API_URL || 'http://127.0.0.1:8188'
-
-// Patch zSystemStats to allow device index to be null
-const zSystemStats = baseZSystemStats.extend({
-  devices: z.array(
-    z.object({
-      name: z.string(),
-      type: z.string(),
-      index: z.number().nullable(),
-      vram_total: z.number(),
-      vram_free: z.number(),
-      torch_vram_total: z.number(),
-      torch_vram_free: z.number()
-    })
-  )
-})
 
 // API Schema Validation Tests
 // These tests ensure backend responses match the frontend's Zod schemas

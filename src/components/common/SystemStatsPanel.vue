@@ -24,9 +24,9 @@
         <TabView v-if="props.stats.devices.length > 1">
           <TabPanel
             v-for="device in props.stats.devices"
-            :key="device.index"
+            :key="device.index ?? device.name"
             :header="device.name"
-            :value="device.index"
+            :value="device.index ?? device.name"
           >
             <DeviceInfo :device="device" />
           </TabPanel>

@@ -94,6 +94,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      ctrl: true,
       key: 'Backspace',
       code: 'Backspace'
     },
