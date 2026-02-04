@@ -80,4 +80,11 @@ export class ComfyNodeSearchBox {
   async removeFilter(index: number) {
     await this.filterChips.nth(index).locator('.p-chip-remove-icon').click()
   }
+
+  /**
+   * Returns a locator for a search result containing the specified text.
+   */
+  findResult(text: string): Locator {
+    return this.dropdown.locator('li').filter({ hasText: text })
+  }
 }

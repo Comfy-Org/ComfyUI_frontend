@@ -350,10 +350,15 @@ export class ComfyPage {
     return `./browser_tests/assets/${fileName}`
   }
 
-  async executeCommand(commandId: string) {
-    await this.page.evaluate((id: string) => {
-      return window['app'].extensionManager.command.execute(id)
-    }, commandId)
+  async executeCommand(commandId: string, metadata?: Record<string, unknown>) {
+    await this.page.evaluate(
+      ({ commandId, metadata }) => {
+        return window['app'].extensionManager.command.execute(commandId, {
+          metadata
+        })
+      },
+      { commandId, metadata }
+    )
   }
 
   async registerCommand(

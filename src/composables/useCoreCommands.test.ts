@@ -68,8 +68,11 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: vi.fn(() => ({}))
 }))
 
+const mockDialogService = vi.hoisted(() => ({
+  prompt: vi.fn()
+}))
 vi.mock('@/services/dialogService', () => ({
-  useDialogService: vi.fn(() => ({}))
+  useDialogService: vi.fn(() => mockDialogService)
 }))
 
 vi.mock('@/services/litegraphService', () => ({
@@ -84,12 +87,29 @@ vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
 }))
 
+const mockChangeTracker = vi.hoisted(() => ({
+  checkState: vi.fn()
+}))
+const mockWorkflowStore = vi.hoisted(() => ({
+  activeWorkflow: {
+    changeTracker: mockChangeTracker
+  }
+}))
 vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({}))
+  useWorkflowStore: vi.fn(() => mockWorkflowStore)
 }))
 
 vi.mock('@/stores/subgraphStore', () => ({
   useSubgraphStore: vi.fn(() => ({}))
+}))
+
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: vi.fn(() => ({
+    getCanvas: () => app.canvas
+  })),
+  useTitleEditorStore: vi.fn(() => ({
+    titleEditorTarget: null
+  }))
 }))
 
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
@@ -155,11 +175,12 @@ describe('useCoreCommands', () => {
       findNodeById: vi.fn(),
       getNodeById: vi.fn(),
       setDirtyCanvas: vi.fn(),
-      sendActionToCanvas: vi.fn()
+      sendActionToCanvas: vi.fn(),
+      extra: {} as Record<string, unknown>
     } as Partial<typeof app.canvas.subgraph> as typeof app.canvas.subgraph
   }
 
-  const mockSubgraph = createMockSubgraph()
+  const mockSubgraph = createMockSubgraph()!
 
   function createMockSettingStore(
     getReturnValue: boolean
@@ -268,6 +289,140 @@ describe('useCoreCommands', () => {
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Subgraph metadata commands', () => {
+    beforeEach(() => {
+      mockSubgraph.extra = {}
+      vi.clearAllMocks()
+    })
+
+    describe('SetDescription command', () => {
+      it('should do nothing when not in subgraph', async () => {
+        app.canvas.subgraph = undefined
+
+        const commands = useCoreCommands()
+        const setDescCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
+        )!
+
+        await setDescCommand.function()
+
+        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+      })
+
+      it('should set description on subgraph.extra', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue('Test description')
+
+        const commands = useCoreCommands()
+        const setDescCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
+        )!
+
+        await setDescCommand.function()
+
+        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(mockSubgraph.extra.BlueprintDescription).toBe('Test description')
+        expect(mockChangeTracker.checkState).toHaveBeenCalled()
+      })
+
+      it('should not set description when user cancels', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue(null)
+
+        const commands = useCoreCommands()
+        const setDescCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetDescription'
+        )!
+
+        await setDescCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintDescription).toBeUndefined()
+        expect(mockChangeTracker.checkState).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('SetSearchAliases command', () => {
+      it('should do nothing when not in subgraph', async () => {
+        app.canvas.subgraph = undefined
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockDialogService.prompt).not.toHaveBeenCalled()
+      })
+
+      it('should set search aliases on subgraph.extra', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue('alias1, alias2, alias3')
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockDialogService.prompt).toHaveBeenCalled()
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
+          'alias1',
+          'alias2',
+          'alias3'
+        ])
+        expect(mockChangeTracker.checkState).toHaveBeenCalled()
+      })
+
+      it('should trim whitespace and filter empty strings', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue('  alias1  ,  , alias2 ,  ')
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toEqual([
+          'alias1',
+          'alias2'
+        ])
+      })
+
+      it('should set undefined when empty input', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue('')
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
+      })
+
+      it('should not set aliases when user cancels', async () => {
+        app.canvas.subgraph = mockSubgraph
+        mockDialogService.prompt.mockResolvedValue(null)
+
+        const commands = useCoreCommands()
+        const setAliasesCommand = commands.find(
+          (cmd) => cmd.id === 'Comfy.Subgraph.SetSearchAliases'
+        )!
+
+        await setAliasesCommand.function()
+
+        expect(mockSubgraph.extra.BlueprintSearchAliases).toBeUndefined()
+        expect(mockChangeTracker.checkState).not.toHaveBeenCalled()
+      })
     })
   })
 })
