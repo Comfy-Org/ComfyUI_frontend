@@ -2,10 +2,17 @@ import { createTestingPinia } from '@pinia/testing'
 import { flushPromises, mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
 
 // Mock modules
 vi.mock('@/platform/distribution/types', () => ({
@@ -55,7 +62,7 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'CheckpointLoaderSimple'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia()]
+        plugins: [PrimeVue, createTestingPinia(), i18n]
       }
     })
   }

@@ -46,7 +46,7 @@ const isFavorited = computed(() =>
 async function handleRename() {
   const newLabel = await dialogService.prompt({
     title: t('g.rename'),
-    message: t('g.enterNewName') + ':',
+    message: t('g.enterNewNamePrompt'),
     defaultValue: widget.label,
     placeholder: widget.name
   })

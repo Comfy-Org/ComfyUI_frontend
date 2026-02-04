@@ -11,7 +11,7 @@ import type { components } from '@/types/comfyRegistryTypes'
 import { mapAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodePacks } from '@/workbench/extensions/manager/composables/nodePack/useNodePacks'
 
-type WorkflowPack = {
+export type WorkflowPack = {
   id:
     | ComfyWorkflowJSON['nodes'][number]['properties']['cnr_id']
     | ComfyWorkflowJSON['nodes'][number]['properties']['aux_id']

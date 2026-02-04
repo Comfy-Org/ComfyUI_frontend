@@ -16,12 +16,15 @@
   "assetBrowser": {
     "allCategory": "جميع {category}",
     "allModels": "جميع النماذج",
+    "apiKeyHint": "تستورد نماذج خاصة أو محمية؟ {link}.",
+    "apiKeyHintLink": "أضف مفاتيح API الخاصة بك في الإعدادات",
     "ariaLabel": {
       "assetCard": "{name} - أصل {type}",
       "loadingAsset": "جاري تحميل الأصل"
     },
     "assetCollection": "مجموعة الأصول",
     "assets": "الأصول",
+    "baseModel": "النموذج الأساسي",
     "baseModels": "النماذج الأساسية",
     "browseAssets": "تصفح الأصول",
     "byType": "حسب النوع",
@@ -50,13 +53,34 @@
       "canImport": "لا توجد نماذج مستوردة بعد. انقر على \"استيراد نموذج\" لإضافة نموذجك الخاص.",
       "restricted": "النماذج الشخصية متاحة فقط لمستوى Creator وما فوق."
     },
+    "errorAccessForbidden": "تم رفض الوصول إلى هذا المورد.",
+    "errorConnectionRefused": "تعذر الاتصال بالمصدر. يرجى المحاولة لاحقًا.",
+    "errorDownloadCancelled": "تم إلغاء التنزيل.",
     "errorFileTooLarge": "الملف يتجاوز الحد الأقصى المسموح به للحجم",
     "errorFormatNotAllowed": "يسمح فقط بصيغة SafeTensor",
+    "errorHttpError": "حدث خطأ أثناء جلب البيانات الوصفية.",
+    "errorInternalError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+    "errorInvalidHost": "تعذر حل اسم مضيف عنوان URL للمصدر.",
+    "errorInvalidUrl": "يرجى إدخال عنوان URL.",
+    "errorInvalidUrlFormat": "تنسيق عنوان URL غير صالح. يرجى التحقق والمحاولة مرة أخرى.",
+    "errorMetadataFetchFailed": "فشل في جلب معلومات الملف من المصدر.",
     "errorModelTypeNotSupported": "نوع النموذج هذا غير مدعوم",
+    "errorNetworkError": "حدث خطأ في الشبكة. يرجى التحقق من الاتصال والمحاولة مرة أخرى.",
+    "errorNetworkTimeout": "انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.",
+    "errorRateLimited": "عدد كبير جدًا من الطلبات. يرجى المحاولة بعد بضع دقائق.",
+    "errorRequestCancelled": "تم إلغاء الطلب.",
+    "errorResourceNotFound": "لم يتم العثور على الملف. يرجى التحقق من عنوان URL والمحاولة مرة أخرى.",
+    "errorServiceUnavailable": "الخدمة غير متوفرة مؤقتًا. يرجى المحاولة لاحقًا.",
+    "errorSourceServerError": "الخادم المصدر يواجه مشاكل. يرجى المحاولة لاحقًا.",
+    "errorUnauthorized": "يرجى تسجيل الدخول للمتابعة.",
+    "errorUnauthorizedSource": "هذا المورد يتطلب المصادقة. يرجى إضافة رمز API الخاص بك في الإعدادات.",
     "errorUnknown": "حدث خطأ غير متوقع",
     "errorUnsafePickleScan": "اكتشف CivitAI رمزًا غير آمن محتملًا في هذا الملف",
     "errorUnsafeVirusScan": "اكتشف CivitAI برمجيات خبيثة أو محتوى مشبوه في هذا الملف",
+    "errorUnsupportedSource": "هذا العنوان غير مدعوم. فقط عناوين Hugging Face وCivitai مسموحة.",
     "errorUploadFailed": "فشل في استيراد الأصل. يرجى المحاولة مرة أخرى.",
+    "errorUserTokenAccessDenied": "رمز API الخاص بك لا يملك صلاحية الوصول إلى هذا المورد. يرجى التحقق من أذونات الرمز.",
+    "errorUserTokenInvalid": "رمز API المخزن غير صالح أو منتهي الصلاحية. يرجى تحديث الرمز في الإعدادات.",
     "failedToCreateNode": "فشل إنشاء العقدة. يرجى المحاولة مرة أخرى أو التحقق من وحدة التحكم للحصول على التفاصيل.",
     "fileFormats": "تنسيقات الملفات",
     "fileName": "اسم الملف",
@@ -127,6 +151,7 @@
     "selectProjects": "اختر المشاريع",
     "sortAZ": "أ-ي",
     "sortBy": "ترتيب حسب",
+    "sortDefault": "الافتراضي",
     "sortPopular": "الأكثر شعبية",
     "sortRecent": "الأحدث",
     "sortZA": "ي-أ",
@@ -177,13 +202,7 @@
       "whitelistInfo": "حول المواقع غير المدرجة في القائمة البيضاء"
     },
     "deleteAccount": {
-      "cancel": "إلغاء",
-      "confirm": "حذف الحساب",
-      "confirmMessage": "هل أنت متأكد أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء وسيتم حذف جميع بياناتك نهائيًا.",
-      "confirmTitle": "حذف الحساب",
-      "deleteAccount": "حذف الحساب",
-      "success": "تم حذف الحساب",
-      "successDetail": "تم حذف حسابك بنجاح."
+      "contactSupport": "لحذف حسابك، يرجى التواصل مع {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "تم إلغاء تسجيل الدخول. يرجى المحاولة مرة أخرى.",
@@ -578,12 +597,20 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "رؤية CLIP",
     "CLIP_VISION_OUTPUT": "خرج رؤية CLIP",
+    "COLOR": "لون",
     "COMBO": "تركيب",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "تكييف",
     "CONTROL_NET": "ControlNet",
+    "FILE_3D": "ملف ثلاثي الأبعاد",
+    "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
+    "FILE_3D_GLB": "ملف GLB ثلاثي الأبعاد",
+    "FILE_3D_GLTF": "ملف GLTF ثلاثي الأبعاد",
+    "FILE_3D_OBJ": "ملف OBJ ثلاثي الأبعاد",
+    "FILE_3D_STL": "ملف STL ثلاثي الأبعاد",
+    "FILE_3D_USDZ": "ملف USDZ ثلاثي الأبعاد",
     "FLOAT": "رقم عشري",
     "FLOATS": "أرقام عشرية",
     "GEMINI_INPUT_FILES": "ملفات إدخال جيميني",
@@ -724,6 +751,7 @@
     "commandProhibited": "الأمر {command} محظور. يرجى التواصل مع المسؤول لمزيد من المعلومات.",
     "community": "المجتمع",
     "completed": "اكتمل",
+    "completedWithCheckmark": "اكتمل ✓",
     "confirm": "تأكيد",
     "confirmed": "تم التأكيد",
     "content": "محتوى",
@@ -759,6 +787,7 @@
     "download": "تنزيل",
     "downloadImage": "تنزيل الصورة",
     "downloadVideo": "تنزيل الفيديو",
+    "downloadWithSize": "تنزيل ({size})",
     "downloading": "جارٍ التحميل",
     "dropYourFileOr": "أسقط ملفك أو",
     "duplicate": "تكرار",
@@ -774,12 +803,14 @@
     "enabling": "جارٍ التمكين",
     "enterBaseName": "أدخل الاسم الأساسي",
     "enterNewName": "أدخل الاسم الجديد",
+    "enterNewNamePrompt": "أدخل اسمًا جديدًا:",
     "error": "خطأ",
     "errorLoadingImage": "حدث خطأ أثناء تحميل الصورة",
     "errorLoadingVideo": "حدث خطأ أثناء تحميل الفيديو",
     "experimental": "تجريبي",
     "export": "تصدير",
     "extensionName": "اسم الامتداد",
+    "extensions": "الملحقات",
     "failed": "فشل",
     "failedToCopyJobId": "فشل نسخ معرف المهمة",
     "failedToDownloadImage": "فشل في تنزيل الصورة",
@@ -818,6 +849,7 @@
     "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
     "keybinding": "اختصار لوحة المفاتيح",
     "keybindingAlreadyExists": "الاختصار موجود بالفعل في",
+    "keybindings": "اختصارات لوحة المفاتيح",
     "learnMore": "اعرف المزيد",
     "listening": "جاري الاستماع...",
     "liveSamplingPreview": "معاينة أخذ العينات المباشرة",
@@ -929,6 +961,7 @@
     "selectedFile": "الملف المحدد",
     "setAsBackground": "تعيين كخلفية",
     "settings": "الإعدادات",
+    "shortcutSuffix": " ({shortcut})",
     "showLeftPanel": "إظهار اللوحة اليسرى",
     "showReport": "عرض التقرير",
     "showRightPanel": "إظهار اللوحة اليمنى",
@@ -1030,8 +1063,12 @@
   },
   "imageCrop": {
     "cropPreviewAlt": "معاينة الاقتصاص",
+    "custom": "مخصص",
     "loading": "جارٍ التحميل...",
-    "noInputImage": "لا توجد صورة إدخال متصلة"
+    "lockRatio": "تثبيت النسبة",
+    "noInputImage": "لا توجد صورة إدخال متصلة",
+    "ratio": "النسبة",
+    "unlockRatio": "إلغاء تثبيت النسبة"
   },
   "importFailed": {
     "copyError": "خطأ في النسخ",
@@ -1155,14 +1192,21 @@
     "helpFix": "المساعدة في الإصلاح"
   },
   "linearMode": {
-    "beta": "تجريبي - أرسل ملاحظاتك",
+    "beta": "وضع التطبيق تجريبي - أرسل ملاحظاتك",
     "downloadAll": "تنزيل الكل",
     "dragAndDropImage": "اسحب وأسقط صورة",
     "graphMode": "وضع الرسم البياني",
-    "linearMode": "الوضع البسيط",
+    "linearMode": "وضع التطبيق",
     "rerun": "تشغيل مجدد",
     "reuseParameters": "إعادة استخدام المعلمات",
-    "runCount": "عدد مرات التشغيل:"
+    "runCount": "عدد مرات التشغيل:",
+    "welcome": {
+      "intro": "عرض مبسط يخفي مخطط العقد حتى تتمكن من التركيز على الإبداع.",
+      "layout": "على اليسار، سترى الصور والفيديوهات والمخرجات التي تم إنشاؤها. على اليمين، فقط عناصر التحكم التي تحتاجها. كل ما هو معقد يبقى بعيدًا عن الأنظار.",
+      "sharing": "المشاركة سهلة: أنشئ سير العمل الخاص بك، افتح وضع التطبيق، انقر بزر الماوس الأيمن على علامة التبويب، ثم صدّر. عندما يفتح الآخرون ملفك، سيتم تشغيله مباشرة في هذا العرض النظيف. يمكنك مشاركة سير عمل قوي كأداة بسيطة دون الحاجة لفهم مخططات العقد.",
+      "title": "مرحبًا بك في وضع التطبيق",
+      "widget": "إذا كنت تريد التحكم في الإعدادات الظاهرة، حوّل العقد العليا إلى مخطط فرعي، ثم استخدم ترقية عناصر التحكم في الأدوات أعلاه لاختيار ما يتم عرضه."
+    }
   },
   "load3d": {
     "applyingTexture": "جارٍ تطبيق الخامة...",
@@ -1301,6 +1345,28 @@
     "disabledNodesWontUpdate": "العقد المعطلة لن يتم تحديثها",
     "discoverCommunityContent": "استكشف حزم العقد والامتدادات والمزيد من إبداعات المجتمع...",
     "downloads": "التنزيلات",
+    "emptyState": {
+      "allInstalled": {
+        "message": "لم تقم بتثبيت أي إضافات بعد.",
+        "title": "لا توجد إضافات مثبتة"
+      },
+      "conflicting": {
+        "message": "جميع إضافاتك متوافقة.",
+        "title": "لا توجد تعارضات"
+      },
+      "missing": {
+        "message": "جميع العقد المطلوبة مثبتة.",
+        "title": "لا توجد عقد مفقودة"
+      },
+      "updateAvailable": {
+        "message": "جميع إضافاتك محدّثة.",
+        "title": "كل شيء محدّث"
+      },
+      "workflow": {
+        "message": "هذا سير العمل لا يستخدم أي عقدة إضافة.",
+        "title": "لا توجد إضافات في سير العمل"
+      }
+    },
     "enablePackToChangeVersion": "فعّل هذه الحزمة لتغيير الإصدارات",
     "errorConnecting": "خطأ في الاتصال بسجل عقد Comfy.",
     "extensionsSuccessfullyInstalled": "تم تثبيت الإضافات بنجاح وهي جاهزة للاستخدام!",
@@ -1322,6 +1388,7 @@
     "installingDependencies": "جاري تثبيت التبعيات...",
     "lastUpdated": "آخر تحديث",
     "latestVersion": "الأحدث",
+    "legacyManagerSearchTip": "هل تبحث عن ComfyUI-Manager؟ يمكنك تفعيل واجهة المدير القديمة عن طريق تشغيل ComfyUI مع الخيار --enable-manager-legacy-ui.",
     "legacyManagerUI": "استخدام الواجهة القديمة",
     "legacyManagerUIDescription": "لاستخدام واجهة مدير الإصدارات القديمة، ابدأ ComfyUI مع --enable-manager-legacy-ui",
     "legacyMenuNotAvailable": "قائمة مدير الإصدارات القديمة غير متوفرة، سيتم التبديل إلى القائمة الجديدة.",
@@ -1590,7 +1657,6 @@
     "Node Library": "مكتبة العقد",
     "Node Links": "روابط العقد",
     "Open": "فتح",
-    "Open 3D Viewer (Beta) for Selected Node": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة",
     "Open Color Picker in MaskEditor": "فتح منتقي الألوان في محرر القناع",
     "Open Custom Nodes Folder": "فتح مجلد العقد المخصصة",
     "Open DevTools": "فتح أدوات المطور",
@@ -1624,12 +1690,10 @@
     "Show Model Selector (Dev)": "إظهار منتقي النماذج (للمطورين)",
     "Show Settings Dialog": "عرض نافذة الإعدادات",
     "Sign Out": "تسجيل خروج",
+    "Toggle App Mode": "تبديل وضع التطبيق",
     "Toggle Essential Bottom Panel": "تبديل لوحة العناصر الأساسية السفلية",
-    "Toggle Logs Bottom Panel": "تبديل لوحة السجلات السفلية",
     "Toggle Queue Panel V2": "تبديل لوحة قائمة الانتظار V2",
     "Toggle Search Box": "تبديل مربع البحث",
-    "Toggle Simple Mode": "تبديل وضع البسيط",
-    "Toggle Terminal Bottom Panel": "تبديل لوحة الطرفية السفلية",
     "Toggle Theme (Dark/Light)": "تبديل السمة (داكن/فاتح)",
     "Toggle View Controls Bottom Panel": "تبديل لوحة عناصر التحكم في العرض السفلية",
     "Toggle promotion of hovered widget": "تبديل ترقية عنصر واجهة المستخدم المحدد",
@@ -1687,6 +1751,7 @@
     "ByteDance": "بايت دانس",
     "Gemini": "جيميني",
     "Grok": "Grok",
+    "HitPaw": "HitPaw",
     "Ideogram": "إيديوغرام",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1787,6 +1852,16 @@
     "render": "خطأ في عرض العقدة",
     "slots": "خطأ في فتحات العقدة",
     "widgets": "خطأ في عناصر العقدة"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "إخفاء العقد المهملة",
+    "hideDeprecatedDescription": "يخفي العقد التي تم تعليمها كمهملة ما لم يتم تفعيلها صراحة",
+    "hideDevOnly": "إخفاء عقد المطور فقط",
+    "hideDevOnlyDescription": "يخفي العقد المخصصة للمطورين فقط ما لم يتم تفعيل وضع المطور",
+    "hideExperimental": "إخفاء العقد التجريبية",
+    "hideExperimentalDescription": "يخفي العقد التي تم تعليمها كتجريبية ما لم يتم تفعيلها صراحة",
+    "hideSubgraph": "إخفاء عقد الرسم البياني الفرعي",
+    "hideSubgraphDescription": "يخفي مؤقتًا عقد الرسم البياني الفرعي من مكتبة العقد والبحث"
   },
   "nodeHelpPage": {
     "documentationPage": "صفحة التوثيق",
@@ -1898,6 +1973,7 @@
     "favorites": "المدخلات المفضلة",
     "favoritesNone": "لا توجد مدخلات مفضلة",
     "favoritesNoneDesc": "ستظهر المدخلات التي تضعها في المفضلة هنا",
+    "favoritesNoneHint": "في علامة تبويب المعلمات، انقر على {moreIcon} بجانب أي إدخال لإضافته هنا",
     "favoritesNoneTooltip": "قم بوضع نجمة على الأدوات للوصول السريع إليها دون اختيار العقد",
     "globalSettings": {
       "canvas": "اللوحة",
@@ -1942,6 +2018,36 @@
     "title": "لا توجد عقد محددة | عقدة واحدة محددة | {count} عقد محددة",
     "togglePanel": "تبديل لوحة الخصائص",
     "workflowOverview": "نظرة عامة على سير العمل"
+  },
+  "secrets": {
+    "addSecret": "إضافة سر",
+    "createdAt": "تم الإنشاء في {date}",
+    "deleteConfirmMessage": "هل أنت متأكد أنك تريد حذف \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteConfirmTitle": "حذف السر",
+    "description": "يتم تشفير الأسرار وتُستخدم للبيانات الحساسة مثل مفاتيح API.",
+    "descriptionUsage": "قم بتخزين رموزك هنا لتمكين تنزيل النماذج الخاصة والمحمية من المزودين المدعومين.",
+    "editSecret": "تعديل السر",
+    "errors": {
+      "duplicateName": "يوجد سر بهذا الاسم بالفعل",
+      "duplicateProvider": "يوجد سر لهذا المزود بالفعل",
+      "nameRequired": "الاسم مطلوب",
+      "nameTooLong": "يجب ألا يزيد الاسم عن ٢٥٥ حرفًا",
+      "providerRequired": "المزود مطلوب",
+      "secretValueRequired": "قيمة السر مطلوبة"
+    },
+    "lastUsed": "آخر استخدام في {date}",
+    "modelProviders": "مزودو النماذج",
+    "name": "الاسم",
+    "namePlaceholder": "مثال: مفتاح API الخاص بي",
+    "noSecrets": "لا توجد أسرار مخزنة. أضف أول مفتاح API للبدء.",
+    "provider": "المزود",
+    "providerHint": "اختياري. اختيار مزود يتيح استخدام الرمز تلقائيًا.",
+    "secretValue": "قيمة السر",
+    "secretValueHint": "سيتم تشفير هذه القيمة ولا يمكن عرضها مرة أخرى.",
+    "secretValueHintEdit": "اترك الحقل فارغًا للاحتفاظ بالقيمة الحالية.",
+    "secretValuePlaceholder": "أدخل مفتاح API الخاص بك",
+    "secretValuePlaceholderEdit": "أدخل قيمة جديدة للتغيير",
+    "title": "مفاتيح API والأسرار"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "تجاوز عقد المجموعة",
@@ -2160,6 +2266,7 @@
     "Reroute": "إعادة التوجيه",
     "RerouteBeta": "إعادة توجيه بيتا",
     "Scene": "المشهد",
+    "Secrets": "الأسرار",
     "Server": "الخادم",
     "Server-Config": "إعدادات الخادم",
     "Settings": "الإعدادات",
@@ -2313,6 +2420,7 @@
   },
   "subgraphStore": {
     "blueprintName": "اسم المخطط الفرعي",
+    "blueprintNamePrompt": "اسم المخطط الفرعي:",
     "cannotDeleteGlobal": "لا يمكن حذف المخططات المثبتة",
     "confirmDelete": "سيؤدي هذا الإجراء إلى إزالة المخطط نهائيًا من مكتبتك",
     "confirmDeleteTitle": "حذف المخطط؟",
@@ -2506,6 +2614,9 @@
     "useCaseFilter": "المهام",
     "useCasesSelected": "{count} حالات استخدام"
   },
+  "templates": {
+    "logoProviderSeparator": " و "
+  },
   "toastMessages": {
     "cannotCreateSubgraph": "لا يمكن إنشاء مخطط فرعي",
     "couldNotDetermineFileType": "تعذر تحديد نوع الملف",
@@ -2669,6 +2780,7 @@
   },
   "workflowService": {
     "enterFilename": "أدخل اسم الملف",
+    "enterFilenamePrompt": "أدخل اسم الملف:",
     "exportWorkflow": "تصدير سير العمل",
     "saveWorkflow": "حفظ سير العمل"
   },

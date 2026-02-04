@@ -5,6 +5,8 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -68,9 +70,11 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { type ExtensionManager } from '@/types/extensionTypes'
+import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import type { MissingNodeTypeExtraInfo } from '@/workbench/extensions/manager/types/missingNodeErrorTypes'
+import { createMissingNodeTypeFromError } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
@@ -122,7 +126,7 @@ type Clipspace = {
   widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
   imgs?: HTMLImageElement[] | null
   original_imgs?: HTMLImageElement[] | null
-  images?: any[] | null
+  images?: ResultItem[] | null
   selectedIndex: number
   img_paste_mode: string
   paintedIndex: number
@@ -732,17 +736,31 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
-      fixLinkInputSlots(this)
+      // Set pending sync flag to suppress link rendering until slots are synced
+      if (LiteGraph.vueNodesMode) {
+        layoutStore.setPendingSlotSync(true)
+      }
 
-      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+      try {
+        fixLinkInputSlots(this)
 
-      const r = onConfigure?.apply(this, args)
+        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
+        const r = onConfigure?.apply(this, args)
 
-      return r
+        // Fire after onConfigure, used by primitives to generate widget using input nodes config
+        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
+
+        return r
+      } finally {
+        // Flush pending slot layout syncs to fix link alignment after undo/redo
+        // Using finally ensures links aren't permanently suppressed if an error occurs
+        if (LiteGraph.vueNodesMode) {
+          flushScheduledSlotLayoutSync()
+          app.canvas?.setDirty(true, true)
+        }
+      }
     }
   }
 
@@ -1403,10 +1421,21 @@ export class ComfyApp {
               } catch (error) {}
             }
           } catch (error: unknown) {
-            useDialogService().showErrorDialog(error, {
-              title: t('errorDialog.promptExecutionError'),
-              reportType: 'promptExecutionError'
-            })
+            if (
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object' &&
+              error.response.error?.type === 'missing_node_type'
+            ) {
+              const extraInfo = (error.response.error.extra_info ??
+                {}) as MissingNodeTypeExtraInfo
+              const missingNodeType = createMissingNodeTypeFromError(extraInfo)
+              this.showMissingNodesError([missingNodeType])
+            } else {
+              useDialogService().showErrorDialog(error, {
+                title: t('errorDialog.promptExecutionError'),
+                reportType: 'promptExecutionError'
+              })
+            }
             console.error(error)
 
             if (error instanceof PromptExecutionError) {

@@ -94,7 +94,7 @@ describe('useSubgraphStore', () => {
     //mock canvas to provide a minimal subgraphNode
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const graph = subgraphNode.graph
+    const graph = subgraphNode.graph!
     graph.add(subgraphNode)
     vi.mocked(comfyApp.canvas).selectedItems = new Set([subgraphNode])
     vi.mocked(comfyApp.canvas)._serializeItems = vi.fn(() => {

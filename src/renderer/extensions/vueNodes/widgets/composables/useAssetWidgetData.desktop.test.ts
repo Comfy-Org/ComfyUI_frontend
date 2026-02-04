@@ -29,12 +29,10 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 describe('useAssetWidgetData (desktop/isCloud=false)', () => {
   it('returns empty/default values without calling stores', () => {
     const nodeType = ref('CheckpointLoaderSimple')
-    const { category, assets, dropdownItems, isLoading, error } =
-      useAssetWidgetData(nodeType)
+    const { category, assets, isLoading, error } = useAssetWidgetData(nodeType)
 
     expect(category.value).toBeUndefined()
     expect(assets.value).toEqual([])
-    expect(dropdownItems.value).toEqual([])
     expect(isLoading.value).toBe(false)
     expect(error.value).toBeNull()
     expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()

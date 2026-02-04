@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Convierte un color a un valor entero RGB.",
+    "display_name": "Color a RGB Int",
+    "inputs": {
+      "color": {
+        "name": "color"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_int",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Combinar Hooks [2]",
     "inputs": {
@@ -2187,6 +2202,23 @@
     "outputs": {
       "0": {
         "tooltip": "El modelo con EasyCache."
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "tamaño de lote",
+        "tooltip": "El número de imágenes latentes en el lote."
+      },
+      "seconds": {
+        "name": "segundos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3531,6 +3563,50 @@
       },
       "tapered_corners": {
         "name": "esquinas_afiladas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "Aumenta la resolución de imágenes de baja calidad a superresolución, elimina artefactos y ruido. Salida máxima: 32 megapíxeles.",
+    "display_name": "HitPaw General Image Enhance",
+    "inputs": {
+      "auto_downscale": {
+        "name": "reducción automática",
+        "tooltip": "Reduce automáticamente la imagen de entrada si la salida supera el límite."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "upscale_factor": {
+        "name": "factor de escalado"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "Aumenta la resolución de videos de baja calidad a alta resolución, elimina artefactos y ruido. Los precios mostrados son por segundo de video.",
+    "display_name": "HitPaw Video Enhance",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -6342,7 +6418,9 @@
   "Load3D": {
     "display_name": "Cargar 3D",
     "inputs": {
-      "clear": {},
+      "clear": {
+        "": "limpiar"
+      },
       "height": {
         "name": "alto"
       },
@@ -6352,8 +6430,12 @@
       "model_file": {
         "name": "archivo_modelo"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
+      "upload 3d model": {
+        "": "subir modelo 3D"
+      },
+      "upload extra resources": {
+        "": "subir recursos adicionales"
+      },
       "width": {
         "name": "ancho"
       }
@@ -7237,12 +7319,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: Imagen a Modelo",
@@ -7288,16 +7375,18 @@
         "name": "modo de simetría"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Multi-Imagen a Modelo",
@@ -7343,16 +7432,18 @@
         "name": "modo de simetría"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "Refina un modelo borrador previamente creado.",
@@ -7377,16 +7468,18 @@
         "tooltip": "Proporcione un texto para guiar el proceso de texturizado. Máximo 600 caracteres. No se puede usar al mismo tiempo que 'texture_image'."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "Proporciona un personaje riggeado en formatos estándar. El auto-rigging actualmente no es adecuado para mallas sin textura, activos no humanoides o activos humanoides con estructura de extremidades y cuerpo poco clara.",
@@ -7404,16 +7497,18 @@
         "tooltip": "Imagen de textura de color base UV-desplegada del modelo."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: Texto a Modelo",
@@ -7452,16 +7547,18 @@
         "name": "modo_simetría"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: Modelo de Textura",
@@ -7488,16 +7585,18 @@
         "tooltip": "Describe el estilo de textura deseado para el objeto usando texto. Máximo 600 caracteres. No se puede usar al mismo tiempo que 'image_style'."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "Genera videos a partir de un prompt, con opción de usar un fotograma inicial utilizando el nuevo modelo MiniMax Hailuo-02.",
@@ -10694,11 +10793,9 @@
       "camera_info": {
         "name": "camera_info"
       },
-      "image": {
-        "name": "imagen"
-      },
       "model_file": {
-        "name": "archivo_modelo"
+        "name": "archivo_modelo",
+        "tooltip": "Archivo de modelo 3D o ruta del archivo"
       }
     }
   },
@@ -10978,6 +11075,25 @@
     "outputs": {
       "0": {
         "name": "controles_recraft",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "Crea un estilo personalizado a partir de imágenes de referencia. Sube de 1 a 5 imágenes para usar como referencias de estilo. El tamaño total de todas las imágenes está limitado a 5 MB.",
+    "display_name": "Recraft Crear Estilo",
+    "inputs": {
+      "images": {
+        "name": "imágenes"
+      },
+      "style": {
+        "name": "estilo",
+        "tooltip": "El estilo base de las imágenes generadas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "id_estilo",
         "tooltip": null
       }
     }
@@ -11320,6 +11436,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "Este nodo establece el audio de referencia para el timbre (para ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamiento"
+      },
+      "latent": {
+        "name": "latente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "Extracción Regex",
     "inputs": {
@@ -11648,12 +11781,13 @@
         "name": "Semilla"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta Modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "Generar activos 3D usando la API de Rodin",
@@ -11675,12 +11809,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta Modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "Generar activos 3D usando la API de Rodin",
@@ -11699,12 +11834,13 @@
         "name": "Semilla"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta Modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "Generar activos 3D usando la API de Rodin",
@@ -11717,12 +11853,13 @@
         "name": "Semilla"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta del modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "Generar activos 3D usando la API de Rodin",
@@ -11741,12 +11878,13 @@
         "name": "Semilla"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "Ruta del modelo 3D",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "Sube los primeros y últimos fotogramas clave, redacta un prompt y genera un video. Las transiciones más complejas, como casos donde el último fotograma es completamente diferente del primero, pueden beneficiarse de la duración más larga de 10s. Esto le daría a la generación más tiempo para transicionar suavemente entre las dos entradas. Antes de comenzar, revisa estas mejores prácticas para asegurar que tus selecciones de entrada preparen tu generación para el éxito: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12473,11 +12611,9 @@
       "filename_prefix": {
         "name": "prefijo_nombre_archivo"
       },
-      "image": {
-        "name": "imagen"
-      },
       "mesh": {
-        "name": "malla"
+        "name": "malla",
+        "tooltip": "Malla o archivo GLB para guardar"
       }
     }
   },
@@ -13730,12 +13866,17 @@
         "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: Texto a Modelo (Pro)",
@@ -13765,12 +13906,17 @@
         "tooltip": "La semilla controla si el nodo debe volver a ejecutarse; los resultados son no deterministas independientemente de la semilla."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_modelo",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13786,6 +13932,46 @@
       },
       "tags": {
         "name": "etiquetas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "bpm"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "duration": {
+        "name": "duración"
+      },
+      "keyscale": {
+        "name": "escala tonal"
+      },
+      "language": {
+        "name": "idioma"
+      },
+      "lyrics": {
+        "name": "letra"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "tags": {
+        "name": "etiquetas"
+      },
+      "timesignature": {
+        "name": "compás"
       }
     },
     "outputs": {
@@ -14349,16 +14535,14 @@
         "name": "semilla_textura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multivista a Modelo",
@@ -14410,16 +14594,14 @@
         "name": "semilla_de_textura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "Refina un modelo borrador creado únicamente por modelos Tripo v1.4.",
@@ -14430,16 +14612,14 @@
         "tooltip": "Debe ser un modelo Tripo v1.4"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: Redireccionar modelo con rig",
@@ -14451,16 +14631,14 @@
         "name": "ID_de_tarea_del_modelo_original"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_de_redireccionamiento",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: Modelo con rig",
@@ -14469,16 +14647,14 @@
         "name": "ID_de_tarea_del_modelo_original"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_de_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ID_de_tarea_de_rig",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Texto a Modelo",
@@ -14523,16 +14699,14 @@
         "name": "semilla_de_textura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_del_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: Modelo de textura",
@@ -14556,16 +14730,14 @@
         "name": "semilla_de_textura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "archivo_del_modelo",
-        "tooltip": null
-      },
-      "1": {
-        "name": "tarea_del_modelo",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "Truncar texto",
@@ -15229,6 +15401,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Genera un video a partir de una imagen y un prompt opcional.",
+    "display_name": "Generación de video de imagen a video Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Una imagen que se usará como el primer fotograma del video generado."
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Un prompt de texto opcional para la generación de video (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Genera un video a partir de un prompt de texto.",
+    "display_name": "Generación de video de texto a video Vidu Q3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la generación de video."
+      },
+      "model_aspect_ratio": {
+        "name": "relación_de_aspecto"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Una descripción textual para la generación de video, con una longitud máxima de 2000 caracteres."
+      },
+      "seed": {
+        "name": "semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Extiende un video existente generando fotogramas adicionales.",
+    "display_name": "Extensión de video Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "end_frame": {
+        "name": "fotograma_final"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a utilizar para la extensión de video."
+      },
+      "model_duration": {
+        "name": "duración"
+      },
+      "model_resolution": {
+        "name": "resolución"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Un prompt de texto opcional para el video extendido (máx. 2000 caracteres)."
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "El video fuente a extender."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Generar video a partir de imagen y texto opcional",
     "display_name": "Generación de Video a partir de Imagen Vidu",
@@ -15263,6 +15548,49 @@
       "seed": {
         "name": "semilla",
         "tooltip": "Semilla para la generación de video (0 para aleatorio)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Genera un video con múltiples transiciones de fotogramas clave.",
+    "display_name": "Generación de video multifotograma Vidu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "frames": {
+        "name": "fotogramas",
+        "tooltip": "Número de transiciones de fotogramas clave (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duración1"
+      },
+      "frames_duration2": {
+        "name": "duración2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "start_image": {
+        "name": "imagen_inicial",
+        "tooltip": "La imagen del fotograma inicial. La relación de aspecto debe estar entre 1:4 y 4:1."
       }
     },
     "outputs": {

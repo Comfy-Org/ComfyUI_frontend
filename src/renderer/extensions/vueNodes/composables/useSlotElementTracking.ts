@@ -12,6 +12,7 @@ import { useSharedCanvasPositionConversion } from '@/composables/element/useCanv
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
 import {
   isPointEqual,
@@ -28,16 +29,36 @@ const raf = createRafBatch(() => {
 
 function scheduleSlotLayoutSync(nodeId: string) {
   pendingNodes.add(nodeId)
+  // Re-assert pending flag for late mounts (Vue components mounting after
+  // flushScheduledSlotLayoutSync was called synchronously in onConfigure)
+  layoutStore.setPendingSlotSync(true)
   raf.schedule()
 }
 
-function flushScheduledSlotLayoutSync() {
-  if (pendingNodes.size === 0) return
+export function flushScheduledSlotLayoutSync() {
+  if (pendingNodes.size === 0) {
+    // No pending nodes - check if we should wait for Vue components to mount
+    const graph = app.canvas?.graph
+    const hasNodes = graph && graph._nodes && graph._nodes.length > 0
+    if (hasNodes) {
+      // Graph has nodes but Vue hasn't mounted them yet - keep flag set
+      // so late mounts can re-assert it via scheduleSlotLayoutSync()
+      return
+    }
+    // No nodes in graph - safe to clear the flag (no Vue components will mount)
+    layoutStore.setPendingSlotSync(false)
+    app.canvas?.setDirty(true, true)
+    return
+  }
   const conv = useSharedCanvasPositionConversion()
   for (const nodeId of Array.from(pendingNodes)) {
     pendingNodes.delete(nodeId)
     syncNodeSlotLayoutsFromDOM(nodeId, conv)
   }
+  // Clear the pending sync flag - slots are now synced
+  layoutStore.setPendingSlotSync(false)
+  // Trigger canvas redraw now that links can render with correct positions
+  app.canvas?.setDirty(true, true)
 }
 
 export function syncNodeSlotLayoutsFromDOM(

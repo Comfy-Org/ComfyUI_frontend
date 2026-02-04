@@ -45,7 +45,7 @@ describe.skip('SubgraphConversion', () => {
     it('Should keep interior nodes and links', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph
+      const graph = subgraphNode.graph!
       graph.add(subgraphNode)
 
       const node1 = createNode(subgraph, [], ['number'])
@@ -63,7 +63,7 @@ describe.skip('SubgraphConversion', () => {
         outputs: [{ name: 'value', type: 'number' }]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph
+      const graph = subgraphNode.graph!
       graph.add(subgraphNode)
 
       const innerNode1 = createNode(subgraph, [], ['number'])
@@ -86,7 +86,7 @@ describe.skip('SubgraphConversion', () => {
         outputs: [{ name: 'value', type: 'number' }]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph
+      const graph = subgraphNode.graph!
       graph.add(subgraphNode)
 
       const inner = createNode(subgraph, [], ['number'])
@@ -117,7 +117,7 @@ describe.skip('SubgraphConversion', () => {
         ]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph
+      const graph = subgraphNode.graph!
       graph.add(subgraphNode)
 
       const inner = createNode(subgraph, [], ['number', 'number'])
@@ -159,7 +159,7 @@ describe.skip('SubgraphConversion', () => {
         ]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph
+      const graph = subgraphNode.graph!
       graph.add(subgraphNode)
 
       const inner1 = createNode(subgraph, ['number', 'number'])

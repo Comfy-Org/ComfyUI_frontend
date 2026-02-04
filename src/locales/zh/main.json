@@ -16,12 +16,15 @@
   "assetBrowser": {
     "allCategory": "全部{category}",
     "allModels": "全部模型",
+    "apiKeyHint": "导入私有或受限模型？{link}。",
+    "apiKeyHintLink": "在设置中添加您的 API 密钥",
     "ariaLabel": {
       "assetCard": "{name} - {type}资产",
       "loadingAsset": "正在加载资产"
     },
     "assetCollection": "资产合集",
     "assets": "资产",
+    "baseModel": "基础模型",
     "baseModels": "基础模型",
     "browseAssets": "浏览资产",
     "byType": "按类型",
@@ -50,13 +53,34 @@
       "canImport": "尚未导入模型。点击“导入模型”添加您的模型。",
       "restricted": "个人模型仅限创作者及以上等级使用。"
     },
+    "errorAccessForbidden": "无法访问此资源。",
+    "errorConnectionRefused": "无法连接到来源。请稍后再试。",
+    "errorDownloadCancelled": "下载已取消。",
     "errorFileTooLarge": "允许执行文件的文件大小限制",
     "errorFormatNotAllowed": "仅允许 SafeTensor 格式",
+    "errorHttpError": "获取元数据时发生错误。",
+    "errorInternalError": "发生意外错误。请重试。",
+    "errorInvalidHost": "无法解析来源 URL 的主机名。",
+    "errorInvalidUrl": "请输入一个 URL。",
+    "errorInvalidUrlFormat": "URL 格式无效。请检查后重试。",
+    "errorMetadataFetchFailed": "从来源获取文件信息失败。",
     "errorModelTypeNotSupported": "不支持该类型的模型",
+    "errorNetworkError": "发生网络错误。请检查您的连接并重试。",
+    "errorNetworkTimeout": "请求超时。请重试。",
+    "errorRateLimited": "请求过多。请几分钟后再试。",
+    "errorRequestCancelled": "请求已取消。",
+    "errorResourceNotFound": "未找到文件。请检查 URL 并重试。",
+    "errorServiceUnavailable": "服务暂时不可用。请稍后再试。",
+    "errorSourceServerError": "来源服务器出现问题。请稍后再试。",
+    "errorUnauthorized": "请登录以继续。",
+    "errorUnauthorizedSource": "此资源需要身份验证。请在设置中添加您的 API 密钥。",
     "errorUnknown": "发生了意外错误",
     "errorUnsafePickleScan": "CivitAI 在该文件中检测到不安全代码",
     "errorUnsafeVirusScan": "CivitAI 在该文件中检测到木马或可疑文件",
+    "errorUnsupportedSource": "此 URL 不受支持。仅允许 Hugging Face 和 Civitai 的链接。",
     "errorUploadFailed": "导入资产失败，请重试。",
+    "errorUserTokenAccessDenied": "您的 API 密钥无权访问此资源。请检查密钥权限。",
+    "errorUserTokenInvalid": "您保存的 API 密钥无效或已过期。请在设置中更新密钥。",
     "failedToCreateNode": "创建节点失败。请重试或查看控制台获取详细信息。",
     "fileFormats": "文件格式",
     "fileName": "文件名",
@@ -127,6 +151,7 @@
     "selectProjects": "选择项目",
     "sortAZ": "A-Z",
     "sortBy": "排序方式",
+    "sortDefault": "默认",
     "sortPopular": "最受欢迎",
     "sortRecent": "最近",
     "sortZA": "Z-A",
@@ -177,13 +202,7 @@
       "whitelistInfo": "关于非白名单网站"
     },
     "deleteAccount": {
-      "cancel": "取消",
-      "confirm": "删除账户",
-      "confirmMessage": "您确定要删除您的账户吗？此操作无法撤销，并且会永久删除您的所有数据。",
-      "confirmTitle": "删除账户",
-      "deleteAccount": "删除账户",
-      "success": "账户已删除",
-      "successDetail": "您的账户已成功删除。"
+      "contactSupport": "如需删除您的账户，请联系 {email}"
     },
     "errors": {
       "auth/cancelled-popup-request": "登录已取消。请重试。",
@@ -578,12 +597,20 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP视觉",
     "CLIP_VISION_OUTPUT": "CLIP视觉输出",
+    "COLOR": "颜色",
     "COMBO": "组合",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "条件",
     "CONTROL_NET": "ControlNet",
+    "FILE_3D": "FILE_3D",
+    "FILE_3D_FBX": "FILE_3D_FBX",
+    "FILE_3D_GLB": "FILE_3D_GLB",
+    "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_STL": "FILE_3D_STL",
+    "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮点",
     "FLOATS": "浮点组",
     "GEMINI_INPUT_FILES": "GEMINI 输入文件",
@@ -724,6 +751,7 @@
     "commandProhibited": "命令 {command} 被禁止。请联系管理员了解更多信息。",
     "community": "社区",
     "completed": "已完成",
+    "completedWithCheckmark": "已完成 ✓",
     "confirm": "确认",
     "confirmed": "已确认",
     "content": "内容",
@@ -759,6 +787,7 @@
     "download": "下载",
     "downloadImage": "下载图片",
     "downloadVideo": "下载视频",
+    "downloadWithSize": "下载（{size}）",
     "downloading": "正在下载",
     "dropYourFileOr": "拖放您的文件或",
     "duplicate": "复制",
@@ -774,12 +803,14 @@
     "enabling": "启用中",
     "enterBaseName": "输入基础名称",
     "enterNewName": "输入新名称",
+    "enterNewNamePrompt": "输入新名称：",
     "error": "错误",
     "errorLoadingImage": "图片加载出错",
     "errorLoadingVideo": "视频加载出错",
     "experimental": "测试版",
     "export": "导出",
     "extensionName": "扩展名称",
+    "extensions": "扩展",
     "failed": "失败",
     "failedToCopyJobId": "未能复制队列 ID",
     "failedToDownloadImage": "图片下载失败",
@@ -818,6 +849,7 @@
     "jobIdCopied": "队列 ID 已复制到剪贴板",
     "keybinding": "按键绑定",
     "keybindingAlreadyExists": "快捷键已存在",
+    "keybindings": "快捷键",
     "learnMore": "了解更多",
     "listening": "正在监听...",
     "liveSamplingPreview": "实时采样预览",
@@ -929,6 +961,7 @@
     "selectedFile": "已选文件",
     "setAsBackground": "设为背景",
     "settings": "设置",
+    "shortcutSuffix": "（{shortcut}）",
     "showLeftPanel": "显示左侧面板",
     "showReport": "显示报告",
     "showRightPanel": "显示右侧面板",
@@ -1030,8 +1063,12 @@
   },
   "imageCrop": {
     "cropPreviewAlt": "裁剪预览",
+    "custom": "自定义",
     "loading": "加载中...",
-    "noInputImage": "未连接输入图像"
+    "lockRatio": "锁定宽高比",
+    "noInputImage": "未连接输入图像",
+    "ratio": "比例",
+    "unlockRatio": "解锁宽高比"
   },
   "importFailed": {
     "copyError": "复制错误",
@@ -1155,14 +1192,21 @@
     "helpFix": "帮助修复这个"
   },
   "linearMode": {
-    "beta": "测试版 - 提供反馈",
+    "beta": "App 模式测试版 - 提供反馈",
     "downloadAll": "全部下载",
     "dragAndDropImage": "拖拽图片到此处",
     "graphMode": "图形模式",
-    "linearMode": "简易模式",
+    "linearMode": "App 模式",
     "rerun": "重新运行",
     "reuseParameters": "复用参数",
-    "runCount": "运行次数："
+    "runCount": "运行次数：",
+    "welcome": {
+      "intro": "简化视图，隐藏节点图，让你专注于创作。",
+      "layout": "左侧显示你生成的图像、视频和输出。右侧只保留所需的控制项。所有复杂内容都被隐藏。",
+      "sharing": "分享很简单：创建工作流，打开应用模式，右键点击标签页并导出。当他人打开你的文件时，会直接进入这个简洁视图。你可以将强大的工作流作为简单工具分享，无需理解节点图。",
+      "title": "欢迎使用应用模式",
+      "widget": "如果你想控制显示哪些设置，将顶层节点转换为子图，然后在上方工具箱中使用控件提升，选择要暴露的内容。"
+    }
   },
   "load3d": {
     "applyingTexture": "应用纹理中...",
@@ -1301,6 +1345,28 @@
     "disabledNodesWontUpdate": "已禁用的节点不会被更新",
     "discoverCommunityContent": "发现社区制作的节点包，扩展等等...",
     "downloads": "下载",
+    "emptyState": {
+      "allInstalled": {
+        "message": "你还没有安装任何扩展。",
+        "title": "未安装扩展"
+      },
+      "conflicting": {
+        "message": "你的所有扩展均兼容。",
+        "title": "未检测到冲突"
+      },
+      "missing": {
+        "message": "所有必需节点均已安装。",
+        "title": "无缺失节点"
+      },
+      "updateAvailable": {
+        "message": "你的所有扩展都是最新的。",
+        "title": "全部已是最新"
+      },
+      "workflow": {
+        "message": "此工作流未使用任何扩展节点。",
+        "title": "工作流中无扩展"
+      }
+    },
     "enablePackToChangeVersion": "启用此包以更改版本",
     "errorConnecting": "连接到Comfy节点注册表时出错。",
     "extensionsSuccessfullyInstalled": "扩展已成功安装并可使用！",
@@ -1322,6 +1388,7 @@
     "installingDependencies": "正在安装依赖项...",
     "lastUpdated": "最后更新",
     "latestVersion": "最新",
+    "legacyManagerSearchTip": "在找 ComfyUI-Manager？你可以通过启动 ComfyUI 并添加 --enable-manager-legacy-ui 参数来启用旧版管理器界面。",
     "legacyManagerUI": "使用传统界面",
     "legacyManagerUIDescription": "如需使用传统管理器界面，请以 --enable-manager-legacy-ui 参数启动 ComfyUI",
     "legacyMenuNotAvailable": "传统管理器菜单不可用，已切换为新管理器菜单。",
@@ -1590,7 +1657,6 @@
     "Node Library": "节点库",
     "Node Links": "节点连接",
     "Open": "打开",
-    "Open 3D Viewer (Beta) for Selected Node": "为选中节点打开3D查看器（测试版）",
     "Open Color Picker in MaskEditor": "在 MaskEditor 中打开取色器",
     "Open Custom Nodes Folder": "打开自定义节点文件夹",
     "Open DevTools": "打开开发者工具",
@@ -1624,12 +1690,10 @@
     "Show Model Selector (Dev)": "显示模型选择器（开发用）",
     "Show Settings Dialog": "显示设置对话框",
     "Sign Out": "退出登录",
+    "Toggle App Mode": "切换 App 模式",
     "Toggle Essential Bottom Panel": "切换基础底部面板",
-    "Toggle Logs Bottom Panel": "切换日志底部面板",
     "Toggle Queue Panel V2": "切换队列面板 V2",
     "Toggle Search Box": "切换搜索框",
-    "Toggle Simple Mode": "切换简易模式",
-    "Toggle Terminal Bottom Panel": "切换终端底部面板",
     "Toggle Theme (Dark/Light)": "切换主题（暗/亮）",
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
     "Toggle promotion of hovered widget": "切换悬停小部件的提升",
@@ -1687,6 +1751,7 @@
     "ByteDance": "字节跳动",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1787,6 +1852,16 @@
     "render": "节点渲染错误",
     "slots": "节点接口错误",
     "widgets": "节点组件错误"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "隐藏已弃用节点",
+    "hideDeprecatedDescription": "隐藏标记为已弃用的节点，除非明确启用",
+    "hideDevOnly": "隐藏仅开发者可见节点",
+    "hideDevOnlyDescription": "隐藏标记为仅开发者可见的节点，除非启用开发者模式",
+    "hideExperimental": "隐藏实验性节点",
+    "hideExperimentalDescription": "隐藏标记为实验性的节点，除非明确启用",
+    "hideSubgraph": "隐藏子图节点",
+    "hideSubgraphDescription": "暂时从节点库和搜索中隐藏子图节点"
   },
   "nodeHelpPage": {
     "documentationPage": "文档页面",
@@ -1898,6 +1973,7 @@
     "favorites": "已收藏输入",
     "favoritesNone": "暂无已收藏输入",
     "favoritesNoneDesc": "你收藏的输入会显示在这里",
+    "favoritesNoneHint": "在参数标签页，点击任意输入项的 {moreIcon} 可将其添加到这里",
     "favoritesNoneTooltip": "星标组件后可快速访问，无需选择节点",
     "globalSettings": {
       "canvas": "画布",
@@ -1942,6 +2018,36 @@
     "title": "无选中节点 | 选中了 1 个节点 | 选中了 {count} 个节点",
     "togglePanel": "开关属性面板",
     "workflowOverview": "工作流总览"
+  },
+  "secrets": {
+    "addSecret": "添加机密",
+    "createdAt": "创建于 {date}",
+    "deleteConfirmMessage": "确定要删除“{name}”吗？此操作无法撤销。",
+    "deleteConfirmTitle": "删除机密",
+    "description": "机密信息会被加密，用于存储诸如 API 密钥等敏感数据。",
+    "descriptionUsage": "在此处存储您的令牌，以便从支持的提供商下载私有和受限模型。",
+    "editSecret": "编辑机密",
+    "errors": {
+      "duplicateName": "已存在同名机密",
+      "duplicateProvider": "该提供商的机密已存在",
+      "nameRequired": "名称为必填项",
+      "nameTooLong": "名称长度不能超过 255 个字符",
+      "providerRequired": "提供商为必填项",
+      "secretValueRequired": "机密值为必填项"
+    },
+    "lastUsed": "上次使用 {date}",
+    "modelProviders": "模型提供商",
+    "name": "名称",
+    "namePlaceholder": "例如：我的 API 密钥",
+    "noSecrets": "尚未存储任何机密。添加您的第一个 API 密钥以开始使用。",
+    "provider": "提供商",
+    "providerHint": "可选。选择提供商可自动使用令牌。",
+    "secretValue": "机密值",
+    "secretValueHint": "该值将被加密，之后无法再次查看。",
+    "secretValueHintEdit": "如需保留当前值，请留空。",
+    "secretValuePlaceholder": "请输入您的 API 密钥",
+    "secretValuePlaceholderEdit": "输入新值以更改",
+    "title": "API 密钥与机密"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "绕过分组节点",
@@ -2160,6 +2266,7 @@
     "Reroute": "重新路由",
     "RerouteBeta": "转接点 Beta",
     "Scene": "场景",
+    "Secrets": "密钥",
     "Server": "服务器",
     "Server-Config": "服务器配置",
     "Settings": "设置",
@@ -2324,6 +2431,7 @@
   },
   "subgraphStore": {
     "blueprintName": "子工作流名称",
+    "blueprintNamePrompt": "子图名称：",
     "cannotDeleteGlobal": "无法删除已安装的蓝图",
     "confirmDelete": "此操作将永久从您的库中移除该子工作流",
     "confirmDeleteTitle": "删除子工作流？",
@@ -2517,6 +2625,9 @@
     "useCaseFilter": "使用例",
     "useCasesSelected": "已选 {count} 个用例"
   },
+  "templates": {
+    "logoProviderSeparator": " 与 "
+  },
   "toastMessages": {
     "cannotCreateSubgraph": "无法创建子工作流",
     "couldNotDetermineFileType": "无法确定文件类型",
@@ -2680,6 +2791,7 @@
   },
   "workflowService": {
     "enterFilename": "输入文件名",
+    "enterFilenamePrompt": "输入文件名：",
     "exportWorkflow": "导出工作流",
     "saveWorkflow": "保存工作流"
   },

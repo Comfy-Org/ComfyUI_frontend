@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "Bir rengi RGB tam sayı değerine dönüştür.",
+    "display_name": "Renkten RGB Tam Sayıya",
+    "inputs": {
+      "color": {
+        "name": "renk"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_tam_sayı",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "Kancaları Birleştir [2]",
     "inputs": {
@@ -2187,6 +2202,23 @@
     "outputs": {
       "0": {
         "tooltip": "KolayÖnbellek ile model."
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyutu",
+        "tooltip": "Toplu işteki latent görüntü sayısı."
+      },
+      "seconds": {
+        "name": "saniye"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3531,6 +3563,50 @@
       },
       "tapered_corners": {
         "name": "sivri_köşeler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "Düşük çözünürlüklü görüntüleri süper çözünürlüğe yükseltin, bozulmaları ve gürültüyü ortadan kaldırın. Maksimum çıktı: 32 megapiksel.",
+    "display_name": "HitPaw Genel Görüntü İyileştirme",
+    "inputs": {
+      "auto_downscale": {
+        "name": "otomatik_küçültme",
+        "tooltip": "Çıktı sınırı aşarsa giriş görüntüsünü otomatik olarak küçült."
+      },
+      "image": {
+        "name": "görüntü"
+      },
+      "model": {
+        "name": "model"
+      },
+      "upscale_factor": {
+        "name": "büyütme_oranı"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "Düşük çözünürlüklü videoları yüksek çözünürlüğe yükseltin, bozulmaları ve gürültüyü ortadan kaldırın. Fiyatlar video saniyesi başınadır.",
+    "display_name": "HitPaw Video İyileştirme",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -6342,7 +6418,9 @@
   "Load3D": {
     "display_name": "3D Yükle",
     "inputs": {
-      "clear": {},
+      "clear": {
+        "": "Temizle"
+      },
       "height": {
         "name": "yükseklik"
       },
@@ -6352,8 +6430,12 @@
       "model_file": {
         "name": "model_dosyası"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
+      "upload 3d model": {
+        "": "3D modeli yükle"
+      },
+      "upload extra resources": {
+        "": "Ek kaynakları yükle"
+      },
       "width": {
         "name": "genişlik"
       }
@@ -7237,12 +7319,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: Görüntüden Modele",
@@ -7288,16 +7375,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: Çoklu Görüntüden Modele",
@@ -7343,16 +7432,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "Önceden oluşturulmuş bir taslak modeli iyileştirir.",
@@ -7377,16 +7468,18 @@
         "tooltip": "Kaplama sürecini yönlendirmek için bir metin istemi girin. Maksimum 600 karakter. 'texture_image' ile aynı anda kullanılamaz."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "Standart formatlarda riglenmiş bir karakter sağlar. Otomatik rigleme, şu anda dokusuz meshler, insan olmayan varlıklar veya uzuv ve vücut yapısı belirsiz olan insan benzeri varlıklar için uygun değildir.",
@@ -7404,16 +7497,18 @@
         "tooltip": "Modelin UV-unwrap edilmiş temel renk doku görseli."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: Metinden Modele",
@@ -7452,16 +7547,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: Doku Modeli",
@@ -7488,16 +7585,18 @@
         "tooltip": "Nesnenin istediğiniz doku stilini metinle tanımlayın. En fazla 600 karakter. 'image_style' ile aynı anda kullanılamaz."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "Yeni MiniMax Hailuo-02 modelini kullanarak prompt'tan video oluşturur, isteğe bağlı başlangıç karesi ile.",
@@ -10694,11 +10793,9 @@
       "camera_info": {
         "name": "kamera_bilgisi"
       },
-      "image": {
-        "name": "görüntü"
-      },
       "model_file": {
-        "name": "model_dosyası"
+        "name": "model_dosyası",
+        "tooltip": "3D model dosyası veya yol dizgesi"
       }
     }
   },
@@ -10978,6 +11075,25 @@
     "outputs": {
       "0": {
         "name": "recraft_kontrolleri",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "Referans görsellerden özel bir stil oluşturun. Stil referansı olarak kullanmak için 1-5 görsel yükleyin. Tüm görsellerin toplam boyutu 5 MB ile sınırlıdır.",
+    "display_name": "Recraft Stil Oluştur",
+    "inputs": {
+      "images": {
+        "name": "görseller"
+      },
+      "style": {
+        "name": "stil",
+        "tooltip": "Oluşturulan görsellerin temel stili."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "stil_id",
         "tooltip": null
       }
     }
@@ -11320,6 +11436,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "Bu düğüm, tını için referans sesi ayarlar (ace step 1.5 için)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "koşullandırma"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "Regex Çıkar",
     "inputs": {
@@ -11648,12 +11781,13 @@
         "name": "Tohum"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D Model Yolu",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
@@ -11675,12 +11809,13 @@
         "name": "TAPoz"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D Model Yolu",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
@@ -11699,12 +11834,13 @@
         "name": "Tohum"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D Model Yolu",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
@@ -11717,12 +11853,13 @@
         "name": "Tohum"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D Model Yolu",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "Rodin API kullanarak 3D Varlıklar Oluştur",
@@ -11741,12 +11878,13 @@
         "name": "Tohum"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D Model Yolu",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "İlk ve son anahtar kareleri yükleyin, bir prompt taslağı oluşturun ve video üretin. Son karenin İlk kareden tamamen farklı olduğu durumlar gibi daha karmaşık geçişler, daha uzun 10 saniyelik süreden faydalanabilir. Bu, üretimin iki girdi arasında daha pürüzsüz geçiş yapması için daha fazla zaman tanır. Başlamadan önce, girdi seçimlerinizin üretiminizi başarıya ulaştıracağından emin olmak için bu en iyi uygulamaları gözden geçirin: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12473,11 +12611,9 @@
       "filename_prefix": {
         "name": "dosyaadı_öneki"
       },
-      "image": {
-        "name": "görüntü"
-      },
       "mesh": {
-        "name": "ağ"
+        "name": "ağ",
+        "tooltip": "Kaydedilecek Mesh veya GLB dosyası"
       }
     }
   },
@@ -13730,12 +13866,17 @@
         "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: Metinden Modele (Pro)",
@@ -13765,12 +13906,17 @@
         "tooltip": "Tohum, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13786,6 +13932,46 @@
       },
       "tags": {
         "name": "etiketler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "bpm"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "keyscale": {
+        "name": "ton anahtarı"
+      },
+      "language": {
+        "name": "dil"
+      },
+      "lyrics": {
+        "name": "şarkı sözleri"
+      },
+      "seed": {
+        "name": "tohum"
+      },
+      "tags": {
+        "name": "etiketler"
+      },
+      "timesignature": {
+        "name": "zaman imzası"
       }
     },
     "outputs": {
@@ -14349,16 +14535,14 @@
         "name": "doku_tohumu"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model görev_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Çok Bakışlıdan Modele",
@@ -14410,16 +14594,14 @@
         "name": "doku_tohumu"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model görev_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "Sadece v1.4 Tripo modelleri tarafından oluşturulan taslak bir modeli iyileştirir.",
@@ -14430,16 +14612,14 @@
         "tooltip": "Bir v1.4 Tripo modeli olmalı"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model görev_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: Riglenmiş Modeli Yeniden Hedefle",
@@ -14451,16 +14631,14 @@
         "name": "orijinal_model_görev_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "yeniden_hedefleme görev_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: Modeli Rigle",
@@ -14469,16 +14647,14 @@
         "name": "orijinal_model_görev_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "rigleme görev_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Metinden Modele",
@@ -14523,16 +14699,14 @@
         "name": "doku_tohumu"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model görev_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: Doku modeli",
@@ -14556,16 +14730,14 @@
         "name": "doku_tohumu"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_dosyası",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model görev_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "Metni Kısalt",
@@ -15229,6 +15401,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "Bir görüntüden ve isteğe bağlı bir istemden video oluşturun.",
+    "display_name": "Vidu Q3 Görüntüden Videoya Üretim",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Oluşturulan videonun başlangıç karesi olarak kullanılacak bir görüntü."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video üretimi için kullanılacak model."
+      },
+      "model_audio": {
+        "name": "ses"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Video üretimi için isteğe bağlı metin istemi (en fazla 2000 karakter)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "Bir metin isteminden video oluşturun.",
+    "display_name": "Vidu Q3 Metinden Videoya Üretim",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video üretimi için kullanılacak model."
+      },
+      "model_aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "model_audio": {
+        "name": "ses"
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Video üretimi için metinsel açıklama, maksimum 2000 karakter."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "Mevcut bir videoyu ek kareler üreterek uzatın.",
+    "display_name": "Vidu Video Uzatma",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "end_frame": {
+        "name": "bitiş karesi"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Video uzatma için kullanılacak model."
+      },
+      "model_duration": {
+        "name": "süre"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Uzatılan video için isteğe bağlı metin istemi (en fazla 2000 karakter)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Uzatılacak kaynak video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "Görsel ve isteğe bağlı prompt'tan video oluştur",
     "display_name": "Vidu Görselden Video Oluşturma",
@@ -15263,6 +15548,49 @@
       "seed": {
         "name": "tohum",
         "tooltip": "Video oluşturma için tohum (rastgele için 0)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "Birden fazla ana kare geçişiyle video oluşturun.",
+    "display_name": "Vidu Çok Kareli Video Üretimi",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "frames": {
+        "name": "kareler",
+        "tooltip": "Ana kare geçiş sayısı (2-9)."
+      },
+      "frames_duration1": {
+        "name": "süre1"
+      },
+      "frames_duration2": {
+        "name": "süre2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "başlangıç_görüntüsü",
+        "tooltip": "Başlangıç karesi görüntüsü. En-boy oranı 1:4 ile 4:1 arasında olmalıdır."
       }
     },
     "outputs": {

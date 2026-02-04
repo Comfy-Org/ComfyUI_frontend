@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "색상을 RGB 정수 값으로 변환합니다.",
+    "display_name": "색상을 RGB 정수로 변환",
+    "inputs": {
+      "color": {
+        "name": "색상"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb_정수",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "후크 결합 [2]",
     "inputs": {
@@ -2187,6 +2202,23 @@
     "outputs": {
       "0": {
         "tooltip": "EasyCache가 적용된 모델입니다."
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "배치 크기",
+        "tooltip": "배치 내 latent 이미지의 수입니다."
+      },
+      "seconds": {
+        "name": "초"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3531,6 +3563,50 @@
       },
       "tapered_corners": {
         "name": "마름모 모서리"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "저해상도 이미지를 초고해상도로 업스케일하고, 아티팩트와 노이즈를 제거합니다. 최대 출력: 32 메가픽셀.",
+    "display_name": "HitPaw 일반 이미지 향상",
+    "inputs": {
+      "auto_downscale": {
+        "name": "자동 다운스케일",
+        "tooltip": "출력 이미지가 제한을 초과할 경우 입력 이미지를 자동으로 다운스케일합니다."
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "upscale_factor": {
+        "name": "업스케일 배수"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "저해상도 비디오를 고해상도로 업스케일하고, 아티팩트와 노이즈를 제거합니다. 가격은 비디오 1초당 기준입니다.",
+    "display_name": "HitPaw 비디오 향상",
+    "inputs": {
+      "model": {
+        "name": "모델"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "video": {
+        "name": "비디오"
       }
     },
     "outputs": {
@@ -6352,8 +6428,12 @@
       "model_file": {
         "name": "모델 파일"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
+      "upload 3d model": {
+        "ko": "3D 모델 업로드"
+      },
+      "upload extra resources": {
+        "ko": "추가 리소스 업로드"
+      },
       "width": {
         "name": "너비"
       }
@@ -7237,12 +7317,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: 이미지 → 모델",
@@ -7288,16 +7373,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: 다중 이미지 → 모델",
@@ -7343,16 +7430,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "이전에 생성된 초안 모델을 다듬습니다.",
@@ -7377,16 +7466,18 @@
         "tooltip": "텍스처링 과정을 안내할 텍스트 프롬프트를 입력하세요. 최대 600자. 'texture_image'와 동시에 사용할 수 없습니다."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "표준 포맷으로 리깅된 캐릭터를 제공합니다. 자동 리깅은 텍스처가 없는 메시, 비휴머노이드 자산, 또는 팔다리와 신체 구조가 불분명한 휴머노이드 자산에는 적합하지 않습니다.",
@@ -7404,16 +7495,18 @@
         "tooltip": "모델의 UV 언랩된 기본 색상 텍스처 이미지입니다."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: 텍스트 → 모델",
@@ -7452,16 +7545,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: 텍스처 모델",
@@ -7488,16 +7583,18 @@
         "tooltip": "오브젝트의 원하는 텍스처 스타일을 텍스트로 설명하세요. 최대 600자까지 입력할 수 있습니다. 'image_style'과 동시에 사용할 수 없습니다."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "새로운 MiniMax Hailuo-02 모델을 사용하여 프롬프트로 비디오를 생성하며, 선택적으로 시작 프레임을 사용할 수 있습니다.",
@@ -10694,11 +10791,9 @@
       "camera_info": {
         "name": "카메라 정보"
       },
-      "image": {
-        "name": "이미지"
-      },
       "model_file": {
-        "name": "모델 파일"
+        "name": "모델 파일",
+        "tooltip": "3D 모델 파일 또는 경로 문자열"
       }
     }
   },
@@ -10978,6 +11073,25 @@
     "outputs": {
       "0": {
         "name": "recraft 제어",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "참고 이미지를 사용하여 사용자 지정 스타일을 만듭니다. 스타일 참조로 사용할 이미지를 1~5개 업로드하세요. 모든 이미지의 총 용량은 5MB로 제한됩니다.",
+    "display_name": "Recraft 스타일 생성",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "style": {
+        "name": "스타일",
+        "tooltip": "생성된 이미지의 기본 스타일입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "style_id",
         "tooltip": null
       }
     }
@@ -11320,6 +11434,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "이 노드는 timbre(ace step 1.5용) 기준 오디오를 설정합니다.",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "컨디셔닝"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "정규식 추출",
     "inputs": {
@@ -11648,12 +11779,13 @@
         "name": "시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -11675,12 +11807,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -11699,12 +11832,13 @@
         "name": "시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -11717,12 +11851,13 @@
         "name": "시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "Rodin API를 사용하여 3D 에셋 생성",
@@ -11741,12 +11876,13 @@
         "name": "시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 모델 경로",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "첫 번째와 마지막 키프레임을 업로드하고 프롬프트를 작성하여 비디오를 생성합니다. 마지막 프레임이 첫 번째 프레임과 완전히 다른 경우와 같은 복잡한 전환은 10초의 긴 지속 시간을 사용하는 것이 좋습니다. 이렇게 하면 두 입력 사이를 부드럽게 전환할 수 있는 시간이 더 주어집니다. 시작하기 전에 입력 선택이 생성 성공을 보장할 수 있도록 다음 모범 사례를 검토하세요: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12473,11 +12609,9 @@
       "filename_prefix": {
         "name": "파일명 접두사"
       },
-      "image": {
-        "name": "이미지"
-      },
       "mesh": {
-        "name": "메시"
+        "name": "메시",
+        "tooltip": "저장할 메시 또는 GLB 파일"
       }
     }
   },
@@ -13730,12 +13864,17 @@
         "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: 텍스트 → 모델 (Pro)",
@@ -13765,12 +13904,17 @@
         "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13786,6 +13930,46 @@
       },
       "tags": {
         "name": "태그"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "BPM"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "길이"
+      },
+      "keyscale": {
+        "name": "조성"
+      },
+      "language": {
+        "name": "언어"
+      },
+      "lyrics": {
+        "name": "가사"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "tags": {
+        "name": "태그"
+      },
+      "timesignature": {
+        "name": "박자"
       }
     },
     "outputs": {
@@ -14349,16 +14533,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: 다중 뷰에서 모델 생성",
@@ -14410,16 +14592,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "v1.4 Tripo 모델로 생성된 드래프트 모델만 정제합니다.",
@@ -14430,16 +14610,14 @@
         "tooltip": "v1.4 Tripo 모델이어야 합니다"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 리깅된 모델 리타겟",
@@ -14451,16 +14629,14 @@
         "name": "원본 모델 작업 ID"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "리타겟 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: 모델 리깅",
@@ -14469,16 +14645,14 @@
         "name": "원본 모델 작업 ID"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "리깅 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 텍스트에서 모델 생성",
@@ -14523,16 +14697,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: 텍스처 모델",
@@ -14556,16 +14728,14 @@
         "name": "텍스처 시드"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "모델 파일",
-        "tooltip": null
-      },
-      "1": {
-        "name": "모델 작업 ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "텍스트 자르기",
@@ -15229,6 +15399,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "이미지와 선택적 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "생성된 비디오의 시작 프레임으로 사용할 이미지입니다."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "텍스트 프롬프트로부터 비디오를 생성합니다.",
+    "display_name": "Vidu Q3 텍스트-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 생성을 위해 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "비디오 생성을 위한 텍스트 설명 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "기존 비디오에 추가 프레임을 생성하여 확장합니다.",
+    "display_name": "Vidu 비디오 확장",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "end_frame": {
+        "name": "end_frame"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "비디오 확장을 위해 사용할 모델입니다."
+      },
+      "model_duration": {
+        "name": "duration"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "확장된 비디오를 위한 선택적 텍스트 프롬프트 (최대 2000자)."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "확장할 원본 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "이미지와 선택적 프롬프트로부터 비디오 생성",
     "display_name": "Vidu 이미지 비디오 생성",
@@ -15263,6 +15546,49 @@
       "seed": {
         "name": "seed",
         "tooltip": "비디오 생성을 위한 시드(0은 랜덤)"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "여러 키프레임 전환이 포함된 비디오를 생성합니다.",
+    "display_name": "Vidu 다중 프레임 비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "키프레임 전환 수 (2-9)."
+      },
+      "frames_duration1": {
+        "name": "duration1"
+      },
+      "frames_duration2": {
+        "name": "duration2"
+      },
+      "frames_prompt1": {
+        "name": "prompt1"
+      },
+      "frames_prompt2": {
+        "name": "prompt2"
+      },
+      "model": {
+        "name": "model"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "start_image": {
+        "name": "start_image",
+        "tooltip": "시작 프레임 이미지입니다. 종횡비는 1:4에서 4:1 사이여야 합니다."
       }
     },
     "outputs": {

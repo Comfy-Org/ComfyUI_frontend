@@ -151,51 +151,6 @@
     },
     "tooltip": "控制畫布上節點連接線的外觀與可見性。"
   },
-  "Comfy_Load3D_3DViewerEnable": {
-    "name": "啟用 3D 檢視器（測試版）",
-    "tooltip": "為所選節點啟用 3D 檢視器（測試版）。此功能可讓您在全尺寸 3D 檢視器中直接瀏覽與互動 3D 模型。"
-  },
-  "Comfy_Load3D_BackgroundColor": {
-    "name": "初始背景顏色",
-    "tooltip": "控制 3D 場景的預設背景顏色。此設定決定新建立 3D 元件時的背景外觀，但每個元件在建立後都可單獨調整。"
-  },
-  "Comfy_Load3D_CameraType": {
-    "name": "初始相機類型",
-    "options": {
-      "orthographic": "正交",
-      "perspective": "透視"
-    },
-    "tooltip": "控制新建 3D 元件時，相機預設為透視或正交。此預設值在建立後仍可針對每個元件單獨切換。"
-  },
-  "Comfy_Load3D_LightAdjustmentIncrement": {
-    "name": "燈光調整增量",
-    "tooltip": "控制在 3D 場景中調整燈光強度時的增量大小。較小的步進值可讓您更細緻地調整燈光，較大的值則每次調整會有更明顯的變化。"
-  },
-  "Comfy_Load3D_LightIntensity": {
-    "name": "初始光源強度",
-    "tooltip": "設定 3D 場景中燈光的預設亮度等級。此數值決定新建立 3D 元件時燈光照亮物體的強度，但每個元件在建立後都可以個別調整。"
-  },
-  "Comfy_Load3D_LightIntensityMaximum": {
-    "name": "最大光照強度",
-    "tooltip": "設定 3D 場景中允許的最大光照強度值。這會定義在調整任何 3D 小工具照明時可設定的最高亮度上限。"
-  },
-  "Comfy_Load3D_LightIntensityMinimum": {
-    "name": "光源強度下限",
-    "tooltip": "設定 3D 場景中允許的最小光源強度值。這會定義在調整任何 3D 控制元件照明時可設定的最低亮度限制。"
-  },
-  "Comfy_Load3D_PLYEngine": {
-    "name": "PLY 引擎",
-    "options": {
-      "fastply": "fastply",
-      "sparkjs": "sparkjs",
-      "threejs": "threejs"
-    },
-    "tooltip": "選擇用於載入 PLY 檔案的引擎。「threejs」使用原生 Three.js PLYLoader（最適合網格 PLY 檔案）。「fastply」使用針對 ASCII 點雲 PLY 檔案優化的載入器。「sparkjs」則用於 3D Gaussian Splatting PLY 檔案。"
-  },
-  "Comfy_Load3D_ShowGrid": {
-    "name": "初始網格可見性",
-    "tooltip": "控制在建立新的 3D 元件時，網格是否預設可見。此預設值在建立後仍可針對每個元件單獨切換。"
-  },
   "Comfy_Locale": {
     "name": "語言"
   },
@@ -243,6 +198,10 @@
   },
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "顯示 API 節點價格標籤"
+  },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "啟用自動節點替換",
+    "tooltip": "啟用後，若有替換對應關係，遺失的節點可自動以其較新的對應節點替換。"
   },
   "Comfy_NodeSearchBoxImpl": {
     "name": "節點搜尋框實作",

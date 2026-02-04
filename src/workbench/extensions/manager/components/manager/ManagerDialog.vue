@@ -206,6 +206,8 @@ import { useManagerDisplayPacks } from '@/workbench/extensions/manager/composabl
 import { useManagerStatePersistence } from '@/workbench/extensions/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
+import { useLegacySearchTip } from '@/workbench/extensions/manager/composables/useLegacySearchTip'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
@@ -222,6 +224,7 @@ const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
 const conflictAcknowledgment = useConflictAcknowledgment()
 const conflictDetectionStore = useConflictDetectionStore()
+const { isNewManagerUI } = useManagerState()
 const workflowStore = useWorkflowStore()
 const persistedState = useManagerStatePersistence()
 const initialState = persistedState.loadStoredState()
@@ -349,7 +352,11 @@ const {
 })
 pageNumber.value = 0
 
-// Filter and sort options for SingleSelect
+const { isLegacyManagerSearch } = useLegacySearchTip(
+  searchQuery,
+  isNewManagerUI
+)
+
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
@@ -414,7 +421,13 @@ const emptyStateTitle = computed(() => {
 
 const emptyStateMessage = computed(() => {
   if (comfyManagerStore.error) return t('manager.tryAgainLater')
-  if (searchQuery.value) return t('manager.tryDifferentSearch')
+  if (searchQuery.value) {
+    const baseMessage = t('manager.tryDifferentSearch')
+    if (isLegacyManagerSearch.value) {
+      return `${baseMessage}\n\n${t('manager.legacyManagerSearchTip')}`
+    }
+    return baseMessage
+  }
 
   const tabId = selectedTab.value?.id as ManagerTab | undefined
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined

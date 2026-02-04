@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
 test.describe(
@@ -16,6 +16,7 @@ test.describe(
       'no_workflow.webp',
       'large_workflow.webp',
       'workflow_prompt_parameters.png',
+      'workflow_itxt.png',
       'workflow.webm',
       // Skipped due to 3d widget unstable visual result.
       // 3d widget shows grid after fully loaded.
@@ -32,7 +33,7 @@ test.describe(
       test(`Load workflow in ${fileName} (drop from filesystem)`, async ({
         comfyPage
       }) => {
-        await comfyPage.dragAndDropFile(`workflowInMedia/${fileName}`)
+        await comfyPage.dragDrop.dragAndDropFile(`workflowInMedia/${fileName}`)
         await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
       })
     })
@@ -44,7 +45,7 @@ test.describe(
       test(`Load workflow from URL ${url} (drop from different browser tabs)`, async ({
         comfyPage
       }) => {
-        await comfyPage.dragAndDropURL(url)
+        await comfyPage.dragDrop.dragAndDropURL(url)
         const readableName = url.split('/').pop()
         await expect(comfyPage.canvas).toHaveScreenshot(
           `dropped_workflow_url_${readableName}.png`

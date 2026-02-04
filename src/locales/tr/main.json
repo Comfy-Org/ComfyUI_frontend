@@ -16,12 +16,15 @@
   "assetBrowser": {
     "allCategory": "Tüm {category}",
     "allModels": "Tüm Modeller",
+    "apiKeyHint": "Özel veya kısıtlı modeller mi içe aktarılıyor? {link}.",
+    "apiKeyHintLink": "API anahtarlarınızı Ayarlar bölümüne ekleyin",
     "ariaLabel": {
       "assetCard": "{name} - {type} varlık",
       "loadingAsset": "Varlık yükleniyor"
     },
     "assetCollection": "Varlık koleksiyonu",
     "assets": "Varlıklar",
+    "baseModel": "Temel model",
     "baseModels": "Temel modeller",
     "browseAssets": "Varlıklara Göz At",
     "byType": "Türe göre",
@@ -50,13 +53,34 @@
       "canImport": "Henüz içe aktarılmış model yok. Kendi modelinizi eklemek için \"Model İçe Aktar\"a tıklayın.",
       "restricted": "Kişisel modeller yalnızca Creator ve üzeri seviyelerde kullanılabilir."
     },
+    "errorAccessForbidden": "Bu kaynağa erişim yasak.",
+    "errorConnectionRefused": "Kaynağa bağlanılamıyor. Lütfen daha sonra tekrar deneyin.",
+    "errorDownloadCancelled": "İndirme iptal edildi.",
     "errorFileTooLarge": "Dosya izin verilen maksimum boyut sınırını aşıyor",
     "errorFormatNotAllowed": "Yalnızca SafeTensor formatı destekleniyor",
+    "errorHttpError": "Meta veriler alınırken bir hata oluştu.",
+    "errorInternalError": "Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.",
+    "errorInvalidHost": "Kaynak URL ana bilgisayarı çözümlenemedi.",
+    "errorInvalidUrl": "Lütfen bir URL girin.",
+    "errorInvalidUrlFormat": "URL formatı geçersiz. Lütfen kontrol edip tekrar deneyin.",
+    "errorMetadataFetchFailed": "Kaynaktan dosya bilgisi alınamadı.",
     "errorModelTypeNotSupported": "Bu model türü desteklenmiyor",
+    "errorNetworkError": "Bir ağ hatası oluştu. Lütfen bağlantınızı kontrol edip tekrar deneyin.",
+    "errorNetworkTimeout": "İstek zaman aşımına uğradı. Lütfen tekrar deneyin.",
+    "errorRateLimited": "Çok fazla istek yapıldı. Lütfen birkaç dakika sonra tekrar deneyin.",
+    "errorRequestCancelled": "İstek iptal edildi.",
+    "errorResourceNotFound": "Dosya bulunamadı. Lütfen URL'yi kontrol edip tekrar deneyin.",
+    "errorServiceUnavailable": "Hizmet geçici olarak kullanılamıyor. Lütfen daha sonra tekrar deneyin.",
+    "errorSourceServerError": "Kaynak sunucusunda bir sorun var. Lütfen daha sonra tekrar deneyin.",
+    "errorUnauthorized": "Devam etmek için lütfen giriş yapın.",
+    "errorUnauthorizedSource": "Bu kaynak kimlik doğrulaması gerektiriyor. Lütfen ayarlardan API anahtarınızı ekleyin.",
     "errorUnknown": "Beklenmeyen bir hata oluştu",
     "errorUnsafePickleScan": "CivitAI bu dosyada potansiyel olarak güvensiz kod tespit etti",
     "errorUnsafeVirusScan": "CivitAI bu dosyada kötü amaçlı yazılım veya şüpheli içerik tespit etti",
+    "errorUnsupportedSource": "Bu URL desteklenmiyor. Sadece Hugging Face ve Civitai URL'leri kabul edilir.",
     "errorUploadFailed": "Varlık içe aktarılamadı. Lütfen tekrar deneyin.",
+    "errorUserTokenAccessDenied": "API anahtarınızın bu kaynağa erişimi yok. Lütfen anahtar izinlerinizi kontrol edin.",
+    "errorUserTokenInvalid": "Kayıtlı API anahtarınız geçersiz veya süresi dolmuş. Lütfen ayarlardan anahtarınızı güncelleyin.",
     "failedToCreateNode": "Düğüm oluşturulamadı. Lütfen tekrar deneyin veya ayrıntılar için konsolu kontrol edin.",
     "fileFormats": "Dosya formatları",
     "fileName": "Dosya Adı",
@@ -127,6 +151,7 @@
     "selectProjects": "Projeleri Seçin",
     "sortAZ": "A-Z",
     "sortBy": "Sırala",
+    "sortDefault": "Varsayılan",
     "sortPopular": "Popüler",
     "sortRecent": "En yeni",
     "sortZA": "Z-A",
@@ -177,13 +202,7 @@
       "whitelistInfo": "Beyaz listede olmayan siteler hakkında"
     },
     "deleteAccount": {
-      "cancel": "İptal",
-      "confirm": "Hesabı Sil",
-      "confirmMessage": "Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve tüm verilerinizi kalıcı olarak silecektir.",
-      "confirmTitle": "Hesabı Sil",
-      "deleteAccount": "Hesabı Sil",
-      "success": "Hesap Silindi",
-      "successDetail": "Hesabınız başarıyla silindi."
+      "contactSupport": "Hesabınızı silmek için lütfen {email} adresiyle iletişime geçin"
     },
     "errors": {
       "auth/cancelled-popup-request": "Giriş iptal edildi. Lütfen tekrar deneyin.",
@@ -578,12 +597,20 @@
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
     "CLIP_VISION_OUTPUT": "CLIP_VISION_ÇIKTISI",
+    "COLOR": "RENK",
     "COMBO": "COMBO",
     "COMFY_AUTOGROW_V3": "COMFY_AUTOGROW_V3",
     "COMFY_DYNAMICCOMBO_V3": "COMFY_DYNAMICCOMBO_V3",
     "COMFY_MATCHTYPE_V3": "COMFY_MATCHTYPE_V3",
     "CONDITIONING": "KOŞULLANDIRMA",
     "CONTROL_NET": "KONTROL_AĞI",
+    "FILE_3D": "FILE_3D",
+    "FILE_3D_FBX": "FILE_3D_FBX",
+    "FILE_3D_GLB": "FILE_3D_GLB",
+    "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_STL": "FILE_3D_STL",
+    "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "FLOAT",
     "FLOATS": "FLOATS",
     "GEMINI_INPUT_FILES": "GEMINI_GİRİŞ_DOSYALARI",
@@ -724,6 +751,7 @@
     "commandProhibited": "{command} komutu yasak. Daha fazla bilgi için bir yöneticiyle iletişime geçin.",
     "community": "Topluluk",
     "completed": "Tamamlandı",
+    "completedWithCheckmark": "Tamamlandı ✓",
     "confirm": "Onayla",
     "confirmed": "Onaylandı",
     "content": "içerik",
@@ -759,6 +787,7 @@
     "download": "İndir",
     "downloadImage": "Görüntüyü indir",
     "downloadVideo": "Videoyu indir",
+    "downloadWithSize": "İndir ({size})",
     "downloading": "İndiriliyor",
     "dropYourFileOr": "Dosyanızı buraya sürükleyin veya",
     "duplicate": "Çoğalt",
@@ -774,12 +803,14 @@
     "enabling": "{id} etkinleştiriliyor",
     "enterBaseName": "Temel adı girin",
     "enterNewName": "Yeni adı girin",
+    "enterNewNamePrompt": "Yeni adı girin:",
     "error": "Hata",
     "errorLoadingImage": "Görüntü yüklenirken hata",
     "errorLoadingVideo": "Video yüklenirken hata",
     "experimental": "BETA",
     "export": "Dışa Aktar",
     "extensionName": "Uzantı Adı",
+    "extensions": "Eklentiler",
     "failed": "Başarısız",
     "failedToCopyJobId": "İş kimliği kopyalanamadı",
     "failedToDownloadImage": "Görüntü indirilemedi",
@@ -818,6 +849,7 @@
     "jobIdCopied": "İş kimliği panoya kopyalandı",
     "keybinding": "Tuş Ataması",
     "keybindingAlreadyExists": "Tuş ataması zaten mevcut:",
+    "keybindings": "Kısayol Tuşları",
     "learnMore": "Daha fazla bilgi edinin",
     "listening": "Dinleniyor...",
     "liveSamplingPreview": "Canlı örnekleme önizlemesi",
@@ -929,6 +961,7 @@
     "selectedFile": "Seçilen dosya",
     "setAsBackground": "Arka Plan Olarak Ayarla",
     "settings": "Ayarlar",
+    "shortcutSuffix": " ({shortcut})",
     "showLeftPanel": "Sol paneli göster",
     "showReport": "Raporu Göster",
     "showRightPanel": "Sağ paneli göster",
@@ -1030,8 +1063,12 @@
   },
   "imageCrop": {
     "cropPreviewAlt": "Kırpma önizlemesi",
+    "custom": "Özel",
     "loading": "Yükleniyor...",
-    "noInputImage": "Bağlı giriş görseli yok"
+    "lockRatio": "En-boy oranını kilitle",
+    "noInputImage": "Bağlı giriş görseli yok",
+    "ratio": "Oran",
+    "unlockRatio": "En-boy oranı kilidini aç"
   },
   "importFailed": {
     "copyError": "Kopyalama Hatası",
@@ -1155,14 +1192,21 @@
     "helpFix": "Bunu Düzeltmeye Yardım Et"
   },
   "linearMode": {
-    "beta": "Beta - Geri Bildirim Verin",
+    "beta": "Uygulama Modu Beta - Geri Bildirim Verin",
     "downloadAll": "Tümünü İndir",
     "dragAndDropImage": "Bir görseli sürükleyip bırakın",
     "graphMode": "Grafik Modu",
-    "linearMode": "Basit Mod",
+    "linearMode": "Uygulama Modu",
     "rerun": "Tekrar Çalıştır",
     "reuseParameters": "Parametreleri Yeniden Kullan",
-    "runCount": "Çalıştırma sayısı:"
+    "runCount": "Çalıştırma sayısı:",
+    "welcome": {
+      "intro": "Düğüm grafiğini gizleyerek odaklanmanızı sağlayan basitleştirilmiş bir görünüm.",
+      "layout": "Solda oluşturulan görsellerinizi, videolarınızı ve çıktılarınızı göreceksiniz. Sağda ise sadece ihtiyacınız olan kontroller var. Karmaşık her şey gözden uzak.",
+      "sharing": "Paylaşmak çok kolay: iş akışınızı oluşturun, Uygulama Modunu açın, sekmeye sağ tıklayın ve dışa aktarın. Başkaları dosyanızı açtığında, doğrudan bu sade görünüme geçer. Güçlü iş akışlarını, kimsenin düğüm grafiğini anlamasına gerek kalmadan basit araçlar olarak paylaşabilirsiniz.",
+      "title": "Uygulama Moduna Hoş Geldiniz",
+      "widget": "Hangi ayarların görüneceğini kontrol etmek istiyorsanız, üst düzey düğümlerinizi bir alt grafiğe dönüştürün, ardından üstündeki araç kutusunda widget tanıtımını kullanarak nelerin görüneceğini seçin."
+    }
   },
   "load3d": {
     "applyingTexture": "Doku uygulanıyor...",
@@ -1301,6 +1345,28 @@
     "disabledNodesWontUpdate": "Devre dışı düğümler güncellenmeyecek",
     "discoverCommunityContent": "Topluluk tarafından yapılmış Düğüm Paketlerini, Uzantıları ve daha fazlasını keşfedin...",
     "downloads": "İndirmeler",
+    "emptyState": {
+      "allInstalled": {
+        "message": "Henüz hiç eklenti yüklemediniz.",
+        "title": "Yüklü Eklenti Yok"
+      },
+      "conflicting": {
+        "message": "Tüm eklentileriniz uyumlu.",
+        "title": "Çakışma Tespit Edilmedi"
+      },
+      "missing": {
+        "message": "Gerekli tüm düğümler yüklü.",
+        "title": "Eksik Düğüm Yok"
+      },
+      "updateAvailable": {
+        "message": "Tüm eklentileriniz güncel.",
+        "title": "Hepsi Güncel"
+      },
+      "workflow": {
+        "message": "Bu iş akışı herhangi bir eklenti düğümü kullanmıyor.",
+        "title": "İş Akışında Eklenti Yok"
+      }
+    },
     "enablePackToChangeVersion": "Sürümleri değiştirmek için bu paketi etkinleştirin",
     "errorConnecting": "Comfy Düğüm Kayıt Defteri'ne bağlanırken hata oluştu.",
     "extensionsSuccessfullyInstalled": "Uzantı(lar) başarıyla yüklendi ve kullanıma hazır!",
@@ -1322,6 +1388,7 @@
     "installingDependencies": "Bağımlılıklar yükleniyor...",
     "lastUpdated": "Son Güncelleme",
     "latestVersion": "En Son",
+    "legacyManagerSearchTip": "ComfyUI-Manager'ı mı arıyorsunuz? Eski yönetici arayüzünü etkinleştirmek için ComfyUI'yi --enable-manager-legacy-ui bayrağı ile başlatabilirsiniz.",
     "legacyManagerUI": "Eski Arayüzü Kullan",
     "legacyManagerUIDescription": "Eski Yönetici Arayüzünü kullanmak için ComfyUI'yi --enable-manager-legacy-ui ile başlatın",
     "legacyMenuNotAvailable": "Eski yönetici menüsü mevcut değil, yeni yönetici menüsüne varsayılan olarak geçiliyor.",
@@ -1590,7 +1657,6 @@
     "Node Library": "Düğüm Kütüphanesi",
     "Node Links": "Düğüm Bağlantıları",
     "Open": "Aç",
-    "Open 3D Viewer (Beta) for Selected Node": "Seçili Düğüm için 3D Görüntüleyiciyi (Beta) Aç",
     "Open Color Picker in MaskEditor": "MaskEditor'da Renk Seçiciyi Aç",
     "Open Custom Nodes Folder": "Özel Düğüm Klasörünü Aç",
     "Open DevTools": "Geliştirici Araçlarını Aç",
@@ -1624,12 +1690,10 @@
     "Show Model Selector (Dev)": "Model Seçiciyi Göster (Geliştirici)",
     "Show Settings Dialog": "Ayarlar İletişim Kutusunu Göster",
     "Sign Out": "Çıkış Yap",
+    "Toggle App Mode": "Uygulama Modunu Aç/Kapat",
     "Toggle Essential Bottom Panel": "Temel Alt Paneli Aç/Kapat",
-    "Toggle Logs Bottom Panel": "Kayıtlar Alt Panelini Aç/Kapat",
     "Toggle Queue Panel V2": "Kuyruk Paneli V2'yi Aç/Kapat",
     "Toggle Search Box": "Arama Kutusunu Aç/Kapat",
-    "Toggle Simple Mode": "Basit Modu Aç/Kapat",
-    "Toggle Terminal Bottom Panel": "Terminal Alt Panelini Aç/Kapat",
     "Toggle Theme (Dark/Light)": "Temayı Değiştir (Karanlık/Açık)",
     "Toggle View Controls Bottom Panel": "Görünüm Kontrolleri Alt Panelini Aç/Kapat",
     "Toggle promotion of hovered widget": "Üzerine gelinen widget'ı yükseltmeyi aç/kapat",
@@ -1687,6 +1751,7 @@
     "ByteDance": "ByteDance",
     "Gemini": "Gemini",
     "Grok": "Grok",
+    "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
     "LTXV": "LTXV",
@@ -1787,6 +1852,16 @@
     "render": "Düğüm Oluşturma Hatası",
     "slots": "Düğüm Slot Hatası",
     "widgets": "Düğüm Widget Hatası"
+  },
+  "nodeFilters": {
+    "hideDeprecated": "Kullanımdan Kaldırılan Düğümleri Gizle",
+    "hideDeprecatedDescription": "Açıkça etkinleştirilmedikçe kullanımdan kaldırılmış olarak işaretlenen düğümleri gizler",
+    "hideDevOnly": "Yalnızca Geliştirici Düğümlerini Gizle",
+    "hideDevOnlyDescription": "Geliştirici modu etkin değilse yalnızca geliştiriciye özel düğümleri gizler",
+    "hideExperimental": "Deneysel Düğümleri Gizle",
+    "hideExperimentalDescription": "Açıkça etkinleştirilmedikçe deneysel olarak işaretlenen düğümleri gizler",
+    "hideSubgraph": "Alt Grafik Düğümlerini Gizle",
+    "hideSubgraphDescription": "Alt grafik düğümlerini geçici olarak düğüm kütüphanesinden ve aramadan gizler"
   },
   "nodeHelpPage": {
     "documentationPage": "belgelendirme sayfası",
@@ -1898,6 +1973,7 @@
     "favorites": "FAVORİ GİRDİLER",
     "favoritesNone": "FAVORİ GİRDİ YOK",
     "favoritesNoneDesc": "Favorilere eklediğiniz girdiler burada görünecek",
+    "favoritesNoneHint": "Parametreler sekmesinde, herhangi bir girdinin yanındaki {moreIcon} simgesine tıklayarak buraya ekleyebilirsiniz",
     "favoritesNoneTooltip": "Düğüm seçmeden hızlı erişim için widget'ları yıldızlayın",
     "globalSettings": {
       "canvas": "TUVAL",
@@ -1942,6 +2018,36 @@
     "title": "Seçili düğüm yok | 1 düğüm seçili | {count} düğüm seçili",
     "togglePanel": "Özellikler panelini aç/kapat",
     "workflowOverview": "Çalışma Akışı Genel Bakış"
+  },
+  "secrets": {
+    "addSecret": "Gizli Bilgi Ekle",
+    "createdAt": "{date} tarihinde oluşturuldu",
+    "deleteConfirmMessage": "\"{name}\" adlı gizli bilgiyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "deleteConfirmTitle": "Gizli Bilgiyi Sil",
+    "description": "Gizli bilgiler şifrelenir ve API anahtarları gibi hassas veriler için kullanılır.",
+    "descriptionUsage": "Desteklenen sağlayıcılardan özel ve kısıtlı modelleri indirmek için anahtarlarınızı burada saklayın.",
+    "editSecret": "Gizli Bilgiyi Düzenle",
+    "errors": {
+      "duplicateName": "Bu adla zaten bir gizli bilgi mevcut",
+      "duplicateProvider": "Bu sağlayıcı için zaten bir gizli bilgi mevcut",
+      "nameRequired": "Ad zorunludur",
+      "nameTooLong": "Ad 255 karakter veya daha kısa olmalıdır",
+      "providerRequired": "Sağlayıcı zorunludur",
+      "secretValueRequired": "Gizli değer zorunludur"
+    },
+    "lastUsed": "Son kullanım {date}",
+    "modelProviders": "Model Sağlayıcıları",
+    "name": "Ad",
+    "namePlaceholder": "örn. API Anahtarım",
+    "noSecrets": "Henüz gizli bilgi yok. Başlamak için ilk API anahtarınızı ekleyin.",
+    "provider": "Sağlayıcı",
+    "providerHint": "İsteğe bağlı. Bir sağlayıcı seçmek otomatik anahtar kullanımını etkinleştirir.",
+    "secretValue": "Gizli Değer",
+    "secretValueHint": "Bu değer şifrelenecek ve tekrar görüntülenemeyecek.",
+    "secretValueHintEdit": "Mevcut değeri korumak için boş bırakın.",
+    "secretValuePlaceholder": "API anahtarınızı girin",
+    "secretValuePlaceholderEdit": "Değiştirmek için yeni değeri girin",
+    "title": "API Anahtarları & Gizli Bilgiler"
   },
   "selectionToolbox": {
     "Bypass Group Nodes": "Bypass Group Nodes",
@@ -2160,6 +2266,7 @@
     "Reroute": "Yeniden Yönlendir",
     "RerouteBeta": "Yeniden Yönlendirme Beta",
     "Scene": "Sahne",
+    "Secrets": "Gizli Anahtarlar",
     "Server": "Sunucu",
     "Server-Config": "Sunucu-Yapılandırma",
     "Settings": "Ayarlar",
@@ -2313,6 +2420,7 @@
   },
   "subgraphStore": {
     "blueprintName": "Alt Grafik adı",
+    "blueprintNamePrompt": "Alt grafik adı:",
     "cannotDeleteGlobal": "Yüklü şablonlar silinemez",
     "confirmDelete": "Bu işlem taslağı kütüphanenizden kalıcı olarak kaldıracaktır",
     "confirmDeleteTitle": "Taslak silinsin mi?",
@@ -2506,6 +2614,9 @@
     "useCaseFilter": "Görevler",
     "useCasesSelected": "{count} Kullanım Senaryosu"
   },
+  "templates": {
+    "logoProviderSeparator": " & "
+  },
   "toastMessages": {
     "cannotCreateSubgraph": "Alt grafik oluşturulamıyor",
     "couldNotDetermineFileType": "Dosya türü belirlenemedi",
@@ -2669,6 +2780,7 @@
   },
   "workflowService": {
     "enterFilename": "Dosya adını girin",
+    "enterFilenamePrompt": "Dosya adını girin:",
     "exportWorkflow": "İş Akışını Dışa Aktar",
     "saveWorkflow": "İş akışını kaydet"
   },

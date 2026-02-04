@@ -1266,6 +1266,21 @@
       }
     }
   },
+  "ColorToRGBInt": {
+    "description": "カラーをRGB整数値に変換します。",
+    "display_name": "カラーをRGB整数に変換",
+    "inputs": {
+      "color": {
+        "name": "カラー"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rgb整数値",
+        "tooltip": null
+      }
+    }
+  },
   "CombineHooks2": {
     "display_name": "フックを組み合わせる [2]",
     "inputs": {
@@ -2187,6 +2202,23 @@
     "outputs": {
       "0": {
         "tooltip": "EasyCacheが適用されたモデル。"
+      }
+    }
+  },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ",
+        "tooltip": "バッチ内のlatent画像の数。"
+      },
+      "seconds": {
+        "name": "秒数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3531,6 +3563,50 @@
       },
       "tapered_corners": {
         "name": "テーパードコーナー"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "低解像度画像を超解像度にアップスケールし、アーティファクトやノイズを除去します。最大出力：32メガピクセル。",
+    "display_name": "HitPaw 一般画像強化",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動ダウンスケール",
+        "tooltip": "出力が制限を超える場合、入力画像を自動的にダウンスケールします。"
+      },
+      "image": {
+        "name": "画像"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "upscale_factor": {
+        "name": "アップスケール倍率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "低解像度動画を高解像度にアップスケールし、アーティファクトやノイズを除去します。表示価格は動画1秒あたりです。",
+    "display_name": "HitPaw 動画強化",
+    "inputs": {
+      "model": {
+        "name": "モデル"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "video": {
+        "name": "動画"
       }
     },
     "outputs": {
@@ -6342,7 +6418,9 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
-      "clear": {},
+      "clear": {
+        "": "クリア"
+      },
       "height": {
         "name": "高さ"
       },
@@ -6352,8 +6430,12 @@
       "model_file": {
         "name": "モデルファイル"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
+      "upload 3d model": {
+        "": "3Dモデルをアップロード"
+      },
+      "upload extra resources": {
+        "": "追加リソースをアップロード"
+      },
       "width": {
         "name": "幅"
       }
@@ -7237,12 +7319,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy：画像からモデルへ",
@@ -7288,16 +7375,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：複数画像からモデルへ",
@@ -7343,16 +7432,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "以前に作成したドラフトモデルをリファインします。",
@@ -7377,16 +7468,18 @@
         "tooltip": "テクスチャリングプロセスをガイドするテキストプロンプトを入力してください。最大600文字。「texture_image」と同時に使用することはできません。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "標準フォーマットでリギング済みキャラクターを提供します。自動リギングは、テクスチャのないメッシュ、非ヒューマノイドアセット、または手足や体の構造が不明瞭なヒューマノイドアセットには適していません。",
@@ -7404,16 +7497,18 @@
         "tooltip": "モデルのUV展開されたベースカラーテクスチャ画像です。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy：テキストからモデル生成",
@@ -7452,16 +7547,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy：テクスチャモデル",
@@ -7488,16 +7585,18 @@
         "tooltip": "オブジェクトの希望するテクスチャスタイルをテキストで説明してください。最大600文字。'image_style'と同時に使用することはできません。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "モデルファイル",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "新しいMiniMax Hailuo-02モデルを使用して、プロンプトから動画を生成します（開始フレームはオプション）。",
@@ -10694,11 +10793,9 @@
       "camera_info": {
         "name": "カメラ情報"
       },
-      "image": {
-        "name": "画像"
-      },
       "model_file": {
-        "name": "モデルファイル"
+        "name": "モデルファイル",
+        "tooltip": "3Dモデルファイルまたはパス文字列"
       }
     }
   },
@@ -10978,6 +11075,25 @@
     "outputs": {
       "0": {
         "name": "recraft_controls",
+        "tooltip": null
+      }
+    }
+  },
+  "RecraftCreateStyleNode": {
+    "description": "参照画像からカスタムスタイルを作成します。スタイル参照として1～5枚の画像をアップロードしてください。すべての画像の合計サイズは5MBまでです。",
+    "display_name": "Recraft スタイル作成",
+    "inputs": {
+      "images": {
+        "name": "画像"
+      },
+      "style": {
+        "name": "スタイル",
+        "tooltip": "生成される画像の基本スタイルです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "スタイルID",
         "tooltip": null
       }
     }
@@ -11320,6 +11436,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "このノードは音色のリファレンスオーディオを設定します（ace step 1.5用）",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "正規表現抽出",
     "inputs": {
@@ -11648,12 +11781,13 @@
         "name": "シード"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3Dモデルパス",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "Rodin APIを使用して3Dアセットを生成",
@@ -11675,12 +11809,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3Dモデルパス",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "Rodin APIを使用して3Dアセットを生成",
@@ -11699,12 +11834,13 @@
         "name": "シード"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3Dモデルパス",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "Rodin APIを使用して3Dアセットを生成",
@@ -11717,12 +11853,13 @@
         "name": "シード"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3Dモデルパス",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "Rodin APIを使用して3Dアセットを生成",
@@ -11741,12 +11878,13 @@
         "name": "シード"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3Dモデルパス",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "最初と最後のキーフレームをアップロードし、プロンプトを作成して動画を生成します。最後のフレームが最初のフレームと完全に異なる場合など、より複雑な遷移では、長い10秒の期間が効果的です。これにより、2つの入力間を滑らかに遷移するための時間がより多く確保されます。始める前に、これらのベストプラクティスを確認して、入力選択が生成を成功に導くようにしてください: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12473,11 +12611,9 @@
       "filename_prefix": {
         "name": "ファイル名のプレフィックス"
       },
-      "image": {
-        "name": "画像"
-      },
       "mesh": {
-        "name": "メッシュ"
+        "name": "メッシュ",
+        "tooltip": "保存するメッシュまたはGLBファイル"
       }
     }
   },
@@ -13730,12 +13866,17 @@
         "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "モデルファイル",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: テキストからモデルへ (Pro)",
@@ -13765,12 +13906,17 @@
         "tooltip": "シードはノードの再実行を制御しますが、シードに関わらず結果は非決定的です。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "モデルファイル",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13786,6 +13932,46 @@
       },
       "tags": {
         "name": "タグ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "BPM"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "duration": {
+        "name": "長さ"
+      },
+      "keyscale": {
+        "name": "キー"
+      },
+      "language": {
+        "name": "言語"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "tags": {
+        "name": "タグ"
+      },
+      "timesignature": {
+        "name": "拍子"
       }
     },
     "outputs": {
@@ -14349,16 +14535,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: マルチビューからモデル",
@@ -14410,16 +14594,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "v1.4 Tripoモデルでのみ作成されたドラフトモデルをリファインします。",
@@ -14430,16 +14612,14 @@
         "tooltip": "v1.4 Tripoモデルである必要があります"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: リグ付きモデルのリターゲット",
@@ -14451,16 +14631,14 @@
         "name": "original_model_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "retarget task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: モデルのリグ設定",
@@ -14469,16 +14647,14 @@
         "name": "original_model_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "rig task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: テキストからモデル生成",
@@ -14523,16 +14699,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: モデルのテクスチャリング",
@@ -14556,16 +14730,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "モデルファイル",
-        "tooltip": null
-      },
-      "1": {
-        "name": "モデル タスクID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "テキストを切り詰める",
@@ -15229,6 +15401,119 @@
       }
     }
   },
+  "Vidu3ImageToVideoNode": {
+    "description": "画像とオプションのプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 画像から動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "生成される動画の開始フレームとして使用する画像。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_audio": {
+        "name": "オーディオ"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画生成用のオプションのテキストプロンプト（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu3TextToVideoNode": {
+    "description": "テキストプロンプトから動画を生成します。",
+    "display_name": "Vidu Q3 テキストから動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_audio": {
+        "name": "オーディオ"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "動画生成用のテキスト説明（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduExtendVideoNode": {
+    "description": "既存の動画を拡張して追加フレームを生成します。",
+    "display_name": "Vidu 動画拡張",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "end_frame": {
+        "name": "終了フレーム"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画拡張に使用するモデル。"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "拡張動画用のオプションのテキストプロンプト（最大2000文字）。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "拡張する元の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ViduImageToVideoNode": {
     "description": "画像とオプションのプロンプトからビデオを生成",
     "display_name": "Vidu 画像からビデオ生成",
@@ -15263,6 +15548,49 @@
       "seed": {
         "name": "シード",
         "tooltip": "ビデオ生成のシード値（0でランダム）"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ViduMultiFrameVideoNode": {
+    "description": "複数のキーフレーム遷移を持つ動画を生成します。",
+    "display_name": "Vidu マルチフレーム動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "frames": {
+        "name": "フレーム数",
+        "tooltip": "キーフレーム遷移の数（2～9）。"
+      },
+      "frames_duration1": {
+        "name": "長さ1"
+      },
+      "frames_duration2": {
+        "name": "長さ2"
+      },
+      "frames_prompt1": {
+        "name": "プロンプト1"
+      },
+      "frames_prompt2": {
+        "name": "プロンプト2"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "start_image": {
+        "name": "開始画像",
+        "tooltip": "開始フレーム画像。アスペクト比は1:4から4:1の間である必要があります。"
       }
     },
     "outputs": {
