@@ -61,7 +61,10 @@ describe('PackEnableToggle', () => {
   const mountComponent = ({
     props = {},
     installedPacks = {}
-  }: Record<string, any> = {}): VueWrapper => {
+  }: {
+    props?: Record<string, unknown>
+    installedPacks?: Record<string, unknown>
+  } = {}): VueWrapper => {
     const i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -73,7 +76,7 @@ describe('PackEnableToggle', () => {
       enablePack: mockEnablePack,
       disablePack: mockDisablePack,
       installedPacks
-    } as any)
+    } as Partial<ReturnType<typeof useComfyManagerStore>> as ReturnType<typeof useComfyManagerStore>)
 
     return mount(PackEnableToggle, {
       props: {
