@@ -7,14 +7,10 @@
     :class="
       cn(
         'lg-node-header text-sm py-2 pl-2 pr-3 w-full min-w-0',
-        'text-node-component-header bg-node-component-header-surface',
+        'text-node-component-header',
         headerShapeClass
       )
     "
-    :style="{
-      backgroundColor: applyLightThemeColor(nodeData?.color),
-      opacity: useSettingStore().get('Comfy.Node.Opacity') ?? 1
-    }"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -97,10 +93,8 @@ import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 
