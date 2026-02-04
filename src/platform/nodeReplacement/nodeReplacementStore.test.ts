@@ -236,5 +236,15 @@ describe('useNodeReplacementStore', () => {
 
       expect(fetchNodeReplacements).toHaveBeenCalledOnce()
     })
+
+    it('should not call API when setting is disabled', async () => {
+      vi.mocked(fetchNodeReplacements).mockResolvedValue(mockReplacements)
+      store = createStore(false)
+
+      await store.load()
+
+      expect(fetchNodeReplacements).not.toHaveBeenCalled()
+      expect(store.isLoaded).toBe(false)
+    })
   })
 })
