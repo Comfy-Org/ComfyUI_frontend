@@ -145,7 +145,7 @@
         v-else-if="lgraphNode?.isSubgraphNode()"
         @click.stop="handleEnterSubgraph"
       >
-        <span>{{ t('[ph] Enter Subgraph') }}</span>
+        <span>{{ t('g.enterSubgraph') }}</span>
         <i class="icon-[comfy--workflow] size-4" />
       </button>
       <button
