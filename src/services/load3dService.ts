@@ -32,7 +32,6 @@ type UseLoad3dViewerFn = (node?: LGraphNode) => {
   handleModelDrop: (file: File) => Promise<void>
   handleSeek: (progress: number) => void
   needApplyChanges: { value: boolean }
-  [key: string]: unknown
 }
 
 // Type for SkeletonUtils module
@@ -81,7 +80,7 @@ interface Load3DNode extends LGraphNode {
   syncLoad3dConfig?: () => void
 }
 
-const viewerInstances = new Map<NodeId, ReturnType<typeof useLoad3dViewer>>()
+const viewerInstances = new Map<NodeId, ReturnType<UseLoad3dViewerFn>>()
 
 export class Load3dService {
   private static instance: Load3dService
@@ -165,12 +164,15 @@ export class Load3dService {
    * Only works after useLoad3dViewer has been loaded.
    * Returns null if module not yet loaded - use async version instead.
    */
-  getOrCreateViewerSync(node: LGraphNode, useLoad3dViewer: UseLoad3dViewerFn) {
+  getOrCreateViewerSync<T extends UseLoad3dViewerFn>(
+    node: LGraphNode,
+    useLoad3dViewer: T
+  ): ReturnType<T> {
     if (!viewerInstances.has(node.id)) {
       viewerInstances.set(node.id, useLoad3dViewer(node))
     }
 
-    return viewerInstances.get(node.id)
+    return viewerInstances.get(node.id) as ReturnType<T>
   }
 
   removeViewer(node: LGraphNode) {

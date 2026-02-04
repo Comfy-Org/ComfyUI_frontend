@@ -5641,7 +5641,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     // Skip link rendering while waiting for slot positions to sync after reconfigure
     if (LiteGraph.vueNodesMode && layoutStore.pendingSlotSync) {
-      this.#visibleReroutes.clear()
+      this._visibleReroutes.clear()
       return
     }
 
