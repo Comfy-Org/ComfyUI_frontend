@@ -80,7 +80,7 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     return [...(nodeData?.badges ?? [])].map(toValue)
   })
   return computed(() => {
-    let hasComfyBadge = false
+    let isCoreNode = false
     const core: NodeBadgeProps[] = []
     const extension: NodeBadgeProps[] = []
     const pricing: { required: string; rest?: string }[] = []
@@ -89,7 +89,7 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
         const [id, source] = splitAroundFirstSpace(badge.text)
         core.push({ text: id })
 
-        if (source === '🦊') hasComfyBadge = true
+        if (source === '🦊') isCoreNode = true
         else if (source) core.push({ text: source })
 
         continue
@@ -101,6 +101,12 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
       }
       extension.push(badge)
     }
-    return { hasComfyBadge, core, extension, pricing }
+
+    return {
+      hasComfyBadge: isCoreNode && pricing.length === 0,
+      core,
+      extension,
+      pricing
+    }
   })
 }
