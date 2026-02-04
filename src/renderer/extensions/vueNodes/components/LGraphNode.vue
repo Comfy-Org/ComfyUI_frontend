@@ -143,6 +143,7 @@
       </button>
       <button
         v-else-if="lgraphNode?.isSubgraphNode()"
+        data-testid="subgraph-enter-button"
         @click.stop="handleEnterSubgraph"
       >
         <span>{{ t('g.enterSubgraph') }}</span>
