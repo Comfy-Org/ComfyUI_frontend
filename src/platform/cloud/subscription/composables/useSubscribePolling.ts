@@ -15,6 +15,7 @@ export interface UseSubscribePollingReturn {
   isPending: Ref<boolean>
   isSuccess: Ref<boolean>
   isFailed: Ref<boolean>
+  isTimeout: Ref<boolean>
   errorMessage: Ref<string | null>
   startPolling: (billingOpId: string) => void
   stopPolling: () => void
@@ -28,6 +29,7 @@ export function useSubscribePolling(
   const isPending = ref(false)
   const isSuccess = ref(false)
   const isFailed = ref(false)
+  const isTimeout = ref(false)
   const errorMessage = ref<string | null>(null)
 
   let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -38,6 +40,7 @@ export function useSubscribePolling(
     isPending.value = false
     isSuccess.value = false
     isFailed.value = false
+    isTimeout.value = false
     errorMessage.value = null
     currentAttempt = 0
     currentOpId = null
@@ -78,6 +81,7 @@ export function useSubscribePolling(
       if (currentAttempt >= MAX_ATTEMPTS) {
         isPending.value = false
         isFailed.value = true
+        isTimeout.value = true
         errorMessage.value = 'Subscription verification timed out'
         stopPolling()
         onError?.(errorMessage.value)
@@ -117,6 +121,7 @@ export function useSubscribePolling(
     isPending,
     isSuccess,
     isFailed,
+    isTimeout,
     errorMessage,
     startPolling,
     stopPolling

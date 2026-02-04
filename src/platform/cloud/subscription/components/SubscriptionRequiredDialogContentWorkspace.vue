@@ -96,7 +96,11 @@ const toast = useToast()
 const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
   useBillingContext()
 
-const { isPending: isPolling, startPolling } = useSubscribePolling({
+const {
+  isPending: isPolling,
+  isTimeout,
+  startPolling
+} = useSubscribePolling({
   async onSuccess() {
     toast.add({
       severity: 'success',
@@ -106,11 +110,13 @@ const { isPending: isPolling, startPolling } = useSubscribePolling({
     await Promise.all([fetchStatus(), fetchBalance()])
     emit('close', true)
   },
-  onError(errorMsg) {
+  onError() {
     toast.add({
       severity: 'error',
       summary: t('subscription.required.pollingFailed'),
-      detail: errorMsg,
+      detail: isTimeout.value
+        ? t('subscription.required.pollingTimeout')
+        : undefined,
       life: 5000
     })
   }

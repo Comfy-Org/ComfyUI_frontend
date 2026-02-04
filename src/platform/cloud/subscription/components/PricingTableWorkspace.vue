@@ -441,16 +441,16 @@ const togglePopover = (event: Event) => {
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
-  if (isCurrentPlan(tier.key)) {
-    return isCancelled.value
-      ? t('subscription.resubscribe')
-      : t('subscription.currentPlan')
-  }
-
   const planName =
     currentBillingCycle.value === 'yearly'
       ? t('subscription.tierNameYearly', { name: tier.name })
       : tier.name
+
+  if (isCurrentPlan(tier.key)) {
+    return isCancelled.value
+      ? t('subscription.resubscribeTo', { plan: planName })
+      : t('subscription.currentPlan')
+  }
 
   return currentTierKey.value
     ? t('subscription.changeTo', { plan: planName })

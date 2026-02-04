@@ -98,7 +98,7 @@ describe('useSubscribePolling', () => {
     expect(onSuccess).not.toHaveBeenCalled()
   })
 
-  it('polling times out after max attempts - sets isFailed to true with timeout message', async () => {
+  it('polling times out after max attempts - sets isFailed and isTimeout to true with timeout message', async () => {
     const onError = vi.fn()
 
     vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
@@ -107,7 +107,7 @@ describe('useSubscribePolling', () => {
       started_at: new Date().toISOString()
     })
 
-    const { isPending, isFailed, errorMessage, startPolling } =
+    const { isPending, isFailed, isTimeout, errorMessage, startPolling } =
       useSubscribePolling({ onError })
 
     startPolling('op-1')
@@ -119,6 +119,7 @@ describe('useSubscribePolling', () => {
 
     expect(isPending.value).toBe(false)
     expect(isFailed.value).toBe(true)
+    expect(isTimeout.value).toBe(true)
     expect(errorMessage.value).toBe('Subscription verification timed out')
     expect(onError).toHaveBeenCalledWith('Subscription verification timed out')
   })
