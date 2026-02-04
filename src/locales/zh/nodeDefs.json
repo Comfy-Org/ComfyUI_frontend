@@ -6427,6 +6427,7 @@
   "Load3D": {
     "display_name": "加载3D",
     "inputs": {
+      "clear": "清除",
       "height": {
         "name": "高度"
       },
@@ -6436,6 +6437,8 @@
       "model_file": {
         "name": "模型文件"
       },
+      "upload 3d model": "上传3D模型",
+      "upload extra resources": "上传额外资源",
       "width": {
         "name": "宽度"
       }

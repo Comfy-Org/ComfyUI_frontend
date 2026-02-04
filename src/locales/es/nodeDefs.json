@@ -6418,6 +6418,9 @@
   "Load3D": {
     "display_name": "Cargar 3D",
     "inputs": {
+      "clear": {
+        "": "limpiar"
+      },
       "height": {
         "name": "alto"
       },
@@ -6426,6 +6429,12 @@
       },
       "model_file": {
         "name": "archivo_modelo"
+      },
+      "upload 3d model": {
+        "": "subir modelo 3D"
+      },
+      "upload extra resources": {
+        "": "subir recursos adicionales"
       },
       "width": {
         "name": "ancho"

@@ -6427,6 +6427,9 @@
   "Load3D": {
     "display_name": "بارگذاری ۳بعدی و انیمیشن",
     "inputs": {
+      "clear": {
+        "": "پاک‌سازی"
+      },
       "height": {
         "name": "ارتفاع"
       },
@@ -6435,6 +6438,12 @@
       },
       "model_file": {
         "name": "فایل مدل"
+      },
+      "upload 3d model": {
+        "": "بارگذاری مدل سه‌بعدی"
+      },
+      "upload extra resources": {
+        "": "بارگذاری منابع اضافی"
       },
       "width": {
         "name": "عرض"

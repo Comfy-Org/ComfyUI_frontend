@@ -6418,6 +6418,7 @@
   "Load3D": {
     "display_name": "3D 불러오기",
     "inputs": {
+      "clear": {},
       "height": {
         "name": "높이"
       },
@@ -6426,6 +6427,12 @@
       },
       "model_file": {
         "name": "모델 파일"
+      },
+      "upload 3d model": {
+        "ko": "3D 모델 업로드"
+      },
+      "upload extra resources": {
+        "ko": "추가 리소스 업로드"
       },
       "width": {
         "name": "너비"

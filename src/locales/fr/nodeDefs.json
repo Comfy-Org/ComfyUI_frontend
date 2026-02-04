@@ -6418,6 +6418,9 @@
   "Load3D": {
     "display_name": "Charger 3D",
     "inputs": {
+      "clear": {
+        "": "effacer"
+      },
       "height": {
         "name": "hauteur"
       },
@@ -6426,6 +6429,12 @@
       },
       "model_file": {
         "name": "fichier_modèle"
+      },
+      "upload 3d model": {
+        "": "téléverser un modèle 3D"
+      },
+      "upload extra resources": {
+        "": "téléverser des ressources supplémentaires"
       },
       "width": {
         "name": "largeur"

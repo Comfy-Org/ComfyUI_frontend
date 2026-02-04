@@ -6418,6 +6418,9 @@
   "Load3D": {
     "display_name": "3Dを読み込む",
     "inputs": {
+      "clear": {
+        "": "クリア"
+      },
       "height": {
         "name": "高さ"
       },
@@ -6426,6 +6429,12 @@
       },
       "model_file": {
         "name": "モデルファイル"
+      },
+      "upload 3d model": {
+        "": "3Dモデルをアップロード"
+      },
+      "upload extra resources": {
+        "": "追加リソースをアップロード"
       },
       "width": {
         "name": "幅"

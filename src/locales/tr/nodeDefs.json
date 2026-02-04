@@ -6418,6 +6418,9 @@
   "Load3D": {
     "display_name": "3D Yükle",
     "inputs": {
+      "clear": {
+        "": "Temizle"
+      },
       "height": {
         "name": "yükseklik"
       },
@@ -6426,6 +6429,12 @@
       },
       "model_file": {
         "name": "model_dosyası"
+      },
+      "upload 3d model": {
+        "": "3D modeli yükle"
+      },
+      "upload extra resources": {
+        "": "Ek kaynakları yükle"
       },
       "width": {
         "name": "genişlik"
