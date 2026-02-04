@@ -9,56 +9,32 @@ describe('useWidgetValueStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  describe('value management (legacy API)', () => {
-    it('stores and retrieves values', () => {
+  describe('widgetState.value access', () => {
+    it('getWidget returns undefined for unregistered widget', () => {
       const store = useWidgetValueStore()
-      store.set('node-1', 'seed', 12345)
-      expect(store.get('node-1', 'seed')).toBe(12345)
+      expect(store.getWidget('missing', 'widget')).toBeUndefined()
     })
 
-    it('returns undefined for missing values', () => {
+    it('widgetState.value can be read and written directly', () => {
       const store = useWidgetValueStore()
-      expect(store.get('missing', 'widget')).toBeUndefined()
-    })
+      const state = store.registerWidget('node-1', 'seed', 'number', 100)
+      expect(state.value).toBe(100)
 
-    it('removes single widget value', () => {
-      const store = useWidgetValueStore()
-      store.set('node-1', 'seed', 100)
-      store.remove('node-1', 'seed')
-      expect(store.get('node-1', 'seed')).toBeUndefined()
-    })
-
-    it('removes all widgets for a node', () => {
-      const store = useWidgetValueStore()
-      store.set('node-1', 'seed', 1)
-      store.set('node-1', 'steps', 20)
-      store.set('node-2', 'seed', 2)
-
-      store.removeNode('node-1')
-
-      expect(store.get('node-1', 'seed')).toBeUndefined()
-      expect(store.get('node-1', 'steps')).toBeUndefined()
-      expect(store.get('node-2', 'seed')).toBe(2)
-    })
-
-    it('overwrites existing values', () => {
-      const store = useWidgetValueStore()
-      store.set('node-1', 'seed', 100)
-      store.set('node-1', 'seed', 200)
-      expect(store.get('node-1', 'seed')).toBe(200)
+      state.value = 200
+      expect(store.getWidget('node-1', 'seed')?.value).toBe(200)
     })
 
     it('stores different value types', () => {
       const store = useWidgetValueStore()
-      store.set('node-1', 'text', 'hello')
-      store.set('node-1', 'number', 42)
-      store.set('node-1', 'boolean', true)
-      store.set('node-1', 'array', [1, 2, 3])
+      store.registerWidget('node-1', 'text', 'string', 'hello')
+      store.registerWidget('node-1', 'number', 'number', 42)
+      store.registerWidget('node-1', 'boolean', 'toggle', true)
+      store.registerWidget('node-1', 'array', 'combo', [1, 2, 3])
 
-      expect(store.get('node-1', 'text')).toBe('hello')
-      expect(store.get('node-1', 'number')).toBe(42)
-      expect(store.get('node-1', 'boolean')).toBe(true)
-      expect(store.get('node-1', 'array')).toEqual([1, 2, 3])
+      expect(store.getWidget('node-1', 'text')?.value).toBe('hello')
+      expect(store.getWidget('node-1', 'number')?.value).toBe(42)
+      expect(store.getWidget('node-1', 'boolean')?.value).toBe(true)
+      expect(store.getWidget('node-1', 'array')?.value).toEqual([1, 2, 3])
     })
   })
 
@@ -100,12 +76,6 @@ describe('useWidgetValueStore', () => {
       expect(state.options).toEqual({ multiline: true })
     })
 
-    it('also sets the value in the values map', () => {
-      const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 42)
-      expect(store.get('node-1', 'seed')).toBe(42)
-    })
-
     it('unregisters a widget', () => {
       const store = useWidgetValueStore()
       store.registerWidget('node-1', 'seed', 'number', 100)
@@ -113,7 +83,6 @@ describe('useWidgetValueStore', () => {
       store.unregisterWidget('node-1', 'seed')
 
       expect(store.getWidget('node-1', 'seed')).toBeUndefined()
-      expect(store.get('node-1', 'seed')).toBeUndefined()
     })
 
     it('unregisters all widgets for a node', () => {
@@ -126,9 +95,7 @@ describe('useWidgetValueStore', () => {
 
       expect(store.getWidget('node-1', 'seed')).toBeUndefined()
       expect(store.getWidget('node-1', 'steps')).toBeUndefined()
-      expect(store.getWidget('node-2', 'seed')).toBeDefined()
-      expect(store.get('node-1', 'seed')).toBeUndefined()
-      expect(store.get('node-2', 'seed')).toBe(2)
+      expect(store.getWidget('node-2', 'seed')?.value).toBe(2)
     })
   })
 
@@ -245,24 +212,6 @@ describe('useWidgetValueStore', () => {
       expect(() => store.setAdvanced('missing', 'widget', true)).not.toThrow()
       expect(() => store.setPromoted('missing', 'widget', true)).not.toThrow()
       expect(() => store.setLabel('missing', 'widget', 'test')).not.toThrow()
-    })
-  })
-
-  describe('value sync between APIs', () => {
-    it('set() updates registered widget state value', () => {
-      const store = useWidgetValueStore()
-      store.registerWidget('node-1', 'seed', 'number', 100)
-
-      store.set('node-1', 'seed', 200)
-
-      expect(store.get('node-1', 'seed')).toBe(200)
-      expect(store.getWidget('node-1', 'seed')?.value).toBe(200)
-    })
-
-    it('set() works for unregistered widgets', () => {
-      const store = useWidgetValueStore()
-      store.set('node-1', 'seed', 100)
-      expect(store.get('node-1', 'seed')).toBe(100)
     })
   })
 })

@@ -24,37 +24,10 @@ export interface WidgetState {
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
-  const values = ref(new Map<WidgetKey, unknown>())
   const widgetStates = ref(new Map<WidgetKey, WidgetState>())
 
   function makeKey(nodeId: NodeId, widgetName: string): WidgetKey {
     return `${nodeId}:${widgetName}`
-  }
-
-  function get(nodeId: NodeId, widgetName: string): unknown {
-    return values.value.get(makeKey(nodeId, widgetName))
-  }
-
-  function set(nodeId: NodeId, widgetName: string, value: unknown): void {
-    const key = makeKey(nodeId, widgetName)
-    values.value.set(key, value)
-    const state = widgetStates.value.get(key)
-    if (state) {
-      state.value = value
-    }
-  }
-
-  function remove(nodeId: NodeId, widgetName: string): void {
-    values.value.delete(makeKey(nodeId, widgetName))
-  }
-
-  function removeNode(nodeId: NodeId): void {
-    const prefix = `${nodeId}:`
-    for (const key of values.value.keys()) {
-      if (key.startsWith(prefix)) {
-        values.value.delete(key)
-      }
-    }
   }
 
   function registerWidget(
@@ -84,14 +57,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       serialize: options.serialize ?? true
     }
     widgetStates.value.set(key, state)
-    values.value.set(key, value)
     return state
   }
 
   function unregisterWidget(nodeId: NodeId, widgetName: string): void {
-    const key = makeKey(nodeId, widgetName)
-    widgetStates.value.delete(key)
-    values.value.delete(key)
+    widgetStates.value.delete(makeKey(nodeId, widgetName))
   }
 
   function unregisterNode(nodeId: NodeId): void {
@@ -101,7 +71,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         widgetStates.value.delete(key)
       }
     }
-    removeNode(nodeId)
   }
 
   function getWidget(
@@ -190,12 +159,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   return {
-    values,
     widgetStates,
-    get,
-    set,
-    remove,
-    removeNode,
     registerWidget,
     unregisterWidget,
     unregisterNode,

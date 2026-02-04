@@ -27,7 +27,9 @@ export function useWidget(
 
   const value = computed({
     get: () => widget.value?.value,
-    set: (v: unknown) => store.set(toValue(nodeId), toValue(widgetName), v)
+    set: (v: unknown) => {
+      if (widget.value) widget.value.value = v
+    }
   })
 
   const isHidden = computed(() => widget.value?.hidden ?? false)

@@ -111,9 +111,10 @@ describe('BaseWidget store integration', () => {
       widget.setNodeId(1)
 
       widget.value = 99
-      expect(store.get(1, 'valueWidget')).toBe(99)
+      expect(store.getWidget(1, 'valueWidget')?.value).toBe(99)
 
-      store.set(1, 'valueWidget', 55)
+      const state = store.getWidget(1, 'valueWidget')!
+      state.value = 55
       expect(widget.value).toBe(55)
     })
   })
@@ -158,11 +159,11 @@ describe('BaseWidget store integration', () => {
       expect(state?.label).toBeUndefined()
     })
 
-    it('registers widget value in values map', () => {
+    it('registers widget value accessible via getWidget', () => {
       const widget = createTestWidget(node, { name: 'valuesWidget', value: 77 })
       widget.setNodeId(1)
 
-      expect(store.get(1, 'valuesWidget')).toBe(77)
+      expect(store.getWidget(1, 'valuesWidget')?.value).toBe(77)
     })
   })
 

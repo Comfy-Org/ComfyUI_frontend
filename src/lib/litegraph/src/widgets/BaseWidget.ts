@@ -184,7 +184,7 @@ export abstract class BaseWidget<
   get value(): TWidget['value'] {
     if (this._nodeId !== undefined) {
       const store = useWidgetValueStore()
-      const storeValue = store.get(this._nodeId, this.name)
+      const storeValue = store.getWidget(this._nodeId, this.name)?.value
       if (storeValue !== undefined) {
         return storeValue as TWidget['value']
       }
@@ -196,7 +196,8 @@ export abstract class BaseWidget<
     this._internalValue = value
     if (this._nodeId !== undefined) {
       const store = useWidgetValueStore()
-      store.set(this._nodeId, this.name, value)
+      const state = store.getWidget(this._nodeId, this.name)
+      if (state) state.value = value
     }
   }
 

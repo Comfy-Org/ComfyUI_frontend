@@ -221,7 +221,7 @@ const nodeBadges = computed<NodeBadgeProps[]>(() => {
       if (relevantNames.length > 0 && nodeData?.id != null) {
         for (const name of relevantNames) {
           // Access value from store to create reactive dependency
-          void widgetStore.get(nodeData.id, name)
+          void widgetStore.getWidget(nodeData.id, name)?.value
         }
       }
       // Access input connections for regular inputs

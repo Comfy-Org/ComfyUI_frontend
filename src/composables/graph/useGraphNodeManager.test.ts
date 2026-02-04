@@ -38,10 +38,12 @@ describe('Node Reactivity', () => {
     expect((widget as any)._nodeId).toBe(node.id)
 
     // Initial value should be in store after setNodeId was called
-    expect(store.get(node.id, 'testnum')).toBe(2)
+    expect(store.getWidget(node.id, 'testnum')?.value).toBe(2)
 
     const onValueChange = vi.fn()
-    const widgetValue = computed(() => store.get(node.id, 'testnum'))
+    const widgetValue = computed(
+      () => store.getWidget(node.id, 'testnum')?.value
+    )
     watch(widgetValue, onValueChange)
 
     widget.value = 42
@@ -62,7 +64,9 @@ describe('Node Reactivity', () => {
     })
     await nextTick()
 
-    const widgetValue = computed(() => store.get(node.id, 'testnum'))
+    const widgetValue = computed(
+      () => store.getWidget(node.id, 'testnum')?.value
+    )
     watch(widgetValue, onValueChange)
 
     node.widgets![0].value = 99

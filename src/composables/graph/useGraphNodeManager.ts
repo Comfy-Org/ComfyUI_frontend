@@ -240,15 +240,6 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   // Extract safe widget data
   const slotMetadata = new Map<string, WidgetSlotMetadata>()
 
-  const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
-  Object.defineProperty(node, 'widgets', {
-    get() {
-      return reactiveWidgets
-    },
-    set(v) {
-      reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
-    }
-  })
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
   Object.defineProperty(node, 'inputs', {
     get() {

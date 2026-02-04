@@ -178,7 +178,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const widgetState = widgetValueStore.getWidget(nodeId, widget.name)
 
     // Get value from store (falls back to undefined if not registered)
-    const value = widgetValueStore.get(nodeId, widget.name) as WidgetValue
+    const value = widgetState?.value as WidgetValue
 
     // Build options from store state, with slot-linked override for disabled
     const storeOptions = widgetState?.options ?? {}
@@ -208,7 +208,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
 
     function updateHandler(newValue: WidgetValue) {
       // Update value in store
-      widgetValueStore.set(nodeId, widget.name, newValue)
+      if (widgetState) widgetState.value = newValue
       // Invoke LiteGraph callback wrapper (handles triggerDraw, etc.)
       widget.callback?.(newValue)
     }
