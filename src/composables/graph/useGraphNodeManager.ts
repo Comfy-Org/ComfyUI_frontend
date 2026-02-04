@@ -145,7 +145,7 @@ interface SharedWidgetEnhancements {
   /** Widget label */
   label?: string
   /** Widget options */
-  options?: Record<string, any>
+  options?: IWidgetOptions<unknown>
 }
 
 /**
