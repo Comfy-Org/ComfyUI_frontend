@@ -36,4 +36,17 @@ jobs:
         run: pnpm build
 
       - name: Scan dist for telemetry references
-        run: pnpm test:dist:no-telemetry
+        run: |
+          set -euo pipefail
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e 'Google Tag Manager' \
+            -e '(?i)\bgtm\.js\b' \
+            -e '(?i)googletagmanager\.com/gtm\.js\\?id=' \
+            -e '(?i)googletagmanager\.com/ns\.html\\?id=' \
+            dist; then
+            echo 'Telemetry references found in dist assets.'
+            exit 1
+          fi
+          echo 'No telemetry references found in dist assets.'
