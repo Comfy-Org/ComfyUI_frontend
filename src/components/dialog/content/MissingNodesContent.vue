@@ -25,10 +25,25 @@
           :key="i"
           class="flex min-h-8 items-center justify-between px-4 py-2 bg-secondary-background text-muted-foreground"
         >
-          <span class="text-xs">
-            {{ node.label }}
-          </span>
-          <span v-if="node.hint" class="text-xs">{{ node.hint }}</span>
+          <div class="flex items-center gap-2">
+            <StatusBadge
+              v-if="node.isReplaceable"
+              :label="$t('nodeReplacement.replaceable')"
+              severity="default"
+            />
+            <span class="text-xs">{{ node.label }}</span>
+            <span v-if="node.hint" class="text-xs text-muted-foreground">
+              {{ node.hint }}
+            </span>
+          </div>
+          <Button
+            v-if="node.isReplaceable"
+            variant="secondary"
+            size="sm"
+            @click="emit('replace', node.label)"
+          >
+            {{ $t('nodeReplacement.replace') }}
+          </Button>
         </div>
       </div>
 
@@ -49,13 +64,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import type { MissingNodeType } from '@/types/comfy'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
+}>()
+
+const emit = defineEmits<{
+  (e: 'replace', nodeType: string): void
 }>()
 
 // Get missing core nodes for OSS mode
@@ -75,10 +96,12 @@ const uniqueNodes = computed(() => {
         return {
           label: node.type,
           hint: node.hint,
-          action: node.action
+          action: node.action,
+          isReplaceable: node.isReplaceable ?? false,
+          replacement: node.replacement
         }
       }
-      return { label: node }
+      return { label: node, isReplaceable: false }
     })
 })
 </script>

@@ -2801,6 +2801,14 @@
       "replacementInstruction": "Install these nodes to run this workflow, or replace them with installed alternatives. Missing nodes are highlighted in red on the canvas."
     }
   },
+  "nodeReplacement": {
+    "replaceable": "Replaceable",
+    "replace": "Replace",
+    "replaceAll": "Replace All",
+    "replacedNode": "Replaced node: {nodeType}",
+    "replacedAllNodes": "Replaced {count} node type(s)",
+    "replaceFailed": "Failed to replace nodes"
+  },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
     "noSelection": "Select a node to see its properties and info.",
