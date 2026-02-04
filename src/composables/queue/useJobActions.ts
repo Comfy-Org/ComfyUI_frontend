@@ -5,15 +5,13 @@ import { useI18n } from 'vue-i18n'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useJobMenu } from '@/composables/queue/useJobMenu'
-import type { JobState } from '@/types/queue'
+import { isActiveJobState } from '@/utils/queueUtil'
 
 export type JobAction = {
   icon: string
   label: string
   variant: 'destructive' | 'secondary' | 'textonly'
 }
-
-const CANCELLABLE_STATES: JobState[] = ['pending', 'initialization', 'running']
 
 export function useJobActions(
   job: MaybeRefOrGetter<JobListItem | null | undefined>
@@ -36,10 +34,7 @@ export function useJobActions(
       return false
     }
 
-    return (
-      currentJob.showClear !== false &&
-      CANCELLABLE_STATES.includes(currentJob.state)
-    )
+    return currentJob.showClear !== false && isActiveJobState(currentJob.state)
   })
 
   const runCancelJob = wrapWithErrorHandlingAsync(async () => {

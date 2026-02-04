@@ -8,7 +8,7 @@ const MUTE_OPACITY = '0.5'
 
 test.describe('Vue Node Mute', () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
     await comfyPage.vueNodes.waitForNodes()
   })
 
