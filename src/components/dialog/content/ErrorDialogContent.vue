@@ -110,6 +110,13 @@ const showReport = () => {
 const toast = useToast()
 const { t } = useI18n()
 const systemStatsStore = useSystemStatsStore()
+const canvasStore = useCanvasStore()
+const telemetry = useTelemetry()
+const dialogStore = useDialogStore()
+
+/**
+ * Locate the node on the canvas.
+ */
 function handleLocateNode() {
   if (!error.nodeId || !canvasStore.canvas) return
 
