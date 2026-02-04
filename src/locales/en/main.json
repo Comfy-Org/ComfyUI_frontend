@@ -2036,6 +2036,7 @@
       "videosEstimate": "~{count} videos*",
       "templateNote": "*Generated with Wan Fun Control template",
       "buy": "Buy",
+      "purchaseSuccess": "Credits added successfully!",
       "purchaseError": "Purchase Failed",
       "purchaseErrorDetail": "Failed to purchase credits: {error}",
       "unknownError": "An unknown error occurred",
@@ -2076,6 +2077,7 @@
     "comfyCloudLogo": "Comfy Cloud Logo",
     "beta": "BETA",
     "perMonth": "/ month",
+    "member": "member",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "USD / mo / member",
     "renewsDate": "Renews {date}",
@@ -2083,6 +2085,23 @@
     "manageSubscription": "Manage subscription",
     "managePayment": "Manage Payment",
     "cancelSubscription": "Cancel Subscription",
+    "canceled": "Canceled",
+    "resubscribe": "Resubscribe",
+    "resubscribeTo": "Resubscribe to {plan}",
+    "resubscribeSuccess": "Subscription reactivated successfully",
+    "canceledCard": {
+      "title": "Your subscription has been canceled",
+      "description": "You won't be charged again. Your features remain active until {date}."
+    },
+    "cancelSuccess": "Subscription cancelled successfully",
+    "cancelDialog": {
+      "title": "Cancel subscription",
+      "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
+      "endOfBillingPeriod": "end of billing period",
+      "keepSubscription": "Keep subscription",
+      "confirmCancel": "Cancel subscription",
+      "failed": "Failed to cancel subscription"
+    },
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
     "totalCredits": "Total credits",
@@ -2131,7 +2150,10 @@
     "required": {
       "title": "Subscribe to",
       "waitingForSubscription": "Complete your subscription in the new tab. We'll automatically detect when you're done!",
-      "subscribe": "Subscribe"
+      "subscribe": "Subscribe",
+      "pollingSuccess": "Subscription activated successfully!",
+      "pollingFailed": "Subscription activation failed",
+      "pollingTimeout": "Timed out waiting for subscription. Please refresh and try again."
     },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
@@ -2156,6 +2178,10 @@
     "monthlyCreditsPerMemberLabel": "Monthly credits / member",
     "maxMembersLabel": "Max. members",
     "yearlyCreditsLabel": "Total yearly credits",
+    "membersLabel": "Up to {count} members",
+    "nextMonthInvoice": "Next month invoice",
+    "invoiceHistory": "Invoice history",
+    "memberCount": "{count} member | {count} members",
     "maxDurationLabel": "Max run duration",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
     "addCreditsLabel": "Add more credits whenever",

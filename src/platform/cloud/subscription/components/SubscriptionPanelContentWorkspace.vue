@@ -1,5 +1,29 @@
 <template>
   <div class="grow overflow-auto pt-6">
+    <!-- Cancelled subscription info card -->
+    <div
+      v-if="isCancelled"
+      class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
+    >
+      <div
+        class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning-background"
+      >
+        <i class="pi pi-info-circle" />
+      </div>
+      <div class="flex flex-col gap-2">
+        <h2 class="text-sm font-bold text-text-primary m-0 pt-1.5">
+          {{ $t('subscription.canceledCard.title') }}
+        </h2>
+        <p class="text-sm text-text-secondary m-0">
+          {{
+            $t('subscription.canceledCard.description', {
+              date: formattedEndDate
+            })
+          }}
+        </p>
+      </div>
+    </div>
+
     <div class="rounded-2xl border border-interface-stroke p-6">
       <div>
         <div
@@ -40,16 +64,33 @@
           <!-- Normal Subscribed State (Owner with subscription, or member viewing subscribed workspace) -->
           <template v-else>
             <div class="flex flex-col gap-2">
-              <div class="text-sm font-bold text-text-primary">
-                {{ subscriptionTierName }}
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-text-primary">
+                  {{ subscriptionTierName }}
+                </span>
+                <StatusBadge
+                  v-if="isCancelled"
+                  :label="$t('subscription.canceled')"
+                  severity="warn"
+                />
               </div>
               <div class="flex items-baseline gap-1 font-inter font-semibold">
                 <span class="text-2xl">${{ tierPrice }}</span>
-                <span class="text-base">{{ $t('subscription.perMonth') }}</span>
+                <span class="text-base"
+                  >{{ $t('subscription.perMonth') }} /
+                  {{ $t('subscription.member') }}</span
+                >
               </div>
               <div
                 v-if="isActiveSubscription"
-                class="text-sm text-text-secondary"
+                :class="
+                  cn(
+                    'text-sm',
+                    isCancelled
+                      ? 'text-warning-background'
+                      : 'text-text-secondary'
+                  )
+                "
               >
                 <template v-if="isCancelled">
                   {{
@@ -72,32 +113,48 @@
               v-if="isActiveSubscription && permissions.canManageSubscription"
               class="flex flex-wrap gap-2 md:ml-auto"
             >
-              <Button
-                size="lg"
-                variant="secondary"
-                class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
-                @click="manageSubscription"
-              >
-                {{ $t('subscription.managePayment') }}
-              </Button>
-              <Button
-                size="lg"
-                variant="primary"
-                class="rounded-lg px-4 text-sm font-normal text-text-primary"
-                @click="showSubscriptionDialog"
-              >
-                {{ $t('subscription.upgradePlan') }}
-              </Button>
-              <Button
-                v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                variant="secondary"
-                size="lg"
-                :aria-label="$t('g.moreOptions')"
-                @click="planMenu?.toggle($event)"
-              >
-                <i class="pi pi-ellipsis-h" />
-              </Button>
-              <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
+              <!-- Cancelled state: show only Resubscribe button -->
+              <template v-if="isCancelled">
+                <Button
+                  size="lg"
+                  variant="primary"
+                  class="rounded-lg px-4 text-sm font-normal"
+                  :loading="isResubscribing"
+                  @click="handleResubscribe"
+                >
+                  {{ $t('subscription.resubscribe') }}
+                </Button>
+              </template>
+
+              <!-- Active state: show Manage Payment, Upgrade, and menu -->
+              <template v-else>
+                <Button
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.managePayment') }}
+                </Button>
+                <Button
+                  size="lg"
+                  variant="primary"
+                  class="rounded-lg px-4 text-sm font-normal text-text-primary"
+                  @click="showSubscriptionDialog"
+                >
+                  {{ $t('subscription.upgradePlan') }}
+                </Button>
+                <Button
+                  v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                  variant="secondary"
+                  size="lg"
+                  :aria-label="$t('g.moreOptions')"
+                  @click="planMenu?.toggle($event)"
+                >
+                  <i class="pi pi-ellipsis-h" />
+                </Button>
+                <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
+              </template>
             </div>
           </template>
         </div>
@@ -210,6 +267,10 @@
                 v-if="benefit.type === 'feature'"
                 class="pi pi-check text-xs text-text-primary"
               />
+              <i
+                v-else-if="benefit.type === 'icon' && benefit.icon"
+                :class="[benefit.icon, 'text-xs text-text-primary']"
+              />
               <span
                 v-else-if="benefit.type === 'metric' && benefit.value"
                 class="text-sm font-normal whitespace-nowrap text-text-primary"
@@ -222,6 +283,30 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Members invoice card -->
+    <div
+      v-if="isActiveSubscription && !isInPersonalWorkspace"
+      class="mt-6 flex gap-1 rounded-2xl border border-interface-stroke p-6 justify-between items-center text-sm"
+    >
+      <div class="flex flex-col gap-2">
+        <h4 class="text-sm text-text-primary m-0">
+          {{ $t('subscription.nextMonthInvoice') }}
+        </h4>
+        <span
+          class="text-muted-foreground underline cursor-pointer"
+          @click="manageSubscription"
+        >
+          {{ $t('subscription.invoiceHistory') }}
+        </span>
+      </div>
+      <div class="flex flex-col gap-2 items-end">
+        <h4 class="m-0 font-bold">${{ nextMonthInvoice }}</h4>
+        <h5 class="m-0 text-muted-foreground">
+          {{ $t('subscription.memberCount', memberCount) }}
+        </h5>
       </div>
     </div>
 
@@ -247,10 +332,16 @@ import Skeleton from 'primevue/skeleton'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from 'primevue/usetoast'
+
+import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useDialogService } from '@/services/dialogService'
+import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
@@ -263,14 +354,62 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { cn } from '@/utils/tailwindUtil'
 
 const workspaceStore = useTeamWorkspaceStore()
-const { isWorkspaceSubscribed, isInPersonalWorkspace } =
+const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
   storeToRefs(workspaceStore)
 const { permissions, workspaceRole } = useWorkspaceUI()
 const { t, n } = useI18n()
+const toast = useToast()
+
+const {
+  isActiveSubscription,
+  subscription,
+  showSubscriptionDialog,
+  manageSubscription,
+  fetchStatus,
+  fetchBalance,
+  plans: apiPlans
+} = useBillingContext()
+
+const { showCancelSubscriptionDialog } = useDialogService()
+
+const isResubscribing = ref(false)
+
+async function handleResubscribe() {
+  isResubscribing.value = true
+  try {
+    await workspaceApi.resubscribe()
+    toast.add({
+      severity: 'success',
+      summary: t('subscription.resubscribeSuccess'),
+      life: 5000
+    })
+    await Promise.all([fetchStatus(), fetchBalance()])
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to resubscribe'
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: message,
+      life: 5000
+    })
+  } finally {
+    isResubscribing.value = false
+  }
+}
+
+// Only show cancelled state for team workspaces (workspace billing)
+// Personal workspaces use legacy billing which has different cancellation semantics
+const isCancelled = computed(
+  () =>
+    !isInPersonalWorkspace.value && (subscription.value?.isCancelled ?? false)
+)
 
 // Show subscribe prompt to owners without active subscription
+// Don't show if subscription is cancelled (still active until end date)
 const showSubscribePrompt = computed(() => {
   if (workspaceRole.value !== 'owner') return false
+  if (isCancelled.value) return false
   if (isInPersonalWorkspace.value) return !isActiveSubscription.value
   return !isWorkspaceSubscribed.value
 })
@@ -292,16 +431,6 @@ const showZeroState = computed(
 function handleSubscribeWorkspace() {
   showSubscriptionDialog()
 }
-
-const {
-  isActiveSubscription,
-  subscription,
-  showSubscriptionDialog,
-  manageSubscription,
-  cancelSubscription
-} = useBillingContext()
-
-const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
 const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
@@ -343,8 +472,8 @@ const planMenuItems = computed(() => [
   {
     label: t('subscription.cancelSubscription'),
     icon: 'pi pi-times',
-    command: async () => {
-      await cancelSubscription()
+    command: () => {
+      showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
     }
   }
 ])
@@ -357,6 +486,26 @@ const tierKey = computed(() => {
 const tierPrice = computed(() =>
   getTierPrice(tierKey.value, isYearlySubscription.value)
 )
+
+const memberCount = computed(() => members.value.length)
+const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
+
+function getApiPlanForTier(tierKey: TierKey, duration: 'monthly' | 'yearly') {
+  const apiDuration = duration === 'yearly' ? 'ANNUAL' : 'MONTHLY'
+  const apiTier = tierKey.toUpperCase()
+  return apiPlans.value.find(
+    (p) => p.tier === apiTier && p.duration === apiDuration
+  )
+}
+
+function getMaxSeatsFromApi(tierKey: TierKey): number | null {
+  const plan = getApiPlanForTier(tierKey, 'monthly')
+  return plan ? plan.max_seats : null
+}
+
+function getMaxMembers(tierKey: TierKey): number {
+  return getMaxSeatsFromApi(tierKey) ?? getTierFeatures(tierKey).maxMembers
+}
 
 const refillsDate = computed(() => {
   if (!subscription.value?.renewalDate) return ''
@@ -388,19 +537,26 @@ const includedCreditsDisplay = computed(
 )
 
 // Tier benefits for v-for loop
-type BenefitType = 'metric' | 'feature'
+type BenefitType = 'metric' | 'feature' | 'icon'
 
 interface Benefit {
   key: string
   type: BenefitType
   label: string
   value?: string
+  icon?: string
 }
 
 const tierBenefits = computed((): Benefit[] => {
   const key = tierKey.value
 
   const benefits: Benefit[] = [
+    {
+      key: 'members',
+      type: 'icon',
+      label: t('subscription.membersLabel', { count: getMaxMembers(key) }),
+      icon: 'pi pi-user'
+    },
     {
       key: 'maxDuration',
       type: 'metric',
@@ -458,6 +614,7 @@ function handleWindowFocus() {
 
 onMounted(() => {
   window.addEventListener('focus', handleWindowFocus)
+  void Promise.all([fetchStatus(), fetchBalance()])
 })
 
 onBeforeUnmount(() => {

@@ -27,13 +27,14 @@
     <PricingTableWorkspace
       v-if="checkoutStep === 'pricing'"
       class="flex-1"
-      :is-loading="isLoadingPreview"
+      :is-loading="isLoadingPreview || isResubscribing"
       :loading-tier="loadingTier"
       @subscribe="handleSubscribeClick"
+      @resubscribe="handleResubscribe"
     />
 
     <!-- Subscription Preview Step - New Subscription -->
-    <SubscriptionNewPreviewWorkspace
+    <SubscriptionAddPaymentPreviewWorkspace
       v-else-if="
         checkoutStep === 'preview' &&
         previewData &&
@@ -42,7 +43,7 @@
       :preview-data="previewData"
       :tier-key="selectedTierKey!"
       :billing-cycle="selectedBillingCycle"
-      :is-loading="isSubscribing"
+      :is-loading="isSubscribing || isPolling"
       @add-credit-card="handleAddCreditCard"
       @back="handleBackToPricing"
     />
@@ -55,7 +56,7 @@
         previewData.transition_type !== 'new_subscription'
       "
       :preview-data="previewData"
-      :is-loading="isSubscribing"
+      :is-loading="isSubscribing || isPolling"
       @confirm="handleConfirmTransition"
       @back="handleBackToPricing"
     />
@@ -64,15 +65,19 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import { useSubscribePolling } from '@/platform/cloud/subscription/composables/useSubscribePolling'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
-import SubscriptionNewPreviewWorkspace from './SubscriptionNewPreviewWorkspace.vue'
+import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
 type CheckoutStep = 'pricing' | 'preview'
@@ -86,13 +91,36 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
+const { t } = useI18n()
 const toast = useToast()
-const { subscribe, previewSubscribe, plans } = useBillingContext()
+const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
+  useBillingContext()
+
+const { isPending: isPolling, startPolling } = useSubscribePolling({
+  async onSuccess() {
+    toast.add({
+      severity: 'success',
+      summary: t('subscription.required.pollingSuccess'),
+      life: 5000
+    })
+    await Promise.all([fetchStatus(), fetchBalance()])
+    emit('close', true)
+  },
+  onError(errorMsg) {
+    toast.add({
+      severity: 'error',
+      summary: t('subscription.required.pollingFailed'),
+      detail: errorMsg,
+      life: 5000
+    })
+  }
+})
 
 const checkoutStep = ref<CheckoutStep>('pricing')
 const isLoadingPreview = ref(false)
 const loadingTier = ref<CheckoutTierKey | null>(null)
 const isSubscribing = ref(false)
+const isResubscribing = ref(false)
 const previewData = ref<PreviewSubscribeResponse | null>(null)
 const selectedTierKey = ref<CheckoutTierKey | null>(null)
 const selectedBillingCycle = ref<BillingCycle>('yearly')
@@ -188,16 +216,17 @@ async function handleAddCreditCard() {
     if (response.status === 'subscribed') {
       toast.add({
         severity: 'success',
-        summary: 'Subscribed',
-        detail: 'Your subscription has been created successfully',
+        summary: t('subscription.required.pollingSuccess'),
         life: 5000
       })
+      await Promise.all([fetchStatus(), fetchBalance()])
       emit('close', true)
     } else if (
       response.status === 'needs_payment_method' &&
       response.payment_method_url
     ) {
       window.open(response.payment_method_url, '_blank')
+      startPolling(response.billing_op_id)
     }
   } catch (error) {
     const message =
@@ -234,16 +263,17 @@ async function handleConfirmTransition() {
     if (response.status === 'subscribed') {
       toast.add({
         severity: 'success',
-        summary: 'Plan updated',
-        detail: 'Your subscription has been updated successfully',
+        summary: t('subscription.required.pollingSuccess'),
         life: 5000
       })
+      await Promise.all([fetchStatus(), fetchBalance()])
       emit('close', true)
     } else if (
       response.status === 'needs_payment_method' &&
       response.payment_method_url
     ) {
-      window.location.href = response.payment_method_url
+      window.open(response.payment_method_url, '_blank')
+      startPolling(response.billing_op_id)
     }
   } catch (error) {
     const message =
@@ -256,6 +286,31 @@ async function handleConfirmTransition() {
     })
   } finally {
     isSubscribing.value = false
+  }
+}
+
+async function handleResubscribe() {
+  isResubscribing.value = true
+  try {
+    await workspaceApi.resubscribe()
+    toast.add({
+      severity: 'success',
+      summary: t('subscription.resubscribeSuccess'),
+      life: 5000
+    })
+    await Promise.all([fetchStatus(), fetchBalance()])
+    emit('close', true)
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to resubscribe'
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: message,
+      life: 5000
+    })
+  } finally {
+    isResubscribing.value = false
   }
 }
 

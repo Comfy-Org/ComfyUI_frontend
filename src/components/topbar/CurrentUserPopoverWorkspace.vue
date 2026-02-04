@@ -87,7 +87,11 @@
         <SubscribeButton
           v-else-if="isPersonalWorkspace"
           :fluid="false"
-          :label="$t('workspaceSwitcher.subscribe')"
+          :label="
+            isCancelled
+              ? $t('subscription.resubscribe')
+              : $t('workspaceSwitcher.subscribe')
+          "
           size="sm"
           variant="gradient"
         />
@@ -98,7 +102,11 @@
           size="sm"
           @click="handleOpenPlanAndCreditsSettings"
         >
-          {{ $t('workspaceSwitcher.subscribe') }}
+          {{
+            isCancelled
+              ? $t('subscription.resubscribe')
+              : $t('workspaceSwitcher.subscribe')
+          }}
         </Button>
       </div>
 
@@ -237,6 +245,8 @@ const { userDisplayName, userEmail, userPhotoUrl, handleSignOut } =
 const dialogService = useDialogService()
 const { isActiveSubscription, subscription, balance, isLoading, fetchBalance } =
   useBillingContext()
+
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
 
 const { locale } = useI18n()

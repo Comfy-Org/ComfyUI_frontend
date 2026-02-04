@@ -4,6 +4,8 @@ import type { Component } from 'vue'
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.vue'
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
+import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
+import TopUpCreditsDialogContentWorkspace from '@/components/dialog/content/TopUpCreditsDialogContentWorkspace.vue'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
@@ -34,8 +36,6 @@ const lazyApiNodesSignInContent = () =>
   import('@/components/dialog/content/ApiNodesSignInContent.vue')
 const lazySignInContent = () =>
   import('@/components/dialog/content/SignInContent.vue')
-const lazyTopUpCreditsDialogContent = () =>
-  import('@/components/dialog/content/TopUpCreditsDialogContent.vue')
 const lazyUpdatePasswordContent = () =>
   import('@/components/dialog/content/UpdatePasswordContent.vue')
 const lazyComfyOrgHeader = () =>
@@ -399,15 +399,17 @@ export const useDialogService = () => {
   async function showTopUpCreditsDialog(options?: {
     isInsufficientCredits?: boolean
   }) {
-    const { isActiveSubscription } = useBillingContext()
+    const { isActiveSubscription, type } = useBillingContext()
     if (!isActiveSubscription.value) return
 
-    const { default: TopUpCreditsDialogContent } =
-      await lazyTopUpCreditsDialogContent()
+const component =
+      type.value === 'workspace'
+        ? TopUpCreditsDialogContentWorkspace
+        : TopUpCreditsDialogContentLegacy
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component: TopUpCreditsDialogContent,
+      component,
       props: options,
       dialogComponentProps: {
         headless: true,
@@ -729,6 +731,23 @@ export const useDialogService = () => {
     })
   }
 
+  async function showCancelSubscriptionDialog(cancelAt?: string) {
+    const { default: component } =
+      await import('@/components/dialog/content/subscription/CancelSubscriptionDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'cancel-subscription',
+      component,
+      props: { cancelAt },
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        pt: {
+          ...workspaceDialogPt.pt,
+          root: { class: 'rounded-2xl max-w-[400px] w-full' }
+        }
+      }
+    })
+  }
+
   return {
     showLoadWorkflowWarning,
     showMissingModelsWarning,
@@ -754,6 +773,7 @@ export const useDialogService = () => {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
     showInviteMemberDialog,
-    showBillingComingSoonDialog
+    showBillingComingSoonDialog,
+    showCancelSubscriptionDialog
   }
 }

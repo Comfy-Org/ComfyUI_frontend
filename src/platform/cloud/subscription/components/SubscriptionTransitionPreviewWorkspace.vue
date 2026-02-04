@@ -24,7 +24,7 @@
           <div class="flex items-center gap-1 text-muted-foreground text-sm">
             <i class="icon-[lucide--component] text-amber-400 text-xs" />
             <span
-              >{{ n(currentDisplayCredits) }}
+              >{{ currentDisplayCredits }}
               {{ $t('subscription.perMonth') }}</span
             >
           </div>
@@ -54,8 +54,7 @@
           <div class="flex items-center gap-1 text-muted-foreground text-sm">
             <i class="icon-[lucide--component] text-amber-400 text-xs" />
             <span
-              >{{ n(newDisplayCredits) }}
-              {{ $t('subscription.perMonth') }}</span
+              >{{ newDisplayCredits }} {{ $t('subscription.perMonth') }}</span
             >
           </div>
           <span class="text-muted-foreground text-sm">
@@ -73,7 +72,7 @@
           <div class="flex items-center gap-1">
             <i class="icon-[lucide--component] text-amber-400 text-sm" />
             <span class="font-bold text-base-foreground">
-              {{ n(newDisplayCredits) }}
+              {{ newDisplayCredits }}
             </span>
           </div>
         </div>
@@ -158,6 +157,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
 interface Props {
@@ -203,28 +203,20 @@ const newDisplayPrice = computed(() =>
 )
 
 const currentDisplayCredits = computed(() => {
-  if (!previewData.current_plan) return 0
-  const totalCredits =
-    previewData.current_plan.seat_summary?.total_credits_cents ??
-    previewData.current_plan.credits_cents
-  const seatCount = previewData.current_plan.seat_summary?.seat_count ?? 1
-  const perSeatCredits = totalCredits / seatCount
-  if (previewData.current_plan.duration === 'ANNUAL') {
-    return Math.round(perSeatCredits / 12)
-  }
-  return Math.round(perSeatCredits)
+  if (!previewData.current_plan) return n(0)
+  const tierKey = previewData.current_plan.tier.toLowerCase() as
+    | 'standard'
+    | 'creator'
+    | 'pro'
+  return n(getTierCredits(tierKey))
 })
 
 const newDisplayCredits = computed(() => {
-  const totalCredits =
-    previewData.new_plan.seat_summary?.total_credits_cents ??
-    previewData.new_plan.credits_cents
-  const seatCount = previewData.new_plan.seat_summary?.seat_count ?? 1
-  const perSeatCredits = totalCredits / seatCount
-  if (previewData.new_plan.duration === 'ANNUAL') {
-    return Math.round(perSeatCredits / 12)
-  }
-  return Math.round(perSeatCredits)
+  const tierKey = previewData.new_plan.tier.toLowerCase() as
+    | 'standard'
+    | 'creator'
+    | 'pro'
+  return n(getTierCredits(tierKey))
 })
 
 const currentPeriodEndDate = computed(() =>

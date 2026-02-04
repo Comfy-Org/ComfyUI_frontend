@@ -96,13 +96,15 @@ function useBillingContextInternal(): BillingContext {
   )
 
   // Sync subscription info to workspace store for display in workspace switcher
+  // A subscription is considered "subscribed" for workspace purposes if it's active AND not cancelled
+  // This ensures the delete button is enabled after cancellation, even before the period ends
   watch(
     subscription,
     (sub) => {
       if (!sub || store.isInPersonalWorkspace) return
 
       store.updateActiveWorkspace({
-        isSubscribed: sub.isActive,
+        isSubscribed: sub.isActive && !sub.isCancelled,
         subscriptionPlan: sub.planSlug
       })
     },

@@ -9,7 +9,7 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
   BalanceInfo,
@@ -25,7 +25,7 @@ import type {
  */
 export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
-  const { toastErrorHandler } = useErrorHandling()
+  const workspaceStore = useTeamWorkspaceStore()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -85,7 +85,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   async function pollCancelStatus(opId: string): Promise<void> {
     stopCancelPolling()
 
-    const maxAttempts = 6
+    const maxAttempts = 30
     let attempt = 0
     const poll = async () => {
       if (pendingCancelOpId.value !== opId) return
@@ -96,16 +96,18 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
           pendingCancelOpId.value = null
           stopCancelPolling()
           await fetchStatus()
+          workspaceStore.updateActiveWorkspace({
+            isSubscribed: false
+          })
           return
         }
 
         if (response.status === 'failed') {
           pendingCancelOpId.value = null
           stopCancelPolling()
-          toastErrorHandler(
-            new Error(response.error_message ?? 'Failed to cancel subscription')
+          throw new Error(
+            response.error_message ?? 'Failed to cancel subscription'
           )
-          return
         }
 
         attempt += 1
@@ -118,15 +120,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
       } catch (err) {
         pendingCancelOpId.value = null
         stopCancelPolling()
-        toastErrorHandler(err)
-        return
+        throw err
       }
 
       cancelPollTimeout = window.setTimeout(
         () => {
           void poll()
         },
-        Math.min(5000 * 2 ** attempt, 30000)
+        Math.min(1000 * 2 ** attempt, 5000)
       )
     }
 
@@ -248,7 +249,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
-      toastErrorHandler(err)
       throw err
     } finally {
       isLoading.value = false

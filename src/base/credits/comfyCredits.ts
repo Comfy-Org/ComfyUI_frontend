@@ -34,7 +34,7 @@ export const COMFY_CREDIT_RATE_CENTS = CREDITS_PER_USD / 100 // credits per cent
 export const usdToCents = (usd: number): number => Math.round(usd * 100)
 
 export const centsToCredits = (cents: number): number =>
-  Math.round(cents * COMFY_CREDIT_RATE_CENTS)
+  Math.floor(cents * COMFY_CREDIT_RATE_CENTS)
 
 export const creditsToCents = (credits: number): number =>
   Math.round(credits / COMFY_CREDIT_RATE_CENTS)

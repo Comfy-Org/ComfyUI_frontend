@@ -195,7 +195,7 @@
         <div class="flex flex-col p-8">
           <Button
             :variant="getButtonSeverity(tier)"
-            :disabled="props.isLoading || isCurrentPlan(tier.key)"
+            :disabled="isButtonDisabled(tier)"
             :loading="props.loadingTier === tier.key"
             :class="
               cn(
@@ -313,6 +313,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
+  resubscribe: []
 }>()
 
 interface BillingCycleOption {
@@ -377,6 +378,8 @@ const {
   subscription
 } = useBillingContext()
 
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
@@ -400,11 +403,6 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   if (!plan) return null
   const price = plan.price_cents / 100
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
-}
-
-function getCreditsFromApi(tier: PricingTierConfig): number | null {
-  const plan = getApiPlanForTier(tier.key, 'monthly')
-  return plan ? plan.credits_cents : null
 }
 
 function getMaxSeatsFromApi(tier: PricingTierConfig): number | null {
@@ -443,7 +441,11 @@ const togglePopover = (event: Event) => {
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
-  if (isCurrentPlan(tier.key)) return t('subscription.currentPlan')
+  if (isCurrentPlan(tier.key)) {
+    return isCancelled.value
+      ? t('subscription.resubscribe')
+      : t('subscription.currentPlan')
+  }
 
   const planName =
     currentBillingCycle.value === 'yearly'
@@ -458,9 +460,20 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
 const getButtonSeverity = (
   tier: PricingTierConfig
 ): 'primary' | 'secondary' => {
-  if (isCurrentPlan(tier.key)) return 'secondary'
+  if (isCurrentPlan(tier.key)) {
+    return isCancelled.value ? 'primary' : 'secondary'
+  }
   if (tier.key === 'creator') return 'primary'
   return 'secondary'
+}
+
+const isButtonDisabled = (tier: PricingTierConfig): boolean => {
+  if (props.isLoading) return true
+  if (isCurrentPlan(tier.key)) {
+    // Allow clicking current plan button when cancelled (for resubscribe)
+    return !isCancelled.value
+  }
+  return false
 }
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
@@ -485,10 +498,18 @@ const getMaxMembers = (tier: PricingTierConfig): number =>
   getMaxSeatsFromApi(tier) ?? tier.maxMembers
 
 const getMonthlyCreditsPerMember = (tier: PricingTierConfig): number =>
-  getCreditsFromApi(tier) ?? tier.pricing.credits
+  tier.pricing.credits
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (props.isLoading || isCurrentPlan(tierKey)) return
+  if (props.isLoading) return
+
+  // Handle resubscribe for cancelled subscription on current plan
+  if (isCurrentPlan(tierKey)) {
+    if (isCancelled.value) {
+      emit('resubscribe')
+    }
+    return
+  }
 
   emit('subscribe', {
     tierKey,

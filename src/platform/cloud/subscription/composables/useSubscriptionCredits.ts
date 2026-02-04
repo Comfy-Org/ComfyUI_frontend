@@ -13,37 +13,42 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
  *   - Personal workspace: uses legacy (/customers)
  *   - Team workspace: uses workspace (/billing)
  */
+/**
+ * Formats a cent value to display credits.
+ * Backend returns cents despite the *_micros naming convention.
+ */
+export function formatBalance(
+  maybeCents: number | undefined,
+  locale: string
+): string {
+  const cents = maybeCents ?? 0
+  return formatCreditsFromCents({
+    cents,
+    locale,
+    numberOptions: {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }
+  })
+}
+
 export function useSubscriptionCredits() {
   const billingContext = useBillingContext()
   const { locale } = useI18n()
 
-  const formatBalance = (maybeCents?: number) => {
-    // Backend returns cents despite the *_micros naming convention.
-    const cents = maybeCents ?? 0
-    const amount = formatCreditsFromCents({
-      cents,
-      locale: locale.value,
-      numberOptions: {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }
-    })
-    return amount
-  }
-
   const totalCredits = computed(() => {
     const balance = toValue(billingContext.balance)
-    return formatBalance(balance?.amountMicros)
+    return formatBalance(balance?.amountMicros, locale.value)
   })
 
   const monthlyBonusCredits = computed(() => {
     const balance = toValue(billingContext.balance)
-    return formatBalance(balance?.cloudCreditBalanceMicros)
+    return formatBalance(balance?.cloudCreditBalanceMicros, locale.value)
   })
 
   const prepaidCredits = computed(() => {
     const balance = toValue(billingContext.balance)
-    return formatBalance(balance?.prepaidBalanceMicros)
+    return formatBalance(balance?.prepaidBalanceMicros, locale.value)
   })
 
   const isLoadingBalance = computed(() => toValue(billingContext.isLoading))
