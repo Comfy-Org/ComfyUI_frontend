@@ -38,7 +38,8 @@
         transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
         zIndex: zIndex,
         opacity: nodeOpacity,
-        '--component-node-background': applyLightThemeColor(nodeData.bgcolor)
+        '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
+        backgroundColor: applyLightThemeColor(nodeData?.color)
       }
     ]"
     v-bind="remainingPointerHandlers"
