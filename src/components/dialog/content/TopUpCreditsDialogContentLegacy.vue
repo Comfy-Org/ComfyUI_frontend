@@ -179,7 +179,7 @@ const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { flags } = useFeatureFlags()
 
-const isSubscriptionEnabled = useSubscription()
+const { isSubscriptionEnabled } = useSubscription()
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
 const MIN_AMOUNT = 5
@@ -263,7 +263,7 @@ async function handleBuy() {
     // Otherwise, show legacy subscription/credits panel
     const settingsPanel = flags.teamWorkspacesEnabled
       ? 'workspace'
-      : isSubscriptionEnabled
+      : isSubscriptionEnabled()
         ? 'subscription'
         : 'credits'
     dialogService.showSettingsDialog(settingsPanel)
