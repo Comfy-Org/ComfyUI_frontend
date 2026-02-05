@@ -90,7 +90,10 @@ import {
   shouldExpand,
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  stripGraphPrefix,
+  useWidgetValueStore
+} from '@/stores/widgetValueStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -175,7 +178,7 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const { slotMetadata } = widget
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
-    const bareWidgetId = String(widget.nodeId ?? nodeId).replace(/^(.*:)+/, '')
+    const bareWidgetId = stripGraphPrefix(widget.nodeId ?? nodeId)
     const widgetState = widgetValueStore.getWidget(bareWidgetId, widget.name)
 
     // Get value from store (falls back to undefined if not registered)

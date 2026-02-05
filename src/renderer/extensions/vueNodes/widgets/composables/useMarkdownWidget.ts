@@ -13,6 +13,8 @@ import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
+// TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
+// Consolidate with useStringWidget into shared helpers (domWidgetHelpers.ts).
 function addMarkdownWidget(
   node: LGraphNode,
   name: string,

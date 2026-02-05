@@ -8,6 +8,7 @@ import type { UUID } from '@/lib/litegraph/src/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -1035,6 +1036,7 @@ export class LGraph
 
     delete this._nodes_by_id[node.id]
 
+    useWidgetValueStore().unregisterNode(node.id)
     this.onNodeRemoved?.(node)
 
     // close panels

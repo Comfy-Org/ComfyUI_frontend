@@ -8,6 +8,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
+// TODO: This widget manually syncs with widgetValueStore via getValue/setValue.
+// Consolidate with useMarkdownWidget into shared helpers (domWidgetHelpers.ts).
 function addMultilineWidget(
   node: LGraphNode,
   name: string,
