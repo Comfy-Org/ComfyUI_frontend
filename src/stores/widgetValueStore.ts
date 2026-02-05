@@ -1,58 +1,51 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-
-/**
- * Widget state is keyed by `nodeId:widgetName` without graph context.
- * This is intentional: nodes viewed at different subgraph depths share
- * the same widget state, enabling synchronized values across the hierarchy.
- */
-type WidgetKey = `${NodeId}:${string}`
+  NodeId,
+  WidgetId,
+  WidgetIdentity,
+  WidgetRuntimeState
+} from '@/types/widget'
+import { getWidgetId } from '@/types/widget'
 
 /**
  * Strips graph/subgraph prefixes from a scoped node ID to get the bare node ID.
  * e.g., "graph1:subgraph2:42" → "42"
  */
 export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
-  return String(scopedId).replace(/^(.*:)+/, '') as NodeId
+  const stripped = String(scopedId).replace(/^(.*:)+/, '')
+  const num = Number(stripped)
+  return Number.isNaN(num) ? stripped : num
 }
 
+/**
+ * Extended widget state for the store, including type info and options.
+ * Extends WidgetRuntimeState with additional fields needed for serialization.
+ */
 export interface WidgetState<
   TValue = unknown,
-  TType extends string = string,
   TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
-> extends Pick<
-  IBaseWidget<TValue, TType, TOptions>,
-  | 'name'
-  | 'type'
-  | 'value'
-  | 'options'
-  | 'label'
-  | 'serialize'
-  | 'disabled'
-  | 'hidden'
-  | 'advanced'
-  | 'promoted'
-> {
-  nodeId: NodeId
+> extends WidgetRuntimeState {
+  value: TValue
+  type?: string
+  options?: TOptions
+  serialize?: boolean
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
-  const widgetStates = ref(new Map<WidgetKey, WidgetState>())
-
-  function makeKey(nodeId: NodeId, widgetName: string): WidgetKey {
-    return `${nodeId}:${widgetName}`
-  }
+  /**
+   * Widget state is keyed by WidgetId (`nodeId:widgetName`) without graph context.
+   * This is intentional: nodes viewed at different subgraph depths share
+   * the same widget state, enabling synchronized values across the hierarchy.
+   */
+  const widgetStates = ref(new Map<WidgetId, WidgetState>())
 
   function registerWidget<TValue = unknown>(
     state: WidgetState<TValue>
   ): WidgetState<TValue> {
-    const key = makeKey(state.nodeId, state.name)
+    const key = getWidgetId(state)
     widgetStates.value.set(key, state)
     return widgetStates.value.get(key) as WidgetState<TValue>
   }
@@ -64,11 +57,21 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       .map(([, state]) => state)
   }
 
+  function getWidget(identity: WidgetIdentity): WidgetState | undefined
   function getWidget(
     nodeId: NodeId,
     widgetName: string
+  ): WidgetState | undefined
+  function getWidget(
+    nodeIdOrIdentity: NodeId | WidgetIdentity,
+    widgetName?: string
   ): WidgetState | undefined {
-    return widgetStates.value.get(makeKey(nodeId, widgetName))
+    if (typeof nodeIdOrIdentity === 'object') {
+      return widgetStates.value.get(getWidgetId(nodeIdOrIdentity))
+    }
+    return widgetStates.value.get(
+      getWidgetId({ nodeId: nodeIdOrIdentity, name: widgetName! })
+    )
   }
 
   return {

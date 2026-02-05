@@ -7,7 +7,7 @@
 export type { NodeId, WidgetId } from './primitives'
 export { widgetId } from './primitives'
 
-export type { WidgetIdentity } from './identity'
+export type { MutableWidgetIdentity, WidgetIdentity } from './identity'
 export { getWidgetId } from './identity'
 
 export type {

@@ -1,5 +1,9 @@
 /**
  * Stores all DOM widgets that are used in the canvas.
+ *
+ * Note: This store uses UUID strings as keys (from BaseDOMWidget.id),
+ * not WidgetId (`nodeId:name`). DOM widgets have their own identity
+ * system separate from the canonical widget types.
  */
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref } from 'vue'
@@ -9,7 +13,6 @@ import type { PositionConfig } from '@/composables/element/useAbsolutePosition'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 
 export interface DomWidgetState extends PositionConfig {
-  // Raw widget instance
   widget: Raw<BaseDOMWidget<object | string>>
   visible: boolean
   readonly: boolean
