@@ -195,6 +195,42 @@ describe('contextMenuCompat', () => {
         expect.any(Error)
       )
     })
+
+    it('should handle multiple items with undefined content correctly', () => {
+      // Setup base method with items that have undefined content
+      LGraphCanvas.prototype.getCanvasMenuOptions = function () {
+        return [
+          { content: undefined, title: 'Separator 1' },
+          { content: undefined, title: 'Separator 2' },
+          { content: 'Item 1', callback: () => {} }
+        ]
+      }
+
+      legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
+
+      // Monkey-patch to add an item with undefined content
+      const original = LGraphCanvas.prototype.getCanvasMenuOptions
+      LGraphCanvas.prototype.getCanvasMenuOptions =
+        function (): (IContextMenuValue | null)[] {
+          const items = original.apply(this)
+          items.push({ content: undefined, title: 'Separator 3' })
+          return items
+        }
+
+      // Extract legacy items
+      const legacyItems = legacyMenuCompat.extractLegacyItems(
+        'getCanvasMenuOptions',
+        mockCanvas
+      )
+
+      // Should extract only the newly added item with undefined content
+      // (not collapse with existing undefined content items)
+      expect(legacyItems).toHaveLength(1)
+      expect(legacyItems[0]).toMatchObject({
+        content: undefined,
+        title: 'Separator 3'
+      })
+    })
   })
 
   describe('integration', () => {
