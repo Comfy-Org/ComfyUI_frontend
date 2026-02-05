@@ -153,7 +153,6 @@ const essentialSections = computed(() => {
     filteredNodeDefs.value.length > 0
       ? filteredNodeDefs.value
       : nodeDefStore.visibleNodeDefs
-
   return nodeOrganizationService.organizeNodesByTab(nodes, 'essential')
 })
 

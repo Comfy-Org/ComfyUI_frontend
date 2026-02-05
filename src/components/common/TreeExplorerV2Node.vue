@@ -18,9 +18,7 @@
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
       >
-        <i
-          class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground"
-        />
+        <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
         <span class="min-w-0 flex-1 truncate text-sm text-foreground">
           <slot name="node" :node="item.value">
             {{ item.value.label }}
@@ -55,9 +53,7 @@
       :style="{ paddingLeft: `${16 + (item.level - 1) * 24}px` }"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
     >
-      <i
-        class="icon-[ph--folder-fill] size-4 shrink-0 text-muted-foreground"
-      />
+      <i class="icon-[ph--folder-fill] size-4 shrink-0 text-muted-foreground" />
       <span class="min-w-0 flex-1 truncate text-sm text-foreground">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}
@@ -80,7 +76,7 @@
     to="#node-library-node-preview-container-v2"
   >
     <div :style="nodePreviewStyle">
-      <NodePreview :node-def="item.value.data" />
+      <NodePreviewCard :node-def="item.value.data" />
     </div>
   </Teleport>
 </template>
@@ -101,7 +97,7 @@ import { ContextMenuTrigger, TreeItem } from 'reka-ui'
 import type { CSSProperties } from 'vue'
 import { computed, inject, ref } from 'vue'
 
-import NodePreview from '@/components/node/NodePreview.vue'
+import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -159,7 +155,8 @@ function handleMouseEnter(e: MouseEvent) {
       sidebarLocation.value === 'left'
         ? `${rect.right + margin}px`
         : `${rect.left - margin}px`,
-    transform: sidebarLocation.value === 'right' ? 'translateX(-100%)' : undefined,
+    transform:
+      sidebarLocation.value === 'right' ? 'translateX(-100%)' : undefined,
     pointerEvents: 'none',
     zIndex: 1001
   }
