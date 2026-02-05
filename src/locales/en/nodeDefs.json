@@ -6104,6 +6104,10 @@
       "5": {
         "name": "recording_video",
         "tooltip": null
+      },
+      "6": {
+        "name": "model_3d",
+        "tooltip": null
       }
     }
   },
@@ -12541,11 +12545,11 @@
     }
   },
   "SaveGLB": {
-    "display_name": "SaveGLB",
+    "display_name": "Save 3D Model",
     "inputs": {
       "mesh": {
         "name": "mesh",
-        "tooltip": "Mesh or GLB file to save"
+        "tooltip": "Mesh or 3D file to save"
       },
       "filename_prefix": {
         "name": "filename_prefix"

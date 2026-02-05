@@ -6443,32 +6443,18 @@
         "name": "宽度"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "图像",
-        "tooltip": null
-      },
-      "1": {
-        "name": "遮罩",
-        "tooltip": null
-      },
-      "2": {
-        "name": "网格路径",
-        "tooltip": null
-      },
-      "3": {
-        "name": "法向",
-        "tooltip": null
-      },
-      "4": {
-        "name": "线条",
-        "tooltip": null
-      },
-      "5": {
-        "name": "相机信息",
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "model_3d",
         "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "加载音频",

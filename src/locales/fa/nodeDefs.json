@@ -6427,9 +6427,7 @@
   "Load3D": {
     "display_name": "بارگذاری ۳بعدی و انیمیشن",
     "inputs": {
-      "clear": {
-        "": "پاک‌سازی"
-      },
+      "clear": {},
       "height": {
         "name": "ارتفاع"
       },
@@ -6439,42 +6437,24 @@
       "model_file": {
         "name": "فایل مدل"
       },
-      "upload 3d model": {
-        "": "بارگذاری مدل سه‌بعدی"
-      },
-      "upload extra resources": {
-        "": "بارگذاری منابع اضافی"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "عرض"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "تصویر",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ماسک",
-        "tooltip": null
-      },
-      "2": {
-        "name": "مسیر مش",
-        "tooltip": null
-      },
-      "3": {
-        "name": "نرمال",
-        "tooltip": null
-      },
-      "4": {
-        "name": "اطلاعات دوربین",
-        "tooltip": null
-      },
-      "5": {
-        "name": "ویدئوی ضبط‌شده",
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "مدل_۳بعدی",
         "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "بارگذاری صوت",
