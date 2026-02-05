@@ -7,7 +7,11 @@
 export type { NodeId, WidgetId } from './primitives'
 export { widgetId } from './primitives'
 
-export type { MutableWidgetIdentity, WidgetIdentity } from './identity'
+export type {
+  MutableWidgetIdentity,
+  SlotWidgetRef,
+  WidgetIdentity
+} from './identity'
 export { getWidgetId } from './identity'
 
 export type {
@@ -68,6 +72,8 @@ export type { WidgetRef } from './ref'
 export type { WidgetLayoutState, WidgetRuntimeState } from './state'
 
 export {
+  createMutableSlotWidgetRef,
+  createSlotWidgetRef,
   fromLiteGraphWidget,
   kindToLegacyType,
   legacyTypeToKind,

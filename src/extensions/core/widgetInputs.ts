@@ -12,6 +12,7 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
+import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import {
@@ -20,9 +21,9 @@ import {
   isValidWidgetType
 } from '@/scripts/widgets'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { createSlotWidgetRef } from '@/types/widget'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
-import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 
 const replacePropertyName = 'Run widget replace on values'
 export class PrimitiveNode extends LGraphNode {
@@ -189,7 +190,11 @@ export class PrimitiveNode extends LGraphNode {
     let widget
     if (!input.widget) {
       if (!(input.type in ComfyWidgets)) return
-      widget = { name: input.name, [GET_CONFIG]: () => [input.type, {}] } //fake widget
+      // Create a SlotWidgetRef with GET_CONFIG for primitive node connection
+      widget = {
+        ...createSlotWidgetRef(input.name),
+        [GET_CONFIG]: () => [input.type, {}]
+      }
     } else {
       widget = input.widget
     }

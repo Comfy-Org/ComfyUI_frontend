@@ -29,8 +29,9 @@ import type {
 } from '@/lib/litegraph/src/types/serialisation'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { AssetWidget } from '@/lib/litegraph/src/widgets/AssetWidget'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { createMutableSlotWidgetRef } from '@/types/widget'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -399,7 +400,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     // NOTE: This code creates linked chains of prototypes for passing across
     // multiple levels of subgraphs. As part of this, it intentionally avoids
     // creating new objects. Have care when making changes.
-    input.widget ??= { name: subgraphInput.name }
+    input.widget ??= createMutableSlotWidgetRef(subgraphInput.name)
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 

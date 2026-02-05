@@ -7,6 +7,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createMutableSlotWidgetRef } from '@/types/widget'
 
 import {
   createEventCapture,
@@ -37,7 +38,7 @@ function createNodeWithWidget(
     tooltip
   })
   node.widgets = [widget]
-  input.widget = { name: widget.name }
+  input.widget = createMutableSlotWidgetRef(widget.name)
 
   return { node, widget, input }
 }
@@ -202,8 +203,8 @@ describe.skip('SubgraphWidgetPromotion', () => {
       })
 
       multiWidgetNode.widgets = [widget1, widget2]
-      numInput.widget = { name: widget1.name }
-      strInput.widget = { name: widget2.name }
+      numInput.widget = createMutableSlotWidgetRef(widget1.name)
+      strInput.widget = createMutableSlotWidgetRef(widget2.name)
       subgraph.add(multiWidgetNode)
 
       // Connect both inputs
@@ -354,8 +355,8 @@ describe.skip('SubgraphWidgetPromotion', () => {
       })
 
       multiWidgetNode.widgets = [widget1, widget2]
-      numInput.widget = { name: widget1.name }
-      strInput.widget = { name: widget2.name }
+      numInput.widget = createMutableSlotWidgetRef(widget1.name)
+      strInput.widget = createMutableSlotWidgetRef(widget2.name)
       subgraph.add(multiWidgetNode)
 
       // Connect both inputs

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
+import { createMutableSlotWidgetRef } from '@/types/widget'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -118,7 +119,7 @@ describe.skip('SubgraphNode Memory Management', () => {
       } as Partial<IWidget> as IWidget
 
       input._widget = mockWidget
-      input.widget = { name: 'promoted_widget' }
+      input.widget = createMutableSlotWidgetRef('promoted_widget')
       subgraphNode.widgets.push(mockWidget)
 
       expect(input._widget).toBe(mockWidget)

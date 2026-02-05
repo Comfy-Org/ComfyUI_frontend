@@ -18,9 +18,10 @@ import {
   zAutogrowOptions,
   zDynamicComboInputSpec
 } from '@/schemas/nodeDefSchema'
-import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
+import { createSlotWidgetRef } from '@/types/widget'
 
 const INLINE_INPUTS = false
 
@@ -62,7 +63,7 @@ function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
     y: 0
   })
   input.alwaysVisible = true
-  input.widget = { name: input.name }
+  input.widget = createSlotWidgetRef(input.name)
 }
 
 function dynamicComboWidget(

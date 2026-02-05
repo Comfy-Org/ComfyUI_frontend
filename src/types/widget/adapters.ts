@@ -446,3 +446,19 @@ export function toWidgetIdentity(
 ): { nodeId: NodeId; name: string } {
   return { nodeId, name: widget.name }
 }
+
+/**
+ * Creates a SlotWidgetRef from a widget name.
+ * Used to associate an input slot with a widget on the same node.
+ */
+export function createSlotWidgetRef(name: string): { readonly name: string } {
+  return Object.freeze({ name })
+}
+
+/**
+ * Creates a mutable slot widget ref for cases requiring prototype manipulation.
+ * @internal Used by SubgraphNode for prototype chain building.
+ */
+export function createMutableSlotWidgetRef(name: string): { name: string } {
+  return { name }
+}

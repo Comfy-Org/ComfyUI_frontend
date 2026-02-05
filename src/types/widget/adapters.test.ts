@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 
 import {
+  createMutableSlotWidgetRef,
+  createSlotWidgetRef,
   fromLiteGraphWidget,
   kindToLegacyType,
   legacyTypeToKind,
@@ -371,5 +373,47 @@ describe('toWidgetIdentity', () => {
 
     expect(result.nodeId).toBe(10)
     expect(result.name).toBe('cfg')
+  })
+})
+
+describe('createSlotWidgetRef', () => {
+  it('creates a frozen SlotWidgetRef', () => {
+    const ref = createSlotWidgetRef('my_widget')
+
+    expect(ref.name).toBe('my_widget')
+    expect(Object.isFrozen(ref)).toBe(true)
+  })
+
+  it('cannot be modified', () => {
+    const ref = createSlotWidgetRef('my_widget')
+
+    expect(() => {
+      ;(ref as { name: string }).name = 'changed'
+    }).toThrow()
+  })
+})
+
+describe('createMutableSlotWidgetRef', () => {
+  it('creates a mutable SlotWidgetRef', () => {
+    const ref = createMutableSlotWidgetRef('my_widget')
+
+    expect(ref.name).toBe('my_widget')
+    expect(Object.isFrozen(ref)).toBe(false)
+  })
+
+  it('can be modified', () => {
+    const ref = createMutableSlotWidgetRef('my_widget')
+    ref.name = 'changed'
+
+    expect(ref.name).toBe('changed')
+  })
+
+  it('supports prototype chaining', () => {
+    const base = { value: 42 }
+    const ref = createMutableSlotWidgetRef('my_widget')
+    Object.setPrototypeOf(ref, base)
+
+    expect((ref as { name: string; value: number }).value).toBe(42)
+    expect(ref.name).toBe('my_widget')
   })
 })

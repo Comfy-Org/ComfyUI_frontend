@@ -5,6 +5,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import { createSlotWidgetRef } from '@/types/widget'
 
 import { app } from '../../scripts/app'
 import { getWidgetConfig, mergeIfValid, setWidgetConfig } from './widgetInputs'
@@ -203,7 +204,7 @@ app.registerExtension({
 
         for (const node of updateNodes) {
           if (widgetConfig && outputType) {
-            node.inputs[0].widget = { name: 'value' }
+            node.inputs[0].widget = createSlotWidgetRef('value')
             setWidgetConfig(node.inputs[0], [
               widgetType ?? `${displayType}`,
               widgetConfig
