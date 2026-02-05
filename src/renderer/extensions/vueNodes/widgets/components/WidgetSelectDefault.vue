@@ -51,7 +51,7 @@ interface Props {
   widget: SimplifiedWidget<string | undefined>
 }
 
-const props = defineProps<Props>()
+const { widget } = defineProps<Props>()
 
 function resolveValues(values: unknown): string[] {
   if (typeof values === 'function') return values()
@@ -76,15 +76,33 @@ function refreshOptions() {
 }
 const selectOptions = computed(() => {
   void refreshTrigger.value
-  return resolveValues(props.widget.options?.values)
+  return resolveValues(widget.options?.values)
 })
 const invalid = computed(
   () => !!modelValue.value && !selectOptions.value.includes(modelValue.value)
 )
 
-const combinedProps = computed(() => ({
-  ...filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS),
-  ...transformCompatProps.value,
-  ...(invalid.value ? { placeholder: `${modelValue.value}` } : {})
-}))
+const hasEmptyOptions = computed(() => selectOptions.value.length === 0)
+
+const combinedProps = computed(() => {
+  // Extract placeholder to handle it separately based on empty/invalid state
+  const { placeholder: _, ...filteredOptions } = filterWidgetProps(
+    widget.options,
+    PANEL_EXCLUDED_PROPS
+  )
+  const baseProps = {
+    ...filteredOptions,
+    ...transformCompatProps.value
+  }
+
+  if (hasEmptyOptions.value && widget.options?.placeholder) {
+    return { ...baseProps, placeholder: widget.options.placeholder }
+  }
+
+  if (invalid.value) {
+    return { ...baseProps, placeholder: `${modelValue.value}` }
+  }
+
+  return baseProps
+})
 </script>
