@@ -6449,32 +6449,18 @@
         "name": "largura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "imagem",
-        "tooltip": null
-      },
-      "1": {
-        "name": "mask",
-        "tooltip": null
-      },
-      "2": {
-        "name": "caminho_malha",
-        "tooltip": null
-      },
-      "3": {
-        "name": "normal",
-        "tooltip": null
-      },
-      "4": {
-        "name": "info_câmera",
-        "tooltip": null
-      },
-      "5": {
-        "name": "vídeo_gravado",
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "model_3d",
         "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "Carregar Áudio",

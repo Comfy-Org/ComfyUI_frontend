@@ -35,9 +35,6 @@
   "Comfy-Desktop_Restart": {
     "label": "重启"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "为所选节点开启 3D 浏览器（Beta 版）"
-  },
   "Comfy_BrowseModelAssets": {
     "label": "实验性：浏览模型资源"
   },
@@ -266,6 +263,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "显示设置对话框"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "设置子图描述"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "设置子图搜索别名"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "实验性：启用 AssetAPI"
   },
@@ -310,12 +313,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "切换底部面板"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "切换终端底部面板"
-  },
-  "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "切换日志底部面板"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "切换基本下方面板"

@@ -35,9 +35,6 @@
   "Comfy-Desktop_Restart": {
     "label": "إعادة التشغيل"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
-  },
   "Comfy_BrowseModelAssets": {
     "label": "تجريبي: تصفح أصول النماذج"
   },
@@ -266,6 +263,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "عرض نافذة الإعدادات"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "تعيين وصف الرسم البياني الفرعي"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "تعيين الأسماء المستعارة للبحث في الرسم البياني الفرعي"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "تجريبي: تمكين AssetAPI"
   },
@@ -310,12 +313,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "تبديل اللوحة السفلية"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "تبديل لوحة الطرفية السفلية"
-  },
-  "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "تبديل لوحة السجلات السفلية"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "تبديل اللوحة السفلية الأساسية"

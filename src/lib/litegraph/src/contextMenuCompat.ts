@@ -156,32 +156,43 @@ class LegacyMenuCompat {
         return []
       }
       // Use content-based diff to detect additions (not reference-based)
-      // so we must compare by content string, not by object reference
-      const originalContents = new Set(
+      // Create composite keys from multiple properties to handle undefined content
+      const createItemKey = (item: IContextMenuValue): string => {
+        const parts = [
+          item.content ?? '',
+          item.title ?? '',
+          item.className ?? '',
+          item.property ?? '',
+          item.type ?? ''
+        ]
+        return parts.join('|')
+      }
+
+      const originalKeys = new Set(
         originalItems
           .filter(
             (item): item is IContextMenuValue =>
               item !== null && typeof item === 'object' && 'content' in item
           )
-          .map((item) => item.content)
+          .map(createItemKey)
       )
       const addedItems = patchedItems.filter((item) => {
         if (item === null) return false
         if (typeof item !== 'object' || !('content' in item)) return false
-        return !originalContents.has(item.content)
+        return !originalKeys.has(createItemKey(item))
       })
 
       // Warn if items were removed (patched has fewer original items than expected)
-      const patchedContents = new Set(
+      const patchedKeys = new Set(
         patchedItems
           .filter(
             (item): item is IContextMenuValue =>
               item !== null && typeof item === 'object' && 'content' in item
           )
-          .map((item) => item.content)
+          .map(createItemKey)
       )
-      const removedCount = [...originalContents].filter(
-        (content) => !patchedContents.has(content)
+      const removedCount = [...originalKeys].filter(
+        (key) => !patchedKeys.has(key)
       ).length
       if (removedCount > 0) {
         console.warn(

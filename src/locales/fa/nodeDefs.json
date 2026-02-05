@@ -6449,32 +6449,18 @@
         "name": "عرض"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "تصویر",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ماسک",
-        "tooltip": null
-      },
-      "2": {
-        "name": "مسیر مش",
-        "tooltip": null
-      },
-      "3": {
-        "name": "نرمال",
-        "tooltip": null
-      },
-      "4": {
-        "name": "اطلاعات دوربین",
-        "tooltip": null
-      },
-      "5": {
-        "name": "ویدئوی ضبط‌شده",
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "مدل_۳بعدی",
         "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "بارگذاری صوت",
