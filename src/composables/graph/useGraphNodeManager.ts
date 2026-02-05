@@ -43,6 +43,7 @@ export interface WidgetSlotMetadata {
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
  */
 export interface SafeWidgetData {
+  nodeId?: NodeId
   name: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
@@ -210,9 +211,20 @@ function safeWidgetMapper(
             advanced: widget.advanced
           }
         : undefined
+      const subgraphId = node.isSubgraphNode() && node.subgraph.id
+
+      const localId = isProxyWidget(widget)
+        ? widget._overlay?.nodeId
+        : undefined
+      const nodeId =
+        subgraphId && localId ? `${subgraphId}:${localId}` : undefined
+      const name = isProxyWidget(widget)
+        ? widget._overlay.widgetName
+        : widget.name
 
       return {
-        name: widget.name,
+        nodeId,
+        name,
         type: widget.type,
         ...sharedEnhancements,
         callback,
@@ -223,6 +235,7 @@ function safeWidgetMapper(
       }
     } catch (error) {
       return {
+        nodeId: String(node.id),
         name: widget.name || 'unknown',
         type: widget.type || 'text'
       }
@@ -240,6 +253,15 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   // Extract safe widget data
   const slotMetadata = new Map<string, WidgetSlotMetadata>()
 
+  const reactiveWidgets = shallowReactive<IBaseWidget[]>(node.widgets ?? [])
+  Object.defineProperty(node, 'widgets', {
+    get() {
+      return reactiveWidgets
+    },
+    set(v) {
+      reactiveWidgets.splice(0, reactiveWidgets.length, ...v)
+    }
+  })
   const reactiveInputs = shallowReactive<INodeInputSlot[]>(node.inputs ?? [])
   Object.defineProperty(node, 'inputs', {
     get() {

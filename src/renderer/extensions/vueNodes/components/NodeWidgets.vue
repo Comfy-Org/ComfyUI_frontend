@@ -175,7 +175,8 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     const { slotMetadata } = widget
 
     // Get metadata from store (registered during BaseWidget.setNodeId)
-    const widgetState = widgetValueStore.getWidget(nodeId, widget.name)
+    const bareWidgetId = String(widget.nodeId ?? nodeId).replace(/^(.*:)+/, '')
+    const widgetState = widgetValueStore.getWidget(bareWidgetId, widget.name)
 
     // Get value from store (falls back to undefined if not registered)
     const value = widgetState?.value as WidgetValue
@@ -187,11 +188,12 @@ const processedWidgets = computed((): ProcessedWidget[] => {
       : storeOptions
 
     // Derive border style from store metadata
-    const borderStyle = widgetState?.promoted
-      ? 'ring ring-component-node-widget-promoted'
-      : widgetState?.advanced
-        ? 'ring ring-component-node-widget-advanced'
-        : undefined
+    const borderStyle =
+      widgetState?.promoted && String(widgetState?.nodeId) === String(nodeId)
+        ? 'ring ring-component-node-widget-promoted'
+        : widgetState?.advanced
+          ? 'ring ring-component-node-widget-advanced'
+          : undefined
 
     const simplified: SimplifiedWidget = {
       name: widget.name,

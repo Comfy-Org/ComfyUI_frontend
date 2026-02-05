@@ -13,6 +13,7 @@ describe('NodeWidgets', () => {
   const createMockWidget = (
     overrides: Partial<SafeWidgetData> = {}
   ): SafeWidgetData => ({
+    nodeId: 'test_node',
     name: 'test_widget',
     type: 'combo',
     options: undefined,

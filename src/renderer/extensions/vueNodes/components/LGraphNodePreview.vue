@@ -56,6 +56,7 @@ const nodeData = computed<VueNodeData>(() => {
   const widgets = Object.entries(nodeDef.inputs || {})
     .filter(([_, input]) => widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
+      nodeId: '-1',
       name,
       type: input.widgetType || input.type,
       value:
