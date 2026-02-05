@@ -15,6 +15,7 @@ function addMultilineWidget(
   name: string,
   opts: { defaultVal: string; placeholder?: string }
 ) {
+  const widgetStore = useWidgetValueStore()
   const inputEl = document.createElement('textarea')
   inputEl.className = 'comfy-multiline-input'
   inputEl.value = opts.defaultVal
@@ -23,14 +24,13 @@ function addMultilineWidget(
 
   const widget = node.addDOMWidget(name, 'customtext', inputEl, {
     getValue(): string {
-      return (
-        (useWidgetValueStore().getWidget(node.id, name)?.value as string) ??
-        inputEl.value
-      )
+      const widgetState = widgetStore.getWidget(node.id, name)
+
+      return (widgetState?.value as string) ?? inputEl.value
     },
     setValue(v: string) {
       inputEl.value = v
-      const widgetState = useWidgetValueStore().getWidget(node.id, name)
+      const widgetState = widgetStore.getWidget(node.id, name)
       if (widgetState) widgetState.value = v
     }
   })
@@ -38,7 +38,10 @@ function addMultilineWidget(
   widget.element = inputEl
   widget.options.minNodeSize = [400, 200]
 
-  inputEl.addEventListener('input', () => {
+  inputEl.addEventListener('input', (event) => {
+    if (event.target instanceof HTMLTextAreaElement) {
+      widget.value = event.target.value
+    }
     widget.callback?.(widget.value)
   })
 

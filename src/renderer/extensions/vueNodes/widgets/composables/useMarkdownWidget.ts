@@ -39,6 +39,8 @@ function addMarkdownWidget(
     editable: false
   })
 
+  const widgetStore = useWidgetValueStore()
+
   const inputEl = editor.options.element as HTMLElement
   inputEl.classList.add('comfy-markdown')
   const textarea = document.createElement('textarea')
@@ -47,19 +49,26 @@ function addMarkdownWidget(
   const widget = node.addDOMWidget(name, 'MARKDOWN', inputEl, {
     getValue(): string {
       return (
-        (useWidgetValueStore().getWidget(node.id, name)?.value as string) ??
+        (widgetStore.getWidget(node.id, name)?.value as string) ??
         textarea.value
       )
     },
     setValue(v: string) {
       textarea.value = v
       editor.commands.setContent(v)
-      const widgetState = useWidgetValueStore().getWidget(node.id, name)
+      const widgetState = widgetStore.getWidget(node.id, name)
       if (widgetState) widgetState.value = v
     }
   })
   widget.element = inputEl
   widget.options.minNodeSize = [400, 200]
+
+  inputEl.addEventListener('input', (event) => {
+    if (event.target instanceof HTMLTextAreaElement) {
+      widget.value = event.target.value
+    }
+    widget.callback?.(widget.value)
+  })
 
   inputEl.addEventListener('dblclick', () => {
     inputEl.classList.add('editing')
