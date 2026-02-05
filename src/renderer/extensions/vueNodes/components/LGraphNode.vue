@@ -116,9 +116,10 @@
           <NodeContent :node-data="nodeData" :media="nodeMedia" />
         </div>
         <!-- Live mid-execution preview images -->
-        <div v-if="shouldShowPreviewImg" class="min-h-0 flex-1 px-4">
-          <LivePreview :image-url="latestPreviewUrl || null" />
-        </div>
+        <LivePreview
+          v-if="shouldShowPreviewImg"
+          :image-url="latestPreviewUrl"
+        />
 
         <!-- Show advanced inputs button for subgraph nodes -->
         <div v-if="showAdvancedInputsButton" class="flex justify-center px-3">
