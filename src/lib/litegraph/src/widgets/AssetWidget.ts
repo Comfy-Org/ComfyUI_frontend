@@ -8,6 +8,10 @@ export class AssetWidget
   extends BaseWidget<IAssetWidget>
   implements IAssetWidget
 {
+  override get kind() {
+    return 'asset' as const
+  }
+
   constructor(widget: IAssetWidget, node: LGraphNode) {
     super(widget, node)
     this.type ??= 'asset'

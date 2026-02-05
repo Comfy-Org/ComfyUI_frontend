@@ -10,6 +10,10 @@ export class NumberWidget
 {
   override type = 'number' as const
 
+  override get kind() {
+    return 'number' as const
+  }
+
   override get _displayValue() {
     if (this.computedDisabled) return ''
     return Number(this.value).toFixed(

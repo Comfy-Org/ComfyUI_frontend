@@ -14,6 +14,10 @@ export class TextWidget
     this.value = widget.value?.toString() ?? ''
   }
 
+  override get kind(): 'string' | 'textarea' {
+    return this.type === 'text' ? 'textarea' : 'string'
+  }
+
   /**
    * Draws the widget
    * @param ctx The canvas context

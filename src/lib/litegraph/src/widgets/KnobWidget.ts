@@ -9,6 +9,10 @@ import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
   override type = 'knob' as const
 
+  override get kind() {
+    return 'knob' as const
+  }
+
   /**
    * Compute the layout size of the widget.
    * @returns The layout size of the widget.

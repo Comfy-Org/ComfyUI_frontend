@@ -14,6 +14,10 @@ export class SelectButtonWidget
 {
   override type = 'selectbutton' as const
 
+  override get kind() {
+    return 'selectbutton' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this

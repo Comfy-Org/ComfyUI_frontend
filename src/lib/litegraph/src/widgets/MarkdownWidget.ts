@@ -14,6 +14,10 @@ export class MarkdownWidget
 {
   override type = 'markdown' as const
 
+  override get kind() {
+    return 'markdown' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this

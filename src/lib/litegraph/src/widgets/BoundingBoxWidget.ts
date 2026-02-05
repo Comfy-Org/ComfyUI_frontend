@@ -12,6 +12,10 @@ export class BoundingBoxWidget
 {
   override type = 'boundingbox' as const
 
+  override get kind() {
+    return 'boundingbox' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'BoundingBox')
   }

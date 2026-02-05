@@ -28,6 +28,10 @@ export class ColorWidget
 {
   override type = 'color' as const
 
+  override get kind() {
+    return 'color' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { fillStyle, strokeStyle, textAlign } = ctx
 

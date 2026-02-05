@@ -14,6 +14,10 @@ export class MultiSelectWidget
 {
   override type = 'multiselect' as const
 
+  override get kind() {
+    return 'multiselect' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this

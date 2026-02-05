@@ -17,6 +17,8 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetKind } from '@/types/widget'
+import { legacyTypeToKind } from '@/types/widget/adapters'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
@@ -73,6 +75,15 @@ export abstract class BaseWidget<
   name: string
   options: TWidget['options']
   type: TWidget['type']
+
+  /**
+   * Canonical widget kind derived from legacy type.
+   * Subclasses may override with a literal for narrower typing.
+   */
+  get kind(): WidgetKind {
+    return legacyTypeToKind(this.type as TWidgetType)
+  }
+
   y: number = 0
   last_y?: number
   width?: number

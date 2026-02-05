@@ -9,6 +9,11 @@ export class ButtonWidget
   implements IButtonWidget
 {
   override type = 'button' as const
+
+  override get kind() {
+    return 'button' as const
+  }
+
   clicked: boolean
 
   constructor(widget: IButtonWidget, node: LGraphNode) {

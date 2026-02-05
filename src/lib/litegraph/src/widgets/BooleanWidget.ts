@@ -9,6 +9,10 @@ export class BooleanWidget
 {
   override type = 'toggle' as const
 
+  override get kind() {
+    return 'boolean' as const
+  }
+
   override drawWidget(
     ctx: CanvasRenderingContext2D,
     { width, showText = true }: DrawWidgetOptions

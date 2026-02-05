@@ -12,6 +12,10 @@ export class TextareaWidget
 {
   override type = 'textarea' as const
 
+  override get kind() {
+    return 'textarea' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'Textarea')
   }

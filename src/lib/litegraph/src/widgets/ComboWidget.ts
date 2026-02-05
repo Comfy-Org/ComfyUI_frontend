@@ -32,6 +32,10 @@ export class ComboWidget
 {
   override type = 'combo' as const
 
+  override get kind() {
+    return 'combo' as const
+  }
+
   override get _displayValue() {
     if (this.computedDisabled) return ''
 

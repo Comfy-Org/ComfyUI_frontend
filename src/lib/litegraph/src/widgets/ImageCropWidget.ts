@@ -12,6 +12,10 @@ export class ImageCropWidget
 {
   override type = 'imagecrop' as const
 
+  override get kind() {
+    return 'imagecrop' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'ImageCrop')
   }

@@ -1,4 +1,5 @@
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { WidgetKind } from '@/types/widget'
 
 import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
@@ -95,12 +96,14 @@ export type IWidget =
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
   type: 'toggle'
+  kind?: 'boolean'
   value: boolean
 }
 
 /** Any widget that uses a numeric backing */
 export interface INumericWidget extends IBaseWidget<number, 'number'> {
   type: 'number'
+  kind?: 'number'
   value: number
 }
 
@@ -110,6 +113,7 @@ export interface ISliderWidget extends IBaseWidget<
   IWidgetSliderOptions
 > {
   type: 'slider'
+  kind?: 'slider'
   value: number
   marker?: number
 }
@@ -120,6 +124,7 @@ export interface IKnobWidget extends IBaseWidget<
   IWidgetKnobOptions
 > {
   type: 'knob'
+  kind?: 'knob'
   value: number
   options: IWidgetKnobOptions
 }
@@ -131,6 +136,7 @@ export interface IStringComboWidget extends IBaseWidget<
   RequiredProps<IWidgetOptions<string[]>, 'values'>
 > {
   type: 'combo'
+  kind?: 'combo'
   value: string
 }
 
@@ -146,6 +152,7 @@ export interface IComboWidget extends IBaseWidget<
   RequiredProps<IWidgetOptions<ComboWidgetValues>, 'values'>
 > {
   type: 'combo'
+  kind?: 'combo'
   value: string | number
 }
 
@@ -156,6 +163,7 @@ export interface IStringWidget extends IBaseWidget<
   IWidgetOptions<string[]>
 > {
   type: 'string' | 'text'
+  kind?: 'string' | 'textarea'
   value: string
 }
 
@@ -164,6 +172,7 @@ export interface IButtonWidget extends IBaseWidget<
   'button'
 > {
   type: 'button'
+  kind?: 'button'
   value: string | undefined
   clicked: boolean
 }
@@ -171,12 +180,14 @@ export interface IButtonWidget extends IBaseWidget<
 /** A custom widget - accepts any value and has no built-in special handling */
 interface ICustomWidget extends IBaseWidget<string | object, 'custom'> {
   type: 'custom'
+  kind?: 'custom'
   value: string | object
 }
 
 /** File upload widget for selecting and uploading files */
 export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
   type: 'fileupload'
+  kind?: 'fileupload'
   value: string
   label?: string
 }
@@ -184,18 +195,21 @@ export interface IFileUploadWidget extends IBaseWidget<string, 'fileupload'> {
 /** Color picker widget for selecting colors */
 export interface IColorWidget extends IBaseWidget<string, 'color'> {
   type: 'color'
+  kind?: 'color'
   value: string
 }
 
 /** Markdown widget for displaying formatted text */
 export interface IMarkdownWidget extends IBaseWidget<string, 'markdown'> {
   type: 'markdown'
+  kind?: 'markdown'
   value: string
 }
 
 /** Image display widget */
 interface IImageWidget extends IBaseWidget<string, 'image'> {
   type: 'image'
+  kind?: 'image'
   value: string
 }
 
@@ -205,6 +219,7 @@ export interface ITreeSelectWidget extends IBaseWidget<
   'treeselect'
 > {
   type: 'treeselect'
+  kind?: 'treeselect'
   value: string | string[]
 }
 
@@ -214,18 +229,21 @@ export interface IMultiSelectWidget extends IBaseWidget<
   'multiselect'
 > {
   type: 'multiselect'
+  kind?: 'multiselect'
   value: string[]
 }
 
 /** Chart widget for displaying data visualizations */
 export interface IChartWidget extends IBaseWidget<object, 'chart'> {
   type: 'chart'
+  kind?: 'chart'
   value: object
 }
 
 /** Gallery widget for displaying multiple images */
 export interface IGalleriaWidget extends IBaseWidget<string[], 'galleria'> {
   type: 'galleria'
+  kind?: 'galleria'
   value: string[]
 }
 
@@ -235,6 +253,7 @@ export interface IImageCompareWidget extends IBaseWidget<
   'imagecompare'
 > {
   type: 'imagecompare'
+  kind?: 'imagecompare'
   value: string[]
 }
 
@@ -245,12 +264,14 @@ export interface ISelectButtonWidget extends IBaseWidget<
   RequiredProps<IWidgetOptions<string[]>, 'values'>
 > {
   type: 'selectbutton'
+  kind?: 'selectbutton'
   value: string
 }
 
 /** Textarea widget for multi-line text input */
 export interface ITextareaWidget extends IBaseWidget<string, 'textarea'> {
   type: 'textarea'
+  kind?: 'textarea'
   value: string
 }
 
@@ -260,18 +281,21 @@ export interface IAssetWidget extends IBaseWidget<
   IWidgetAssetOptions
 > {
   type: 'asset'
+  kind?: 'asset'
   value: string
 }
 
 /** Image crop widget for cropping image */
 export interface IImageCropWidget extends IBaseWidget<Bounds, 'imagecrop'> {
   type: 'imagecrop'
+  kind?: 'imagecrop'
   value: Bounds
 }
 
 /** Bounding box widget for defining regions with numeric inputs */
 export interface IBoundingBoxWidget extends IBaseWidget<Bounds, 'boundingbox'> {
   type: 'boundingbox'
+  kind?: 'boundingbox'
   value: Bounds
 }
 
@@ -305,6 +329,12 @@ export interface IBaseWidget<
   label?: string
   /** Widget type (see {@link TWidgetType}) */
   type: TType
+  /**
+   * Canonical widget kind for the new type system.
+   * Maps type → kind: 'toggle' → 'boolean', 'text' → 'textarea'.
+   * @see WidgetKind
+   */
+  kind?: WidgetKind
   value?: TValue
   vueTrack?: () => void
 

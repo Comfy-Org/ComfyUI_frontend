@@ -12,6 +12,10 @@ export class TreeSelectWidget
 {
   override type = 'treeselect' as const
 
+  override get kind() {
+    return 'treeselect' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'TreeSelect')
   }

@@ -11,6 +11,10 @@ export class SliderWidget
 {
   override type = 'slider' as const
 
+  override get kind() {
+    return 'slider' as const
+  }
+
   marker?: number
 
   /**

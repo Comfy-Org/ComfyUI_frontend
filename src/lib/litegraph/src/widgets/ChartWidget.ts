@@ -14,6 +14,10 @@ export class ChartWidget
 {
   override type = 'chart' as const
 
+  override get kind() {
+    return 'chart' as const
+  }
+
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     const { width } = options
     const { y, height } = this
