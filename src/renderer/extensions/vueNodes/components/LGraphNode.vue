@@ -88,7 +88,7 @@
     />
 
     <template v-if="!isCollapsed">
-      <div class="relative mb-1">
+      <div class="relative">
         <!-- Progress bar for executing state -->
         <div
           v-if="executing && progress !== undefined"
@@ -104,7 +104,7 @@
       </div>
 
       <div
-        class="flex flex-1 flex-col gap-1 pb-3 bg-component-node-background rounded-b-2xl"
+        class="flex flex-1 flex-col gap-1 pt-1 pb-3 bg-component-node-background rounded-b-2xl"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <NodeSlots :node-data="nodeData" />
