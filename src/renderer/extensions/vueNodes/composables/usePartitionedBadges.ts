@@ -5,6 +5,7 @@ import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
@@ -23,6 +24,7 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
   } = useNodePricing()
 
   const { isCreditsBadge } = usePriceBadge()
+  const colorPaletteStore = useColorPaletteStore()
 
   // Cache pricing metadata (won't change during node lifetime)
   const isDynamicPricing = computed(() =>
@@ -87,7 +89,12 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     for (const badge of unpartitionedBadges.value) {
       if (!badge.text) continue
 
-      if (badge.text[0] === '#' && badge.bgColor === '#0F1F0F') {
+      if (
+        badge.text[0] === '#' &&
+        badge.bgColor ===
+          colorPaletteStore.completedActivePalette.colors.litegraph_base
+            .BADGE_BG_COLOR
+      ) {
         const [id, source] = splitAroundFirstSpace(badge.text)
         core.push({ text: id })
 

@@ -11,7 +11,7 @@ defineProps<{
 <template>
   <div
     v-if="hasComfyBadge || core.length || extension.length"
-    class="flex h-5 w-full gap-2 mx-2 text-muted-foreground"
+    class="flex h-5 w-full gap-2 px-2 text-muted-foreground"
   >
     <div
       v-if="hasComfyBadge"
