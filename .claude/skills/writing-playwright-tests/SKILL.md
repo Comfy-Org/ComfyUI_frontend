@@ -148,10 +148,11 @@ Avoid these common mistakes:
 ## Quick Start Template
 
 ```typescript
+// Path depends on test file location - adjust '../' segments accordingly
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from './fixtures/ComfyPage'
+} from '../fixtures/ComfyPage'
 
 test.describe('FeatureName', { tag: ['@canvas'] }, () => {
   test.afterEach(async ({ comfyPage }) => {
