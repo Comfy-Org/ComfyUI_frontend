@@ -10,6 +10,7 @@ import type {
   ListMembersParams,
   Member,
   PendingInvite as ApiPendingInvite,
+  SubscriptionTier,
   WorkspaceWithRole
 } from '../api/workspaceApi'
 import { workspaceApi } from '../api/workspaceApi'
@@ -35,6 +36,7 @@ type SubscriptionPlan = string | null
 interface WorkspaceState extends WorkspaceWithRole {
   isSubscribed: boolean
   subscriptionPlan: SubscriptionPlan
+  subscriptionTier: SubscriptionTier | null
   members: WorkspaceMember[]
   pendingInvites: PendingInvite[]
 }
@@ -65,8 +67,10 @@ function createWorkspaceState(workspace: WorkspaceWithRole): WorkspaceState {
   return {
     ...workspace,
     // Personal workspaces use user-scoped subscription from useSubscription()
-    isSubscribed: workspace.type === 'personal',
+    isSubscribed:
+      workspace.type === 'personal' || !!workspace.subscription_tier,
     subscriptionPlan: null,
+    subscriptionTier: workspace.subscription_tier ?? null,
     members: [],
     pendingInvites: []
   }

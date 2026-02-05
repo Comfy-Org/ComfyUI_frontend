@@ -1,4 +1,4 @@
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -6,8 +6,10 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 import type {
   BalanceInfo,
+  BillingActions,
   BillingContext,
   BillingType,
+  BillingState,
   SubscriptionInfo
 } from './types'
 import { useLegacyBilling } from './useLegacyBilling'
@@ -53,8 +55,26 @@ function useBillingContextInternal(): BillingContext {
   const store = useTeamWorkspaceStore()
   const { flags } = useFeatureFlags()
 
-  const legacyBilling = useLegacyBilling()
-  const workspaceBilling = useWorkspaceBilling()
+  const legacyBillingRef = shallowRef<(BillingState & BillingActions) | null>(
+    null
+  )
+  const workspaceBillingRef = shallowRef<
+    (BillingState & BillingActions) | null
+  >(null)
+
+  const getLegacyBilling = () => {
+    if (!legacyBillingRef.value) {
+      legacyBillingRef.value = useLegacyBilling()
+    }
+    return legacyBillingRef.value
+  }
+
+  const getWorkspaceBilling = () => {
+    if (!workspaceBillingRef.value) {
+      workspaceBillingRef.value = useWorkspaceBilling()
+    }
+    return workspaceBillingRef.value
+  }
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -73,7 +93,7 @@ function useBillingContextInternal(): BillingContext {
   })
 
   const activeContext = computed(() =>
-    type.value === 'legacy' ? legacyBilling : workspaceBilling
+    type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
   )
 
   // Proxy state from active context

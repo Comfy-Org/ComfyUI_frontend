@@ -116,6 +116,7 @@ import WorkspaceProfilePic from '@/components/common/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
 import type {
+  SubscriptionTier,
   WorkspaceRole,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
@@ -129,6 +130,7 @@ interface AvailableWorkspace {
   role: WorkspaceRole
   isSubscribed: boolean
   subscriptionPlan: string | null
+  subscriptionTier: SubscriptionTier | null
 }
 
 const emit = defineEmits<{
@@ -178,7 +180,8 @@ const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
     type: w.type,
     role: w.role,
     isSubscribed: w.isSubscribed,
-    subscriptionPlan: w.subscriptionPlan
+    subscriptionPlan: w.subscriptionPlan,
+    subscriptionTier: w.subscriptionTier
   }))
 )
 
@@ -200,7 +203,13 @@ function getTierLabel(workspace: AvailableWorkspace): string | null {
   }
 
   // For non-active workspaces, use cached store data
-  if (!workspace.isSubscribed || !workspace.subscriptionPlan) return null
+  if (!workspace.isSubscribed) return null
+
+  if (workspace.subscriptionTier) {
+    return formatTierName(workspace.subscriptionTier, false)
+  }
+
+  if (!workspace.subscriptionPlan) return null
 
   // Parse plan slug (format: TIER_DURATION, e.g. "CREATOR_MONTHLY", "PRO_YEARLY")
   const planSlug = workspace.subscriptionPlan

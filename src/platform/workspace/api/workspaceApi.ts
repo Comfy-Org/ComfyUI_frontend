@@ -15,6 +15,7 @@ interface Workspace {
 
 export interface WorkspaceWithRole extends Workspace {
   role: WorkspaceRole
+  subscription_tier?: SubscriptionTier
 }
 
 export interface Member {
