@@ -35,6 +35,15 @@ export class ComboWidget
   override get _displayValue() {
     if (this.computedDisabled) return ''
 
+    const { values: rawValues, placeholder } = this.options
+    if (rawValues) {
+      const values = typeof rawValues === 'function' ? rawValues() : rawValues
+      const valuesArray = toArray(values)
+      if (valuesArray.length === 0 && placeholder) {
+        return placeholder
+      }
+    }
+
     const getOptionLabel = this.options.getOptionLabel
     if (getOptionLabel) {
       try {
@@ -45,7 +54,6 @@ export class ComboWidget
       }
     }
 
-    const { values: rawValues } = this.options
     if (rawValues) {
       const values = typeof rawValues === 'function' ? rawValues() : rawValues
 
