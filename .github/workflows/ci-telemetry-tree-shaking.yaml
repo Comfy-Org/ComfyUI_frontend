@@ -1,0 +1,60 @@
+name: 'CI: Telemetry Tree-Shaking Validation'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  push:
+    branches: [main, dev*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-tree-shaking:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+      - name: Build project
+        run: pnpm build
+      - name: Check for telemetry code in dist
+        run: |
+          # Keywords that should NOT appear in dist
+          KEYWORDS=('googletagmanager' 'gtag' 'mixpanel' 'analytics.js' 'gtm.js')
+          FOUND_VIOLATIONS=0
+
+          echo '🔍 Checking dist for telemetry code that should be tree-shaken...'
+          echo ''
+
+          for keyword in "${KEYWORDS[@]}"; do
+            echo "Searching for: $keyword"
+            if grep -r -i "$keyword" dist/; then
+              echo "❌ ERROR: Found '$keyword' in dist files!"
+              echo "Telemetry code must be properly tree-shaken from OSS builds."
+              FOUND_VIOLATIONS=1
+            fi
+          done
+
+          if [ $FOUND_VIOLATIONS -eq 1 ]; then
+            echo ''
+            echo '============================================'
+            echo '❌ Telemetry tree-shaking validation FAILED'
+            echo '============================================'
+            echo ''
+            echo 'One or more telemetry keywords were found in the compiled dist.'
+            echo 'This means telemetry code is being bundled into OSS builds.'
+            echo ''
+            echo 'To fix this:'
+            echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+            echo '2. Call telemetry via useTelemetry() hook'
+            echo '3. Avoid top-level imports of telemetry libraries'
+            echo '4. Reference PR #6154 for proper implementation pattern'
+            echo ''
+            exit 1
+          fi
+
+          echo ''
+          echo '✅ Telemetry tree-shaking validation passed!'
+          echo 'No telemetry code found in dist files.'
