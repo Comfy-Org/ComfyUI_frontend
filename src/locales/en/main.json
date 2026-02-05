@@ -1834,6 +1834,8 @@
     "pleaseSelectNodesToGroup": "Please select the nodes (or other groups) to create a group for",
     "emptyCanvas": "Empty canvas",
     "fileUploadFailed": "File upload failed",
+    "uploadFailed": "Upload failed",
+    "tempUploadFailed": "Error uploading temp file: {error}",
     "fileTooLarge": "File too large ({size} MB). Maximum supported size is {maxSize} MB",
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",

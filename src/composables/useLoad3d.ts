@@ -387,8 +387,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       : '3d'
 
     const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
-    sceneConfig.value.backgroundImage = uploadedPath
-    await load3d?.setBackgroundImage(uploadedPath)
+    if (uploadedPath) {
+      sceneConfig.value.backgroundImage = uploadedPath
+      await load3d?.setBackgroundImage(uploadedPath)
+    }
   }
 
   const handleExportModel = async (format: string) => {
