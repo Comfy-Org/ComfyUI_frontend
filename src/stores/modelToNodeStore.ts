@@ -192,6 +192,52 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
       ''
     )
     quickRegister('chatterbox/chatterbox_vc', 'FL_ChatterboxVC', '')
+
+    // Video upscaling models
+    quickRegister('FlashVSR', 'FlashVSRInitPipe', 'model')
+    quickRegister('SEEDVR2', 'SeedVR2LoadDiTModel', 'model')
+
+    // Depth estimation models
+    quickRegister(
+      'depthanything',
+      'DownloadAndLoadDepthAnythingV2Model',
+      'model'
+    )
+
+    // Latent upscaling models
+    quickRegister(
+      'latent_upscale_models',
+      'LatentUpscaleModelLoader',
+      'model_name'
+    )
+
+    // Segmentation models
+    quickRegister('sam2', 'DownloadAndLoadSAM2Model', 'model')
+    quickRegister('sams', 'SAMLoader', 'model_name')
+    quickRegister('ultralytics', 'UltralyticsDetectorProvider', 'model_name')
+
+    // IP-Adapter models
+    quickRegister('ipadapter', 'IPAdapterModelLoader', 'ipadapter_file')
+
+    // Segformer clothing/fashion segmentation models
+    quickRegister(
+      'segformer_b2_clothes',
+      'LayerMask: SegformerClothesPipelineLoader',
+      'model'
+    )
+    quickRegister(
+      'segformer_b3_clothes',
+      'LayerMask: SegformerClothesPipelineLoader',
+      'model'
+    )
+    quickRegister(
+      'segformer_b3_fashion',
+      'LayerMask: SegformerFashionPipelineLoader',
+      'model'
+    )
+
+    // Other specialized models
+    quickRegister('nlf', 'LoadNLFModel', 'nlf_model')
   }
 
   return {
