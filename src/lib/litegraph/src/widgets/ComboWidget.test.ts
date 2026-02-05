@@ -1064,14 +1064,14 @@ describe('ComboWidget', () => {
           value: '',
           options: {
             values: [],
-            placeholder: 'No models found in ComfyUI/models/checkpoints folder . . .'
+            placeholder: 'No models found in ComfyUI/models/checkpoints folder...'
           }
         }),
         node
       )
 
       expect(widget._displayValue).toBe(
-        'No models found in ComfyUI/models/checkpoints folder . . .'
+        'No models found in ComfyUI/models/checkpoints folder...'
       )
     })
 
@@ -1082,13 +1082,29 @@ describe('ComboWidget', () => {
           value: 'model.safetensors',
           options: {
             values: ['model.safetensors', 'other.safetensors'],
-            placeholder: 'No models found in ComfyUI/models/checkpoints folder . . .'
+            placeholder: 'No models found in ComfyUI/models/checkpoints folder...'
           }
         }),
         node
       )
 
       expect(widget._displayValue).toBe('model.safetensors')
+    })
+
+    it('should not display placeholder when placeholder is undefined', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'ckpt_name',
+          value: '',
+          options: {
+            values: [],
+            placeholder: undefined
+          }
+        }),
+        node
+      )
+
+      expect(widget._displayValue).toBe('')
     })
 
     it('should throw error when values is null in getValues', () => {

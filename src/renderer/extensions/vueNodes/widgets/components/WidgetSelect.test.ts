@@ -346,4 +346,32 @@ describe('WidgetSelect Value Binding', () => {
       expect(wrapper.findComponent(WidgetSelectDropdown).exists()).toBe(false)
     })
   })
+
+  describe('Empty options with placeholder', () => {
+    it('shows placeholder when options are empty', () => {
+      const widget = createMockWidget('', {
+        values: [],
+        placeholder: 'No models found in ComfyUI/models/checkpoints folder...'
+      })
+      const wrapper = mountComponent(widget, '')
+      const selectDefault = wrapper.findComponent(WidgetSelectDefault)
+      const select = selectDefault.findComponent(SelectPlus)
+
+      expect(select.props('placeholder')).toBe(
+        'No models found in ComfyUI/models/checkpoints folder...'
+      )
+    })
+
+    it('does not show placeholder when options exist', () => {
+      const widget = createMockWidget('option1', {
+        values: ['option1', 'option2'],
+        placeholder: 'No models found'
+      })
+      const wrapper = mountComponent(widget, 'option1')
+      const selectDefault = wrapper.findComponent(WidgetSelectDefault)
+      const select = selectDefault.findComponent(SelectPlus)
+
+      expect(select.props('placeholder')).toBeFalsy()
+    })
+  })
 })
