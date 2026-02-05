@@ -5,10 +5,18 @@ import type { KeyCombo } from '../../../src/platform/keybindings/types'
 export class CommandHelper {
   constructor(private readonly page: Page) {}
 
-  async executeCommand(commandId: string): Promise<void> {
-    await this.page.evaluate((id: string) => {
-      return window.app!.extensionManager.command.execute(id)
-    }, commandId)
+  async executeCommand(
+    commandId: string,
+    metadata?: Record<string, unknown>
+  ): Promise<void> {
+    await this.page.evaluate(
+      ({ commandId, metadata }) => {
+        return window['app'].extensionManager.command.execute(commandId, {
+          metadata
+        })
+      },
+      { commandId, metadata }
+    )
   }
 
   async registerCommand(
