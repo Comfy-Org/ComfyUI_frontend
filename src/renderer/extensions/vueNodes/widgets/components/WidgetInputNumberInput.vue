@@ -15,7 +15,7 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const { n } = useI18n()
+const { locale } = useI18n()
 
 const props = defineProps<{
   widget: SimplifiedWidget<number>
@@ -30,8 +30,16 @@ onClickOutside(widgetContainer, () => {
   }
 })
 
-const decimalSeparator = computed(() => n(1.1).replace(/\p{Number}/gu, ''))
-const groupSeparator = computed(() => n(11111).replace(/\p{Number}/gu, ''))
+function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
+  return new Intl.NumberFormat(locale.value, options).format(value)
+}
+
+const decimalSeparator = computed(() =>
+  formatNumber(1.1).replace(/\p{Number}/gu, '')
+)
+const groupSeparator = computed(() =>
+  formatNumber(11111).replace(/\p{Number}/gu, '')
+)
 function unformatValue(value: string) {
   return value
     .replaceAll(groupSeparator.value, '')
@@ -45,11 +53,14 @@ const formattedValue = computed(() => {
   if ((unformattedValue as unknown) === '' || !isFinite(unformattedValue))
     return `${unformattedValue}`
 
-  return n(unformattedValue, {
-    useGrouping: useGrouping.value,
-    minimumFractionDigits: precision.value,
-    maximumFractionDigits: precision.value
-  })
+  const options: Intl.NumberFormatOptions = {
+    useGrouping: useGrouping.value
+  }
+  if (precision.value !== undefined) {
+    options.minimumFractionDigits = precision.value
+    options.maximumFractionDigits = precision.value
+  }
+  return formatNumber(unformattedValue, options)
 })
 
 function updateValue(e: UIEvent) {

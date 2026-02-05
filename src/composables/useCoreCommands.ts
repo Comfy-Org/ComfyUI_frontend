@@ -171,8 +171,9 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-save',
       label: 'Publish Subgraph',
       menubarLabel: 'Publish',
-      function: async () => {
-        await useSubgraphStore().publishSubgraph()
+      function: async (metadata?: Record<string, unknown>) => {
+        const name = metadata?.name as string | undefined
+        await useSubgraphStore().publishSubgraph(name)
       }
     },
     {
@@ -1093,6 +1094,75 @@ export function useCoreCommands(): ComfyCommand[] {
         canvas.setGraph(
           navigationStore.navigationStack.at(-2) ?? canvas.graph.rootGraph
         )
+      }
+    },
+    {
+      id: 'Comfy.Subgraph.SetDescription',
+      icon: 'pi pi-pencil',
+      label: 'Set Subgraph Description',
+      versionAdded: '1.39.7',
+      function: async (metadata?: Record<string, unknown>) => {
+        const canvas = canvasStore.getCanvas()
+        const subgraph = canvas.subgraph
+        if (!subgraph) return
+
+        const extra = (subgraph.extra ??= {}) as Record<string, unknown>
+        const currentDescription = (extra.BlueprintDescription as string) ?? ''
+
+        let description: string | null | undefined
+        const rawDescription = metadata?.description
+        if (rawDescription != null) {
+          description =
+            typeof rawDescription === 'string'
+              ? rawDescription
+              : String(rawDescription)
+        }
+        description ??= await dialogService.prompt({
+          title: t('g.description'),
+          message: t('subgraphStore.enterDescription'),
+          defaultValue: currentDescription
+        })
+        if (description === null) return
+
+        extra.BlueprintDescription = description.trim() || undefined
+        workflowStore.activeWorkflow?.changeTracker?.checkState()
+      }
+    },
+    {
+      id: 'Comfy.Subgraph.SetSearchAliases',
+      icon: 'pi pi-search',
+      label: 'Set Subgraph Search Aliases',
+      versionAdded: '1.39.7',
+      function: async (metadata?: Record<string, unknown>) => {
+        const canvas = canvasStore.getCanvas()
+        const subgraph = canvas.subgraph
+        if (!subgraph) return
+
+        const parseAliases = (value: unknown): string[] =>
+          (Array.isArray(value) ? value.map(String) : String(value).split(','))
+            .map((s) => s.trim())
+            .filter(Boolean)
+
+        const extra = (subgraph.extra ??= {}) as Record<string, unknown>
+
+        let aliases: string[]
+        const rawAliases = metadata?.aliases
+        if (rawAliases == null) {
+          const input = await dialogService.prompt({
+            title: t('subgraphStore.searchAliases'),
+            message: t('subgraphStore.enterSearchAliases'),
+            defaultValue: parseAliases(extra.BlueprintSearchAliases ?? '').join(
+              ', '
+            )
+          })
+          if (input === null) return
+          aliases = parseAliases(input)
+        } else {
+          aliases = parseAliases(rawAliases)
+        }
+
+        extra.BlueprintSearchAliases = aliases.length > 0 ? aliases : undefined
+        workflowStore.activeWorkflow?.changeTracker?.checkState()
       }
     },
     {

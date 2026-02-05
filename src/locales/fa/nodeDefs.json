@@ -2207,6 +2207,23 @@
       }
     }
   },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "اندازه دسته",
+        "tooltip": "تعداد تصاویر latent در هر دسته."
+      },
+      "seconds": {
+        "name": "ثانیه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
     "display_name": "EmptyAceStepLatentAudio",
     "inputs": {
@@ -3551,6 +3568,50 @@
       },
       "tapered_corners": {
         "name": "گوشه‌های نرم"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "ارتقاء تصاویر با وضوح پایین به وضوح بسیار بالا، حذف نویز و آرتیفکت‌ها. حداکثر خروجی: ۳۲ مگاپیکسل.",
+    "display_name": "افزایش کیفیت تصویر عمومی HitPaw",
+    "inputs": {
+      "auto_downscale": {
+        "name": "کاهش خودکار مقیاس",
+        "tooltip": "در صورت تجاوز خروجی از حد مجاز، تصویر ورودی به طور خودکار کوچک می‌شود."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "upscale_factor": {
+        "name": "ضریب بزرگ‌نمایی"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "ارتقاء ویدیوهای با وضوح پایین به وضوح بالا، حذف نویز و آرتیفکت‌ها. قیمت‌ها به ازای هر ثانیه ویدیو محاسبه می‌شود.",
+    "display_name": "افزایش کیفیت ویدیو HitPaw",
+    "inputs": {
+      "model": {
+        "name": "مدل"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "video": {
+        "name": "ویدیو"
       }
     },
     "outputs": {
@@ -6382,32 +6443,18 @@
         "name": "عرض"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "تصویر",
-        "tooltip": null
-      },
-      "1": {
-        "name": "ماسک",
-        "tooltip": null
-      },
-      "2": {
-        "name": "مسیر مش",
-        "tooltip": null
-      },
-      "3": {
-        "name": "نرمال",
-        "tooltip": null
-      },
-      "4": {
-        "name": "اطلاعات دوربین",
-        "tooltip": null
-      },
-      "5": {
-        "name": "ویدئوی ضبط‌شده",
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "مدل_۳بعدی",
         "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "بارگذاری صوت",
@@ -7268,12 +7315,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy: تصویر به مدل",
@@ -7319,16 +7371,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy: چند تصویر به مدل",
@@ -7374,16 +7428,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "یک مدل پیش‌نویس ایجادشده قبلی را بهبود دهید.",
@@ -7408,16 +7464,18 @@
         "tooltip": "یک متن راهنما برای هدایت فرایند بافت‌دهی وارد کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'texture_image' استفاده کرد."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "یک کاراکتر ریگ‌شده در فرمت‌های استاندارد ارائه می‌دهد. ریگ خودکار در حال حاضر برای مش‌های بدون بافت، دارایی‌های غیرانسان‌نما یا دارایی‌های انسان‌نمایی که ساختار اندام و بدن آن‌ها نامشخص است، مناسب نیست.",
@@ -7435,16 +7493,18 @@
         "tooltip": "تصویر بافت رنگ پایه مدل با UV باز شده."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy: متن به مدل",
@@ -7483,16 +7543,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy: مدل بافت",
@@ -7519,16 +7581,18 @@
         "tooltip": "سبک بافت مورد نظر شیء را با استفاده از متن توصیف کنید. حداکثر ۶۰۰ کاراکتر. نمی‌توان همزمان با 'image_style' استفاده کرد."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "تولید ویدئو از طریق پرامپت، با امکان استفاده از فریم ابتدایی با مدل جدید MiniMax Hailuo-02.",
@@ -10725,11 +10789,9 @@
       "camera_info": {
         "name": "اطلاعات دوربین"
       },
-      "image": {
-        "name": "تصویر"
-      },
       "model_file": {
-        "name": "فایل مدل"
+        "name": "فایل مدل",
+        "tooltip": "فایل مدل سه‌بعدی یا مسیر فایل"
       }
     }
   },
@@ -11370,6 +11432,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "این نود صدای مرجع برای timbre را تنظیم می‌کند (برای ace step 1.5)",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "شرایط‌دهی"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "استخراج با Regex",
     "inputs": {
@@ -11698,12 +11777,13 @@
         "name": "Seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -11725,12 +11805,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -11749,12 +11830,13 @@
         "name": "Seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -11767,12 +11849,13 @@
         "name": "Seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "تولید دارایی‌های سه‌بعدی با استفاده از Rodin API",
@@ -11791,12 +11874,13 @@
         "name": "Seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "مسیر مدل سه‌بعدی",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "اولین و آخرین فریم کلیدی را بارگذاری کنید، یک پرامپت بنویسید و ویدیو تولید کنید. انتقال‌های پیچیده‌تر، مانند زمانی که فریم آخر کاملاً با فریم اول متفاوت است، ممکن است از مدت زمان طولانی‌تر ۱۰ ثانیه‌ای بهره‌مند شوند. این کار به تولید اجازه می‌دهد تا زمان بیشتری برای انتقال روان بین دو ورودی داشته باشد. پیش از شروع، این نکات کلیدی را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما باعث موفقیت تولید خواهد شد: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -12528,11 +12612,9 @@
       "filename_prefix": {
         "name": "filename_prefix"
       },
-      "image": {
-        "name": "image"
-      },
       "mesh": {
-        "name": "mesh"
+        "name": "mesh",
+        "tooltip": "مش یا فایل GLB برای ذخیره"
       }
     }
   },
@@ -13791,12 +13873,17 @@
         "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D: تبدیل متن به مدل (پیشرفته)",
@@ -13826,12 +13913,17 @@
         "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13847,6 +13939,46 @@
       },
       "tags": {
         "name": "برچسب‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "ضرب در دقیقه (BPM)"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت زمان"
+      },
+      "keyscale": {
+        "name": "گام"
+      },
+      "language": {
+        "name": "زبان"
+      },
+      "lyrics": {
+        "name": "متن ترانه"
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "tags": {
+        "name": "برچسب‌ها"
+      },
+      "timesignature": {
+        "name": "امضای زمانی"
       }
     },
     "outputs": {
@@ -14410,16 +14542,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: چندنما به مدل",
@@ -14471,16 +14601,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "بهبود یک مدل پیش‌نویس که فقط توسط مدل‌های Tripo نسخه ۱.۴ ایجاد شده است.",
@@ -14491,16 +14619,14 @@
         "tooltip": "باید یک مدل Tripo نسخه ۱.۴ باشد"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: هدف‌گذاری مجدد مدل ریگ‌شده",
@@ -14512,16 +14638,14 @@
         "name": "شناسه وظیفه مدل اصلی"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه هدف‌گذاری مجدد",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: ریگ مدل",
@@ -14530,16 +14654,14 @@
         "name": "شناسه وظیفه مدل اصلی"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه ریگ",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo: متن به مدل",
@@ -14584,16 +14706,14 @@
         "name": "بذر تکسچر"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo: مدل بافت",
@@ -14617,16 +14737,14 @@
         "name": "بذر بافت"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "فایل مدل",
-        "tooltip": null
-      },
-      "1": {
-        "name": "شناسه وظیفه مدل",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "کوتاه‌سازی متن",
