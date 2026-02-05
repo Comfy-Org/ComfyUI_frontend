@@ -4,7 +4,7 @@ See `@docs/guidance/playwright.md` for Playwright best practices (auto-loaded fo
 
 ## Directory Structure
 
-```
+```text
 browser_tests/
 ├── assets/           - Test data (JSON workflows, images)
 ├── fixtures/
