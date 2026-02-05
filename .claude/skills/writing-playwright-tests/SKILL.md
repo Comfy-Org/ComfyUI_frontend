@@ -118,20 +118,32 @@ await expect(async () => {
 
 ## Anti-Patterns
 
-```typescript
-// ❌ Never use arbitrary waits
-await page.waitForTimeout(500)
+Avoid these common mistakes:
 
-// ❌ Never use implementation-tied selectors
-await page.locator('div.container > button.btn-primary').click()
+1. **Arbitrary waits** - Use retrying assertions instead
+   ```typescript
+   // ❌ await page.waitForTimeout(500)
+   // ✅ await expect(element).toBeVisible()
+   ```
 
-// ❌ Never skip nextFrame after canvas operations
-await node.drag({ x: 50, y: 50 })
-// Missing nextFrame = flaky
+2. **Implementation-tied selectors** - Use test IDs or semantic selectors
+   ```typescript
+   // ❌ page.locator('div.container > button.btn-primary')
+   // ✅ page.getByTestId('submit-button')
+   ```
 
-// ❌ Never share state between tests
-let sharedData // Bad - tests must be independent
-```
+3. **Missing nextFrame after canvas ops** - Canvas needs sync time
+
+   ```typescript
+   await node.drag({ x: 50, y: 50 })
+   await comfyPage.nextFrame() // Required
+   ```
+
+4. **Shared state between tests** - Tests must be independent
+   ```typescript
+   // ❌ let sharedData  // Outside test
+   // ✅ Define state inside each test
+   ```
 
 ## Quick Start Template
 
