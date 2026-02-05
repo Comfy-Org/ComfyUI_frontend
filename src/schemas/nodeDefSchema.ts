@@ -91,7 +91,9 @@ export const zComboInputOptions = zBaseInputOptions.extend({
   options: z.array(zComboOption).optional(),
   remote: zRemoteWidgetConfig.optional(),
   /** Whether the widget is a multi-select widget. */
-  multi_select: zMultiSelectOption.optional()
+  multi_select: zMultiSelectOption.optional(),
+  /** Placeholder text to display when the options list is empty. */
+  placeholder: z.string().optional()
 })
 
 const zIntInputSpec = z.tuple([z.literal('INT'), zIntInputOptions.optional()])

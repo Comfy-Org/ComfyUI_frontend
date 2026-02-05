@@ -187,13 +187,15 @@ const addComboWidget = (
   }
 
   // Standard combo widget
+  const hasEmptyOptions = !inputSpec.options?.length && !inputSpec.remote
   const widget = node.addWidget(
     'combo',
     inputSpec.name,
-    defaultValue,
+    hasEmptyOptions && inputSpec.placeholder ? inputSpec.placeholder : defaultValue,
     () => {},
     {
-      values: inputSpec.options ?? []
+      values: inputSpec.options ?? [],
+      placeholder: inputSpec.placeholder
     }
   )
 
