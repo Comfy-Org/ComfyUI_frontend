@@ -18,7 +18,7 @@ const mockTrackBeginCheckout = vi.fn()
 const mockGetFirebaseAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
-const mockGetCheckoutAttribution = vi.fn(() => ({}))
+const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
