@@ -40,17 +40,19 @@ const BYPASS_CLASS = /before:bg-bypass\/60/
 await expect(node).toHaveClass(BYPASS_CLASS)
 ```
 
-## Critical Gotchas
+## Common Issues
 
-| Issue                   | Symptom                            | Fix                                                                                    |
-| ----------------------- | ---------------------------------- | -------------------------------------------------------------------------------------- |
-| **Missing nextFrame()** | Test passes locally, fails in CI   | Add `await comfyPage.nextFrame()` after canvas ops (not needed after `loadWorkflow()`) |
-| **Missing focus**       | Keyboard shortcuts don't work      | Add `await comfyPage.canvas.click()` first                                             |
-| **Double-click timing** | Double-click doesn't trigger       | Add `{ delay: 5 }` option                                                              |
-| **Drag animation**      | Elements end up in wrong position  | Use `{ steps: 10 }` not `{ steps: 1 }`                                                 |
-| **Upload incomplete**   | Widget value wrong after drag-drop | Add `{ waitForUpload: true }`                                                          |
-| **Test pollution**      | Test fails when run with others    | Add `afterEach` with `resetView()`                                                     |
-| **Screenshot mismatch** | Local screenshots don't match CI   | Screenshots are Linux-only, use PR label                                               |
+These are frequent causes of flaky tests - check them first, but investigate if they don't apply:
+
+| Symptom                            | Common Cause              | Typical Fix                                                                            |
+| ---------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
+| Test passes locally, fails in CI   | Missing nextFrame()       | Add `await comfyPage.nextFrame()` after canvas ops (not needed after `loadWorkflow()`) |
+| Keyboard shortcuts don't work      | Missing focus             | Add `await comfyPage.canvas.click()` first                                             |
+| Double-click doesn't trigger       | Timing too fast           | Add `{ delay: 5 }` option                                                              |
+| Elements end up in wrong position  | Drag animation incomplete | Use `{ steps: 10 }` not `{ steps: 1 }`                                                 |
+| Widget value wrong after drag-drop | Upload incomplete         | Add `{ waitForUpload: true }`                                                          |
+| Test fails when run with others    | Test pollution            | Add `afterEach` with `resetView()`                                                     |
+| Local screenshots don't match CI   | Platform differences      | Screenshots are Linux-only, use PR label                                               |
 
 ## Test Tags
 
