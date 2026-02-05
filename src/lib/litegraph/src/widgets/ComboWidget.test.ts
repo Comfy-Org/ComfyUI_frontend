@@ -1057,6 +1057,40 @@ describe('ComboWidget', () => {
       expect(widget.canDecrement()).toBe(false)
     })
 
+    it('should display placeholder text when values list is empty and placeholder is provided', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'ckpt_name',
+          value: '',
+          options: {
+            values: [],
+            placeholder: 'No models found in ComfyUI/models/checkpoints folder . . .'
+          }
+        }),
+        node
+      )
+
+      expect(widget._displayValue).toBe(
+        'No models found in ComfyUI/models/checkpoints folder . . .'
+      )
+    })
+
+    it('should display normal value when values list is not empty even with placeholder', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'ckpt_name',
+          value: 'model.safetensors',
+          options: {
+            values: ['model.safetensors', 'other.safetensors'],
+            placeholder: 'No models found in ComfyUI/models/checkpoints folder . . .'
+          }
+        }),
+        node
+      )
+
+      expect(widget._displayValue).toBe('model.safetensors')
+    })
+
     it('should throw error when values is null in getValues', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({

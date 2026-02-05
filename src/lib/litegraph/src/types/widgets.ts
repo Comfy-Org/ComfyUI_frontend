@@ -37,6 +37,8 @@ export interface IWidgetOptions<TValues = unknown[]> {
   getOptionLabel?: (value?: string | null) => string
   callback?: IWidget['callback']
   iconClass?: string
+  /** Placeholder text to display when the values list is empty. */
+  placeholder?: string
 }
 
 interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
