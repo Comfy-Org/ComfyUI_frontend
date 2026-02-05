@@ -20,19 +20,21 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
 
 Choose based on **what you're testing**, not personal preference:
 
-| Testing...                                      | Use                    | Why                                      |
-| ----------------------------------------------- | ---------------------- | ---------------------------------------- |
-| Vue-rendered node UI, DOM widgets, CSS states   | `comfyPage.vueNodes.*` | Nodes are DOM elements, use locators     |
-| Canvas interactions, connections, legacy nodes  | `comfyPage.nodeOps.*`  | Canvas-based, use coordinates/references |
-| Both in same test                               | Pick primary, minimize switching | Avoid confusion             |
+| Testing...                                     | Use                              | Why                                      |
+| ---------------------------------------------- | -------------------------------- | ---------------------------------------- |
+| Vue-rendered node UI, DOM widgets, CSS states  | `comfyPage.vueNodes.*`           | Nodes are DOM elements, use locators     |
+| Canvas interactions, connections, legacy nodes | `comfyPage.nodeOps.*`            | Canvas-based, use coordinates/references |
+| Both in same test                              | Pick primary, minimize switching | Avoid confusion                          |
 
 **Vue Nodes requires explicit opt-in:**
+
 ```typescript
 await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 await comfyPage.vueNodes.waitForNodes()
 ```
 
 **Vue Node state uses CSS classes:**
+
 ```typescript
 const BYPASS_CLASS = /before:bg-bypass\/60/
 await expect(node).toHaveClass(BYPASS_CLASS)
@@ -40,30 +42,30 @@ await expect(node).toHaveClass(BYPASS_CLASS)
 
 ## Critical Gotchas
 
-| Issue                       | Symptom                              | Fix                                          |
-| --------------------------- | ------------------------------------ | -------------------------------------------- |
-| **Missing nextFrame()**     | Test passes locally, fails in CI    | Add `await comfyPage.nextFrame()` after canvas ops (not needed after `loadWorkflow()`) |
-| **Missing focus**           | Keyboard shortcuts don't work        | Add `await comfyPage.canvas.click()` first   |
-| **Double-click timing**     | Double-click doesn't trigger         | Add `{ delay: 5 }` option                    |
-| **Drag animation**          | Elements end up in wrong position    | Use `{ steps: 10 }` not `{ steps: 1 }`       |
-| **Upload incomplete**       | Widget value wrong after drag-drop   | Add `{ waitForUpload: true }`                |
-| **Test pollution**          | Test fails when run with others      | Add `afterEach` with `resetView()`           |
-| **Screenshot mismatch**     | Local screenshots don't match CI     | Screenshots are Linux-only, use PR label     |
+| Issue                   | Symptom                            | Fix                                                                                    |
+| ----------------------- | ---------------------------------- | -------------------------------------------------------------------------------------- |
+| **Missing nextFrame()** | Test passes locally, fails in CI   | Add `await comfyPage.nextFrame()` after canvas ops (not needed after `loadWorkflow()`) |
+| **Missing focus**       | Keyboard shortcuts don't work      | Add `await comfyPage.canvas.click()` first                                             |
+| **Double-click timing** | Double-click doesn't trigger       | Add `{ delay: 5 }` option                                                              |
+| **Drag animation**      | Elements end up in wrong position  | Use `{ steps: 10 }` not `{ steps: 1 }`                                                 |
+| **Upload incomplete**   | Widget value wrong after drag-drop | Add `{ waitForUpload: true }`                                                          |
+| **Test pollution**      | Test fails when run with others    | Add `afterEach` with `resetView()`                                                     |
+| **Screenshot mismatch** | Local screenshots don't match CI   | Screenshots are Linux-only, use PR label                                               |
 
 ## Test Tags
 
 Add appropriate tags to every test:
 
-| Tag           | When to Use                    |
-| ------------- | ------------------------------ |
-| `@smoke`      | Quick essential tests          |
-| `@slow`       | Tests > 10 seconds             |
-| `@screenshot` | Visual regression tests        |
-| `@canvas`     | Canvas interactions            |
-| `@node`       | Node-related                   |
-| `@widget`     | Widget-related                 |
+| Tag           | When to Use                               |
+| ------------- | ----------------------------------------- |
+| `@smoke`      | Quick essential tests                     |
+| `@slow`       | Tests > 10 seconds                        |
+| `@screenshot` | Visual regression tests                   |
+| `@canvas`     | Canvas interactions                       |
+| `@node`       | Node-related                              |
+| `@widget`     | Widget-related                            |
 | `@mobile`     | Mobile viewport (runs on Pixel 5 project) |
-| `@2x`         | HiDPI tests (runs on 2x scale project) |
+| `@2x`         | HiDPI tests (runs on 2x scale project)    |
 
 ```typescript
 test.describe('Feature', { tag: ['@screenshot', '@canvas'] }, () => {
@@ -73,11 +75,11 @@ test.describe('Feature', { tag: ['@screenshot', '@canvas'] }, () => {
 
 **Never use `waitForTimeout`** - it's always wrong.
 
-| Pattern                  | Use Case                                    |
-| ------------------------ | ------------------------------------------- |
-| `expect.poll()`          | Single value polling                        |
-| `expect().toPass()`      | Multiple assertions that must all pass      |
-| Auto-retrying assertions | `toBeVisible()`, `toHaveText()`, etc.       |
+| Pattern                  | Use Case                               |
+| ------------------------ | -------------------------------------- |
+| `expect.poll()`          | Single value polling                   |
+| `expect().toPass()`      | Multiple assertions that must all pass |
+| Auto-retrying assertions | `toBeVisible()`, `toHaveText()`, etc.  |
 
 ```typescript
 // Single value
@@ -123,7 +125,7 @@ await node.drag({ x: 50, y: 50 })
 // Missing nextFrame = flaky
 
 // ❌ Never share state between tests
-let sharedData  // Bad - tests must be independent
+let sharedData // Bad - tests must be independent
 ```
 
 ## Quick Start Template
@@ -165,14 +167,14 @@ grep -r '@screenshot' browser_tests/tests/
 
 ## Key Files to Read
 
-| Purpose              | Path                                      |
-| -------------------- | ----------------------------------------- |
-| Main fixture         | `browser_tests/fixtures/ComfyPage.ts`     |
-| Helper classes       | `browser_tests/fixtures/helpers/`         |
-| Component objects    | `browser_tests/fixtures/components/`      |
-| Test selectors       | `browser_tests/fixtures/selectors.ts`     |
-| Vue Node helpers     | `browser_tests/fixtures/VueNodeHelpers.ts`|
-| Test assets          | `browser_tests/assets/`                   |
-| Existing tests       | `browser_tests/tests/`                    |
+| Purpose           | Path                                       |
+| ----------------- | ------------------------------------------ |
+| Main fixture      | `browser_tests/fixtures/ComfyPage.ts`      |
+| Helper classes    | `browser_tests/fixtures/helpers/`          |
+| Component objects | `browser_tests/fixtures/components/`       |
+| Test selectors    | `browser_tests/fixtures/selectors.ts`      |
+| Vue Node helpers  | `browser_tests/fixtures/VueNodeHelpers.ts` |
+| Test assets       | `browser_tests/assets/`                    |
+| Existing tests    | `browser_tests/tests/`                     |
 
 **Read the fixture code directly** - it's the source of truth for available methods.
