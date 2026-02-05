@@ -65,11 +65,19 @@ data as unknown as SomeType // Avoid; prefer explicit typings or helpers
 When tests need internal store properties (e.g., `.workflow`, `.focusMode`):
 
 ```typescript
-// ✅ Access stores directly in page.evaluate
+// ✅ Use the wss() helper to access workspace store with full typing
 await page.evaluate(() => {
-  const store = useWorkflowStore()
-  return store.activeWorkflow
+  return wss().workflow.activeWorkflow?.filename
 })
+
+// ✅ wss() provides typed access to:
+// - workflow (activeWorkflow, syncWorkflows, isBusy)
+// - focusMode
+// - queueSettings
+// - colorPalette
+
+// ❌ Don't use `as WorkspaceStore` casts
+;(window.app!.extensionManager as WorkspaceStore).workflow // Bad
 
 // ❌ Don't change public API types to expose internals
 // Keep app.extensionManager typed as ExtensionManager, not WorkspaceStore

@@ -4,6 +4,7 @@ import type { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
+import type { ExtensionManager } from '@/types/extensionTypes'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
 
 /**
@@ -24,6 +25,26 @@ interface CapturedMessages {
   clientFeatureFlags: unknown
   serverFeatureFlags: unknown
 }
+
+/**
+ * Internal store type for browser test access.
+ * At runtime, `app.extensionManager` is assigned `useWorkspaceStore()`, which
+ * implements the public `ExtensionManager` interface plus internal store properties.
+ *
+ * Use the `wss()` helper function to access store properties in page.evaluate():
+ * @example
+ * ```ts
+ * await page.evaluate(() => wss().workflow.syncWorkflows())
+ * ```
+ */
+export type WorkspaceStore = ReturnType<typeof useWorkspaceStore>
+
+/**
+ * Test-only extension manager type that exposes both the public API and
+ * internal store properties. This intersection accurately reflects the
+ * runtime reality where extensionManager is the workspace store.
+ */
+export type TestExtensionManager = ExtensionManager & WorkspaceStore
 
 declare global {
   interface Window {
@@ -49,21 +70,19 @@ declare global {
     __ws__?: Record<string, WebSocket>
   }
 
+  /**
+   * WorkspaceStore shorthand - returns the workspace store with full typing.
+   * Centralizes the type assertion in one place.
+   *
+   * @example
+   * ```ts
+   * await page.evaluate(() => wss().workflow.syncWorkflows())
+   * ```
+   */
+  function wss(): TestExtensionManager
+
   const app: ComfyApp | undefined
   const graph: LGraph | undefined
   const LiteGraph: LiteGraphGlobal | undefined
   const LGraphBadge: typeof LGraphBadge | undefined
 }
-
-/**
- * Internal store type for browser test access.
- * Used to access properties not exposed via the public ExtensionManager interface.
- *
- * @example
- * ```ts
- * await page.evaluate(() => {
- *   ;(window.app!.extensionManager as WorkspaceStore).workflow.syncWorkflows()
- * })
- * ```
- */
-export type WorkspaceStore = ReturnType<typeof useWorkspaceStore>

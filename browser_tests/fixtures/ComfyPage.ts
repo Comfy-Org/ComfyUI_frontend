@@ -34,7 +34,6 @@ import { SubgraphHelper } from './helpers/SubgraphHelper'
 import { ToastHelper } from './helpers/ToastHelper'
 import { WorkflowHelper } from './helpers/WorkflowHelper'
 import type { NodeReference } from './utils/litegraphUtils'
-import type { WorkspaceStore } from '../types/globals'
 
 dotenv.config()
 
@@ -140,9 +139,7 @@ class ConfirmDialog {
 
     // Wait for workflow service to finish if it's busy
     await this.page.waitForFunction(
-      () =>
-        (window.app?.extensionManager as WorkspaceStore | undefined)?.workflow
-          ?.isBusy === false,
+      () => !wss().workflow.isBusy,
       undefined,
       { timeout: 3000 }
     )
@@ -390,7 +387,7 @@ export class ComfyPage {
 
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
-      ;(window.app!.extensionManager as WorkspaceStore).focusMode = focusMode
+      wss().focusMode = focusMode
     }, focusMode)
     await this.nextFrame()
   }
@@ -436,6 +433,13 @@ export const comfyPageFixture = base.extend<{
     }
 
     await comfyPage.setup()
+
+    // Inject workspace store helper for typed access in page.evaluate()
+    await page.evaluate(() => {
+      ;(window as unknown as Record<string, unknown>).wss = () =>
+        window.app!.extensionManager
+    })
+
     await use(comfyPage)
   },
   comfyMouse: async ({ comfyPage }, use) => {

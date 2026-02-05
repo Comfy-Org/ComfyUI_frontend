@@ -2,7 +2,6 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { AutoQueueMode } from '../../src/stores/queueStore'
 import { TestIds } from '../fixtures/selectors'
-import type { WorkspaceStore } from '../types/globals'
 
 export class ComfyActionbar {
   public readonly root: Locator
@@ -44,14 +43,13 @@ class ComfyQueueButtonOptions {
 
   public async setMode(mode: AutoQueueMode) {
     await this.page.evaluate((mode) => {
-      ;(window.app!.extensionManager as WorkspaceStore).queueSettings.mode =
-        mode
+      wss().queueSettings.mode = mode
     }, mode)
   }
 
   public async getMode() {
     return await this.page.evaluate(() => {
-      return (window.app!.extensionManager as WorkspaceStore).queueSettings.mode
+      return wss().queueSettings.mode
     })
   }
 }
