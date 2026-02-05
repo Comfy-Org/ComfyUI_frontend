@@ -25,7 +25,7 @@ import { i18n } from './i18n'
  * CRITICAL: Load remote config FIRST for cloud builds to ensure
  * window.__CONFIG__is available for all modules during initialization
  */
-import { isCloud } from '@/platform/distribution/types'
+const isCloud = __DISTRIBUTION__ === 'cloud'
 
 if (isCloud) {
   const { refreshRemoteConfig } =
