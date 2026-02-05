@@ -7,7 +7,7 @@ import AudioPreviewPlayer from '@/renderer/extensions/vueNodes/widgets/component
 
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue', () => ({
+vi.mock('primevue/usetoast', () => ({
   useToast: () => ({ add: mockToastAdd })
 }))
 
@@ -38,28 +38,29 @@ function mountPlayer(modelValue?: string) {
   })
 }
 
+function findDownloadButton(wrapper: ReturnType<typeof mountPlayer>) {
+  return wrapper.find('[aria-label="g.downloadAudio"]')
+}
+
 describe('AudioPreviewPlayer', () => {
   describe('download button', () => {
     it('shows download button when audio is loaded', () => {
       const wrapper = mountPlayer('http://example.com/audio.mp3')
 
-      const downloadButton = wrapper.findComponent(Button)
-      expect(downloadButton.exists()).toBe(true)
+      expect(findDownloadButton(wrapper).exists()).toBe(true)
     })
 
     it('hides download button when no audio is loaded', () => {
       const wrapper = mountPlayer()
 
-      const buttons = wrapper.findAllComponents(Button)
-      expect(buttons).toHaveLength(0)
+      expect(findDownloadButton(wrapper).exists()).toBe(false)
     })
 
     it('calls downloadFile when download button is clicked', async () => {
       const { downloadFile } = await import('@/base/common/downloadUtil')
 
       const wrapper = mountPlayer('http://example.com/audio.mp3')
-      const downloadButton = wrapper.findComponent(Button)
-      await downloadButton.trigger('click')
+      await findDownloadButton(wrapper).trigger('click')
 
       expect(downloadFile).toHaveBeenCalledWith('http://example.com/audio.mp3')
     })
@@ -71,8 +72,7 @@ describe('AudioPreviewPlayer', () => {
       })
 
       const wrapper = mountPlayer('http://example.com/audio.mp3')
-      const downloadButton = wrapper.findComponent(Button)
-      await downloadButton.trigger('click')
+      await findDownloadButton(wrapper).trigger('click')
 
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({

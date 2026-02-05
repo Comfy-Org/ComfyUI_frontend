@@ -16,11 +16,11 @@
       <!-- Left Actions -->
       <div class="relative flex shrink-0 items-center justify-start gap-2">
         <!-- Play/Pause Button -->
-        <div
-          role="button"
-          :tabindex="0"
+        <Button
+          variant="textonly"
+          size="unset"
           :aria-label="$t('g.playPause')"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
+          class="size-6 rounded"
           @click="togglePlayPause"
         >
           <i
@@ -28,7 +28,7 @@
             class="text-secondary icon-[lucide--play] size-4"
           />
           <i v-else class="text-secondary icon-[lucide--pause] size-4" />
-        </div>
+        </Button>
 
         <!-- Time Display -->
         <div class="text-sm font-normal text-nowrap text-base-foreground">
@@ -57,11 +57,11 @@
       <!-- Right Actions -->
       <div class="relative flex shrink-0 items-center justify-start gap-2">
         <!-- Volume Button -->
-        <div
-          role="button"
-          :tabindex="0"
+        <Button
+          variant="textonly"
+          size="unset"
           :aria-label="$t('g.volume')"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
+          class="size-6 rounded"
           @click="toggleMute"
         >
           <i
@@ -73,7 +73,7 @@
             class="text-secondary icon-[lucide--volume-1] size-4"
           />
           <i v-else class="text-secondary icon-[lucide--volume-x] size-4" />
-        </div>
+        </Button>
 
         <!-- Download Button -->
         <Button
@@ -89,16 +89,16 @@
         </Button>
 
         <!-- Options Button -->
-        <div
+        <Button
           v-if="showOptionsButton"
-          role="button"
-          :tabindex="0"
+          variant="textonly"
+          size="unset"
           :aria-label="$t('g.moreOptions')"
-          class="flex size-6 cursor-pointer items-center justify-center rounded hover:bg-interface-menu-component-surface-hovered"
+          class="size-6 rounded"
           @click="toggleOptionsMenu"
         >
           <i class="text-secondary icon-[lucide--more-vertical] size-4" />
-        </div>
+        </Button>
       </div>
 
       <!-- Options Menu -->
@@ -150,7 +150,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
-import { useToast } from 'primevue'
+import { useToast } from 'primevue/usetoast'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
@@ -159,6 +159,7 @@ import { cn } from '@/utils/tailwindUtil'
 import { formatTime } from '../../utils/audioUtils'
 
 const { t } = useI18n()
+const toast = useToast()
 
 const props = withDefaults(
   defineProps<{
@@ -208,10 +209,10 @@ const handleDownload = () => {
   if (!modelValue.value) return
   try {
     downloadFile(modelValue.value)
-  } catch (error) {
-    useToast().add({
+  } catch {
+    toast.add({
       severity: 'error',
-      summary: 'Error',
+      summary: t('g.error'),
       detail: t('g.failedToDownloadFile'),
       life: 3000
     })
