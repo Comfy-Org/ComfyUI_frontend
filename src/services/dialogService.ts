@@ -402,7 +402,7 @@ export const useDialogService = () => {
     const { isActiveSubscription, type } = useBillingContext()
     if (!isActiveSubscription.value) return
 
-const component =
+    const component =
       type.value === 'workspace'
         ? TopUpCreditsDialogContentWorkspace
         : TopUpCreditsDialogContentLegacy

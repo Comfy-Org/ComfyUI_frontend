@@ -132,7 +132,7 @@
         class="h-10 justify-center"
         @click="handleBuy"
       >
-        {{ $t('credits.topUp.buyCredits') }}
+        {{ $t('subscription.addCredits') }}
       </Button>
       <div class="flex items-center justify-center gap-1">
         <a
@@ -176,7 +176,7 @@ const dialogService = useDialogService()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, isActiveSubscription } = useBillingContext()
+const { fetchBalance } = useBillingContext()
 
 const { isPending: isPolling, startPolling } = useTopupPolling({
   async onSuccess() {
@@ -187,9 +187,7 @@ const { isPending: isPolling, startPolling } = useTopupPolling({
     })
     await fetchBalance()
     handleClose(false)
-    dialogService.showSettingsDialog(
-      isActiveSubscription.value ? 'subscription' : 'credits'
-    )
+    dialogService.showSettingsDialog('workspace')
   },
   onError(errorMsg) {
     toast.add({
@@ -286,9 +284,7 @@ async function handleBuy() {
       })
       await fetchBalance()
       handleClose(false)
-      dialogService.showSettingsDialog(
-        isActiveSubscription.value ? 'subscription' : 'credits'
-      )
+      dialogService.showSettingsDialog('workspace')
     } else if (response.status === 'pending') {
       startPolling(response.billing_op_id)
     } else {
