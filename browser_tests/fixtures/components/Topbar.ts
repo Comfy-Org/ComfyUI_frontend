@@ -84,11 +84,9 @@ export class Topbar {
     await this.page.keyboard.press('Enter')
 
     // Wait for workflow service to finish saving
-    await this.page.waitForFunction(
-      () => !wss().workflow.isBusy,
-      undefined,
-      { timeout: 3000 }
-    )
+    await this.page.waitForFunction(() => !wss().workflow.isBusy, undefined, {
+      timeout: 3000
+    })
     // Wait for the dialog to close.
     await this.getSaveDialog().waitFor({ state: 'hidden', timeout: 500 })
 

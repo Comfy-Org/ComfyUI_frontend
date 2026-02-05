@@ -138,11 +138,9 @@ class ConfirmDialog {
     }
 
     // Wait for workflow service to finish if it's busy
-    await this.page.waitForFunction(
-      () => !wss().workflow.isBusy,
-      undefined,
-      { timeout: 3000 }
-    )
+    await this.page.waitForFunction(() => !wss().workflow.isBusy, undefined, {
+      timeout: 3000
+    })
   }
 }
 
