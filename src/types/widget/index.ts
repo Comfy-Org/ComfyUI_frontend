@@ -66,3 +66,11 @@ export { assertNever } from './model'
 export type { WidgetRef } from './ref'
 
 export type { WidgetLayoutState, WidgetRuntimeState } from './state'
+
+export {
+  fromLiteGraphWidget,
+  kindToLegacyType,
+  legacyTypeToKind,
+  toLiteGraphWidget,
+  toWidgetIdentity
+} from './adapters'
