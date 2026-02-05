@@ -77,14 +77,17 @@ test.describe('Feature', { tag: ['@screenshot', '@canvas'] }, () => {
 
 **Never use `waitForTimeout`** - it's always wrong.
 
-| Pattern                  | Use Case                               |
-| ------------------------ | -------------------------------------- |
-| `expect.poll()`          | Single value polling                   |
-| `expect().toPass()`      | Multiple assertions that must all pass |
-| Auto-retrying assertions | `toBeVisible()`, `toHaveText()`, etc.  |
+| Pattern                  | Use Case                                             |
+| ------------------------ | ---------------------------------------------------- |
+| Auto-retrying assertions | `toBeVisible()`, `toHaveText()`, etc. (prefer these) |
+| `expect.poll()`          | Single value polling                                 |
+| `expect().toPass()`      | Multiple assertions that must all pass               |
 
 ```typescript
-// Single value
+// Prefer auto-retrying assertions when possible
+await expect(node).toBeVisible()
+
+// Single value polling
 await expect.poll(() => widget.getValue(), { timeout: 2000 }).toBe(100)
 
 // Multiple conditions
