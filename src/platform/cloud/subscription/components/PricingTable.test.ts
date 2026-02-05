@@ -18,6 +18,7 @@ const mockTrackBeginCheckout = vi.fn()
 const mockGetFirebaseAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
+const mockGetCheckoutAttribution = vi.fn(() => ({}))
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
@@ -65,6 +66,10 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackBeginCheckout: mockTrackBeginCheckout
   })
+}))
+
+vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
+  getCheckoutAttribution: mockGetCheckoutAttribution
 }))
 
 vi.mock('@/platform/distribution/types', () => ({

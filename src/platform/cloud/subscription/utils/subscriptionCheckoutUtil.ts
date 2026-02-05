@@ -2,6 +2,7 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
 import {
   FirebaseAuthStoreError,
   useFirebaseAuthStore
@@ -45,12 +46,15 @@ export async function performSubscriptionCheckout(
   }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
+  const checkoutAttribution = getCheckoutAttribution()
+  const checkoutPayload = { ...checkoutAttribution }
 
   const response = await fetch(
     `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',
-      headers: { ...authHeader, 'Content-Type': 'application/json' }
+      headers: { ...authHeader, 'Content-Type': 'application/json' },
+      body: JSON.stringify(checkoutPayload)
     }
   )
 
@@ -85,7 +89,8 @@ export async function performSubscriptionCheckout(
         user_id: userId,
         tier: tierKey,
         cycle: currentBillingCycle,
-        checkout_type: 'new'
+        checkout_type: 'new',
+        ...checkoutAttribution
       })
     }
     if (openInNewTab) {

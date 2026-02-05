@@ -287,6 +287,12 @@ export interface BeginCheckoutMetadata extends Record<string, unknown> {
   cycle: BillingCycle
   checkout_type: 'new' | 'change'
   previous_tier?: TierKey
+  ga_client_id?: string
+  ga_session_id?: string
+  ga_session_number?: string
+  gclid?: string
+  gbraid?: string
+  wbraid?: string
 }
 
 /**

@@ -31,6 +31,11 @@ interface Window {
       badge?: string
     }
   }
+  __ga_identity__?: {
+    client_id?: string
+    session_id?: string
+    session_number?: string
+  }
   dataLayer?: Array<Record<string, unknown>>
 }
 

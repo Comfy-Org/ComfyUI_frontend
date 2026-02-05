@@ -267,6 +267,7 @@ import { isPlanDowngrade } from '@/platform/cloud/subscription/utils/subscriptio
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { getCheckoutAttribution } from '@/platform/telemetry/utils/checkoutAttribution'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import type { components } from '@/types/comfyRegistryTypes'
 
@@ -414,12 +415,14 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     try {
       if (isActiveSubscription.value) {
+        const checkoutAttribution = getCheckoutAttribution()
         if (userId) {
           telemetry?.trackBeginCheckout({
             user_id: userId,
             tier: tierKey,
             cycle: currentBillingCycle.value,
             checkout_type: 'change',
+            ...checkoutAttribution,
             ...(currentTierKey.value
               ? { previous_tier: currentTierKey.value }
               : {})
