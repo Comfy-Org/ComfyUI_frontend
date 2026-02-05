@@ -75,6 +75,18 @@
           <i v-else class="text-secondary icon-[lucide--volume-x] size-4" />
         </div>
 
+        <!-- Download Button -->
+        <button
+          v-if="modelValue"
+          type="button"
+          :aria-label="$t('g.downloadAudio')"
+          :title="$t('g.downloadAudio')"
+          class="flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-transparent hover:bg-interface-menu-component-surface-hovered"
+          @click="handleDownload"
+        >
+          <i class="text-secondary icon-[lucide--download] size-4" />
+        </button>
+
         <!-- Options Button -->
         <div
           v-if="showOptionsButton"
@@ -137,6 +149,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import { cn } from '@/utils/tailwindUtil'
 
 import { formatTime } from '../../utils/audioUtils'
@@ -185,6 +198,15 @@ const togglePlayPause = () => {
     void audioRef.value.play()
   }
   isPlaying.value = !isPlaying.value
+}
+
+const handleDownload = () => {
+  if (!modelValue.value) return
+  try {
+    downloadFile(modelValue.value)
+  } catch (error) {
+    console.error('Failed to download audio', error)
+  }
 }
 
 const toggleMute = () => {
