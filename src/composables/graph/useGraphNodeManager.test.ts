@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
@@ -30,12 +30,10 @@ describe('Node Reactivity', () => {
     const store = useWidgetValueStore()
     const widget = node.widgets![0]
 
-    // Verify widget has setNodeId (is a BaseWidget)
-    expect(typeof (widget as any).setNodeId).toBe('function')
-
-    // Verify internal value is set correctly
-    expect((widget as any)._internalValue).toBe(2)
-    expect((widget as any)._nodeId).toBe(node.id)
+    // Verify widget is a BaseWidget with correct value and node assignment
+    expect(widget).toBeInstanceOf(BaseWidget)
+    expect(widget.value).toBe(2)
+    expect((widget as BaseWidget).node.id).toBe(node.id)
 
     // Initial value should be in store after setNodeId was called
     expect(store.getWidget(node.id, 'testnum')?.value).toBe(2)
