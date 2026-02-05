@@ -9,7 +9,9 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import WidgetActions from './WidgetActions.vue'
 
-const mockGetInputSpecForWidget = vi.fn()
+const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
+  mockGetInputSpecForWidget: vi.fn()
+}))
 
 vi.mock('@/stores/nodeDefStore', () => ({
   useNodeDefStore: () => ({
@@ -75,15 +77,17 @@ describe('WidgetActions', () => {
       type: 'number',
       value,
       label: 'Test Widget',
+      options: {},
+      y: 0,
       callback
-    } as unknown as IBaseWidget
+    } as IBaseWidget
   }
 
-  function createMockNode() {
+  function createMockNode(): LGraphNode {
     return {
       id: 1,
       type: 'TestNode'
-    } as unknown as LGraphNode
+    } as LGraphNode
   }
 
   function mountWidgetActions(widget: IBaseWidget, node: LGraphNode) {
@@ -94,12 +98,7 @@ describe('WidgetActions', () => {
         label: 'Test Widget'
       },
       global: {
-        plugins: [i18n],
-        stubs: {
-          MoreButton: {
-            template: '<div><slot :close="() => {}" /></div>'
-          }
-        }
+        plugins: [i18n]
       }
     })
   }

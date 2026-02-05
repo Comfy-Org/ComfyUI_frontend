@@ -20,6 +20,7 @@ import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@/utils/tailwindUtil'
 import { renameWidget } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 import WidgetActions from './WidgetActions.vue'
 
@@ -42,8 +43,8 @@ const {
 }>()
 
 const emit = defineEmits<{
-  'update:widgetValue': [value: string | number | boolean | object]
-  resetToDefault: [value: string | number | boolean | object | undefined]
+  'update:widgetValue': [value: WidgetValue]
+  resetToDefault: [value: WidgetValue]
 }>()
 
 const { t } = useI18n()

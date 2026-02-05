@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import _ from 'es-toolkit/compat'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -61,7 +62,7 @@ const hasDefault = computed(() => defaultValue.value !== undefined)
 
 const isCurrentValueDefault = computed(() => {
   if (!hasDefault.value) return true
-  return widget.value === defaultValue.value
+  return _.isEqual(widget.value, defaultValue.value)
 })
 
 async function handleRename() {

@@ -141,6 +141,17 @@ function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
   canvasStore.canvas?.setDirty(true, true)
 }
 
+function handleWidgetReset(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  newValue: WidgetValue
+) {
+  getSharedWidgetEnhancements(widgetNode, widget)
+  widget.value = newValue
+  widget.callback?.(newValue)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 defineExpose({
   widgetsContainer,
   rootElement
@@ -214,7 +225,7 @@ defineExpose({
             :parents="parents"
             :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
             @update:widget-value="handleWidgetValueUpdate(widget, $event)"
-            @reset-to-default="handleWidgetValueUpdate(widget, $event)"
+            @reset-to-default="handleWidgetReset(node, widget, $event)"
           />
         </TransitionGroup>
       </div>
