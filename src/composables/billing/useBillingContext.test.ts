@@ -116,7 +116,9 @@ describe('useBillingContext', () => {
     expect(balance.value).toEqual({
       amountMicros: 5000000,
       currency: 'usd',
-      effectiveBalanceMicros: 5000000
+      effectiveBalanceMicros: 5000000,
+      prepaidBalanceMicros: 0,
+      cloudCreditBalanceMicros: 0
     })
   })
 
