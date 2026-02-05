@@ -121,12 +121,14 @@ await expect(async () => {
 Avoid these common mistakes:
 
 1. **Arbitrary waits** - Use retrying assertions instead
+
    ```typescript
    // ❌ await page.waitForTimeout(500)
    // ✅ await expect(element).toBeVisible()
    ```
 
 2. **Implementation-tied selectors** - Use test IDs or semantic selectors
+
    ```typescript
    // ❌ page.locator('div.container > button.btn-primary')
    // ✅ page.getByTestId('submit-button')
