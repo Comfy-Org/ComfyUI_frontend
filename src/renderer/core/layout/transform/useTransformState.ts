@@ -52,6 +52,7 @@
 import { computed, reactive, readonly } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createSharedComposable } from '@vueuse/core'
 
 interface Point {
   x: number
@@ -64,7 +65,7 @@ interface Camera {
   z: number // scale/zoom
 }
 
-export const useTransformState = () => {
+function useTransformStateIndividual() {
   // Reactive state mirroring LiteGraph's canvas transform
   const camera = reactive<Camera>({
     x: 0,
@@ -91,7 +92,7 @@ export const useTransformState = () => {
    *
    * @param canvas - LiteGraph canvas instance with DragAndScale (ds) transform state
    */
-  const syncWithCanvas = (canvas: LGraphCanvas) => {
+  function syncWithCanvas(canvas: LGraphCanvas) {
     if (!canvas || !canvas.ds) return
 
     // Mirror LiteGraph's transform state to Vue's reactive state
@@ -112,7 +113,7 @@ export const useTransformState = () => {
    * @param point - Point in canvas coordinate system
    * @returns Point in screen coordinate system
    */
-  const canvasToScreen = (point: Point): Point => {
+  function canvasToScreen(point: Point): Point {
     return {
       x: (point.x + camera.x) * camera.z,
       y: (point.y + camera.y) * camera.z
@@ -138,10 +139,10 @@ export const useTransformState = () => {
   }
 
   // Get node's screen bounds for culling
-  const getNodeScreenBounds = (
-    pos: ArrayLike<number>,
-    size: ArrayLike<number>
-  ): DOMRect => {
+  function getNodeScreenBounds(
+    pos: [number, number],
+    size: [number, number]
+  ): DOMRect {
     const topLeft = canvasToScreen({ x: pos[0], y: pos[1] })
     const width = size[0] * camera.z
     const height = size[1] * camera.z
@@ -150,23 +151,23 @@ export const useTransformState = () => {
   }
 
   // Helper: Calculate zoom-adjusted margin for viewport culling
-  const calculateAdjustedMargin = (baseMargin: number): number => {
+  function calculateAdjustedMargin(baseMargin: number): number {
     if (camera.z < 0.1) return Math.min(baseMargin * 5, 2.0)
     if (camera.z > 3.0) return Math.max(baseMargin * 0.5, 0.05)
     return baseMargin
   }
 
   // Helper: Check if node is too small to be visible at current zoom
-  const isNodeTooSmall = (nodeSize: ArrayLike<number>): boolean => {
+  function isNodeTooSmall(nodeSize: [number, number]): boolean {
     const nodeScreenSize = Math.max(nodeSize[0], nodeSize[1]) * camera.z
     return nodeScreenSize < 4
   }
 
   // Helper: Calculate expanded viewport bounds with margin
-  const getExpandedViewportBounds = (
+  function getExpandedViewportBounds(
     viewport: { width: number; height: number },
     margin: number
-  ) => {
+  ) {
     const marginX = viewport.width * margin
     const marginY = viewport.height * margin
     return {
@@ -178,11 +179,11 @@ export const useTransformState = () => {
   }
 
   // Helper: Test if node intersects with viewport bounds
-  const testViewportIntersection = (
+  function testViewportIntersection(
     screenPos: { x: number; y: number },
-    nodeSize: ArrayLike<number>,
+    nodeSize: [number, number],
     bounds: { left: number; right: number; top: number; bottom: number }
-  ): boolean => {
+  ): boolean {
     const nodeRight = screenPos.x + nodeSize[0] * camera.z
     const nodeBottom = screenPos.y + nodeSize[1] * camera.z
 
@@ -195,12 +196,12 @@ export const useTransformState = () => {
   }
 
   // Check if node is within viewport with frustum and size-based culling
-  const isNodeInViewport = (
-    nodePos: ArrayLike<number>,
-    nodeSize: ArrayLike<number>,
+  function isNodeInViewport(
+    nodePos: [number, number],
+    nodeSize: [number, number],
     viewport: { width: number; height: number },
     margin: number = 0.2
-  ): boolean => {
+  ): boolean {
     // Early exit for tiny nodes
     if (isNodeTooSmall(nodeSize)) return false
 
@@ -212,10 +213,10 @@ export const useTransformState = () => {
   }
 
   // Get viewport bounds in canvas coordinates (for spatial index queries)
-  const getViewportBounds = (
+  function getViewportBounds(
     viewport: { width: number; height: number },
     margin: number = 0.2
-  ) => {
+  ) {
     const marginX = viewport.width * margin
     const marginY = viewport.height * margin
 
@@ -244,3 +245,7 @@ export const useTransformState = () => {
     getViewportBounds
   }
 }
+
+export const useTransformState = createSharedComposable(
+  useTransformStateIndividual
+)

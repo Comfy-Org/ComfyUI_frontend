@@ -30,13 +30,15 @@ const localeLoaders: Record<
 > = {
   ar: () => import('./locales/ar/main.json'),
   es: () => import('./locales/es/main.json'),
+  fa: () => import('./locales/fa/main.json'),
   fr: () => import('./locales/fr/main.json'),
   ja: () => import('./locales/ja/main.json'),
   ko: () => import('./locales/ko/main.json'),
   ru: () => import('./locales/ru/main.json'),
   tr: () => import('./locales/tr/main.json'),
   zh: () => import('./locales/zh/main.json'),
-  'zh-TW': () => import('./locales/zh-TW/main.json')
+  'zh-TW': () => import('./locales/zh-TW/main.json'),
+  'pt-BR': () => import('./locales/pt-BR/main.json')
 }
 
 const nodeDefsLoaders: Record<
@@ -45,13 +47,15 @@ const nodeDefsLoaders: Record<
 > = {
   ar: () => import('./locales/ar/nodeDefs.json'),
   es: () => import('./locales/es/nodeDefs.json'),
+  fa: () => import('./locales/fa/nodeDefs.json'),
   fr: () => import('./locales/fr/nodeDefs.json'),
   ja: () => import('./locales/ja/nodeDefs.json'),
   ko: () => import('./locales/ko/nodeDefs.json'),
   ru: () => import('./locales/ru/nodeDefs.json'),
   tr: () => import('./locales/tr/nodeDefs.json'),
   zh: () => import('./locales/zh/nodeDefs.json'),
-  'zh-TW': () => import('./locales/zh-TW/nodeDefs.json')
+  'zh-TW': () => import('./locales/zh-TW/nodeDefs.json'),
+  'pt-BR': () => import('./locales/pt-BR/nodeDefs.json')
 }
 
 const commandsLoaders: Record<
@@ -60,13 +64,15 @@ const commandsLoaders: Record<
 > = {
   ar: () => import('./locales/ar/commands.json'),
   es: () => import('./locales/es/commands.json'),
+  fa: () => import('./locales/fa/commands.json'),
   fr: () => import('./locales/fr/commands.json'),
   ja: () => import('./locales/ja/commands.json'),
   ko: () => import('./locales/ko/commands.json'),
   ru: () => import('./locales/ru/commands.json'),
   tr: () => import('./locales/tr/commands.json'),
   zh: () => import('./locales/zh/commands.json'),
-  'zh-TW': () => import('./locales/zh-TW/commands.json')
+  'zh-TW': () => import('./locales/zh-TW/commands.json'),
+  'pt-BR': () => import('./locales/pt-BR/commands.json')
 }
 
 const settingsLoaders: Record<
@@ -75,13 +81,15 @@ const settingsLoaders: Record<
 > = {
   ar: () => import('./locales/ar/settings.json'),
   es: () => import('./locales/es/settings.json'),
+  fa: () => import('./locales/fa/settings.json'),
   fr: () => import('./locales/fr/settings.json'),
   ja: () => import('./locales/ja/settings.json'),
   ko: () => import('./locales/ko/settings.json'),
   ru: () => import('./locales/ru/settings.json'),
   tr: () => import('./locales/tr/settings.json'),
   zh: () => import('./locales/zh/settings.json'),
-  'zh-TW': () => import('./locales/zh-TW/settings.json')
+  'zh-TW': () => import('./locales/zh-TW/settings.json'),
+  'pt-BR': () => import('./locales/pt-BR/settings.json')
 }
 
 // Track which locales have been loaded
@@ -89,6 +97,9 @@ const loadedLocales = new Set<string>(['en'])
 
 // Track locales currently being loaded to prevent race conditions
 const loadingLocales = new Map<string, Promise<void>>()
+
+// Store custom nodes i18n data for merging when locales are lazily loaded
+const customNodesI18nData: Record<string, unknown> = {}
 
 /**
  * Dynamically load a locale and its associated files (nodeDefs, commands, settings)
@@ -133,6 +144,10 @@ export async function loadLocale(locale: string): Promise<void> {
 
       i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
       loadedLocales.add(locale)
+
+      if (customNodesI18nData[locale]) {
+        i18n.global.mergeLocaleMessage(locale, customNodesI18nData[locale])
+      }
     } catch (error) {
       console.error(`Failed to load locale "${locale}":`, error)
       throw error
@@ -144,6 +159,24 @@ export async function loadLocale(locale: string): Promise<void> {
 
   loadingLocales.set(locale, loadPromise)
   return loadPromise
+}
+
+/**
+ * Stores the data for later use when locales are lazily loaded,
+ * and immediately merges data for already-loaded locales.
+ */
+export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
+  // Clear existing data and replace with new data
+  for (const key of Object.keys(customNodesI18nData)) {
+    delete customNodesI18nData[key]
+  }
+  Object.assign(customNodesI18nData, i18nData)
+
+  for (const [locale, message] of Object.entries(i18nData)) {
+    if (loadedLocales.has(locale)) {
+      i18n.global.mergeLocaleMessage(locale, message)
+    }
+  }
 }
 
 // Only include English in the initial bundle
@@ -159,6 +192,7 @@ export const i18n = createI18n({
   legacy: false,
   locale: navigator.language.split('-')[0] || 'en',
   fallbackLocale: 'en',
+  escapeParameter: true,
   messages,
   // Ignore warnings for locale options as each option is in its own language.
   // e.g. "English", "中文", "Русский", "日本語", "한국어", "Français", "Español"
@@ -167,6 +201,7 @@ export const i18n = createI18n({
 })
 
 /** Convenience shorthand: i18n.global */
+/** @deprecated use useI18n */
 export const { t, te, d } = i18n.global
 
 /**
@@ -176,5 +211,6 @@ export const { t, te, d } = i18n.global
  * @param fallbackMessage - The fallback message to use if the key is not found.
  */
 export function st(key: string, fallbackMessage: string) {
+  // The normal defaultMsg overload fails in some cases for custom nodes
   return te(key) ? t(key) : fallbackMessage
 }

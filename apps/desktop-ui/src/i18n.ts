@@ -1,13 +1,13 @@
 // Import only English locale eagerly as the default/fallback
 // ESLint cannot statically resolve dynamic imports with path aliases (@frontend-locales/*),
 // but these are properly configured in tsconfig.json and resolved by Vite at build time.
-// eslint-disable-next-line import-x/no-unresolved
+
 import enCommands from '@frontend-locales/en/commands.json' with { type: 'json' }
-// eslint-disable-next-line import-x/no-unresolved
+
 import en from '@frontend-locales/en/main.json' with { type: 'json' }
-// eslint-disable-next-line import-x/no-unresolved
+
 import enNodes from '@frontend-locales/en/nodeDefs.json' with { type: 'json' }
-// eslint-disable-next-line import-x/no-unresolved
+
 import enSettings from '@frontend-locales/en/settings.json' with { type: 'json' }
 import { createI18n } from 'vue-i18n'
 
@@ -27,7 +27,7 @@ function buildLocale<
 
 // Locale loader map - dynamically import locales only when needed
 // ESLint cannot statically resolve these dynamic imports, but they are valid at build time
-/* eslint-disable import-x/no-unresolved */
+
 const localeLoaders: Record<
   string,
   () => Promise<{ default: Record<string, unknown> }>
@@ -40,7 +40,8 @@ const localeLoaders: Record<
   ru: () => import('@frontend-locales/ru/main.json'),
   tr: () => import('@frontend-locales/tr/main.json'),
   zh: () => import('@frontend-locales/zh/main.json'),
-  'zh-TW': () => import('@frontend-locales/zh-TW/main.json')
+  'zh-TW': () => import('@frontend-locales/zh-TW/main.json'),
+  'pt-BR': () => import('@frontend-locales/pt-BR/main.json')
 }
 
 const nodeDefsLoaders: Record<
@@ -55,7 +56,8 @@ const nodeDefsLoaders: Record<
   ru: () => import('@frontend-locales/ru/nodeDefs.json'),
   tr: () => import('@frontend-locales/tr/nodeDefs.json'),
   zh: () => import('@frontend-locales/zh/nodeDefs.json'),
-  'zh-TW': () => import('@frontend-locales/zh-TW/nodeDefs.json')
+  'zh-TW': () => import('@frontend-locales/zh-TW/nodeDefs.json'),
+  'pt-BR': () => import('@frontend-locales/pt-BR/nodeDefs.json')
 }
 
 const commandsLoaders: Record<
@@ -70,7 +72,8 @@ const commandsLoaders: Record<
   ru: () => import('@frontend-locales/ru/commands.json'),
   tr: () => import('@frontend-locales/tr/commands.json'),
   zh: () => import('@frontend-locales/zh/commands.json'),
-  'zh-TW': () => import('@frontend-locales/zh-TW/commands.json')
+  'zh-TW': () => import('@frontend-locales/zh-TW/commands.json'),
+  'pt-BR': () => import('@frontend-locales/pt-BR/commands.json')
 }
 
 const settingsLoaders: Record<
@@ -85,7 +88,8 @@ const settingsLoaders: Record<
   ru: () => import('@frontend-locales/ru/settings.json'),
   tr: () => import('@frontend-locales/tr/settings.json'),
   zh: () => import('@frontend-locales/zh/settings.json'),
-  'zh-TW': () => import('@frontend-locales/zh-TW/settings.json')
+  'zh-TW': () => import('@frontend-locales/zh-TW/settings.json'),
+  'pt-BR': () => import('@frontend-locales/pt-BR/settings.json')
 }
 
 // Track which locales have been loaded
@@ -151,12 +155,14 @@ export async function loadLocale(locale: string): Promise<void> {
 }
 
 // Only include English in the initial bundle
-const messages = {
-  en: buildLocale(en, enNodes, enCommands, enSettings)
-}
+const enMessages = buildLocale(en, enNodes, enCommands, enSettings)
 
 // Type for locale messages - inferred from the English locale structure
-type LocaleMessages = typeof messages.en
+type LocaleMessages = typeof enMessages
+
+const messages: Record<string, LocaleMessages> = {
+  en: enMessages
+}
 
 export const i18n = createI18n({
   // Must set `false`, as Vue I18n Legacy API is for Vue 2

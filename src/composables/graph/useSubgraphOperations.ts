@@ -37,6 +37,21 @@ export function useSubgraphOperations() {
     workflowStore.activeWorkflow?.changeTracker?.checkState()
   }
 
+  const doUnpack = (
+    subgraphNodes: SubgraphNode[],
+    skipMissingNodes: boolean
+  ) => {
+    const canvas = canvasStore.getCanvas()
+    const graph = canvas.subgraph ?? canvas.graph
+    if (!graph) return
+
+    for (const subgraphNode of subgraphNodes) {
+      nodeOutputStore.revokeSubgraphPreviews(subgraphNode)
+      graph.unpackSubgraph(subgraphNode, { skipMissingNodes })
+    }
+    workflowStore.activeWorkflow?.changeTracker?.checkState()
+  }
+
   const unpackSubgraph = () => {
     const canvas = canvasStore.getCanvas()
     const graph = canvas.subgraph ?? canvas.graph
@@ -53,17 +68,7 @@ export function useSubgraphOperations() {
     if (subgraphNodes.length === 0) {
       return
     }
-
-    subgraphNodes.forEach((subgraphNode) => {
-      // Revoke any image previews for the subgraph
-      nodeOutputStore.revokeSubgraphPreviews(subgraphNode)
-
-      // Unpack the subgraph
-      graph.unpackSubgraph(subgraphNode)
-    })
-
-    // Trigger change tracking
-    workflowStore.activeWorkflow?.changeTracker?.checkState()
+    doUnpack(subgraphNodes, true)
   }
 
   const addSubgraphToLibrary = async () => {

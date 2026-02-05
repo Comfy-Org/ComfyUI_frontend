@@ -46,7 +46,7 @@ export abstract class SubgraphSlot
     return LiteGraph.NODE_SLOT_HEIGHT
   }
 
-  readonly #pos: Point = [0, 0]
+  private readonly _pos: Point = [0, 0]
 
   readonly measurement: ConstrainedSize = new ConstrainedSize(
     SubgraphSlot.defaultHeight,
@@ -67,14 +67,14 @@ export abstract class SubgraphSlot
   )
 
   override get pos() {
-    return this.#pos
+    return this._pos
   }
 
   override set pos(value) {
     if (!value || value.length < 2) return
 
-    this.#pos[0] = value[0]
-    this.#pos[1] = value[1]
+    this._pos[0] = value[0]
+    this._pos[1] = value[1]
   }
 
   /** Whether this slot is connected to another slot. */

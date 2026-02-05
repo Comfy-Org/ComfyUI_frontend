@@ -11,9 +11,10 @@ import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
-import { FIREBASE_CONFIG } from '@/config/firebase'
+import { getFirebaseConfig } from '@/config/firebase'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
+import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -27,10 +28,9 @@ import { i18n } from './i18n'
 import { isCloud } from '@/platform/distribution/types'
 
 if (isCloud) {
-  const { loadRemoteConfig } = await import(
-    '@/platform/remoteConfig/remoteConfig'
-  )
-  await loadRemoteConfig()
+  const { refreshRemoteConfig } =
+    await import('@/platform/remoteConfig/refreshRemoteConfig')
+  await refreshRemoteConfig({ useAuth: false })
 }
 
 const ComfyUIPreset = definePreset(Aura, {
@@ -40,10 +40,11 @@ const ComfyUIPreset = definePreset(Aura, {
   }
 })
 
-const firebaseApp = initializeApp(FIREBASE_CONFIG)
+const firebaseApp = initializeApp(getFirebaseConfig())
 
 const app = createApp(App)
 const pinia = createPinia()
+
 Sentry.init({
   app,
   dsn: __SENTRY_DSN__,
@@ -88,5 +89,8 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+const bootstrapStore = useBootstrapStore(pinia)
+void bootstrapStore.startStoreBootstrap()
 
 app.mount('#vue-app')

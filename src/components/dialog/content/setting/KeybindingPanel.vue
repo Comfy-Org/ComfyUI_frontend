@@ -3,7 +3,9 @@
     <template #header>
       <SearchBox
         v-model="filters['global'].value"
-        :placeholder="$t('g.searchKeybindings') + '...'"
+        :placeholder="
+          $t('g.searchPlaceholder', { subject: $t('g.keybindings') })
+        "
       />
     </template>
 
@@ -23,24 +25,33 @@
         <template #body="slotProps">
           <div class="actions invisible flex flex-row">
             <Button
-              icon="pi pi-pencil"
-              class="p-button-text"
+              variant="textonly"
+              size="icon"
+              :aria-label="$t('g.edit')"
               @click="editKeybinding(slotProps.data)"
-            />
+            >
+              <i class="pi pi-pencil" />
+            </Button>
             <Button
-              icon="pi pi-replay"
-              class="p-button-text p-button-warn"
+              variant="textonly"
+              size="icon"
+              :aria-label="$t('g.reset')"
               :disabled="
                 !keybindingStore.isCommandKeybindingModified(slotProps.data.id)
               "
               @click="resetKeybinding(slotProps.data)"
-            />
+            >
+              <i class="pi pi-replay" />
+            </Button>
             <Button
-              icon="pi pi-trash"
-              class="p-button-text p-button-danger"
+              variant="textonly"
+              size="icon"
+              :aria-label="$t('g.delete')"
               :disabled="!slotProps.data.keybinding"
               @click="removeKeybinding(slotProps.data)"
-            />
+            >
+              <i class="pi pi-trash" />
+            </Button>
           </div>
         </template>
       </Column>
@@ -104,30 +115,31 @@
       </div>
       <template #footer>
         <Button
-          :label="existingKeybindingOnCombo ? 'Overwrite' : 'Save'"
-          :icon="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
-          :severity="existingKeybindingOnCombo ? 'warn' : undefined"
+          :variant="existingKeybindingOnCombo ? 'destructive' : 'primary'"
           autofocus
           @click="saveKeybinding"
-        />
+        >
+          <i
+            :class="existingKeybindingOnCombo ? 'pi pi-pencil' : 'pi pi-check'"
+          />
+          {{ existingKeybindingOnCombo ? $t('g.overwrite') : $t('g.save') }}
+        </Button>
       </template>
     </Dialog>
     <Button
       v-tooltip="$t('g.resetAllKeybindingsTooltip')"
-      class="mt-4"
-      :label="$t('g.resetAll')"
-      icon="pi pi-replay"
-      severity="danger"
-      fluid
-      text
+      class="mt-4 w-full"
+      variant="destructive-textonly"
       @click="resetAllKeybindings"
-    />
+    >
+      <i class="pi pi-replay" />
+      {{ $t('g.resetAll') }}
+    </Button>
   </PanelTemplate>
 </template>
 
 <script setup lang="ts">
 import { FilterMatchMode } from '@primevue/core/api'
-import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import Dialog from 'primevue/dialog'
@@ -139,13 +151,12 @@ import { computed, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBox.vue'
-import { useKeybindingService } from '@/services/keybindingService'
+import Button from '@/components/ui/button/Button.vue'
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useCommandStore } from '@/stores/commandStore'
-import {
-  KeyComboImpl,
-  KeybindingImpl,
-  useKeybindingStore
-} from '@/stores/keybindingStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import PanelTemplate from './PanelTemplate.vue'
@@ -254,18 +265,15 @@ function cancelEdit() {
 }
 
 async function saveKeybinding() {
-  if (currentEditingCommand.value && newBindingKeyCombo.value) {
-    const updated = keybindingStore.updateKeybindingOnCommand(
-      new KeybindingImpl({
-        commandId: currentEditingCommand.value.id,
-        combo: newBindingKeyCombo.value
-      })
-    )
-    if (updated) {
-      await keybindingService.persistUserKeybindings()
-    }
-  }
+  const commandId = currentEditingCommand.value?.id
+  const combo = newBindingKeyCombo.value
   cancelEdit()
+  if (!combo || commandId == undefined) return
+
+  const updated = keybindingStore.updateKeybindingOnCommand(
+    new KeybindingImpl({ commandId, combo })
+  )
+  if (updated) await keybindingService.persistUserKeybindings()
 }
 
 async function resetKeybinding(commandData: ICommandData) {

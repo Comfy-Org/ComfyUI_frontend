@@ -95,16 +95,48 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         if (!(await confirmOverwrite(this.filename))) return this
         this.hasPromptedSave = true
       }
+      // Extract metadata from subgraph.extra to workflow.extra before saving
+      this.extractMetadataToWorkflowExtra()
       const ret = await super.save()
-      useSubgraphStore().updateDef(await this.load())
+      // Force reload to update initialState with saved metadata
+      registerNodeDef(await this.load({ force: true }), {
+        category: 'Subgraph Blueprints/User'
+      })
       return ret
+    }
+
+    /**
+     * Moves all properties (except workflowRendererVersion) from subgraph.extra
+     * to workflow.extra, then removes from subgraph.extra to avoid duplication.
+     */
+    private extractMetadataToWorkflowExtra(): void {
+      if (!this.activeState) return
+      const subgraph = this.activeState.definitions?.subgraphs?.[0]
+      if (!subgraph?.extra) return
+
+      const sgExtra = subgraph.extra as Record<string, unknown>
+      const workflowExtra = (this.activeState.extra ??= {}) as Record<
+        string,
+        unknown
+      >
+
+      for (const key of Object.keys(sgExtra)) {
+        if (key === 'workflowRendererVersion') continue
+        workflowExtra[key] = sgExtra[key]
+        delete sgExtra[key]
+      }
     }
 
     override async saveAs(path: string) {
       this.validateSubgraph()
       this.hasPromptedSave = true
+      // Extract metadata from subgraph.extra to workflow.extra before saving
+      this.extractMetadataToWorkflowExtra()
       const ret = await super.saveAs(path)
-      useSubgraphStore().updateDef(await this.load())
+      // Force reload to update initialState with saved metadata
+      registerNodeDef(await this.load({ force: true }), {
+        category: 'Subgraph Blueprints/User'
+      })
       return ret
     }
     override async load({ force = false }: { force?: boolean } = {}): Promise<
@@ -121,12 +153,23 @@ export const useSubgraphStore = defineStore('subgraph', () => {
           'Loaded subgraph blueprint does not contain valid subgraph'
         )
       sg.name = st.nodes[0].title = this.filename
+
+      // Copy blueprint metadata from workflow extra to subgraph extra
+      // so it's available when editing via canvas.subgraph.extra
+      if (st.extra) {
+        const sgExtra = (sg.extra ??= {}) as Record<string, unknown>
+        for (const [key, value] of Object.entries(st.extra)) {
+          if (key === 'workflowRendererVersion') continue
+          sgExtra[key] = value
+        }
+      }
+
       return loaded
     }
     override async promptSave(): Promise<string | null> {
       return await useDialogService().prompt({
         title: t('subgraphStore.saveBlueprint'),
-        message: t('subgraphStore.blueprintName') + ':',
+        message: t('subgraphStore.blueprintNamePrompt'),
         defaultValue: this.filename
       })
     }
@@ -151,7 +194,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       options.path = SubgraphBlueprint.basePath + options.path
       const bp = await new SubgraphBlueprint(options, true).load()
       useWorkflowStore().attachWorkflow(bp)
-      registerNodeDef(bp)
+      registerNodeDef(bp, { category: 'Subgraph Blueprints/User' })
     }
     async function loadInstalledBlueprints() {
       async function loadGlobalBlueprint([k, v]: [string, GlobalSubgraphData]) {
@@ -165,11 +208,16 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         blueprint.filename = v.name
         useWorkflowStore().attachWorkflow(blueprint)
         const loaded = await blueprint.load()
+        const category = v.info.category
+          ? `Subgraph Blueprints/${v.info.category}`
+          : 'Subgraph Blueprints'
         registerNodeDef(
           loaded,
           {
             python_module: v.info.node_pack,
-            display_name: v.name
+            display_name: v.name,
+            category,
+            search_aliases: v.info.search_aliases
           },
           k
         )
@@ -215,9 +263,10 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         [`${i.type}`, undefined] satisfies InputSpec
       ])
     )
-    let description = 'User generated subgraph blueprint'
-    if (workflow.initialState.extra?.BlueprintDescription)
-      description = `${workflow.initialState.extra.BlueprintDescription}`
+    const workflowExtra = workflow.initialState.extra
+    const description =
+      workflowExtra?.BlueprintDescription ?? 'User generated subgraph blueprint'
+    const search_aliases = workflowExtra?.BlueprintSearchAliases
     const nodedefv1: ComfyNodeDefV1 = {
       input: { required: inputs },
       output: subgraphNode.outputs.map((o) => `${o.type}`),
@@ -228,13 +277,14 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       category: 'Subgraph Blueprints',
       output_node: false,
       python_module: 'blueprint',
+      search_aliases,
       ...overrides
     }
     const nodeDefImpl = new ComfyNodeDefImpl(nodedefv1)
     subgraphDefCache.value.set(name, nodeDefImpl)
     subgraphCache[name] = workflow
   }
-  async function publishSubgraph() {
+  async function publishSubgraph(providedName?: string) {
     const canvas = canvasStore.getCanvas()
     const subgraphNode = [...canvas.selectedItems][0]
     if (
@@ -249,22 +299,25 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     if (nodes.length != 1) {
       throw new TypeError('Must have single SubgraphNode selected to publish')
     }
+
     //create minimal workflow
     const workflowData = {
       revision: 0,
       last_node_id: subgraphNode.id,
       last_link_id: 0,
       nodes,
-      links: [],
+      links: [] as never[],
       version: 0.4,
       definitions: { subgraphs }
     }
     //prompt name
-    const name = await useDialogService().prompt({
-      title: t('subgraphStore.saveBlueprint'),
-      message: t('subgraphStore.blueprintName') + ':',
-      defaultValue: subgraphNode.title
-    })
+    const name =
+      providedName ??
+      (await useDialogService().prompt({
+        title: t('subgraphStore.saveBlueprint'),
+        message: t('subgraphStore.blueprintNamePrompt'),
+        defaultValue: subgraphNode.title
+      }))
     if (!name) return
     if (subgraphDefCache.value.has(name) && !(await confirmOverwrite(name)))
       //User has chosen not to overwrite.
@@ -284,16 +337,12 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     await workflow.save()
     //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
-    registerNodeDef(loadedWorkflow)
     useToastStore().add({
       severity: 'success',
       summary: t('subgraphStore.publishSuccess'),
       detail: t('subgraphStore.publishSuccessMessage'),
       life: 4000
     })
-  }
-  function updateDef(blueprint: LoadedComfyWorkflow) {
-    registerNodeDef(blueprint)
   }
   async function editBlueprint(nodeType: string) {
     const name = nodeType.slice(typePrefix.length)
@@ -315,9 +364,17 @@ export const useSubgraphStore = defineStore('subgraph', () => {
   }
   async function deleteBlueprint(nodeType: string) {
     const name = nodeType.slice(typePrefix.length)
-    if (!(name in subgraphCache))
-      //As loading is blocked on in startup, this can likely be changed to invalid type
-      throw new Error('not yet loaded')
+    if (!(name in subgraphCache)) throw new Error('not yet loaded')
+
+    if (isGlobalBlueprint(name)) {
+      useToastStore().add({
+        severity: 'warn',
+        summary: t('subgraphStore.cannotDeleteGlobal'),
+        life: 4000
+      })
+      return
+    }
+
     if (
       !(await useDialogService().confirm({
         title: t('subgraphStore.confirmDeleteTitle'),
@@ -338,15 +395,20 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     return workflow instanceof SubgraphBlueprint
   }
 
+  function isGlobalBlueprint(name: string): boolean {
+    const nodeDef = subgraphDefCache.value.get(name)
+    return nodeDef !== undefined && nodeDef.python_module !== 'blueprint'
+  }
+
   return {
     deleteBlueprint,
     editBlueprint,
     fetchSubgraphs,
     getBlueprint,
+    isGlobalBlueprint,
     isSubgraphBlueprint,
     publishSubgraph,
     subgraphBlueprints,
-    typePrefix,
-    updateDef
+    typePrefix
   }
 })

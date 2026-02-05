@@ -1,21 +1,19 @@
 <template>
   <Button
     ref="buttonRef"
-    severity="secondary"
-    class="group h-8 rounded-none! bg-interface-panel-surface p-0 transition-none! hover:rounded-lg! hover:bg-button-hover-surface!"
+    variant="secondary"
+    class="group h-8 rounded-none! bg-comfy-menu-bg p-0 transition-none! hover:rounded-lg! hover:bg-interface-button-hover-surface!"
     :style="buttonStyles"
     @click="toggle"
   >
-    <template #default>
-      <div class="flex items-center gap-1 pr-0.5">
-        <div
-          class="rounded-lg bg-button-active-surface p-2 group-hover:bg-button-hover-surface"
-        >
-          <i :class="currentModeIcon" class="block h-4 w-4" />
-        </div>
-        <i class="icon-[lucide--chevron-down] block h-4 w-4 pr-1.5" />
+    <div class="flex items-center gap-1 pr-0.5">
+      <div
+        class="rounded-lg bg-interface-panel-selected-surface p-2 group-hover:bg-interface-button-hover-surface"
+      >
+        <i :class="currentModeIcon" class="block h-4 w-4" />
       </div>
-    </template>
+      <i class="icon-[lucide--chevron-down] block h-4 w-4 pr-1.5" />
+    </div>
   </Button>
 
   <Popover
@@ -56,10 +54,11 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -68,7 +67,7 @@ interface Props {
 }
 
 defineProps<Props>()
-const buttonRef = ref<InstanceType<typeof Button>>()
+const buttonRef = ref<ComponentPublicInstance | null>(null)
 const popover = ref<InstanceType<typeof Popover>>()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
@@ -94,7 +93,7 @@ const lockCommandText = computed(() =>
 )
 
 const toggle = (event: Event) => {
-  const el = (buttonRef.value as any)?.$el || buttonRef.value
+  const el = buttonRef.value?.$el || buttonRef.value
   popover.value?.toggle(event, el)
 }
 
@@ -114,7 +113,7 @@ const popoverPt = computed(() => ({
   content: {
     class: [
       'mb-2 text-text-primary',
-      'shadow-lg border border-node-border',
+      'shadow-lg border border-interface-stroke',
       'bg-nav-background',
       'rounded-lg',
       'p-2 px-3',

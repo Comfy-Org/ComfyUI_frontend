@@ -1,24 +1,33 @@
 <template>
   <SidebarTabTemplate
     :title="$t('sideToolbar.workflows')"
-    class="workflows-sidebar-tab bg-(--p-tree-background)"
+    v-bind="$attrs"
+    data-testid="workflows-sidebar"
+    class="workflows-sidebar-tab"
   >
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
-        icon="pi pi-refresh"
-        severity="secondary"
-        text
+        variant="muted-textonly"
+        size="icon"
+        :aria-label="$t('g.refresh')"
         @click="workflowStore.syncWorkflows()"
-      />
+      >
+        <i class="icon-[lucide--refresh-cw] size-4" />
+      </Button>
     </template>
     <template #header>
-      <SearchBox
-        v-model:model-value="searchQuery"
-        class="workflows-search-box p-2 2xl:p-4"
-        :placeholder="$t('g.searchWorkflows') + '...'"
-        @search="handleSearch"
-      />
+      <div class="px-2 2xl:px-4">
+        <SearchBox
+          ref="searchBoxRef"
+          v-model:model-value="searchQuery"
+          class="workflows-search-box"
+          :placeholder="
+            $t('g.searchPlaceholder', { subject: $t('g.workflow') })
+          "
+          @search="handleSearch"
+        />
+      </div>
     </template>
     <template #body>
       <div v-if="!isSearching" class="comfyui-workflows-panel">
@@ -49,16 +58,17 @@
                 <template #actions="{ node: treeNode }">
                   <Button
                     class="close-workflow-button"
-                    icon="pi pi-times"
-                    text
-                    :severity="
-                      workspaceStore.shiftDown ? 'danger' : 'secondary'
+                    :variant="
+                      workspaceStore.shiftDown ? 'destructive' : 'textonly'
                     "
-                    size="small"
+                    size="icon-sm"
+                    :aria-label="$t('g.close')"
                     @click.stop="
                       handleCloseWorkflow(treeNode.data as ComfyWorkflow)
                     "
-                  />
+                  >
+                    <i class="icon-[lucide--x] size-3" />
+                  </Button>
                 </template>
               </TreeExplorerTreeNode>
             </template>
@@ -128,7 +138,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ConfirmDialog from 'primevue/confirmdialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -140,6 +149,7 @@ import TreeExplorer from '@/components/common/TreeExplorer.vue'
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -157,6 +167,8 @@ const settingStore = useSettingStore()
 const workflowTabsPosition = computed(() =>
   settingStore.get('Comfy.Workflow.WorkflowTabsPosition')
 )
+
+const searchBoxRef = ref()
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
@@ -295,6 +307,7 @@ const selectionKeys = computed(() => ({
 
 const workflowBookmarkStore = useWorkflowBookmarkStore()
 onMounted(async () => {
+  searchBoxRef.value?.focus()
   await workflowBookmarkStore.loadBookmarks()
 })
 </script>

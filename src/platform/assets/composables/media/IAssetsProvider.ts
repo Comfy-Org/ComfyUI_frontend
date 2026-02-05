@@ -26,4 +26,19 @@ export interface IAssetsProvider {
    * Refresh the media list (alias for fetchMediaList)
    */
   refresh: () => Promise<AssetItem[]>
+
+  /**
+   * Load more items (for pagination)
+   */
+  loadMore: () => Promise<void>
+
+  /**
+   * Whether there are more items to load
+   */
+  hasMore: Ref<boolean>
+
+  /**
+   * Whether currently loading more items
+   */
+  isLoadingMore: Ref<boolean>
 }

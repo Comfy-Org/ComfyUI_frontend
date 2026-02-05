@@ -7,6 +7,10 @@
     @mouseleave="handleMouseLeave"
     @click="handleClick"
   >
+    <i
+      v-if="workflowOption.workflow.activeState?.extra?.linearMode"
+      class="icon-[lucide--panels-top-left] bg-primary-background"
+    />
     <span class="workflow-label inline-block max-w-[150px] truncate text-sm">
       {{ workflowOption.workflow.filename }}
     </span>
@@ -18,12 +22,13 @@
       >
       <Button
         class="close-button invisible w-auto p-0"
-        icon="pi pi-times"
-        text
-        severity="secondary"
-        size="small"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('g.close')"
         @click.stop="onCloseWorkflow(workflowOption)"
-      />
+      >
+        <i class="pi pi-times" />
+      </Button>
     </div>
   </div>
 
@@ -36,10 +41,10 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import {
   usePragmaticDraggable,
   usePragmaticDroppable
@@ -59,7 +64,6 @@ interface WorkflowOption {
 }
 
 const props = defineProps<{
-  class?: string
   workflowOption: WorkflowOption
 }>()
 

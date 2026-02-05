@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
+import { captureException } from '@sentry/vue'
 import BlockUI from 'primevue/blockui'
 import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted } from 'vue'
@@ -20,15 +20,13 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 import { electronAPI, isElectron } from './utils/envUtil'
+import { app } from '@/scripts/app'
 
 const workspaceStore = useWorkspaceStore()
+app.extensionManager = useWorkspaceStore()
+
 const conflictDetection = useConflictDetection()
 const isLoading = computed<boolean>(() => workspaceStore.spinner)
-const handleKey = (e: KeyboardEvent) => {
-  workspaceStore.shiftDown = e.shiftKey
-}
-useEventListener(window, 'keydown', handleKey)
-useEventListener(window, 'keyup', handleKey)
 
 const showContextMenu = (event: MouseEvent) => {
   const { target } = event
@@ -47,6 +45,20 @@ onMounted(() => {
   if (isElectron()) {
     document.addEventListener('contextmenu', showContextMenu)
   }
+
+  // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
+  // See: https://vite.dev/guide/build#load-error-handling
+  window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault()
+    // eslint-disable-next-line no-undef
+    if (__DISTRIBUTION__ === 'cloud') {
+      captureException(event.payload, {
+        tags: { error_type: 'vite_preload_error' }
+      })
+    } else {
+      console.error('[vite:preloadError]', event.payload)
+    }
+  })
 
   // Initialize conflict detection in background
   // This runs async and doesn't block UI setup

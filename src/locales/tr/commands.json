@@ -3,22 +3,22 @@
     "label": "Güncellemeleri Kontrol Et"
   },
   "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
-    "label": "Özel Düğümler Klasörünü Aç"
+    "label": "Özel Düğüm Klasörünü Aç"
   },
   "Comfy-Desktop_Folders_OpenInputsFolder": {
-    "label": "Girişler Klasörünü Aç"
+    "label": "Girdi Klasörünü Aç"
   },
   "Comfy-Desktop_Folders_OpenLogsFolder": {
-    "label": "Kayıtlar Klasörünü Aç"
+    "label": "Kayıt Klasörünü Aç"
   },
   "Comfy-Desktop_Folders_OpenModelConfig": {
-    "label": "extra_model_paths.yaml dosyasını aç"
+    "label": "extra_model_paths.yaml dosyasını Aç"
   },
   "Comfy-Desktop_Folders_OpenModelsFolder": {
-    "label": "Modeller Klasörünü Aç"
+    "label": "Model Klasörünü Aç"
   },
   "Comfy-Desktop_Folders_OpenOutputsFolder": {
-    "label": "Çıktılar Klasörünü Aç"
+    "label": "Çıktı Klasörünü Aç"
   },
   "Comfy-Desktop_OpenDevTools": {
     "label": "Geliştirici Araçlarını Aç"
@@ -27,7 +27,7 @@
     "label": "Masaüstü Kullanıcı Kılavuzu"
   },
   "Comfy-Desktop_Quit": {
-    "label": "Çık"
+    "label": "Çıkış"
   },
   "Comfy-Desktop_Reinstall": {
     "label": "Yeniden Yükle"
@@ -35,8 +35,8 @@
   "Comfy-Desktop_Restart": {
     "label": "Yeniden Başlat"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "Seçili Düğüm için 3D Görüntüleyiciyi (Beta) Aç"
+  "Comfy_BrowseModelAssets": {
+    "label": "Deneysel: Model Varlıklarını Gözat"
   },
   "Comfy_BrowseTemplates": {
     "label": "Şablonlara Gözat"
@@ -125,6 +125,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Seçimi Alt Grafiğe Dönüştür"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Alt Grafik Bileşenlerini Düzenle"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "Alt Grafikten Çık"
   },
@@ -133,6 +136,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "Seçili Düğümleri Gruplandır"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Vurgulanan bileşenin önceliğini değiştir"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Seçili Alt Grafiği Aç"
@@ -182,17 +188,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "Özel Düğüm Güncellemelerini Kontrol Et"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "Özel Düğüm Yöneticisi İlerleme Çubuğunu Aç/Kapat"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "Maske Düzenleyicide Fırça Boyutunu Azalt"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "Maske Düzenleyicide Fırça Boyutunu Artır"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "MaskEditor'da Renk Seçiciyi Aç"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "MaskEditor'da Yatay Aynala"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "MaskEditor'da Dikey Aynala"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "Seçili Düğüm için Maske Düzenleyiciyi Aç"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "MaskEditor'da Sola Döndür"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "MaskEditor'da Sağa Döndür"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "Modelleri Boşalt"
@@ -224,11 +242,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "Seçili Çıktı Düğümlerini Kuyruğa Al"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "İş Geçmişini Göster/Gizle"
+  },
   "Comfy_Redo": {
     "label": "Yinele"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "Düğüm Tanımlarını Yenile"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Çalışma Akışını Yeniden Adlandır"
   },
   "Comfy_SaveWorkflow": {
     "label": "İş Akışını Kaydet"
@@ -239,11 +263,26 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Ayarlar İletişim Kutusunu Göster"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Alt Grafik Açıklamasını Ayarla"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Alt Grafik Arama Takma Adlarını Ayarla"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Deneysel: AssetAPI'yi Etkinleştir"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "Tuval Performansı"
   },
   "Comfy_ToggleHelpCenter": {
     "label": "Yardım Merkezi"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "Doğrusal Modu Aç/Kapat"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Kuyruk Paneli V2'yi Aç/Kapat"
   },
   "Comfy_ToggleTheme": {
     "label": "Temayı Değiştir (Karanlık/Açık)"
@@ -256,6 +295,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "Çıkış Yap"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Deneysel: Vue Düğümlerini Etkinleştir"
   },
   "Workspace_CloseWorkflow": {
     "label": "Mevcut İş Akışını Kapat"
@@ -272,12 +314,6 @@
   "Workspace_ToggleBottomPanel": {
     "label": "Alt Paneli Aç/Kapat"
   },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Terminal Alt Panelini Aç/Kapat"
-  },
-  "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "Kayıtlar Alt Panelini Aç/Kapat"
-  },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "Temel Alt Paneli Aç/Kapat"
   },
@@ -290,6 +326,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "Odak Modunu Aç/Kapat"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Varlıklar Kenar Çubuğunu Aç/Kapat",
+    "tooltip": "Varlıklar"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "Model Kütüphanesi Kenar Çubuğunu Aç/Kapat",
     "tooltip": "Model Kütüphanesi"
@@ -297,10 +337,6 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "Düğüm Kütüphanesi Kenar Çubuğunu Aç/Kapat",
     "tooltip": "Düğüm Kütüphanesi"
-  },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "Kuyruk Kenar Çubuğunu Aç/Kapat",
-    "tooltip": "Kuyruk"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "İş Akışları Kenar Çubuğunu Aç/Kapat",

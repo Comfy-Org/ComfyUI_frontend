@@ -1,42 +1,50 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+
 import type { ComfyPage } from '../fixtures/ComfyPage'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import type { NodeLibrarySidebarTab } from '../fixtures/components/SidebarTab'
+import { DefaultGraphPositions } from '../fixtures/constants/defaultGraphPositions'
 import type { NodeReference } from '../fixtures/utils/litegraphUtils'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('Group Node', () => {
+test.describe('Group Node', { tag: '@node' }, () => {
   test.describe('Node library sidebar', () => {
     const groupNodeName = 'DefautWorkflowGroupNode'
     const groupNodeCategory = 'group nodes>workflow'
     const groupNodeBookmarkName = `workflow>${groupNodeName}`
-    let libraryTab
+    let libraryTab: NodeLibrarySidebarTab
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       libraryTab = comfyPage.menu.nodeLibraryTab
-      await comfyPage.convertAllNodesToGroupNode(groupNodeName)
+      await comfyPage.nodeOps.convertAllNodesToGroupNode(groupNodeName)
       await libraryTab.open()
     })
 
-    test('Is added to node library sidebar', async ({ comfyPage }) => {
-      expect(await libraryTab.getFolder('group nodes').count()).toBe(1)
+    test('Is added to node library sidebar', async ({
+      comfyPage: _comfyPage
+    }) => {
+      expect(await libraryTab.getFolder(groupNodeCategory).count()).toBe(1)
     })
 
     test('Can be added to canvas using node library sidebar', async ({
       comfyPage
     }) => {
-      const initialNodeCount = await comfyPage.getGraphNodesCount()
+      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
       // Add group node from node library sidebar
       await libraryTab.getFolder(groupNodeCategory).click()
       await libraryTab.getNode(groupNodeName).click()
 
       // Verify the node is added to the canvas
-      expect(await comfyPage.getGraphNodesCount()).toBe(initialNodeCount + 1)
+      expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(
+        initialNodeCount + 1
+      )
     })
 
     test('Can be bookmarked and unbookmarked', async ({ comfyPage }) => {
@@ -48,7 +56,7 @@ test.describe('Group Node', () => {
 
       // Verify the node is added to the bookmarks tab
       expect(
-        await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
+        await comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
       ).toEqual([groupNodeBookmarkName])
       // Verify the bookmark node with the same name is added to the tree
       expect(await libraryTab.getNode(groupNodeName).count()).not.toBe(0)
@@ -62,7 +70,7 @@ test.describe('Group Node', () => {
 
       // Verify the node is removed from the bookmarks tab
       expect(
-        await comfyPage.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
+        await comfyPage.settings.getSetting('Comfy.NodeLibrary.Bookmarks.V2')
       ).toHaveLength(0)
     })
 
@@ -89,32 +97,34 @@ test.describe('Group Node', () => {
   // does not have a v-model on the query, so we cannot observe the raw
   // query update, and thus cannot set the spinning state between the raw query
   // update and the debounced search update.
-  test.skip('Can be added to canvas using search', async ({ comfyPage }) => {
-    const groupNodeName = 'DefautWorkflowGroupNode'
-    await comfyPage.convertAllNodesToGroupNode(groupNodeName)
-    await comfyPage.doubleClickCanvas()
-    await comfyPage.nextFrame()
-    await comfyPage.searchBox.fillAndSelectFirstNode(groupNodeName)
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'group-node-copy-added-from-search.png'
-    )
-  })
+  test.skip(
+    'Can be added to canvas using search',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      const groupNodeName = 'DefautWorkflowGroupNode'
+      await comfyPage.nodeOps.convertAllNodesToGroupNode(groupNodeName)
+      await comfyPage.canvasOps.doubleClick()
+      await comfyPage.nextFrame()
+      await comfyPage.searchBox.fillAndSelectFirstNode(groupNodeName)
+      await expect(comfyPage.canvas).toHaveScreenshot(
+        'group-node-copy-added-from-search.png'
+      )
+    }
+  )
 
   test('Displays tooltip on title hover', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.EnableTooltips', true)
-    await comfyPage.convertAllNodesToGroupNode('Group Node')
+    await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
+    await comfyPage.nodeOps.convertAllNodesToGroupNode('Group Node')
     await comfyPage.page.mouse.move(47, 173)
-    const tooltipTimeout = 500
-    await comfyPage.page.waitForTimeout(tooltipTimeout + 16)
     await expect(comfyPage.page.locator('.node-tooltip')).toBeVisible()
   })
 
   test('Manage group opens with the correct group selected', async ({
     comfyPage
   }) => {
-    const makeGroup = async (name, type1, type2) => {
-      const node1 = (await comfyPage.getNodeRefsByType(type1))[0]
-      const node2 = (await comfyPage.getNodeRefsByType(type2))[0]
+    const makeGroup = async (name: string, type1: string, type2: string) => {
+      const node1 = (await comfyPage.nodeOps.getNodeRefsByType(type1))[0]
+      const node2 = (await comfyPage.nodeOps.getNodeRefsByType(type2))[0]
       await node1.click('title')
       await node2.click('title', {
         modifiers: ['Shift']
@@ -142,7 +152,7 @@ test.describe('Group Node', () => {
   test('Preserves hidden input configuration when containing duplicate node types', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow(
+    await comfyPage.workflow.loadWorkflow(
       'groupnodes/group_node_identical_nodes_hidden_inputs'
     )
     await comfyPage.nextFrame()
@@ -153,16 +163,14 @@ test.describe('Group Node', () => {
     const totalInputCount = await comfyPage.page.evaluate((nodeName) => {
       const {
         extra: { groupNodes }
-      } = window['app'].graph
-      const { nodes } = groupNodes[nodeName]
-      return nodes.reduce((acc: number, node) => {
-        return acc + node.inputs.length
-      }, 0)
+      } = window.app!.graph!
+      const { nodes } = groupNodes![nodeName]
+      return nodes.reduce((acc, node) => acc + (node.inputs?.length ?? 0), 0)
     }, groupNodeName)
 
     const visibleInputCount = await comfyPage.page.evaluate((id) => {
-      const node = window['app'].graph.getNodeById(id)
-      return node.inputs.length
+      const node = window.app!.graph!.getNodeById(id)
+      return node!.inputs.length
     }, groupNodeId)
 
     // Verify there are 4 total inputs (2 VAE decode nodes with 2 inputs each)
@@ -176,7 +184,7 @@ test.describe('Group Node', () => {
     comfyPage
   }) => {
     const expectSingleNode = async (type: string) => {
-      const nodes = await comfyPage.getNodeRefsByType(type)
+      const nodes = await comfyPage.nodeOps.getNodeRefsByType(type)
       expect(nodes).toHaveLength(1)
       return nodes[0]
     }
@@ -211,8 +219,8 @@ test.describe('Group Node', () => {
   test('Loads from a workflow using the legacy path separator ("/")', async ({
     comfyPage
   }) => {
-    await comfyPage.loadWorkflow('groupnodes/legacy_group_node')
-    expect(await comfyPage.getGraphNodesCount()).toBe(1)
+    await comfyPage.workflow.loadWorkflow('groupnodes/legacy_group_node')
+    expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
     await expect(
       comfyPage.page.locator('.comfy-missing-nodes')
     ).not.toBeVisible()
@@ -228,7 +236,7 @@ test.describe('Group Node', () => {
 
     const isRegisteredLitegraph = async (comfyPage: ComfyPage) => {
       return await comfyPage.page.evaluate((nodeType: string) => {
-        return !!window['LiteGraph'].registered_node_types[nodeType]
+        return !!window.LiteGraph!.registered_node_types[nodeType]
       }, GROUP_NODE_TYPE)
     }
 
@@ -244,17 +252,17 @@ test.describe('Group Node', () => {
       comfyPage: ComfyPage,
       expectedCount: number
     ) => {
-      expect(await comfyPage.getNodeRefsByType(GROUP_NODE_TYPE)).toHaveLength(
-        expectedCount
-      )
+      expect(
+        await comfyPage.nodeOps.getNodeRefsByType(GROUP_NODE_TYPE)
+      ).toHaveLength(expectedCount)
       expect(await isRegisteredLitegraph(comfyPage)).toBe(true)
       expect(await isRegisteredNodeDefStore(comfyPage)).toBe(true)
     }
 
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-      await comfyPage.loadWorkflow(WORKFLOW_NAME)
-      groupNode = await comfyPage.getFirstNodeRef()
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.workflow.loadWorkflow(WORKFLOW_NAME)
+      groupNode = await comfyPage.nodeOps.getFirstNodeRef()
       if (!groupNode)
         throw new Error(`Group node not found in workflow ${WORKFLOW_NAME}`)
       await groupNode.copy()
@@ -263,7 +271,7 @@ test.describe('Group Node', () => {
     test('Copies and pastes group node within the same workflow', async ({
       comfyPage
     }) => {
-      await comfyPage.ctrlV()
+      await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 2)
     })
 
@@ -271,12 +279,12 @@ test.describe('Group Node', () => {
       comfyPage
     }) => {
       // Set setting
-      await comfyPage.setSetting('Comfy.ConfirmClear', false)
+      await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
 
       // Clear workflow
-      await comfyPage.executeCommand('Comfy.ClearWorkflow')
+      await comfyPage.command.executeCommand('Comfy.ClearWorkflow')
 
-      await comfyPage.ctrlV()
+      await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 1)
     })
 
@@ -284,15 +292,15 @@ test.describe('Group Node', () => {
       comfyPage
     }) => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await comfyPage.ctrlV()
+      await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 1)
     })
 
     test('Copies and pastes group node across different workflows', async ({
       comfyPage
     }) => {
-      await comfyPage.loadWorkflow('default')
-      await comfyPage.ctrlV()
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.clipboard.paste()
       await verifyNodeLoaded(comfyPage, 1)
     })
 
@@ -300,14 +308,15 @@ test.describe('Group Node', () => {
       comfyPage
     }) => {
       await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
-      await comfyPage.ctrlV()
+      await comfyPage.clipboard.paste()
       const currentGraphState = await comfyPage.page.evaluate(() =>
-        window['app'].graph.serialize()
+        window.app!.graph!.serialize()
       )
 
       await test.step('Load workflow containing a group node pasted from a different workflow', async () => {
         await comfyPage.page.evaluate(
-          (workflow) => window['app'].loadGraphData(workflow),
+          (workflow) =>
+            window.app!.loadGraphData(workflow as ComfyWorkflowJSON),
           currentGraphState
         )
         await comfyPage.nextFrame()
@@ -318,17 +327,18 @@ test.describe('Group Node', () => {
 
   test.describe('Keybindings', () => {
     test('Convert to group node, no selection', async ({ comfyPage }) => {
-      expect(await comfyPage.getVisibleToastCount()).toBe(0)
+      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(0)
       await comfyPage.page.keyboard.press('Alt+g')
-      await comfyPage.page.waitForTimeout(300)
-      expect(await comfyPage.getVisibleToastCount()).toBe(1)
+      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(1)
     })
     test('Convert to group node, selected 1 node', async ({ comfyPage }) => {
-      expect(await comfyPage.getVisibleToastCount()).toBe(0)
-      await comfyPage.clickTextEncodeNode1()
+      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(0)
+      await comfyPage.canvas.click({
+        position: DefaultGraphPositions.textEncodeNode1
+      })
+      await comfyPage.nextFrame()
       await comfyPage.page.keyboard.press('Alt+g')
-      await comfyPage.page.waitForTimeout(300)
-      expect(await comfyPage.getVisibleToastCount()).toBe(1)
+      await expect.poll(() => comfyPage.toast.getVisibleToastCount()).toBe(1)
     })
   })
 })

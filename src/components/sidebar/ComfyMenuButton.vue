@@ -29,6 +29,7 @@
   >
     <template #item="{ item, props }">
       <a
+        v-if="item.key !== 'nodes-2.0-toggle'"
         class="p-menubar-item-link px-4 py-2"
         v-bind="props.action"
         :href="item.url"
@@ -65,14 +66,45 @@
         </span>
         <i v-if="item.items" class="pi pi-angle-right ml-auto" />
       </a>
+      <div
+        v-else
+        class="flex items-center justify-between px-4 py-2"
+        @click.stop="handleNodes2ToggleClick"
+      >
+        <span class="p-menubar-item-label text-nowrap">{{ item.label }}</span>
+        <Tag severity="info" class="ml-2 text-xs">{{ $t('g.beta') }}</Tag>
+        <ToggleSwitch
+          v-model="nodes2Enabled"
+          class="ml-4"
+          :aria-label="item.label"
+          :pt="{
+            root: {
+              style: {
+                width: '38px',
+                height: '20px'
+              }
+            },
+            handle: {
+              style: {
+                width: '16px',
+                height: '16px'
+              }
+            }
+          }"
+          @click.stop
+          @update:model-value="onNodes2ToggleChange"
+        />
+      </div>
     </template>
   </TieredMenu>
 </template>
 
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
+import Tag from 'primevue/tag'
 import TieredMenu from 'primevue/tieredmenu'
 import type { TieredMenuMethods, TieredMenuState } from 'primevue/tieredmenu'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -80,6 +112,7 @@ import SettingDialogHeader from '@/components/dialog/header/SettingDialogHeader.
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import SettingDialogContent from '@/platform/settings/components/SettingDialogContent.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useCommandStore } from '@/stores/commandStore'
@@ -98,10 +131,18 @@ const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const dialogStore = useDialogStore()
 const managerState = useManagerState()
+const settingStore = useSettingStore()
 
 const menuRef = ref<
   ({ dirty: boolean } & TieredMenuMethods & TieredMenuState) | null
 >(null)
+
+const nodes2Enabled = computed({
+  get: () => settingStore.get('Comfy.VueNodes.Enabled') ?? false,
+  set: async (value: boolean) => {
+    await settingStore.set('Comfy.VueNodes.Enabled', value)
+  }
+})
 
 const telemetry = useTelemetry()
 
@@ -164,6 +205,10 @@ const extraMenuItems = computed(() => [
     label: t('menu.theme'),
     items: themeMenuItems.value
   },
+  {
+    key: 'nodes-2.0-toggle',
+    label: 'Nodes 2.0'
+  },
   { separator: true },
   {
     key: 'browse-templates',
@@ -174,7 +219,7 @@ const extraMenuItems = computed(() => [
   {
     key: 'settings',
     label: t('g.settings'),
-    icon: 'mdi mdi-cog-outline',
+    icon: 'icon-[lucide--settings]',
     command: () => {
       telemetry?.trackUiButtonClicked({
         button_id: 'sidebar_settings_menu_opened'
@@ -185,7 +230,7 @@ const extraMenuItems = computed(() => [
   {
     key: 'manage-extensions',
     label: t('menu.manageExtensions'),
-    icon: 'mdi mdi-puzzle-outline',
+    icon: 'icon-[lucide--puzzle]',
     command: showManageExtensions
   }
 ])
@@ -280,6 +325,17 @@ const hasActiveStateSiblings = (item: MenuItem): boolean => {
     (item.parentPath === 'theme' ||
       menuItemStore.menuItemHasActiveStateChildren[item.parentPath])
   )
+}
+
+const handleNodes2ToggleClick = () => {
+  return false
+}
+
+const onNodes2ToggleChange = async (value: boolean) => {
+  await settingStore.set('Comfy.VueNodes.Enabled', value)
+  telemetry?.trackUiButtonClicked({
+    button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`
+  })
 }
 </script>
 

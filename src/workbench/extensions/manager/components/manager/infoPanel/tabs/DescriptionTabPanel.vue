@@ -1,24 +1,57 @@
 <template>
-  <div class="overflow-hidden">
-    <InfoTextSection
-      v-if="nodePack?.description"
-      :sections="descriptionSections"
-    />
-    <p v-else class="text-sm text-muted italic">
-      {{ $t('manager.noDescription') }}
-    </p>
-    <div v-if="nodePack?.latest_version?.dependencies?.length">
-      <p class="mb-1">
-        {{ $t('manager.dependencies') }}
-      </p>
+  <div>
+    <ModelInfoField :label="t('g.description')">
+      <MarkdownText
+        v-if="nodePack.description"
+        :text="nodePack.description"
+        class="text-muted-foreground"
+      />
+      <span v-else class="text-muted-foreground italic">
+        {{ t('manager.noDescription') }}
+      </span>
+    </ModelInfoField>
+    <ModelInfoField v-if="nodePack.repository" :label="t('manager.repository')">
+      <a
+        :href="nodePack.repository"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
+      >
+        <i
+          v-if="isGitHubLink(nodePack.repository)"
+          class="pi pi-github text-base"
+        />
+        <span class="break-all">{{ nodePack.repository }}</span>
+        <i class="icon-[lucide--external-link] size-4 shrink-0" />
+      </a>
+    </ModelInfoField>
+    <ModelInfoField v-if="licenseInfo" :label="t('manager.license')">
+      <a
+        v-if="licenseInfo.isUrl"
+        :href="licenseInfo.text"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
+      >
+        <span class="break-all">{{ licenseInfo.text }}</span>
+        <i class="icon-[lucide--external-link] size-4 shrink-0" />
+      </a>
+      <span v-else class="text-muted-foreground break-all">
+        {{ licenseInfo.text }}
+      </span>
+    </ModelInfoField>
+    <ModelInfoField
+      v-if="nodePack.latest_version?.dependencies?.length"
+      :label="t('manager.dependencies')"
+    >
       <div
         v-for="(dep, index) in nodePack.latest_version.dependencies"
         :key="index"
-        class="break-words text-muted"
+        class="break-words text-muted-foreground"
       >
         {{ dep }}
       </div>
-    </div>
+    </ModelInfoField>
   </div>
 </template>
 
@@ -26,16 +59,18 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { isValidUrl } from '@/utils/formatUtil'
-import InfoTextSection from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTextSection.vue'
-import type { TextSection } from '@/workbench/extensions/manager/components/manager/infoPanel/InfoTextSection.vue'
+import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
 
 const { t } = useI18n()
 
 const { nodePack } = defineProps<{
   nodePack: components['schemas']['Node']
 }>()
+
+const isGitHubLink = (url: string): boolean => url.includes('github.com')
 
 const isLicenseFile = (filename: string): boolean => {
   // Match LICENSE, LICENSE.md, LICENSE.txt (case insensitive)
@@ -57,8 +92,13 @@ const createLicenseUrl = (filename: string, repoUrl: string): string => {
   return `${baseRepoUrl}/blob/main/${licenseFile}`
 }
 
+interface LicenseObject {
+  file?: string
+  text?: string
+}
+
 const parseLicenseObject = (
-  licenseObj: any
+  licenseObj: LicenseObject
 ): { text: string; isUrl: boolean } => {
   const licenseFile = licenseObj.file || licenseObj.text
 
@@ -118,33 +158,8 @@ const formatLicense = (
   }
 }
 
-const descriptionSections = computed<TextSection[]>(() => {
-  const sections: TextSection[] = [
-    {
-      title: t('g.description'),
-      text: nodePack.description || t('manager.noDescription')
-    }
-  ]
-
-  if (nodePack.repository) {
-    sections.push({
-      title: t('manager.repository'),
-      text: nodePack.repository,
-      isUrl: isValidUrl(nodePack.repository)
-    })
-  }
-
-  if (nodePack.license) {
-    const licenseInfo = formatLicense(nodePack.license)
-    if (licenseInfo && licenseInfo.text) {
-      sections.push({
-        title: t('manager.license'),
-        text: licenseInfo.text,
-        isUrl: licenseInfo.isUrl
-      })
-    }
-  }
-
-  return sections
+const licenseInfo = computed(() => {
+  if (!nodePack.license) return null
+  return formatLicense(nodePack.license)
 })
 </script>

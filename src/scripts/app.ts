@@ -5,6 +5,8 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { st, t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -34,6 +36,7 @@ import {
 import type {
   ExecutionErrorWsMessage,
   NodeError,
+  NodeExecutionOutput,
   ResultItem
 } from '@/schemas/apiSchema'
 import {
@@ -41,7 +44,11 @@ import {
   isComboInputSpecV1,
   isComboInputSpecV2
 } from '@/schemas/nodeDefSchema'
-import { type BaseDOMWidget, DOMWidgetImpl } from '@/scripts/domWidget'
+import {
+  type BaseDOMWidget,
+  ComponentWidgetImpl,
+  DOMWidgetImpl
+} from '@/scripts/domWidget'
 import { useDialogService } from '@/services/dialogService'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useExtensionService } from '@/services/extensionService'
@@ -54,17 +61,22 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useExtensionStore } from '@/stores/extensionStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 import { useNodeOutputStore } from '@/stores/imagePreviewStore'
-import { KeyComboImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useModelStore } from '@/stores/modelStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
-import { type ExtensionManager } from '@/types/extensionTypes'
+import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import type { MissingNodeTypeExtraInfo } from '@/workbench/extensions/manager/types/missingNodeErrorTypes'
+import { createMissingNodeTypeFromError } from '@/workbench/extensions/manager/utils/missingNodeErrorUtil'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import {
   getNodeByExecutionId,
   triggerCallbackOnAllNodes
@@ -78,7 +90,7 @@ import {
   findLegacyRerouteNodes,
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
-import { getSelectedModelsMetadata } from '@/utils/modelMetadataUtil'
+import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
@@ -91,6 +103,7 @@ import { type ComfyWidgetConstructor } from './widgets'
 import { ensureCorrectLayoutScale } from '@/renderer/extensions/vueNodes/layout/ensureCorrectLayoutScale'
 import { extractFileFromDragEvent } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { pasteImageNode } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
@@ -113,7 +126,7 @@ type Clipspace = {
   widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
   imgs?: HTMLImageElement[] | null
   original_imgs?: HTMLImageElement[] | null
-  images?: any[] | null
+  images?: ResultItem[] | null
   selectedIndex: number
   img_paste_mode: string
   paintedIndex: number
@@ -147,10 +160,8 @@ export class ComfyApp {
   vueAppReady: boolean
   api: ComfyApi
   ui: ComfyUI
-  // @ts-expect-error fixme ts strict error
-  extensionManager: ExtensionManager
-  // @ts-expect-error fixme ts strict error
-  _nodeOutputs: Record<string, any>
+  extensionManager!: ExtensionManager
+  private _nodeOutputs!: Record<string, NodeExecutionOutput>
   nodePreviewImages: Record<string, string[]>
 
   private rootGraphInternal: LGraph | undefined
@@ -161,15 +172,14 @@ export class ComfyApp {
     return this.rootGraphInternal!
   }
 
-  get rootGraph(): LGraph | undefined {
+  get rootGraph(): LGraph {
     if (!this.rootGraphInternal) {
       console.error('ComfyApp graph accessed before initialization')
     }
-    return this.rootGraphInternal
+    return this.rootGraphInternal!
   }
 
-  // @ts-expect-error fixme ts strict error
-  canvas: LGraphCanvas
+  canvas!: LGraphCanvas
   dragOverNode: LGraphNode | null = null
   readonly canvasElRef = shallowRef<HTMLCanvasElement>()
   get canvasEl() {
@@ -181,8 +191,7 @@ export class ComfyApp {
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
-  // @ts-expect-error fixme ts strict error
-  ctx: CanvasRenderingContext2D
+  ctx!: CanvasRenderingContext2D
   bodyTop: HTMLElement
   bodyLeft: HTMLElement
   bodyRight: HTMLElement
@@ -485,18 +494,17 @@ export class ComfyApp {
             }
           }
         }
-        if (ComfyApp.clipspace.widgets) {
+        if (ComfyApp.clipspace.widgets && node.widgets) {
           ComfyApp.clipspace.widgets.forEach(({ type, name, value }) => {
-            // @ts-expect-error fixme ts strict error
-            const prop = Object.values(node.widgets).find(
+            const prop = node.widgets?.find(
               (obj) => obj.type === type && obj.name === name
             )
             if (prop && prop.type != 'button') {
+              const valueObj = value as Record<string, unknown> | undefined
               if (
                 prop.type != 'image' &&
                 typeof prop.value == 'string' &&
-                // @ts-expect-error Custom widget value
-                value.filename
+                valueObj?.filename
               ) {
                 const resultItem = value as ResultItem
                 prop.value =
@@ -512,7 +520,7 @@ export class ComfyApp {
         }
       }
 
-      app.graph.setDirtyCanvas(true)
+      app.canvas.setDirty(true)
 
       useNodeOutputStore().updateNodeImages(node)
     }
@@ -553,7 +561,7 @@ export class ComfyApp {
     useEventListener(this.canvasElRef, 'dragleave', async () => {
       if (!this.dragOverNode) return
       this.dragOverNode = null
-      this.graph.setDirtyCanvas(false, true)
+      this.canvas.setDirty(false, true)
     })
 
     // Add handler for dropping onto a specific node
@@ -562,7 +570,10 @@ export class ComfyApp {
       'dragover',
       (event: DragEvent) => {
         this.canvas.adjustMouseEvent(event)
-        const node = this.graph.getNodeOnPos(event.canvasX, event.canvasY)
+        const node = this.canvas.graph?.getNodeOnPos(
+          event.canvasX,
+          event.canvasY
+        )
 
         if (!node?.onDragOver?.(event)) {
           this.dragOverNode = null
@@ -573,7 +584,7 @@ export class ComfyApp {
 
         // dragover event is fired very frequently, run this on an animation frame
         requestAnimationFrame(() => {
-          this.graph.setDirtyCanvas(false, true)
+          this.canvas.setDirty(false, true)
         })
       },
       false
@@ -638,11 +649,11 @@ export class ComfyApp {
     })
 
     api.addEventListener('progress', () => {
-      this.graph.setDirtyCanvas(true, false)
+      this.canvas.setDirty(true, false)
     })
 
     api.addEventListener('executing', () => {
-      this.graph.setDirtyCanvas(true, false)
+      this.canvas.setDirty(true, false)
     })
 
     api.addEventListener('executed', ({ detail }) => {
@@ -653,14 +664,14 @@ export class ComfyApp {
         merge: detail.merge
       })
 
-      const node = getNodeByExecutionId(this.graph, executionId)
+      const node = getNodeByExecutionId(this.rootGraph, executionId)
       if (node && node.onExecuted) {
         node.onExecuted(detail.output)
       }
     })
 
     api.addEventListener('execution_start', () => {
-      triggerCallbackOnAllNodes(this.graph, 'onExecutionStart')
+      triggerCallbackOnAllNodes(this.rootGraph, 'onExecutionStart')
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
@@ -725,17 +736,31 @@ export class ComfyApp {
   private addAfterConfigureHandler(graph: LGraph) {
     const { onConfigure } = graph
     graph.onConfigure = function (...args) {
-      fixLinkInputSlots(this)
+      // Set pending sync flag to suppress link rendering until slots are synced
+      if (LiteGraph.vueNodesMode) {
+        layoutStore.setPendingSlotSync(true)
+      }
 
-      // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
-      triggerCallbackOnAllNodes(this, 'onGraphConfigured')
+      try {
+        fixLinkInputSlots(this)
 
-      const r = onConfigure?.apply(this, args)
+        // Fire callbacks before the onConfigure, this is used by widget inputs to setup the config
+        triggerCallbackOnAllNodes(this, 'onGraphConfigured')
 
-      // Fire after onConfigure, used by primitives to generate widget using input nodes config
-      triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
+        const r = onConfigure?.apply(this, args)
 
-      return r
+        // Fire after onConfigure, used by primitives to generate widget using input nodes config
+        triggerCallbackOnAllNodes(this, 'onAfterGraphConfigured')
+
+        return r
+      } finally {
+        // Flush pending slot layout syncs to fix link alignment after undo/redo
+        // Using finally ensures links aren't permanently suppressed if an error occurs
+        if (LiteGraph.vueNodesMode) {
+          flushScheduledSlotLayoutSync()
+          app.canvas?.setDirty(true, true)
+        }
+      }
     }
   }
 
@@ -743,22 +768,18 @@ export class ComfyApp {
    * Set up the app on the page
    */
   async setup(canvasEl: HTMLCanvasElement) {
-    // @ts-expect-error fixme ts strict error
-    this.bodyTop = document.getElementById('comfyui-body-top')
-    // @ts-expect-error fixme ts strict error
-    this.bodyLeft = document.getElementById('comfyui-body-left')
-    // @ts-expect-error fixme ts strict error
-    this.bodyRight = document.getElementById('comfyui-body-right')
-    // @ts-expect-error fixme ts strict error
-    this.bodyBottom = document.getElementById('comfyui-body-bottom')
-    // @ts-expect-error fixme ts strict error
-    this.canvasContainer = document.getElementById('graph-canvas-container')
+    this.bodyTop = document.getElementById('comfyui-body-top')!
+    this.bodyLeft = document.getElementById('comfyui-body-left')!
+    this.bodyRight = document.getElementById('comfyui-body-right')!
+    this.bodyBottom = document.getElementById('comfyui-body-bottom')!
+    this.canvasContainer = document.getElementById('graph-canvas-container')!
 
     this.canvasElRef.value = canvasEl
 
     await useWorkspaceStore().workflow.syncWorkflows()
     //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
+    void useNodeReplacementStore().load()
     await useExtensionService().loadExtensions()
 
     this.addProcessKeyHandler()
@@ -789,8 +810,7 @@ export class ComfyApp {
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
 
-    // @ts-expect-error fixme ts strict error
-    this.ctx = canvasEl.getContext('2d')
+    this.ctx = canvasEl.getContext('2d')!
 
     LiteGraph.alt_drag_do_clone_nodes = true
     LiteGraph.macGesturesRequireMac = false
@@ -808,7 +828,10 @@ export class ComfyApp {
         > = Object.fromEntries(
           newGraph.nodes
             .flatMap((node) => node.widgets ?? [])
-            .filter((w) => w instanceof DOMWidgetImpl)
+            .filter(
+              (w) =>
+                w instanceof DOMWidgetImpl || w instanceof ComponentWidgetImpl
+            )
             .map((w) => [w.id, w])
         )
 
@@ -825,9 +848,26 @@ export class ComfyApp {
         }
       }
     )
+
+    // Ensure subgraphs are scaled when entering them
+    this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
+      'litegraph:set-graph',
+      (e) => {
+        const { newGraph, oldGraph } = e.detail
+        // Only scale when switching between graphs (not during initial setup)
+        // oldGraph is null/undefined during initial setup, so skip scaling then
+        if (oldGraph) {
+          ensureCorrectLayoutScale(
+            newGraph.extra.workflowRendererVersion,
+            newGraph
+          )
+        }
+      }
+    )
+
     registerProxyWidgets(this.canvas)
 
-    this.graph.start()
+    this.rootGraph.start()
 
     // Ensure the canvas fills the window
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
@@ -858,8 +898,7 @@ export class ComfyApp {
     const { width, height } = canvas.getBoundingClientRect()
     canvas.width = Math.round(width * scale)
     canvas.height = Math.round(height * scale)
-    // @ts-expect-error fixme ts strict error
-    canvas.getContext('2d').scale(scale, scale)
+    canvas.getContext('2d')?.scale(scale, scale)
     this.canvas?.draw(true, true)
   }
 
@@ -901,8 +940,7 @@ export class ComfyApp {
     const nodeDefArray: ComfyNodeDefV1[] = Object.values(allNodeDefs)
     useExtensionService().invokeExtensions(
       'beforeRegisterVueAppNodeDefs',
-      nodeDefArray,
-      this
+      nodeDefArray
     )
     nodeDefStore.updateNodeDefs(nodeDefArray)
   }
@@ -952,15 +990,14 @@ export class ComfyApp {
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  loadTemplateData(templateData) {
+  loadTemplateData(templateData: {
+    templates?: { name?: string; data?: string }[]
+  }): void {
     if (!templateData?.templates) {
       return
     }
 
     const old = localStorage.getItem('litegrapheditor_clipboard')
-
-    var maxY, nodeBottom, node
 
     for (const template of templateData.templates) {
       if (!template?.data) {
@@ -977,26 +1014,24 @@ export class ComfyApp {
       }
 
       // Move mouse position down to paste the next template below
-
-      maxY = false
+      let maxY: number | undefined
 
       for (const i in app.canvas.selected_nodes) {
-        node = app.canvas.selected_nodes[i]
-
-        nodeBottom = node.pos[1] + node.size[1]
-
-        // @ts-expect-error fixme ts strict error
-        if (maxY === false || nodeBottom > maxY) {
+        const node = app.canvas.selected_nodes[i]
+        const nodeBottom = node.pos[1] + node.size[1]
+        if (maxY === undefined || nodeBottom > maxY) {
           maxY = nodeBottom
         }
       }
 
-      // @ts-expect-error fixme ts strict error
-      app.canvas.graph_mouse[1] = maxY + 50
+      if (maxY !== undefined) {
+        app.canvas.graph_mouse[1] = maxY + 50
+      }
     }
 
-    // @ts-expect-error fixme ts strict error
-    localStorage.setItem('litegrapheditor_clipboard', old)
+    if (old !== null) {
+      localStorage.setItem('litegrapheditor_clipboard', old)
+    }
   }
 
   private showMissingNodesError(missingNodeTypes: MissingNodeType[]) {
@@ -1005,8 +1040,10 @@ export class ComfyApp {
     }
   }
 
-  // @ts-expect-error fixme ts strict error
-  private showMissingModelsError(missingModels, paths) {
+  private showMissingModelsError(
+    missingModels: ModelFile[],
+    paths: Record<string, string[]>
+  ): void {
     if (useSettingStore().get('Comfy.Workflow.ShowMissingModelsWarning')) {
       useDialogService().showMissingModelsWarning({
         missingModels,
@@ -1040,7 +1077,13 @@ export class ComfyApp {
     }
 
     let reset_invalid_values = false
-    if (!graphData) {
+    // Use explicit validation instead of falsy check to avoid replacing
+    // valid but falsy values (empty objects, 0, false, etc.)
+    if (
+      !graphData ||
+      typeof graphData !== 'object' ||
+      Array.isArray(graphData)
+    ) {
       graphData = defaultGraph
       reset_invalid_values = true
     }
@@ -1156,8 +1199,9 @@ export class ComfyApp {
       await modelStore.loadModelFolders()
       for (const m of uniqueModels) {
         const modelFolder = await modelStore.getLoadedModelFolder(m.directory)
-        // @ts-expect-error
-        if (!modelFolder) m.directory_invalid = true
+        if (!modelFolder)
+          (m as ModelFile & { directory_invalid?: boolean }).directory_invalid =
+            true
 
         const modelsAvailable = modelFolder?.models
         const modelExists =
@@ -1171,9 +1215,23 @@ export class ComfyApp {
 
     try {
       // @ts-expect-error Discrepancies between zod and litegraph - in progress
-      this.graph.configure(graphData)
+      this.rootGraph.configure(graphData)
 
-      ensureCorrectLayoutScale()
+      // Save original renderer version before scaling (it gets modified during scaling)
+      const originalMainGraphRenderer =
+        this.rootGraph.extra.workflowRendererVersion
+
+      // Scale main graph
+      ensureCorrectLayoutScale(originalMainGraphRenderer)
+
+      // Scale all subgraphs that were loaded with the workflow
+      // Use original main graph renderer as fallback (not the modified one)
+      for (const subgraph of this.rootGraph.subgraphs.values()) {
+        ensureCorrectLayoutScale(
+          subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
+          subgraph
+        )
+      }
 
       if (
         restore_view &&
@@ -1182,13 +1240,21 @@ export class ComfyApp {
         if (graphData.extra?.ds) {
           this.canvas.ds.offset = graphData.extra.ds.offset
           this.canvas.ds.scale = graphData.extra.ds.scale
+
+          // Fit view if no nodes visible in restored viewport
+          this.canvas.ds.computeVisibleArea(this.canvas.viewport)
+          if (
+            this.canvas.visible_area.width &&
+            this.canvas.visible_area.height &&
+            !anyItemOverlapsRect(
+              this.rootGraph._nodes,
+              this.canvas.visible_area
+            )
+          ) {
+            requestAnimationFrame(() => useLitegraphService().fitView())
+          }
         } else {
-          // @note: Set view after the graph has been rendered once. fitView uses
-          // boundingRect on nodes to calculate the view bounds, which only become
-          // available after the first render.
-          requestAnimationFrame(() => {
-            useLitegraphService().fitView()
-          })
+          useLitegraphService().fitView()
         }
       }
     } catch (error) {
@@ -1199,7 +1265,7 @@ export class ComfyApp {
       console.error(error)
       return
     }
-    for (const node of this.graph.nodes) {
+    forEachNode(this.rootGraph, (node) => {
       const size = node.computeSize()
       size[0] = Math.max(node.size[0], size[0])
       size[1] = Math.max(node.size[1], size[1])
@@ -1233,14 +1299,15 @@ export class ComfyApp {
           }
           if (reset_invalid_values) {
             if (widget.type == 'combo') {
+              const values = widget.options.values as
+                | (string | number | boolean)[]
+                | undefined
               if (
-                // @ts-expect-error fixme ts strict error
-                !widget.options.values.includes(widget.value as string) &&
-                // @ts-expect-error fixme ts strict error
-                widget.options.values.length > 0
+                values &&
+                values.length > 0 &&
+                !values.includes(widget.value as string | number | boolean)
               ) {
-                // @ts-expect-error fixme ts strict error
-                widget.value = widget.options.values[0]
+                widget.value = values[0]
               }
             }
           }
@@ -1248,7 +1315,7 @@ export class ComfyApp {
       }
 
       useExtensionService().invokeExtensions('loadedGraphNode', node)
-    }
+    })
 
     if (missingNodeTypes.length && showMissingNodesDialog) {
       this.showMissingNodesError(missingNodeTypes)
@@ -1273,14 +1340,14 @@ export class ComfyApp {
     useTelemetry()?.trackWorkflowImported(telemetryPayload)
     await useWorkflowService().afterLoadNewGraph(
       workflow,
-      this.graph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
     requestAnimationFrame(() => {
-      this.graph.setDirtyCanvas(true, true)
+      this.canvas.setDirty(true, true)
     })
   }
 
-  async graphToPrompt(graph = this.graph) {
+  async graphToPrompt(graph = this.rootGraph) {
     return graphToPrompt(graph, {
       sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
     })
@@ -1302,27 +1369,32 @@ export class ComfyApp {
     const executionStore = useExecutionStore()
     executionStore.lastNodeErrors = null
 
-    let comfyOrgAuthToken = await useFirebaseAuthStore().getIdToken()
-    let comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
+    // Get auth token for backend nodes - uses workspace token if enabled, otherwise Firebase token
+    const comfyOrgAuthToken = await useFirebaseAuthStore().getAuthToken()
+    const comfyOrgApiKey = useApiKeyAuthStore().getApiKey()
 
     try {
       while (this.queueItems.length) {
         const { number, batchCount, queueNodeIds } = this.queueItems.pop()!
+        const previewMethod = useSettingStore().get(
+          'Comfy.Execution.PreviewMethod'
+        )
 
         for (let i = 0; i < batchCount; i++) {
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
-          executeWidgetsCallback(this.graph.nodes, 'beforeQueued')
-          for (const subgraph of this.graph.subgraphs.values()) {
-            executeWidgetsCallback(subgraph.nodes, 'beforeQueued')
-          }
+          forEachNode(this.rootGraph, (node) => {
+            for (const widget of node.widgets ?? []) widget.beforeQueued?.()
+          })
 
-          const p = await this.graphToPrompt(this.graph)
+          const p = await this.graphToPrompt(this.rootGraph)
+          const queuedNodes = collectAllNodes(this.rootGraph)
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p, {
-              partialExecutionTargets: queueNodeIds
+              partialExecutionTargets: queueNodeIds,
+              previewMethod
             })
             delete api.authToken
             delete api.apiKey
@@ -1342,10 +1414,21 @@ export class ComfyApp {
               } catch (error) {}
             }
           } catch (error: unknown) {
-            useDialogService().showErrorDialog(error, {
-              title: t('errorDialog.promptExecutionError'),
-              reportType: 'promptExecutionError'
-            })
+            if (
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object' &&
+              error.response.error?.type === 'missing_node_type'
+            ) {
+              const extraInfo = (error.response.error.extra_info ??
+                {}) as MissingNodeTypeExtraInfo
+              const missingNodeType = createMissingNodeTypeFromError(extraInfo)
+              this.showMissingNodesError([missingNodeType])
+            } else {
+              useDialogService().showErrorDialog(error, {
+                title: t('errorDialog.promptExecutionError'),
+                reportType: 'promptExecutionError'
+              })
+            }
             console.error(error)
 
             if (error instanceof PromptExecutionError) {
@@ -1357,16 +1440,7 @@ export class ComfyApp {
 
           // Allow widgets to run callbacks after a prompt has been queued
           // e.g. random seed after every gen
-          executeWidgetsCallback(
-            p.workflow.nodes
-              .map((n) => this.graph.getNodeById(n.id))
-              .filter((n) => !!n),
-            'afterQueued'
-          )
-          for (const subgraph of this.graph.subgraphs.values()) {
-            executeWidgetsCallback(subgraph.nodes, 'afterQueued')
-          }
-
+          executeWidgetsCallback(queuedNodes, 'afterQueued')
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
@@ -1391,41 +1465,83 @@ export class ComfyApp {
   async handleFile(file: File, openSource?: WorkflowOpenSource) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
     const workflowData = await getWorkflowDataFromFile(file)
-    if (!workflowData) {
+    if (_.isEmpty(workflowData)) {
+      if (file.type.startsWith('image')) {
+        const transfer = new DataTransfer()
+        transfer.items.add(file)
+        pasteImageNode(this.canvas, transfer.items)
+        return
+      }
+
       this.showErrorOnFileLoad(file)
       return
     }
 
     const { workflow, prompt, parameters, templates } = workflowData
 
-    if (templates) {
-      this.loadTemplateData({ templates })
-    }
-
-    if (parameters) {
-      // Note: Not putting this in `importA1111` as it is mostly not used
-      // by external callers, and `importA1111` has no access to `app`.
-      useWorkflowService().beforeLoadNewGraph()
-      importA1111(this.graph, parameters)
-      useWorkflowService().afterLoadNewGraph(
-        fileName,
-        this.graph.serialize() as unknown as ComfyWorkflowJSON
-      )
-      return
-    }
-
-    if (workflow) {
-      const workflowObj =
-        typeof workflow === 'string' ? JSON.parse(workflow) : workflow
-      await this.loadGraphData(workflowObj, true, true, fileName, {
-        openSource
+    if (
+      templates &&
+      typeof templates === 'object' &&
+      Array.isArray(templates)
+    ) {
+      this.loadTemplateData({
+        templates: templates as { name?: string; data?: string }[]
       })
-      return
+    }
+
+    // Check workflow first - it should take priority over parameters
+    // when both are present (e.g., in ComfyUI-generated PNGs)
+    if (workflow) {
+      let workflowObj: ComfyWorkflowJSON | undefined = undefined
+      try {
+        workflowObj =
+          typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+
+        // Only load workflow if parsing succeeded AND validation passed
+        if (
+          workflowObj &&
+          typeof workflowObj === 'object' &&
+          !Array.isArray(workflowObj)
+        ) {
+          await this.loadGraphData(workflowObj, true, true, fileName, {
+            openSource
+          })
+          return
+        } else {
+          console.error(
+            'Invalid workflow structure, trying parameters fallback'
+          )
+          this.showErrorOnFileLoad(file)
+        }
+      } catch (err) {
+        console.error('Failed to parse workflow:', err)
+        this.showErrorOnFileLoad(file)
+        // Fall through to check parameters as fallback
+      }
     }
 
     if (prompt) {
-      const promptObj = typeof prompt === 'string' ? JSON.parse(prompt) : prompt
-      this.loadApiJson(promptObj, fileName)
+      try {
+        const promptObj =
+          typeof prompt === 'string' ? JSON.parse(prompt) : prompt
+        if (this.isApiJson(promptObj)) {
+          this.loadApiJson(promptObj, fileName)
+          return
+        }
+      } catch (err) {
+        console.error('Failed to parse prompt:', err)
+      }
+      // Fall through to parameters as a last resort
+    }
+
+    // Use parameters strictly as the final fallback
+    if (parameters && typeof parameters === 'string') {
+      useWorkflowService().beforeLoadNewGraph()
+      importA1111(this.rootGraph, parameters)
+      useWorkflowService().afterLoadNewGraph(
+        fileName,
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+      )
       return
     }
 
@@ -1433,8 +1549,21 @@ export class ComfyApp {
   }
 
   // @deprecated
-  isApiJson(data: unknown) {
-    return _.isObject(data) && Object.values(data).every((v) => v.class_type)
+  isApiJson(data: unknown): data is ComfyApiWorkflow {
+    if (!_.isObject(data) || Array.isArray(data)) {
+      return false
+    }
+    if (Object.keys(data).length === 0) return false
+
+    return Object.values(data).every((node) => {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) {
+        return false
+      }
+
+      const { class_type: classType, inputs } = node as Record<string, unknown>
+      const inputsIsRecord = _.isObject(inputs) && !Array.isArray(inputs)
+      return typeof classType === 'string' && inputsIsRecord
+    })
   }
 
   loadApiJson(apiData: ComfyApiWorkflow, fileName: string) {
@@ -1449,82 +1578,50 @@ export class ComfyApp {
     }
 
     const ids = Object.keys(apiData)
-    app.graph.clear()
+    app.rootGraph.clear()
     for (const id of ids) {
       const data = apiData[id]
       const node = LiteGraph.createNode(data.class_type)
       if (!node) continue
       node.id = isNaN(+id) ? id : +id
       node.title = data._meta?.title ?? node.title
-      app.graph.add(node)
+      app.rootGraph.add(node)
     }
 
-    for (const id of ids) {
+    const processNodeInputs = (id: string) => {
       const data = apiData[id]
-      const node = app.graph.getNodeById(id)
+      const node = app.rootGraph.getNodeById(id)
+      if (!node) return
+
       for (const input in data.inputs ?? {}) {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.graph.getNodeById(fromId)
-          // @ts-expect-error fixme ts strict error
-          let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
-          if (toSlot == null || toSlot === -1) {
-            try {
-              // Target has no matching input, most likely a converted widget
-              // @ts-expect-error fixme ts strict error
-              const widget = node.widgets?.find((w) => w.name === input)
-              // @ts-expect-error
-              if (widget && node.convertWidgetToInput?.(widget)) {
-                // @ts-expect-error fixme ts strict error
-                toSlot = node.inputs?.length - 1
-              }
-            } catch (error) {}
-          }
-          if (toSlot != null || toSlot !== -1) {
-            // @ts-expect-error fixme ts strict error
-            fromNode.connect(fromSlot, node, toSlot)
-          }
-        } else {
-          // @ts-expect-error fixme ts strict error
-          const widget = node.widgets?.find((w) => w.name === input)
-          if (widget) {
-            widget.value = value
-            widget.callback?.(value)
-          }
-        }
-      }
-    }
-    app.graph.arrange()
+          const fromNode = app.rootGraph.getNodeById(fromId)
+          if (!fromNode) continue
 
-    for (const id of ids) {
-      const data = apiData[id]
-      const node = app.graph.getNodeById(id)
-      for (const input in data.inputs ?? {}) {
-        const value = data.inputs[input]
-        if (value instanceof Array) {
-          const [fromId, fromSlot] = value
-          const fromNode = app.graph.getNodeById(fromId)
-          // @ts-expect-error fixme ts strict error
-          let toSlot = node.inputs?.findIndex((inp) => inp.name === input)
-          if (toSlot == null || toSlot === -1) {
+          let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1
+          if (toSlot === -1) {
             try {
-              // Target has no matching input, most likely a converted widget
-              // @ts-expect-error fixme ts strict error
               const widget = node.widgets?.find((w) => w.name === input)
-              // @ts-expect-error
-              if (widget && node.convertWidgetToInput?.(widget)) {
-                // @ts-expect-error fixme ts strict error
-                toSlot = node.inputs?.length - 1
+              const convertFn = (
+                node as LGraphNode & {
+                  convertWidgetToInput?: (w: IBaseWidget) => boolean
+                }
+              ).convertWidgetToInput
+              if (widget && convertFn?.(widget)) {
+                // Re-find the target slot by name after conversion
+                toSlot =
+                  node.inputs?.findIndex((inp) => inp.name === input) ?? -1
               }
-            } catch (error) {}
+            } catch (_error) {
+              // Ignore conversion errors
+            }
           }
-          if (toSlot != null || toSlot !== -1) {
-            // @ts-expect-error fixme ts strict error
+          if (toSlot !== -1) {
             fromNode.connect(fromSlot, node, toSlot)
           }
         } else {
-          // @ts-expect-error fixme ts strict error
           const widget = node.widgets?.find((w) => w.name === input)
           if (widget) {
             widget.value = value
@@ -1534,11 +1631,14 @@ export class ComfyApp {
       }
     }
 
-    app.graph.arrange()
+    for (const id of ids) processNodeInputs(id)
+    app.rootGraph.arrange()
+    for (const id of ids) processNodeInputs(id)
+    app.rootGraph.arrange()
 
     useWorkflowService().afterLoadNewGraph(
       fileName,
-      this.graph.serialize() as unknown as ComfyWorkflowJSON
+      this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
     )
   }
 
@@ -1590,7 +1690,7 @@ export class ComfyApp {
       this.registerNodeDef(nodeId, defs[nodeId])
     }
     // Refresh combo widgets in all nodes including those in subgraphs
-    forEachNode(this.graph, (node) => {
+    forEachNode(this.rootGraph, (node) => {
       const def = defs[node.type]
       // Allow primitive nodes to handle refresh
       node.refreshComboInNode?.(defs)
@@ -1655,8 +1755,8 @@ export class ComfyApp {
 
     // Subgraph does not properly implement `clear` and the parent class's
     // (`LGraph`) `clear` breaks the subgraph structure.
-    if (this.graph && !this.canvas.subgraph) {
-      this.graph.clear()
+    if (this.rootGraph && !this.canvas.subgraph) {
+      this.rootGraph.clear()
     }
   }
 

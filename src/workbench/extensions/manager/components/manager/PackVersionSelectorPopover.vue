@@ -25,6 +25,7 @@
       v-model="selectedVersion"
       option-label="label"
       option-value="value"
+      option-disabled="isInstalled"
       :options="processedVersionOptions"
       :highlight-on-select="false"
       class="max-h-[50vh] w-full rounded-md border-none shadow-none"
@@ -45,7 +46,7 @@
                   value: slotProps.option.conflictMessage,
                   showDelay: 300
                 }"
-                class="pi pi-exclamation-triangle text-yellow-500"
+                class="icon-[lucide--triangle-alert] text-warning-background"
               />
               <VerifiedIcon v-else :size="20" class="relative right-0.5" />
             </template>
@@ -61,27 +62,27 @@
     <ContentDivider class="my-2" />
     <div class="flex justify-end gap-2 px-3 py-1">
       <Button
-        text
+        variant="muted-textonly"
         class="text-sm"
-        severity="secondary"
-        :label="$t('g.cancel')"
         :disabled="isQueueing"
         @click="emit('cancel')"
-      />
+      >
+        {{ $t('g.cancel') }}
+      </Button>
       <Button
-        severity="secondary"
-        :label="$t('g.install')"
-        class="dark-theme:bg-unset dark-theme:text-unset rounded-lg bg-black/80 px-4 py-2.5 text-sm text-neutral-100"
-        :disabled="isQueueing"
+        variant="secondary"
+        class="rounded-lg bg-secondary-background px-4 py-2.5 text-sm text-base-foreground"
+        :disabled="isInstallDisabled"
         @click="handleSubmit"
-      />
+      >
+        {{ $t('g.install') }}
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Button from 'primevue/button'
 import Listbox from 'primevue/listbox'
 import ProgressSpinner from 'primevue/progressspinner'
 import { valid as validSemver } from 'semver'
@@ -91,6 +92,7 @@ import { useI18n } from 'vue-i18n'
 import ContentDivider from '@/components/common/ContentDivider.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
@@ -135,8 +137,10 @@ const managerStore = useComfyManagerStore()
 const { checkNodeCompatibility } = useConflictDetection()
 
 const isQueueing = ref(false)
-
 const selectedVersion = ref<string>(SelectedVersionValues.LATEST)
+const isInstallDisabled = computed(
+  () => isQueueing.value || isVersionInstalled(selectedVersion.value)
+)
 onMounted(() => {
   const initialVersion =
     getInitialSelectedVersion() ?? SelectedVersionValues.LATEST
@@ -298,16 +302,25 @@ const isOptionSelected = (optionValue: string) => {
   }
   return false
 }
-// Checks if an option is selected, treating 'latest' as an alias for the actual latest version number.
+const isVersionInstalled = (version: string) => {
+  const installed = nodePack.id
+    ? managerStore.getInstalledPackVersion(nodePack.id)
+    : undefined
+  if (!installed) return false
+  if (version === 'latest')
+    return installed === nodePack.latest_version?.version
+  return version === installed
+}
+
 const processedVersionOptions = computed(() => {
   return versionOptions.value.map((option) => {
     const compatibility = getVersionCompatibility(option.value)
-    const isSelected = isOptionSelected(option.value)
     return {
       ...option,
       hasConflict: compatibility.hasConflict,
       conflictMessage: compatibility.conflictMessage,
-      isSelected: isSelected
+      isSelected: isOptionSelected(option.value),
+      isInstalled: isVersionInstalled(option.value)
     }
   })
 })

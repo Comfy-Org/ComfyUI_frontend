@@ -1,59 +1,72 @@
 <script setup lang="ts">
+import type { MaybeRefOrGetter } from 'vue'
+
 import { cn } from '@/utils/tailwindUtil'
+
+import type {
+  FilterOption,
+  OwnershipFilterOption,
+  OwnershipOption
+} from '@/platform/assets/types/filterTypes'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
-import type {
-  DropdownItem,
-  FilterOption,
-  LayoutMode,
-  OptionId,
-  SortOption
-} from './types'
+import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: DropdownItem[]
-  isSelected: (item: DropdownItem, index: number) => boolean
-  isQuerying: boolean
+  items: FormDropdownItem[]
+  isSelected: (item: FormDropdownItem, index: number) => boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
+  searcher?: (
+    query: string,
+    onCleanup: (cleanupFn: () => void) => void
+  ) => Promise<void>
+  updateKey?: MaybeRefOrGetter<unknown>
+  showOwnershipFilter?: boolean
+  ownershipOptions?: OwnershipFilterOption[]
+  showBaseModelFilter?: boolean
+  baseModelOptions?: FilterOption[]
 }
 
 defineProps<Props>()
 const emit = defineEmits<{
-  (e: 'item-click', item: DropdownItem, index: number): void
+  (e: 'item-click', item: FormDropdownItem, index: number): void
 }>()
 
-// Define models for two-way binding
-const filterSelected = defineModel<OptionId>('filterSelected')
+const filterSelected = defineModel<string>('filterSelected')
 const layoutMode = defineModel<LayoutMode>('layoutMode')
-const sortSelected = defineModel<OptionId>('sortSelected')
+const sortSelected = defineModel<string>('sortSelected')
 const searchQuery = defineModel<string>('searchQuery')
-
-// Handle item selection
+const ownershipSelected = defineModel<OwnershipOption>('ownershipSelected')
+const baseModelSelected = defineModel<Set<string>>('baseModelSelected')
 </script>
 
 <template>
   <div
-    class="flex max-h-[640px] w-103 flex-col rounded-lg bg-node-component-surface pt-4 outline outline-offset-[-1px] outline-node-component-border"
+    class="flex max-h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline outline-offset-[-1px] outline-node-component-border"
   >
-    <!-- Filter -->
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
       v-model:filter-selected="filterSelected"
-      :filter-options="filterOptions"
+      :filter-options
     />
-    <!-- Actions -->
     <FormDropdownMenuActions
       v-model:layout-mode="layoutMode"
       v-model:sort-selected="sortSelected"
       v-model:search-query="searchQuery"
-      :sort-options="sortOptions"
-      :is-querying="isQuerying"
+      v-model:ownership-selected="ownershipSelected"
+      v-model:base-model-selected="baseModelSelected"
+      :sort-options
+      :searcher
+      :update-key
+      :show-ownership-filter
+      :ownership-options
+      :show-base-model-filter
+      :base-model-options
     />
-    <!-- List -->
-    <div class="relative flex h-full overflow-hidden">
+    <div class="relative flex h-full mt-2 overflow-y-scroll">
       <div
         :class="
           cn(
@@ -66,27 +79,25 @@ const searchQuery = defineModel<string>('searchQuery')
           )
         "
       >
-        <div
-          class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5 bg-gradient-to-b from-backdrop to-transparent"
-        />
+        <div class="pointer-events-none absolute inset-x-3 top-0 z-10 h-5" />
         <div
           v-if="items.length === 0"
-          class="absolute inset-0 flex items-center justify-center"
+          class="h-50 col-span-full flex items-center justify-center"
         >
           <i
-            title="No items"
+            :title="$t('g.noItems')"
+            :aria-label="$t('g.noItems')"
             class="icon-[lucide--circle-off] size-30 text-zinc-500/20"
           />
         </div>
-        <!-- Item -->
         <FormDropdownMenuItem
           v-for="(item, index) in items"
           :key="item.id"
           :index="index"
           :selected="isSelected(item, index)"
-          :media-src="item.mediaSrc"
+          :preview-url="item.preview_url ?? ''"
           :name="item.name"
-          :metadata="item.metadata"
+          :label="item.label"
           :layout="layoutMode"
           @click="emit('item-click', item, index)"
         />

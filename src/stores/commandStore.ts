@@ -2,14 +2,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { ComfyExtension } from '@/types/comfy'
-
-import { useKeybindingStore } from './keybindingStore'
-import type { KeybindingImpl } from './keybindingStore'
 
 export interface ComfyCommand {
   id: string
-  function: () => void | Promise<void>
+  function: (metadata?: Record<string, unknown>) => void | Promise<void>
 
   label?: string | (() => string)
   icon?: string | (() => string)
@@ -24,7 +23,7 @@ export interface ComfyCommand {
 
 export class ComfyCommandImpl implements ComfyCommand {
   id: string
-  function: () => void | Promise<void>
+  function: (metadata?: Record<string, unknown>) => void | Promise<void>
   _label?: string | (() => string)
   _icon?: string | (() => string)
   _tooltip?: string | (() => string)
@@ -96,11 +95,17 @@ export const useCommandStore = defineStore('command', () => {
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
   const execute = async (
     commandId: string,
-    errorHandler?: (error: any) => void
+    options?: {
+      errorHandler?: (error: unknown) => void
+      metadata?: Record<string, unknown>
+    }
   ) => {
     const command = getCommand(commandId)
     if (command) {
-      await wrapWithErrorHandlingAsync(command.function, errorHandler)()
+      await wrapWithErrorHandlingAsync(
+        () => command.function(options?.metadata),
+        options?.errorHandler
+      )()
     } else {
       throw new Error(`Command ${commandId} not found`)
     }

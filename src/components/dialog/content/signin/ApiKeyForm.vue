@@ -48,7 +48,7 @@
           <small class="text-muted">
             {{ t('auth.apiKey.helpText') }}
             <a
-              :href="`${COMFY_PLATFORM_BASE_URL}/login`"
+              :href="`${comfyPlatformBaseUrl}/login`"
               target="_blank"
               class="cursor-pointer text-blue-500"
             >
@@ -67,10 +67,15 @@
       </div>
 
       <div class="mt-4 flex items-center justify-between">
-        <Button type="button" link @click="$emit('back')">
+        <Button type="button" variant="textonly" @click="$emit('back')">
           {{ t('g.back') }}
         </Button>
-        <Button type="submit" :loading="loading" :disabled="loading">
+        <Button
+          type="submit"
+          variant="primary"
+          :loading="loading"
+          :disabled="loading"
+        >
           {{ t('g.save') }}
         </Button>
       </div>
@@ -82,13 +87,17 @@
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
-import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { COMFY_PLATFORM_BASE_URL } from '@/config/comfyApi'
+import Button from '@/components/ui/button/Button.vue'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import {
+  configValueOrDefault,
+  remoteConfig
+} from '@/platform/remoteConfig/remoteConfig'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
@@ -96,6 +105,13 @@ import { useFirebaseAuthStore } from '@/stores/firebaseAuthStore'
 const authStore = useFirebaseAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
 const loading = computed(() => authStore.loading)
+const comfyPlatformBaseUrl = computed(() =>
+  configValueOrDefault(
+    remoteConfig.value,
+    'comfy_platform_base_url',
+    getComfyPlatformBaseUrl()
+  )
+)
 
 const { t } = useI18n()
 

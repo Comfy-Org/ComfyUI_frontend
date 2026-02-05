@@ -1,5 +1,10 @@
 <template>
-  <div ref="container" class="node-lib-node-container">
+  <div
+    ref="container"
+    class="node-lib-node-container"
+    data-testid="node-tree-leaf"
+    :data-node-name="nodeDef.display_name"
+  >
     <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
       <template #before-label>
         <Tag
@@ -13,47 +18,51 @@
           severity="danger"
         />
       </template>
-      <template
-        v-if="nodeDef.name.startsWith(useSubgraphStore().typePrefix)"
-        #actions
-      >
+      <template v-if="isUserBlueprint" #actions>
         <Button
-          size="small"
-          icon="pi pi-trash"
-          text
-          severity="danger"
+          variant="destructive"
+          size="icon-sm"
+          :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
+          <i class="icon-[lucide--trash-2] size-3.5" />
         </Button>
         <Button
-          size="small"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('g.edit')"
           @click.stop="editBlueprint"
         >
-          <template #icon>
-            <i class="icon-[lucide--square-pen]" />
-          </template>
+          <i class="icon-[lucide--square-pen] size-3.5" />
         </Button>
       </template>
       <template v-else #actions>
         <Button
           class="bookmark-button"
-          size="small"
-          :icon="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-          text
-          severity="secondary"
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('icon.bookmark')"
           @click.stop="toggleBookmark"
-        />
+        >
+          <i
+            :class="
+              cn(
+                isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark',
+                'size-3.5'
+              )
+            "
+          />
+        </Button>
         <Button
           v-tooltip.bottom="$t('g.learnMore')"
           class="help-button"
-          size="small"
-          icon="pi pi-question"
-          text
-          severity="secondary"
-          @click.stop="props.openNodeHelp(nodeDef)"
-        />
+          variant="muted-textonly"
+          size="icon-sm"
+          :aria-label="$t('g.learnMore')"
+          @click.stop="onHelpClick"
+        >
+          <i class="pi pi-question size-3.5" />
+        </Button>
       </template>
     </TreeExplorerTreeNode>
 
@@ -67,7 +76,6 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import Tag from 'primevue/tag'
@@ -77,11 +85,14 @@ import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { cn } from '@/utils/tailwindUtil'
 
 const { t } = useI18n()
 
@@ -104,6 +115,13 @@ const sidebarLocation = computed<'left' | 'right'>(() =>
 const toggleBookmark = async () => {
   await nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }
+
+const onHelpClick = () => {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'node_library_help_button'
+  })
+  props.openNodeHelp(nodeDef.value)
+}
 const editBlueprint = async () => {
   if (!props.node.data)
     throw new Error(
@@ -112,8 +130,18 @@ const editBlueprint = async () => {
   await useSubgraphStore().editBlueprint(props.node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
+const subgraphStore = useSubgraphStore()
+const isUserBlueprint = computed(() => {
+  const name = nodeDef.value.name
+  if (!name.startsWith(subgraphStore.typePrefix)) return false
+  return !subgraphStore.isGlobalBlueprint(
+    name.slice(subgraphStore.typePrefix.length)
+  )
+})
 const menuItems = computed<MenuItem[]>(() => {
-  const items: MenuItem[] = [
+  if (!isUserBlueprint.value) return []
+
+  return [
     {
       label: t('g.delete'),
       icon: 'pi pi-trash',
@@ -121,15 +149,14 @@ const menuItems = computed<MenuItem[]>(() => {
       command: deleteBlueprint
     }
   ]
-  return items
 })
 function handleContextMenu(event: Event) {
-  if (!nodeDef.value.name.startsWith(useSubgraphStore().typePrefix)) return
+  if (!isUserBlueprint.value) return
   menu.value?.show(event)
 }
 function deleteBlueprint() {
   if (!props.node.data) return
-  void useSubgraphStore().deleteBlueprint(props.node.data.name)
+  void subgraphStore.deleteBlueprint(props.node.data.name)
 }
 
 const nodePreviewStyle = ref<CSSProperties>({

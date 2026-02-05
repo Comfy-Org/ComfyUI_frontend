@@ -5,7 +5,7 @@ import type {
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { Keybinding } from '@/schemas/keyBindingSchema'
+import type { Keybinding } from '@/platform/keybindings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
@@ -57,6 +57,32 @@ export interface TopbarBadge {
   tooltip?: string
 }
 
+/*
+ * Action bar button definition: add buttons to the action bar
+ */
+export interface ActionBarButton {
+  /**
+   * Icon class to display (e.g., "icon-[lucide--message-circle-question-mark]")
+   */
+  icon: string
+  /**
+   * Optional label text to display next to the icon
+   */
+  label?: string
+  /**
+   * Optional tooltip text to show on hover
+   */
+  tooltip?: string
+  /**
+   * Optional CSS classes to apply to the button
+   */
+  class?: string
+  /**
+   * Click handler for the button
+   */
+  onClick: () => void
+}
+
 export type MissingNodeType =
   | string
   // Primarily used by group nodes.
@@ -103,19 +129,20 @@ export interface ComfyExtension {
    */
   topbarBadges?: TopbarBadge[]
   /**
+   * Buttons to add to the action bar
+   */
+  actionBarButtons?: ActionBarButton[]
+  /**
    * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
-   * @param app The ComfyUI app instance
    */
   init?(app: ComfyApp): Promise<void> | void
   /**
    * Allows any additional setup, called after the application is fully set up and running
-   * @param app The ComfyUI app instance
    */
   setup?(app: ComfyApp): Promise<void> | void
   /**
    * Called before nodes are registered with the graph
    * @param defs The collection of node definitions, add custom ones or edit existing ones
-   * @param app The ComfyUI app instance
    */
   addCustomNodeDefs?(
     defs: Record<string, ComfyNodeDef>,
@@ -125,7 +152,6 @@ export interface ComfyExtension {
   // getCustomWidgets.
   /**
    * Allows the extension to add custom widgets
-   * @param app The ComfyUI app instance
    * @returns An array of {[widget name]: widget data}
    */
   getCustomWidgets?(app: ComfyApp): Promise<Widgets> | Widgets
@@ -155,7 +181,7 @@ export interface ComfyExtension {
    * Allows the extension to add additional handling to the node before it is registered with **LGraph**
    * @param nodeType The node class (not an instance)
    * @param nodeData The original node object info config object
-   * @param app The ComfyUI app instance
+   * @param app The app instance
    */
   beforeRegisterNodeDef?(
     nodeType: typeof LGraphNode,
@@ -168,15 +194,13 @@ export interface ComfyExtension {
    * Modifications is expected to be made in place.
    *
    * @param defs The node definitions
-   * @param app The ComfyUI app instance
+   * @param app The app instance
    */
   beforeRegisterVueAppNodeDefs?(defs: ComfyNodeDef[], app: ComfyApp): void
 
   /**
    * Allows the extension to register additional nodes with LGraph after standard nodes are added.
    * Custom node classes should extend **LGraphNode**.
-   *
-   * @param app The ComfyUI app instance
    */
   registerCustomNodes?(app: ComfyApp): Promise<void> | void
   /**
@@ -184,13 +208,13 @@ export interface ComfyExtension {
    * If you break something in the backend and want to patch workflows in the frontend
    * This is the place to do this
    * @param node The node that has been loaded
-   * @param app The ComfyUI app instance
+   * @param app The app instance
    */
   loadedGraphNode?(node: LGraphNode, app: ComfyApp): void
   /**
    * Allows the extension to run code after the constructor of the node
    * @param node The node that has been created
-   * @param app The ComfyUI app instance
+   * @param app The app instance
    */
   nodeCreated?(node: LGraphNode, app: ComfyApp): void
 
@@ -198,18 +222,22 @@ export interface ComfyExtension {
    * Allows the extension to modify the graph data before it is configured.
    * @param graphData The graph data
    * @param missingNodeTypes The missing node types
+   * @param app The app instance
    */
   beforeConfigureGraph?(
     graphData: ComfyWorkflowJSON,
-    missingNodeTypes: MissingNodeType[]
+    missingNodeTypes: MissingNodeType[],
+    app: ComfyApp
   ): Promise<void> | void
 
   /**
    * Allows the extension to run code after the graph is configured.
    * @param missingNodeTypes The missing node types
+   * @param app The app instance
    */
   afterConfigureGraph?(
-    missingNodeTypes: MissingNodeType[]
+    missingNodeTypes: MissingNodeType[],
+    app: ComfyApp
   ): Promise<void> | void
 
   /**

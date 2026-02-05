@@ -10,7 +10,7 @@
     ></div>
 
     <ButtonGroup
-      class="absolute right-0 bottom-0 z-[1200] flex-row gap-1 border-[1px] border-[var(--interface-stroke)] bg-interface-panel-surface p-2"
+      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border-[1px] border-interface-stroke bg-comfy-menu-bg p-2"
       :style="{
         ...stringifiedMinimapStyles.buttonGroupStyles
       }"
@@ -24,23 +24,18 @@
 
       <Button
         v-tooltip.top="fitViewTooltip"
-        severity="secondary"
-        icon="pi pi-expand"
+        variant="secondary"
         :aria-label="fitViewTooltip"
         :style="stringifiedMinimapStyles.buttonStyles"
-        class="h-8 w-8 bg-interface-panel-surface p-0 hover:bg-button-hover-surface!"
+        class="h-8 w-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
-        <template #icon>
-          <i class="icon-[lucide--focus] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--focus] h-4 w-4" />
       </Button>
 
       <Button
-        ref="zoomButton"
         v-tooltip.top="t('zoomControls.label')"
-        severity="secondary"
-        :label="t('zoomControls.label')"
+        variant="secondary"
         :class="zoomButtonClass"
         :aria-label="t('zoomControls.label')"
         data-testid="zoom-controls-button"
@@ -56,18 +51,15 @@
       <div class="h-[27px] w-[1px] self-center bg-node-divider" />
 
       <Button
-        ref="minimapButton"
         v-tooltip.top="minimapTooltip"
-        severity="secondary"
+        variant="secondary"
         :aria-label="minimapTooltip"
         data-testid="toggle-minimap-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         :class="minimapButtonClass"
         @click="onMinimapToggleClick"
       >
-        <template #icon>
-          <i class="icon-[lucide--map] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--map] h-4 w-4" />
       </Button>
 
       <Button
@@ -79,27 +71,25 @@
             }
           }
         }"
-        severity="secondary"
+        variant="secondary"
         :class="linkVisibleClass"
         :aria-label="linkVisibilityAriaLabel"
         data-testid="toggle-link-visibility-button"
         :style="stringifiedMinimapStyles.buttonStyles"
         @click="onLinkVisibilityToggleClick"
       >
-        <template #icon>
-          <i class="icon-[lucide--route-off] h-4 w-4" />
-        </template>
+        <i class="icon-[lucide--route-off] h-4 w-4" />
       </Button>
     </ButtonGroup>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ButtonGroup from 'primevue/buttongroup'
 import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useZoomControls } from '@/composables/useZoomControls'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -166,18 +156,18 @@ const minimapCommandText = computed(() =>
 
 // Computed properties for button classes and states
 const zoomButtonClass = computed(() => [
-  'bg-interface-panel-surface',
-  isModalVisible.value ? 'not-active:bg-button-active-surface!' : '',
-  'hover:bg-button-hover-surface!',
+  'bg-comfy-menu-bg',
+  isModalVisible.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
+  'hover:bg-interface-button-hover-surface!',
   'p-0',
   'h-8',
   'w-15'
 ])
 
 const minimapButtonClass = computed(() => ({
-  'bg-interface-panel-surface': true,
-  'hover:bg-button-hover-surface!': true,
-  'not-active:bg-button-active-surface!': settingStore.get(
+  'bg-comfy-menu-bg': true,
+  'hover:bg-interface-button-hover-surface!': true,
+  'not-active:bg-interface-panel-selected-surface!': settingStore.get(
     'Comfy.Minimap.Visible'
   ),
   'p-0': true,
@@ -209,9 +199,9 @@ const linkVisibilityAriaLabel = computed(() =>
     : t('graphCanvasMenu.hideLinks')
 )
 const linkVisibleClass = computed(() => [
-  'bg-interface-panel-surface',
-  linkHidden.value ? 'not-active:bg-button-active-surface!' : '',
-  'hover:bg-button-hover-surface!',
+  'bg-comfy-menu-bg',
+  linkHidden.value ? 'not-active:bg-interface-panel-selected-surface!' : '',
+  'hover:bg-interface-button-hover-surface!',
   'p-0',
   'w-8',
   'h-8'

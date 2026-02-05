@@ -6,7 +6,6 @@
   -moz-user-select: none;
   -webkit-user-select: none;
   outline: none;
-  font-family: Tahoma, sans-serif;
 }
 
 .lgraphcanvas * {
@@ -14,15 +13,14 @@
 }
 
 .litegraph.litecontextmenu {
-  font-family: Tahoma, sans-serif;
   position: fixed;
   top: 100px;
   left: 100px;
   min-width: 100px;
   color: #aaf;
   padding: 0;
-  box-shadow: 0 0 10px black !important;
-  background-color: #2e2e2e !important;
+  box-shadow: 0 0 10px black;
+  background-color: #2e2e2e;
   z-index: 10;
   max-height: -webkit-fill-available;
   overflow-y: auto;
@@ -36,10 +34,6 @@
   }
 }
 
-.litegraph.litecontextmenu.dark {
-  background-color: #000 !important;
-}
-
 .litegraph.litecontextmenu .litemenu-title img {
   margin-top: 2px;
   margin-left: 2px;
@@ -51,16 +45,7 @@
   padding: 2px;
 }
 
-.litegraph.litecontextmenu .litemenu-entry.submenu {
-  background-color: #2e2e2e !important;
-}
-
-.litegraph.litecontextmenu.dark .litemenu-entry.submenu {
-  background-color: #000 !important;
-}
-
 .litegraph .litemenubar ul {
-  font-family: Tahoma, sans-serif;
   margin: 0;
   padding: 0;
 }
@@ -132,14 +117,13 @@
 
 .litegraph .litemenu-entry.separator {
   display: block;
-  border-top: 1px solid #333;
-  border-bottom: 1px solid #666;
+  border-top: 1px solid var(--border-default);
   width: 100%;
   height: 0px;
   margin: 3px 0 2px 0;
   background-color: transparent;
-  padding: 0 !important;
-  cursor: default !important;
+  padding: 0;
+  cursor: default;
 }
 
 .litegraph .litemenu-entry.has_submenu {
@@ -155,8 +139,8 @@
 }
 
 .litegraph .litemenu-entry:hover:not(.disabled):not(.separator) {
-  background-color: #444 !important;
-  color: #eee;
+  background-color: var(--palette-interface-panel-hover-surface);
+  color: var(--content-hover-fg);
   transition: all 0.2s;
 }
 
@@ -178,7 +162,6 @@
 }
 
 .litegraph.litesearchbox {
-  font-family: Tahoma, sans-serif;
   position: absolute;
   background-color: rgba(0, 0, 0, 0.5);
   padding-top: 4px;
@@ -211,7 +194,6 @@
 }
 
 .litegraph.lite-search-item {
-  font-family: Tahoma, sans-serif;
   background-color: rgba(0, 0, 0, 0.5);
   color: white;
   padding-top: 2px;
@@ -259,7 +241,8 @@
   margin-top: -150px;
   margin-left: -200px;
 
-  background-color: #2a2a2a;
+  color: var(--base-foreground);
+  background-color: var(--comfy-menu-bg);
 
   min-width: 400px;
   min-height: 200px;
@@ -299,8 +282,7 @@
 }
 
 .litegraph .dialog .dialog-header {
-  color: #aaa;
-  border-bottom: 1px solid #161616;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .litegraph .dialog .dialog-header {
@@ -310,11 +292,11 @@
   height: 50px;
   padding: 10px;
   margin: 0;
-  border-top: 1px solid #1a1a1a;
+  border-top: 1px solid var(--border-default);
 }
 
 .litegraph .dialog .dialog-header .dialog-title {
-  font: 20px "Arial";
+  font: 1rem;
   margin: 4px;
   padding: 4px 10px;
   display: inline-block;
@@ -326,7 +308,7 @@
   width: 100%;
   min-height: 100px;
   display: inline-block;
-  color: #aaa;
+  /* color: #aaa; */
   /*background-color: black;*/
   overflow: auto;
 }
@@ -362,8 +344,7 @@
   display: block;
   width: calc(100% - 4px);
   height: 1px;
-  border-top: 1px solid #000;
-  border-bottom: 1px solid #333;
+  border-top: 1px solid var(--border-default);
   margin: 10px 2px;
   padding: 0;
 }
@@ -373,12 +354,8 @@
   padding: 4px;
 }
 
-.litegraph .dialog .property:hover {
-  background: #545454;
-}
-
 .litegraph .dialog .property_name {
-  color: #737373;
+  color: var(--muted-foreground);
   display: inline-block;
   text-align: left;
   vertical-align: top;
@@ -395,8 +372,8 @@
 .litegraph .dialog .property_value {
   display: inline-block;
   text-align: right;
-  color: #aaa;
-  background-color: #1a1a1a;
+  color: var(--input-text);
+  background-color: var(--component-node-widget-background);
   /*width: calc( 100% - 122px );*/
   max-width: calc(100% - 162px);
   min-width: 200px;
@@ -432,18 +409,18 @@
   border-radius: 4px;
   padding: 4px 20px;
   margin-left: 0px;
-  background-color: #060606;
-  color: #8e8e8e;
+  background-color: var(--secondary-background);
+  color: var(--base-foreground);
 }
 
 .litegraph .dialog .btn:hover {
-  background-color: #111;
-  color: #fff;
+  background-color: var(--secondary-background-hover);
+  color: var(--base-foreground);
 }
 
 .litegraph .dialog .btn.delete:hover {
-  background-color: #f33;
-  color: black;
+  background-color: var(--color-danger-100);
+  color: var(--base-foreground);
 }
 
 .litegraph .bullet_icon {
@@ -497,11 +474,11 @@
 
 .graphmenu-entry.danger,
 .litemenu-entry.danger {
-  color: var(--error-text) !important;
+  color: var(--error-text);
 }
 
 .litegraph .litemenu-entry.danger:hover:not(.disabled) {
-  color: var(--error-text) !important;
+  color: var(--error-text);
   opacity: 0.8;
 }
 
@@ -518,8 +495,7 @@
 }
 
 .graphmenu-entry.separator {
-  background-color: #111;
-  border-bottom: 1px solid #666;
+  background-color: var(--border-default);
   height: 1px;
   width: calc(100% - 20px);
   -moz-width: calc(100% - 20px);
@@ -551,7 +527,7 @@
   min-height: 2em;
   background-color: #333;
   font-size: 1.2em;
-  box-shadow: 0 0 10px black !important;
+  box-shadow: 0 0 10px black;
   z-index: 10;
 }
 
@@ -637,7 +613,7 @@
   margin: 0 10px;
   padding: 2px 5px;
 }
-.litegraph .graphdialog input[type="checkbox"] {
+.litegraph .graphdialog input[type='checkbox'] {
   width: 16px;
   height: 16px;
 }

@@ -1,6 +1,9 @@
 import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
+import type { RendererType } from '@/lib/litegraph/src/LGraph'
+
+const zRendererType = z.enum(['LG', 'Vue']) satisfies z.ZodType<RendererType>
 
 // GroupNode is hacking node id to be a string, so we need to allow that.
 // innerNode.id = `${this.node.id}:${i}`
@@ -271,7 +274,10 @@ const zExtra = z
     ds: zDS.optional(),
     frontendVersion: z.string().optional(),
     linkExtensions: z.array(zComfyLinkExtension).optional(),
-    reroutes: z.array(zReroute).optional()
+    reroutes: z.array(zReroute).optional(),
+    workflowRendererVersion: zRendererType.optional(),
+    BlueprintDescription: z.string().optional(),
+    BlueprintSearchAliases: z.array(z.string()).optional()
   })
   .passthrough()
 
@@ -390,6 +396,11 @@ interface SubgraphDefinitionBase<
   id: string
   revision: number
   name: string
+  category?: string
+  /** Custom metadata for the subgraph (description, searchAliases, etc.) */
+  extra?: T extends ComfyWorkflow1BaseInput
+    ? z.input<typeof zExtra> | null
+    : z.output<typeof zExtra> | null
 
   inputNode: T extends ComfyWorkflow1BaseInput
     ? z.input<typeof zExportedSubgraphIONode>
@@ -421,6 +432,7 @@ const zSubgraphDefinition = zComfyWorkflow1
     id: z.string().uuid(),
     revision: z.number(),
     name: z.string(),
+    category: z.string().optional(),
     inputNode: zExportedSubgraphIONode,
     outputNode: zExportedSubgraphIONode,
 
@@ -448,7 +460,6 @@ const zSubgraphDefinition = zComfyWorkflow1
   .passthrough()
 
 export type ModelFile = z.infer<typeof zModelFile>
-export type ComfyLink = z.infer<typeof zComfyLink>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>
 export type Reroute = z.infer<typeof zReroute>
@@ -462,14 +473,14 @@ type SubgraphDefinition = z.infer<typeof zSubgraphDefinition>
  * Type guard to check if an object is a SubgraphDefinition.
  * This helps TypeScript understand the type when z.lazy() breaks inference.
  */
-export function isSubgraphDefinition(obj: any): obj is SubgraphDefinition {
+export function isSubgraphDefinition(obj: unknown): obj is SubgraphDefinition {
   return (
-    obj &&
+    obj !== null &&
     typeof obj === 'object' &&
     'id' in obj &&
     'name' in obj &&
     'nodes' in obj &&
-    Array.isArray(obj.nodes) &&
+    Array.isArray((obj as SubgraphDefinition).nodes) &&
     'inputNode' in obj &&
     'outputNode' in obj
   )
@@ -510,6 +521,7 @@ export async function validateComfyWorkflow(
  */
 const zNodeInputValue = z.union([
   // For widget values (can be any type)
+
   z.any(),
   // For node links [nodeId, slotIndex]
   z.tuple([zNodeId, zSlotIndex])

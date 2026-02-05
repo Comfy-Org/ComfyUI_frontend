@@ -2,10 +2,13 @@ import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import type {
   CameraConfig,
+  CameraState,
   LightConfig,
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
+import type { Dictionary } from '@/lib/litegraph/src/interfaces'
+import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -13,14 +16,17 @@ import { api } from '@/scripts/api'
 type Load3DConfigurationSettings = {
   loadFolder: string
   modelWidget: IBaseWidget
-  cameraState?: any
+  cameraState?: CameraState
   width?: IBaseWidget
   height?: IBaseWidget
   bgImagePath?: string
 }
 
 class Load3DConfiguration {
-  constructor(private load3d: Load3d) {}
+  constructor(
+    private load3d: Load3d,
+    private properties?: Dictionary<NodeProperty | undefined>
+  ) {}
 
   configureForSaveMesh(loadFolder: 'input' | 'output', filePath: string) {
     this.setupModelHandlingForSaveMesh(filePath, loadFolder)
@@ -62,7 +68,7 @@ class Load3DConfiguration {
   private setupModelHandling(
     modelWidget: IBaseWidget,
     loadFolder: string,
-    cameraState?: any
+    cameraState?: CameraState
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
       loadFolder,
@@ -110,48 +116,49 @@ class Load3DConfiguration {
   }
 
   private loadSceneConfig(): SceneConfig {
-    const defaultConfig: SceneConfig = {
+    if (this.properties && 'Scene Config' in this.properties) {
+      return this.properties['Scene Config'] as SceneConfig
+    }
+
+    return {
       showGrid: useSettingStore().get('Comfy.Load3D.ShowGrid'),
       backgroundColor:
         '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor'),
       backgroundImage: ''
-    }
-
-    const config = this.load3d.loadNodeProperty('Scene Config', defaultConfig)
-    this.load3d.node.properties['Scene Config'] = config
-    return config
+    } as SceneConfig
   }
 
   private loadCameraConfig(): CameraConfig {
-    const defaultConfig: CameraConfig = {
-      cameraType: useSettingStore().get('Comfy.Load3D.CameraType'),
-      fov: 35
+    if (this.properties && 'Camera Config' in this.properties) {
+      return this.properties['Camera Config'] as CameraConfig
     }
 
-    const config = this.load3d.loadNodeProperty('Camera Config', defaultConfig)
-    this.load3d.node.properties['Camera Config'] = config
-    return config
+    return {
+      cameraType: useSettingStore().get('Comfy.Load3D.CameraType'),
+      fov: 35
+    } as CameraConfig
   }
 
   private loadLightConfig(): LightConfig {
-    const defaultConfig: LightConfig = {
-      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity')
+    if (this.properties && 'Light Config' in this.properties) {
+      return this.properties['Light Config'] as LightConfig
     }
 
-    const config = this.load3d.loadNodeProperty('Light Config', defaultConfig)
-    this.load3d.node.properties['Light Config'] = config
-    return config
+    return {
+      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity')
+    } as LightConfig
   }
 
   private loadModelConfig(): ModelConfig {
-    const defaultConfig: ModelConfig = {
-      upDirection: 'original',
-      materialMode: 'original'
+    if (this.properties && 'Model Config' in this.properties) {
+      return this.properties['Model Config'] as ModelConfig
     }
 
-    const config = this.load3d.loadNodeProperty('Model Config', defaultConfig)
-    this.load3d.node.properties['Model Config'] = config
-    return config
+    return {
+      upDirection: 'original',
+      materialMode: 'original',
+      showSkeleton: false
+    }
   }
 
   private applySceneConfig(config: SceneConfig, bgImagePath?: string) {
@@ -162,7 +169,11 @@ class Load3DConfiguration {
         return
       }
 
-      this.load3d.setBackgroundImage(config.backgroundImage)
+      void this.load3d.setBackgroundImage(config.backgroundImage)
+
+      if (config.backgroundRenderMode) {
+        this.load3d.setBackgroundRenderMode(config.backgroundRenderMode)
+      }
     }
   }
 
@@ -184,7 +195,10 @@ class Load3DConfiguration {
     this.load3d.setMaterialMode(config.materialMode)
   }
 
-  private createModelUpdateHandler(loadFolder: string, cameraState?: any) {
+  private createModelUpdateHandler(
+    loadFolder: string,
+    cameraState?: CameraState
+  ) {
     let isFirstLoad = true
     return async (value: string | number | boolean | object) => {
       if (!value) return
@@ -205,7 +219,7 @@ class Load3DConfiguration {
       const modelConfig = this.loadModelConfig()
       this.applyModelConfig(modelConfig)
 
-      if (isFirstLoad && cameraState && typeof cameraState === 'object') {
+      if (isFirstLoad && cameraState) {
         try {
           this.load3d.setCameraState(cameraState)
         } catch (error) {
@@ -226,8 +240,8 @@ class Load3DConfiguration {
     const subfolderParts = pathParts.slice(1, -1)
     const subfolder = subfolderParts.join('/')
 
-    if (subfolder) {
-      this.load3d.node.properties['Resource Folder'] = subfolder
+    if (subfolder && this.properties) {
+      this.properties['Resource Folder'] = subfolder
     }
   }
 }

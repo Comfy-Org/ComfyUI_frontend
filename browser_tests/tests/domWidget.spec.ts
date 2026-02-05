@@ -3,12 +3,12 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '../fixtures/ComfyPage'
 
 test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.setSetting('Comfy.UseNewMenu', 'Disabled')
+  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
 })
 
-test.describe('DOM Widget', () => {
+test.describe('DOM Widget', { tag: '@widget' }, () => {
   test('Collapsed multiline textarea is not visible', async ({ comfyPage }) => {
-    await comfyPage.loadWorkflow('widgets/collapsed_multiline')
+    await comfyPage.workflow.loadWorkflow('widgets/collapsed_multiline')
     const textareaWidget = comfyPage.page.locator('.comfy-multiline-input')
     await expect(textareaWidget).not.toBeVisible()
   })
@@ -21,7 +21,7 @@ test.describe('DOM Widget', () => {
     await expect(firstMultiline).toBeVisible()
     await expect(lastMultiline).toBeVisible()
 
-    const nodes = await comfyPage.getNodeRefsByType('CLIPTextEncode')
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
     for (const node of nodes) {
       await node.click('collapse')
     }
@@ -29,12 +29,16 @@ test.describe('DOM Widget', () => {
     await expect(lastMultiline).not.toBeVisible()
   })
 
-  test('Position update when entering focus mode', async ({ comfyPage }) => {
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.executeCommand('Workspace.ToggleFocusMode')
-    await comfyPage.nextFrame()
-    await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
-  })
+  test(
+    'Position update when entering focus mode',
+    { tag: '@screenshot' },
+    async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+      await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
+      await comfyPage.nextFrame()
+      await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
+    }
+  )
 
   // No DOM widget should be created by creation of interim LGraphNode objects.
   test('Copy node with DOM widget by dragging + alt', async ({ comfyPage }) => {
@@ -64,9 +68,9 @@ test.describe('DOM Widget', () => {
       .first()
     await expect(textareaWidget).toBeVisible()
 
-    await comfyPage.setSetting('Comfy.Sidebar.Size', 'small')
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'left')
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'small')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'left')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.nextFrame()
 
     let oldPos: [number, number]
@@ -81,15 +85,15 @@ test.describe('DOM Widget', () => {
 
     // --- test ---
 
-    await comfyPage.setSetting('Comfy.Sidebar.Size', 'normal')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'normal')
     await comfyPage.nextFrame()
     await checkBboxChange()
 
-    await comfyPage.setSetting('Comfy.Sidebar.Location', 'right')
+    await comfyPage.settings.setSetting('Comfy.Sidebar.Location', 'right')
     await comfyPage.nextFrame()
     await checkBboxChange()
 
-    await comfyPage.setSetting('Comfy.UseNewMenu', 'Bottom')
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Bottom')
     await comfyPage.nextFrame()
     await checkBboxChange()
   })

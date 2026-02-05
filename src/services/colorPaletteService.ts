@@ -14,13 +14,13 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 const THEME_PROPERTY_MAP = {
-  NODE_BOX_OUTLINE_COLOR: 'node-component-border',
-  NODE_DEFAULT_BGCOLOR: 'node-component-surface',
+  NODE_BOX_OUTLINE_COLOR: 'component-node-border',
+  NODE_DEFAULT_BGCOLOR: 'component-node-background',
   NODE_DEFAULT_BOXCOLOR: 'node-component-header-icon',
   NODE_DEFAULT_COLOR: 'node-component-header-surface',
   NODE_TITLE_COLOR: 'node-component-header',
-  WIDGET_BGCOLOR: 'node-component-widget-input-surface',
-  WIDGET_TEXT_COLOR: 'node-component-widget-input'
+  WIDGET_BGCOLOR: 'component-node-widget-background',
+  WIDGET_TEXT_COLOR: 'component-node-foreground'
 } as const satisfies Partial<Record<keyof Colors['litegraph_base'], string>>
 
 export const useColorPaletteService = () => {
@@ -97,12 +97,32 @@ export const useColorPaletteService = () => {
     )
   }
 
+  function loadLinkColorPaletteForVueNodes(
+    linkColorPalette: Colors['node_slot']
+  ) {
+    if (!linkColorPalette) return
+    const rootStyle = document.body?.style
+    if (!rootStyle) return
+
+    for (const dataType of nodeDefStore.nodeDataTypes) {
+      const cssVar = `color-datatype-${dataType}`
+
+      const valueMaybe =
+        linkColorPalette[dataType as unknown as keyof Colors['node_slot']]
+      if (valueMaybe) {
+        rootStyle.setProperty(`--${cssVar}`, valueMaybe)
+      } else {
+        rootStyle.removeProperty(`--${cssVar}`)
+      }
+    }
+  }
+
   function loadLitegraphForVueNodes(
     palette: Colors['litegraph_base'],
     colorPaletteId: string
   ) {
     if (!palette) return
-    const rootStyle = document.getElementById('vue-app')?.style
+    const rootStyle = document.body?.style
     if (!rootStyle) return
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
@@ -141,22 +161,25 @@ export const useColorPaletteService = () => {
     }
     app.canvas._pattern = undefined
 
-    for (const [key, value] of Object.entries(palette)) {
-      if (Object.prototype.hasOwnProperty.call(LiteGraph, key)) {
-        if (key === 'NODE_DEFAULT_SHAPE' && typeof value === 'string') {
-          console.warn(
-            `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
-              LiteGraph.BOX_SHAPE,
-              LiteGraph.ROUND_SHAPE,
-              LiteGraph.CARD_SHAPE
-            ].join(', ')}] but got ${value}`
-          )
-          LiteGraph.NODE_DEFAULT_SHAPE = LiteGraph.ROUND_SHAPE
-        } else {
-          ;(LiteGraph as any)[key] = value
-        }
-      }
+    if (typeof palette.NODE_DEFAULT_SHAPE === 'string')
+      console.warn(
+        `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
+          LiteGraph.BOX_SHAPE,
+          LiteGraph.ROUND_SHAPE,
+          LiteGraph.CARD_SHAPE
+        ].join(', ')}] but got ${palette.NODE_DEFAULT_SHAPE}`
+      )
+
+    const default_shape =
+      typeof palette.NODE_DEFAULT_SHAPE === 'string'
+        ? LiteGraph.ROUND_SHAPE
+        : palette.NODE_DEFAULT_SHAPE
+    const sanitizedPalette: Partial<typeof LiteGraph> = {
+      ...palette,
+      NODE_DEFAULT_SHAPE: default_shape
     }
+
+    Object.assign(LiteGraph, sanitizedPalette)
   }
 
   /**
@@ -202,10 +225,7 @@ export const useColorPaletteService = () => {
 
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
     if (backgroundImage) {
-      rootStyle.setProperty(
-        '--bg-img',
-        `url('${backgroundImage}') no-repeat center /cover`
-      )
+      rootStyle.setProperty('--bg-img', `url('${backgroundImage}')`)
     } else {
       rootStyle.removeProperty('--bg-img')
     }
@@ -229,6 +249,7 @@ export const useColorPaletteService = () => {
       completedPalette.colors.litegraph_base,
       colorPaletteId
     )
+    loadLinkColorPaletteForVueNodes(completedPalette.colors.node_slot)
     loadComfyColorPalette(completedPalette.colors.comfy_base)
     app.canvas.setDirty(true, true)
 

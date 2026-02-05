@@ -9,6 +9,7 @@
         'tree-leaf': props.node.leaf
       }
     ]"
+    :data-testid="`tree-node-${node.key}`"
   >
     <div class="node-content">
       <span class="node-label">
@@ -28,7 +29,7 @@
       />
     </div>
     <div
-      class="node-actions motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
+      class="node-actions flex gap-1 touch:opacity-100 motion-safe:opacity-0 motion-safe:group-hover/tree-node:opacity-100"
     >
       <slot name="actions" :node="props.node" />
     </div>

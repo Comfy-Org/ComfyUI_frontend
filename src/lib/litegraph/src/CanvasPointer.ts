@@ -35,17 +35,17 @@ export class CanvasPointer {
 
   /** Maximum offset from click location */
   static get maxClickDrift() {
-    return this.#maxClickDrift
+    return this._maxClickDrift
   }
 
   static set maxClickDrift(value) {
-    this.#maxClickDrift = value
-    this.#maxClickDrift2 = value * value
+    this._maxClickDrift = value
+    this._maxClickDrift2 = value * value
   }
 
-  static #maxClickDrift = 6
+  private static _maxClickDrift = 6
   /** {@link maxClickDrift} squared.  Used to calculate click drift without `sqrt`. */
-  static #maxClickDrift2 = this.#maxClickDrift ** 2
+  private static _maxClickDrift2 = this._maxClickDrift ** 2
 
   /** Assume that "wheel" events with both deltaX and deltaY less than this value are trackpad gestures. */
   static trackpadThreshold = 60
@@ -157,18 +157,18 @@ export class CanvasPointer {
    * Therefore, simply setting this value twice will execute the first callback.
    */
   get finally() {
-    return this.#finally
+    return this._finally
   }
 
   set finally(value) {
     try {
-      this.#finally?.()
+      this._finally?.()
     } finally {
-      this.#finally = value
+      this._finally = value
     }
   }
 
-  #finally?: () => unknown
+  private _finally?: () => unknown
 
   constructor(element: Element) {
     this.element = element
@@ -201,7 +201,7 @@ export class CanvasPointer {
 
     // Primary button released - treat as pointerup.
     if (!(e.buttons & eDown.buttons)) {
-      this.#completeClick(e)
+      this._completeClick(e)
       this.reset()
       return
     }
@@ -213,8 +213,8 @@ export class CanvasPointer {
 
     const longerThanBufferTime =
       e.timeStamp - eDown.timeStamp > CanvasPointer.bufferTime
-    if (longerThanBufferTime || !this.#hasSamePosition(e, eDown)) {
-      this.#setDragStarted(e)
+    if (longerThanBufferTime || !this._hasSamePosition(e, eDown)) {
+      this._setDragStarted(e)
     }
   }
 
@@ -225,13 +225,13 @@ export class CanvasPointer {
   up(e: CanvasPointerEvent): boolean {
     if (e.button !== this.eDown?.button) return false
 
-    this.#completeClick(e)
+    this._completeClick(e)
     const { dragStarted } = this
     this.reset()
     return !dragStarted
   }
 
-  #completeClick(e: CanvasPointerEvent): void {
+  private _completeClick(e: CanvasPointerEvent): void {
     const { eDown } = this
     if (!eDown) return
 
@@ -240,11 +240,11 @@ export class CanvasPointer {
     if (this.dragStarted) {
       // A move event already started drag
       this.onDragEnd?.(e)
-    } else if (!this.#hasSamePosition(e, eDown)) {
+    } else if (!this._hasSamePosition(e, eDown)) {
       // Teleport without a move event (e.g. tab out, move, tab back)
-      this.#setDragStarted()
+      this._setDragStarted()
       this.onDragEnd?.(e)
-    } else if (this.onDoubleClick && this.#isDoubleClick()) {
+    } else if (this.onDoubleClick && this._isDoubleClick()) {
       // Double-click event
       this.onDoubleClick(e)
       this.eLastDown = undefined
@@ -262,10 +262,10 @@ export class CanvasPointer {
    * @param tolerance2 The maximum distance (squared) before the positions are considered different
    * @returns `true` if the two events were no more than {@link maxClickDrift} apart, otherwise `false`
    */
-  #hasSamePosition(
+  private _hasSamePosition(
     a: PointerEvent,
     b: PointerEvent,
-    tolerance2 = CanvasPointer.#maxClickDrift2
+    tolerance2 = CanvasPointer._maxClickDrift2
   ): boolean {
     const drift = dist2(a.clientX, a.clientY, b.clientX, b.clientY)
     return drift <= tolerance2
@@ -275,21 +275,21 @@ export class CanvasPointer {
    * Checks whether the pointer is currently past the max click drift threshold.
    * @returns `true` if the latest pointer event is past the the click drift threshold
    */
-  #isDoubleClick(): boolean {
+  private _isDoubleClick(): boolean {
     const { eDown, eLastDown } = this
     if (!eDown || !eLastDown) return false
 
     // Use thrice the drift distance for double-click gap
-    const tolerance2 = (3 * CanvasPointer.#maxClickDrift) ** 2
+    const tolerance2 = (3 * CanvasPointer._maxClickDrift) ** 2
     const diff = eDown.timeStamp - eLastDown.timeStamp
     return (
       diff > 0 &&
       diff < CanvasPointer.doubleClickTime &&
-      this.#hasSamePosition(eDown, eLastDown, tolerance2)
+      this._hasSamePosition(eDown, eLastDown, tolerance2)
     )
   }
 
-  #setDragStarted(eMove?: CanvasPointerEvent): void {
+  private _setDragStarted(eMove?: CanvasPointerEvent): void {
     this.dragStarted = true
     this.onDragStart?.(this, eMove)
     delete this.onDragStart
@@ -307,14 +307,14 @@ export class CanvasPointer {
     const timeSinceLastEvent = Math.max(0, now - this.lastWheelEventTime)
     this.lastWheelEventTime = now
 
-    if (this.#isHighResWheelEvent(e, now)) {
+    if (this._isHighResWheelEvent(e, now)) {
       this.detectedDevice = 'mouse'
-    } else if (this.#isWithinCooldown(timeSinceLastEvent)) {
-      if (this.#shouldBufferLinuxEvent(e)) {
-        this.#bufferLinuxEvent(e, now)
+    } else if (this._isWithinCooldown(timeSinceLastEvent)) {
+      if (this._shouldBufferLinuxEvent(e)) {
+        this._bufferLinuxEvent(e, now)
       }
     } else {
-      this.#updateDeviceMode(e, now)
+      this._updateDeviceMode(e, now)
       this.hasReceivedWheelEvent = true
     }
 
@@ -325,7 +325,7 @@ export class CanvasPointer {
    * Validates buffered high res wheel events and switches to mouse mode if pattern matches.
    * @returns `true` if switched to mouse mode
    */
-  #isHighResWheelEvent(event: WheelEvent, now: number): boolean {
+  private _isHighResWheelEvent(event: WheelEvent, now: number): boolean {
     if (!this.bufferedLinuxEvent || this.bufferedLinuxEventTime <= 0) {
       return false
     }
@@ -333,15 +333,15 @@ export class CanvasPointer {
     const timeSinceBuffer = now - this.bufferedLinuxEventTime
 
     if (timeSinceBuffer > CanvasPointer.maxHighResBufferTime) {
-      this.#clearLinuxBuffer()
+      this._clearLinuxBuffer()
       return false
     }
 
     if (
       event.deltaX === 0 &&
-      this.#isLinuxWheelPattern(this.bufferedLinuxEvent.deltaY, event.deltaY)
+      this._isLinuxWheelPattern(this.bufferedLinuxEvent.deltaY, event.deltaY)
     ) {
-      this.#clearLinuxBuffer()
+      this._clearLinuxBuffer()
       return true
     }
 
@@ -351,7 +351,7 @@ export class CanvasPointer {
   /**
    * Checks if we're within the cooldown period where mode switching is disabled.
    */
-  #isWithinCooldown(timeSinceLastEvent: number): boolean {
+  private _isWithinCooldown(timeSinceLastEvent: number): boolean {
     const isFirstEvent = !this.hasReceivedWheelEvent
     const cooldownExpired = timeSinceLastEvent >= CanvasPointer.trackpadMaxGap
     return !isFirstEvent && !cooldownExpired
@@ -360,23 +360,23 @@ export class CanvasPointer {
   /**
    * Updates the device mode based on event patterns.
    */
-  #updateDeviceMode(event: WheelEvent, now: number): void {
-    if (this.#isTrackpadPattern(event)) {
+  private _updateDeviceMode(event: WheelEvent, now: number): void {
+    if (this._isTrackpadPattern(event)) {
       this.detectedDevice = 'trackpad'
-    } else if (this.#isMousePattern(event)) {
+    } else if (this._isMousePattern(event)) {
       this.detectedDevice = 'mouse'
     } else if (
       this.detectedDevice === 'trackpad' &&
-      this.#shouldBufferLinuxEvent(event)
+      this._shouldBufferLinuxEvent(event)
     ) {
-      this.#bufferLinuxEvent(event, now)
+      this._bufferLinuxEvent(event, now)
     }
   }
 
   /**
    * Clears the buffered Linux wheel event and associated timer.
    */
-  #clearLinuxBuffer(): void {
+  private _clearLinuxBuffer(): void {
     this.bufferedLinuxEvent = undefined
     this.bufferedLinuxEventTime = 0
     if (this.linuxBufferTimeoutId !== undefined) {
@@ -389,7 +389,7 @@ export class CanvasPointer {
    * Checks if the event matches trackpad input patterns.
    * @param event The wheel event to check
    */
-  #isTrackpadPattern(event: WheelEvent): boolean {
+  private _isTrackpadPattern(event: WheelEvent): boolean {
     // Two-finger panning: non-zero deltaX AND deltaY
     if (event.deltaX !== 0 && event.deltaY !== 0) return true
 
@@ -403,7 +403,7 @@ export class CanvasPointer {
    * Checks if the event matches mouse wheel input patterns.
    * @param event The wheel event to check
    */
-  #isMousePattern(event: WheelEvent): boolean {
+  private _isMousePattern(event: WheelEvent): boolean {
     const absoluteDeltaY = Math.abs(event.deltaY)
 
     // Primary threshold for switching from trackpad to mouse
@@ -421,7 +421,7 @@ export class CanvasPointer {
    * Checks if the event should be buffered as a potential Linux wheel event.
    * @param event The wheel event to check
    */
-  #shouldBufferLinuxEvent(event: WheelEvent): boolean {
+  private _shouldBufferLinuxEvent(event: WheelEvent): boolean {
     const absoluteDeltaY = Math.abs(event.deltaY)
     const isInLinuxRange = absoluteDeltaY >= 10 && absoluteDeltaY < 60
     const isVerticalOnly = event.deltaX === 0
@@ -440,7 +440,7 @@ export class CanvasPointer {
    * @param event The event to buffer
    * @param now The current timestamp
    */
-  #bufferLinuxEvent(event: WheelEvent, now: number): void {
+  private _bufferLinuxEvent(event: WheelEvent, now: number): void {
     if (this.linuxBufferTimeoutId !== undefined) {
       clearTimeout(this.linuxBufferTimeoutId)
     }
@@ -450,7 +450,7 @@ export class CanvasPointer {
 
     // Set timeout to clear buffer after 10ms
     this.linuxBufferTimeoutId = setTimeout(() => {
-      this.#clearLinuxBuffer()
+      this._clearLinuxBuffer()
     }, CanvasPointer.maxHighResBufferTime)
   }
 
@@ -459,7 +459,7 @@ export class CanvasPointer {
    * @param deltaY1 The first deltaY value
    * @param deltaY2 The second deltaY value
    */
-  #isLinuxWheelPattern(deltaY1: number, deltaY2: number): boolean {
+  private _isLinuxWheelPattern(deltaY1: number, deltaY2: number): boolean {
     const absolute1 = Math.abs(deltaY1)
     const absolute2 = Math.abs(deltaY2)
 

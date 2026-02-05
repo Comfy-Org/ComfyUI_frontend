@@ -76,6 +76,17 @@ export function formatSize(value?: number) {
 }
 
 /**
+ * Formats a commit hash by truncating long (40-char) hashes to 7 chars.
+ * Returns the original string if not a valid full commit hash.
+ */
+export function formatCommitHash(value: string): string {
+  if (/^[a-f0-9]{40}$/i.test(value)) {
+    return value.slice(0, 7)
+  }
+  return value
+}
+
+/**
  * Returns various filename components.
  * Example:
  * - fullFilename: 'file.txt'
@@ -526,7 +537,9 @@ export function truncateFilename(
  * @param filename The filename to analyze
  * @returns The media type: 'image', 'video', 'audio', or '3D'
  */
-export function getMediaTypeFromFilename(filename: string): MediaType {
+export function getMediaTypeFromFilename(
+  filename: string | null | undefined
+): MediaType {
   if (!filename) return 'image'
   const ext = filename.split('.').pop()?.toLowerCase()
   if (!ext) return 'image'

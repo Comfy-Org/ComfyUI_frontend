@@ -40,6 +40,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   const { nodeIdToNodeLocatorId, nodeToNodeLocatorId } = useWorkflowStore()
   const { executionIdToNodeLocatorId } = useExecutionStore()
   const scheduledRevoke: Record<NodeLocatorId, { stop: () => void }> = {}
+  const latestPreview = ref<string[]>([])
 
   function scheduleRevoke(locator: NodeLocatorId, cb: () => void) {
     scheduledRevoke[locator]?.stop()
@@ -129,6 +130,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
+    // Skip if outputs is null/undefined - preserve existing output
+    // This can happen when backend returns null for cached/deduplicated nodes
+    // (e.g., two LoadImage nodes selecting the same image)
+    if (outputs == null) return
+
     if (options.merge) {
       const existingOutput = app.nodeOutputs[nodeLocatorId]
       if (existingOutput && outputs) {
@@ -142,6 +148,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
             existingOutput[k] = newValue
           }
         }
+        nodeOutputs.value[nodeLocatorId] = existingOutput
         return
       }
     }
@@ -213,6 +220,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       scheduledRevoke[nodeLocatorId].stop()
       delete scheduledRevoke[nodeLocatorId]
     }
+    latestPreview.value = previewImages
     app.nodePreviewImages[nodeLocatorId] = previewImages
     nodePreviewImages.value[nodeLocatorId] = previewImages
   }
@@ -291,9 +299,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
    * Does not recurse to contents of nested subgraphs.
    */
   function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
-    const graphId = subgraphNode.graph.isRootGraph
-      ? ''
-      : subgraphNode.graph.id + ':'
+    const { graph } = subgraphNode
+    if (!graph) return
+
+    const graphId = graph.isRootGraph ? '' : graph.id + ':'
     revokePreviewsByLocatorId(graphId + subgraphNode.id)
     for (const node of subgraphNode.subgraph.nodes) {
       revokePreviewsByLocatorId(subgraphNode.subgraph.id + node.id)
@@ -381,6 +390,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     // State
     nodeOutputs,
-    nodePreviewImages
+    nodePreviewImages,
+    latestPreview
   }
 })

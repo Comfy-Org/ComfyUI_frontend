@@ -29,15 +29,31 @@
     "name": "캔버스 배경 이미지",
     "tooltip": "캔버스 배경에 사용할 이미지 URL입니다. 출력 패널에서 이미지를 마우스 오른쪽 버튼으로 클릭한 후 \"배경으로 설정\"을 선택해 사용할 수 있습니다."
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "왼쪽 마우스 클릭 동작",
+    "options": {
+      "Panning": "패닝",
+      "Select": "선택"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "마우스 휠 스크롤",
+    "options": {
+      "Panning": "패닝",
+      "Zoom in/out": "확대/축소"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "캔버스 내비게이션 모드",
     "options": {
+      "Custom": "사용자 지정",
       "Drag Navigation": "드래그 내비게이션",
       "Standard (New)": "표준(신규)"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "선택 도구 상자 표시"
+    "name": "선택 도구 상자 표시",
+    "tooltip": "노드가 선택되었을 때 공통 작업에 빠르게 접근할 수 있는 플로팅 툴바를 표시합니다."
   },
   "Comfy_ConfirmClear": {
     "name": "워크플로 비우기 시 확인 요구"
@@ -64,6 +80,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "워크플로에서 캔버스 위치 및 확대/축소 수준 저장 및 복원"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "라이브 미리보기 방식",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "none",
+      "taesd": "taesd"
+    },
+    "tooltip": "이미지 생성 중 라이브 미리보기 방식입니다. \"default\"는 서버 CLI 설정을 사용합니다."
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "부동 소수점 위젯 반올림 소수 자리 수 [0 = 자동]",
     "tooltip": "(페이지 새로 고침 필요)"
@@ -84,6 +111,10 @@
       "Circle": "원",
       "None": "없음"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "실시간 선택",
+    "tooltip": "활성화하면, 다른 디자인 툴처럼 선택 사각형을 드래그할 때 노드가 실시간으로 선택/해제됩니다."
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "캔버스 확대/축소 속도"
@@ -117,43 +148,8 @@
       "Linear": "선형",
       "Spline": "스플라인",
       "Straight": "직선"
-    }
-  },
-  "Comfy_Load3D_3DViewerEnable": {
-    "name": "3D 뷰어 활성화 (베타)",
-    "tooltip": "선택한 노드에 대해 3D 뷰어(베타)를 활성화합니다. 이 기능을 통해 전체 크기의 3D 뷰어에서 3D 모델을 직접 시각화하고 상호작용할 수 있습니다."
-  },
-  "Comfy_Load3D_BackgroundColor": {
-    "name": "초기 배경색",
-    "tooltip": "3D 장면의 기본 배경색을 설정합니다. 이 설정은 새 3D 위젯이 생성될 때 배경의 모양을 결정하지만, 생성 후 각 위젯별로 개별적으로 조정할 수 있습니다."
-  },
-  "Comfy_Load3D_CameraType": {
-    "name": "카메라 유형",
-    "options": {
-      "orthographic": "직교법",
-      "perspective": "원근법"
     },
-    "tooltip": "새로운 3D 위젯이 생성될 때 카메라가 기본적으로 원근법 또는 직교법을 사용하는지를 제어합니다. 이 기본값은 생성 후 각 위젯별로 개별적으로 전환할 수 있습니다."
-  },
-  "Comfy_Load3D_LightAdjustmentIncrement": {
-    "name": "조명 조정 증가량",
-    "tooltip": "3D 장면에서 조명 강도를 조정할 때 증가하는 크기를 제어합니다. 값이 작을수록 조명을 더 세밀하게 조정할 수 있고, 값이 클수록 한 번에 더 눈에 띄는 변화가 발생합니다."
-  },
-  "Comfy_Load3D_LightIntensity": {
-    "name": "초기 조명 강도",
-    "tooltip": "3D 장면에서 조명의 기본 밝기 수준을 설정합니다. 이 값은 새 3D 위젯이 생성될 때 조명이 오브젝트를 얼마나 강하게 비추는지 결정하지만, 생성 후 각 위젯별로 개별적으로 조정할 수 있습니다."
-  },
-  "Comfy_Load3D_LightIntensityMaximum": {
-    "name": "최대 조명 강도",
-    "tooltip": "3D 장면에서 허용되는 최대 조명 강도 값을 설정합니다. 이는 모든 3D 위젯에서 조명을 조정할 때 설정할 수 있는 밝기의 상한선을 정의합니다."
-  },
-  "Comfy_Load3D_LightIntensityMinimum": {
-    "name": "최소 광원 세기",
-    "tooltip": "3D 장면에서 허용되는 최소 광원 세기 값을 설정합니다. 이는 모든 3D 위젯에서 조명을 조정할 때 설정할 수 있는 밝기의 하한을 정의합니다."
-  },
-  "Comfy_Load3D_ShowGrid": {
-    "name": "그리드 표시",
-    "tooltip": "기본적으로 그리드를 표시하도록 전환"
+    "tooltip": "캔버스에서 노드 간 연결 링크의 모양과 표시 여부를 제어합니다."
   },
   "Comfy_Locale": {
     "name": "언어"
@@ -165,10 +161,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "브러시 조정을 지배 축에 고정",
     "tooltip": "활성화하면 브러시 조정이 이동하는 방향에 따라 크기 또는 경도에만 영향을 미칩니다."
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "새 마스크 편집기 사용",
-    "tooltip": "새 마스크 편집기 인터페이스로 전환"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "모든 모델 폴더 자동 로드",
@@ -207,6 +199,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "API 노드 가격 배지 표시"
   },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "자동 노드 교체 활성화",
+    "tooltip": "활성화하면, 누락된 노드를 교체 매핑이 존재할 경우 최신 버전의 노드로 자동 교체할 수 있습니다."
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "노드 검색 상자 구현",
     "options": {
@@ -236,6 +232,10 @@
   },
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "이미지 미리보기 아래에 너비 × 높이 표시"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "모든 노드에서 고급 위젯 항상 표시",
+    "tooltip": "이 옵션을 활성화하면, 모든 노드에서 고급 위젯이 개별적으로 확장하지 않아도 항상 표시됩니다."
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "링크를 노드 슬롯에 자동 스냅",
@@ -297,6 +297,10 @@
     "name": "실행 큐 기록 갯수",
     "tooltip": "실행 큐 기록에 표시되는 최대 작업 수입니다."
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "에셋 사이드 패널에서 통합 작업 큐 사용",
+    "tooltip": "떠다니는 작업 큐 패널을 에셋 사이드 패널에 내장된 동등한 작업 큐로 대체합니다. 이 옵션을 비활성화하면 기존의 떠다니는 패널 레이아웃으로 돌아갈 수 있습니다."
+  },
   "Comfy_Sidebar_Location": {
     "name": "사이드바 위치",
     "options": {
@@ -309,6 +313,13 @@
     "options": {
       "normal": "보통",
       "small": "작음"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "사이드바 스타일",
+    "options": {
+      "connected": "연결됨",
+      "floating": "플로팅"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -327,6 +338,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "트리 탐색기 항목 패딩"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "탭 바 레이아웃",
+    "options": {
+      "Default": "기본값",
+      "Integrated": "통합"
+    },
+    "tooltip": "탭 바의 레이아웃을 제어합니다. \"통합\"을 선택하면 도움말과 사용자 컨트롤이 탭 바 영역으로 이동합니다."
+  },
   "Comfy_UseNewMenu": {
     "name": "새 메뉴 사용",
     "options": {
@@ -337,6 +356,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "워크플로 유효성 검사"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "자동 스케일 레이아웃 (Vue 노드)",
+    "tooltip": "Vue 렌더링으로 전환 시 노드 위치를 자동으로 조정하여 겹침 방지"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "모던 노드 디자인 (Vue 노드)",
+    "tooltip": "모던: 향상된 상호작용, 기본 브라우저 기능, 업데이트된 시각적 디자인을 갖춘 DOM 기반 렌더링. 클래식: 전통적인 캔버스 렌더링."
   },
   "Comfy_WidgetControlMode": {
     "name": "위젯 제어 모드",
@@ -375,6 +402,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "워크플로 저장 시 노드 ID 정렬"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "기존 서브그래프 블루프린트 덮어쓰기 전 확인 요청"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "열린 워크플로 위치",
     "options": {
@@ -405,6 +435,7 @@
     "tooltip": "경유점 중심에서 베지어 제어점까지의 오프셋"
   },
   "pysssss_SnapToGrid": {
-    "name": "항상 그리드에 스냅"
+    "name": "항상 그리드에 스냅",
+    "tooltip": "활성화하면 노드를 이동하거나 크기를 조정할 때 자동으로 그리드에 정렬됩니다."
   }
 }

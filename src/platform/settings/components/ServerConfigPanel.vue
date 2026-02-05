@@ -16,17 +16,12 @@
             </li>
           </ul>
           <div class="flex justify-end gap-2">
-            <Button
-              :label="$t('serverConfig.revertChanges')"
-              outlined
-              @click="revertChanges"
-            />
-            <Button
-              :label="$t('serverConfig.restart')"
-              outlined
-              severity="danger"
-              @click="restartApp"
-            />
+            <Button variant="secondary" @click="revertChanges">
+              {{ $t('serverConfig.revertChanges') }}
+            </Button>
+            <Button variant="destructive" @click="restartApp">
+              {{ $t('serverConfig.restart') }}
+            </Button>
           </div>
         </Message>
         <Message v-if="commandLineArgs" severity="secondary" pt:text="w-full">
@@ -36,11 +31,12 @@
           <div class="flex items-center justify-between">
             <p>{{ commandLineArgs }}</p>
             <Button
-              icon="pi pi-clipboard"
-              severity="secondary"
-              text
+              size="icon"
+              variant="muted-textonly"
               @click="copyCommandLineArgs"
-            />
+            >
+              <i class="pi pi-clipboard" />
+            </Button>
           </div>
         </Message>
       </div>
@@ -67,23 +63,25 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
-import { watch } from 'vue'
+import { onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import FormItem from '@/components/common/FormItem.vue'
 import PanelTemplate from '@/components/dialog/content/setting/PanelTemplate.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ServerConfig } from '@/constants/serverConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { FormItem as FormItemType } from '@/platform/settings/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { electronAPI } from '@/utils/envUtil'
 
 const settingStore = useSettingStore()
 const serverConfigStore = useServerConfigStore()
+const toastStore = useToastStore()
 const {
   serverConfigsByCategory,
   serverConfigValues,
@@ -92,11 +90,14 @@ const {
   modifiedConfigs
 } = storeToRefs(serverConfigStore)
 
+let restartTriggered = false
+
 const revertChanges = () => {
   serverConfigStore.revertChanges()
 }
 
 const restartApp = async () => {
+  restartTriggered = true
   await electronAPI().restartApp()
 }
 
@@ -114,6 +115,24 @@ const copyCommandLineArgs = async () => {
 }
 
 const { t } = useI18n()
+
+onBeforeUnmount(() => {
+  if (restartTriggered) {
+    return
+  }
+
+  if (modifiedConfigs.value.length === 0) {
+    return
+  }
+
+  toastStore.add({
+    severity: 'warn',
+    summary: t('serverConfig.restartRequiredToastSummary'),
+    detail: t('serverConfig.restartRequiredToastDetail'),
+    life: 10_000
+  })
+})
+
 const translateItem = (item: ServerConfig<any>): FormItemType => {
   return {
     ...item,

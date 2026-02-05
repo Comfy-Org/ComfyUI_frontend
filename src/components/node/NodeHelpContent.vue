@@ -1,0 +1,230 @@
+<template>
+  <div class="node-help-content mx-auto w-full">
+    <ProgressSpinner
+      v-if="isLoading"
+      class="m-auto"
+      :aria-label="$t('g.loading')"
+    />
+    <!-- Markdown fetched successfully -->
+    <div
+      v-else-if="!error"
+      class="markdown-content"
+      v-html="renderedHelpHtml"
+    />
+    <!-- Fallback: markdown not found or fetch error -->
+    <div v-else class="fallback-content space-y-6 text-sm">
+      <p v-if="node.description">
+        <strong>{{ $t('g.description') }}:</strong> {{ node.description }}
+      </p>
+
+      <div v-if="inputList.length">
+        <p>
+          <strong>{{ $t('nodeHelpPage.inputs') }}:</strong>
+        </p>
+        <!-- Using plain HTML table instead of DataTable for consistent styling with markdown content -->
+        <table class="overflow-x-auto">
+          <thead>
+            <tr>
+              <th>{{ $t('g.name') }}</th>
+              <th>{{ $t('nodeHelpPage.type') }}</th>
+              <th>{{ $t('g.description') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="input in inputList" :key="input.name">
+              <td>
+                <code>{{ input.name }}</code>
+              </td>
+              <td>{{ input.type }}</td>
+              <td>{{ input.tooltip || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="outputList.length">
+        <p>
+          <strong>{{ $t('nodeHelpPage.outputs') }}:</strong>
+        </p>
+        <table class="overflow-x-auto">
+          <thead>
+            <tr>
+              <th>{{ $t('g.name') }}</th>
+              <th>{{ $t('nodeHelpPage.type') }}</th>
+              <th>{{ $t('g.description') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="output in outputList" :key="output.name">
+              <td>
+                <code>{{ output.name }}</code>
+              </td>
+              <td>{{ output.type }}</td>
+              <td>{{ output.tooltip || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import ProgressSpinner from 'primevue/progressspinner'
+import { computed } from 'vue'
+
+import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+
+const { node } = defineProps<{
+  node: ComfyNodeDefImpl
+}>()
+
+const { renderedHelpHtml, isLoading, error } = useNodeHelpContent(() => node)
+
+const inputList = computed(() =>
+  Object.values(node.inputs).map((spec) => ({
+    name: spec.name,
+    type: spec.type,
+    tooltip: spec.tooltip || ''
+  }))
+)
+
+const outputList = computed(() =>
+  node.outputs.map((spec) => ({
+    name: spec.name,
+    type: spec.type,
+    tooltip: spec.tooltip || ''
+  }))
+)
+</script>
+
+<style scoped>
+@reference './../../assets/css/style.css';
+
+.node-help-content :deep(:is(img, video)) {
+  @apply max-w-full h-auto block mb-4;
+}
+
+.markdown-content,
+.fallback-content {
+  @apply text-sm overflow-visible;
+}
+
+.markdown-content :deep(h1),
+.fallback-content h1 {
+  @apply text-[22px] font-bold mt-8 mb-4 first:mt-0;
+}
+
+.markdown-content :deep(h2),
+.fallback-content h2 {
+  @apply text-[18px] font-bold mt-8 mb-4 first:mt-0;
+}
+
+.markdown-content :deep(h3),
+.fallback-content h3 {
+  @apply text-[16px] font-bold mt-8 mb-4 first:mt-0;
+}
+
+.markdown-content :deep(h4),
+.markdown-content :deep(h5),
+.markdown-content :deep(h6),
+.fallback-content h4,
+.fallback-content h5,
+.fallback-content h6 {
+  @apply mt-8 mb-4 first:mt-0;
+}
+
+.markdown-content :deep(td),
+.fallback-content td {
+  color: var(--drag-text);
+}
+
+.markdown-content :deep(a),
+.fallback-content a {
+  color: var(--drag-text);
+  text-decoration: underline;
+}
+
+.markdown-content :deep(th),
+.fallback-content th {
+  color: var(--fg-color);
+}
+
+.markdown-content :deep(ul),
+.markdown-content :deep(ol),
+.fallback-content ul,
+.fallback-content ol {
+  @apply pl-8 my-2;
+}
+
+.markdown-content :deep(ul ul),
+.markdown-content :deep(ol ol),
+.markdown-content :deep(ul ol),
+.markdown-content :deep(ol ul),
+.fallback-content ul ul,
+.fallback-content ol ol,
+.fallback-content ul ol,
+.fallback-content ol ul {
+  @apply pl-6 my-2;
+}
+
+.markdown-content :deep(li),
+.fallback-content li {
+  @apply my-2;
+}
+
+.markdown-content :deep(*:first-child),
+.fallback-content > *:first-child {
+  @apply mt-0;
+}
+
+.markdown-content :deep(code),
+.fallback-content code {
+  color: var(--code-text-color);
+  background-color: var(--code-bg-color);
+  @apply rounded px-1.5 py-0.5;
+}
+
+.markdown-content :deep(table),
+.fallback-content table {
+  @apply w-full border-collapse;
+}
+
+.markdown-content :deep(th),
+.markdown-content :deep(td),
+.fallback-content th,
+.fallback-content td {
+  @apply px-2 py-2;
+}
+
+.markdown-content :deep(tr),
+.fallback-content tr {
+  border-bottom: 1px solid var(--content-bg);
+}
+
+.markdown-content :deep(tr:last-child),
+.fallback-content tr:last-child {
+  border-bottom: none;
+}
+
+.markdown-content :deep(thead),
+.fallback-content thead {
+  border-bottom: 1px solid var(--p-text-color);
+}
+
+.markdown-content :deep(pre),
+.fallback-content pre {
+  @apply rounded p-4 my-4 overflow-x-auto;
+  background-color: var(--code-block-bg-color);
+
+  code {
+    @apply bg-transparent p-0;
+    color: var(--p-text-color);
+  }
+}
+
+.markdown-content :deep(table) {
+  @apply overflow-x-auto;
+}
+</style>

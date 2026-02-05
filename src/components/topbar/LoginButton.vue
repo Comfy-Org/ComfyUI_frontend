@@ -1,17 +1,19 @@
 <template>
   <Button
     v-if="!isLoggedIn"
-    outlined
-    rounded
-    severity="secondary"
-    class="size-8 border-black/50 bg-transparent text-black hover:bg-[var(--interface-panel-hover-surface)] dark-theme:border-white/50 dark-theme:text-white"
+    variant="textonly"
+    size="icon"
+    :class="cn('group rounded-full text-base-foreground p-0', className)"
+    :aria-label="t('g.login')"
     @click="handleSignIn()"
     @mouseenter="showPopover"
     @mouseleave="hidePopover"
   >
-    <template #icon>
+    <span
+      class="flex size-full items-center justify-center rounded-full bg-secondary-background transition-colors group-hover:bg-transparent"
+    >
       <i class="icon-[lucide--user] size-4" />
-    </template>
+    </span>
   </Button>
   <Popover
     ref="popoverRef"
@@ -22,7 +24,7 @@
     <div>
       <div class="mb-1">{{ t('auth.loginButton.tooltipHelp') }}</div>
       <a
-        href="https://docs.comfy.org/tutorials/api-nodes/overview#api-nodes"
+        :href="apiNodesOverviewUrl"
         target="_blank"
         class="text-neutral-500 hover:text-primary"
         >{{ t('auth.loginButton.tooltipLearnMore') }}</a
@@ -32,14 +34,28 @@
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Popover from 'primevue/popover'
+import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { t } from '@/i18n'
+import { cn } from '@/utils/tailwindUtil'
+
+const { class: className } = defineProps<{
+  class?: HTMLAttributes['class']
+}>()
 
 const { isLoggedIn, handleSignIn } = useCurrentUser()
+const { buildDocsUrl } = useExternalLink()
+const apiNodesOverviewUrl = buildDocsUrl(
+  '/tutorials/api-nodes/overview#api-nodes',
+  {
+    includeLocale: true
+  }
+)
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
 let hideTimeout: ReturnType<typeof setTimeout> | null = null
 let showTimeout: ReturnType<typeof setTimeout> | null = null

@@ -1,18 +1,26 @@
+import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import type { MenuItem } from 'primevue/menuitem'
 import { ref } from 'vue'
 
 import { CORE_MENU_COMMANDS } from '@/constants/coreMenuCommands'
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 import { useCommandStore } from './commandStore'
 
 export const useMenuItemStore = defineStore('menuItem', () => {
+  const canvasStore = useCanvasStore()
   const commandStore = useCommandStore()
   const menuItems = ref<MenuItem[]>([])
   const menuItemHasActiveStateChildren = ref<Record<string, boolean>>({})
+  const hasSeenLinear = ref(false)
+
+  whenever(
+    () => canvasStore.linearMode,
+    () => (hasSeenLinear.value = true),
+    { immediate: true, once: true }
+  )
 
   const registerMenuGroup = (path: string[], items: MenuItem[]) => {
     let currentLevel = menuItems.value
@@ -64,17 +72,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       .map(
         (command) =>
           ({
-            command: () => {
-              if (
-                isCloud &&
-                (command.id === 'Comfy.QueuePrompt' ||
-                  command.id === 'Comfy.QueuePromptFront' ||
-                  command.id === 'Comfy.QueueSelectedOutputNodes')
-              ) {
-                useTelemetry()?.trackRunTriggeredViaMenu()
-              }
-              return commandStore.execute(command.id)
-            },
+            command: () => commandStore.execute(command.id),
             label: command.menubarLabel,
             icon: command.icon,
             tooltip: command.tooltip,
@@ -115,6 +113,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     registerCommands,
     loadExtensionMenuCommands,
     registerCoreMenuCommands,
-    menuItemHasActiveStateChildren
+    menuItemHasActiveStateChildren,
+    hasSeenLinear
   }
 })

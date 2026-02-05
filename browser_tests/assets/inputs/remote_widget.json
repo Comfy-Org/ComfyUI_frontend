@@ -5,14 +5,8 @@
     {
       "id": 15,
       "type": "DevToolsRemoteWidgetNode",
-      "pos": [
-        495,
-        735
-      ],
-      "size": [
-        315,
-        58
-      ],
+      "pos": [495, 735],
+      "size": [315, 58],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -27,9 +21,7 @@
       "properties": {
         "Node name for S&R": "DevToolsRemoteWidgetNode"
       },
-      "widgets_values": [
-        "v1-5-pruned-emaonly-fp16.safetensors"
-      ]
+      "widgets_values": ["v1-5-pruned-emaonly-fp16.safetensors"]
     }
   ],
   "links": [],
@@ -38,10 +30,7 @@
   "extra": {
     "ds": {
       "scale": 0.8008869919566275,
-      "offset": [
-        538.9801226576359,
-        -55.24554581806672
-      ]
+      "offset": [538.9801226576359, -55.24554581806672]
     }
   },
   "version": 0.4

@@ -1,30 +1,73 @@
 /**
  * Widget type registry and component mapping for Vue-based widgets
  */
+import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import Load3D from '@/components/load3d/Load3D.vue'
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 
-import WidgetAudioUI from '../components/WidgetAudioUI.vue'
-import WidgetButton from '../components/WidgetButton.vue'
-import WidgetChart from '../components/WidgetChart.vue'
-import WidgetColorPicker from '../components/WidgetColorPicker.vue'
-import WidgetFileUpload from '../components/WidgetFileUpload.vue'
-import WidgetGalleria from '../components/WidgetGalleria.vue'
-import WidgetImageCompare from '../components/WidgetImageCompare.vue'
-import WidgetInputNumber from '../components/WidgetInputNumber.vue'
-import WidgetInputText from '../components/WidgetInputText.vue'
-import WidgetLegacy from '../components/WidgetLegacy.vue'
-import WidgetMarkdown from '../components/WidgetMarkdown.vue'
-import WidgetMultiSelect from '../components/WidgetMultiSelect.vue'
-import WidgetRecordAudio from '../components/WidgetRecordAudio.vue'
-import WidgetSelect from '../components/WidgetSelect.vue'
-import WidgetSelectButton from '../components/WidgetSelectButton.vue'
-import WidgetTextarea from '../components/WidgetTextarea.vue'
-import WidgetToggleSwitch from '../components/WidgetToggleSwitch.vue'
-import WidgetTreeSelect from '../components/WidgetTreeSelect.vue'
-import AudioPreviewPlayer from '../components/audio/AudioPreviewPlayer.vue'
+const WidgetButton = defineAsyncComponent(
+  () => import('../components/WidgetButton.vue')
+)
+const WidgetInputText = defineAsyncComponent(
+  () => import('../components/WidgetInputText.vue')
+)
+const WidgetInputNumber = defineAsyncComponent(
+  () => import('../components/WidgetInputNumber.vue')
+)
+const WidgetToggleSwitch = defineAsyncComponent(
+  () => import('../components/WidgetToggleSwitch.vue')
+)
+const WidgetSelect = defineAsyncComponent(
+  () => import('../components/WidgetSelect.vue')
+)
+const WidgetColorPicker = defineAsyncComponent(
+  () => import('../components/WidgetColorPicker.vue')
+)
+const WidgetTextarea = defineAsyncComponent(
+  () => import('../components/WidgetTextarea.vue')
+)
+const WidgetChart = defineAsyncComponent(
+  () => import('../components/WidgetChart.vue')
+)
+const WidgetImageCompare = defineAsyncComponent(
+  () => import('../components/WidgetImageCompare.vue')
+)
+const WidgetGalleria = defineAsyncComponent(
+  () => import('../components/WidgetGalleria.vue')
+)
+const WidgetMarkdown = defineAsyncComponent(
+  () => import('../components/WidgetMarkdown.vue')
+)
+const WidgetLegacy = defineAsyncComponent(
+  () => import('../components/WidgetLegacy.vue')
+)
+const WidgetRecordAudio = defineAsyncComponent(
+  () => import('../components/WidgetRecordAudio.vue')
+)
+const AudioPreviewPlayer = defineAsyncComponent(
+  () => import('../components/audio/AudioPreviewPlayer.vue')
+)
+const Load3D = defineAsyncComponent(
+  () => import('@/components/load3d/Load3D.vue')
+)
+const WidgetImageCrop = defineAsyncComponent(
+  () => import('@/components/imagecrop/WidgetImageCrop.vue')
+)
+const WidgetBoundingBox = defineAsyncComponent(
+  () => import('@/components/boundingbox/WidgetBoundingBox.vue')
+)
+
+export const FOR_TESTING = {
+  WidgetButton,
+  WidgetColorPicker,
+  WidgetInputNumber,
+  WidgetInputText,
+  WidgetMarkdown,
+  WidgetSelect,
+  WidgetTextarea,
+  WidgetToggleSwitch
+} as const
 
 interface WidgetDefinition {
   component: Component
@@ -62,22 +105,13 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: true
     }
   ],
-  ['combo', { component: WidgetSelect, aliases: ['COMBO'], essential: true }],
+  [
+    'combo',
+    { component: WidgetSelect, aliases: ['COMBO', 'asset'], essential: true }
+  ],
   [
     'color',
     { component: WidgetColorPicker, aliases: ['COLOR'], essential: false }
-  ],
-  [
-    'multiselect',
-    { component: WidgetMultiSelect, aliases: ['MULTISELECT'], essential: false }
-  ],
-  [
-    'selectbutton',
-    {
-      component: WidgetSelectButton,
-      aliases: ['SELECTBUTTON'],
-      essential: false
-    }
   ],
   [
     'textarea',
@@ -101,20 +135,12 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     { component: WidgetGalleria, aliases: ['GALLERIA'], essential: false }
   ],
   [
-    'fileupload',
+    'markdown',
     {
-      component: WidgetFileUpload,
-      aliases: ['FILEUPLOAD', 'file'],
+      component: WidgetMarkdown,
+      aliases: ['MARKDOWN', 'progressText'],
       essential: false
     }
-  ],
-  [
-    'treeselect',
-    { component: WidgetTreeSelect, aliases: ['TREESELECT'], essential: false }
-  ],
-  [
-    'markdown',
-    { component: WidgetMarkdown, aliases: ['MARKDOWN'], essential: false }
   ],
   ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
@@ -133,12 +159,24 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: false
     }
   ],
-  ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }]
+  ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }],
+  [
+    'imagecrop',
+    {
+      component: WidgetImageCrop,
+      aliases: ['IMAGECROP'],
+      essential: false
+    }
+  ],
+  [
+    'boundingbox',
+    {
+      component: WidgetBoundingBox,
+      aliases: ['BOUNDING_BOX'],
+      essential: false
+    }
+  ]
 ]
-
-const getComboWidgetAdditions = (): Map<string, Component> => {
-  return new Map([['audio', WidgetAudioUI]])
-}
 
 // Build lookup maps
 const widgets = new Map<string, WidgetDefinition>()
@@ -154,13 +192,7 @@ for (const [type, def] of coreWidgetDefinitions) {
 // Utility functions
 const getCanonicalType = (type: string): string => aliasMap.get(type) || type
 
-export const getComponent = (type: string, name: string): Component | null => {
-  if (type == 'combo') {
-    const comboAdditions = getComboWidgetAdditions()
-    if (comboAdditions.has(name)) {
-      return comboAdditions.get(name) || null
-    }
-  }
+export const getComponent = (type: string): Component | null => {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.component || null
 }
@@ -172,4 +204,13 @@ export const isEssential = (type: string): boolean => {
 
 export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
   return !widget.options?.canvasOnly && !!widget.type
+}
+
+const EXPANDING_TYPES = ['textarea', 'markdown', 'load3D'] as const
+
+export function shouldExpand(type: string): boolean {
+  const canonicalType = getCanonicalType(type)
+  return EXPANDING_TYPES.includes(
+    canonicalType as (typeof EXPANDING_TYPES)[number]
+  )
 }

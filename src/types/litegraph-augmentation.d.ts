@@ -5,8 +5,12 @@ import type {
   LLink,
   Size
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  TWidgetValue
+} from '@/lib/litegraph/src/types/widgets'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/scripts/domWidget'
@@ -94,7 +98,12 @@ declare module '@/lib/litegraph/src/litegraph' {
      */
     onAfterGraphConfigured?(): void
     onGraphConfigured?(): void
-    onExecuted?(output: any): void
+    /**
+     * Callback fired when node execution completes.
+     * Output contains known media properties (images, audio, video) plus
+     * arbitrary node-specific outputs (text, ui, custom properties).
+     */
+    onExecuted?(output: NodeExecutionOutput): void
     onNodeCreated?(this: LGraphNode): void
     /** @deprecated groupNode */
     setInnerNodes?(nodes: LGraphNode[]): void
@@ -204,6 +213,6 @@ declare module '@/lib/litegraph/src/litegraph' {
    * used by litegraph internally. We should remove the dependency on it later.
    */
   interface LGraphNode {
-    widgets_values?: unknown[]
+    widgets_values?: TWidgetValue[]
   }
 }

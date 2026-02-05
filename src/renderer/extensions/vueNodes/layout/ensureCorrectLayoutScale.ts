@@ -1,34 +1,40 @@
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import type { LGraph, RendererType } from '@/lib/litegraph/src/LGraph'
 import { createBounds } from '@/lib/litegraph/src/measure'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import type { NodeBoundsUpdate } from '@/renderer/core/layout/types'
 import { app as comfyApp } from '@/scripts/app'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-const SCALE_FACTOR = 1.75
+const SCALE_FACTOR = 1.2
 
-export function ensureCorrectLayoutScale() {
-  const settingStore = useSettingStore()
-
-  const autoScaleLayoutSetting = settingStore.get(
+export function ensureCorrectLayoutScale(
+  renderer: RendererType = 'LG',
+  targetGraph?: LGraph
+) {
+  const autoScaleLayoutSetting = useSettingStore().get(
     'Comfy.VueNodes.AutoScaleLayout'
   )
 
-  if (autoScaleLayoutSetting === false) {
-    return
-  }
+  if (!autoScaleLayoutSetting) return
 
   const canvas = comfyApp.canvas
-  const graph = canvas?.graph
+  const graph = targetGraph ?? canvas?.graph
 
-  if (!graph || !graph.nodes) return
+  if (!graph?.nodes) return
 
-  if (graph.extra?.vueNodesScaled === true) {
-    return
-  }
+  const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-  const vueNodesEnabled = settingStore.get('Comfy.VueNodes.Enabled')
-  if (!vueNodesEnabled) {
+  const needsUpscale = renderer === 'LG' && shouldRenderVueNodes.value
+  const needsDownscale = renderer === 'Vue' && !shouldRenderVueNodes.value
+
+  if (!needsUpscale && !needsDownscale) {
+    // Don't scale, but ensure workflowRendererVersion is set for future checks
+    graph.extra.workflowRendererVersion ??= renderer
     return
   }
 
@@ -36,59 +42,125 @@ export function ensureCorrectLayoutScale() {
 
   if (!lgBounds) return
 
-  const allVueNodes = layoutStore.getAllNodes().value
+  const [originX, originY] = lgBounds
 
-  const originX = lgBounds[0]
-  const originY = lgBounds[1]
-
-  const lgNodesById = new Map(
-    graph.nodes.map((node) => [String(node.id), node])
-  )
+  const lgNodesById = new Map(graph.nodes.map((node) => [node.id, node]))
 
   const yjsMoveNodeUpdates: NodeBoundsUpdate[] = []
 
-  for (const vueNode of allVueNodes.values()) {
-    const lgNode = lgNodesById.get(String(vueNode.id))
+  const scaleFactor = needsUpscale ? SCALE_FACTOR : 1 / SCALE_FACTOR
+
+  const onActiveGraph = !targetGraph || targetGraph === canvas?.graph
+
+  //TODO: once we remove the need for LiteGraph.NODE_TITLE_HEIGHT in vue nodes we nned to remove everything here.
+  for (const node of graph.nodes) {
+    const lgNode = lgNodesById.get(node.id)
     if (!lgNode) continue
 
-    const lgBodyY = lgNode.pos[1] - LiteGraph.NODE_TITLE_HEIGHT
+    const [oldX, oldY] = lgNode.pos
 
-    const relativeX = lgNode.pos[0] - originX
-    const relativeY = lgBodyY - originY
-    const newX = originX + relativeX * SCALE_FACTOR
-    const newY = originY + relativeY * SCALE_FACTOR
-    const newWidth = lgNode.width * SCALE_FACTOR
-    const newHeight = lgNode.height * SCALE_FACTOR
+    const relativeX = oldX - originX
+    const relativeY = oldY - originY
 
-    yjsMoveNodeUpdates.push({
-      nodeId: vueNode.id,
-      bounds: {
-        x: newX,
-        y: newY,
-        width: newWidth,
-        height: newHeight
-      }
-    })
+    const scaledX = originX + relativeX * scaleFactor
+    const scaledY = originY + relativeY * scaleFactor
+
+    const scaledWidth = lgNode.width * scaleFactor
+
+    const scaledHeight = needsUpscale
+      ? lgNode.size[1] * scaleFactor + LiteGraph.NODE_TITLE_HEIGHT
+      : (lgNode.size[1] - LiteGraph.NODE_TITLE_HEIGHT) * scaleFactor
+
+    // Directly update LiteGraph node to ensure immediate consistency
+    // Dont need to reference vue directly because the pos and dims are already in yjs
+    lgNode.pos[0] = scaledX
+    lgNode.pos[1] = scaledY
+    lgNode.size[0] = scaledWidth
+    lgNode.size[1] = scaledHeight
+
+    // Track updates for layout store (only if this is the active graph)
+    if (onActiveGraph) {
+      yjsMoveNodeUpdates.push({
+        nodeId: String(lgNode.id),
+        bounds: {
+          x: scaledX,
+          y: scaledY,
+          width: scaledWidth,
+          height: scaledHeight
+        }
+      })
+    }
   }
 
-  layoutStore.batchUpdateNodeBounds(yjsMoveNodeUpdates)
+  if (onActiveGraph && yjsMoveNodeUpdates.length > 0) {
+    layoutStore.batchUpdateNodeBounds(yjsMoveNodeUpdates)
+  }
+
+  for (const reroute of graph.reroutes.values()) {
+    const [oldX, oldY] = reroute.pos
+
+    const relativeX = oldX - originX
+    const relativeY = oldY - originY
+
+    const scaledX = originX + relativeX * scaleFactor
+    const scaledY = originY + relativeY * scaleFactor
+
+    reroute.pos = [scaledX, scaledY]
+
+    if (onActiveGraph && shouldRenderVueNodes.value) {
+      const layoutMutations = useLayoutMutations()
+      layoutMutations.moveReroute(
+        reroute.id,
+        { x: scaledX, y: scaledY },
+        { x: oldX, y: oldY }
+      )
+    }
+  }
+
+  if ('inputNode' in graph && 'outputNode' in graph) {
+    const ioNodes = [
+      graph.inputNode as SubgraphInputNode,
+      graph.outputNode as SubgraphOutputNode
+    ]
+    for (const ioNode of ioNodes) {
+      const [oldX, oldY] = ioNode.pos
+      const [oldWidth, oldHeight] = ioNode.size
+
+      const relativeX = oldX - originX
+      const relativeY = oldY - originY
+
+      const scaledX = originX + relativeX * scaleFactor
+      const scaledY = originY + relativeY * scaleFactor
+
+      const scaledWidth = oldWidth * scaleFactor
+      const scaledHeight = oldHeight * scaleFactor
+
+      ioNode.pos = [scaledX, scaledY]
+      ioNode.size = [scaledWidth, scaledHeight]
+    }
+  }
 
   graph.groups.forEach((group) => {
-    const groupBodyY = group.pos[1] - LiteGraph.NODE_TITLE_HEIGHT
+    const [oldX, oldY] = group.pos
+    const [oldWidth, oldHeight] = group.size
 
-    const relativeX = group.pos[0] - originX
-    const relativeY = groupBodyY - originY
+    const relativeX = oldX - originX
+    const relativeY = oldY - originY
 
-    const newPosY =
-      originY + relativeY * SCALE_FACTOR + LiteGraph.NODE_TITLE_HEIGHT
+    const scaledX = originX + relativeX * scaleFactor
+    const scaledY = originY + relativeY * scaleFactor
 
-    group.pos = [originX + relativeX * SCALE_FACTOR, newPosY]
-    group.size = [group.size[0] * SCALE_FACTOR, group.size[1] * SCALE_FACTOR]
+    const scaledWidth = oldWidth * scaleFactor
+    const scaledHeight = oldHeight * scaleFactor
+
+    group.pos = [scaledX, scaledY]
+    group.size = [scaledWidth, scaledHeight]
   })
 
-  const originScreen = canvas.ds.convertOffsetToCanvas([originX, originY])
-  canvas.ds.changeScale(canvas.ds.scale / SCALE_FACTOR, originScreen)
+  if (onActiveGraph && canvas) {
+    const originScreen = canvas.ds.convertOffsetToCanvas([originX, originY])
+    canvas.ds.changeScale(canvas.ds.scale / scaleFactor, originScreen)
+  }
 
-  if (!graph.extra) graph.extra = {}
-  graph.extra.vueNodesScaled = true
+  graph.extra.workflowRendererVersion = needsUpscale ? 'Vue' : 'LG'
 }

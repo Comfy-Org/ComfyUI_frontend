@@ -44,11 +44,12 @@
                 value: $t('userSettings.updatePassword'),
                 showDelay: 300
               }"
-              icon="pi pi-pen-to-square"
-              severity="secondary"
-              text
+              variant="muted-textonly"
+              size="icon-sm"
               @click="dialogService.showUpdatePasswordDialog()"
-            />
+            >
+              <i class="pi pi-pen-to-square" />
+            </Button>
           </div>
         </div>
 
@@ -58,21 +59,22 @@
           style="--pc-spinner-color: #000"
         />
         <div v-else class="mt-4 flex flex-col gap-2">
-          <Button
-            class="w-32"
-            severity="secondary"
-            :label="$t('auth.signOut.signOut')"
-            icon="pi pi-sign-out"
-            @click="handleSignOut"
-          />
-          <Button
+          <Button class="w-32" variant="secondary" @click="handleSignOut">
+            <i class="pi pi-sign-out" />
+            {{ $t('auth.signOut.signOut') }}
+          </Button>
+          <i18n-t
             v-if="!isApiKeyLogin"
-            class="w-fit"
-            variant="text"
-            severity="danger"
-            :label="$t('auth.deleteAccount.deleteAccount')"
-            @click="handleDeleteAccount"
-          />
+            keypath="auth.deleteAccount.contactSupport"
+            tag="p"
+            class="text-muted text-sm"
+          >
+            <template #email>
+              <a href="mailto:support@comfy.org" class="underline"
+                >support@comfy.org</a
+              >
+            </template>
+          </i18n-t>
         </div>
       </div>
 
@@ -84,24 +86,25 @@
 
         <Button
           class="w-52"
-          severity="primary"
+          variant="primary"
           :loading="loading"
-          :label="$t('auth.login.signInOrSignUp')"
-          icon="pi pi-user"
           @click="handleSignIn"
-        />
+        >
+          <i class="pi pi-user" />
+          {{ $t('auth.login.signInOrSignUp') }}
+        </Button>
       </div>
     </div>
   </TabPanel>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogService } from '@/services/dialogService'
 
@@ -117,7 +120,6 @@ const {
   providerName,
   providerIcon,
   handleSignOut,
-  handleSignIn,
-  handleDeleteAccount
+  handleSignIn
 } = useCurrentUser()
 </script>

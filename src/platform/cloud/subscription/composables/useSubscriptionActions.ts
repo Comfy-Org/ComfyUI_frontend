@@ -1,5 +1,4 @@
-import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { onMounted, ref } from 'vue'
 
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -12,27 +11,20 @@ import { useCommandStore } from '@/stores/commandStore'
  * Composable for handling subscription panel actions and loading states
  */
 export function useSubscriptionActions() {
-  const { t } = useI18n()
   const dialogService = useDialogService()
   const authActions = useFirebaseAuthActions()
   const commandStore = useCommandStore()
   const telemetry = useTelemetry()
-  const { fetchStatus, formattedRenewalDate } = useSubscription()
+  const { fetchStatus } = useSubscription()
 
   const isLoadingSupport = ref(false)
-
-  const refreshTooltip = computed(() => {
-    const date =
-      formattedRenewalDate.value || t('subscription.nextBillingCycle')
-    return `Refreshes on ${date}`
-  })
 
   onMounted(() => {
     void handleRefresh()
   })
 
   const handleAddApiCredits = () => {
-    dialogService.showTopUpCreditsDialog()
+    void dialogService.showTopUpCreditsDialog()
   }
 
   const handleMessageSupport = async () => {
@@ -67,7 +59,6 @@ export function useSubscriptionActions() {
 
   return {
     isLoadingSupport,
-    refreshTooltip,
     handleAddApiCredits,
     handleMessageSupport,
     handleRefresh,

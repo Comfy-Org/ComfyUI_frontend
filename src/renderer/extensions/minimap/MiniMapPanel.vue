@@ -1,6 +1,6 @@
 <template>
   <div
-    class="minimap-panel mr-2 flex flex-col gap-2 bg-interface-panel-surface p-3 text-sm shadow-interface"
+    class="minimap-panel mr-2 flex flex-col gap-2 bg-comfy-menu-bg p-3 text-sm shadow-interface"
     :style="panelStyles"
   >
     <div class="flex items-center gap-2">
@@ -79,11 +79,12 @@
 
 <script setup lang="ts">
 import Checkbox from 'primevue/checkbox'
+import type { CSSProperties } from 'vue'
 
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
 
 defineProps<{
-  panelStyles: any
+  panelStyles: CSSProperties
   nodeColors: boolean
   showLinks: boolean
   showGroups: boolean

@@ -6,6 +6,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { isFloatInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import { addValueControlWidget } from '@/scripts/widgets'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onFloatValueChange(this: INumericWidget, v: number) {
   const round = this.options.round
@@ -55,7 +57,7 @@ export const useFloatWidget = () => {
 
     /** Assertion {@link inputSpec.default} */
     const defaultValue = (inputSpec.default as number | undefined) ?? 0
-    return node.addWidget(
+    const widget = node.addWidget(
       widgetType,
       inputSpec.name,
       defaultValue,
@@ -73,6 +75,20 @@ export const useFloatWidget = () => {
         precision
       }
     )
+
+    if (inputSpec.control_after_generate) {
+      const controlWidget = addValueControlWidget(
+        node,
+        widget,
+        'fixed',
+        undefined,
+        undefined,
+        transformInputSpecV2ToV1(inputSpec)
+      )
+      widget.linkedWidgets = [controlWidget]
+    }
+
+    return widget
   }
 
   return widgetConstructor

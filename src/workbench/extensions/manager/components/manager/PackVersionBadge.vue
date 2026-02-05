@@ -63,7 +63,7 @@ const {
   fill?: boolean
 }>()
 
-const { isUpdateAvailable } = usePackUpdateStatus(nodePack)
+const { isUpdateAvailable } = usePackUpdateStatus(() => nodePack)
 const popoverRef = ref()
 
 const managerStore = useComfyManagerStore()

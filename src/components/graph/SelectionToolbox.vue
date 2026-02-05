@@ -10,7 +10,7 @@
         class="selection-toolbox pointer-events-auto rounded-lg border border-interface-stroke bg-interface-panel-surface"
         :pt="{
           header: 'hidden',
-          content: 'p-2 h-12 flex flex-row gap-1'
+          content: 'p-1 h-10 flex flex-row gap-1'
         }"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
@@ -42,6 +42,7 @@
       </Panel>
     </Transition>
   </div>
+  <NodeContextMenu />
 </template>
 
 <script setup lang="ts">
@@ -68,6 +69,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
+import NodeContextMenu from './NodeContextMenu.vue'
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
 import NodeOptionsButton from './selectionToolbox/NodeOptionsButton.vue'
 import VerticalDivider from './selectionToolbox/VerticalDivider.vue'

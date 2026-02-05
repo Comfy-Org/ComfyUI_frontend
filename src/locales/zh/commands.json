@@ -24,19 +24,19 @@
     "label": "打开开发者工具"
   },
   "Comfy-Desktop_OpenUserGuide": {
-    "label": "桌面用户指南"
+    "label": "桌面端用户手册"
   },
   "Comfy-Desktop_Quit": {
     "label": "退出"
   },
   "Comfy-Desktop_Reinstall": {
-    "label": "重新安装"
+    "label": "重装"
   },
   "Comfy-Desktop_Restart": {
     "label": "重启"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "为所选节点开启 3D 浏览器（Beta 版）"
+  "Comfy_BrowseModelAssets": {
+    "label": "实验性：浏览模型资源"
   },
   "Comfy_BrowseTemplates": {
     "label": "浏览模板"
@@ -125,6 +125,9 @@
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "将选区转换为子图"
   },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "编辑子图组件"
+  },
   "Comfy_Graph_ExitSubgraph": {
     "label": "退出子图"
   },
@@ -133,6 +136,9 @@
   },
   "Comfy_Graph_GroupSelectedNodes": {
     "label": "添加框到选中节点"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "切换悬停小部件的推广"
   },
   "Comfy_Graph_UnpackSubgraph": {
     "label": "解开所选子图"
@@ -182,17 +188,29 @@
   "Comfy_Manager_ShowUpdateAvailablePacks": {
     "label": "检查更新"
   },
-  "Comfy_Manager_ToggleManagerProgressDialog": {
-    "label": "切换进度对话框"
-  },
   "Comfy_MaskEditor_BrushSize_Decrease": {
     "label": "减小 MaskEditor 中的笔刷大小"
   },
   "Comfy_MaskEditor_BrushSize_Increase": {
     "label": "增加 MaskEditor 画笔大小"
   },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "在MaskEditor中打开取色器"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "在MaskEditor中水平镜像"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "在MaskEditor中垂直镜像"
+  },
   "Comfy_MaskEditor_OpenMaskEditor": {
     "label": "打开选中节点的遮罩编辑器"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "在MaskEditor中向左旋转"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "在MaskEditor中向右旋转"
   },
   "Comfy_Memory_UnloadModels": {
     "label": "卸载模型"
@@ -224,11 +242,17 @@
   "Comfy_QueueSelectedOutputNodes": {
     "label": "队列所选输出节点"
   },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "切换作业历史"
+  },
   "Comfy_Redo": {
     "label": "重做"
   },
   "Comfy_RefreshNodeDefinitions": {
     "label": "刷新节点定义"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "重命名工作流"
   },
   "Comfy_SaveWorkflow": {
     "label": "保存工作流"
@@ -239,11 +263,26 @@
   "Comfy_ShowSettingsDialog": {
     "label": "显示设置对话框"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "设置子图描述"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "设置子图搜索别名"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "实验性：启用 AssetAPI"
+  },
   "Comfy_ToggleCanvasInfo": {
     "label": "画布性能"
   },
   "Comfy_ToggleHelpCenter": {
     "label": "说明中心"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "切换线性模式"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "切换队列面板V2"
   },
   "Comfy_ToggleTheme": {
     "label": "切换主题"
@@ -256,6 +295,9 @@
   },
   "Comfy_User_SignOut": {
     "label": "退出登录"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "实验性：启用 Vue 节点"
   },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"
@@ -272,12 +314,6 @@
   "Workspace_ToggleBottomPanel": {
     "label": "切换底部面板"
   },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "切换终端底部面板"
-  },
-  "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "切换日志底部面板"
-  },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "切换基本下方面板"
   },
@@ -290,6 +326,10 @@
   "Workspace_ToggleFocusMode": {
     "label": "切换焦点模式"
   },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "切换资产侧边栏",
+    "tooltip": "资产"
+  },
   "Workspace_ToggleSidebarTab_model-library": {
     "label": "切换模型库侧边栏",
     "tooltip": "模型库"
@@ -297,10 +337,6 @@
   "Workspace_ToggleSidebarTab_node-library": {
     "label": "切换节点库侧边栏",
     "tooltip": "节点库"
-  },
-  "Workspace_ToggleSidebarTab_queue": {
-    "label": "切换执行队列侧边栏",
-    "tooltip": "执行队列"
   },
   "Workspace_ToggleSidebarTab_workflows": {
     "label": "切换工作流侧边栏",

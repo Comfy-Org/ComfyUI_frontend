@@ -3,20 +3,27 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import { KeybindingImpl, useKeybindingStore } from '@/stores/keybindingStore'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { ComfyExtension } from '@/types/comfy'
+import type { AuthUserInfo } from '@/types/authTypes'
+import { app } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
 
 export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
   const keybindingStore = useKeybindingStore()
-  const { wrapWithErrorHandling } = useErrorHandling()
+  const {
+    wrapWithErrorHandling,
+    wrapWithErrorHandlingAsync,
+    toastErrorHandler
+  } = useErrorHandling()
 
   /**
    * Loads all extensions from the API into the window in parallel
@@ -77,34 +84,81 @@ export const useExtensionService = () => {
 
     if (extension.onAuthUserResolved) {
       const { onUserResolved } = useCurrentUser()
+      const handleUserResolved = wrapWithErrorHandlingAsync(
+        (user: AuthUserInfo) => extension.onAuthUserResolved?.(user, app),
+        (error) => {
+          console.error('[Extension Auth Hook Error]', {
+            extension: extension.name,
+            hook: 'onAuthUserResolved',
+            error
+          })
+          toastErrorHandler(error)
+        }
+      )
       onUserResolved((user) => {
-        void extension.onAuthUserResolved?.(user, app)
+        void handleUserResolved(user)
       })
     }
 
     if (extension.onAuthTokenRefreshed) {
       const { onTokenRefreshed } = useCurrentUser()
+      const handleTokenRefreshed = wrapWithErrorHandlingAsync(
+        () => extension.onAuthTokenRefreshed?.(),
+        (error) => {
+          console.error('[Extension Auth Hook Error]', {
+            extension: extension.name,
+            hook: 'onAuthTokenRefreshed',
+            error
+          })
+          toastErrorHandler(error)
+        }
+      )
       onTokenRefreshed(() => {
-        void extension.onAuthTokenRefreshed?.()
+        void handleTokenRefreshed()
       })
     }
 
     if (extension.onAuthUserLogout) {
       const { onUserLogout } = useCurrentUser()
+      const handleUserLogout = wrapWithErrorHandlingAsync(
+        () => extension.onAuthUserLogout?.(),
+        (error) => {
+          console.error('[Extension Auth Hook Error]', {
+            extension: extension.name,
+            hook: 'onAuthUserLogout',
+            error
+          })
+          toastErrorHandler(error)
+        }
+      )
       onUserLogout(() => {
-        void extension.onAuthUserLogout?.()
+        void handleUserLogout()
       })
     }
   }
 
+  type FunctionPropertyNames<T> = {
+    [K in keyof T]: T[K] extends (...args: unknown[]) => unknown ? K : never
+  }[keyof T]
+  type RemoveLastAppParam<T> = T extends (
+    ...args: [...infer Rest, ComfyApp]
+  ) => infer R
+    ? (...args: Rest) => R
+    : T
+
+  type ComfyExtensionParamsWithoutApp<T extends keyof ComfyExtension> =
+    RemoveLastAppParam<ComfyExtension[T]>
   /**
    * Invoke an extension callback
    * @param {keyof ComfyExtension} method The extension callback to execute
-   * @param  {any[]} args Any arguments to pass to the callback
+   * @param  {unknown[]} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensions = (method: keyof ComfyExtension, ...args: any[]) => {
-    const results: any[] = []
+  const invokeExtensions = <T extends FunctionPropertyNames<ComfyExtension>>(
+    method: T,
+    ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
+  ) => {
+    const results: ReturnType<ComfyExtension[T]>[] = []
     for (const ext of extensionStore.enabledExtensions) {
       if (method in ext) {
         try {
@@ -126,12 +180,14 @@ export const useExtensionService = () => {
    * Invoke an async extension callback
    * Each callback will be invoked concurrently
    * @param {string} method The extension callback to execute
-   * @param  {...any} args Any arguments to pass to the callback
+   * @param  {...unknown} args Any arguments to pass to the callback
    * @returns
    */
-  const invokeExtensionsAsync = async (
-    method: keyof ComfyExtension,
-    ...args: any[]
+  const invokeExtensionsAsync = async <
+    T extends FunctionPropertyNames<ComfyExtension>
+  >(
+    method: T,
+    ...args: Parameters<ComfyExtensionParamsWithoutApp<T>>
   ) => {
     return await Promise.all(
       extensionStore.enabledExtensions.map(async (ext) => {

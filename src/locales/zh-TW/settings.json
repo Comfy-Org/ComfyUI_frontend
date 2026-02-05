@@ -29,15 +29,31 @@
     "name": "畫布背景圖片",
     "tooltip": "畫布背景的圖片網址。你可以在輸出面板中右鍵點擊圖片並選擇「設為背景」來使用，或是使用上傳按鈕上傳你自己的圖片。"
   },
+  "Comfy_Canvas_LeftMouseClickBehavior": {
+    "name": "左鍵點擊行為",
+    "options": {
+      "Panning": "平移",
+      "Select": "選取"
+    }
+  },
+  "Comfy_Canvas_MouseWheelScroll": {
+    "name": "滑鼠滾輪捲動",
+    "options": {
+      "Panning": "平移",
+      "Zoom in/out": "縮放"
+    }
+  },
   "Comfy_Canvas_NavigationMode": {
     "name": "畫布導航模式",
     "options": {
+      "Custom": "自訂",
       "Drag Navigation": "拖曳導覽",
       "Standard (New)": "標準（新）"
     }
   },
   "Comfy_Canvas_SelectionToolbox": {
-    "name": "顯示選取工具箱"
+    "name": "顯示選取工具箱",
+    "tooltip": "當選取節點時顯示浮動工具列，快速存取常用操作。"
   },
   "Comfy_ConfirmClear": {
     "name": "清除工作流程時需要確認"
@@ -64,6 +80,17 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "在工作流程中儲存並還原畫布位置與縮放等級"
   },
+  "Comfy_Execution_PreviewMethod": {
+    "name": "即時預覽方式",
+    "options": {
+      "auto": "auto",
+      "default": "default",
+      "latent2rgb": "latent2rgb",
+      "none": "none",
+      "taesd": "taesd"
+    },
+    "tooltip": "在圖像生成過程中使用的即時預覽方式。「default」會使用伺服器 CLI 設定。"
+  },
   "Comfy_FloatRoundingPrecision": {
     "name": "浮點元件小數點位數 [0 = 自動]。",
     "tooltip": "（需重新載入頁面）"
@@ -84,6 +111,10 @@
       "Circle": "圓圈",
       "None": "無"
     }
+  },
+  "Comfy_Graph_LiveSelection": {
+    "name": "即時選取",
+    "tooltip": "啟用後，拖曳選取框時會即時選取/取消選取節點，類似其他設計工具的操作方式。"
   },
   "Comfy_Graph_ZoomSpeed": {
     "name": "畫布縮放速度"
@@ -117,43 +148,8 @@
       "Linear": "線性",
       "Spline": "曲線",
       "Straight": "直線"
-    }
-  },
-  "Comfy_Load3D_3DViewerEnable": {
-    "name": "啟用 3D 檢視器（測試版）",
-    "tooltip": "為所選節點啟用 3D 檢視器（測試版）。此功能可讓您在全尺寸 3D 檢視器中直接瀏覽與互動 3D 模型。"
-  },
-  "Comfy_Load3D_BackgroundColor": {
-    "name": "初始背景顏色",
-    "tooltip": "控制 3D 場景的預設背景顏色。此設定決定新建立 3D 元件時的背景外觀，但每個元件在建立後都可單獨調整。"
-  },
-  "Comfy_Load3D_CameraType": {
-    "name": "初始相機類型",
-    "options": {
-      "orthographic": "正交",
-      "perspective": "透視"
     },
-    "tooltip": "控制新建 3D 元件時，相機預設為透視或正交。此預設值在建立後仍可針對每個元件單獨切換。"
-  },
-  "Comfy_Load3D_LightAdjustmentIncrement": {
-    "name": "燈光調整增量",
-    "tooltip": "控制在 3D 場景中調整燈光強度時的增量大小。較小的步進值可讓您更細緻地調整燈光，較大的值則每次調整會有更明顯的變化。"
-  },
-  "Comfy_Load3D_LightIntensity": {
-    "name": "初始光源強度",
-    "tooltip": "設定 3D 場景中燈光的預設亮度等級。此數值決定新建立 3D 元件時燈光照亮物體的強度，但每個元件在建立後都可以個別調整。"
-  },
-  "Comfy_Load3D_LightIntensityMaximum": {
-    "name": "最大光照強度",
-    "tooltip": "設定 3D 場景中允許的最大光照強度值。這會定義在調整任何 3D 小工具照明時可設定的最高亮度上限。"
-  },
-  "Comfy_Load3D_LightIntensityMinimum": {
-    "name": "光源強度下限",
-    "tooltip": "設定 3D 場景中允許的最小光源強度值。這會定義在調整任何 3D 控制元件照明時可設定的最低亮度限制。"
-  },
-  "Comfy_Load3D_ShowGrid": {
-    "name": "初始網格可見性",
-    "tooltip": "控制在建立新的 3D 元件時，網格是否預設可見。此預設值在建立後仍可針對每個元件單獨切換。"
+    "tooltip": "控制畫布上節點連接線的外觀與可見性。"
   },
   "Comfy_Locale": {
     "name": "語言"
@@ -165,10 +161,6 @@
   "Comfy_MaskEditor_UseDominantAxis": {
     "name": "鎖定筆刷調整至主軸",
     "tooltip": "啟用後，筆刷調整只會根據你移動較多的方向，分別影響大小或硬度"
-  },
-  "Comfy_MaskEditor_UseNewEditor": {
-    "name": "使用新遮罩編輯器",
-    "tooltip": "切換到新遮罩編輯器介面"
   },
   "Comfy_ModelLibrary_AutoLoadAll": {
     "name": "自動載入所有模型資料夾",
@@ -207,6 +199,10 @@
   "Comfy_NodeBadge_ShowApiPricing": {
     "name": "顯示 API 節點價格標籤"
   },
+  "Comfy_NodeReplacement_Enabled": {
+    "name": "啟用自動節點替換",
+    "tooltip": "啟用後，若有替換對應關係，遺失的節點可自動以其較新的對應節點替換。"
+  },
   "Comfy_NodeSearchBoxImpl": {
     "name": "節點搜尋框實作",
     "options": {
@@ -236,6 +232,10 @@
   },
   "Comfy_Node_AllowImageSizeDraw": {
     "name": "在圖片預覽下方顯示寬度 × 高度"
+  },
+  "Comfy_Node_AlwaysShowAdvancedWidgets": {
+    "name": "在所有節點上總是顯示進階小工具",
+    "tooltip": "啟用後，所有節點的進階小工具將始終可見，無需單獨展開。"
   },
   "Comfy_Node_AutoSnapLinkToSlot": {
     "name": "自動吸附連結到節點插槽",
@@ -297,6 +297,10 @@
     "name": "佇列歷史記錄大小",
     "tooltip": "佇列歷史中顯示的最大任務數量。"
   },
+  "Comfy_Queue_QPOV2": {
+    "name": "在資產側邊欄中使用統一任務佇列",
+    "tooltip": "將浮動任務佇列面板替換為嵌入資產側邊欄的等效任務佇列。您可以停用此選項以恢復浮動面板佈局。"
+  },
   "Comfy_Sidebar_Location": {
     "name": "側邊欄位置",
     "options": {
@@ -309,6 +313,13 @@
     "options": {
       "normal": "一般",
       "small": "小"
+    }
+  },
+  "Comfy_Sidebar_Style": {
+    "name": "側邊欄樣式",
+    "options": {
+      "connected": "連接式",
+      "floating": "浮動式"
     }
   },
   "Comfy_Sidebar_UnifiedWidth": {
@@ -327,6 +338,14 @@
   "Comfy_TreeExplorer_ItemPadding": {
     "name": "樹狀瀏覽器項目間距"
   },
+  "Comfy_UI_TabBarLayout": {
+    "name": "分頁列佈局",
+    "options": {
+      "Default": "預設",
+      "Integrated": "整合"
+    },
+    "tooltip": "控制分頁列的佈局。「整合」會將說明和使用者控制項移至分頁列區域。"
+  },
   "Comfy_UseNewMenu": {
     "name": "使用新選單",
     "options": {
@@ -337,6 +356,14 @@
   },
   "Comfy_Validation_Workflows": {
     "name": "驗證工作流程"
+  },
+  "Comfy_VueNodes_AutoScaleLayout": {
+    "name": "自動縮放佈局 (Vue 節點)",
+    "tooltip": "切換至 Vue 渲染時自動縮放節點位置以防止重疊"
+  },
+  "Comfy_VueNodes_Enabled": {
+    "name": "現代節點設計 (Vue 節點)",
+    "tooltip": "現代：基於 DOM 的渲染，具備增強的互動性、原生瀏覽器功能和更新的視覺設計。經典：傳統畫布渲染。"
   },
   "Comfy_WidgetControlMode": {
     "name": "元件控制模式",
@@ -375,6 +402,9 @@
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "儲存工作流程時排序節點 ID"
   },
+  "Comfy_Workflow_WarnBlueprintOverwrite": {
+    "name": "覆蓋現有子圖藍圖前需要確認"
+  },
   "Comfy_Workflow_WorkflowTabsPosition": {
     "name": "已開啟工作流程的位置",
     "options": {
@@ -405,6 +435,7 @@
     "tooltip": "貝茲控制點相對於重導中心點的偏移量"
   },
   "pysssss_SnapToGrid": {
-    "name": "總是對齊格線"
+    "name": "總是對齊格線",
+    "tooltip": "啟用後，移動或調整節點大小時會自動對齊網格。"
   }
 }

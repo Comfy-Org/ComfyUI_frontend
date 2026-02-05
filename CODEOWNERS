@@ -1,8 +1,11 @@
+# Global Ownership
+*                                                 @Comfy-org/comfy_frontend_devs
+
 # Desktop/Electron
-/apps/desktop-ui/                                 @webfiltered
-/src/stores/electronDownloadStore.ts              @webfiltered
-/src/extensions/core/electronAdapter.ts           @webfiltered
-/vite.electron.config.mts                         @webfiltered
+/apps/desktop-ui/                                 @benceruleanlu
+/src/stores/electronDownloadStore.ts              @benceruleanlu
+/src/extensions/core/electronAdapter.ts           @benceruleanlu
+/vite.electron.config.mts                         @benceruleanlu
 
 # Common UI Components
 /src/components/chip/                             @viva-jinyi
@@ -22,6 +25,9 @@
 # Link rendering
 /src/renderer/core/canvas/links/                  @benceruleanlu
 
+# Partner Nodes
+/src/composables/node/useNodePricing.ts           @jojodecayz @bigcat88
+
 # Node help system
 /src/utils/nodeHelpUtil.ts                        @benceruleanlu
 /src/stores/workspace/nodeHelpStore.ts            @benceruleanlu
@@ -31,10 +37,7 @@
 /src/components/graph/selectionToolbox/           @Myestery
 
 # Minimap
-/src/renderer/extensions/minimap/                 @jtydhr88
-
-# Assets
-/src/platform/assets/                             @arjansingh
+/src/renderer/extensions/minimap/                 @jtydhr88 @Myestery
 
 # Workflow Templates
 /src/platform/workflow/templates/                 @Myestery @christian-byrne @comfyui-wiki
@@ -43,7 +46,6 @@
 # Mask Editor
 /src/extensions/core/maskeditor.ts                @trsommer @brucew4yn3rp
 /src/extensions/core/maskEditorLayerFilenames.ts  @trsommer @brucew4yn3rp
-/src/extensions/core/maskEditorOld.ts             @trsommer @brucew4yn3rp
 
 # 3D
 /src/extensions/core/load3d.ts                    @jtydhr88
@@ -53,7 +55,7 @@
 /src/workbench/extensions/manager/                @viva-jinyi @christian-byrne @ltdrdata
 
 # Translations
-/src/locales/                                     @Yorha4D @KarryCharon @shinshin86 @Comfy-Org/comfy_maintainer
+/src/locales/                                     @Comfy-Org/comfy_maintainer @Comfy-org/comfy_frontend_devs
 
 # LLM Instructions (blank on purpose)
 .claude/

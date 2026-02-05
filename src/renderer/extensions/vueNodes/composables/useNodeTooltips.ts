@@ -1,5 +1,5 @@
 import type {
-  TooltipDirectivePassThroughOptions,
+  TooltipOptions,
   TooltipPassThroughMethodOptions
 } from 'primevue/tooltip'
 import { computed, ref, unref } from 'vue'
@@ -11,6 +11,11 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import { cn } from '@/utils/tailwindUtil'
+
+// PrimeVue adds this internal property to elements with tooltips
+interface PrimeVueTooltipElement extends Element {
+  $_ptooltipId?: string
+}
 
 /**
  * Hide all visible tooltips by dispatching mouseleave events
@@ -41,7 +46,7 @@ const hideTooltipsGlobally = () => {
     // Find the target element that owns this tooltip
     const targetElements = document.querySelectorAll('[data-pd-tooltip="true"]')
     for (const targetEl of targetElements) {
-      if ((targetEl as any).$_ptooltipId === tooltipId) {
+      if ((targetEl as PrimeVueTooltipElement).$_ptooltipId === tooltipId) {
         ;(targetEl as HTMLElement).dispatchEvent(
           new MouseEvent('mouseleave', { bubbles: true })
         )
@@ -148,7 +153,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
    * Create tooltip configuration object for v-tooltip directive
    * Components wrap this in computed() for reactivity
    */
-  const createTooltipConfig = (text: string) => {
+  const createTooltipConfig = (text: string): TooltipOptions => {
     const tooltipDelay = settingsStore.get('LiteGraph.Node.TooltipDelay')
     const tooltipText = text || ''
 
@@ -174,7 +179,7 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
             context.right && 'border-r-node-component-tooltip-border'
           )
         })
-      } as TooltipDirectivePassThroughOptions
+      }
     }
   }
 

@@ -17,15 +17,13 @@ export function clone<T>(obj: T): T {
 }
 
 /**
- * @knipIgnoreUnusedButUsedByCustomNodes
  * @deprecated Use `applyTextReplacements` from `@/utils/searchAndReplace` instead
  * There are external callers to this function, so we need to keep it for now
  */
 export function applyTextReplacements(app: ComfyApp, value: string): string {
-  return _applyTextReplacements(app.graph, value)
+  return _applyTextReplacements(app.rootGraph, value)
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export async function addStylesheet(
   urlOrFile: string,
   relativeTo?: string
@@ -51,7 +49,6 @@ export async function addStylesheet(
   })
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export { downloadBlob } from '@/base/common/downloadUtil'
 
 export function uploadFile(accept: string) {

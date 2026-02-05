@@ -12,17 +12,26 @@
         </div>
       </div>
 
-      <div class="file-action">
+      <div class="file-action flex flex-row items-center gap-2">
         <Button
           v-if="status === null || status === 'error'"
           class="file-action-button"
-          :label="$t('g.download') + ' (' + fileSize + ')'"
-          size="small"
-          outlined
+          variant="secondary"
+          size="sm"
           :disabled="!!props.error"
-          icon="pi pi-download"
           @click="triggerDownload"
-        />
+        >
+          <i class="pi pi-download" />
+          {{ $t('g.downloadWithSize', { size: fileSize }) }}
+        </Button>
+        <Button
+          v-if="(status === null || status === 'error') && !!props.url"
+          variant="secondary"
+          size="sm"
+          @click="copyURL"
+        >
+          {{ $t('g.copyURL') }}
+        </Button>
       </div>
     </div>
     <div
@@ -42,44 +51,49 @@
         v-if="status === 'in_progress'"
         v-tooltip.top="t('electronFileDownload.pause')"
         class="file-action-button"
-        size="small"
-        outlined
+        variant="secondary"
+        size="sm"
         :disabled="!!props.error"
-        icon="pi pi-pause-circle"
         @click="triggerPauseDownload"
-      />
+      >
+        <i class="pi pi-pause-circle" />
+      </Button>
 
       <Button
         v-if="status === 'paused'"
         v-tooltip.top="t('electronFileDownload.resume')"
         class="file-action-button"
-        size="small"
-        outlined
+        variant="secondary"
+        size="sm"
+        :aria-label="t('electronFileDownload.resume')"
         :disabled="!!props.error"
-        icon="pi pi-play-circle"
         @click="triggerResumeDownload"
-      />
+      >
+        <i class="pi pi-play-circle" />
+      </Button>
 
       <Button
         v-tooltip.top="t('electronFileDownload.cancel')"
         class="file-action-button"
-        size="small"
-        outlined
+        variant="destructive"
+        size="sm"
+        :aria-label="t('electronFileDownload.cancel')"
         :disabled="!!props.error"
-        icon="pi pi-times-circle"
-        severity="danger"
         @click="triggerCancelDownload"
-      />
+      >
+        <i class="pi pi-times-circle" />
+      </Button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import Button from 'primevue/button'
 import ProgressBar from 'primevue/progressbar'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { formatSize } from '@/utils/formatUtil'
@@ -100,6 +114,7 @@ const status = ref<string | null>(null)
 const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
+const { copyToClipboard } = useCopyToClipboard()
 const electronDownloadStore = useElectronDownloadStore()
 // @ts-expect-error fixme ts strict error
 const [savePath, filename] = props.label.split('/')
@@ -126,4 +141,8 @@ const triggerDownload = async () => {
 const triggerCancelDownload = () => electronDownloadStore.cancel(props.url)
 const triggerPauseDownload = () => electronDownloadStore.pause(props.url)
 const triggerResumeDownload = () => electronDownloadStore.resume(props.url)
+
+const copyURL = async () => {
+  await copyToClipboard(props.url)
+}
 </script>
