@@ -94,28 +94,6 @@ describe('useWidgetValueStore', () => {
       expect(state.serialize).toBe(false)
       expect(state.options).toEqual({ multiline: true })
     })
-
-    it('unregisters a widget', () => {
-      const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'seed', 'number', 100))
-
-      store.unregisterWidget('node-1', 'seed')
-
-      expect(store.getWidget('node-1', 'seed')).toBeUndefined()
-    })
-
-    it('unregisters all widgets for a node', () => {
-      const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'seed', 'number', 1))
-      store.registerWidget(widget('node-1', 'steps', 'number', 20))
-      store.registerWidget(widget('node-2', 'seed', 'number', 2))
-
-      store.unregisterNode('node-1')
-
-      expect(store.getWidget('node-1', 'seed')).toBeUndefined()
-      expect(store.getWidget('node-1', 'steps')).toBeUndefined()
-      expect(store.getWidget('node-2', 'seed')?.value).toBe(2)
-    })
   })
 
   describe('widget getters', () => {
@@ -143,45 +121,6 @@ describe('useWidgetValueStore', () => {
       const widgets = store.getNodeWidgets('node-1')
       expect(widgets).toHaveLength(2)
       expect(widgets.map((w) => w.name).sort()).toEqual(['seed', 'steps'])
-    })
-
-    it('getVisibleWidgets filters out hidden widgets', () => {
-      const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'visible', 'number', 1))
-      store.registerWidget(
-        widget('node-1', 'hidden', 'number', 2, { hidden: true })
-      )
-
-      const visible = store.getVisibleWidgets('node-1')
-      expect(visible).toHaveLength(1)
-      expect(visible[0].name).toBe('visible')
-    })
-
-    it('getAdvancedWidgets returns only advanced widgets', () => {
-      const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'basic', 'number', 1))
-      store.registerWidget(
-        widget('node-1', 'adv1', 'number', 2, { advanced: true })
-      )
-      store.registerWidget(
-        widget('node-1', 'adv2', 'string', 'x', { advanced: true })
-      )
-
-      const advanced = store.getAdvancedWidgets('node-1')
-      expect(advanced).toHaveLength(2)
-      expect(advanced.map((w) => w.name).sort()).toEqual(['adv1', 'adv2'])
-    })
-
-    it('getPromotedWidgets returns only promoted widgets', () => {
-      const store = useWidgetValueStore()
-      store.registerWidget(widget('node-1', 'normal', 'number', 1))
-      store.registerWidget(
-        widget('node-1', 'promo', 'string', 'x', { promoted: true })
-      )
-
-      const promoted = store.getPromotedWidgets('node-1')
-      expect(promoted).toHaveLength(1)
-      expect(promoted[0].name).toBe('promo')
     })
   })
 

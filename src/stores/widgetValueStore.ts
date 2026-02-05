@@ -57,21 +57,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return widgetStates.value.get(key) as WidgetState<TValue>
   }
 
-  function unregisterWidget(nodeId: NodeId, widgetName: string): void {
-    widgetStates.value.delete(makeKey(nodeId, widgetName))
-  }
-
   function getNodeWidgets(nodeId: NodeId): WidgetState[] {
     const prefix = `${nodeId}:`
     return [...widgetStates.value]
       .filter(([key]) => key.startsWith(prefix))
       .map(([, state]) => state)
-  }
-
-  function unregisterNode(nodeId: NodeId): void {
-    for (const { name } of getNodeWidgets(nodeId)) {
-      widgetStates.value.delete(makeKey(nodeId, name))
-    }
   }
 
   function getWidget(
@@ -81,27 +71,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return widgetStates.value.get(makeKey(nodeId, widgetName))
   }
 
-  function getVisibleWidgets(nodeId: NodeId): WidgetState[] {
-    return getNodeWidgets(nodeId).filter((w) => !w.hidden)
-  }
-
-  function getAdvancedWidgets(nodeId: NodeId): WidgetState[] {
-    return getNodeWidgets(nodeId).filter((w) => w.advanced)
-  }
-
-  function getPromotedWidgets(nodeId: NodeId): WidgetState[] {
-    return getNodeWidgets(nodeId).filter((w) => w.promoted)
-  }
-
   return {
-    widgetStates,
     registerWidget,
-    unregisterWidget,
-    unregisterNode,
     getWidget,
-    getNodeWidgets,
-    getVisibleWidgets,
-    getAdvancedWidgets,
-    getPromotedWidgets
+    getNodeWidgets
   }
 })
