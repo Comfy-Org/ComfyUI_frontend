@@ -49,7 +49,9 @@ const getBackoff = (retryCount: number) =>
   Math.min(1000 * Math.pow(2, retryCount), 512)
 
 const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
-  entry?.data && entry?.timestamp && entry.timestamp > 0
+  entry?.data !== undefined &&
+  entry?.timestamp !== undefined &&
+  entry.timestamp > 0
 
 const isStale = (entry: CacheEntry<unknown> | undefined, ttl: number) =>
   entry?.timestamp && Date.now() - entry.timestamp >= ttl

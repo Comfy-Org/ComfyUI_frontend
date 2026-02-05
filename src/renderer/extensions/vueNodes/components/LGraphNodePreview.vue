@@ -36,6 +36,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
@@ -69,8 +70,11 @@ const nodeData = computed<VueNodeData>(() => {
       options: {
         hidden: input.hidden,
         advanced: input.advanced,
-        values: input.type === 'COMBO' ? input.options : undefined // For combo widgets
-      }
+        values:
+          input.type === 'COMBO' && Array.isArray(input.options)
+            ? input.options
+            : undefined
+      } satisfies IWidgetOptions
     }))
 
   const inputs: INodeInputSlot[] = Object.entries(nodeDef.inputs || {})

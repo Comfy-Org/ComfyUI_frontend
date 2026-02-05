@@ -849,9 +849,9 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options?: { pos?: Point }
+    options: Record<string, unknown> & { pos?: Point } = {}
   ): LGraphNode {
-    const pos = options?.pos ?? getCanvasCenter()
+    options.pos ??= getCanvasCenter()
 
     if (nodeDef.name.startsWith(useSubgraphStore().typePrefix)) {
       const canvas = canvasStore.getCanvas()
@@ -861,7 +861,7 @@ export const useLitegraphService = () => {
         subgraphs: bp.definitions?.subgraphs
       }
       const results = canvas._deserializeItems(items, {
-        position: pos
+        position: options.pos
       })
       if (!results) throw new Error('Failed to add subgraph blueprint')
       const node = results.nodes.values().next().value
@@ -872,9 +872,11 @@ export const useLitegraphService = () => {
       return node
     }
 
-    const node = LiteGraph.createNode(nodeDef.name, nodeDef.display_name, {
-      pos
-    })
+    const node = LiteGraph.createNode(
+      nodeDef.name,
+      nodeDef.display_name,
+      options
+    )
 
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
 

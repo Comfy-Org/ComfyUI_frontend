@@ -79,7 +79,6 @@ import type {
   VueNodeData,
   WidgetSlotMetadata
 } from '@/composables/graph/useGraphNodeManager'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
@@ -172,9 +171,9 @@ const processedWidgets = computed((): ProcessedWidget[] => {
     // Core feature: Disable Vue widgets when their input slots are connected
     // This prevents conflicting input sources - when a slot is linked to another
     // node's output, the widget should be read-only to avoid data conflicts
-    const widgetOptions = (
-      slotMetadata?.linked ? { ...options, disabled: true } : options
-    ) as IWidgetOptions | undefined
+    const widgetOptions = slotMetadata?.linked
+      ? { ...options, disabled: true }
+      : options
 
     const simplified: SimplifiedWidget = {
       name: widget.name,

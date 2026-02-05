@@ -80,9 +80,7 @@ const filteredProps = computed(() => {
   return filtered as Partial<NumericWidgetOptions>
 })
 
-const isDisabled = computed(() => {
-  return (props.widget.options?.disabled as boolean | undefined) ?? false
-})
+const isDisabled = computed(() => props.widget.options?.disabled ?? false)
 
 const canDecrement = computed(() => {
   const min = filteredProps.value.min ?? -Number.MAX_VALUE
