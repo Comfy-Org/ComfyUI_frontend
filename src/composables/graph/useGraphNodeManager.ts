@@ -432,7 +432,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     } else {
       // Not during workflow loading - initialize layout immediately
       // This handles individual node additions during normal operation
-      requestAnimationFrame(initializeVueNodeLayout)
+      initializeVueNodeLayout()
     }
 
     // Call original callback if provided
