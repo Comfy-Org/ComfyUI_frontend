@@ -287,10 +287,10 @@ export const zComfyNodeDef = z.object({
    */
   price_badge: zPriceBadge.optional(),
   /**
-   * Optional category for the Essentials tab in the node library.
-   * Path-based like category field (e.g., 'Basic', 'Image Tools/Editing').
+   * Optional main category for top-level tabs in the node library
+   * (e.g., 'Basic', 'Image Tools', 'Partner Nodes').
    */
-  essentials_category: z.string().optional()
+  main_category: z.string().optional()
 })
 
 export const zAutogrowOptions = z.object({
