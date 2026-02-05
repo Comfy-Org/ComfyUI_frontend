@@ -1,6 +1,6 @@
 // oxlint-disable no-empty-pattern
 // TODO: Fix these tests after migration
-import { afterEach, describe, expect, vi } from 'vitest'
+import { afterEach, describe, expect, vi } from 'vite-plus/test'
 
 import type {
   LGraph,

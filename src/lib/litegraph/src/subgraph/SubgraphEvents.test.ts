@@ -1,5 +1,5 @@
 // TODO: Fix these tests after migration
-import { describe, expect, vi } from 'vitest'
+import { describe, expect, vi } from 'vite-plus/test'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import { verifyEventSequence } from './__fixtures__/subgraphHelpers'

@@ -1,5 +1,5 @@
 import { useEventListener } from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { nextTick } from 'vue'
 
 import { useServerLogs } from '@/composables/useServerLogs'

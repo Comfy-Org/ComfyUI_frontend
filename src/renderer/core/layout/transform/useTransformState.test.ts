@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'

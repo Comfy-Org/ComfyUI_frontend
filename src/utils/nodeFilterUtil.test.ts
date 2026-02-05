@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { filterOutputNodes, isOutputNode } from '@/utils/nodeFilterUtil'

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { computeUnionBounds, gcd, lcm } from '@/utils/mathUtil'

@@ -5,7 +5,7 @@
  * Tests for SubgraphNode instances including construction,
  * IO synchronization, and edge cases.
  */
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'

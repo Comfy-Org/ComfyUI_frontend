@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 import { nextTick } from 'vue'
 
 import AssetFilterBar from '@/platform/assets/components/AssetFilterBar.vue'

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { LGraph, LGraphNode, LiteGraph } from './litegraph'
 import type { NodeInputSlot } from './node/NodeInputSlot'

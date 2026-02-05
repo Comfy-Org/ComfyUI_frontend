@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import ColorPicker from 'primevue/colorpicker'
 import type { ColorPickerProps } from 'primevue/colorpicker'
 import PrimeVue from 'primevue/config'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

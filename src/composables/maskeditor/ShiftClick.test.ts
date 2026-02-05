@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { resampleSegment } from './splineUtils'
 import type { Point } from '@/extensions/core/maskeditor/types'
 

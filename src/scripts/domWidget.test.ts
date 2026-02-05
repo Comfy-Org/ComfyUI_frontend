@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vite-plus/test'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'

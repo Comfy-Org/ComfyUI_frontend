@@ -1,5 +1,5 @@
-import { defineConfig, mergeConfig } from 'vite'
-import type { Plugin } from 'vite'
+import { defineConfig, mergeConfig } from 'vite-plus'
+import type { Plugin } from 'vite-plus'
 
 import baseConfig from './vite.config.mts'
 

@@ -1,4 +1,4 @@
-import { describe } from 'vitest'
+import { describe } from 'vite-plus/test'
 
 import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'

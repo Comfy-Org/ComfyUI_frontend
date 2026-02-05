@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vite-plus/test'
 import { defineComponent, nextTick } from 'vue'
 
 import JobGroupsList from '@/components/queue/job/JobGroupsList.vue'

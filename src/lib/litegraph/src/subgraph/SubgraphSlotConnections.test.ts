@@ -1,5 +1,5 @@
 // TODO: Fix these tests after migration
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import {
   SUBGRAPH_INPUT_ID,

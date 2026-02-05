@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import ColorPicker from 'primevue/colorpicker'
 import PrimeVue from 'primevue/config'
 import SelectButton from 'primevue/selectbutton'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 import { createApp, nextTick } from 'vue'
 
 import ColorCustomizationSelector from './ColorCustomizationSelector.vue'

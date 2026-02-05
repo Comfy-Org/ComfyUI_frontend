@@ -8,7 +8,7 @@ export default {
 
   './**/*.{ts,tsx,vue,mts}': (stagedFiles: string[]) => [
     ...formatAndEslint(stagedFiles),
-    'pnpm typecheck'
+    'vite run typecheck'
   ]
 }
 
@@ -17,8 +17,8 @@ function formatAndEslint(fileNames: string[]) {
   const relativePaths = fileNames.map((f) => path.relative(process.cwd(), f))
   const joinedPaths = relativePaths.map((p) => `"${p}"`).join(' ')
   return [
-    `pnpm exec oxfmt --write ${joinedPaths}`,
-    `pnpm exec oxlint --fix ${joinedPaths}`,
-    `pnpm exec eslint --cache --fix --no-warn-ignored ${joinedPaths}`
+    `vite fmt ${joinedPaths}`,
+    `vite lint --fix ${joinedPaths}`,
+    `vite dlx eslint --cache --fix --no-warn-ignored ${joinedPaths}`
   ]
 }

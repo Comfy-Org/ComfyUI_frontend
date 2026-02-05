@@ -1,7 +1,7 @@
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
-import { describe, expect, it, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vite-plus/test'
 import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 

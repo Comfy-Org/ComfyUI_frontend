@@ -5,7 +5,7 @@
  * Tests for saving, loading, and version compatibility of subgraphs.
  * This covers serialization, deserialization, data integrity, and migration scenarios.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 

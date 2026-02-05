@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { nextTick, reactive } from 'vue'
 
 import { useCompletionSummary } from '@/composables/queue/useCompletionSummary'

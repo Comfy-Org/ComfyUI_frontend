@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import Textarea from 'primevue/textarea'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 

@@ -3,7 +3,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { mount } from '@vue/test-utils'
 import Avatar from 'primevue/avatar'
 import PrimeVue from 'primevue/config'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 import { createApp, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 

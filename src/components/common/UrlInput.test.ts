@@ -3,7 +3,7 @@ import PrimeVue from 'primevue/config'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 import { createApp, nextTick } from 'vue'
 
 import UrlInput from './UrlInput.vue'

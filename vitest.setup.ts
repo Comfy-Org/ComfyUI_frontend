@@ -1,4 +1,4 @@
-import { vi } from 'vitest'
+import { vi } from 'vite-plus/test'
 import 'vue'
 
 // Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { computed, shallowRef } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'

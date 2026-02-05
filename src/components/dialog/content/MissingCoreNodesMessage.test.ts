@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import Message from 'primevue/message'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { nextTick } from 'vue'
 
 import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNodesMessage.vue'

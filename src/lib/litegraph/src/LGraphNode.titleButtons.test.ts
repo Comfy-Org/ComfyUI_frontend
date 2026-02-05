@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphButton, LGraphNode } from '@/lib/litegraph/src/litegraph'

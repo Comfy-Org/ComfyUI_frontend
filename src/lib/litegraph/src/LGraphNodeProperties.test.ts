@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'

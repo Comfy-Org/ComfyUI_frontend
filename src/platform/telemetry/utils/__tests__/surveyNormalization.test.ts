@@ -3,7 +3,7 @@
  * Uses real example data from migration script to verify categorization accuracy
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import {
   normalizeIndustry,

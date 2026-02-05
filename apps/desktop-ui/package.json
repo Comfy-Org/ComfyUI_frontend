@@ -30,6 +30,7 @@
     "vite": "catalog:",
     "vite-plugin-html": "catalog:",
     "vite-plugin-vue-devtools": "catalog:",
+    "vite-plus": "catalog:",
     "vue-tsc": "catalog:"
   },
   "nx": {

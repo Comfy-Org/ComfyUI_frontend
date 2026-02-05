@@ -1,5 +1,5 @@
 // oxlint-disable no-empty-pattern
-import { test as baseTest } from 'vitest'
+import { test as baseTest } from 'vite-plus/test'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'

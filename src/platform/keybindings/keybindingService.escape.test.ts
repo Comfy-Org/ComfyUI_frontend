@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { markRaw, reactive } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'

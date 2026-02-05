@@ -8,7 +8,7 @@ import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { describe, it } from 'vitest'
+import { describe, it } from 'vite-plus/test'
 
 function makeFakeInputSlot(
   name: string,

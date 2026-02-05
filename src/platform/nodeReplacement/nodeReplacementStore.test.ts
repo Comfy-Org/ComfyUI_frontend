@@ -1,7 +1,7 @@
 import type { NodeReplacementResponse } from './types'
 
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { fetchNodeReplacements } from './nodeReplacementService'

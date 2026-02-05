@@ -5,7 +5,7 @@
  * Tests for edge cases, error handling, and boundary conditions in the subgraph system.
  * This covers unusual scenarios, invalid states, and stress testing.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
 

@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'

@@ -1,4 +1,4 @@
-import { describe, expect } from 'vitest'
+import { describe, expect } from 'vite-plus/test'
 
 import { LLink } from '@/lib/litegraph/src/litegraph'
 

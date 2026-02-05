@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tag from 'primevue/tag'
 import Tooltip from 'primevue/tooltip'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 import { createI18n } from 'vue-i18n'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'

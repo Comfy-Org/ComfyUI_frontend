@@ -1,5 +1,5 @@
 // oxlint-disable no-empty-pattern
-import { test as baseTest, describe, expect, vi } from 'vitest'
+import { test as baseTest, describe, expect, vi } from 'vite-plus/test'
 
 import { Rectangle } from '@/lib/litegraph/src/litegraph'
 import type { Point, Size } from '@/lib/litegraph/src/litegraph'

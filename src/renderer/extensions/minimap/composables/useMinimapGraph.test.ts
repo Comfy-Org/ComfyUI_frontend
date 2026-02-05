@@ -1,5 +1,5 @@
 import { useThrottleFn } from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 

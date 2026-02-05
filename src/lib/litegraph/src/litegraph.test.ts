@@ -1,5 +1,5 @@
 import { clamp } from 'es-toolkit/compat'
-import { describe, expect } from 'vitest'
+import { describe, expect } from 'vite-plus/test'
 
 import {
   LiteGraphGlobal,

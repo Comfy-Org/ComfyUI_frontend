@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { StrokeProcessor } from './StrokeProcessor'
 import type { Point } from '@/extensions/core/maskeditor/types'
 

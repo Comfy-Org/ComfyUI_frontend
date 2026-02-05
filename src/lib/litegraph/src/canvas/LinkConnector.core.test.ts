@@ -1,5 +1,5 @@
 // oxlint-disable no-empty-pattern
-import { test as baseTest, describe, expect, vi } from 'vitest'
+import { test as baseTest, describe, expect, vi } from 'vite-plus/test'
 
 import type {
   MovingInputLink,

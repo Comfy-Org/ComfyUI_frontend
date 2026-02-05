@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vite-plus/test'
 import { createI18n } from 'vue-i18n'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'

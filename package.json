@@ -22,20 +22,20 @@
     "dev:no-vue": "cross-env DISABLE_VUE_PLUGINS=true nx serve",
     "dev": "nx serve",
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
-    "format:check": "oxfmt --check",
-    "format": "oxfmt --write",
+    "format:check": "vite fmt --check",
+    "format": "vite fmt --write",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",
-    "lint:fix:no-cache": "oxlint src --type-aware --fix && eslint src --fix",
-    "lint:fix": "oxlint src --type-aware --fix && eslint src --cache --fix",
-    "lint:no-cache": "oxlint src --type-aware && eslint src",
+    "lint:fix:no-cache": "vite lint src --type-aware --fix && eslint src --fix",
+    "lint:fix": "vite lint src --type-aware --fix && eslint src --cache --fix",
+    "lint:no-cache": "vite lint src --type-aware && eslint src",
     "lint:unstaged:fix": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache --fix",
     "lint:unstaged": "git diff --name-only HEAD | grep -E '\\.(js|ts|vue|mts)$' | xargs -r eslint --cache",
-    "lint": "oxlint src --type-aware && eslint src --cache",
+    "lint": "vite lint src --type-aware && eslint src --cache",
     "lint:desktop": "nx run @comfyorg/desktop-ui:lint",
     "locale": "lobe-i18n locale",
-    "oxlint": "oxlint src --type-aware",
+    "oxlint": "vite lint src --type-aware",
     "preinstall": "pnpm dlx only-allow pnpm",
     "prepare": "husky || true && git config blame.ignoreRevsFile .git-blame-ignore-revs || true",
     "preview": "nx preview",
@@ -160,9 +160,6 @@
     "markdown-table": "catalog:",
     "mixpanel-browser": "catalog:",
     "nx": "catalog:",
-    "oxfmt": "catalog:",
-    "oxlint": "catalog:",
-    "oxlint-tsgolint": "catalog:",
     "picocolors": "catalog:",
     "postcss-html": "catalog:",
     "pretty-bytes": "catalog:",
@@ -183,6 +180,7 @@
     "vite-plugin-dts": "catalog:",
     "vite-plugin-html": "catalog:",
     "vite-plugin-vue-devtools": "catalog:",
+    "vite-plus": "catalog:",
     "vitest": "catalog:",
     "vue-component-type-helpers": "catalog:",
     "vue-eslint-parser": "catalog:",
@@ -190,9 +188,8 @@
     "zip-dir": "^2.0.0",
     "zod-to-json-schema": "catalog:"
   },
+  "packageManager": "pnpm@10.28.2",
   "pnpm": {
-    "overrides": {
-      "vite": "catalog:"
-    }
+    "overrides": {}
   }
 }

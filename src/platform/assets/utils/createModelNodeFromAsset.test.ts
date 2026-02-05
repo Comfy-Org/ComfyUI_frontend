@@ -1,5 +1,5 @@
 // oxlint-disable no-misused-spread
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { markRaw } from 'vue'
 import type { Raw } from 'vue'
 

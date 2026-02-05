@@ -6,7 +6,7 @@
  * patterns for the rest of the testing team. These tests cover construction,
  * basic I/O management, and known issues.
  */
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import {
   createUuidv4,

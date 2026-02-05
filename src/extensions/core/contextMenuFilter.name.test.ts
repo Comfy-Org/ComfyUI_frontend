@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
 import type {

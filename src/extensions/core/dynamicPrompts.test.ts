@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, test, vi } from 'vitest'
+import { afterEach, describe, expect, it, test, vi } from 'vite-plus/test'
 
 import { processDynamicPrompt } from '@/utils/formatUtil'
 

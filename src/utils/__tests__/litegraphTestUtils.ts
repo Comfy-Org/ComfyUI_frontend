@@ -13,7 +13,7 @@ import type {
   LLink
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { vi } from 'vitest'
+import { vi } from 'vite-plus/test'
 import type { ChangeTracker } from '@/scripts/changeTracker'
 
 /**

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { MaskBlendMode } from '@/extensions/core/maskeditor/types'
 import { useCanvasManager } from '@/composables/maskeditor/useCanvasManager'

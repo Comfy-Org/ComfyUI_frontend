@@ -3,7 +3,7 @@ import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import type { InputTextProps } from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

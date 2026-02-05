@@ -5,7 +5,7 @@
  * These functions provide consistent ways to create test subgraphs, nodes, and
  * verify their behavior.
  */
-import { expect } from 'vitest'
+import { expect } from 'vite-plus/test'
 
 import type { ISlotType, NodeId } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'

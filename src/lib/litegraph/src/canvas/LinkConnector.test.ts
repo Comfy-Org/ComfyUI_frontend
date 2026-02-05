@@ -1,5 +1,5 @@
 // TODO: Fix these tests after migration
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, test, vi } from 'vite-plus/test'
 
 import { LinkConnector } from '@/lib/litegraph/src/litegraph'
 import {

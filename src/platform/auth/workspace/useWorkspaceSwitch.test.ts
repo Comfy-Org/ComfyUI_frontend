@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import { useWorkspaceSwitch } from '@/platform/auth/workspace/useWorkspaceSwitch'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'

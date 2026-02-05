@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 const { i18n, loadLocale, mergeCustomNodesI18n } = await import('./i18n')
 
 // Mock the JSON imports before importing i18n module

@@ -1,5 +1,5 @@
 // TODO: Fix these tests after migration
-import { assert, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vite-plus/test'
 
 import {
   LGraphGroup,

@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import RadioButton from 'primevue/radiobutton'
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vite-plus/test'
 import { createApp } from 'vue'
 
 import type { SettingOption } from '@/platform/settings/types'

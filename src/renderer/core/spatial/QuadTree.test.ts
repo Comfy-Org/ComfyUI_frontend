@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vite-plus/test'
 
 import { QuadTree } from '@/renderer/core/spatial/QuadTree'
 import type { Bounds } from '@/renderer/core/spatial/QuadTree'

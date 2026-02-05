@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { IWidget } from '@/lib/litegraph/src/litegraph'
 import { api } from '@/scripts/api'

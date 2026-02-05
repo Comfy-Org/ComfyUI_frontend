@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import Badge from 'primevue/badge'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vite-plus/test'
 import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 

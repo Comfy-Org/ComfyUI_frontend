@@ -1,5 +1,5 @@
 // TODO: Fix these tests after migration
-import { describe } from 'vitest'
+import { describe } from 'vite-plus/test'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 

@@ -1,6 +1,6 @@
-import type { Mock } from 'vitest'
+import type { Mock } from 'vite-plus/test'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 
 import type { components } from '@/types/comfyRegistryTypes'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'

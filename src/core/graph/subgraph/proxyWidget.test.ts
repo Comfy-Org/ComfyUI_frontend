@@ -1,4 +1,4 @@
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vite-plus/test'
 
 import { registerProxyWidgets } from '@/core/graph/subgraph/proxyWidget'
 import { promoteWidget } from '@/core/graph/subgraph/proxyWidgetUtils'

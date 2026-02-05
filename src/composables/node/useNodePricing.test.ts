@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import { useNodePricing } from '@/composables/node/useNodePricing'

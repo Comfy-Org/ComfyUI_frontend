@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { nextTick, ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import type { LogoInfo } from '@/platform/workflow/templates/types/template'

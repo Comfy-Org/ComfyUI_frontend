@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vite-plus/test'
 
 import { LGraphButton, Rectangle } from '@/lib/litegraph/src/litegraph'
 

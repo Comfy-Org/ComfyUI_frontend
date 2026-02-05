@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 
 import { validateComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
