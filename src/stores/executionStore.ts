@@ -162,23 +162,40 @@ export const useExecutionStore = defineStore('execution', () => {
     lastExecutionResultByWorkflowId.value = next
   }
 
+  /**
+   * Computed map of workflow ID to execution state for reactive UI updates.
+   */
+  const workflowExecutionStates = computed<Map<string, WorkflowExecutionState>>(
+    () => {
+      const states = new Map<string, WorkflowExecutionState>()
+
+      // Mark running workflows
+      for (const promptId of runningPromptIds.value) {
+        const workflowId = promptIdToWorkflowId.value.get(promptId)
+        if (workflowId) {
+          states.set(workflowId, 'running')
+        }
+      }
+
+      // Add completed/error states for workflows not currently running
+      for (const [
+        workflowId,
+        result
+      ] of lastExecutionResultByWorkflowId.value) {
+        if (!states.has(workflowId)) {
+          states.set(workflowId, result.state)
+        }
+      }
+
+      return states
+    }
+  )
+
   function getWorkflowExecutionState(
     workflowId: string | undefined
   ): WorkflowExecutionState {
     if (!workflowId) return 'idle'
-
-    for (const promptId of runningPromptIds.value) {
-      if (promptIdToWorkflowId.value.get(promptId) === workflowId) {
-        return 'running'
-      }
-    }
-
-    const lastResult = lastExecutionResultByWorkflowId.value.get(workflowId)
-    if (lastResult) {
-      return lastResult.state
-    }
-
-    return 'idle'
+    return workflowExecutionStates.value.get(workflowId) ?? 'idle'
   }
 
   const mergeExecutionProgressStates = (
@@ -740,6 +757,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // Workflow execution result tracking
     lastExecutionResultByWorkflowId,
     clearWorkflowExecutionResult,
+    workflowExecutionStates,
     getWorkflowExecutionState
   }
 })

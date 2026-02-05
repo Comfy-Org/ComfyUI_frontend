@@ -1,6 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type {
   WorkflowExecutionResult,
@@ -20,24 +20,26 @@ const _clearWorkflowExecutionResult = vi.fn((wid: string) => {
   _lastExecutionResultByWorkflowId.value = next
 })
 
-function _getWorkflowExecutionState(
-  workflowId: string | undefined
-): WorkflowExecutionState {
-  if (!workflowId) return 'idle'
+const _workflowExecutionStates = computed<Map<string, WorkflowExecutionState>>(
+  () => {
+    const states = new Map<string, WorkflowExecutionState>()
 
-  for (const promptId of _runningPromptIds.value) {
-    if (_promptIdToWorkflowId.value.get(promptId) === workflowId) {
-      return 'running'
+    for (const promptId of _runningPromptIds.value) {
+      const workflowId = _promptIdToWorkflowId.value.get(promptId)
+      if (workflowId) {
+        states.set(workflowId, 'running')
+      }
     }
-  }
 
-  const lastResult = _lastExecutionResultByWorkflowId.value.get(workflowId)
-  if (lastResult) {
-    return lastResult.state
-  }
+    for (const [workflowId, result] of _lastExecutionResultByWorkflowId.value) {
+      if (!states.has(workflowId)) {
+        states.set(workflowId, result.state)
+      }
+    }
 
-  return 'idle'
-}
+    return states
+  }
+)
 
 vi.mock('@/stores/executionStore', () => {
   return {
@@ -51,8 +53,10 @@ vi.mock('@/stores/executionStore', () => {
       get lastExecutionResultByWorkflowId() {
         return _lastExecutionResultByWorkflowId.value
       },
-      clearWorkflowExecutionResult: _clearWorkflowExecutionResult,
-      getWorkflowExecutionState: _getWorkflowExecutionState
+      get workflowExecutionStates() {
+        return _workflowExecutionStates.value
+      },
+      clearWorkflowExecutionResult: _clearWorkflowExecutionResult
     })
   }
 })

@@ -9,9 +9,11 @@ export function useWorkflowExecutionState(
 ) {
   const executionStore = useExecutionStore()
 
-  const state = computed<WorkflowExecutionState>(() =>
-    executionStore.getWorkflowExecutionState(toValue(workflowId))
-  )
+  const state = computed<WorkflowExecutionState>(() => {
+    const wid = toValue(workflowId)
+    if (!wid) return 'idle'
+    return executionStore.workflowExecutionStates.get(wid) ?? 'idle'
+  })
 
   function clearResult() {
     const wid = toValue(workflowId)
