@@ -265,8 +265,8 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
           (w) =>
             !(
               w.options?.canvasOnly ||
-              w.options?.hidden ||
-              (w.options?.advanced && !includesAdvanced.value)
+              w.hidden ||
+              (w.advanced && !includesAdvanced.value)
             )
         )
         .map((widget) => ({ node, widget }))
