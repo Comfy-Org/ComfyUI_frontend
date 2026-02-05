@@ -35,9 +35,6 @@
   "Comfy-Desktop_Restart": {
     "label": "Reiniciar"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "Abrir visualizador 3D (Beta) para o nó selecionado"
-  },
   "Comfy_BrowseModelAssets": {
     "label": "Experimental: Navegar pelos ativos de modelo"
   },
@@ -266,6 +263,12 @@
   "Comfy_ShowSettingsDialog": {
     "label": "Mostrar Diálogo de Configurações"
   },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Definir descrição do subgrafo"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Definir aliases de pesquisa do subgrafo"
+  },
   "Comfy_ToggleAssetAPI": {
     "label": "Experimental: Ativar AssetAPI"
   },
@@ -310,12 +313,6 @@
   },
   "Workspace_ToggleBottomPanel": {
     "label": "Alternar painel inferior"
-  },
-  "Workspace_ToggleBottomPanelTab_command-terminal": {
-    "label": "Alternar painel inferior do terminal"
-  },
-  "Workspace_ToggleBottomPanelTab_logs-terminal": {
-    "label": "Alternar painel inferior de logs"
   },
   "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
     "label": "Alternar painel inferior essencial"

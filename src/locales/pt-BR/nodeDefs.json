@@ -6427,9 +6427,7 @@
   "Load3D": {
     "display_name": "Carregar 3D & Animação",
     "inputs": {
-      "clear": {
-        "": "limpar"
-      },
+      "clear": {},
       "height": {
         "name": "altura"
       },
@@ -6439,42 +6437,24 @@
       "model_file": {
         "name": "arquivo_do_modelo"
       },
-      "upload 3d model": {
-        "": "enviar modelo 3D"
-      },
-      "upload extra resources": {
-        "": "enviar recursos extras"
-      },
+      "upload 3d model": {},
+      "upload extra resources": {},
       "width": {
         "name": "largura"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "imagem",
-        "tooltip": null
-      },
-      "1": {
-        "name": "mask",
-        "tooltip": null
-      },
-      "2": {
-        "name": "caminho_malha",
-        "tooltip": null
-      },
-      "3": {
-        "name": "normal",
-        "tooltip": null
-      },
-      "4": {
-        "name": "info_câmera",
-        "tooltip": null
-      },
-      "5": {
-        "name": "vídeo_gravado",
+    "outputs": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      {
+        "name": "model_3d",
         "tooltip": null
       }
-    }
+    ]
   },
   "LoadAudio": {
     "display_name": "Carregar Áudio",
