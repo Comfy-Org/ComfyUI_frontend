@@ -36,12 +36,12 @@ export class ComboWidget
     if (this.computedDisabled) return ''
 
     const { values: rawValues, placeholder } = this.options
-    if (rawValues) {
-      const values = typeof rawValues === 'function' ? rawValues() : rawValues
-      const valuesArray = toArray(values)
-      if (valuesArray.length === 0 && placeholder) {
-        return placeholder
-      }
+    const resolvedValues =
+      typeof rawValues === 'function' ? rawValues(this, this.node) : rawValues
+    const valuesArray = toArray(resolvedValues)
+
+    if (valuesArray.length === 0 && placeholder) {
+      return placeholder
     }
 
     if (this.options.getOptionLabel) {
@@ -55,12 +55,8 @@ export class ComboWidget
       }
     }
 
-    if (rawValues) {
-      const values = typeof rawValues === 'function' ? rawValues() : rawValues
-
-      if (values && !Array.isArray(values)) {
-        return values[this.value]
-      }
+    if (resolvedValues && !Array.isArray(resolvedValues)) {
+      return resolvedValues[this.value]
     }
     return typeof this.value === 'number' ? String(this.value) : this.value
   }
