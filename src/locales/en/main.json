@@ -1030,7 +1030,10 @@
     "hidden": "Hidden / nested parameters",
     "hideAll": "Hide all",
     "showRecommended": "Show recommended widgets",
-    "cannotDeleteGlobal": "Cannot delete installed blueprints"
+    "cannotDeleteGlobal": "Cannot delete installed blueprints",
+    "enterDescription": "Enter a description",
+    "searchAliases": "Search Aliases",
+    "enterSearchAliases": "Enter search aliases (comma separated)"
   },
   "electronFileDownload": {
     "inProgress": "In Progress",
@@ -1247,6 +1250,8 @@
     "Save": "Save",
     "Save As": "Save As",
     "Show Settings Dialog": "Show Settings Dialog",
+    "Set Subgraph Description": "Set Subgraph Description",
+    "Set Subgraph Search Aliases": "Set Subgraph Search Aliases",
     "Experimental: Enable AssetAPI": "Experimental: Enable AssetAPI",
     "Canvas Performance": "Canvas Performance",
     "Help Center": "Help Center",
