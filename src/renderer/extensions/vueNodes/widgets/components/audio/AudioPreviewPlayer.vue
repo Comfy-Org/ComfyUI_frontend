@@ -76,16 +76,17 @@
         </div>
 
         <!-- Download Button -->
-        <button
+        <Button
           v-if="modelValue"
-          type="button"
+          size="icon-sm"
+          variant="textonly"
           :aria-label="$t('g.downloadAudio')"
           :title="$t('g.downloadAudio')"
-          class="flex size-6 cursor-pointer items-center justify-center rounded border-0 bg-transparent hover:bg-interface-menu-component-surface-hovered"
+          class="size-6 hover:bg-interface-menu-component-surface-hovered"
           @click="handleDownload"
         >
           <i class="text-secondary icon-[lucide--download] size-4" />
-        </button>
+        </Button>
 
         <!-- Options Button -->
         <div
@@ -149,7 +150,10 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { whenever } from '@vueuse/core'
 
+import { useToast } from 'primevue'
+
 import { downloadFile } from '@/base/common/downloadUtil'
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@/utils/tailwindUtil'
 
 import { formatTime } from '../../utils/audioUtils'
@@ -205,7 +209,12 @@ const handleDownload = () => {
   try {
     downloadFile(modelValue.value)
   } catch (error) {
-    console.error('Failed to download audio', error)
+    useToast().add({
+      severity: 'error',
+      summary: 'Error',
+      detail: t('g.failedToDownloadFile'),
+      life: 3000
+    })
   }
 }
 
