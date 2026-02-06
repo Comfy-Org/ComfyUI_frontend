@@ -26,6 +26,15 @@
     <template #tool-buttons>
       <!-- Normal Tab View -->
       <TabList v-if="!isInFolderView" v-model="activeTab">
+        <Tab v-if="isQueuePanelV2Enabled" class="font-inter" value="queue">
+          {{ $t('sideToolbar.labels.queue') }}
+          <span
+            v-if="activeJobsCount > 0"
+            class="ml-1 inline-flex items-center justify-center rounded-full bg-primary px-1.5 text-xs text-base-foreground font-medium h-5"
+          >
+            {{ activeJobsCount }}
+          </span>
+        </Tab>
         <Tab class="font-inter" value="output">{{
           $t('sideToolbar.labels.generated')
         }}</Tab>
@@ -43,8 +52,9 @@
         </Button>
       </div>
 
-      <!-- Filter Bar -->
+      <!-- Filter Bar (hidden on queue tab) -->
       <MediaAssetFilterBar
+        v-if="!isQueueTab"
         v-model:search-query="searchQuery"
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
@@ -53,13 +63,14 @@
         :show-generation-time-sort="activeTab === 'output'"
       />
       <div
-        v-if="isQueuePanelV2Enabled && !isInFolderView"
-        class="flex items-center justify-between px-2 py-2 2xl:px-4"
+        v-if="isQueueTab && !isInFolderView"
+        class="flex items-center justify-between px-4 2xl:px-6"
       >
         <span class="text-sm text-muted-foreground">
           {{ activeJobsLabel }}
         </span>
         <div class="flex items-center gap-2">
+          <MediaAssetViewModeToggle v-model:view-mode="viewMode" />
           <span class="text-sm text-base-foreground">
             {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
           </span>
@@ -76,7 +87,7 @@
           </Button>
         </div>
       </div>
-      <Divider v-else type="dashed" class="my-2" />
+      <Divider v-else-if="!isQueueTab" type="dashed" class="my-2" />
     </template>
     <template #body>
       <div v-if="showLoadingState">
@@ -87,23 +98,32 @@
           icon="pi pi-info-circle"
           :title="
             $t(
-              activeTab === 'input'
-                ? 'sideToolbar.noImportedFiles'
-                : 'sideToolbar.noGeneratedFiles'
+              isQueueTab
+                ? 'sideToolbar.noQueueItems'
+                : activeTab === 'input'
+                  ? 'sideToolbar.noImportedFiles'
+                  : 'sideToolbar.noGeneratedFiles'
             )
           "
-          :message="$t('sideToolbar.noFilesFoundMessage')"
+          :message="
+            $t(
+              isQueueTab
+                ? 'sideToolbar.noQueueItemsMessage'
+                : 'sideToolbar.noFilesFoundMessage'
+            )
+          "
         />
       </div>
       <div v-else class="relative size-full" @click="handleEmptySpaceClick">
+        <QueueAssetView v-if="isQueueTab" :view-mode="viewMode" />
         <AssetsSidebarListView
-          v-if="isListView"
+          v-else-if="isListView"
           :asset-items="listViewAssetItems"
           :is-selected="isSelected"
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
-          :asset-type="activeTab"
+          :asset-type="assetTabType"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
@@ -112,8 +132,7 @@
           v-else
           :assets="displayAssets"
           :is-selected="isSelected"
-          :is-in-folder-view="isInFolderView"
-          :asset-type="activeTab"
+          :asset-type="assetTabType"
           :show-output-count="shouldShowOutputCount"
           :get-output-count="getOutputCount"
           @select-asset="handleAssetSelect"
@@ -224,6 +243,7 @@ const Load3dViewerContent = () =>
   import('@/components/load3d/Load3dViewerContent.vue')
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
+import QueueAssetView from '@/components/sidebar/tabs/QueueAssetView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
@@ -231,6 +251,7 @@ import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
+import MediaAssetViewModeToggle from '@/platform/assets/components/MediaAssetViewModeToggle.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
@@ -257,7 +278,7 @@ const { activeJobsCount } = storeToRefs(queueStore)
 const executionStore = useExecutionStore()
 const settingStore = useSettingStore()
 
-const activeTab = ref<'input' | 'output'>('output')
+const activeTab = ref<'input' | 'output' | 'queue'>('output')
 const folderPromptId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const isInFolderView = computed(() => folderPromptId.value !== null)
@@ -267,6 +288,10 @@ const viewMode = useStorage<'list' | 'grid'>(
 )
 const isQueuePanelV2Enabled = computed(() =>
   settingStore.get('Comfy.Queue.QPOV2')
+)
+const isQueueTab = computed(() => activeTab.value === 'queue')
+const assetTabType = computed<'input' | 'output'>(() =>
+  activeTab.value === 'input' ? 'input' : 'output'
 )
 const isListView = computed(
   () => isQueuePanelV2Enabled.value && viewMode.value === 'list'
@@ -415,18 +440,15 @@ const isBulkMode = computed(
 )
 
 const showLoadingState = computed(
-  () =>
-    loading.value &&
-    displayAssets.value.length === 0 &&
-    activeJobsCount.value === 0
+  () => !isQueueTab.value && loading.value && displayAssets.value.length === 0
 )
 
-const showEmptyState = computed(
-  () =>
-    !loading.value &&
-    displayAssets.value.length === 0 &&
-    activeJobsCount.value === 0
-)
+const showEmptyState = computed(() => {
+  if (isQueueTab.value) {
+    return activeJobsCount.value === 0
+  }
+  return !loading.value && displayAssets.value.length === 0
+})
 
 watch(visibleAssets, (newAssets) => {
   // Alternative: keep hidden selections and surface them in UI; for now prune
@@ -483,11 +505,20 @@ watch(
     clearSelection()
     // Clear search when switching tabs
     searchQuery.value = ''
-    // Reset pagination state when tab changes
-    void refreshAssets()
+    // Skip asset fetch for queue tab
+    if (activeTab.value !== 'queue') {
+      void refreshAssets()
+    }
   },
   { immediate: true }
 )
+
+// Reset to output tab if QPOV2 is disabled while on queue tab
+watch(isQueuePanelV2Enabled, (enabled) => {
+  if (!enabled && activeTab.value === 'queue') {
+    activeTab.value = 'output'
+  }
+})
 
 function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const assetList = assets ?? visibleAssets.value
