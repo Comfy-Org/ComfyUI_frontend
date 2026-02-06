@@ -161,7 +161,7 @@ export class ComfyWorkflow extends UserFile {
   async promptSave(): Promise<string | null> {
     return await useDialogService().prompt({
       title: t('workflowService.saveWorkflow'),
-      message: t('workflowService.enterFilename') + ':',
+      message: t('workflowService.enterFilenamePrompt'),
       defaultValue: this.filename
     })
   }
@@ -222,7 +222,7 @@ interface WorkflowStore {
   activeSubgraph: Subgraph | undefined
   /** Updates the {@link subgraphNamePath} and {@link isSubgraphActive} values. */
   updateActiveGraph: () => void
-  executionIdToCurrentId: (id: string) => any
+  executionIdToCurrentId: (id: string) => string | undefined
   nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
   nodeToNodeLocatorId: (node: LGraphNode) => NodeLocatorId
   nodeExecutionIdToNodeLocatorId: (
@@ -718,7 +718,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   //FIXME: use existing util function
-  const executionIdToCurrentId = (id: string) => {
+  const executionIdToCurrentId = (id: string): string | undefined => {
     const subgraph = activeSubgraph.value
 
     // Short-circuit: ID belongs to the parent workflow / no active subgraph

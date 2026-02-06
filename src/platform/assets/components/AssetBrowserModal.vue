@@ -30,7 +30,7 @@
           v-model="searchQuery"
           :autofocus="true"
           size="lg"
-          :placeholder="$t('g.searchPlaceholder')"
+          :placeholder="$t('g.searchPlaceholder', { subject: '' })"
           class="max-w-96"
         />
         <Button

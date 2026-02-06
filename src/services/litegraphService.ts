@@ -85,7 +85,7 @@ export function getExtraOptionsForWidget(
       callback: async () => {
         const newLabel = await useDialogService().prompt({
           title: t('g.rename'),
-          message: t('g.enterNewName') + ':',
+          message: t('g.enterNewNamePrompt'),
           defaultValue: widget.label,
           placeholder: widget.name
         })
@@ -849,7 +849,7 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, any> = {}
+    options: Record<string, unknown> & { pos?: Point } = {}
   ): LGraphNode {
     options.pos ??= getCanvasCenter()
 

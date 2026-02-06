@@ -11,6 +11,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
+import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 // Lazy-loaded to avoid pulling THREE.js into the main bundle
 const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
@@ -177,9 +178,5 @@ async function rerun(e: Event) {
     v-else-if="getMediaType(selectedOutput) === '3d'"
     :model-url="selectedOutput!.url"
   />
-  <img
-    v-else
-    class="pointer-events-none flex-1 max-h-full md:contain-size brightness-50 opacity-10"
-    src="/assets/images/comfy-logo-mono.svg"
-  />
+  <LinearWelcome v-else />
 </template>

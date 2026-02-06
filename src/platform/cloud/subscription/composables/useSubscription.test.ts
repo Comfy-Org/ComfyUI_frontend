@@ -38,7 +38,7 @@ vi.mock('@/composables/useErrorHandling', () => ({
   useErrorHandling: vi.fn(() => ({
     wrapWithErrorHandlingAsync: vi.fn(
       (fn, errorHandler) =>
-        async (...args: any[]) => {
+        async (...args: Parameters<typeof fn>) => {
           try {
             return await fn(...args)
           } catch (error) {

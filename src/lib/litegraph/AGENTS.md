@@ -34,7 +34,7 @@ import { LGraph } from '@/lib/litegraph/src/LGraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from './fixtures/subgraphHelpers'
+} from './__fixtures__/subgraphHelpers'
 
 function createTestSetup() {
   const subgraph = createTestSubgraph()
