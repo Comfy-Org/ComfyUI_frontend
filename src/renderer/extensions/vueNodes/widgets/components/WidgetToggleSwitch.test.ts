@@ -171,9 +171,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
       const widget = createMockWidget(false, { on: 'inside', off: 'outside' })
       const wrapper = mountComponent(widget, false)
 
-      expect(
-        wrapper.findComponent({ name: 'FormSelectButton' }).exists()
-      ).toBe(true)
+      expect(wrapper.findComponent({ name: 'FormSelectButton' }).exists()).toBe(
+        true
+      )
       expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
         false
       )
@@ -186,9 +186,9 @@ describe('WidgetToggleSwitch Value Binding', () => {
       expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
         true
       )
-      expect(
-        wrapper.findComponent({ name: 'FormSelectButton' }).exists()
-      ).toBe(false)
+      expect(wrapper.findComponent({ name: 'FormSelectButton' }).exists()).toBe(
+        false
+      )
     })
 
     it('displays both on and off labels in FormSelectButton', () => {
