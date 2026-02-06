@@ -1,23 +1,23 @@
 <template>
   <WidgetLayoutField :widget>
+    <!-- Use FormSelectButton when explicit labels are provided -->
+    <FormSelectButton
+      v-if="hasLabels"
+      :model-value="modelValue ? 'on' : 'off'"
+      :options="booleanOptions"
+      option-label="label"
+      option-value="value"
+      :class="cn(!hideLayoutField && 'ml-auto')"
+      @update:model-value="handleOptionChange"
+    />
+
+    <!-- Use ToggleSwitch for implicit boolean states -->
     <div
+      v-else
       :class="
         cn('flex w-fit items-center gap-2', !hideLayoutField && 'ml-auto')
       "
     >
-      <span
-        v-if="stateLabel"
-        :class="
-          cn(
-            'text-sm transition-colors',
-            modelValue
-              ? 'text-node-component-slot-text'
-              : 'text-node-component-slot-text/50'
-          )
-        "
-      >
-        {{ stateLabel }}
-      </span>
       <ToggleSwitch
         v-model="modelValue"
         v-bind="filteredProps"
@@ -30,6 +30,7 @@
 <script setup lang="ts">
 import ToggleSwitch from 'primevue/toggleswitch'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -40,6 +41,7 @@ import {
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
+import FormSelectButton from './form/FormSelectButton.vue'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 const { widget } = defineProps<{
@@ -49,14 +51,22 @@ const { widget } = defineProps<{
 const modelValue = defineModel<boolean>()
 
 const hideLayoutField = useHideLayoutField()
+const { t } = useI18n()
 
 const filteredProps = computed(() =>
   filterWidgetProps(widget.options, STANDARD_EXCLUDED_PROPS)
 )
 
-const stateLabel = computed(() => {
-  const options = widget.options
-  if (!options?.on && !options?.off) return null
-  return modelValue.value ? (options.on ?? 'true') : (options.off ?? 'false')
+const hasLabels = computed(() => {
+  return !!(widget.options?.on || widget.options?.off)
 })
+
+const booleanOptions = computed(() => [
+  { label: widget.options?.off ?? t('widgets.boolean.false'), value: 'off' },
+  { label: widget.options?.on ?? t('widgets.boolean.true'), value: 'on' }
+])
+
+function handleOptionChange(value: string) {
+  modelValue.value = value === 'on'
+}
 </script>
