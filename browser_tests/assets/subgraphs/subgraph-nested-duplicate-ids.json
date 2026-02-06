@@ -7,14 +7,8 @@
     {
       "id": 5,
       "type": "1e38d8ea-45e1-48a5-aa20-966584201867",
-      "pos": [
-        788,
-        433.5
-      ],
-      "size": [
-        210,
-        108
-      ],
+      "pos": [788, 433.5],
+      "size": [210, 108],
       "flags": {},
       "order": 1,
       "mode": 0,
@@ -32,34 +26,19 @@
         {
           "name": "STRING",
           "type": "STRING",
-          "links": [
-            5
-          ]
+          "links": [5]
         }
       ],
       "properties": {
-        "proxyWidgets": [
-          [
-            "-1",
-            "string_a"
-          ]
-        ]
+        "proxyWidgets": [["-1", "string_a"]]
       },
-      "widgets_values": [
-        ""
-      ]
+      "widgets_values": [""]
     },
     {
       "id": 2,
       "type": "PreviewAny",
-      "pos": [
-        1135,
-        429
-      ],
-      "size": [
-        250,
-        145.5
-      ],
+      "pos": [1135, 429],
+      "size": [250, 145.5],
       "flags": {},
       "order": 2,
       "mode": 0,
@@ -74,23 +53,13 @@
       "properties": {
         "Node name for S&R": "PreviewAny"
       },
-      "widgets_values": [
-        null,
-        null,
-        false
-      ]
+      "widgets_values": [null, null, false]
     },
     {
       "id": 1,
       "type": "PrimitiveStringMultiline",
-      "pos": [
-        456,
-        450
-      ],
-      "size": [
-        225,
-        121.5
-      ],
+      "pos": [456, 450],
+      "size": [225, 121.5],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -99,36 +68,18 @@
         {
           "name": "STRING",
           "type": "STRING",
-          "links": [
-            4
-          ]
+          "links": [4]
         }
       ],
       "properties": {
         "Node name for S&R": "PrimitiveStringMultiline"
       },
-      "widgets_values": [
-        "Outer\n"
-      ]
+      "widgets_values": ["Outer\n"]
     }
   ],
   "links": [
-    [
-      4,
-      1,
-      0,
-      5,
-      0,
-      "STRING"
-    ],
-    [
-      5,
-      5,
-      0,
-      2,
-      0,
-      "STRING"
-    ]
+    [4, 1, 0, 5, 0, "STRING"],
+    [5, 5, 0, 2, 0, "STRING"]
   ],
   "groups": [],
   "definitions": {
@@ -147,35 +98,20 @@
         "name": "New Subgraph",
         "inputNode": {
           "id": -10,
-          "bounding": [
-            351,
-            432.5,
-            120,
-            60
-          ]
+          "bounding": [351, 432.5, 120, 60]
         },
         "outputNode": {
           "id": -20,
-          "bounding": [
-            1315,
-            432.5,
-            120,
-            60
-          ]
+          "bounding": [1315, 432.5, 120, 60]
         },
         "inputs": [
           {
             "id": "7bf3e1d4-0521-4b5c-92f5-47ca598b7eb4",
             "name": "string_a",
             "type": "STRING",
-            "linkIds": [
-              1
-            ],
+            "linkIds": [1],
             "localized_name": "string_a",
-            "pos": [
-              451,
-              452.5
-            ]
+            "pos": [451, 452.5]
           }
         ],
         "outputs": [
@@ -183,14 +119,9 @@
             "id": "fbe975ba-d7c2-471e-a99a-a1e2c6ab466d",
             "name": "STRING",
             "type": "STRING",
-            "linkIds": [
-              9
-            ],
+            "linkIds": [9],
             "localized_name": "STRING",
-            "pos": [
-              1335,
-              452.5
-            ]
+            "pos": [1335, 452.5]
           }
         ],
         "widgets": [],
@@ -198,14 +129,8 @@
           {
             "id": 3,
             "type": "StringConcatenate",
-            "pos": [
-              815,
-              373
-            ],
-            "size": [
-              347,
-              231
-            ],
+            "pos": [815, 373],
+            "size": [347, 231],
             "flags": {},
             "order": 2,
             "mode": 0,
@@ -234,31 +159,19 @@
                 "localized_name": "STRING",
                 "name": "STRING",
                 "type": "STRING",
-                "links": [
-                  7
-                ]
+                "links": [7]
               }
             ],
             "properties": {
               "Node name for S&R": "StringConcatenate"
             },
-            "widgets_values": [
-              "",
-              "",
-              ""
-            ]
+            "widgets_values": ["", "", ""]
           },
           {
             "id": 6,
             "type": "9be42452-056b-4c99-9f9f-7381d11c4454",
-            "pos": [
-              955,
-              775
-            ],
-            "size": [
-              210,
-              88
-            ],
+            "pos": [955, 775],
+            "size": [210, 88],
             "flags": {},
             "order": 1,
             "mode": 0,
@@ -278,34 +191,19 @@
                 "localized_name": "STRING",
                 "name": "STRING",
                 "type": "STRING",
-                "links": [
-                  9
-                ]
+                "links": [9]
               }
             ],
             "properties": {
-              "proxyWidgets": [
-                [
-                  "-1",
-                  "string_a"
-                ]
-              ]
+              "proxyWidgets": [["-1", "string_a"]]
             },
-            "widgets_values": [
-              ""
-            ]
+            "widgets_values": [""]
           },
           {
             "id": 4,
             "type": "PrimitiveStringMultiline",
-            "pos": [
-              313,
-              685
-            ],
-            "size": [
-              325,
-              109
-            ],
+            "pos": [313, 685],
+            "size": [325, 109],
             "flags": {},
             "order": 0,
             "mode": 0,
@@ -315,17 +213,13 @@
                 "localized_name": "STRING",
                 "name": "STRING",
                 "type": "STRING",
-                "links": [
-                  2
-                ]
+                "links": [2]
               }
             ],
             "properties": {
               "Node name for S&R": "PrimitiveStringMultiline"
             },
-            "widgets_values": [
-              "Inner 1\n"
-            ]
+            "widgets_values": ["Inner 1\n"]
           }
         ],
         "groups": [],
@@ -387,35 +281,20 @@
         "name": "New Subgraph",
         "inputNode": {
           "id": -10,
-          "bounding": [
-            680,
-            774,
-            120,
-            60
-          ]
+          "bounding": [680, 774, 120, 60]
         },
         "outputNode": {
           "id": -20,
-          "bounding": [
-            1320,
-            774,
-            120,
-            60
-          ]
+          "bounding": [1320, 774, 120, 60]
         },
         "inputs": [
           {
             "id": "01c05c51-86b5-4bad-b32f-9c911683a13d",
             "name": "string_a",
             "type": "STRING",
-            "linkIds": [
-              4
-            ],
+            "linkIds": [4],
             "localized_name": "string_a",
-            "pos": [
-              780,
-              794
-            ]
+            "pos": [780, 794]
           }
         ],
         "outputs": [
@@ -423,14 +302,9 @@
             "id": "a8bcf3bf-a66a-4c71-8d92-17a2a4d03686",
             "name": "STRING",
             "type": "STRING",
-            "linkIds": [
-              12
-            ],
+            "linkIds": [12],
             "localized_name": "STRING",
-            "pos": [
-              1340,
-              794
-            ]
+            "pos": [1340, 794]
           }
         ],
         "widgets": [],
@@ -438,14 +312,8 @@
           {
             "id": 5,
             "type": "StringConcatenate",
-            "pos": [
-              860,
-              719
-            ],
-            "size": [
-              400,
-              200
-            ],
+            "pos": [860, 719],
+            "size": [400, 200],
             "flags": {},
             "order": 2,
             "mode": 0,
@@ -474,31 +342,19 @@
                 "localized_name": "STRING",
                 "name": "STRING",
                 "type": "STRING",
-                "links": [
-                  11
-                ]
+                "links": [11]
               }
             ],
             "properties": {
               "Node name for S&R": "StringConcatenate"
             },
-            "widgets_values": [
-              "",
-              "",
-              ""
-            ]
+            "widgets_values": ["", "", ""]
           },
           {
             "id": 6,
             "type": "PrimitiveStringMultiline",
-            "pos": [
-              401,
-              973
-            ],
-            "size": [
-              400,
-              200
-            ],
+            "pos": [401, 973],
+            "size": [400, 200],
             "flags": {},
             "order": 0,
             "mode": 0,
@@ -508,29 +364,19 @@
                 "localized_name": "STRING",
                 "name": "STRING",
                 "type": "STRING",
-                "links": [
-                  7
-                ]
+                "links": [7]
               }
             ],
             "properties": {
               "Node name for S&R": "PrimitiveStringMultiline"
             },
-            "widgets_values": [
-              "Inner 2\n"
-            ]
+            "widgets_values": ["Inner 2\n"]
           },
           {
             "id": 9,
             "type": "7c2915a5-5eb8-4958-a8fd-4beb30f370ce",
-            "pos": [
-              1046,
-              985
-            ],
-            "size": [
-              210,
-              88
-            ],
+            "pos": [1046, 985],
+            "size": [210, 88],
             "flags": {},
             "order": 1,
             "mode": 0,
@@ -550,22 +396,13 @@
                 "localized_name": "STRING",
                 "name": "STRING",
                 "type": "STRING",
-                "links": [
-                  12
-                ]
+                "links": [12]
               }
             ],
             "properties": {
-              "proxyWidgets": [
-                [
-                  "-1",
-                  "string_a"
-                ]
-              ]
+              "proxyWidgets": [["-1", "string_a"]]
             },
-            "widgets_values": [
-              ""
-            ]
+            "widgets_values": [""]
           }
         ],
         "groups": [],
@@ -627,35 +464,20 @@
         "name": "New Subgraph",
         "inputNode": {
           "id": -10,
-          "bounding": [
-            262,
-            1222,
-            120,
-            60
-          ]
+          "bounding": [262, 1222, 120, 60]
         },
         "outputNode": {
           "id": -20,
-          "bounding": [
-            1330,
-            1222,
-            120,
-            60
-          ]
+          "bounding": [1330, 1222, 120, 60]
         },
         "inputs": [
           {
             "id": "934a8baa-d79c-428c-8ec9-814ad437d7c7",
             "name": "string_a",
             "type": "STRING",
-            "linkIds": [
-              9
-            ],
+            "linkIds": [9],
             "localized_name": "string_a",
-            "pos": [
-              362,
-              1242
-            ]
+            "pos": [362, 1242]
           }
         ],
         "outputs": [
@@ -663,14 +485,9 @@
             "id": "4c3d243b-9ff6-4dcd-9dbf-e4ec8e1fc879",
             "name": "STRING",
             "type": "STRING",
-            "linkIds": [
-              10
-            ],
+            "linkIds": [10],
             "localized_name": "STRING",
-            "pos": [
-              1350,
-              1242
-            ]
+            "pos": [1350, 1242]
           }
         ],
         "widgets": [],
@@ -678,14 +495,8 @@
           {
             "id": 7,
             "type": "StringConcatenate",
-            "pos": [
-              870,
-              1038
-            ],
-            "size": [
-              400,
-              200
-            ],
+            "pos": [870, 1038],
+            "size": [400, 200],
             "flags": {},
             "order": 1,
             "mode": 0,
@@ -714,31 +525,19 @@
                 "localized_name": "STRING",
                 "name": "STRING",
                 "type": "STRING",
-                "links": [
-                  10
-                ]
+                "links": [10]
               }
             ],
             "properties": {
               "Node name for S&R": "StringConcatenate"
             },
-            "widgets_values": [
-              "",
-              "",
-              ""
-            ]
+            "widgets_values": ["", "", ""]
           },
           {
             "id": 8,
             "type": "PrimitiveStringMultiline",
-            "pos": [
-              442,
-              1296
-            ],
-            "size": [
-              400,
-              200
-            ],
+            "pos": [442, 1296],
+            "size": [400, 200],
             "flags": {},
             "order": 0,
             "mode": 0,
@@ -748,17 +547,13 @@
                 "localized_name": "STRING",
                 "name": "STRING",
                 "type": "STRING",
-                "links": [
-                  8
-                ]
+                "links": [8]
               }
             ],
             "properties": {
               "Node name for S&R": "PrimitiveStringMultiline"
             },
-            "widgets_values": [
-              "Inner 3\n"
-            ]
+            "widgets_values": ["Inner 3\n"]
           }
         ],
         "groups": [],
@@ -796,10 +591,7 @@
   "extra": {
     "ds": {
       "scale": 1,
-      "offset": [
-        -7,
-        144
-      ]
+      "offset": [-7, 144]
     },
     "frontendVersion": "1.38.13"
   },
