@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import Popover from 'primevue/popover'
 import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type {
@@ -46,8 +46,10 @@ interface Props {
   ) => Promise<FormDropdownItem[]>
 }
 
+const { t } = useI18n()
+
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: t('widgets.uploadSelect.placeholder'),
+  placeholder: undefined,
   multiple: false,
   uploadable: false,
   disabled: false,
@@ -56,6 +58,10 @@ const props = withDefaults(defineProps<Props>(), {
   isSelected: (selected, item, _index) => selected.has(item.id),
   searcher: defaultSearcher
 })
+
+const placeholder = computed(
+  () => props.placeholder ?? t('widgets.uploadSelect.placeholder')
+)
 
 const selected = defineModel<Set<string>>('selected', {
   default: () => new Set()

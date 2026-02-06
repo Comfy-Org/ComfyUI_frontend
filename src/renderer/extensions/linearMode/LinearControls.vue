@@ -3,11 +3,11 @@ import { useEventListener, useTimeout } from '@vueuse/core'
 import { partition } from 'es-toolkit'
 import { storeToRefs } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -26,6 +26,7 @@ import { useQueueSettingsStore } from '@/stores/queueStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@/utils/tailwindUtil'
 
+const { t } = useI18n()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
