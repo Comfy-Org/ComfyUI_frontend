@@ -281,12 +281,7 @@ export interface PageViewMetadata {
   [key: string]: unknown
 }
 
-export interface BeginCheckoutMetadata extends Record<string, unknown> {
-  user_id: string
-  tier: TierKey
-  cycle: BillingCycle
-  checkout_type: 'new' | 'change'
-  previous_tier?: TierKey
+export interface CheckoutAttributionMetadata {
   ga_client_id?: string
   ga_session_id?: string
   ga_session_number?: string
@@ -300,6 +295,15 @@ export interface BeginCheckoutMetadata extends Record<string, unknown> {
   gclid?: string
   gbraid?: string
   wbraid?: string
+}
+
+export interface BeginCheckoutMetadata
+  extends Record<string, unknown>, CheckoutAttributionMetadata {
+  user_id: string
+  tier: TierKey
+  cycle: BillingCycle
+  checkout_type: 'new' | 'change'
+  previous_tier?: TierKey
 }
 
 /**

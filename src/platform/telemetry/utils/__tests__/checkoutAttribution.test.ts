@@ -104,4 +104,32 @@ describe('getCheckoutAttribution', () => {
       im_ref: 'impact-789'
     })
   })
+
+  it('does not persist when explicit search attribution matches stored values', () => {
+    storage.set(
+      'comfy_checkout_attribution',
+      JSON.stringify({ utm_source: 'impact', im_ref: 'impact-789' })
+    )
+
+    captureCheckoutAttributionFromSearch('?utm_source=impact&im_ref=impact-789')
+
+    expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
+  })
+
+  it('does not persist from URL when query attribution matches stored values', () => {
+    storage.set(
+      'comfy_checkout_attribution',
+      JSON.stringify({ gclid: 'gclid-123', im_ref: 'impact-abc' })
+    )
+    window.history.pushState({}, '', '/?gclid=gclid-123&im_ref=impact-abc')
+
+    const attribution = getCheckoutAttribution()
+
+    expect(attribution).toMatchObject({
+      gclid: 'gclid-123',
+      im_ref: 'impact-abc',
+      impact_click_id: 'impact-abc'
+    })
+    expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
+  })
 })

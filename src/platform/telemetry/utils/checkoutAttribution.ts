@@ -1,20 +1,8 @@
 import { isPlainObject } from 'es-toolkit'
 
-interface CheckoutAttribution {
-  ga_client_id?: string
-  ga_session_id?: string
-  ga_session_number?: string
-  im_ref?: string
-  impact_click_id?: string
-  utm_source?: string
-  utm_medium?: string
-  utm_campaign?: string
-  utm_term?: string
-  utm_content?: string
-  gclid?: string
-  gbraid?: string
-  wbraid?: string
-}
+import type { CheckoutAttributionMetadata } from '../types'
+
+type CheckoutAttribution = CheckoutAttributionMetadata
 
 type GaIdentity = {
   client_id?: string
@@ -68,6 +56,20 @@ function persistAttribution(
   }
 }
 
+function hasAttributionChanges(
+  existing: Partial<Record<AttributionQueryKey, string>>,
+  incoming: Partial<Record<AttributionQueryKey, string>>
+): boolean {
+  for (const key of ATTRIBUTION_QUERY_KEYS) {
+    const value = incoming[key]
+    if (value !== undefined && existing[key] !== value) {
+      return true
+    }
+  }
+
+  return false
+}
+
 function readAttributionFromUrl(
   search: string
 ): Partial<Record<AttributionQueryKey, string>> {
@@ -106,6 +108,7 @@ export function captureCheckoutAttributionFromSearch(search: string): void {
   const stored = readStoredAttribution()
   const fromSearch = readAttributionFromUrl(search)
   if (Object.keys(fromSearch).length === 0) return
+  if (!hasAttributionChanges(stored, fromSearch)) return
 
   persistAttribution({
     ...stored,
@@ -123,7 +126,10 @@ export function getCheckoutAttribution(): CheckoutAttribution {
     ...fromUrl
   }
 
-  if (Object.keys(fromUrl).length > 0) {
+  if (
+    Object.keys(fromUrl).length > 0 &&
+    hasAttributionChanges(stored, fromUrl)
+  ) {
     persistAttribution(merged)
   }
 
