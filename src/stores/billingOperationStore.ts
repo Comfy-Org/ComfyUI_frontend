@@ -14,10 +14,10 @@ const MAX_INTERVAL_MS = 8000
 const BACKOFF_MULTIPLIER = 1.5
 const TIMEOUT_MS = 120_000 // 2 minutes
 
-export type OperationType = 'subscription' | 'topup'
-export type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
+type OperationType = 'subscription' | 'topup'
+type OperationStatus = 'pending' | 'succeeded' | 'failed' | 'timeout'
 
-export interface BillingOperation {
+interface BillingOperation {
   opId: string
   type: OperationType
   status: OperationStatus
