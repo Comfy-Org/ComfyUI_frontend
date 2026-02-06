@@ -103,7 +103,7 @@ export interface LGraphConfig {
 }
 
 /** Options for {@link LGraph.add} method. */
-export interface GraphAddOptions {
+interface GraphAddOptions {
   /** If true, skip recomputing execution order after adding the node. */
   skipComputeOrder?: boolean
   /** If true, the node will be semi-transparent and follow the cursor until placed or cancelled. */
