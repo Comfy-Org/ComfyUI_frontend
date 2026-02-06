@@ -113,7 +113,10 @@ export const useDialogService = () => {
           }
         }
       },
-      props
+      props,
+      footerProps: {
+        missingNodeTypes: props.missingNodeTypes
+      }
     })
   }
 

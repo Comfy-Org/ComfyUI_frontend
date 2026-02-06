@@ -15,18 +15,18 @@
       <i class="icon-[lucide--info]"></i>
       <span>{{ $t('missingNodes.cloud.learnMore') }}</span>
     </Button>
-    <Button variant="secondary" size="md" @click="handleGotItClick">{{
+    <Button variant="secondary" size="md" @click="handleSkipClick">{{
       $t('missingNodes.cloud.gotIt')
     }}</Button>
   </div>
 
-  <!-- OSS mode: Open Manager + Install All buttons -->
-  <div v-else-if="showManagerButtons" class="flex justify-end gap-1 py-2 px-4">
-    <Button variant="textonly" @click="openManager">{{
-      $t('g.openManager')
-    }}</Button>
+  <!-- OSS mode: Skip + Install Missing Nodes -->
+  <div v-else-if="showManagerButtons" class="flex justify-end gap-2 py-2 px-4">
+    <Button variant="textonly" size="md" @click="handleSkipClick">
+      {{ $t('nodeReplacement.skipForNow') }}
+    </Button>
     <PackInstallButton
-      v-if="showInstallAllButton"
+      v-if="showInstallAllButton && hasNonReplaceableNodes"
       type="secondary"
       size="md"
       :disabled="
@@ -37,30 +37,34 @@
       :label="
         isLoading
           ? $t('manager.gettingInfo')
-          : $t('manager.installAllMissingNodes')
+          : $t('nodeReplacement.installMissingNodes')
       "
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { MissingNodeType } from '@/types/comfy'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+
+const { missingNodeTypes } = defineProps<{
+  missingNodeTypes?: MissingNodeType[]
+}>()
 
 const dialogStore = useDialogStore()
 const { t } = useI18n()
 
-const handleGotItClick = () => {
+const handleSkipClick = () => {
   dialogStore.closeDialog({ key: 'global-missing-nodes' })
 }
 
@@ -86,15 +90,29 @@ const showInstallAllButton = computed(() => {
   return managerState.shouldShowInstallButton.value
 })
 
-const openManager = async () => {
-  await managerState.openManager({
-    initialTab: ManagerTab.Missing,
-    showToastOnLegacyError: true
-  })
-}
+const hasNonReplaceableNodes = computed(
+  () =>
+    missingNodeTypes?.some(
+      (n) =>
+        typeof n === 'string' || (typeof n === 'object' && !n.isReplaceable)
+    ) ?? false
+)
 
-// Computed to check if all missing nodes have been installed
+// Track whether missingNodePacks was ever non-empty (i.e. there were packs to install)
+const hadMissingPacks = ref(false)
+
+watch(
+  missingNodePacks,
+  (packs) => {
+    if (packs && packs.length > 0) hadMissingPacks.value = true
+  },
+  { immediate: true }
+)
+
+// Only consider "all installed" when packs transitioned from non-empty to empty
+// (actual installation happened). Replaceable-only case is handled by Content auto-close.
 const allMissingNodesInstalled = computed(() => {
+  if (!hadMissingPacks.value) return false
   return (
     !isLoading.value &&
     !isInstalling.value &&
