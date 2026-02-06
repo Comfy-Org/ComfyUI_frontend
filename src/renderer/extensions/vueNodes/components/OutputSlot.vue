@@ -20,6 +20,7 @@
       class="w-3 translate-x-1/2"
       :slot-data
       @pointerdown="onPointerDown"
+      @contextmenu.stop.prevent="onSlotContextMenu"
     />
   </div>
 </template>
@@ -34,6 +35,8 @@ import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import { showSlotMenu } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
+import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
@@ -112,4 +115,13 @@ const { onPointerDown } = useSlotLinkInteraction({
   index: props.index,
   type: 'output'
 })
+
+function onSlotContextMenu(event: MouseEvent) {
+  if (!props.nodeId) return
+  showSlotMenu(event, {
+    nodeId: props.nodeId,
+    slotIndex: props.index,
+    isInput: false
+  })
+}
 </script>
