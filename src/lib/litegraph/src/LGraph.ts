@@ -2396,6 +2396,13 @@ export class LGraph
           this.subgraphs.get(subgraph.id)?.configure(subgraph)
       }
 
+      if (this.isRootGraph) {
+        const reservedNodeIds = nodesData
+          ?.map((n) => n.id)
+          .filter((id): id is number => typeof id === 'number')
+        this.ensureGlobalIdUniqueness(reservedNodeIds)
+      }
+
       let error = false
       const nodeDataMap = new Map<NodeId, ISerialisedNode>()
 
@@ -2481,8 +2488,6 @@ export class LGraph
         }
       }
 
-      if (this.isRootGraph) this.ensureGlobalIdUniqueness()
-
       this.setDirtyCanvas(true, true)
       return error
     } finally {
@@ -2496,12 +2501,12 @@ export class LGraph
    * root graph IDs as canonical. Updates link references (`origin_id`,
    * `target_id`) within the affected graph to match the new node IDs.
    */
-  ensureGlobalIdUniqueness(): void {
+  ensureGlobalIdUniqueness(reservedNodeIds?: Iterable<number>): void {
     const { state } = this
 
     const allGraphs: LGraph[] = [this, ...this._subgraphs.values()]
 
-    const usedNodeIds = new Set<number>()
+    const usedNodeIds = new Set<number>(reservedNodeIds)
     for (const graph of allGraphs) {
       const remappedIds = new Map<NodeId, NodeId>()
 
