@@ -92,10 +92,7 @@ const {
 const renderedRoot = computed<RenderedTreeExplorerNode<T>>(() => {
   const renderedRoot = fillNodeInfo(props.root)
   return newFolderNode.value
-    ? combineTrees(
-        renderedRoot,
-        newFolderNode.value as RenderedTreeExplorerNode<T>
-      )
+    ? combineTrees(renderedRoot, newFolderNode.value)
     : renderedRoot
 })
 const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
