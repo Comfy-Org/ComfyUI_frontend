@@ -34,6 +34,38 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
     expect(warningText).toContain('MISSING_NODE_TYPE_IN_SUBGRAPH')
     expect(warningText).toContain('in subgraph')
   })
+
+  test('Should classify missing nodes by replacement availability', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.NodeReplacement.Enabled', true)
+
+    const consoleLogs: string[] = []
+    comfyPage.page.on('console', (msg) => {
+      if (msg.text().includes('[MissingNode]')) {
+        consoleLogs.push(msg.text())
+      }
+    })
+
+    await comfyPage.workflow.loadWorkflow('missing/replaceable_nodes')
+
+    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+    await expect(missingNodesWarning).toBeVisible()
+
+    // Verify replaceable nodes are logged with isReplaceable: true
+    const replaceableLogs = consoleLogs.filter((log) =>
+      log.includes('isReplaceable: true')
+    )
+    expect(replaceableLogs.length).toBeGreaterThanOrEqual(2)
+
+    // Verify non-replaceable node is logged with isReplaceable: false
+    const nonReplaceableLogs = consoleLogs.filter(
+      (log) =>
+        log.includes('UNKNOWN_NO_REPLACEMENT') &&
+        log.includes('isReplaceable: false')
+    )
+    expect(nonReplaceableLogs.length).toBe(1)
+  })
 })
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {
