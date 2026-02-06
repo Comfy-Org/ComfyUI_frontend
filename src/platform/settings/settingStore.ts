@@ -46,7 +46,7 @@ function onChange(
 }
 
 export const useSettingStore = defineStore('setting', () => {
-  const settingValues = ref<Record<string, any>>({})
+  const settingValues = ref<Partial<Settings>>({})
   const settingsById = ref<Record<string, SettingParams>>({})
 
   const {
@@ -87,7 +87,7 @@ export const useSettingStore = defineStore('setting', () => {
    * @param key - The key of the setting to check.
    * @returns Whether the setting exists.
    */
-  function exists(key: string) {
+  function exists<K extends keyof Settings>(key: K) {
     return settingValues.value[key] !== undefined
   }
 
@@ -118,7 +118,7 @@ export const useSettingStore = defineStore('setting', () => {
    */
   function get<K extends keyof Settings>(key: K): Settings[K] {
     // Clone the value when returning to prevent external mutations
-    return _.cloneDeep(settingValues.value[key] ?? getDefaultValue(key))
+    return _.cloneDeep(settingValues.value[key] ?? getDefaultValue(key)!)
   }
 
   /**

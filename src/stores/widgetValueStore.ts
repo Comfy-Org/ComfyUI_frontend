@@ -25,7 +25,7 @@ export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
 export interface WidgetState<
   TValue = unknown,
   TType extends string = string,
-  TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
+  TOptions extends IWidgetOptions = IWidgetOptions
 > extends Pick<
   IBaseWidget<TValue, TType, TOptions>,
   | 'name'

@@ -849,7 +849,7 @@ export const useLitegraphService = () => {
 
   function addNodeOnGraph(
     nodeDef: ComfyNodeDefV1 | ComfyNodeDefV2,
-    options: Record<string, any> = {}
+    options: Record<string, unknown> & { pos?: Point } = {}
   ): LGraphNode {
     options.pos ??= getCanvasCenter()
 

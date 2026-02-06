@@ -10,7 +10,7 @@ import type { ConflictDetail } from '@/workbench/extensions/manager/types/confli
  */
 export function getConflictMessage(
   conflict: ConflictDetail,
-  t: (key: string, params?: Record<string, any>) => string
+  t: (key: string, params?: Record<string, unknown>) => string
 ): string {
   const messageKey = `manager.conflicts.conflictMessages.${conflict.type}`
 
@@ -53,7 +53,7 @@ export function getConflictMessage(
  */
 export function getJoinedConflictMessages(
   conflicts: ConflictDetail[],
-  t: (key: string, params?: Record<string, any>) => string,
+  t: (key: string, params?: Record<string, unknown>) => string,
   separator = '; '
 ): string {
   return conflicts

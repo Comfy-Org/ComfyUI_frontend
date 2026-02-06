@@ -131,7 +131,7 @@ const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
     onModelDrop: async (file) => {
       await viewer.handleModelDrop(file)
     },
-    disabled: viewer.isPreview.value || isStandaloneMode
+    disabled: viewer.isPreview.value || !!isStandaloneMode
   })
 
 onMounted(async () => {

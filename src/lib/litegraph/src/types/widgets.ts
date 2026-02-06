@@ -4,7 +4,7 @@ import type { CanvasColour, Point, RequiredProps, Size } from '../interfaces'
 import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
 import type { CanvasPointerEvent } from './events'
 
-export interface IWidgetOptions<TValues = unknown[]> {
+export interface IWidgetOptions<TValues = unknown> {
   on?: string
   off?: string
   max?: number
@@ -37,6 +37,14 @@ export interface IWidgetOptions<TValues = unknown[]> {
   getOptionLabel?: (value?: string | null) => string
   callback?: IWidget['callback']
   iconClass?: string
+
+  // Vue widget options
+  disabled?: boolean
+  useGrouping?: boolean
+  placeholder?: string
+  showThumbnails?: boolean
+  showItemNavigators?: boolean
+  hidden?: boolean
 }
 
 interface IWidgetSliderOptions extends IWidgetOptions<number[]> {
@@ -293,7 +301,7 @@ export type TWidgetValue = IWidget['value']
 export interface IBaseWidget<
   TValue = boolean | number | string | object | undefined,
   TType extends string = string,
-  TOptions extends IWidgetOptions<unknown> = IWidgetOptions<unknown>
+  TOptions extends IWidgetOptions = IWidgetOptions
 > {
   [symbol: symbol]: boolean
 
