@@ -304,7 +304,7 @@ export default defineConfig([
   // Non-composable .ts files must use the global t/d/st/te, not useI18n()
   {
     files: ['**/*.ts'],
-    ignores: ['**/use*.ts', '**/*.test.ts', 'src/i18n.ts'],
+    ignores: ['**/use[A-Z]*.ts', '**/*.test.ts', 'src/i18n.ts'],
     rules: {
       'no-restricted-imports': [
         'warn',
