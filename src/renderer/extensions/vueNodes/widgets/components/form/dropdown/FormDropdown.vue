@@ -48,19 +48,25 @@ interface Props {
 
 const { t } = useI18n()
 
-const props = withDefaults(defineProps<Props>(), {
-  placeholder: undefined,
-  multiple: false,
-  uploadable: false,
-  disabled: false,
-  filterOptions: () => [],
-  sortOptions: () => getDefaultSortOptions(),
-  isSelected: (selected, item, _index) => selected.has(item.id),
-  searcher: defaultSearcher
-})
+const {
+  placeholder,
+  multiple = false,
+  uploadable = false,
+  disabled = false,
+  accept,
+  filterOptions = [],
+  sortOptions = getDefaultSortOptions(),
+  showOwnershipFilter,
+  ownershipOptions,
+  showBaseModelFilter,
+  baseModelOptions,
+  isSelected = (selected, item, _index) => selected.has(item.id),
+  searcher = defaultSearcher,
+  items
+} = defineProps<Props>()
 
-const placeholder = computed(
-  () => props.placeholder ?? t('widgets.uploadSelect.placeholder')
+const placeholderText = computed(
+  () => placeholder ?? t('widgets.uploadSelect.placeholder')
 )
 
 const selected = defineModel<Set<string>>('selected', {
@@ -88,24 +94,22 @@ const triggerRef = useTemplateRef('triggerRef')
 const isOpen = ref(false)
 
 const maxSelectable = computed(() => {
-  if (props.multiple === true) return Infinity
-  if (typeof props.multiple === 'number') return props.multiple
+  if (multiple === true) return Infinity
+  if (typeof multiple === 'number') return multiple
   return 1
 })
 
-const itemsKey = computed(() => props.items.map((item) => item.id).join('|'))
+const itemsKey = computed(() => items.map((item) => item.id).join('|'))
 
 const filteredItems = ref<FormDropdownItem[]>([])
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
-  const sorter = props.sortOptions.find(
-    (option) => option.id === 'default'
-  )?.sorter
-  return sorter || (({ items }) => items.slice())
+  const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
+  return sorter || (({ items: i }) => i.slice())
 })
 const selectedSorter = computed<SortOption['sorter']>(() => {
   if (sortSelected.value === 'default') return defaultSorter.value
-  const sorter = props.sortOptions.find(
+  const sorter = sortOptions.find(
     (option) => option.id === sortSelected.value
   )?.sorter
   return sorter || defaultSorter.value
@@ -115,11 +119,11 @@ const sortedItems = computed(() => {
 })
 
 function internalIsSelected(item: FormDropdownItem, index: number): boolean {
-  return props.isSelected?.(selected.value, item, index) ?? false
+  return isSelected(selected.value, item, index)
 }
 
 const toggleDropdown = (event: Event) => {
-  if (props.disabled) return
+  if (disabled) return
   if (popoverRef.value && triggerRef.value) {
     popoverRef.value.toggle(event, triggerRef.value)
     isOpen.value = !isOpen.value
@@ -134,7 +138,7 @@ const closeDropdown = () => {
 }
 
 function handleFileChange(event: Event) {
-  if (props.disabled) return
+  if (disabled) return
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   if (target.files) {
@@ -144,7 +148,7 @@ function handleFileChange(event: Event) {
 }
 
 function handleSelection(item: FormDropdownItem, index: number) {
-  if (props.disabled) return
+  if (disabled) return
   const sel = selected.value
   if (internalIsSelected(item, index)) {
     sel.delete(item.id)
@@ -176,11 +180,9 @@ async function customSearcher(
     isCleanup = true
     cleanupFn?.()
   })
-  await props
-    .searcher(query, props.items, (cb) => (cleanupFn = cb))
-    .then((results) => {
-      if (!isCleanup) filteredItems.value = results
-    })
+  await searcher(query, items, (cb) => (cleanupFn = cb)).then((results) => {
+    if (!isCleanup) filteredItems.value = results
+  })
 }
 </script>
 
@@ -189,7 +191,7 @@ async function customSearcher(
     <FormDropdownInput
       :files
       :is-open
-      :placeholder
+      :placeholder="placeholderText"
       :items
       :max-selectable
       :selected
