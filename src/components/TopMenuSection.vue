@@ -19,12 +19,14 @@
             <Button
               v-tooltip.bottom="customNodesManagerTooltipConfig"
               variant="secondary"
-              size="icon"
-              :aria-label="t('menu.customNodesManager')"
+              :aria-label="t('menu.manageExtensions')"
               class="relative"
               @click="openCustomNodeManager"
             >
-              <i class="icon-[lucide--puzzle] size-4" />
+              <i class="icon-[comfy--extensions-blocks] size-4" />
+              <span class="not-md:hidden">
+                {{ t('menu.manageExtensions') }}
+              </span>
               <span
                 v-if="shouldShowRedDot"
                 class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
@@ -220,7 +222,7 @@ const queueHistoryTooltipConfig = computed(() =>
   buildTooltipConfig(t('sideToolbar.queueProgressOverlay.viewJobHistory'))
 )
 const customNodesManagerTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.customNodesManager'))
+  buildTooltipConfig(t('menu.manageExtensions'))
 )
 const queueContextMenu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const queueContextMenuItems = computed<MenuItem[]>(() => [
