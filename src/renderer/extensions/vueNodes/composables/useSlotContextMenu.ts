@@ -118,10 +118,7 @@ export function connectSlots(
   app.canvas?.setDirty(true, true)
 }
 
-export function renameSlot(
-  context: SlotMenuContext,
-  newLabel: string
-): void {
+export function renameSlot(context: SlotMenuContext, newLabel: string): void {
   const graph = app.canvas?.graph
   if (!graph) return
 
