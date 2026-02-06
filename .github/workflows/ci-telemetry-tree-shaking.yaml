@@ -43,13 +43,13 @@ jobs:
 
           # Check for Google Tag Manager / Google Analytics
           echo "Checking for GTM/GA code..."
-          # Exclude source maps, credit files, and dynamic import chunks (mixpanel.module-*)
-          if grep -r -i --exclude='*.map' --exclude='CREDIT.txt' --exclude='mixpanel.module-*.js' \
+          # Exclude source maps and credit files
+          if grep -r -i --exclude='*.map' --exclude='CREDIT.txt' \
             -e 'googletagmanager' \
             -e 'gtm\.js' \
             -e 'analytics\.js' \
-            -e "gtag('config'" \
-            -e "gtag('event'" \
+            -e 'gtag(.config' \
+            -e 'gtag(.event' \
             dist/; then
             echo "❌ ERROR: Found GTM/GA code in dist files!"
             echo "Google Tag Manager / Google Analytics must be properly tree-shaken from OSS builds."
