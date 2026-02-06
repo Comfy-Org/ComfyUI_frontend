@@ -1,14 +1,20 @@
+import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { MenuItem } from 'primevue/menuitem'
 import type { TreeNode as PrimeVueTreeNode } from 'primevue/treenode'
-import type { InjectionKey, ModelRef } from 'vue'
+import type { InjectionKey, ModelRef, Ref } from 'vue'
 
 export interface TreeNode extends PrimeVueTreeNode {
   label: string
   children?: this[]
 }
 
+export interface NodeLibrarySection {
+  title?: string
+  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+}
+
 export interface TreeExplorerNode<T = unknown> extends TreeNode {
-  readonly data?: T
+  data?: T
   children?: this[]
   icon?: string
   /**
@@ -86,4 +92,8 @@ export const InjectKeyHandleEditLabelFunction: InjectionKey<
 
 export const InjectKeyExpandedKeys: InjectionKey<
   ModelRef<Record<string, boolean>>
+> = Symbol()
+
+export const InjectKeyContextMenuNode: InjectionKey<
+  Ref<RenderedTreeExplorerNode | null>
 > = Symbol()

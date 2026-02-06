@@ -203,9 +203,9 @@ class NodeOrganizationService {
     }
 
     const sortedNodes =
-      sortingStrategy.id !== 'original'
-        ? [...nodes].sort(sortingStrategy.compare)
-        : nodes
+      sortingStrategy.id === 'original'
+        ? nodes
+        : [...nodes].sort(sortingStrategy.compare)
 
     const tree = buildNodeDefTree(sortedNodes, {
       pathExtractor: groupingStrategy.getNodePath

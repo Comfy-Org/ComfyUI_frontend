@@ -103,10 +103,9 @@ import { computed, provide, ref } from 'vue'
 
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 
-import TreeExplorerV2Node, {
-  contextMenuNodeKey
-} from './TreeExplorerV2Node.vue'
+import TreeExplorerV2Node from './TreeExplorerV2Node.vue'
 
 const { showContextMenu = false } = defineProps<{
   root: RenderedTreeExplorerNode
@@ -123,7 +122,7 @@ const emit = defineEmits<{
 }>()
 
 const contextMenuNode = ref<RenderedTreeExplorerNode | null>(null)
-provide(contextMenuNodeKey, contextMenuNode)
+provide(InjectKeyContextMenuNode, contextMenuNode)
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 

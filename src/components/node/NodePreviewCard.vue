@@ -10,21 +10,21 @@
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
       <!-- Title -->
-      <h3 class="text-sm font-bold text-white">
+      <h3 class="text-xs font-bold text-white m-0">
         {{ nodeDef.display_name }}
       </h3>
 
       <!-- Badges -->
       <div class="flex flex-wrap gap-1">
         <BadgePill
-          v-if="nodeDef.nodeSource"
-          :text="nodeDef.nodeSource.badgeText"
-          icon="icon-[lucide--settings]"
+          v-show="nodeDef.api_node && creditsLabel"
+          :text="creditsLabel"
+          icon="icon-[comfy--credits]"
           icon-class="text-amber-400"
         />
         <BadgePill
-          v-if="nodeDef.nodeSource?.displayText"
-          :text="nodeDef.nodeSource.displayText"
+          v-show="nodeDef.api_node && categoryLabel"
+          :text="categoryLabel"
           icon="icon-[lucide--bar-chart-2]"
         />
       </div>
@@ -32,7 +32,7 @@
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="line-clamp-2 text-xs leading-relaxed text-neutral-400"
+        class="line-clamp-2 text-xxs leading-relaxed text-neutral-400 m-0"
       >
         {{ nodeDef.description }}
       </p>
@@ -43,14 +43,14 @@
       <!-- Inputs Section -->
       <div v-if="inputs.length > 0" class="flex flex-col gap-1">
         <h4
-          class="text-[10px] font-semibold uppercase tracking-wide text-neutral-500"
+          class="text-xxs font-semibold uppercase tracking-wide text-neutral-500 m-0"
         >
           {{ $t('nodeHelpPage.inputs') }}
         </h4>
         <div
           v-for="input in inputs"
           :key="input.name"
-          class="flex items-center justify-between text-xs"
+          class="flex items-center justify-between text-xxs"
         >
           <span class="text-white">{{ input.name }}</span>
           <span class="text-neutral-500">{{ input.type }}</span>
@@ -60,14 +60,14 @@
       <!-- Outputs Section -->
       <div v-if="outputs.length > 0" class="flex flex-col gap-1">
         <h4
-          class="text-[10px] font-semibold uppercase tracking-wide text-neutral-500"
+          class="text-xxs font-semibold uppercase tracking-wide text-neutral-500 m-0"
         >
           {{ $t('nodeHelpPage.outputs') }}
         </h4>
         <div
           v-for="output in outputs"
           :key="output.name"
-          class="flex items-center justify-between text-xs"
+          class="flex items-center justify-between text-xxs"
         >
           <span class="text-white">{{ output.name }}</span>
           <span class="text-neutral-500">{{ output.type }}</span>
@@ -79,8 +79,10 @@
 
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
+import jsonata from 'jsonata'
 import { computed, ref } from 'vue'
 
+import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import BadgePill from '@/components/common/BadgePill.vue'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -101,6 +103,34 @@ useResizeObserver(previewWrapperRef, (entries) => {
     previewContainerRef.value.style.height = `${scaledHeight + 32}px`
   }
 })
+
+const categoryLabel = computed(() => {
+  if (!nodeDef.category) return ''
+  return nodeDef.category.split('/').at(-1) ?? ''
+})
+
+const creditsLabel = ref('')
+
+// Evaluate pricing expression with empty context to get base/default credits
+if (nodeDef.api_node && nodeDef.price_badge?.expr) {
+  const emptyContext = { widgets: {}, inputs: {}, inputGroups: {} }
+  jsonata(nodeDef.price_badge.expr)
+    .evaluate(emptyContext)
+    .then((result: unknown) => {
+      if (
+        result &&
+        typeof result === 'object' &&
+        'usd' in result &&
+        typeof result.usd === 'number'
+      ) {
+        const credits = Math.round(result.usd * CREDITS_PER_USD)
+        creditsLabel.value = formatCredits({ value: credits })
+      }
+    })
+    .catch(() => {
+      // Silently ignore evaluation errors for preview
+    })
+}
 
 const inputs = computed(() => {
   if (!nodeDef.inputs) return []

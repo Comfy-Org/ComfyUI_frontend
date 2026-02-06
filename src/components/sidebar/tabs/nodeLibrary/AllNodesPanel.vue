@@ -41,17 +41,13 @@ import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
+  NodeLibrarySection,
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
 
-interface Section {
-  title?: string
-  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
-}
-
 const { fillNodeInfo } = defineProps<{
-  sections: Section[]
+  sections: NodeLibrarySection[]
   fillNodeInfo: (node: TreeNode) => RenderedTreeExplorerNode<ComfyNodeDefImpl>
 }>()
 
@@ -71,7 +67,9 @@ const favoritesRoot = computed(() =>
   fillNodeInfo(nodeBookmarkStore.bookmarkedRoot)
 )
 
-function handleAddToFavorites(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
+function handleAddToFavorites(
+  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+) {
   if (node.data) {
     nodeBookmarkStore.toggleBookmark(node.data)
   }
