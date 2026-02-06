@@ -2564,7 +2564,10 @@ export class LGraph
           state.lastNodeId = node.id as number
       }
 
-      if (remappedIds.size > 0) patchLinkNodeIds(graph._links, remappedIds)
+      if (remappedIds.size > 0) {
+        patchLinkNodeIds(graph._links, remappedIds)
+        patchLinkNodeIds(graph.floatingLinksInternal, remappedIds)
+      }
     }
   }
 
