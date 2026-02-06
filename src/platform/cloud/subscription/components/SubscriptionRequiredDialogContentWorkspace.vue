@@ -70,11 +70,12 @@ import { useToast } from 'primevue/usetoast'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscribePolling } from '@/platform/cloud/subscription/composables/useSubscribePolling'
+import { useBillingPolling } from '@/platform/cloud/subscription/composables/useBillingPolling'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useDialogService } from '@/services/dialogService'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
@@ -95,12 +96,15 @@ const { t } = useI18n()
 const toast = useToast()
 const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
   useBillingContext()
+const { showSettingsDialog } = useDialogService()
 
 const {
   isPending: isPolling,
   isTimeout,
   startPolling
-} = useSubscribePolling({
+} = useBillingPolling({
+  failedMessage: 'Subscription failed',
+  timeoutMessage: 'Subscription verification timed out',
   async onSuccess() {
     toast.add({
       severity: 'success',
@@ -108,7 +112,8 @@ const {
       life: 5000
     })
     await Promise.all([fetchStatus(), fetchBalance()])
-    emit('close', true)
+    props.onClose()
+    await showSettingsDialog('workspace')
   },
   onError() {
     toast.add({
@@ -233,6 +238,8 @@ async function handleAddCreditCard() {
     ) {
       window.open(response.payment_method_url, '_blank')
       startPolling(response.billing_op_id)
+    } else if (response.status === 'pending_payment') {
+      startPolling(response.billing_op_id)
     }
   } catch (error) {
     const message =
@@ -279,6 +286,8 @@ async function handleConfirmTransition() {
       response.payment_method_url
     ) {
       window.open(response.payment_method_url, '_blank')
+      startPolling(response.billing_op_id)
+    } else if (response.status === 'pending_payment') {
       startPolling(response.billing_op_id)
     }
   } catch (error) {

@@ -158,7 +158,7 @@ import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useTopupPolling } from '@/platform/cloud/subscription/composables/useTopupPolling'
+import { useBillingPolling } from '@/platform/cloud/subscription/composables/useBillingPolling'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -178,7 +178,9 @@ const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance } = useBillingContext()
 
-const { isPending: isPolling, startPolling } = useTopupPolling({
+const { isPending: isPolling, startPolling } = useBillingPolling({
+  failedMessage: 'Top-up failed',
+  timeoutMessage: 'Top-up verification timed out',
   async onSuccess() {
     toast.add({
       severity: 'success',

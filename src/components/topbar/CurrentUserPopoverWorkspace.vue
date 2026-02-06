@@ -95,12 +95,12 @@
           size="sm"
           variant="gradient"
         />
-        <!-- Non-personal workspace: Navigate to workspace settings -->
+        <!-- Non-personal workspace: Show pricing table -->
         <Button
           v-else
           variant="primary"
           size="sm"
-          @click="handleOpenPlanAndCreditsSettings"
+          @click="handleOpenPlansAndPricing"
         >
           {{
             isCancelled

@@ -231,14 +231,6 @@
               </table>
 
               <div class="flex items-center justify-between">
-                <a
-                  href="https://platform.comfy.org/profile/usage"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-sm underline text-center text-muted"
-                >
-                  {{ $t('subscription.viewUsageHistory') }}
-                </a>
                 <Button
                   v-if="isActiveSubscription && !showZeroState"
                   variant="secondary"
@@ -252,7 +244,7 @@
           </div>
         </div>
 
-        <div class="flex flex-col gap-2">
+        <div v-if="isActiveSubscription" class="flex flex-col gap-2">
           <div class="text-sm text-text-primary">
             {{ $t('subscription.yourPlanIncludes') }}
           </div>
@@ -311,7 +303,7 @@
     </div>
 
     <!-- View More Details - Outside main content -->
-    <div class="flex items-center gap-2 py-4">
+    <div class="flex items-center gap-2 py-6">
       <i class="pi pi-external-link text-muted"></i>
       <a
         href="https://www.comfy.org/cloud/pricing"

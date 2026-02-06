@@ -266,8 +266,7 @@ export function useSettingUI(
         ...(isLoggedIn.value &&
         !(isCloud && window.__CONFIG__?.subscription_required)
           ? [creditsPanel.node]
-          : []),
-        ...(shouldShowSecretsPanel.value ? [secretsPanel.node] : [])
+          : [])
       ].map(translateCategory)
     }),
     // General settings - Profile + all core settings + special panels
@@ -276,7 +275,11 @@ export function useSettingUI(
       label: 'General',
       children: [
         translateCategory(userPanel.node),
-        ...coreSettingCategories.value.map(translateCategory),
+        ...coreSettingCategories.value.slice(0, 1).map(translateCategory),
+        ...(shouldShowSecretsPanel.value
+          ? [translateCategory(secretsPanel.node)]
+          : []),
+        ...coreSettingCategories.value.slice(1).map(translateCategory),
         translateCategory(keybindingPanel.node),
         translateCategory(extensionPanel.node),
         translateCategory(aboutPanel.node),
