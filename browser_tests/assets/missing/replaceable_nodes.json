@@ -33,9 +33,7 @@
         { "name": "image1", "type": "IMAGE", "link": null },
         { "name": "image2", "type": "IMAGE", "link": null }
       ],
-      "outputs": [
-        { "name": "IMAGE", "type": "IMAGE", "links": [1] }
-      ],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": [1] }],
       "properties": { "Node name for S&R": "ImageBatch" }
     },
     {
@@ -46,18 +44,12 @@
       "flags": {},
       "order": 2,
       "mode": 0,
-      "inputs": [
-        { "name": "image", "type": "IMAGE", "link": 1 }
-      ],
-      "outputs": [
-        { "name": "IMAGE", "type": "IMAGE", "links": null }
-      ],
+      "inputs": [{ "name": "image", "type": "IMAGE", "link": 1 }],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": null }],
       "properties": { "Node name for S&R": "UNKNOWN_NO_REPLACEMENT" }
     }
   ],
-  "links": [
-    [1, 2, 0, 3, 0, "IMAGE"]
-  ],
+  "links": [[1, 2, 0, 3, 0, "IMAGE"]],
   "groups": [],
   "config": {},
   "extra": {
