@@ -541,16 +541,11 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      const getProvider = (v: unknown) =>
-        modelToNodeStore.getNodeProvider(v as string)
-      const getAllProviders = (v: unknown) =>
-        modelToNodeStore.getAllNodeProviders(v as string)
-
-      expect(getProvider(null)).toBeUndefined()
-      expect(getProvider(undefined)).toBeUndefined()
-      expect(getProvider(123)).toBeUndefined()
-      expect(getAllProviders(null)).toEqual([])
-      expect(getAllProviders(undefined)).toEqual([])
+      expect(modelToNodeStore.getNodeProvider(null)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(undefined)).toBeUndefined()
+      expect(modelToNodeStore.getNodeProvider(123)).toBeUndefined()
+      expect(modelToNodeStore.getAllNodeProviders(null)).toEqual([])
+      expect(modelToNodeStore.getAllNodeProviders(undefined)).toEqual([])
     })
   })
 })
