@@ -1,197 +1,97 @@
-import { clone } from 'es-toolkit/compat'
-
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { app, sanitizeNodeName } from '@/scripts/app'
 import type { MissingNodeType } from '@/types/comfy'
-
-import { useNodeReplacementStore } from './nodeReplacementStore'
+import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
 /**
- * Modify workflow data to replace missing node types with their replacements
- * @param graphData The workflow JSON data
- * @param replacements Map of old node type to new node type
- * @returns Modified workflow data with node types replaced
+ * Match a placeholder node to a selected missing node type.
+ * Placeholder nodes have sanitized type strings, so we compare
+ * against the sanitized version of the original type.
  */
-function applyNodeReplacements(
-  graphData: ComfyWorkflowJSON,
-  replacements: Map<string, string>
-): ComfyWorkflowJSON {
-  const modifiedData = clone(graphData)
-
-  // Helper function to process nodes array
-  function processNodes(nodes: ComfyWorkflowJSON['nodes']) {
-    if (!Array.isArray(nodes)) return
-
-    for (const node of nodes) {
-      const replacement = replacements.get(node.type)
-      if (replacement) {
-        node.type = replacement
-      }
-    }
+function findMatchingType(
+  node: LGraphNode,
+  selectedTypes: MissingNodeType[]
+): Extract<MissingNodeType, { type: string }> | undefined {
+  const nodeType = node.type
+  for (const selected of selectedTypes) {
+    if (typeof selected !== 'object' || !selected.isReplaceable) continue
+    if (sanitizeNodeName(selected.type) === nodeType) return selected
   }
-
-  // Process top-level nodes
-  processNodes(modifiedData.nodes)
-
-  // Process nodes in subgraphs
-  if (modifiedData.definitions?.subgraphs) {
-    for (const subgraph of modifiedData.definitions.subgraphs) {
-      if (subgraph && 'nodes' in subgraph) {
-        processNodes(subgraph.nodes as ComfyWorkflowJSON['nodes'])
-      }
-    }
-  }
-
-  return modifiedData
+  return undefined
 }
 
 export function useNodeReplacement() {
-  const nodeReplacementStore = useNodeReplacementStore()
-  const workflowStore = useWorkflowStore()
   const toastStore = useToastStore()
 
   /**
-   * Build a map of replacements from missing node types
+   * Replace selected missing nodes in-place on the graph.
+   * Uses the checkNodeTypes() pattern: create new node, configure with
+   * old serialization, copy inputs/outputs to preserve connections.
+   *
+   * @param selectedTypes Missing node types selected for replacement
+   * @returns Array of original type names that were successfully replaced
    */
-  function buildReplacementMap(
-    missingNodeTypes: MissingNodeType[]
-  ): Map<string, string> {
-    const replacements = new Map<string, string>()
+  function replaceNodesInPlace(selectedTypes: MissingNodeType[]): string[] {
+    const replacedTypes: string[] = []
+    const graph = app.rootGraph
 
-    for (const nodeType of missingNodeTypes) {
-      if (typeof nodeType === 'object' && nodeType.isReplaceable) {
-        const replacement = nodeType.replacement
-        if (replacement) {
-          replacements.set(nodeType.type, replacement.new_node_id)
-        }
+    const placeholders = collectAllNodes(
+      graph,
+      (n) => !!n.has_errors && !!n.last_serialization
+    )
+
+    for (const node of placeholders) {
+      const match = findMatchingType(node, selectedTypes)
+      if (!match?.replacement) continue
+
+      const newNode = LiteGraph.createNode(match.replacement.new_node_id)
+      if (!newNode) continue
+
+      const nodeGraph = node.graph
+      if (!nodeGraph) continue
+
+      const idx = nodeGraph._nodes.indexOf(node)
+      if (idx === -1) continue
+
+      // checkNodeTypes() pattern: swap in array, configure, copy connections
+      const newType = match.replacement.new_node_id
+      nodeGraph._nodes[idx] = newNode
+      newNode.configure(node.serialize())
+      // configure() overwrites type with old serialization; restore the new type
+      newNode.type = newType
+      newNode.has_errors = false
+      delete newNode.last_serialization
+      newNode.graph = nodeGraph
+      nodeGraph._nodes_by_id[newNode.id] = newNode
+      if (node.inputs) newNode.inputs = [...node.inputs]
+      if (node.outputs) newNode.outputs = [...node.outputs]
+
+      if (!replacedTypes.includes(match.type)) {
+        replacedTypes.push(match.type)
       }
     }
 
-    return replacements
-  }
-
-  /**
-   * Replace a single node type with its replacement
-   * This reloads the entire workflow with the replacement applied
-   * @param nodeType The type of the missing node to replace
-   * @returns true if replacement was successful
-   */
-  async function replaceNode(nodeType: string): Promise<boolean> {
-    const replacement = nodeReplacementStore.getReplacementFor(nodeType)
-    if (!replacement) {
-      console.warn(`No replacement found for node type: ${nodeType}`)
-      return false
-    }
-
-    const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow?.isLoaded || !activeWorkflow.originalContent) {
-      console.error('No active workflow or workflow not loaded')
-      return false
-    }
-
-    try {
-      // Parse original workflow data
-      const originalData = JSON.parse(
-        activeWorkflow.originalContent
-      ) as ComfyWorkflowJSON
-
-      // Create replacement map for single node
-      const replacements = new Map<string, string>()
-      replacements.set(nodeType, replacement.new_node_id)
-
-      // Apply replacements
-      const modifiedData = applyNodeReplacements(originalData, replacements)
-
-      // Reload the workflow with modified data
-      await app.loadGraphData(modifiedData, true, false, activeWorkflow, {
-        showMissingNodesDialog: true,
-        showMissingModelsDialog: true
-      })
-
-      toastStore.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('nodeReplacement.replacedNode', { nodeType }),
-        life: 3000
-      })
-
-      return true
-    } catch (error) {
-      console.error('Failed to replace node:', error)
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('nodeReplacement.replaceFailed'),
-        life: 5000
-      })
-      return false
-    }
-  }
-
-  /**
-   * Replace all replaceable missing nodes
-   * This reloads the entire workflow with all replacements applied
-   * @param missingNodeTypes Array of missing node types (from dialog props)
-   * @returns Number of node types that were replaced
-   */
-  async function replaceAllNodes(
-    missingNodeTypes: MissingNodeType[]
-  ): Promise<number> {
-    const replacements = buildReplacementMap(missingNodeTypes)
-
-    if (replacements.size === 0) {
-      console.warn('No replaceable nodes found')
-      return 0
-    }
-
-    const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow?.isLoaded || !activeWorkflow.originalContent) {
-      console.error('No active workflow or workflow not loaded')
-      return 0
-    }
-
-    try {
-      // Parse original workflow data
-      const originalData = JSON.parse(
-        activeWorkflow.originalContent
-      ) as ComfyWorkflowJSON
-
-      // Apply all replacements
-      const modifiedData = applyNodeReplacements(originalData, replacements)
-
-      // Reload the workflow with modified data
-      await app.loadGraphData(modifiedData, true, false, activeWorkflow, {
-        showMissingNodesDialog: true,
-        showMissingModelsDialog: true
-      })
+    if (replacedTypes.length > 0) {
+      graph.updateExecutionOrder()
+      graph.setDirtyCanvas(true, true)
 
       toastStore.add({
         severity: 'success',
         summary: t('g.success'),
         detail: t('nodeReplacement.replacedAllNodes', {
-          count: replacements.size
+          count: replacedTypes.length
         }),
         life: 3000
       })
-
-      return replacements.size
-    } catch (error) {
-      console.error('Failed to replace nodes:', error)
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('nodeReplacement.replaceFailed'),
-        life: 5000
-      })
-      return 0
     }
+
+    return replacedTypes
   }
 
   return {
-    replaceNode,
-    replaceAllNodes
+    replaceNodesInPlace
   }
 }

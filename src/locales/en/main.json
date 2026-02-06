@@ -2811,6 +2811,7 @@
     "installationRequired": "Installation Required",
     "compatibleAlternatives": "Compatible Alternatives",
     "replaceable": "Replaceable",
+    "replaced": "Replaced",
     "notReplaceable": "Install Required",
     "selectAll": "Select All",
     "replaceSelected": "Replace Selected ({count})",
@@ -2821,7 +2822,8 @@
     "redHighlight": "red",
     "openNodeManager": "Open Node Manager",
     "skipForNow": "Skip for Now",
-    "installMissingNodes": "Install Missing Nodes"
+    "installMissingNodes": "Install Missing Nodes",
+    "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure."
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",

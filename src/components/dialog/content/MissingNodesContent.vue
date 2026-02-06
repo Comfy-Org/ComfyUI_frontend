@@ -28,12 +28,22 @@
             <div class="h-2 w-2 rounded-full bg-primary" />
           </div>
           <Button
+            v-tooltip.top="$t('nodeReplacement.replaceWarning')"
             variant="primary"
             size="md"
-            :disabled="selectedTypes.size === 0"
+            :disabled="selectedTypes.size === 0 || isReplacing"
             @click="handleReplaceSelected"
           >
-            <i class="icon-[lucide--refresh-cw] mr-1.5 h-4 w-4" />
+            <i
+              :class="
+                cn(
+                  'mr-1.5 h-4 w-4',
+                  isReplacing
+                    ? 'icon-[lucide--loader-circle] animate-spin'
+                    : 'icon-[lucide--refresh-cw]'
+                )
+              "
+            />
             {{
               $t('nodeReplacement.replaceSelected', {
                 count: selectedTypes.size
@@ -48,7 +58,14 @@
         >
           <!-- Select All row (sticky header) -->
           <div
-            class="sticky top-0 z-10 flex cursor-pointer items-center gap-3 border-b border-border-default bg-secondary-background px-3 py-2 hover:bg-secondary-background-hover"
+            :class="
+              cn(
+                'sticky top-0 z-10 flex items-center gap-3 border-b border-border-default bg-secondary-background px-3 py-2',
+                pendingNodes.length > 0
+                  ? 'cursor-pointer hover:bg-secondary-background-hover'
+                  : 'opacity-50 pointer-events-none'
+              )
+            "
             tabindex="0"
             role="checkbox"
             :aria-checked="
@@ -84,10 +101,19 @@
           <div
             v-for="node in replaceableNodes"
             :key="node.label"
-            class="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-secondary-background-hover"
+            :class="
+              cn(
+                'flex items-center gap-3 px-3 py-2',
+                replacedTypes.has(node.label)
+                  ? 'opacity-50 pointer-events-none'
+                  : 'cursor-pointer hover:bg-secondary-background-hover'
+              )
+            "
             tabindex="0"
             role="checkbox"
-            :aria-checked="selectedTypes.has(node.label)"
+            :aria-checked="
+              replacedTypes.has(node.label) || selectedTypes.has(node.label)
+            "
             @click="toggleNode(node.label)"
             @keydown.enter.prevent="toggleNode(node.label)"
             @keydown.space.prevent="toggleNode(node.label)"
@@ -95,24 +121,33 @@
             <div
               class="flex size-4 shrink-0 items-center justify-center rounded p-0.5 transition-all duration-200"
               :class="
-                selectedTypes.has(node.label)
+                replacedTypes.has(node.label) || selectedTypes.has(node.label)
                   ? 'bg-primary-background'
                   : 'bg-secondary-background'
               "
             >
               <i
-                v-if="selectedTypes.has(node.label)"
+                v-if="
+                  replacedTypes.has(node.label) || selectedTypes.has(node.label)
+                "
                 class="icon-[lucide--check] text-bold text-xs text-base-foreground"
               />
             </div>
             <div class="flex flex-col gap-0.5">
               <div class="flex items-center gap-2">
                 <span
+                  v-if="replacedTypes.has(node.label)"
+                  class="inline-flex h-4 items-center rounded-full border border-success bg-success/10 px-1.5 text-xxxs font-semibold uppercase text-success"
+                >
+                  {{ $t('nodeReplacement.replaced') }}
+                </span>
+                <span
+                  v-else
                   class="inline-flex h-4 items-center rounded-full border border-primary bg-primary/10 px-1.5 text-xxxs font-semibold uppercase text-primary"
                 >
                   {{ $t('nodeReplacement.replaceable') }}
                 </span>
-                <span class="text-sm font-medium text-foreground">
+                <span class="text-sm text-foreground">
                   {{ node.label }}
                 </span>
               </div>
@@ -125,7 +160,10 @@
       </div>
 
       <!-- MANUAL INSTALLATION REQUIRED Section -->
-      <div v-if="nonReplaceableNodes.length > 0" class="flex flex-col gap-2">
+      <div
+        v-if="nonReplaceableNodes.length > 0"
+        class="flex max-h-[200px] flex-col gap-2"
+      >
         <!-- Section header -->
         <div class="flex items-center gap-2">
           <span class="text-xs font-semibold uppercase text-error">
@@ -151,7 +189,7 @@
                   >
                     {{ $t('nodeReplacement.notReplaceable') }}
                   </span>
-                  <span class="text-sm font-medium text-foreground">
+                  <span class="text-sm text-foreground">
                     {{ node.label }}
                   </span>
                 </div>
@@ -200,18 +238,19 @@ import MissingCoreNodesMessage from '@/components/dialog/content/MissingCoreNode
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+import { useDialogStore } from '@/stores/dialogStore'
 import type { MissingNodeType } from '@/types/comfy'
+import { cn } from '@/utils/tailwindUtil'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 
 const props = defineProps<{
   missingNodeTypes: MissingNodeType[]
 }>()
 
-const emit = defineEmits<{
-  (e: 'replaceSelected', selectedTypes: MissingNodeType[]): void
-}>()
-
 const { missingCoreNodes } = useMissingNodes()
+const { replaceNodesInPlace } = useNodeReplacement()
+const dialogStore = useDialogStore()
 
 interface ProcessedNode {
   label: string
@@ -220,6 +259,9 @@ interface ProcessedNode {
   isReplaceable: boolean
   replacement?: NodeReplacement
 }
+
+const replacedTypes = ref<Set<string>>(new Set())
+const isReplacing = ref(false)
 
 const uniqueNodes = computed<ProcessedNode[]>(() => {
   const seenTypes = new Set<string>()
@@ -248,16 +290,20 @@ const replaceableNodes = computed(() =>
   uniqueNodes.value.filter((n) => n.isReplaceable)
 )
 
+const pendingNodes = computed(() =>
+  replaceableNodes.value.filter((n) => !replacedTypes.value.has(n.label))
+)
+
 const nonReplaceableNodes = computed(() =>
   uniqueNodes.value.filter((n) => !n.isReplaceable)
 )
 
-// Selection state - all replaceable nodes selected by default
+// Selection state - all pending nodes selected by default
 const selectedTypes = ref<Set<string>>(new Set<string>())
 
-// Initialize selection when replaceableNodes changes
+// Initialize selection when pendingNodes changes
 watch(
-  replaceableNodes,
+  pendingNodes,
   (nodes) => {
     selectedTypes.value = new Set(nodes.map((n) => n.label))
   },
@@ -266,8 +312,8 @@ watch(
 
 const isAllSelected = computed(
   () =>
-    replaceableNodes.value.length > 0 &&
-    selectedTypes.value.size === replaceableNodes.value.length
+    pendingNodes.value.length > 0 &&
+    selectedTypes.value.size === pendingNodes.value.length
 )
 
 const isSomeSelected = computed(
@@ -275,6 +321,7 @@ const isSomeSelected = computed(
 )
 
 function toggleNode(label: string) {
+  if (replacedTypes.value.has(label)) return
   const next = new Set(selectedTypes.value)
   if (next.has(label)) {
     next.delete(label)
@@ -288,7 +335,7 @@ function toggleSelectAll() {
   if (isAllSelected.value) {
     selectedTypes.value = new Set()
   } else {
-    selectedTypes.value = new Set(replaceableNodes.value.map((n) => n.label))
+    selectedTypes.value = new Set(pendingNodes.value.map((n) => n.label))
   }
 }
 
@@ -297,6 +344,25 @@ function handleReplaceSelected() {
     const type = typeof node === 'object' ? node.type : node
     return selectedTypes.value.has(type)
   })
-  emit('replaceSelected', selected)
+
+  isReplacing.value = true
+  const result = replaceNodesInPlace(selected)
+  const nextReplaced = new Set(replacedTypes.value)
+  const nextSelected = new Set(selectedTypes.value)
+  for (const type of result) {
+    nextReplaced.add(type)
+    nextSelected.delete(type)
+  }
+  replacedTypes.value = nextReplaced
+  selectedTypes.value = nextSelected
+  isReplacing.value = false
+
+  // Auto-close when all replaceable nodes replaced and no non-replaceable remain
+  const allReplaced = replaceableNodes.value.every((n) =>
+    nextReplaced.has(n.label)
+  )
+  if (allReplaced && nonReplaceableNodes.value.length === 0) {
+    dialogStore.closeDialog({ key: 'global-missing-nodes' })
+  }
 }
 </script>

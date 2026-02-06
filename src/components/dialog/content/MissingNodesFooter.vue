@@ -26,7 +26,7 @@
       {{ $t('nodeReplacement.skipForNow') }}
     </Button>
     <PackInstallButton
-      v-if="showInstallAllButton"
+      v-if="showInstallAllButton && hasNonReplaceableNodes"
       type="secondary"
       size="md"
       :disabled="
@@ -44,17 +44,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { MissingNodeType } from '@/types/comfy'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
+
+const { missingNodeTypes } = defineProps<{
+  missingNodeTypes?: MissingNodeType[]
+}>()
 
 const dialogStore = useDialogStore()
 const { t } = useI18n()
@@ -85,8 +90,29 @@ const showInstallAllButton = computed(() => {
   return managerState.shouldShowInstallButton.value
 })
 
-// Computed to check if all missing nodes have been installed
+const hasNonReplaceableNodes = computed(
+  () =>
+    missingNodeTypes?.some(
+      (n) =>
+        typeof n === 'string' || (typeof n === 'object' && !n.isReplaceable)
+    ) ?? false
+)
+
+// Track whether missingNodePacks was ever non-empty (i.e. there were packs to install)
+const hadMissingPacks = ref(false)
+
+watch(
+  missingNodePacks,
+  (packs) => {
+    if (packs && packs.length > 0) hadMissingPacks.value = true
+  },
+  { immediate: true }
+)
+
+// Only consider "all installed" when packs transitioned from non-empty to empty
+// (actual installation happened). Replaceable-only case is handled by Content auto-close.
 const allMissingNodesInstalled = computed(() => {
+  if (!hadMissingPacks.value) return false
   return (
     !isLoading.value &&
     !isInstalling.value &&

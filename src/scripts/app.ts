@@ -107,7 +107,7 @@ import { pasteImageNode } from '@/composables/usePaste'
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
-function sanitizeNodeName(string: string) {
+export function sanitizeNodeName(string: string) {
   let entityMap = {
     '&': '',
     '<': '',

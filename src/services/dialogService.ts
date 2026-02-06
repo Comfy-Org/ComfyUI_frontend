@@ -7,7 +7,6 @@ import PromptDialogContent from '@/components/dialog/content/PromptDialogContent
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
-import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
@@ -15,7 +14,6 @@ import type {
   ShowDialogOptions
 } from '@/stores/dialogStore'
 
-import type { MissingNodeType } from '@/types/comfy'
 import type { ConflictDetectionResult } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
@@ -96,12 +94,6 @@ export const useDialogService = () => {
       lazyMissingNodesFooter()
     ])
 
-    const { replaceAllNodes } = useNodeReplacement()
-
-    const handleReplaceSelected = async (selectedTypes: MissingNodeType[]) => {
-      await replaceAllNodes(selectedTypes)
-    }
-
     dialogStore.showDialog({
       key: 'global-missing-nodes',
       headerComponent: MissingNodesHeader,
@@ -121,9 +113,9 @@ export const useDialogService = () => {
           }
         }
       },
-      props: {
-        ...props,
-        onReplaceSelected: handleReplaceSelected
+      props,
+      footerProps: {
+        missingNodeTypes: props.missingNodeTypes
       }
     })
   }
