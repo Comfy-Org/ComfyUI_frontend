@@ -1,6 +1,6 @@
 <div align="center">
 
-# ComfyUI_frontend
+# ComfyUI_frontend1
 
 **Official front-end implementation of [ComfyUI](https://github.com/comfyanonymous/ComfyUI).**
 
