@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="imageUrl"
-    class="min-h-16 w-full min-w-16 place-content-center flex-1"
-  >
+  <template v-if="imageUrl">
     <div
       v-if="imageError"
       class="text-pure-white flex h-full w-full flex-col items-center justify-center text-center"
@@ -14,7 +11,7 @@
       v-else
       :src="imageUrl"
       :alt="$t('g.liveSamplingPreview')"
-      class="pointer-events-none w-full object-contain"
+      class="pointer-events-none w-full object-contain contain-size min-h-55 flex-1"
       @load="handleImageLoad"
       @error="handleImageError"
     />
@@ -25,7 +22,7 @@
           : actualDimensions || $t('g.calculatingDimensions')
       }}
     </div>
-  </div>
+  </template>
 </template>
 
 <script setup lang="ts">
