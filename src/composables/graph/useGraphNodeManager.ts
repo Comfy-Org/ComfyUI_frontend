@@ -80,6 +80,7 @@ export interface VueNodeData {
   color?: string
   flags?: {
     collapsed?: boolean
+    ghost?: boolean
     pinned?: boolean
   }
   hasErrors?: boolean
@@ -520,6 +521,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 flags: {
                   ...currentData.flags,
                   collapsed: Boolean(propertyEvent.newValue)
+                }
+              })
+              break
+            case 'flags.ghost':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                flags: {
+                  ...currentData.flags,
+                  ghost: Boolean(propertyEvent.newValue)
                 }
               })
               break

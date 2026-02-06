@@ -42,11 +42,11 @@ export function useTextPreviewWidget(
           widgetValue.value = typeof value === 'string' ? value : String(value)
         },
         getMinHeight: () => options.minHeight ?? 42 + PADDING,
-        serialize: false,
         read_only: true
       },
       type: inputSpec.type
     })
+    widget.serialize = false
     addWidget(node, widget)
     return widget
   }
