@@ -2018,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "إنشاء قائمة",
+    "inputs": {
+      "inputs": {
+        "name": "المدخلات"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "قائمة",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "إنشاء فيديو من الصور.",
     "display_name": "إنشاء فيديو",
@@ -6418,7 +6432,6 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
-      "clear": "مسح",
       "height": {
         "name": "الارتفاع"
       },
@@ -6428,8 +6441,6 @@
       "model_file": {
         "name": "ملف النموذج"
       },
-      "upload 3d model": "رفع نموذج ثلاثي الأبعاد",
-      "upload extra resources": "رفع موارد إضافية",
       "width": {
         "name": "العرض"
       }
@@ -13940,6 +13951,9 @@
       "bpm": {
         "name": "الإيقاع (BPM)"
       },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13948,6 +13962,10 @@
       },
       "duration": {
         "name": "المدة"
+      },
+      "generate_audio_codes": {
+        "name": "توليد رموز الصوت",
+        "tooltip": "تفعيل نموذج اللغة الكبير (LLM) الذي يولد رموز الصوت. قد يكون بطيئًا لكنه سيزيد من جودة الصوت الناتج. قم بإيقاف هذا الخيار إذا كنت تقدم مرجعًا صوتيًا للنموذج."
       },
       "keyscale": {
         "name": "المقام الموسيقي"
@@ -13964,8 +13982,17 @@
       "tags": {
         "name": "الوسوم"
       },
+      "temperature": {
+        "name": "درجة الحرارة"
+      },
       "timesignature": {
         "name": "توقيع الإيقاع"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14889,6 +14916,28 @@
     "inputs": {
       "samples": {
         "name": "عينات"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "فك ترميز الصوت بواسطة VAE (مجزأ)",
+    "inputs": {
+      "overlap": {
+        "name": "تداخل"
+      },
+      "samples": {
+        "name": "عينات"
+      },
+      "tile_size": {
+        "name": "حجم التجزئة"
       },
       "vae": {
         "name": "vae"

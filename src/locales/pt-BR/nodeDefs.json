@@ -2020,6 +2020,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Criar Lista",
+    "inputs": {
+      "inputs": {
+        "name": "entradas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "lista",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "Crie um vídeo a partir de imagens.",
     "display_name": "Criar Vídeo",
@@ -6427,7 +6441,6 @@
   "Load3D": {
     "display_name": "Carregar 3D & Animação",
     "inputs": {
-      "clear": {},
       "height": {
         "name": "altura"
       },
@@ -6437,8 +6450,6 @@
       "model_file": {
         "name": "arquivo_do_modelo"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
       "width": {
         "name": "largura"
       }
@@ -13953,6 +13964,9 @@
       "bpm": {
         "name": "bpm"
       },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13961,6 +13975,10 @@
       },
       "duration": {
         "name": "duração"
+      },
+      "generate_audio_codes": {
+        "name": "gerar_códigos_de_áudio",
+        "tooltip": "Ativa o LLM que gera códigos de áudio. Isso pode ser lento, mas aumentará a qualidade do áudio gerado. Desative se você fornecer uma referência de áudio ao modelo."
       },
       "keyscale": {
         "name": "escala tonal"
@@ -13977,8 +13995,17 @@
       "tags": {
         "name": "tags"
       },
+      "temperature": {
+        "name": "temperatura"
+      },
       "timesignature": {
         "name": "fórmula de compasso"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14902,6 +14929,28 @@
     "inputs": {
       "samples": {
         "name": "amostras"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE Decodificar Áudio (Em Blocos)",
+    "inputs": {
+      "overlap": {
+        "name": "sobreposição"
+      },
+      "samples": {
+        "name": "amostras"
+      },
+      "tile_size": {
+        "name": "tamanho_do_bloco"
       },
       "vae": {
         "name": "vae"

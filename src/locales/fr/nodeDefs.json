@@ -2018,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Créer une liste",
+    "inputs": {
+      "inputs": {
+        "name": "entrées"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "liste",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "Créer une vidéo à partir d’images.",
     "display_name": "Créer une vidéo",
@@ -6418,9 +6432,6 @@
   "Load3D": {
     "display_name": "Charger 3D",
     "inputs": {
-      "clear": {
-        "": "effacer"
-      },
       "height": {
         "name": "hauteur"
       },
@@ -6429,12 +6440,6 @@
       },
       "model_file": {
         "name": "fichier_modèle"
-      },
-      "upload 3d model": {
-        "": "téléverser un modèle 3D"
-      },
-      "upload extra resources": {
-        "": "téléverser des ressources supplémentaires"
       },
       "width": {
         "name": "largeur"
@@ -13946,6 +13951,9 @@
       "bpm": {
         "name": "bpm"
       },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13954,6 +13962,10 @@
       },
       "duration": {
         "name": "durée"
+      },
+      "generate_audio_codes": {
+        "name": "générer des codes audio",
+        "tooltip": "Activez le LLM qui génère des codes audio. Cela peut être lent mais augmentera la qualité de l’audio généré. Désactivez cette option si vous fournissez une référence audio au modèle."
       },
       "keyscale": {
         "name": "tonalité"
@@ -13970,8 +13982,17 @@
       "tags": {
         "name": "tags"
       },
+      "temperature": {
+        "name": "température"
+      },
       "timesignature": {
         "name": "signature rythmique"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14895,6 +14916,28 @@
     "inputs": {
       "samples": {
         "name": "échantillons"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "Décoder Audio VAE (par tuiles)",
+    "inputs": {
+      "overlap": {
+        "name": "chevauchement"
+      },
+      "samples": {
+        "name": "échantillons"
+      },
+      "tile_size": {
+        "name": "taille de tuile"
       },
       "vae": {
         "name": "vae"
