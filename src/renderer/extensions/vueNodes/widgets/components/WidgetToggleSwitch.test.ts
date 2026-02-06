@@ -1,12 +1,28 @@
 import { mount } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import ToggleSwitch from 'primevue/toggleswitch'
+import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      widgets: {
+        boolean: {
+          true: 'true',
+          false: 'false'
+        }
+      }
+    }
+  }
+})
 
 describe('WidgetToggleSwitch Value Binding', () => {
   const createMockWidget = (
@@ -33,7 +49,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
         readonly
       },
       global: {
-        plugins: [PrimeVue],
+        plugins: [PrimeVue, i18n],
         components: { ToggleSwitch }
       }
     })
@@ -151,45 +167,90 @@ describe('WidgetToggleSwitch Value Binding', () => {
   })
 
   describe('Label Display (label_on/label_off)', () => {
-    it('displays label_on when value is true', () => {
-      const widget = createMockWidget(true, { on: 'inside', off: 'outside' })
-      const wrapper = mountComponent(widget, true)
-
-      expect(wrapper.text()).toContain('inside')
-    })
-
-    it('displays label_off when value is false', () => {
+    it('renders FormSelectButton when labels are provided', () => {
       const widget = createMockWidget(false, { on: 'inside', off: 'outside' })
       const wrapper = mountComponent(widget, false)
 
-      expect(wrapper.text()).toContain('outside')
+      expect(
+        wrapper.findComponent({ name: 'FormSelectButton' }).exists()
+      ).toBe(true)
+      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
+        false
+      )
     })
 
-    it('does not display label when no on/off options provided', () => {
+    it('renders ToggleSwitch when no labels are provided', () => {
       const widget = createMockWidget(false, {})
       const wrapper = mountComponent(widget, false)
 
-      expect(wrapper.find('span').exists()).toBe(false)
+      expect(wrapper.findComponent({ name: 'ToggleSwitch' }).exists()).toBe(
+        true
+      )
+      expect(
+        wrapper.findComponent({ name: 'FormSelectButton' }).exists()
+      ).toBe(false)
     })
 
-    it('updates label when value changes', async () => {
+    it('displays both on and off labels in FormSelectButton', () => {
+      const widget = createMockWidget(false, { on: 'inside', off: 'outside' })
+      const wrapper = mountComponent(widget, false)
+
+      expect(wrapper.text()).toContain('inside')
+      expect(wrapper.text()).toContain('outside')
+    })
+
+    it('selects correct option based on boolean value (false)', () => {
       const widget = createMockWidget(false, { on: 'enabled', off: 'disabled' })
       const wrapper = mountComponent(widget, false)
 
-      expect(wrapper.text()).toContain('disabled')
-
-      await wrapper.setProps({ modelValue: true })
-      expect(wrapper.text()).toContain('enabled')
+      const selectButton = wrapper.findComponent({ name: 'FormSelectButton' })
+      expect(selectButton.props('modelValue')).toBe('off')
     })
 
-    it('falls back to true/false when only partial options provided', () => {
+    it('selects correct option based on boolean value (true)', () => {
+      const widget = createMockWidget(true, { on: 'enabled', off: 'disabled' })
+      const wrapper = mountComponent(widget, true)
+
+      const selectButton = wrapper.findComponent({ name: 'FormSelectButton' })
+      expect(selectButton.props('modelValue')).toBe('on')
+    })
+
+    it('emits true when "on" option is clicked', async () => {
+      const widget = createMockWidget(false, { on: 'enabled', off: 'disabled' })
+      const wrapper = mountComponent(widget, false)
+
+      const buttons = wrapper.findAll('button')
+      const onButton = buttons.find((b) => b.text() === 'enabled')
+      await onButton!.trigger('click')
+
+      const emitted = wrapper.emitted('update:modelValue')
+      expect(emitted).toBeDefined()
+      expect(emitted![0]).toContain(true)
+    })
+
+    it('emits false when "off" option is clicked', async () => {
+      const widget = createMockWidget(true, { on: 'enabled', off: 'disabled' })
+      const wrapper = mountComponent(widget, true)
+
+      const buttons = wrapper.findAll('button')
+      const offButton = buttons.find((b) => b.text() === 'disabled')
+      await offButton!.trigger('click')
+
+      const emitted = wrapper.emitted('update:modelValue')
+      expect(emitted).toBeDefined()
+      expect(emitted![0]).toContain(false)
+    })
+
+    it('falls back to i18n defaults when only partial options provided', () => {
       const widgetOnOnly = createMockWidget(true, { on: 'active' })
       const wrapperOn = mountComponent(widgetOnOnly, true)
       expect(wrapperOn.text()).toContain('active')
+      expect(wrapperOn.text()).toContain('false')
 
       const widgetOffOnly = createMockWidget(false, { off: 'inactive' })
       const wrapperOff = mountComponent(widgetOffOnly, false)
       expect(wrapperOff.text()).toContain('inactive')
+      expect(wrapperOff.text()).toContain('true')
     })
   })
 })
