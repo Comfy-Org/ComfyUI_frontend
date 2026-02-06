@@ -122,7 +122,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-
 const hoveredAssetId = ref<string | null>(null)
 
 const listGridStyle = {
