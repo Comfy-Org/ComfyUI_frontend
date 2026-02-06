@@ -1,12 +1,92 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import {
   compressWidgetInputSlots,
+  createNode,
   migrateWidgetsValues
 } from '@/utils/litegraphUtil'
+
+vi.mock('@/lib/litegraph/src/litegraph', () => ({
+  LiteGraph: {
+    createNode: vi.fn()
+  }
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({
+    addAlert: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn()
+  }))
+}))
+
+vi.mock('@/i18n', () => ({
+  t: vi.fn((key: string) => key)
+}))
+
+describe('createNode', () => {
+  let mockCanvas: any
+  let mockGraph: any
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mockGraph = {
+      add: vi.fn((node) => node),
+      change: vi.fn()
+    }
+
+    mockCanvas = {
+      graph: mockGraph,
+      graph_mouse: [100, 200]
+    }
+  })
+
+  it('should create a node successfully', async () => {
+    const mockNode = { pos: [0, 0] }
+    vi.mocked(LiteGraph.createNode).mockReturnValue(mockNode as any)
+
+    const result = await createNode(mockCanvas, 'LoadImage')
+
+    expect(LiteGraph.createNode).toHaveBeenCalledWith('LoadImage')
+    expect(mockNode.pos).toEqual([100, 200])
+    expect(mockGraph.add).toHaveBeenCalledWith(mockNode)
+    expect(mockGraph.change).toHaveBeenCalled()
+    expect(result).toBe(mockNode)
+  })
+
+  it('should return null when name is empty', async () => {
+    const result = await createNode(mockCanvas, '')
+
+    expect(LiteGraph.createNode).not.toHaveBeenCalled()
+    expect(result).toBeNull()
+  })
+
+  it('should handle graph being null', async () => {
+    const mockNode = { pos: [0, 0] }
+    mockCanvas.graph = null
+    vi.mocked(LiteGraph.createNode).mockReturnValue(mockNode as any)
+
+    const result = await createNode(mockCanvas, 'LoadImage')
+
+    expect(mockNode.pos).toEqual([0, 0])
+    expect(result).toBeNull()
+  })
+
+  it('should set position based on canvas graph_mouse', async () => {
+    mockCanvas.graph_mouse = [250, 350]
+    const mockNode = { pos: [0, 0] }
+    vi.mocked(LiteGraph.createNode).mockReturnValue(mockNode as any)
+
+    await createNode(mockCanvas, 'LoadAudio')
+
+    expect(mockNode.pos).toEqual([250, 350])
+  })
+})
 
 describe('migrateWidgetsValues', () => {
   it('should remove widget values for forceInput inputs', () => {
