@@ -29,6 +29,7 @@ vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   })
 }))
 
+
 describe('TreeExplorerV2Node', () => {
   function createMockItem(
     type: 'node' | 'folder',
