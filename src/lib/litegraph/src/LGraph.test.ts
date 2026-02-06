@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  Subgraph
+} from '@/lib/litegraph/src/litegraph';
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraphData,
   createTestSubgraphNode
@@ -286,5 +293,60 @@ describe('Legacy LGraph Compatibility Layer', () => {
 
   test('is correctly assigned to LiteGraph', ({ expect }) => {
     expect(LiteGraph.LGraph).toBe(LGraph)
+  })
+})
+
+describe('Shared LGraphState', () => {
+  function createSubgraphOnGraph(rootGraph: LGraph): Subgraph {
+    const data = createTestSubgraphData()
+    return rootGraph.createSubgraph(data)
+  }
+
+  it('subgraph state is the same object as rootGraph state', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+    expect(subgraph.state).toBe(rootGraph.state)
+  })
+
+  it('adding a node in a subgraph increments the root counter', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    rootGraph.add(new DummyNode())
+    const rootNodeId = rootGraph.state.lastNodeId
+
+    subgraph.add(new DummyNode())
+    expect(rootGraph.state.lastNodeId).toBe(rootNodeId + 1)
+  })
+
+  it('node IDs never collide between root and subgraph', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const rootNode = new DummyNode()
+    rootGraph.add(rootNode)
+
+    const subNode = new DummyNode()
+    subgraph.add(subNode)
+
+    expect(rootNode.id).not.toBe(subNode.id)
+  })
+
+  it('configure merges state using max', () => {
+    const rootGraph = new LGraph()
+    rootGraph.state.lastNodeId = 10
+
+    const data = createTestSubgraphData()
+    data.state = {
+      lastNodeId: 5,
+      lastLinkId: 20,
+      lastGroupId: 0,
+      lastRerouteId: 0
+    }
+    const subgraph = rootGraph.createSubgraph(data)
+    subgraph.configure(data)
+
+    expect(rootGraph.state.lastNodeId).toBe(10)
+    expect(rootGraph.state.lastLinkId).toBe(20)
   })
 })
