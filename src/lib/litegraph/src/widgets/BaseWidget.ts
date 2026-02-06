@@ -79,7 +79,8 @@ export abstract class BaseWidget<
   computedDisabled?: boolean
   tooltip?: string
 
-  private _state: WidgetState
+  private _state: Omit<WidgetState, 'nodeId'> &
+    Partial<Pick<WidgetState, 'nodeId'>>
 
   get label(): string | undefined {
     return this._state.label
@@ -147,8 +148,10 @@ export abstract class BaseWidget<
    * Once set, value reads/writes will be delegated to the store.
    */
   setNodeId(nodeId: NodeId): void {
-    this._state.nodeId = nodeId
-    this._state = useWidgetValueStore().registerWidget(this._state)
+    this._state = useWidgetValueStore().registerWidget({
+      ...this._state,
+      nodeId
+    })
   }
 
   constructor(widget: TWidget & { node: LGraphNode })
@@ -199,7 +202,6 @@ export abstract class BaseWidget<
     Object.assign(this, safeValues)
 
     this._state = {
-      nodeId: undefined as unknown as NodeId,
       name: this.name,
       type: this.type as TWidgetType,
       value,
