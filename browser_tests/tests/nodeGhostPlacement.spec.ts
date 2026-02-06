@@ -117,6 +117,34 @@ for (const mode of ['litegraph', 'vue'] as const) {
       expect(after).toBeNull()
     })
 
+    test('Delete cancels ghost placement', async ({ comfyPage }) => {
+      const { nodeId } = await addGhostAtCenter(comfyPage)
+
+      const before = await getNodeById(comfyPage, nodeId)
+      expect(before).not.toBeNull()
+      expect(before!.ghost).toBe(true)
+
+      await comfyPage.page.keyboard.press('Delete')
+      await comfyPage.nextFrame()
+
+      const after = await getNodeById(comfyPage, nodeId)
+      expect(after).toBeNull()
+    })
+
+    test('Backspace cancels ghost placement', async ({ comfyPage }) => {
+      const { nodeId } = await addGhostAtCenter(comfyPage)
+
+      const before = await getNodeById(comfyPage, nodeId)
+      expect(before).not.toBeNull()
+      expect(before!.ghost).toBe(true)
+
+      await comfyPage.page.keyboard.press('Backspace')
+      await comfyPage.nextFrame()
+
+      const after = await getNodeById(comfyPage, nodeId)
+      expect(after).toBeNull()
+    })
+
     test('right-click cancels ghost placement', async ({ comfyPage }) => {
       const { nodeId, centerX, centerY } = await addGhostAtCenter(comfyPage)
 

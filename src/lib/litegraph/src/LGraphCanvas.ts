@@ -3792,9 +3792,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { graph } = this
     if (!graph) return
 
-    // Ghost Escape: handle for both keydown and keyup (document keyup listener),
-    // regardless of input focus, so ghost can be cancelled even without canvas focus.
-    if (e.key === 'Escape' && this.state.ghostNodeId != null) {
+    // Cancel ghost placement
+    if (
+      (e.key === 'Escape' || e.key === 'Delete' || e.key === 'Backspace') &&
+      this.state.ghostNodeId != null
+    ) {
       this.finalizeGhostPlacement(true)
       e.preventDefault()
       return
