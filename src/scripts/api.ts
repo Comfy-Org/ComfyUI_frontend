@@ -235,6 +235,7 @@ export type GlobalSubgraphData = {
     node_pack: string
     category?: string
     search_aliases?: string[]
+    includeOnDistributions?: ('cloud' | 'localhost' | 'desktop')[]
   }
   data: string | Promise<string>
 }
