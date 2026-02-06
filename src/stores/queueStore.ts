@@ -31,6 +31,13 @@ enum TaskItemDisplayStatus {
   Cancelled = 'Cancelled'
 }
 
+interface ResultItemInit extends ResultItem {
+  nodeId: NodeId
+  mediaType: string
+  format?: string
+  frame_rate?: number
+}
+
 export class ResultItemImpl {
   filename: string
   subfolder: string
@@ -44,16 +51,16 @@ export class ResultItemImpl {
   format?: string
   frame_rate?: number
 
-  constructor(obj: Record<string, unknown>) {
-    this.filename = (obj.filename as string | undefined) ?? ''
-    this.subfolder = (obj.subfolder as string | undefined) ?? ''
-    this.type = (obj.type as string | undefined) ?? ''
+  constructor(obj: ResultItemInit) {
+    this.filename = obj.filename ?? ''
+    this.subfolder = obj.subfolder ?? ''
+    this.type = obj.type ?? ''
 
-    this.nodeId = obj.nodeId as NodeId
-    this.mediaType = obj.mediaType as string
+    this.nodeId = obj.nodeId
+    this.mediaType = obj.mediaType
 
-    this.format = obj.format as string | undefined
-    this.frame_rate = obj.frame_rate as number | undefined
+    this.format = obj.format
+    this.frame_rate = obj.frame_rate
   }
 
   get urlParams(): URLSearchParams {

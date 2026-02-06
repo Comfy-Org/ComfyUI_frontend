@@ -80,7 +80,7 @@ const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
 const isEditing = computed<boolean>(() => props.node.isEditingLabel ?? false)
 const handleEditLabel = inject(InjectKeyHandleEditLabelFunction)
 const handleRename = (newName: string) => {
-  handleEditLabel?.(props.node as unknown as RenderedTreeExplorerNode, newName)
+  handleEditLabel?.(props.node as RenderedTreeExplorerNode, newName)
 }
 
 const container = ref<HTMLElement | null>(null)

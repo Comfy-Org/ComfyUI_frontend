@@ -40,7 +40,7 @@
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
-import { computed, provide, ref } from 'vue'
+import { computed, provide, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
@@ -144,16 +144,16 @@ const onNodeContentClick = async (
   emit('nodeClick', node, e)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
-const menuTargetNode = ref<RenderedTreeExplorerNode<T> | null>(null)
+const menuTargetNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
 const extraMenuItems = computed(() => {
-  const node = menuTargetNode.value as RenderedTreeExplorerNode<T> | null
+  const node = menuTargetNode.value
   return node?.contextMenuItems
     ? typeof node.contextMenuItems === 'function'
       ? node.contextMenuItems(node)
       : node.contextMenuItems
     : []
 })
-const renameEditingNode = ref<RenderedTreeExplorerNode<T> | null>(null)
+const renameEditingNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
 const errorHandling = useErrorHandling()
 const handleNodeLabelEdit = async (
   n: RenderedTreeExplorerNode,
@@ -185,7 +185,7 @@ const deleteCommand = async (node: RenderedTreeExplorerNode<T>) => {
   emit('nodeDelete', node)
 }
 const menuItems = computed<MenuItem[]>(() => {
-  const node = menuTargetNode.value as RenderedTreeExplorerNode<T> | null
+  const node = menuTargetNode.value
   return [
     getAddFolderMenuItem(node),
     {
@@ -235,7 +235,7 @@ const wrapCommandWithErrorHandler = (
   command: (event: MenuItemCommandEvent) => void,
   { isAsync = false }: { isAsync: boolean }
 ) => {
-  const node = menuTargetNode.value as RenderedTreeExplorerNode<T> | null
+  const node = menuTargetNode.value
   return isAsync
     ? errorHandling.wrapWithErrorHandlingAsync(
         command as (event: MenuItemCommandEvent) => Promise<void>,

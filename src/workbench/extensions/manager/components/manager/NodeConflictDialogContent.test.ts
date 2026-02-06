@@ -20,6 +20,10 @@ interface NodeConflictDialogVM {
   importFailedConflicts: string[]
 }
 
+function getVM(wrapper: ReturnType<typeof mount>): NodeConflictDialogVM {
+  return wrapper.vm as Partial<NodeConflictDialogVM> as NodeConflictDialogVM
+}
+
 // Mock getConflictMessage utility
 vi.mock('@/utils/conflictMessageUtil', () => ({
   getConflictMessage: vi.fn((conflict) => {
@@ -300,7 +304,7 @@ describe('NodeConflictDialogContent', () => {
       await importFailedHeader.trigger('click')
 
       // Verify import failed panel is open
-      const vm1 = wrapper.vm as unknown as NodeConflictDialogVM
+      const vm1 = getVM(wrapper)
       expect(vm1.importFailedExpanded).toBe(true)
       expect(vm1.conflictsExpanded).toBe(false)
       expect(vm1.extensionsExpanded).toBe(false)
@@ -309,7 +313,7 @@ describe('NodeConflictDialogContent', () => {
       await conflictsHeader.trigger('click')
 
       // Verify conflicts panel is open and others are closed
-      const vm2 = wrapper.vm as unknown as NodeConflictDialogVM
+      const vm2 = getVM(wrapper)
       expect(vm2.importFailedExpanded).toBe(false)
       expect(vm2.conflictsExpanded).toBe(true)
       expect(vm2.extensionsExpanded).toBe(false)
@@ -318,7 +322,7 @@ describe('NodeConflictDialogContent', () => {
       await extensionsHeader.trigger('click')
 
       // Verify extensions panel is open and others are closed
-      const vm3 = wrapper.vm as unknown as NodeConflictDialogVM
+      const vm3 = getVM(wrapper)
       expect(vm3.importFailedExpanded).toBe(false)
       expect(vm3.conflictsExpanded).toBe(false)
       expect(vm3.extensionsExpanded).toBe(true)
@@ -466,7 +470,7 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       // Verify that import_failed conflicts are filtered out from main conflicts
-      const vm = wrapper.vm as unknown as NodeConflictDialogVM
+      const vm = getVM(wrapper)
       expect(vm.allConflictDetails).toHaveLength(3) // Should not include import_failed
       expect(
         vm.allConflictDetails.every(
@@ -480,7 +484,7 @@ describe('NodeConflictDialogContent', () => {
       const wrapper = createWrapper()
 
       // Verify that only import_failed packages are extracted
-      const vm = wrapper.vm as unknown as NodeConflictDialogVM
+      const vm = getVM(wrapper)
       expect(vm.importFailedConflicts).toHaveLength(1)
       expect(vm.importFailedConflicts[0]).toBe('Test Package 3')
     })

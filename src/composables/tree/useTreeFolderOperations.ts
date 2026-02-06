@@ -1,5 +1,5 @@
 import type { MenuItem } from 'primevue/menuitem'
-import { ref } from 'vue'
+import { shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
@@ -12,8 +12,10 @@ export function useTreeFolderOperations<T>(
   expandNode: (node: RenderedTreeExplorerNode<T>) => void
 ) {
   const { t } = useI18n()
-  const newFolderNode = ref<RenderedTreeExplorerNode<T> | null>(null)
-  const addFolderTargetNode = ref<RenderedTreeExplorerNode<T> | null>(null)
+  const newFolderNode = shallowRef<RenderedTreeExplorerNode<T> | null>(null)
+  const addFolderTargetNode = shallowRef<RenderedTreeExplorerNode<T> | null>(
+    null
+  )
 
   // Generate a unique temporary key for the new folder
   const generateTempKey = (parentKey: string) => {
@@ -26,9 +28,7 @@ export function useTreeFolderOperations<T>(
 
     try {
       // Call the handleAddFolder method with the new folder name
-      await (
-        addFolderTargetNode.value as RenderedTreeExplorerNode<T>
-      )?.handleAddFolder?.(newName)
+      await addFolderTargetNode.value?.handleAddFolder?.(newName)
     } finally {
       newFolderNode.value = null
       addFolderTargetNode.value = null
