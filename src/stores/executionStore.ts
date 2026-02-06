@@ -437,6 +437,13 @@ export const useExecutionStore = defineStore('execution', () => {
     initializingPromptIds.value = next
   }
 
+  function reconcileInitializingPrompts(activeJobIds: Set<string>) {
+    const orphaned = [...initializingPromptIds.value].filter(
+      (id) => !activeJobIds.has(id)
+    )
+    clearInitializationByPromptIds(orphaned)
+  }
+
   function isPromptInitializing(
     promptId: string | number | undefined
   ): boolean {
@@ -664,6 +671,7 @@ export const useExecutionStore = defineStore('execution', () => {
     isPromptInitializing,
     clearInitializationByPromptId,
     clearInitializationByPromptIds,
+    reconcileInitializingPrompts,
     bindExecutionEvents,
     unbindExecutionEvents,
     storePrompt,
