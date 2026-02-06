@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type {
-  Subgraph
-} from '@/lib/litegraph/src/litegraph';
-import {
-  LGraph,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraphData,
   createTestSubgraphNode
