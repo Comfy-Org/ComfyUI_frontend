@@ -43,6 +43,7 @@
     </Transition>
   </div>
   <NodeContextMenu />
+  <SlotContextMenu />
 </template>
 
 <script setup lang="ts">
@@ -70,6 +71,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
 import NodeContextMenu from './NodeContextMenu.vue'
+import SlotContextMenu from '@/renderer/extensions/vueNodes/components/SlotContextMenu.vue'
 import FrameNodes from './selectionToolbox/FrameNodes.vue'
 import NodeOptionsButton from './selectionToolbox/NodeOptionsButton.vue'
 import VerticalDivider from './selectionToolbox/VerticalDivider.vue'

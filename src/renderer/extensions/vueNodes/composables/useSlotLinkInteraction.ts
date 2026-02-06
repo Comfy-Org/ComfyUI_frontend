@@ -29,6 +29,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { useAutoPan } from '@/renderer/extensions/vueNodes/composables/useAutoPan'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
@@ -127,6 +128,21 @@ export function useSlotLinkInteraction({
 
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
+
+  const autoPan = useAutoPan(() => {
+    const data = dragContext.pendingPointerMove
+    const clientX = data?.clientX ?? state.pointer.client.x
+    const clientY = data?.clientY ?? state.pointer.client.y
+    const [canvasX, canvasY] = conversion.clientPosToCanvasPos([
+      clientX,
+      clientY
+    ])
+    updatePointerPosition(clientX, clientY, canvasX, canvasY)
+    if (activeAdapter) {
+      activeAdapter.linkConnector.state.snapLinksPos = [canvasX, canvasY]
+      app.canvas?.setDirty(true, true)
+    }
+  })
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
@@ -286,6 +302,7 @@ export function useSlotLinkInteraction({
     if (state.pointerId != null) {
       clearCanvasPointerHistory(state.pointerId)
     }
+    autoPan.stop()
     activeAdapter?.reset()
     pointerSession.clear()
     endDrag()
@@ -416,6 +433,7 @@ export function useSlotLinkInteraction({
       clientY: event.clientY,
       target: event.target
     }
+    autoPan.updatePointer(event.clientX, event.clientY)
     raf.schedule()
   }
 

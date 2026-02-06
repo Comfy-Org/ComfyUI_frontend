@@ -31,6 +31,7 @@
       @click="onClick"
       @dblclick="onDoubleClick"
       @pointerdown="onPointerDown"
+      @contextmenu.stop.prevent="onSlotContextMenu"
     />
 
     <!-- Slot Name -->
@@ -65,6 +66,7 @@ import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDra
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { showSlotMenu } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useExecutionStore } from '@/stores/executionStore'
 import { cn } from '@/utils/tailwindUtil'
@@ -147,4 +149,13 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
   index: props.index,
   type: 'input'
 })
+
+function onSlotContextMenu(event: MouseEvent) {
+  if (!props.nodeId) return
+  showSlotMenu(event, {
+    nodeId: props.nodeId,
+    slotIndex: props.index,
+    isInput: true
+  })
+}
 </script>
