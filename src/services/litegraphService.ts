@@ -162,7 +162,7 @@ export const useLitegraphService = () => {
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
       if (state === 'running') {
-        return { color: '#0f0' }
+        return { color: '#0f0', lineWidth: 3 }
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
@@ -172,7 +172,7 @@ export const useLitegraphService = () => {
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
       if (app.lastExecutionError?.node_id == this.id) {
-        return { color: '#f0f', lineWidth: 2 }
+        return { color: '#f0f', lineWidth: 3 }
       }
     }
   }
