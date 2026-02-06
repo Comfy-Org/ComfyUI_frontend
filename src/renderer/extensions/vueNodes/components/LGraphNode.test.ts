@@ -184,7 +184,7 @@ describe('LGraphNode', () => {
 
     const wrapper = mountLGraphNode({ nodeData: mockNodeData })
 
-    expect(wrapper.classes()).toContain('outline-2')
+    expect(wrapper.classes()).toContain('outline-3')
     expect(wrapper.classes()).toContain('outline-node-component-outline')
   })
 
