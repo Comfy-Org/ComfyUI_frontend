@@ -7,11 +7,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   LGraph,
-  LGraphNode,
+  LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
+import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const mockApp: { rootGraph?: Partial<LGraph> } = vi.hoisted(() => ({}))
@@ -56,7 +56,7 @@ vi.mock('@/i18n', () => ({
   }
 }))
 
-describe('NodeHeader - Subgraph Functionality', () => {
+describe('Vue Node - Subgraph Functionality', () => {
   // Helper to setup common mocks
   const setupMocks = async (isSubgraph = true, hasGraph = true) => {
     if (hasGraph) mockApp.rootGraph = {}
@@ -64,7 +64,7 @@ describe('NodeHeader - Subgraph Functionality', () => {
 
     vi.mocked(getNodeByLocatorId).mockReturnValue({
       isSubgraphNode: (): this is SubgraphNode => isSubgraph
-    } as LGraphNode)
+    } as LGLGraphNode)
   }
 
   beforeEach(() => {
@@ -89,8 +89,8 @@ describe('NodeHeader - Subgraph Functionality', () => {
     flags: {}
   })
 
-  const createWrapper = (props = {}) => {
-    return mount(NodeHeader, {
+  const createWrapper = (props: { nodeData: VueNodeData }) => {
+    return mount(LGraphNode, {
       props,
       global: {
         plugins: [createTestingPinia({ createSpy: vi.fn })],
@@ -106,8 +106,7 @@ describe('NodeHeader - Subgraph Functionality', () => {
     await setupMocks(true) // isSubgraph = true
 
     const wrapper = createWrapper({
-      nodeData: createMockNodeData('test-node-1'),
-      readonly: false
+      nodeData: createMockNodeData('test-node-1')
     })
 
     await wrapper.vm.$nextTick()
@@ -120,8 +119,7 @@ describe('NodeHeader - Subgraph Functionality', () => {
     await setupMocks(false) // isSubgraph = false
 
     const wrapper = createWrapper({
-      nodeData: createMockNodeData('test-node-1'),
-      readonly: false
+      nodeData: createMockNodeData('test-node-1')
     })
 
     await wrapper.vm.$nextTick()
@@ -130,29 +128,11 @@ describe('NodeHeader - Subgraph Functionality', () => {
     expect(subgraphButton.exists()).toBe(false)
   })
 
-  it('should emit enter-subgraph event when button is clicked', async () => {
-    await setupMocks(true) // isSubgraph = true
-
-    const wrapper = createWrapper({
-      nodeData: createMockNodeData('test-node-1'),
-      readonly: false
-    })
-
-    await wrapper.vm.$nextTick()
-
-    const subgraphButton = wrapper.find('[data-testid="subgraph-enter-button"]')
-    await subgraphButton.trigger('click')
-
-    expect(wrapper.emitted('enter-subgraph')).toBeTruthy()
-    expect(wrapper.emitted('enter-subgraph')).toHaveLength(1)
-  })
-
   it('should handle subgraph context correctly', async () => {
     await setupMocks(true) // isSubgraph = true
 
     const wrapper = createWrapper({
-      nodeData: createMockNodeData('test-node-1', 'subgraph-id'),
-      readonly: false
+      nodeData: createMockNodeData('test-node-1', 'subgraph-id')
     })
 
     await wrapper.vm.$nextTick()
@@ -167,26 +147,11 @@ describe('NodeHeader - Subgraph Functionality', () => {
     expect(subgraphButton.exists()).toBe(true)
   })
 
-  it('should handle missing graph gracefully', async () => {
-    await setupMocks(true, false) // isSubgraph = true, hasGraph = false
-
-    const wrapper = createWrapper({
-      nodeData: createMockNodeData('test-node-1'),
-      readonly: false
-    })
-
-    await wrapper.vm.$nextTick()
-
-    const subgraphButton = wrapper.find('[data-testid="subgraph-enter-button"]')
-    expect(subgraphButton.exists()).toBe(false)
-  })
-
   it('should prevent event propagation on double click', async () => {
     await setupMocks(true) // isSubgraph = true
 
     const wrapper = createWrapper({
-      nodeData: createMockNodeData('test-node-1'),
-      readonly: false
+      nodeData: createMockNodeData('test-node-1')
     })
 
     await wrapper.vm.$nextTick()

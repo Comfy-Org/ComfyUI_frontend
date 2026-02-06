@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 export type RightSidePanelTab =
+  | 'error'
   | 'parameters'
   | 'nodes'
   | 'settings'
