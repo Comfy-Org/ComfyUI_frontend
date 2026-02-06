@@ -33,6 +33,18 @@ vi.mock('@/i18n', () => ({
   t: (key: string) => key
 }))
 
+vi.mock('@/services/dialogService', () => ({
+  useDialogService: () => ({
+    showSettingsDialog: vi.fn()
+  })
+}))
+
+vi.mock('@/stores/dialogStore', () => ({
+  useDialogStore: () => ({
+    closeDialog: vi.fn()
+  })
+}))
+
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingOperationStore } from './billingOperationStore'
