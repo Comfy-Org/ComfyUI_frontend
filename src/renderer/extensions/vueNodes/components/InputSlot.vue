@@ -44,6 +44,7 @@
             hasError && 'font-medium text-error'
           )
         "
+        @contextmenu.stop.prevent="onLabelContextMenu"
       >
         {{
           slotData.label ||
@@ -65,7 +66,10 @@ import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDra
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
-import { showSlotMenu } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
+import {
+  showSlotMenu,
+  showSlotLabelMenu
+} from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
@@ -135,6 +139,15 @@ const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
 function onSlotContextMenu(event: MouseEvent) {
   if (!props.nodeId) return
   showSlotMenu(event, {
+    nodeId: props.nodeId,
+    slotIndex: props.index,
+    isInput: true
+  })
+}
+
+function onLabelContextMenu(event: MouseEvent) {
+  if (!props.nodeId) return
+  showSlotLabelMenu(event, {
     nodeId: props.nodeId,
     slotIndex: props.index,
     isInput: true

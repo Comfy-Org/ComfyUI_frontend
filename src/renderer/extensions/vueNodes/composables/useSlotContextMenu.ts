@@ -3,7 +3,8 @@ import type { Ref } from 'vue'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  IWidgetInputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -115,6 +116,91 @@ export function connectSlots(
 
   graph.afterChange()
   app.canvas?.setDirty(true, true)
+}
+
+export function renameSlot(
+  context: SlotMenuContext,
+  newLabel: string
+): void {
+  const graph = app.canvas?.graph
+  if (!graph) return
+
+  const node = graph.getNodeById(context.nodeId)
+  if (!node) return
+
+  const slotInfo = context.isInput
+    ? node.getInputInfo(context.slotIndex)
+    : node.getOutputInfo(context.slotIndex)
+  if (!slotInfo) return
+
+  graph.beforeChange()
+  slotInfo.label = newLabel
+  app.canvas?.setDirty(true, true)
+  graph.afterChange()
+}
+
+export function disconnectSlotLinks(context: SlotMenuContext): void {
+  const graph = app.canvas?.graph
+  if (!graph) return
+
+  const node = graph.getNodeById(context.nodeId)
+  if (!node) return
+
+  graph.beforeChange()
+  if (context.isInput) {
+    node.disconnectInput(context.slotIndex, true)
+  } else {
+    node.disconnectOutput(context.slotIndex)
+  }
+  graph.afterChange()
+  app.canvas?.setDirty(true, true)
+}
+
+export function canRenameSlot(context: SlotMenuContext): boolean {
+  const graph = app.canvas?.graph
+  if (!graph) return false
+  const node = graph.getNodeById(context.nodeId)
+  if (!node) return false
+  const slotInfo = context.isInput
+    ? node.inputs?.[context.slotIndex]
+    : node.outputs?.[context.slotIndex]
+  if (!slotInfo) return false
+  if (slotInfo.nameLocked) return false
+  if (
+    context.isInput &&
+    'link' in slotInfo &&
+    (slotInfo as IWidgetInputSlot).widget
+  )
+    return false
+  return true
+}
+
+export function hasConnectedLinks(context: SlotMenuContext): boolean {
+  const graph = app.canvas?.graph
+  if (!graph) return false
+  const node = graph.getNodeById(context.nodeId)
+  if (!node) return false
+  if (context.isInput) {
+    const input = node.inputs?.[context.slotIndex]
+    return input?.link != null
+  }
+  const output = node.outputs?.[context.slotIndex]
+  return (output?.links?.length ?? 0) > 0
+}
+
+let slotLabelMenuInstance: SlotMenuInstance | null = null
+
+export function registerSlotLabelMenuInstance(
+  instance: SlotMenuInstance | null
+): void {
+  slotLabelMenuInstance = instance
+}
+
+export function showSlotLabelMenu(
+  event: MouseEvent,
+  context: SlotMenuContext
+): void {
+  slotLabelMenuInstance?.show(event, context)
 }
 
 export type { SlotMenuContext }
