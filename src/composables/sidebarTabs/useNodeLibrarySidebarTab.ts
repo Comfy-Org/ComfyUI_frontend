@@ -4,11 +4,14 @@ import NodeLibrarySidebarTab from '@/components/sidebar/tabs/NodeLibrarySidebarT
 import NodeLibrarySidebarTabV2 from '@/components/sidebar/tabs/NodeLibrarySidebarTabV2.vue'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
-export const useNodeLibrarySidebarTab = (): SidebarTabExtension => {
-  const urlParams = new URLSearchParams(window.location.search)
-  const component = urlParams.get('nodeRedesign') === 'true'
-    ? NodeLibrarySidebarTabV2
-    : NodeLibrarySidebarTab
+export function useNodeLibrarySidebarTab(): SidebarTabExtension {
+  const urlParams = new URLSearchParams(
+    typeof globalThis === 'undefined' ? '' : globalThis.location.search
+  )
+  const component =
+    urlParams.get('nodeRedesign') === 'true'
+      ? NodeLibrarySidebarTabV2
+      : NodeLibrarySidebarTab
 
   return {
     id: 'node-library',

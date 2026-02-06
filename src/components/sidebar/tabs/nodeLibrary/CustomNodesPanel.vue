@@ -1,8 +1,5 @@
 <template>
-  <TabsContent
-    value="custom"
-    class="min-h-0 flex-1 overflow-y-auto"
-  >
+  <TabsContent value="custom" class="min-h-0 flex-1 overflow-y-auto">
     <div v-for="(section, index) in sections" :key="section.title ?? index">
       <!-- Section header -->
       <h3
@@ -36,16 +33,14 @@ import { TabsContent } from 'reka-ui'
 import TreeExplorerV2 from '@/components/common/TreeExplorerV2.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import type {
+  NodeLibrarySection,
+  RenderedTreeExplorerNode
+} from '@/types/treeExplorerTypes'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 
-interface Section {
-  title?: string
-  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
-}
-
 defineProps<{
-  sections: Section[]
+  sections: NodeLibrarySection[]
 }>()
 
 const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })

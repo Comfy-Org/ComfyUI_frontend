@@ -96,9 +96,20 @@ const { t } = useI18n()
 
 const searchBoxRef = ref()
 const searchQuery = ref('')
-const expandedKeys = ref<string[]>([])
+const expandedKeysByTab = ref<Record<TabId, string[]>>({
+  essential: [],
+  all: [],
+  custom: []
+})
+const expandedKeys = computed({
+  get: () => expandedKeysByTab.value[selectedTab.value],
+  set: (value) => {
+    expandedKeysByTab.value[selectedTab.value] = value
+  }
+})
 
 const nodeDefStore = useNodeDefStore()
+const litegraphService = useLitegraphService()
 
 const filteredNodeDefs = computed(() => {
   if (searchQuery.value.length === 0) {
@@ -121,6 +132,27 @@ const sections = computed(() => {
   return nodeOrganizationService.organizeNodesByTab(nodes, 'all')
 })
 
+function getFolderIcon(node: TreeNode): string {
+  const firstLeaf = findFirstLeaf(node)
+  if (
+    firstLeaf?.key?.startsWith('root/api node') &&
+    firstLeaf.key.replace(`${node.key}/`, '') === firstLeaf.label
+  ) {
+    const iconKey = node.label?.toLowerCase().replaceAll(/\s+/g, '-') ?? ''
+    return `icon-[comfy--${iconKey}]`
+  }
+  return 'icon-[ph--folder-fill]'
+}
+
+function findFirstLeaf(node: TreeNode): TreeNode | undefined {
+  if (node.leaf) return node
+  for (const child of node.children ?? []) {
+    const leaf = findFirstLeaf(child)
+    if (leaf) return leaf
+  }
+  return undefined
+}
+
 function fillNodeInfo(
   node: TreeNode
 ): RenderedTreeExplorerNode<ComfyNodeDefImpl> {
@@ -134,7 +166,7 @@ function fillNodeInfo(
     label: node.leaf ? node.data?.display_name : node.label,
     leaf: node.leaf,
     data: node.data,
-    icon: node.leaf ? 'pi pi-circle-fill' : 'pi pi-folder',
+    icon: node.leaf ? 'icon-[comfy--node]' : getFolderIcon(node),
     type: node.leaf ? 'node' : 'folder',
     totalLeaves,
     children
@@ -188,33 +220,9 @@ function collectFolderKeys(node: TreeNode): string[] {
   return keys
 }
 
-function expandAllResults() {
-  if (filteredNodeDefs.value.length > 0) {
-    const allKeys: string[] = []
-
-    if (selectedTab.value === 'essential') {
-      for (const section of essentialSections.value) {
-        allKeys.push(...collectFolderKeys(section.tree))
-      }
-    } else if (selectedTab.value === 'custom') {
-      for (const section of customSections.value) {
-        allKeys.push(...collectFolderKeys(section.tree))
-      }
-    } else {
-      for (const section of sections.value) {
-        allKeys.push(...collectFolderKeys(section.tree))
-      }
-    }
-
-    expandedKeys.value = allKeys
-  } else {
-    expandedKeys.value = []
-  }
-}
-
 function handleNodeClick(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
   if (node.type === 'node' && node.data) {
-    useLitegraphService().addNodeOnGraph(node.data)
+    litegraphService.addNodeOnGraph(node.data)
   }
   if (node.type === 'folder') {
     const index = expandedKeys.value.indexOf(node.key)
@@ -226,16 +234,36 @@ function handleNodeClick(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
   }
 }
 
-const handleSearch = async (_query: string) => {
+async function handleSearch() {
   await nextTick()
-  expandAllResults()
+
+  if (filteredNodeDefs.value.length === 0) {
+    expandedKeys.value = []
+    return
+  }
+
+  const allKeys: string[] = []
+  if (selectedTab.value === 'essential') {
+    for (const section of essentialSections.value) {
+      allKeys.push(...collectFolderKeys(section.tree))
+    }
+  } else if (selectedTab.value === 'custom') {
+    for (const section of customSections.value) {
+      allKeys.push(...collectFolderKeys(section.tree))
+    }
+  } else {
+    for (const section of sections.value) {
+      allKeys.push(...collectFolderKeys(section.tree))
+    }
+  }
+  expandedKeys.value = allKeys
 }
 
-const tabs = [
+const tabs = computed(() => [
   { value: 'essential', label: t('sideToolbar.nodeLibraryTab.essential') },
   { value: 'all', label: t('sideToolbar.nodeLibraryTab.allNodes') },
   { value: 'custom', label: t('sideToolbar.nodeLibraryTab.custom') }
-]
+])
 
 onMounted(() => {
   searchBoxRef.value?.focus()
