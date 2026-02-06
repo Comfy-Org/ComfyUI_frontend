@@ -4,7 +4,8 @@
     :unstyled="hideLayoutField"
     :pt="{
       root: {
-        class: '[&_label]:!bg-transparent [&_label]:!text-muted-foreground'
+        class:
+          '[&_label]:!bg-component-node-widget-background [&_label]:!text-muted-foreground [&_label]:px-1'
       }
     }"
     :class="
