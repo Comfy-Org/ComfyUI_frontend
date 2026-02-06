@@ -3799,6 +3799,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.state.ghostNodeId != null
     ) {
       this.finalizeGhostPlacement(true)
+      e.stopPropagation()
       e.preventDefault()
       return
     }
