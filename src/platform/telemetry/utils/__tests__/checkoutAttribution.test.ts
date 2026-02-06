@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getCheckoutAttribution } from '../checkoutAttribution'
+import {
+  captureCheckoutAttributionFromSearch,
+  getCheckoutAttribution
+} from '../checkoutAttribution'
 
 const storage = new Map<string, string>()
 
@@ -30,13 +33,17 @@ describe('getCheckoutAttribution', () => {
     window.history.pushState({}, '', '/')
   })
 
-  it('reads GA identity and persists click ids from URL', () => {
+  it('reads GA identity and persists attribution from URL', () => {
     window.__ga_identity__ = {
       client_id: '123.456',
       session_id: '1700000000',
       session_number: '2'
     }
-    window.history.pushState({}, '', '/?gclid=gclid-123')
+    window.history.pushState(
+      {},
+      '',
+      '/?gclid=gclid-123&utm_source=impact&im_ref=impact-123'
+    )
 
     const attribution = getCheckoutAttribution()
 
@@ -44,22 +51,57 @@ describe('getCheckoutAttribution', () => {
       ga_client_id: '123.456',
       ga_session_id: '1700000000',
       ga_session_number: '2',
-      gclid: 'gclid-123'
+      gclid: 'gclid-123',
+      utm_source: 'impact',
+      im_ref: 'impact-123',
+      impact_click_id: 'impact-123'
     })
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
-      'comfy_checkout_attribution',
-      JSON.stringify({ gclid: 'gclid-123' })
-    )
+    expect(mockLocalStorage.setItem).toHaveBeenCalledTimes(1)
+    const firstPersistedPayload = mockLocalStorage.setItem.mock.calls[0]?.[1]
+    expect(JSON.parse(firstPersistedPayload)).toEqual({
+      gclid: 'gclid-123',
+      utm_source: 'impact',
+      im_ref: 'impact-123'
+    })
   })
 
-  it('uses stored click ids when URL is empty', () => {
+  it('uses stored attribution when URL is empty', () => {
     storage.set(
       'comfy_checkout_attribution',
-      JSON.stringify({ gbraid: 'gbraid-1' })
+      JSON.stringify({ gbraid: 'gbraid-1', im_ref: 'impact-abc' })
     )
 
     const attribution = getCheckoutAttribution()
 
     expect(attribution.gbraid).toBe('gbraid-1')
+    expect(attribution.im_ref).toBe('impact-abc')
+    expect(attribution.impact_click_id).toBe('impact-abc')
+  })
+
+  it('captures attribution from current URL search string', () => {
+    window.history.pushState({}, '', '/?utm_campaign=launch&im_ref=impact-456')
+
+    captureCheckoutAttributionFromSearch(window.location.search)
+
+    expect(mockLocalStorage.setItem).toHaveBeenCalledTimes(1)
+    const capturedPayload = mockLocalStorage.setItem.mock.calls[0]?.[1]
+    expect(JSON.parse(capturedPayload)).toEqual({
+      utm_campaign: 'launch',
+      im_ref: 'impact-456'
+    })
+  })
+
+  it('captures attribution from an explicit search string', () => {
+    captureCheckoutAttributionFromSearch(
+      '?utm_source=impact&utm_medium=affiliate&im_ref=impact-789'
+    )
+
+    expect(mockLocalStorage.setItem).toHaveBeenCalledTimes(1)
+    const capturedPayload = mockLocalStorage.setItem.mock.calls[0]?.[1]
+    expect(JSON.parse(capturedPayload)).toEqual({
+      utm_source: 'impact',
+      utm_medium: 'affiliate',
+      im_ref: 'impact-789'
+    })
   })
 })

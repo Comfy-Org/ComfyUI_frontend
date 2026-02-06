@@ -290,6 +290,13 @@ export interface BeginCheckoutMetadata extends Record<string, unknown> {
   ga_client_id?: string
   ga_session_id?: string
   ga_session_number?: string
+  im_ref?: string
+  impact_click_id?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_term?: string
+  utm_content?: string
   gclid?: string
   gbraid?: string
   wbraid?: string
