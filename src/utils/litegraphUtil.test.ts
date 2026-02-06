@@ -89,6 +89,30 @@ describe('migrateWidgetsValues', () => {
     const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
     expect(result).toEqual(['first value', 'last value'])
   })
+  it('should correctly handle seed with unexpected value', () => {
+    const inputDefs: Record<string, InputSpec> = {
+      normalInput: {
+        type: 'INT',
+        name: 'normalInput',
+        control_after_generate: true
+      },
+      forceInputField: {
+        type: 'STRING',
+        name: 'forceInputField',
+        forceInput: true
+      }
+    }
+
+    const widgets = [
+      { name: 'normalInput', type: 'number' },
+      { name: 'control_after_generate', type: 'string' }
+    ] as Partial<IWidget>[] as IWidget[]
+
+    const widgetValues = [42, 'fixed', 'unexpected widget value']
+
+    const result = migrateWidgetsValues(inputDefs, widgets, widgetValues)
+    expect(result).toEqual([42, 'fixed'])
+  })
 })
 
 describe('compressWidgetInputSlots', () => {
