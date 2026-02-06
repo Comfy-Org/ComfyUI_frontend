@@ -153,11 +153,19 @@ export const useExecutionStore = defineStore('execution', () => {
   ) {
     const wid = promptIdToWorkflowId.value.get(promptId)
     if (!wid) return
+    setWorkflowExecutionResultByWorkflowId(wid, state, promptId)
+  }
+
+  function setWorkflowExecutionResultByWorkflowId(
+    workflowId: string,
+    state: 'completed' | 'error',
+    promptId?: string
+  ) {
     const next = new Map(lastExecutionResultByWorkflowId.value)
-    next.set(wid, {
+    next.set(workflowId, {
       state,
       timestamp: Date.now(),
-      promptId
+      promptId: promptId ?? ''
     })
     lastExecutionResultByWorkflowId.value = next
   }
@@ -461,18 +469,20 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    const pid = e.detail.prompt_id
-    setWorkflowExecutionResult(pid, 'error')
+    const pid = e.detail.prompt_id ?? activePromptId.value
+    if (pid) {
+      setWorkflowExecutionResult(pid, 'error')
+    }
     lastExecutionError.value = e.detail
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
-        jobId: pid,
+        jobId: pid ?? '',
         nodeId: String(e.detail.node_id),
         nodeType: e.detail.node_type,
         error: e.detail.exception_message
       })
     }
-    clearInitializationByPromptId(pid)
+    if (pid) clearInitializationByPromptId(pid)
     resetExecutionState(pid)
   }
 
@@ -757,6 +767,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // Workflow execution result tracking
     lastExecutionResultByWorkflowId,
     clearWorkflowExecutionResult,
+    setWorkflowExecutionResultByWorkflowId,
     workflowExecutionStates,
     getWorkflowExecutionState
   }

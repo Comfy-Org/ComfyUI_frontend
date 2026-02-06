@@ -1415,6 +1415,17 @@ export class ComfyApp {
 
             if (error instanceof PromptExecutionError) {
               executionStore.lastNodeErrors = error.response.node_errors ?? null
+              const activeWorkflow = useWorkspaceStore().workflow
+                .activeWorkflow as ComfyWorkflow | undefined
+              const wid =
+                activeWorkflow?.activeState?.id ??
+                activeWorkflow?.initialState?.id
+              if (wid) {
+                executionStore.setWorkflowExecutionResultByWorkflowId(
+                  String(wid),
+                  'error'
+                )
+              }
               this.canvas.draw(true, true)
             }
             break
