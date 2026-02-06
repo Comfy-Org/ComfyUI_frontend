@@ -2018,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Liste Oluştur",
+    "inputs": {
+      "inputs": {
+        "name": "girdiler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "liste",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "Görüntülerden bir video oluşturun.",
     "display_name": "Video Oluştur",
@@ -13946,6 +13960,9 @@
       "bpm": {
         "name": "bpm"
       },
+      "cfg_scale": {
+        "name": "cfg ölçeği"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13954,6 +13971,10 @@
       },
       "duration": {
         "name": "süre"
+      },
+      "generate_audio_codes": {
+        "name": "ses kodlarını üret",
+        "tooltip": "Ses kodlarını üreten LLM'i etkinleştir. Bu işlem yavaş olabilir ancak üretilen sesin kalitesini artırır. Eğer modele bir ses referansı veriyorsanız bunu kapatın."
       },
       "keyscale": {
         "name": "ton anahtarı"
@@ -13970,8 +13991,17 @@
       "tags": {
         "name": "etiketler"
       },
+      "temperature": {
+        "name": "sıcaklık"
+      },
       "timesignature": {
         "name": "zaman imzası"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14895,6 +14925,28 @@
     "inputs": {
       "samples": {
         "name": "örnekler"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE Sesini Çöz (Döşemeli)",
+    "inputs": {
+      "overlap": {
+        "name": "örtüşme"
+      },
+      "samples": {
+        "name": "örnekler"
+      },
+      "tile_size": {
+        "name": "döşeme boyutu"
       },
       "vae": {
         "name": "vae"

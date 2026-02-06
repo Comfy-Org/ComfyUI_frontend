@@ -2020,6 +2020,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "Create List",
+    "inputs": {
+      "inputs": {
+        "name": "inputs"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "list",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "display_name": "Create Video",
     "description": "Create a video from images.",
@@ -11492,8 +11506,8 @@
     }
   },
   "ReferenceTimbreAudio": {
-    "display_name": "ReferenceTimbreAudio",
-    "description": "This node sets the reference audio for timbre (for ace step 1.5)",
+    "display_name": "Reference Audio",
+    "description": "This node sets the reference audio for ace step 1.5",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -14057,6 +14071,22 @@
       "keyscale": {
         "name": "keyscale"
       },
+      "generate_audio_codes": {
+        "name": "generate_audio_codes",
+        "tooltip": "Enable the LLM that generates audio codes. This can be slow but will increase the quality of the generated audio. Turn this off if you are giving the model an audio reference."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_p": {
+        "name": "top_p"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
       "control_after_generate": {
         "name": "control after generate"
       }
@@ -15052,6 +15082,28 @@
       },
       "vae": {
         "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE Decode Audio (Tiled)",
+    "inputs": {
+      "samples": {
+        "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "tile_size": {
+        "name": "tile_size"
+      },
+      "overlap": {
+        "name": "overlap"
       }
     },
     "outputs": {

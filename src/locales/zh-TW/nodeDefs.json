@@ -2018,6 +2018,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "建立清單",
+    "inputs": {
+      "inputs": {
+        "name": "輸入"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "清單",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "從圖片建立影片。",
     "display_name": "建立影片",
@@ -13944,6 +13958,9 @@
       "bpm": {
         "name": "每分鐘節拍數"
       },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13952,6 +13969,10 @@
       },
       "duration": {
         "name": "時長"
+      },
+      "generate_audio_codes": {
+        "name": "產生音訊編碼",
+        "tooltip": "啟用產生音訊編碼的 LLM。這可能會較慢，但能提升產生音訊的品質。如果你已提供模型音訊參考，請關閉此選項。"
       },
       "keyscale": {
         "name": "調性"
@@ -13968,8 +13989,17 @@
       "tags": {
         "name": "標籤"
       },
+      "temperature": {
+        "name": "temperature"
+      },
       "timesignature": {
         "name": "拍號"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14893,6 +14923,28 @@
     "inputs": {
       "samples": {
         "name": "samples"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE 解碼音訊（分塊）",
+    "inputs": {
+      "overlap": {
+        "name": "重疊"
+      },
+      "samples": {
+        "name": "樣本"
+      },
+      "tile_size": {
+        "name": "分塊大小"
       },
       "vae": {
         "name": "vae"
