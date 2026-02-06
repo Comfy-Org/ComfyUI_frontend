@@ -3604,6 +3604,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!node) return
 
     if (cancelled) {
+      this.deselect(node)
       this.graph?.remove(node)
     } else {
       delete node.flags.ghost
