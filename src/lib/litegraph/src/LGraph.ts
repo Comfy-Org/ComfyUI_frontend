@@ -199,11 +199,19 @@ export class LGraph
   list_of_graphcanvas: LGraphCanvas[] | null
   status: number = LGraph.STATUS_STOPPED
 
-  state: LGraphState = {
+  private _state: LGraphState = {
     lastGroupId: 0,
     lastNodeId: 0,
     lastLinkId: 0,
     lastRerouteId: 0
+  }
+
+  get state(): LGraphState {
+    return this._state
+  }
+
+  set state(value: LGraphState) {
+    this._state = value
   }
 
   readonly events = new CustomEventTarget<LGraphEventMap>()
@@ -2377,15 +2385,19 @@ export class LGraph
       } else {
         // New schema - one version so far, no check required.
 
-        // State
+        // State - use max to prevent ID collisions across root and subgraphs
         if (data.state) {
           const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
             data.state
           const { state } = this
-          if (lastGroupId != null) state.lastGroupId = lastGroupId
-          if (lastLinkId != null) state.lastLinkId = lastLinkId
-          if (lastNodeId != null) state.lastNodeId = lastNodeId
-          if (lastRerouteId != null) state.lastRerouteId = lastRerouteId
+          if (lastGroupId != null)
+            state.lastGroupId = Math.max(state.lastGroupId, lastGroupId)
+          if (lastLinkId != null)
+            state.lastLinkId = Math.max(state.lastLinkId, lastLinkId)
+          if (lastNodeId != null)
+            state.lastNodeId = Math.max(state.lastNodeId, lastNodeId)
+          if (lastRerouteId != null)
+            state.lastRerouteId = Math.max(state.lastRerouteId, lastRerouteId)
         }
 
         // Links
@@ -2594,6 +2606,14 @@ export class Subgraph
   private _rootGraph: LGraph
   override get rootGraph(): LGraph {
     return this._rootGraph
+  }
+
+  override get state(): LGraphState {
+    return this._rootGraph.state
+  }
+
+  override set state(_value: LGraphState) {
+    // No-op: subgraphs share the root graph's state.
   }
 
   constructor(rootGraph: LGraph, data: ExportedSubgraph) {
