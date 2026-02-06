@@ -469,20 +469,18 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    const pid = e.detail.prompt_id ?? activePromptId.value
-    if (pid) {
-      setWorkflowExecutionResult(pid, 'error')
-    }
+    const pid = e.detail.prompt_id
+    setWorkflowExecutionResult(pid, 'error')
     lastExecutionError.value = e.detail
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
-        jobId: pid ?? '',
+        jobId: pid,
         nodeId: String(e.detail.node_id),
         nodeType: e.detail.node_type,
         error: e.detail.exception_message
       })
     }
-    if (pid) clearInitializationByPromptId(pid)
+    clearInitializationByPromptId(pid)
     resetExecutionState(pid)
   }
 

@@ -535,6 +535,26 @@ export const useQueueStore = defineStore('queue', () => {
         .sort((a, b) => b.create_time - a.create_time)
         .slice(0, toValue(maxHistoryItems))
 
+      const seenWorkflows = new Set<string>()
+      for (const job of sortedHistory) {
+        const workflowId = job.workflow_id
+        if (!workflowId || seenWorkflows.has(workflowId)) continue
+        seenWorkflows.add(workflowId)
+        if (job.status === 'failed') {
+          executionStore.setWorkflowExecutionResultByWorkflowId(
+            workflowId,
+            'error',
+            job.id
+          )
+        } else if (job.status === 'completed') {
+          executionStore.setWorkflowExecutionResultByWorkflowId(
+            workflowId,
+            'completed',
+            job.id
+          )
+        }
+      }
+
       // Reuse existing TaskItemImpl instances or create new
       // Must recreate if outputs_count changed (e.g., API started returning it)
       const existingByPromptId = new Map(
