@@ -3,7 +3,8 @@ import type { Ref } from 'vue'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  IWidgetInputSlot
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -93,6 +94,47 @@ export function findCompatibleTargets(
 
   results.sort((a, b) => a.node.pos[1] - b.node.pos[1])
   return results.slice(0, maxResults)
+}
+
+export function renameSlot(context: SlotMenuContext, newLabel: string): void {
+  const graph = app.canvas?.graph
+  if (!graph) return
+
+  const node = graph.getNodeById(context.nodeId)
+  if (!node) return
+
+  const slotInfo = context.isInput
+    ? node.getInputInfo(context.slotIndex)
+    : node.getOutputInfo(context.slotIndex)
+  if (!slotInfo) return
+
+  graph.beforeChange()
+  slotInfo.label = newLabel
+  app.canvas?.setDirty(true, true)
+  graph.afterChange()
+}
+
+export function canRenameSlot(context: SlotMenuContext): boolean {
+  const graph = app.canvas?.graph
+  if (!graph) return false
+
+  const node = graph.getNodeById(context.nodeId)
+  if (!node) return false
+
+  const slotInfo = context.isInput
+    ? node.inputs?.[context.slotIndex]
+    : node.outputs?.[context.slotIndex]
+  if (!slotInfo) return false
+
+  if (slotInfo.nameLocked) return false
+  if (
+    context.isInput &&
+    'link' in slotInfo &&
+    (slotInfo as IWidgetInputSlot).widget
+  )
+    return false
+
+  return true
 }
 
 export function connectSlots(
