@@ -3,7 +3,11 @@
   <div v-else v-tooltip.right="tooltipConfig" :class="slotWrapperClass">
     <div class="relative h-full flex items-center min-w-0">
       <!-- Slot Name -->
-      <span v-if="!dotOnly" class="truncate text-node-component-slot-text">
+      <span
+        v-if="!dotOnly"
+        class="truncate text-node-component-slot-text"
+        @contextmenu.stop.prevent="onLabelContextMenu"
+      >
         {{ slotData.localized_name || slotData.name || `Output ${index}` }}
       </span>
     </div>
@@ -27,7 +31,10 @@ import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
-import { showSlotMenu } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
+import {
+  showSlotMenu,
+  showSlotLabelMenu
+} from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { cn } from '@/utils/tailwindUtil'
@@ -118,6 +125,15 @@ const { onPointerDown } = useSlotLinkInteraction({
 function onSlotContextMenu(event: MouseEvent) {
   if (!props.nodeId) return
   showSlotMenu(event, {
+    nodeId: props.nodeId,
+    slotIndex: props.index,
+    isInput: false
+  })
+}
+
+function onLabelContextMenu(event: MouseEvent) {
+  if (!props.nodeId) return
+  showSlotLabelMenu(event, {
     nodeId: props.nodeId,
     slotIndex: props.index,
     isInput: false
