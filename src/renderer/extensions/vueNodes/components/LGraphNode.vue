@@ -17,7 +17,7 @@
         // hover (only when node should handle events)
         shouldHandleNodePointerEvents &&
           'hover:ring-7 ring-node-component-ring',
-        'outline-transparent outline-2 focus-visible:outline-node-component-outline',
+        'outline-transparent outline-3 focus-visible:outline-node-component-outline',
         borderClass,
         outlineClass,
         cursorClass,

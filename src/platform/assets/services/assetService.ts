@@ -487,7 +487,7 @@ function createAssetService() {
     url: string
     name: string
     tags?: string[]
-    user_metadata?: Record<string, any>
+    user_metadata?: Record<string, unknown>
     preview_id?: string
   }): Promise<AssetItem & { created_new: boolean }> {
     const res = await api.fetchApi(ASSETS_ENDPOINT, {
@@ -525,7 +525,7 @@ function createAssetService() {
     data: string
     name: string
     tags?: string[]
-    user_metadata?: Record<string, any>
+    user_metadata?: Record<string, unknown>
   }): Promise<AssetItem & { created_new: boolean }> {
     // Validate that data is a data URL
     if (!params.data || !params.data.startsWith('data:')) {

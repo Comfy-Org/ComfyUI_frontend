@@ -24,7 +24,7 @@ const MANAGER_WS_TASK_STARTED_NAME = 'cm-task-started'
 export const useManagerQueue = (
   taskHistory: Ref<ManagerTaskHistory>,
   taskQueue: Ref<ManagerTaskQueue>,
-  installedPacks: Ref<Record<string, any>>
+  installedPacks: Ref<Record<string, unknown>>
 ) => {
   // Task queue state (read-only from server)
   const maxHistoryItems = ref(64)
