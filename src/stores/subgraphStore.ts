@@ -224,7 +224,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         )
       }
       const subgraphs = await api.getGlobalSubgraphs()
-      const distribution = isCloud ? 'cloud' : isDesktop ? 'desktop' : 'localhost'
+      const distribution = isCloud
+        ? 'cloud'
+        : isDesktop
+          ? 'desktop'
+          : 'localhost'
       const filtered = Object.entries(subgraphs).filter(([, v]) => {
         const includedOn = v.info.includeOnDistributions
         if (!includedOn || includedOn.length === 0) return true
