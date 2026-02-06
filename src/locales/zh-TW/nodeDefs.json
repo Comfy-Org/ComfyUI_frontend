@@ -2205,6 +2205,23 @@
       }
     }
   },
+  "EmptyAceStep1_5LatentAudio": {
+    "display_name": "Empty Ace Step 1.5 Latent Audio",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小",
+        "tooltip": "批次中 latent 圖像的數量。"
+      },
+      "seconds": {
+        "name": "秒數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EmptyAceStepLatentAudio": {
     "display_name": "EmptyAceStepLatentAudio",
     "inputs": {
@@ -3546,6 +3563,50 @@
       },
       "tapered_corners": {
         "name": "圓角"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawGeneralImageEnhance": {
+    "description": "將低解析度影像升級為超高解析度，消除雜訊與失真。最大輸出：32 百萬像素。",
+    "display_name": "HitPaw 通用影像增強",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "若輸出超過限制，將自動縮小輸入影像。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "upscale_factor": {
+        "name": "放大倍率"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HitPawVideoEnhance": {
+    "description": "將低解析度影片升級為高解析度，消除雜訊與失真。價格以每秒影片計算。",
+    "display_name": "HitPaw 影片增強",
+    "inputs": {
+      "model": {
+        "name": "模型"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "video": {
+        "name": "影片"
       }
     },
     "outputs": {
@@ -6367,8 +6428,12 @@
       "model_file": {
         "name": "模型檔案"
       },
-      "upload 3d model": {},
-      "upload extra resources": {},
+      "upload 3d model": {
+        "zh-TW": "上傳 3D 模型"
+      },
+      "upload extra resources": {
+        "zh-TW": "上傳額外資源"
+      },
       "width": {
         "name": "寬度"
       }
@@ -7252,12 +7317,17 @@
         "name": "rig_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyImageToModelNode": {
     "display_name": "Meshy：圖片轉模型",
@@ -7303,16 +7373,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyMultiImageToModelNode": {
     "display_name": "Meshy：多圖轉模型",
@@ -7358,16 +7430,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRefineNode": {
     "description": "精修先前建立的草稿模型。",
@@ -7392,16 +7466,18 @@
         "tooltip": "提供文字提示以引導材質製作。最多 600 字元。不可與「texture_image」同時使用。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyRigModelNode": {
     "description": "提供標準格式的骨架綁定角色。目前自動綁定不適用於無材質網格、非人形資產，或肢體結構不明確的人形資產。",
@@ -7419,16 +7495,18 @@
         "tooltip": "模型 UV 展開後的基礎色彩貼圖。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "rig_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextToModelNode": {
     "display_name": "Meshy：文字生成模型",
@@ -7467,16 +7545,18 @@
         "name": "symmetry_mode"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MeshyTextureNode": {
     "display_name": "Meshy：材質模型",
@@ -7503,16 +7583,18 @@
         "tooltip": "用文字描述你想要的物件材質風格。最多600字。不能與「image_style」同時使用。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       },
-      "1": {
-        "name": "meshy_task_id",
+      {
+        "name": "FBX",
         "tooltip": null
       }
-    }
+    ]
   },
   "MinimaxHailuoVideoNode": {
     "description": "使用新的 MiniMax 海螺-02 模型，從提示詞生成影片，可選起始幀。",
@@ -10709,11 +10791,9 @@
       "camera_info": {
         "name": "camera_info"
       },
-      "image": {
-        "name": "影像"
-      },
       "model_file": {
-        "name": "model_file"
+        "name": "model_file",
+        "tooltip": "3D 模型檔案或路徑字串"
       }
     }
   },
@@ -11354,6 +11434,23 @@
       }
     }
   },
+  "ReferenceTimbreAudio": {
+    "description": "此節點設定 timbre 的參考音訊（適用於 ace step 1.5）",
+    "display_name": "ReferenceTimbreAudio",
+    "inputs": {
+      "conditioning": {
+        "name": "條件"
+      },
+      "latent": {
+        "name": "latent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RegexExtract": {
     "display_name": "正則表達式提取",
     "inputs": {
@@ -11682,12 +11779,13 @@
         "name": "種子值"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Gen2": {
     "description": "使用 Rodin API 生成 3D 資源",
@@ -11709,12 +11807,13 @@
         "name": "TAPose"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Regular": {
     "description": "使用 Rodin API 生成 3D 資源",
@@ -11733,12 +11832,13 @@
         "name": "種子值"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Sketch": {
     "description": "使用 Rodin API 生成 3D 資源",
@@ -11751,12 +11851,13 @@
         "name": "種子值"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "Rodin3D_Smooth": {
     "description": "使用 Rodin API 生成 3D 資源",
@@ -11775,12 +11876,13 @@
         "name": "種子值"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "3D 模型路徑",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "RunwayFirstLastFrameNode": {
     "description": "上傳首尾關鍵幀，草擬提示詞，並生成影片。對於較複雜的轉場（例如最後一幀與第一幀完全不同的情況），較長的 10 秒持續時間可能更有利，這能讓生成過程有更多時間在兩個輸入之間平滑過渡。開始前，請先閱讀這些最佳實踐指南，確保您的輸入選擇能為生成成功奠定基礎：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
@@ -12507,11 +12609,9 @@
       "filename_prefix": {
         "name": "檔名前綴"
       },
-      "image": {
-        "name": "影像"
-      },
       "mesh": {
-        "name": "mesh"
+        "name": "mesh",
+        "tooltip": "要儲存的 Mesh 或 GLB 檔案"
       }
     }
   },
@@ -13764,12 +13864,17 @@
         "tooltip": "種子控制節點是否重新執行；無論種子如何，結果皆為非確定性。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TencentTextToModelNode": {
     "display_name": "Hunyuan3D：文字轉模型（專業版）",
@@ -13799,12 +13904,17 @@
         "tooltip": "種子控制節點是否重新執行；無論種子如何，結果皆為非確定性。"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
+    "outputs": [
+      null,
+      {
+        "name": "GLB",
+        "tooltip": null
+      },
+      {
+        "name": "OBJ",
         "tooltip": null
       }
-    }
+    ]
   },
   "TextEncodeAceStepAudio": {
     "display_name": "TextEncodeAceStepAudio",
@@ -13820,6 +13930,46 @@
       },
       "tags": {
         "name": "標籤"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeAceStepAudio1_5": {
+    "display_name": "TextEncodeAceStepAudio1.5",
+    "inputs": {
+      "bpm": {
+        "name": "每分鐘節拍數"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "keyscale": {
+        "name": "調性"
+      },
+      "language": {
+        "name": "語言"
+      },
+      "lyrics": {
+        "name": "歌詞"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "tags": {
+        "name": "標籤"
+      },
+      "timesignature": {
+        "name": "拍號"
       }
     },
     "outputs": {
@@ -14383,16 +14533,14 @@
         "name": "紋理種子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任務ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多視角轉模型",
@@ -14444,16 +14592,14 @@
         "name": "texture_seed"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRefineNode": {
     "description": "僅精修由 v1.4 Tripo 模型建立的草稿模型。",
@@ -14464,16 +14610,14 @@
         "tooltip": "必須是 v1.4 Tripo 模型"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "model task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRetargetNode": {
     "display_name": "Tripo: 重新定位骨架模型",
@@ -14485,16 +14629,14 @@
         "name": "original_model_task_id"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "model_file",
-        "tooltip": null
-      },
-      "1": {
-        "name": "retarget task_id",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoRigNode": {
     "display_name": "Tripo: 骨架模型",
@@ -14503,16 +14645,14 @@
         "name": "原始模型任務ID"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "綁定任務ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextToModelNode": {
     "display_name": "Tripo：文字轉模型",
@@ -14557,16 +14697,14 @@
         "name": "紋理種子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任務ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TripoTextureNode": {
     "display_name": "Tripo：紋理模型",
@@ -14590,16 +14728,14 @@
         "name": "紋理種子"
       }
     },
-    "outputs": {
-      "0": {
-        "name": "模型檔案",
-        "tooltip": null
-      },
-      "1": {
-        "name": "模型任務ID",
+    "outputs": [
+      null,
+      null,
+      {
+        "name": "GLB",
         "tooltip": null
       }
-    }
+    ]
   },
   "TruncateText": {
     "display_name": "截斷文字",

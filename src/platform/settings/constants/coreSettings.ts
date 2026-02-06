@@ -1204,7 +1204,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, missing nodes can be automatically replaced with their newer equivalents if a replacement mapping exists.',
     type: 'boolean',
-    defaultValue: true,
+    defaultValue: false,
     experimental: true,
     versionAdded: '1.40.0'
   }

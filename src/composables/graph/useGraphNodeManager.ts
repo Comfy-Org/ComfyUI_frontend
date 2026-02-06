@@ -52,7 +52,7 @@ export interface SafeWidgetData {
   isDOMWidget?: boolean
   label?: string
   nodeType?: string
-  options?: IWidgetOptions<unknown>
+  options?: IWidgetOptions
   spec?: InputSpec
   slotMetadata?: WidgetSlotMetadata
 }
@@ -145,7 +145,7 @@ interface SharedWidgetEnhancements {
   /** Widget label */
   label?: string
   /** Widget options */
-  options?: IWidgetOptions<unknown>
+  options?: IWidgetOptions
 }
 
 /**
@@ -170,7 +170,7 @@ export function getSharedWidgetEnhancements(
         ? 'ring ring-component-node-widget-advanced'
         : undefined,
     label: widget.label,
-    options: widget.options
+    options: widget.options as IWidgetOptions
   }
 }
 
@@ -432,7 +432,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     } else {
       // Not during workflow loading - initialize layout immediately
       // This handles individual node additions during normal operation
-      requestAnimationFrame(initializeVueNodeLayout)
+      initializeVueNodeLayout()
     }
 
     // Call original callback if provided

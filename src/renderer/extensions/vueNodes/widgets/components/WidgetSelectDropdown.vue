@@ -73,9 +73,8 @@ const combinedProps = computed(() => ({
 }))
 
 const getAssetData = () => {
-  const nodeType = (props.widget.options?.nodeType ?? props.nodeType) as
-    | string
-    | undefined
+  const nodeType: string | undefined =
+    props.widget.options?.nodeType ?? props.nodeType
   if (props.isAssetMode && nodeType) {
     return useAssetWidgetData(toRef(nodeType))
   }
@@ -136,11 +135,11 @@ const inputItems = computed<FormDropdownItem[]>(() => {
     return []
   }
 
-  return (values as string[]).map((value, index) => ({
+  return values.map((value, index) => ({
     id: `input-${index}`,
-    preview_url: getMediaUrl(value, 'input'),
-    name: value,
-    label: getDisplayLabel(value)
+    preview_url: getMediaUrl(String(value), 'input'),
+    name: String(value),
+    label: getDisplayLabel(String(value))
   }))
 })
 const outputItems = computed<FormDropdownItem[]>(() => {

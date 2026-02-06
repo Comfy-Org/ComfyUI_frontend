@@ -77,11 +77,16 @@ export class ComfyNodeDefImpl
    * and input connectivity.
    */
   readonly price_badge?: PriceBadge
+  /**
+   * Alternative names for search. Useful for synonyms, abbreviations,
+   * or old names after renaming a node.
+   */
+  readonly search_aliases?: string[]
 
   // V2 fields
   readonly inputs: Record<string, InputSpecV2>
   readonly outputs: OutputSpecV2[]
-  readonly hidden?: Record<string, unknown>
+  readonly hidden?: Record<string, boolean>
 
   // ComfyNodeDefImpl fields
   readonly nodeSource: NodeSource
