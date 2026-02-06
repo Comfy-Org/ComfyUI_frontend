@@ -77,7 +77,7 @@ jobs:
     needs: setup
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.10
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.12
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -109,7 +109,7 @@ jobs:
       # Run sharded tests with snapshot updates (browsers pre-installed in container)
       - name: Update snapshots (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright-tests
-        run: pnpm exec playwright test --update-snapshots --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --update-snapshots --grep @screenshot --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         continue-on-error: true
 
       - name: Stage changed snapshot files
@@ -173,6 +173,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: ${{ needs.setup.outputs.branch }}
+          token: ${{ secrets.PR_GH_TOKEN }}
 
       # Download all changed snapshot files from shards
       - name: Download snapshot artifacts

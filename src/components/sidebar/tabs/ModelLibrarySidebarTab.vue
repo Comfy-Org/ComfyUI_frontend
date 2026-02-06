@@ -25,7 +25,11 @@
         <SearchBox
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
-          :placeholder="$t('g.searchModels') + '...'"
+          :placeholder="
+            $t('g.searchPlaceholder', {
+              subject: $t('sideToolbar.labels.models')
+            })
+          "
           @search="handleSearch"
         />
       </div>

@@ -4,16 +4,25 @@ import type { VueWrapper } from '@vue/test-utils'
 import PrimeVue from 'primevue/config'
 import type { ComponentPublicInstance } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
+import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { DropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} }
+})
+
 interface WidgetSelectDropdownInstance extends ComponentPublicInstance {
-  inputItems: DropdownItem[]
-  outputItems: DropdownItem[]
+  inputItems: FormDropdownItem[]
+  outputItems: FormDropdownItem[]
+  dropdownItems: FormDropdownItem[]
+  filterSelected: string
   updateSelectedItems: (selectedSet: Set<string>) => void
 }
 
@@ -22,7 +31,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     value: string = 'img_001.png',
     options: {
       values?: string[]
-      getOptionLabel?: (value: string | null) => string
+      getOptionLabel?: (value?: string | null) => string
     } = {},
     spec?: ComboInputSpec
   ): SimplifiedWidget<string | undefined> => ({
@@ -50,7 +59,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
         uploadFolder: 'input'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia()]
+        plugins: [PrimeVue, createTestingPinia(), i18n]
       }
     }) as unknown as VueWrapper<WidgetSelectDropdownInstance>
   }
@@ -73,7 +82,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
   describe('when custom labels are provided via getOptionLabel', () => {
     it('displays custom labels while preserving original values', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (!value) return 'No file'
         const mapping: Record<string, string> = {
           'img_001.png': 'Vacation Photo',
@@ -103,7 +112,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('emits original values when items with custom labels are selected', async () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (!value) return 'No file'
         return `Custom: ${value}`
       })
@@ -125,7 +134,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('falls back to original value when label mapping fails', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (value === 'photo_abc.jpg') {
           throw new Error('Mapping failed')
         }
@@ -154,7 +163,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('falls back to original value when label mapping returns empty string', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (value === 'photo_abc.jpg') {
           return ''
         }
@@ -176,7 +185,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
     })
 
     it('falls back to original value when label mapping returns undefined', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (value === 'hash789.png') {
           return undefined as unknown as string
         }
@@ -200,7 +209,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
 
   describe('output items with custom label mapping', () => {
     it('applies custom label mapping to output items from queue history', () => {
-      const getOptionLabel = vi.fn((value: string | null) => {
+      const getOptionLabel = vi.fn((value?: string | null) => {
         if (!value) return 'No file'
         return `Output: ${value}`
       })
@@ -230,9 +239,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       ).toBe(false)
 
       // The missing value should be accessible via dropdownItems when filter is 'all' (default)
-      const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
-      ).dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(
         dropdownItems.some((item) => item.name === 'template_image.png')
       ).toBe(true)
@@ -246,15 +253,10 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       })
       const wrapper = mountComponent(widget, 'template_image.png')
 
-      const vmWithFilter = wrapper.vm as unknown as {
-        filterSelected: string
-        dropdownItems: DropdownItem[]
-      }
-
-      vmWithFilter.filterSelected = 'inputs'
+      wrapper.vm.filterSelected = 'inputs'
       await wrapper.vm.$nextTick()
 
-      const dropdownItems = vmWithFilter.dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(dropdownItems).toHaveLength(2)
       expect(
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
@@ -267,16 +269,10 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       })
       const wrapper = mountComponent(widget, 'template_image.png')
 
-      const vmWithFilter = wrapper.vm as unknown as {
-        filterSelected: string
-        dropdownItems: DropdownItem[]
-        outputItems: DropdownItem[]
-      }
-
-      vmWithFilter.filterSelected = 'outputs'
+      wrapper.vm.filterSelected = 'outputs'
       await wrapper.vm.$nextTick()
 
-      const dropdownItems = vmWithFilter.dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(dropdownItems).toHaveLength(wrapper.vm.outputItems.length)
       expect(
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
@@ -289,9 +285,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       })
       const wrapper = mountComponent(widget, 'img_001.png')
 
-      const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
-      ).dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(dropdownItems).toHaveLength(2)
       expect(
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))
@@ -304,9 +298,7 @@ describe('WidgetSelectDropdown custom label mapping', () => {
       })
       const wrapper = mountComponent(widget, undefined)
 
-      const dropdownItems = (
-        wrapper.vm as unknown as { dropdownItems: DropdownItem[] }
-      ).dropdownItems
+      const dropdownItems = wrapper.vm.dropdownItems
       expect(dropdownItems).toHaveLength(2)
       expect(
         dropdownItems.every((item) => !String(item.id).startsWith('missing-'))

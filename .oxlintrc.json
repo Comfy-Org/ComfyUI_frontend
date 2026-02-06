@@ -60,11 +60,6 @@
           {
             "name": "primevue/sidebar",
             "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-          },
-          {
-            "name": "@/i18n--to-enable",
-            "importNames": ["st", "t", "te", "d"],
-            "message": "Don't import `@/i18n` directly, prefer `useI18n()`"
           }
         ]
       }
@@ -109,6 +104,17 @@
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
+      }
+    },
+    {
+      "files": ["browser_tests/**/*.ts"],
+      "rules": {
+        "typescript/no-explicit-any": "error",
+        "no-async-promise-executor": "error",
+        "no-control-regex": "error",
+        "no-useless-rename": "error",
+        "no-unused-private-class-members": "error",
+        "unicorn/no-empty-file": "error"
       }
     }
   ]

@@ -121,8 +121,9 @@ const mutationObserver = ref<MutationObserver | null>(null)
 
 const isStandaloneMode = !props.node && props.modelUrl
 
+// Use sync version since useLoad3dViewer is already imported (module is loaded)
 const viewer = props.node
-  ? useLoad3dService().getOrCreateViewer(toRaw(props.node))
+  ? useLoad3dService().getOrCreateViewerSync(toRaw(props.node), useLoad3dViewer)
   : useLoad3dViewer()
 
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
@@ -130,7 +131,7 @@ const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
     onModelDrop: async (file) => {
       await viewer.handleModelDrop(file)
     },
-    disabled: viewer.isPreview.value || isStandaloneMode
+    disabled: viewer.isPreview.value || !!isStandaloneMode
   })
 
 onMounted(async () => {
