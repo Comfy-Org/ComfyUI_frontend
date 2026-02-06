@@ -755,6 +755,8 @@
     "noFilesFound": "No files found",
     "noImportedFiles": "No imported files found",
     "noGeneratedFiles": "No generated files found",
+    "noQueueItems": "No active jobs",
+    "noQueueItemsMessage": "Queue a prompt to see active jobs here",
     "generatedAssetsHeader": "Generated assets",
     "importedAssetsHeader": "Imported assets",
     "activeJobStatus": "Active job: {status}",
