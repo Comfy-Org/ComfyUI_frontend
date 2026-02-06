@@ -152,7 +152,12 @@ export const useExecutionStore = defineStore('execution', () => {
     state: 'completed' | 'error'
   ) {
     const wid = promptIdToWorkflowId.value.get(promptId)
-    if (!wid) return
+    if (!wid) {
+      console.warn(
+        `[executionStore] No workflow mapping for prompt ${promptId}, execution result '${state}' dropped`
+      )
+      return
+    }
     setWorkflowExecutionResultByWorkflowId(wid, state, promptId)
   }
 
@@ -167,6 +172,17 @@ export const useExecutionStore = defineStore('execution', () => {
       timestamp: Date.now(),
       promptId: promptId ?? ''
     })
+    lastExecutionResultByWorkflowId.value = next
+  }
+
+  function batchSetWorkflowExecutionResults(
+    results: Map<string, WorkflowExecutionResult>
+  ) {
+    if (results.size === 0) return
+    const next = new Map(lastExecutionResultByWorkflowId.value)
+    for (const [workflowId, result] of results) {
+      next.set(workflowId, result)
+    }
     lastExecutionResultByWorkflowId.value = next
   }
 
@@ -538,6 +554,7 @@ export const useExecutionStore = defineStore('execution', () => {
       const map = { ...nodeProgressStatesByPrompt.value }
       delete map[promptId]
       nodeProgressStatesByPrompt.value = map
+      promptIdToWorkflowId.value.delete(promptId)
     }
     if (activePromptId.value) {
       delete queuedPrompts.value[activePromptId.value]
@@ -766,6 +783,7 @@ export const useExecutionStore = defineStore('execution', () => {
     lastExecutionResultByWorkflowId,
     clearWorkflowExecutionResult,
     setWorkflowExecutionResultByWorkflowId,
+    batchSetWorkflowExecutionResults,
     workflowExecutionStates,
     getWorkflowExecutionState
   }

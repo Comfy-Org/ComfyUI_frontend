@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import type { WorkflowExecutionState } from '@/stores/executionStore'
 
-defineProps<{
+const { state } = defineProps<{
   state: WorkflowExecutionState
 }>()
 </script>

@@ -9,6 +9,8 @@ const mockNodeIdToNodeLocatorId = vi.fn()
 const mockNodeLocatorIdToNodeExecutionId = vi.fn()
 
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeProgressState } from '@/schemas/apiSchema'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -303,6 +305,16 @@ describe('useExecutionStore - Node Error Lookups', () => {
 describe('useExecutionStore - Workflow Execution State', () => {
   let store: ReturnType<typeof useExecutionStore>
 
+  function mockWorkflow(id: string) {
+    return { activeState: { id } } as unknown as ComfyWorkflow
+  }
+
+  function mockNodeProgress(
+    state: NodeProgressState['state']
+  ): NodeProgressState {
+    return { value: 0, max: 1, state, node_id: '1', prompt_id: 'prompt-1' }
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -318,11 +330,11 @@ describe('useExecutionStore - Workflow Execution State', () => {
       store.storePrompt({
         nodes: ['1', '2'],
         id: 'prompt-1',
-        workflow: { activeState: { id: 'wf-1' } } as any
+        workflow: mockWorkflow('wf-1')
       })
 
       store.nodeProgressStatesByPrompt = {
-        'prompt-1': { '1': { state: 'running' } as any }
+        'prompt-1': { '1': mockNodeProgress('running') }
       }
 
       expect(store.workflowExecutionStates.get('wf-1')).toBe('running')
@@ -356,11 +368,11 @@ describe('useExecutionStore - Workflow Execution State', () => {
       store.storePrompt({
         nodes: ['1', '2'],
         id: 'prompt-2',
-        workflow: { activeState: { id: 'wf-1' } } as any
+        workflow: mockWorkflow('wf-1')
       })
 
       store.nodeProgressStatesByPrompt = {
-        'prompt-2': { '1': { state: 'running' } as any }
+        'prompt-2': { '1': mockNodeProgress('running') }
       }
 
       const next = new Map(store.lastExecutionResultByWorkflowId)

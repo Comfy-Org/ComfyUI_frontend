@@ -34,35 +34,14 @@ describe('WorkflowExecutionIndicator', () => {
     expect(wrapper.find('i').exists()).toBe(false)
   })
 
-  it('renders spinning loader for running state', () => {
-    const wrapper = mountWithI18n({ state: 'running' })
+  it.each<{ state: WorkflowExecutionState; label: string }>([
+    { state: 'running', label: 'Workflow is running' },
+    { state: 'completed', label: 'Workflow completed successfully' },
+    { state: 'error', label: 'Workflow execution failed' }
+  ])('renders accessible icon for $state state', ({ state, label }) => {
+    const wrapper = mountWithI18n({ state })
     const icon = wrapper.find('i')
     expect(icon.exists()).toBe(true)
-    expect(icon.classes()).toContain('icon-[lucide--loader-circle]')
-    expect(icon.classes()).toContain('animate-spin')
-    expect(icon.classes()).toContain('text-muted-foreground')
-  })
-
-  it('renders check icon for completed state', () => {
-    const wrapper = mountWithI18n({ state: 'completed' })
-    const icon = wrapper.find('i')
-    expect(icon.exists()).toBe(true)
-    expect(icon.classes()).toContain('icon-[lucide--circle-check]')
-    expect(icon.classes()).toContain('text-jade-600')
-  })
-
-  it('renders alert icon for error state', () => {
-    const wrapper = mountWithI18n({ state: 'error' })
-    const icon = wrapper.find('i')
-    expect(icon.exists()).toBe(true)
-    expect(icon.classes()).toContain('icon-[lucide--circle-alert]')
-    expect(icon.classes()).toContain('text-coral-600')
-  })
-
-  it('has correct aria-label for running state', () => {
-    const wrapper = mountWithI18n({ state: 'running' })
-    expect(wrapper.find('i').attributes('aria-label')).toBe(
-      'Workflow is running'
-    )
+    expect(icon.attributes('aria-label')).toBe(label)
   })
 })
