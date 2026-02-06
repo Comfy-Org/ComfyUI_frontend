@@ -342,7 +342,10 @@ function initSizeStyles() {
   const suffix = isCollapsed.value ? '-x' : ''
 
   el.style.setProperty(`--node-width${suffix}`, `${width}px`)
-  el.style.setProperty(`--node-height${suffix}`, `${height}px`)
+  el.style.setProperty(
+    `--node-height${suffix}`,
+    `${height + LiteGraph.NODE_TITLE_HEIGHT}px`
+  )
 }
 
 const baseResizeHandleClasses =

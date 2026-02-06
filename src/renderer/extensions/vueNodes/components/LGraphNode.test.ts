@@ -206,7 +206,7 @@ describe('LGraphNode', () => {
 
     expect(wrapper.element.style.getPropertyValue('--node-height')).toBe('')
     expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe(
-      '100px'
+      '130px'
     )
   })
 
@@ -219,7 +219,7 @@ describe('LGraphNode', () => {
     })
 
     expect(wrapper.element.style.getPropertyValue('--node-height')).toBe(
-      '100px'
+      '130px'
     )
     expect(wrapper.element.style.getPropertyValue('--node-height-x')).toBe('')
   })
