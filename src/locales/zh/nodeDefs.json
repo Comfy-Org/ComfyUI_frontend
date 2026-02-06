@@ -2020,6 +2020,20 @@
       }
     }
   },
+  "CreateList": {
+    "display_name": "创建列表",
+    "inputs": {
+      "inputs": {
+        "name": "输入"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "列表",
+        "tooltip": null
+      }
+    }
+  },
   "CreateVideo": {
     "description": "从图像创建视频。",
     "display_name": "创建视频",
@@ -13953,6 +13967,9 @@
       "bpm": {
         "name": "每分钟节拍数"
       },
+      "cfg_scale": {
+        "name": "cfg_scale"
+      },
       "clip": {
         "name": "clip"
       },
@@ -13961,6 +13978,10 @@
       },
       "duration": {
         "name": "时长"
+      },
+      "generate_audio_codes": {
+        "name": "生成音频代码",
+        "tooltip": "启用生成音频代码的LLM。这可能较慢，但会提升生成音频的质量。如果你为模型提供了音频参考，请关闭此选项。"
       },
       "keyscale": {
         "name": "调式"
@@ -13977,8 +13998,17 @@
       "tags": {
         "name": "标签"
       },
+      "temperature": {
+        "name": "temperature"
+      },
       "timesignature": {
         "name": "拍号"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -14902,6 +14932,28 @@
     "inputs": {
       "samples": {
         "name": "Latent"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEDecodeAudioTiled": {
+    "display_name": "VAE解码音频（分块）",
+    "inputs": {
+      "overlap": {
+        "name": "重叠"
+      },
+      "samples": {
+        "name": "样本"
+      },
+      "tile_size": {
+        "name": "分块大小"
       },
       "vae": {
         "name": "vae"
