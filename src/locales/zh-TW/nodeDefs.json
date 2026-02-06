@@ -6432,6 +6432,7 @@
   "Load3D": {
     "display_name": "載入 3D",
     "inputs": {
+      "clear": {},
       "height": {
         "name": "高度"
       },
@@ -6440,6 +6441,12 @@
       },
       "model_file": {
         "name": "模型檔案"
+      },
+      "upload 3d model": {
+        "zh-TW": "上傳 3D 模型"
+      },
+      "upload extra resources": {
+        "zh-TW": "上傳額外資源"
       },
       "width": {
         "name": "寬度"

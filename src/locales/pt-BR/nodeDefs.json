@@ -6441,6 +6441,9 @@
   "Load3D": {
     "display_name": "Carregar 3D & Animação",
     "inputs": {
+      "clear": {
+        "": "limpar"
+      },
       "height": {
         "name": "altura"
       },
@@ -6449,6 +6452,12 @@
       },
       "model_file": {
         "name": "arquivo_do_modelo"
+      },
+      "upload 3d model": {
+        "": "enviar modelo 3D"
+      },
+      "upload extra resources": {
+        "": "enviar recursos extras"
       },
       "width": {
         "name": "largura"

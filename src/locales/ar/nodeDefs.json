@@ -6432,6 +6432,7 @@
   "Load3D": {
     "display_name": "تحميل ثلاثي الأبعاد",
     "inputs": {
+      "clear": "مسح",
       "height": {
         "name": "الارتفاع"
       },
@@ -6441,6 +6442,8 @@
       "model_file": {
         "name": "ملف النموذج"
       },
+      "upload 3d model": "رفع نموذج ثلاثي الأبعاد",
+      "upload extra resources": "رفع موارد إضافية",
       "width": {
         "name": "العرض"
       }

@@ -6089,7 +6089,10 @@
       },
       "height": {
         "name": "height"
-      }
+      },
+      "clear": {},
+      "upload 3d model": {},
+      "upload extra resources": {}
     },
     "outputs": {
       "0": {
