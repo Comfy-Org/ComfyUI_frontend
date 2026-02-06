@@ -169,7 +169,7 @@ export const useExtensionService = () => {
         try {
           const fn = ext[method]
           if (typeof fn === 'function') {
-            results.push(fn(...args, app))
+            results.push(fn.call(ext, ...args, app))
           }
         } catch (error) {
           console.error(
@@ -209,7 +209,7 @@ export const useExtensionService = () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
             }
 
-            const result = await fn(...args, app)
+            const result = await fn.call(ext, ...args, app)
 
             // Clear current extension after setup
             if (method === 'setup') {
