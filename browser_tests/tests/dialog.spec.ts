@@ -34,6 +34,33 @@ test.describe('Load workflow warning', { tag: '@ui' }, () => {
     expect(warningText).toContain('MISSING_NODE_TYPE_IN_SUBGRAPH')
     expect(warningText).toContain('in subgraph')
   })
+
+  test('Should show replacement UI for replaceable missing nodes', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.NodeReplacement.Enabled', true)
+    await comfyPage.workflow.loadWorkflow('missing/replaceable_nodes')
+
+    const missingNodesWarning = comfyPage.page.locator('.comfy-missing-nodes')
+    await expect(missingNodesWarning).toBeVisible()
+
+    // Verify "Replaceable" badges appear for nodes with replacements
+    const replaceableBadges = missingNodesWarning.getByText('Replaceable')
+    await expect(replaceableBadges.first()).toBeVisible()
+    expect(await replaceableBadges.count()).toBeGreaterThanOrEqual(2)
+
+    // Verify individual "Replace" buttons appear
+    const replaceButtons = missingNodesWarning.getByRole('button', {
+      name: 'Replace'
+    })
+    expect(await replaceButtons.count()).toBeGreaterThanOrEqual(2)
+
+    // Verify "Replace All" button appears in footer
+    const replaceAllButton = comfyPage.page.getByRole('button', {
+      name: 'Replace All'
+    })
+    await expect(replaceAllButton).toBeVisible()
+  })
 })
 
 test('Does not report warning on undo/redo', async ({ comfyPage }) => {

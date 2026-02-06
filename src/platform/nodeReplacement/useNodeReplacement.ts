@@ -87,23 +87,22 @@ export function useNodeReplacement() {
     }
 
     const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow?.isLoaded || !activeWorkflow.originalContent) {
+    if (!activeWorkflow?.isLoaded) {
       console.error('No active workflow or workflow not loaded')
       return false
     }
 
     try {
-      // Parse original workflow data
-      const originalData = JSON.parse(
-        activeWorkflow.originalContent
-      ) as ComfyWorkflowJSON
+      // Use current graph state, not originalContent, to preserve prior replacements
+      const currentData =
+        app.rootGraph.serialize() as unknown as ComfyWorkflowJSON
 
       // Create replacement map for single node
       const replacements = new Map<string, string>()
       replacements.set(nodeType, replacement.new_node_id)
 
       // Apply replacements
-      const modifiedData = applyNodeReplacements(originalData, replacements)
+      const modifiedData = applyNodeReplacements(currentData, replacements)
 
       // Reload the workflow with modified data
       await app.loadGraphData(modifiedData, true, false, activeWorkflow, {
@@ -148,19 +147,18 @@ export function useNodeReplacement() {
     }
 
     const activeWorkflow = workflowStore.activeWorkflow
-    if (!activeWorkflow?.isLoaded || !activeWorkflow.originalContent) {
+    if (!activeWorkflow?.isLoaded) {
       console.error('No active workflow or workflow not loaded')
       return 0
     }
 
     try {
-      // Parse original workflow data
-      const originalData = JSON.parse(
-        activeWorkflow.originalContent
-      ) as ComfyWorkflowJSON
+      // Use current graph state, not originalContent, to preserve any prior changes
+      const currentData =
+        app.rootGraph.serialize() as unknown as ComfyWorkflowJSON
 
       // Apply all replacements
-      const modifiedData = applyNodeReplacements(originalData, replacements)
+      const modifiedData = applyNodeReplacements(currentData, replacements)
 
       // Reload the workflow with modified data
       await app.loadGraphData(modifiedData, true, false, activeWorkflow, {
