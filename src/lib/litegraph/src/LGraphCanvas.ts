@@ -2187,8 +2187,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (!is_inside) return
 
-    const node =
+    let node =
       graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes) ?? undefined
+
+    // In Vue nodes mode, slots extend beyond node bounds due to CSS transforms.
+    // If no node was found, check if the click is on a slot and use its owning node.
+    if (!node && LiteGraph.vueNodesMode) {
+      const slotLayout = layoutStore.querySlotAtPoint({
+        x: e.canvasX,
+        y: e.canvasY
+      })
+      if (slotLayout) {
+        node = graph.getNodeById(slotLayout.nodeId) ?? undefined
+      }
+    }
 
     this.mouse[0] = x
     this.mouse[1] = y
