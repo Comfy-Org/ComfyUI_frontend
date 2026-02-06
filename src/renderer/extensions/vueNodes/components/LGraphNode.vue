@@ -29,7 +29,7 @@
           'ring-4 ring-primary-500 bg-primary-500/10': isDraggingOver
         },
 
-        shouldHandleNodePointerEvents
+        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
           ? 'pointer-events-auto'
           : 'pointer-events-none',
         !isCollapsed && ' pb-1'
@@ -267,6 +267,8 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
+
+  if (nodeData.flags?.ghost) return globalOpacity * 0.3
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {

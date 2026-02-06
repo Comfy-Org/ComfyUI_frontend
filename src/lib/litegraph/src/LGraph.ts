@@ -102,6 +102,16 @@ export interface LGraphConfig {
   links_ontop?: boolean
 }
 
+/** Options for {@link LGraph.add} method. */
+export interface GraphAddOptions {
+  /** If true, skip recomputing execution order after adding the node. */
+  skipComputeOrder?: boolean
+  /** If true, the node will be semi-transparent and follow the cursor until placed or cancelled. */
+  ghost?: boolean
+  /** Mouse event for ghost placement. Used to position node under cursor. */
+  dragEvent?: MouseEvent
+}
+
 export interface GroupNodeConfigEntry {
   input?: Record<string, { name?: string; visible?: boolean }>
   output?: Record<number, { name?: string; visible?: boolean }>
@@ -862,12 +872,35 @@ export class LGraph
   /**
    * Adds a new node instance to this graph
    * @param node the instance of the node
+   * @param options Additional options for adding the node
    */
   add(
     node: LGraphNode | LGraphGroup,
-    skip_compute_order?: boolean
+    options?: GraphAddOptions
+  ): LGraphNode | null | undefined
+  /**
+   * Adds a new node instance to this graph
+   * @param node the instance of the node
+   * @param skipComputeOrder If true, skip recomputing execution order
+   * @deprecated Use options object instead
+   */
+  add(
+    node: LGraphNode | LGraphGroup,
+    skipComputeOrder?: boolean
+  ): LGraphNode | null | undefined
+  add(
+    node: LGraphNode | LGraphGroup,
+    skipComputeOrderOrOptions?: boolean | GraphAddOptions
   ): LGraphNode | null | undefined {
     if (!node) return
+
+    // Handle backwards compatibility: 2nd arg can be boolean or options
+    const opts: GraphAddOptions =
+      typeof skipComputeOrderOrOptions === 'object'
+        ? skipComputeOrderOrOptions
+        : { skipComputeOrder: skipComputeOrderOrOptions ?? false }
+    const shouldSkipComputeOrder = opts.skipComputeOrder ?? false
+
     const { state } = this
 
     // Ensure created items are snapped
@@ -914,6 +947,11 @@ export class LGraph
       }
     }
 
+    // Set ghost flag before registration so VueNodeData picks it up
+    if (opts.ghost) {
+      node.flags.ghost = true
+    }
+
     node.graph = this
     this._version++
 
@@ -924,12 +962,16 @@ export class LGraph
 
     if (this.config.align_to_grid) node.alignToGrid()
 
-    if (!skip_compute_order) this.updateExecutionOrder()
+    if (!shouldSkipComputeOrder) this.updateExecutionOrder()
 
     this.onNodeAdded?.(node)
 
     this.setDirtyCanvas(true)
     this.change()
+
+    if (opts.ghost) {
+      this.canvasAction((c) => c.startGhostPlacement(node, opts.dragEvent))
+    }
 
     // to chain actions
     return node
