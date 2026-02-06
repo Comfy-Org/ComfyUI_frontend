@@ -71,16 +71,14 @@
         </span>
         <div class="flex items-center gap-2">
           <MediaAssetViewModeToggle v-model:view-mode="viewMode" />
-          <span class="text-sm text-base-foreground">
-            {{ t('sideToolbar.queueProgressOverlay.clearQueueTooltip') }}
-          </span>
           <Button
+            v-tooltip.top="clearQueueTooltip"
             variant="destructive"
             size="icon"
             :aria-label="
               t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
             "
-            :disabled="queuedCount === 0"
+            :disabled="activeJobsCount === 0"
             @click="handleClearQueue"
           >
             <i class="icon-[lucide--list-x] size-4" />
@@ -249,6 +247,7 @@ import ResultGallery from '@/components/sidebar/tabs/queue/ResultGallery.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetViewModeToggle from '@/platform/assets/components/MediaAssetViewModeToggle.vue'
@@ -327,7 +326,9 @@ const formattedExecutionTime = computed(() => {
   return formatDuration(folderExecutionTime.value * 1000)
 })
 
-const queuedCount = computed(() => queueStore.pendingTasks.length)
+const clearQueueTooltip = computed(() =>
+  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearQueueTooltip'))
+)
 const activeJobsLabel = computed(() => {
   const count = activeJobsCount.value
   return t(

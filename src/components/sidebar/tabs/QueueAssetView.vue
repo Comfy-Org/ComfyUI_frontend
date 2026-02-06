@@ -92,7 +92,6 @@ const gridStyle = {
   gap: '0.5rem'
 }
 
-// List view hover & cancel logic
 const hoveredJobId = ref<string | null>(null)
 const hoveredJob = computed(() =>
   hoveredJobId.value
@@ -113,11 +112,10 @@ function onJobLeave(jobId: string) {
 }
 
 function getJobIconClass(job: JobListItem): string | undefined {
-  const classes = []
   const iconName = job.iconName ?? iconForJobState(job.state)
   if (!job.iconImageUrl && iconName === iconForJobState('pending')) {
-    classes.push('animate-spin')
+    return 'animate-spin'
   }
-  return classes.length ? classes.join(' ') : undefined
+  return undefined
 }
 </script>
