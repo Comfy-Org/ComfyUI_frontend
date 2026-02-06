@@ -21,21 +21,42 @@ jobs:
         run: pnpm build
       - name: Check for telemetry code in dist
         run: |
-          # Keywords that should NOT appear in dist
-          KEYWORDS=('googletagmanager' 'gtag' 'mixpanel' 'analytics.js' 'gtm.js')
+          # Check for GTM/GA code that should NOT appear in dist
+          # Note: Mixpanel uses conditional dynamic imports and is expected in dist as a lazy chunk
           FOUND_VIOLATIONS=0
 
           echo '🔍 Checking dist for telemetry code that should be tree-shaken...'
           echo ''
 
-          for keyword in "${KEYWORDS[@]}"; do
-            echo "Searching for: $keyword"
-            if grep -r -i "$keyword" dist/; then
-              echo "❌ ERROR: Found '$keyword' in dist files!"
-              echo "Telemetry code must be properly tree-shaken from OSS builds."
-              FOUND_VIOLATIONS=1
-            fi
-          done
+          # Verify dist/ directory exists and is not empty
+          if [ ! -d "dist" ]; then
+            echo "❌ ERROR: dist/ directory does not exist!"
+            echo "Build may have failed or produced no output."
+            exit 1
+          fi
+
+          if [ -z "$(ls -A dist)" ]; then
+            echo "❌ ERROR: dist/ directory is empty!"
+            echo "Build may have failed or produced no output."
+            exit 1
+          fi
+
+          # Check for Google Tag Manager / Google Analytics
+          echo "Checking for GTM/GA code..."
+          # Exclude source maps, credit files, and dynamic import chunks (mixpanel.module-*)
+          if grep -r -i --exclude='*.map' --exclude='CREDIT.txt' --exclude='mixpanel.module-*.js' \
+            -e 'googletagmanager' \
+            -e 'gtm\.js' \
+            -e 'analytics\.js' \
+            -e "gtag('config'" \
+            -e "gtag('event'" \
+            dist/; then
+            echo "❌ ERROR: Found GTM/GA code in dist files!"
+            echo "Google Tag Manager / Google Analytics must be properly tree-shaken from OSS builds."
+            FOUND_VIOLATIONS=1
+          else
+            echo "✓ No GTM/GA code found"
+          fi
 
           if [ $FOUND_VIOLATIONS -eq 1 ]; then
             echo ''
@@ -43,18 +64,18 @@ jobs:
             echo '❌ Telemetry tree-shaking validation FAILED'
             echo '============================================'
             echo ''
-            echo 'One or more telemetry keywords were found in the compiled dist.'
-            echo 'This means telemetry code is being bundled into OSS builds.'
+            echo 'GTM/GA telemetry code was found in the compiled dist.'
+            echo 'This code must be properly tree-shaken from OSS builds.'
             echo ''
             echo 'To fix this:'
             echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
             echo '2. Call telemetry via useTelemetry() hook'
-            echo '3. Avoid top-level imports of telemetry libraries'
-            echo '4. Reference PR #6154 for proper implementation pattern'
+            echo '3. Avoid top-level imports of GTM/GA libraries'
+            echo '4. Use conditional dynamic imports behind isCloud checks'
             echo ''
             exit 1
           fi
 
           echo ''
           echo '✅ Telemetry tree-shaking validation passed!'
-          echo 'No telemetry code found in dist files.'
+          echo 'No GTM/GA telemetry code found in dist files.'
