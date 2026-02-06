@@ -65,15 +65,8 @@ export function useMediaAssetActions() {
 
     try {
       const filename = targetAsset.name
-      let downloadUrl: string
-
-      // In cloud, use preview_url directly (from cloud storage)
-      // In OSS/localhost, use the /view endpoint
-      if (isCloud && targetAsset.preview_url) {
-        downloadUrl = targetAsset.preview_url
-      } else {
-        downloadUrl = getAssetUrl(targetAsset)
-      }
+      // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
+      const downloadUrl = targetAsset.preview_url || getAssetUrl(targetAsset)
 
       downloadFile(downloadUrl, filename)
 
@@ -103,15 +96,8 @@ export function useMediaAssetActions() {
     try {
       assets.forEach((asset) => {
         const filename = asset.name
-        let downloadUrl: string
-
-        // In cloud, use preview_url directly (from GCS or other cloud storage)
-        // In OSS/localhost, use the /view endpoint
-        if (isCloud && asset.preview_url) {
-          downloadUrl = asset.preview_url
-        } else {
-          downloadUrl = getAssetUrl(asset)
-        }
+        // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
+        const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
 
