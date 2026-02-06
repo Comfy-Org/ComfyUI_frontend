@@ -439,6 +439,21 @@ describe('ensureGlobalIdUniqueness', () => {
     expect(link.origin_id).not.toBe(rootNode.id)
   })
 
+  it('detects collisions with reserved (not-yet-created) node IDs', () => {
+    const rootGraph = new LGraph()
+    const subgraph = createSubgraphOnGraph(rootGraph)
+
+    const subNode = new DummyNode()
+    subNode.id = 42
+    subgraph._nodes.push(subNode)
+    subgraph._nodes_by_id[subNode.id] = subNode
+
+    rootGraph.ensureGlobalIdUniqueness([42])
+
+    expect(subNode.id).not.toBe(42)
+    expect(subgraph._nodes_by_id[subNode.id]).toBe(subNode)
+  })
+
   it('is a no-op when there are no collisions', () => {
     const rootGraph = new LGraph()
     const subgraph = createSubgraphOnGraph(rootGraph)
