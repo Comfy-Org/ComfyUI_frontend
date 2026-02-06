@@ -1,6 +1,8 @@
 import { createTestingPinia } from '@pinia/testing'
 import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
+import type { Slots } from 'vue'
+import { h } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -36,6 +38,11 @@ vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     prompt: vi.fn()
   })
+}))
+
+vi.mock('@/components/button/MoreButton.vue', () => ({
+  default: (_: unknown, { slots }: { slots: Slots }) =>
+    h('div', slots.default?.({ close: () => {} }))
 }))
 
 const i18n = createI18n({
