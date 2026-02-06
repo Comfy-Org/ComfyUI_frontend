@@ -26,9 +26,11 @@ import { computed, onMounted, onUnmounted, ref, watchEffect } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
+  canRenameSlot,
   connectSlots,
   findCompatibleTargets,
-  registerSlotMenuInstance
+  registerSlotMenuInstance,
+  renameSlot
 } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 import type { SlotMenuContext } from '@/renderer/extensions/vueNodes/composables/useSlotContextMenu'
 
@@ -91,13 +93,27 @@ const menuItems = computed<MenuItem[]>(() => {
   const ctx = activeContext.value
   if (!ctx) return []
 
-  const targets = findCompatibleTargets(ctx)
-  if (targets.length === 0) {
-    return [{ label: 'No compatible nodes', disabled: true }]
+  const items: MenuItem[] = []
+
+  if (canRenameSlot(ctx)) {
+    items.push({
+      label: 'Rename slot',
+      command: () => {
+        const newLabel = window.prompt('New slot label:')
+        if (newLabel !== null) {
+          renameSlot(ctx, newLabel)
+        }
+        hide()
+      }
+    })
+    items.push({ separator: true })
   }
 
-  return [
-    {
+  const targets = findCompatibleTargets(ctx)
+  if (targets.length === 0) {
+    items.push({ label: 'No compatible nodes', disabled: true })
+  } else {
+    items.push({
       label: 'Connect to...',
       items: targets.map((target) => ({
         label: `${target.slotInfo.name} @ ${target.node.title || target.node.type}`,
@@ -106,8 +122,10 @@ const menuItems = computed<MenuItem[]>(() => {
           hide()
         }
       }))
-    }
-  ]
+    })
+  }
+
+  return items
 })
 
 function show(event: MouseEvent, context: SlotMenuContext) {
