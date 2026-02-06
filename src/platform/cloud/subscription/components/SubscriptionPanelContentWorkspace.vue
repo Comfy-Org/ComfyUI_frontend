@@ -1,319 +1,336 @@
 <template>
   <div class="grow overflow-auto pt-6">
-    <!-- Cancelled subscription info card -->
+    <!-- Loading state while subscription is being set up -->
     <div
-      v-if="isCancelled"
-      class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
+      v-if="isSettingUp"
+      class="rounded-2xl border border-interface-stroke p-6"
     >
-      <div
-        class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning-background"
-      >
-        <i class="pi pi-info-circle" />
-      </div>
-      <div class="flex flex-col gap-2">
-        <h2 class="text-sm font-bold text-text-primary m-0 pt-1.5">
-          {{ $t('subscription.canceledCard.title') }}
-        </h2>
-        <p class="text-sm text-text-secondary m-0">
-          {{
-            $t('subscription.canceledCard.description', {
-              date: formattedEndDate
-            })
-          }}
-        </p>
+      <div class="flex items-center gap-2 text-muted-foreground py-4">
+        <i class="pi pi-spin pi-spinner" />
+        <span>{{ $t('billingOperation.subscriptionProcessing') }}</span>
       </div>
     </div>
 
-    <div class="rounded-2xl border border-interface-stroke p-6">
-      <div>
+    <template v-else>
+      <!-- Cancelled subscription info card -->
+      <div
+        v-if="isCancelled"
+        class="mb-6 flex gap-1 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
+      >
         <div
-          class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-2"
+          class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning-background"
         >
-          <!-- OWNER Unsubscribed State -->
-          <template v-if="showSubscribePrompt">
-            <div class="flex flex-col gap-2">
-              <div class="text-sm font-bold text-text-primary">
-                {{ $t('subscription.workspaceNotSubscribed') }}
-              </div>
-              <div class="text-sm text-text-secondary">
-                {{ $t('subscription.subscriptionRequiredMessage') }}
-              </div>
-            </div>
-            <Button
-              variant="primary"
-              size="lg"
-              class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
-              @click="handleSubscribeWorkspace"
-            >
-              {{ $t('subscription.subscribeNow') }}
-            </Button>
-          </template>
+          <i class="pi pi-info-circle" />
+        </div>
+        <div class="flex flex-col gap-2">
+          <h2 class="text-sm font-bold text-text-primary m-0 pt-1.5">
+            {{ $t('subscription.canceledCard.title') }}
+          </h2>
+          <p class="text-sm text-text-secondary m-0">
+            {{
+              $t('subscription.canceledCard.description', {
+                date: formattedEndDate
+              })
+            }}
+          </p>
+        </div>
+      </div>
 
-          <!-- MEMBER View - read-only, workspace not subscribed -->
-          <template v-else-if="isMemberView">
-            <div class="flex flex-col gap-2">
-              <div class="text-sm font-bold text-text-primary">
-                {{ $t('subscription.workspaceNotSubscribed') }}
+      <div class="rounded-2xl border border-interface-stroke p-6">
+        <div>
+          <div
+            class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-2"
+          >
+            <!-- OWNER Unsubscribed State -->
+            <template v-if="showSubscribePrompt">
+              <div class="flex flex-col gap-2">
+                <div class="text-sm font-bold text-text-primary">
+                  {{ $t('subscription.workspaceNotSubscribed') }}
+                </div>
+                <div class="text-sm text-text-secondary">
+                  {{ $t('subscription.subscriptionRequiredMessage') }}
+                </div>
               </div>
-              <div class="text-sm text-text-secondary">
-                {{ $t('subscription.contactOwnerToSubscribe') }}
-              </div>
-            </div>
-          </template>
+              <Button
+                variant="primary"
+                size="lg"
+                class="ml-auto rounded-lg px-4 py-2 text-sm font-normal"
+                @click="handleSubscribeWorkspace"
+              >
+                {{ $t('subscription.subscribeNow') }}
+              </Button>
+            </template>
 
-          <!-- Normal Subscribed State (Owner with subscription, or member viewing subscribed workspace) -->
-          <template v-else>
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2">
-                <span class="text-sm font-bold text-text-primary">
-                  {{ subscriptionTierName }}
-                </span>
-                <StatusBadge
-                  v-if="isCancelled"
-                  :label="$t('subscription.canceled')"
-                  severity="warn"
-                />
+            <!-- MEMBER View - read-only, workspace not subscribed -->
+            <template v-else-if="isMemberView">
+              <div class="flex flex-col gap-2">
+                <div class="text-sm font-bold text-text-primary">
+                  {{ $t('subscription.workspaceNotSubscribed') }}
+                </div>
+                <div class="text-sm text-text-secondary">
+                  {{ $t('subscription.contactOwnerToSubscribe') }}
+                </div>
               </div>
-              <div class="flex items-baseline gap-1 font-inter font-semibold">
-                <span class="text-2xl">${{ tierPrice }}</span>
-                <span class="text-base"
-                  >{{ $t('subscription.perMonth') }} /
-                  {{ $t('subscription.member') }}</span
+            </template>
+
+            <!-- Normal Subscribed State (Owner with subscription, or member viewing subscribed workspace) -->
+            <template v-else>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-bold text-text-primary">
+                    {{ subscriptionTierName }}
+                  </span>
+                  <StatusBadge
+                    v-if="isCancelled"
+                    :label="$t('subscription.canceled')"
+                    severity="warn"
+                  />
+                </div>
+                <div class="flex items-baseline gap-1 font-inter font-semibold">
+                  <span class="text-2xl">${{ tierPrice }}</span>
+                  <span class="text-base"
+                    >{{ $t('subscription.perMonth') }} /
+                    {{ $t('subscription.member') }}</span
+                  >
+                </div>
+                <div
+                  v-if="isActiveSubscription"
+                  :class="
+                    cn(
+                      'text-sm',
+                      isCancelled
+                        ? 'text-warning-background'
+                        : 'text-text-secondary'
+                    )
+                  "
                 >
+                  <template v-if="isCancelled">
+                    {{
+                      $t('subscription.expiresDate', {
+                        date: formattedEndDate
+                      })
+                    }}
+                  </template>
+                  <template v-else>
+                    {{
+                      $t('subscription.renewsDate', {
+                        date: formattedRenewalDate
+                      })
+                    }}
+                  </template>
+                </div>
               </div>
+
               <div
-                v-if="isActiveSubscription"
+                v-if="isActiveSubscription && permissions.canManageSubscription"
+                class="flex flex-wrap gap-2 md:ml-auto"
+              >
+                <!-- Cancelled state: show only Resubscribe button -->
+                <template v-if="isCancelled">
+                  <Button
+                    size="lg"
+                    variant="primary"
+                    class="rounded-lg px-4 text-sm font-normal"
+                    :loading="isResubscribing"
+                    @click="handleResubscribe"
+                  >
+                    {{ $t('subscription.resubscribe') }}
+                  </Button>
+                </template>
+
+                <!-- Active state: show Manage Payment, Upgrade, and menu -->
+                <template v-else>
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                    @click="manageSubscription"
+                  >
+                    {{ $t('subscription.managePayment') }}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="primary"
+                    class="rounded-lg px-4 text-sm font-normal text-text-primary"
+                    @click="showSubscriptionDialog"
+                  >
+                    {{ $t('subscription.upgradePlan') }}
+                  </Button>
+                  <Button
+                    v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                    variant="secondary"
+                    size="lg"
+                    :aria-label="$t('g.moreOptions')"
+                    @click="planMenu?.toggle($event)"
+                  >
+                    <i class="pi pi-ellipsis-h" />
+                  </Button>
+                  <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row gap-6 pt-9">
+          <div class="flex flex-col shrink-0">
+            <div class="flex flex-col gap-3">
+              <div
                 :class="
                   cn(
-                    'text-sm',
-                    isCancelled
-                      ? 'text-warning-background'
-                      : 'text-text-secondary'
+                    'relative flex flex-col gap-6 rounded-2xl p-5',
+                    'bg-modal-panel-background'
                   )
                 "
               >
-                <template v-if="isCancelled">
-                  {{
-                    $t('subscription.expiresDate', {
-                      date: formattedEndDate
-                    })
-                  }}
-                </template>
-                <template v-else>
-                  {{
-                    $t('subscription.renewsDate', {
-                      date: formattedRenewalDate
-                    })
-                  }}
-                </template>
-              </div>
-            </div>
-
-            <div
-              v-if="isActiveSubscription && permissions.canManageSubscription"
-              class="flex flex-wrap gap-2 md:ml-auto"
-            >
-              <!-- Cancelled state: show only Resubscribe button -->
-              <template v-if="isCancelled">
                 <Button
-                  size="lg"
-                  variant="primary"
-                  class="rounded-lg px-4 text-sm font-normal"
-                  :loading="isResubscribing"
-                  @click="handleResubscribe"
+                  variant="muted-textonly"
+                  size="icon-sm"
+                  class="absolute top-4 right-4"
+                  :loading="isLoadingBalance"
+                  @click="handleRefresh"
                 >
-                  {{ $t('subscription.resubscribe') }}
+                  <i class="pi pi-sync text-text-secondary text-sm" />
                 </Button>
-              </template>
 
-              <!-- Active state: show Manage Payment, Upgrade, and menu -->
-              <template v-else>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  class="rounded-lg px-4 text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
-                  @click="manageSubscription"
-                >
-                  {{ $t('subscription.managePayment') }}
-                </Button>
-                <Button
-                  size="lg"
-                  variant="primary"
-                  class="rounded-lg px-4 text-sm font-normal text-text-primary"
-                  @click="showSubscriptionDialog"
-                >
-                  {{ $t('subscription.upgradePlan') }}
-                </Button>
-                <Button
-                  v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                  variant="secondary"
-                  size="lg"
-                  :aria-label="$t('g.moreOptions')"
-                  @click="planMenu?.toggle($event)"
-                >
-                  <i class="pi pi-ellipsis-h" />
-                </Button>
-                <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
-              </template>
-            </div>
-          </template>
-        </div>
-      </div>
-
-      <div class="flex flex-col lg:flex-row gap-6 pt-9">
-        <div class="flex flex-col shrink-0">
-          <div class="flex flex-col gap-3">
-            <div
-              :class="
-                cn(
-                  'relative flex flex-col gap-6 rounded-2xl p-5',
-                  'bg-modal-panel-background'
-                )
-              "
-            >
-              <Button
-                variant="muted-textonly"
-                size="icon-sm"
-                class="absolute top-4 right-4"
-                :loading="isLoadingBalance"
-                @click="handleRefresh"
-              >
-                <i class="pi pi-sync text-text-secondary text-sm" />
-              </Button>
-
-              <div class="flex flex-col gap-2">
-                <div class="text-sm text-muted">
-                  {{ $t('subscription.totalCredits') }}
+                <div class="flex flex-col gap-2">
+                  <div class="text-sm text-muted">
+                    {{ $t('subscription.totalCredits') }}
+                  </div>
+                  <Skeleton
+                    v-if="isLoadingBalance"
+                    width="8rem"
+                    height="2rem"
+                  />
+                  <div v-else class="text-2xl font-bold">
+                    {{ showZeroState ? '0' : totalCredits }}
+                  </div>
                 </div>
-                <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
-                <div v-else class="text-2xl font-bold">
-                  {{ showZeroState ? '0' : totalCredits }}
+
+                <!-- Credit Breakdown -->
+                <table class="text-sm text-muted">
+                  <tbody>
+                    <tr>
+                      <td class="pr-4 font-bold text-left align-middle">
+                        <Skeleton
+                          v-if="isLoadingBalance"
+                          width="5rem"
+                          height="1rem"
+                        />
+                        <span v-else>{{
+                          showZeroState ? '0 / 0' : includedCreditsDisplay
+                        }}</span>
+                      </td>
+                      <td class="align-middle" :title="creditsRemainingLabel">
+                        {{ creditsRemainingLabel }}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="pr-4 font-bold text-left align-middle">
+                        <Skeleton
+                          v-if="isLoadingBalance"
+                          width="3rem"
+                          height="1rem"
+                        />
+                        <span v-else>{{
+                          showZeroState ? '0' : prepaidCredits
+                        }}</span>
+                      </td>
+                      <td
+                        class="align-middle"
+                        :title="$t('subscription.creditsYouveAdded')"
+                      >
+                        {{ $t('subscription.creditsYouveAdded') }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div class="flex items-center justify-between">
+                  <Button
+                    v-if="isActiveSubscription && !showZeroState"
+                    variant="secondary"
+                    class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
+                    @click="handleAddApiCredits"
+                  >
+                    {{ $t('subscription.addCredits') }}
+                  </Button>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <!-- Credit Breakdown -->
-              <table class="text-sm text-muted">
-                <tbody>
-                  <tr>
-                    <td class="pr-4 font-bold text-left align-middle">
-                      <Skeleton
-                        v-if="isLoadingBalance"
-                        width="5rem"
-                        height="1rem"
-                      />
-                      <span v-else>{{
-                        showZeroState ? '0 / 0' : includedCreditsDisplay
-                      }}</span>
-                    </td>
-                    <td class="align-middle" :title="creditsRemainingLabel">
-                      {{ creditsRemainingLabel }}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="pr-4 font-bold text-left align-middle">
-                      <Skeleton
-                        v-if="isLoadingBalance"
-                        width="3rem"
-                        height="1rem"
-                      />
-                      <span v-else>{{
-                        showZeroState ? '0' : prepaidCredits
-                      }}</span>
-                    </td>
-                    <td
-                      class="align-middle"
-                      :title="$t('subscription.creditsYouveAdded')"
-                    >
-                      {{ $t('subscription.creditsYouveAdded') }}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+          <div v-if="isActiveSubscription" class="flex flex-col gap-2">
+            <div class="text-sm text-text-primary">
+              {{ $t('subscription.yourPlanIncludes') }}
+            </div>
 
-              <div class="flex items-center justify-between">
-                <Button
-                  v-if="isActiveSubscription && !showZeroState"
-                  variant="secondary"
-                  class="p-2 min-h-8 rounded-lg text-sm font-normal text-text-primary bg-interface-menu-component-surface-selected"
-                  @click="handleAddApiCredits"
+            <div class="flex flex-col gap-0">
+              <div
+                v-for="benefit in tierBenefits"
+                :key="benefit.key"
+                class="flex items-center gap-2 py-2"
+              >
+                <i
+                  v-if="benefit.type === 'feature'"
+                  class="pi pi-check text-xs text-text-primary"
+                />
+                <i
+                  v-else-if="benefit.type === 'icon' && benefit.icon"
+                  :class="[benefit.icon, 'text-xs text-text-primary']"
+                />
+                <span
+                  v-else-if="benefit.type === 'metric' && benefit.value"
+                  class="text-sm font-normal whitespace-nowrap text-text-primary"
                 >
-                  {{ $t('subscription.addCredits') }}
-                </Button>
+                  {{ benefit.value }}
+                </span>
+                <span class="text-sm text-muted">
+                  {{ benefit.label }}
+                </span>
               </div>
             </div>
           </div>
         </div>
-
-        <div v-if="isActiveSubscription" class="flex flex-col gap-2">
-          <div class="text-sm text-text-primary">
-            {{ $t('subscription.yourPlanIncludes') }}
-          </div>
-
-          <div class="flex flex-col gap-0">
-            <div
-              v-for="benefit in tierBenefits"
-              :key="benefit.key"
-              class="flex items-center gap-2 py-2"
-            >
-              <i
-                v-if="benefit.type === 'feature'"
-                class="pi pi-check text-xs text-text-primary"
-              />
-              <i
-                v-else-if="benefit.type === 'icon' && benefit.icon"
-                :class="[benefit.icon, 'text-xs text-text-primary']"
-              />
-              <span
-                v-else-if="benefit.type === 'metric' && benefit.value"
-                class="text-sm font-normal whitespace-nowrap text-text-primary"
-              >
-                {{ benefit.value }}
-              </span>
-              <span class="text-sm text-muted">
-                {{ benefit.label }}
-              </span>
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
 
-    <!-- Members invoice card -->
-    <div
-      v-if="isActiveSubscription && !isInPersonalWorkspace"
-      class="mt-6 flex gap-1 rounded-2xl border border-interface-stroke p-6 justify-between items-center text-sm"
-    >
-      <div class="flex flex-col gap-2">
-        <h4 class="text-sm text-text-primary m-0">
-          {{ $t('subscription.nextMonthInvoice') }}
-        </h4>
-        <span
-          class="text-muted-foreground underline cursor-pointer"
-          @click="manageSubscription"
-        >
-          {{ $t('subscription.invoiceHistory') }}
-        </span>
-      </div>
-      <div class="flex flex-col gap-2 items-end">
-        <h4 class="m-0 font-bold">${{ nextMonthInvoice }}</h4>
-        <h5 class="m-0 text-muted-foreground">
-          {{ $t('subscription.memberCount', memberCount) }}
-        </h5>
-      </div>
-    </div>
-
-    <!-- View More Details - Outside main content -->
-    <div class="flex items-center gap-2 py-6">
-      <i class="pi pi-external-link text-muted"></i>
-      <a
-        href="https://www.comfy.org/cloud/pricing"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-sm underline hover:opacity-80 text-muted"
+      <!-- Members invoice card -->
+      <div
+        v-if="isActiveSubscription && !isInPersonalWorkspace"
+        class="mt-6 flex gap-1 rounded-2xl border border-interface-stroke p-6 justify-between items-center text-sm"
       >
-        {{ $t('subscription.viewMoreDetailsPlans') }}
-      </a>
-    </div>
+        <div class="flex flex-col gap-2">
+          <h4 class="text-sm text-text-primary m-0">
+            {{ $t('subscription.nextMonthInvoice') }}
+          </h4>
+          <span
+            class="text-muted-foreground underline cursor-pointer"
+            @click="manageSubscription"
+          >
+            {{ $t('subscription.invoiceHistory') }}
+          </span>
+        </div>
+        <div class="flex flex-col gap-2 items-end">
+          <h4 class="m-0 font-bold">${{ nextMonthInvoice }}</h4>
+          <h5 class="m-0 text-muted-foreground">
+            {{ $t('subscription.memberCount', memberCount) }}
+          </h5>
+        </div>
+      </div>
+
+      <!-- View More Details - Outside main content -->
+      <div class="flex items-center gap-2 py-6">
+        <i class="pi pi-external-link text-muted"></i>
+        <a
+          href="https://www.comfy.org/cloud/pricing"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-sm underline hover:opacity-80 text-muted"
+        >
+          {{ $t('subscription.viewMoreDetailsPlans') }}
+        </a>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -329,6 +346,7 @@ import { useToast } from 'primevue/usetoast'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingOperationStore } from '@/stores/billingOperationStore'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -351,6 +369,9 @@ const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
 const { permissions, workspaceRole } = useWorkspaceUI()
 const { t, n } = useI18n()
 const toast = useToast()
+
+const billingOperationStore = useBillingOperationStore()
+const isSettingUp = computed(() => billingOperationStore.isSettingUp)
 
 const {
   isActiveSubscription,

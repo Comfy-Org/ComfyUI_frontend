@@ -158,11 +158,11 @@ import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useBillingPolling } from '@/platform/cloud/subscription/composables/useBillingPolling'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDialogService } from '@/services/dialogService'
+import { useBillingOperationStore } from '@/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@/utils/tailwindUtil'
 
@@ -178,28 +178,8 @@ const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { fetchBalance } = useBillingContext()
 
-const { isPending: isPolling, startPolling } = useBillingPolling({
-  failedMessage: 'Top-up failed',
-  timeoutMessage: 'Top-up verification timed out',
-  async onSuccess() {
-    toast.add({
-      severity: 'success',
-      summary: t('credits.topUp.purchaseSuccess'),
-      life: 5000
-    })
-    await fetchBalance()
-    handleClose(false)
-    dialogService.showSettingsDialog('workspace')
-  },
-  onError(errorMsg) {
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.purchaseError'),
-      detail: errorMsg,
-      life: 5000
-    })
-  }
-})
+const billingOperationStore = useBillingOperationStore()
+const isPolling = computed(() => billingOperationStore.hasPendingOperations)
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
@@ -288,7 +268,7 @@ async function handleBuy() {
       handleClose(false)
       dialogService.showSettingsDialog('workspace')
     } else if (response.status === 'pending') {
-      startPolling(response.billing_op_id)
+      billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
       toast.add({
         severity: 'error',

@@ -2069,6 +2069,16 @@
       "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n\nYour existing Partner node balance has been converted into credits."
     }
   },
+  "billingOperation": {
+    "subscriptionProcessing": "Processing payment — setting up your workspace...",
+    "subscriptionSuccess": "Subscription updated successfully",
+    "subscriptionFailed": "Subscription update failed",
+    "subscriptionTimeout": "Subscription verification timed out",
+    "topupProcessing": "Processing payment — adding credits...",
+    "topupSuccess": "Credits added successfully",
+    "topupFailed": "Top-up failed",
+    "topupTimeout": "Top-up verification timed out"
+  },
   "subscription": {
     "chooseBestPlanWorkspace": "Choose the best plan for your workspace",
     "title": "Subscription",

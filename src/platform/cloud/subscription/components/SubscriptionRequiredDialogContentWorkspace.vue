@@ -64,18 +64,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingPolling } from '@/platform/cloud/subscription/composables/useBillingPolling'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingOperationStore } from '@/stores/billingOperationStore'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
@@ -96,36 +95,9 @@ const { t } = useI18n()
 const toast = useToast()
 const { subscribe, previewSubscribe, plans, fetchStatus, fetchBalance } =
   useBillingContext()
-const { showSettingsDialog } = useDialogService()
 
-const {
-  isPending: isPolling,
-  isTimeout,
-  startPolling
-} = useBillingPolling({
-  failedMessage: 'Subscription failed',
-  timeoutMessage: 'Subscription verification timed out',
-  async onSuccess() {
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.required.pollingSuccess'),
-      life: 5000
-    })
-    await Promise.all([fetchStatus(), fetchBalance()])
-    props.onClose()
-    await showSettingsDialog('workspace')
-  },
-  onError() {
-    toast.add({
-      severity: 'error',
-      summary: t('subscription.required.pollingFailed'),
-      detail: isTimeout.value
-        ? t('subscription.required.pollingTimeout')
-        : undefined,
-      life: 5000
-    })
-  }
-})
+const billingOperationStore = useBillingOperationStore()
+const isPolling = computed(() => billingOperationStore.hasPendingOperations)
 
 const checkoutStep = ref<CheckoutStep>('pricing')
 const isLoadingPreview = ref(false)
@@ -237,9 +209,15 @@ async function handleAddCreditCard() {
       response.payment_method_url
     ) {
       window.open(response.payment_method_url, '_blank')
-      startPolling(response.billing_op_id)
+      billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
     } else if (response.status === 'pending_payment') {
-      startPolling(response.billing_op_id)
+      billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
     }
   } catch (error) {
     const message =
@@ -286,9 +264,15 @@ async function handleConfirmTransition() {
       response.payment_method_url
     ) {
       window.open(response.payment_method_url, '_blank')
-      startPolling(response.billing_op_id)
+      billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
     } else if (response.status === 'pending_payment') {
-      startPolling(response.billing_op_id)
+      billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
     }
   } catch (error) {
     const message =
