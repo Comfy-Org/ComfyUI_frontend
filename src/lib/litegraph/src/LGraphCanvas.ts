@@ -203,6 +203,9 @@ interface LGraphCanvasState {
    * Downstream consumers may reset to false once actioned.
    */
   selectionChanged: boolean
+
+  /** ID of node currently in ghost placement mode (semi-transparent, following cursor). */
+  ghostNodeId: NodeId | null
 }
 
 /**
@@ -313,7 +316,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     readOnly: false,
     hoveringOver: CanvasItem.Nothing,
     shouldSetCursor: true,
-    selectionChanged: false
+    selectionChanged: false,
+    ghostNodeId: null
   }
 
   private _subgraph?: Subgraph
@@ -2163,6 +2167,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   processMouseDown(e: MouseEvent): void {
+    if (this.state.ghostNodeId != null) {
+      if (e.button === 0) this.finalizeGhostPlacement(false)
+      if (e.button === 2) this.finalizeGhostPlacement(true)
+      e.stopPropagation()
+      e.preventDefault()
+      return
+    }
+
     if (
       this.dragZoomEnabled &&
       e.ctrlKey &&
@@ -3554,6 +3566,76 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   /**
+   * Starts ghost placement mode for a node.
+   * The node will be semi-transparent and follow the cursor until the user
+   * clicks to place it, or presses Escape/right-clicks to cancel.
+   * @param node The node to place
+   * @param dragEvent Optional mouse event for positioning under cursor
+   */
+  startGhostPlacement(node: LGraphNode, dragEvent?: MouseEvent): void {
+    this.emitBeforeChange()
+    this.graph?.beforeChange()
+
+    if (dragEvent) {
+      this.adjustMouseEvent(dragEvent)
+      const e = dragEvent as CanvasPointerEvent
+      node.pos[0] = e.canvasX - node.size[0] / 2
+      node.pos[1] = e.canvasY + 10
+      // Update last_mouse to prevent jump on first drag move
+      this.last_mouse = [e.clientX, e.clientY]
+    } else {
+      node.pos[0] = this.graph_mouse[0] - node.size[0] / 2
+      node.pos[1] = this.graph_mouse[1] + 10
+    }
+
+    // Sync position to layout store for Vue node rendering
+    if (LiteGraph.vueNodesMode) {
+      const mutations = this.initLayoutMutations()
+      mutations.moveNode(node.id, { x: node.pos[0], y: node.pos[1] })
+    }
+
+    this.state.ghostNodeId = node.id
+
+    this.deselectAll()
+    this.select(node)
+    this.isDragging = true
+  }
+
+  /**
+   * Finalizes ghost placement mode.
+   * @param cancelled If true, the node is removed; otherwise it's placed
+   */
+  finalizeGhostPlacement(cancelled: boolean): void {
+    const nodeId = this.state.ghostNodeId
+    if (nodeId == null) return
+
+    this.state.ghostNodeId = null
+    this.isDragging = false
+
+    const node = this.graph?.getNodeById(nodeId)
+    if (!node) return
+
+    if (cancelled) {
+      this.deselect(node)
+      this.graph?.remove(node)
+    } else {
+      delete node.flags.ghost
+      this.graph?.trigger('node:property:changed', {
+        nodeId: node.id,
+        property: 'flags.ghost',
+        oldValue: true,
+        newValue: false
+      })
+    }
+
+    this.dirty_canvas = true
+    this.dirty_bgcanvas = true
+
+    this.graph?.afterChange()
+    this.emitAfterChange()
+  }
+
+  /**
    * Called when a mouse up event has to be processed
    */
   processMouseUp(e: PointerEvent): void {
@@ -3722,6 +3804,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const { graph } = this
     if (!graph) return
+
+    // Cancel ghost placement
+    if (
+      (e.key === 'Escape' || e.key === 'Delete' || e.key === 'Backspace') &&
+      this.state.ghostNodeId != null
+    ) {
+      this.finalizeGhostPlacement(true)
+      e.stopPropagation()
+      e.preventDefault()
+      return
+    }
 
     let block_default = false
     // @ts-expect-error EventTarget.localName is not in standard types
@@ -5805,6 +5898,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private getNodeModeAlpha(node: LGraphNode) {
+    if (node.flags.ghost) return 0.3
     return node.mode === LGraphEventMode.BYPASS
       ? 0.2
       : node.mode === LGraphEventMode.NEVER
