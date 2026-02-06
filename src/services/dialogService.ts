@@ -96,15 +96,10 @@ export const useDialogService = () => {
       lazyMissingNodesFooter()
     ])
 
-    const { replaceNode, replaceAllNodes } = useNodeReplacement()
+    const { replaceAllNodes } = useNodeReplacement()
 
-    const handleReplace = async (nodeType: string) => {
-      await replaceNode(nodeType)
-    }
-
-    const handleReplaceAll = async () => {
-      await replaceAllNodes(props.missingNodeTypes as MissingNodeType[])
-      dialogStore.closeDialog({ key: 'global-missing-nodes' })
+    const handleReplaceSelected = async (selectedTypes: MissingNodeType[]) => {
+      await replaceAllNodes(selectedTypes)
     }
 
     dialogStore.showDialog({
@@ -128,11 +123,7 @@ export const useDialogService = () => {
       },
       props: {
         ...props,
-        onReplace: handleReplace
-      },
-      footerProps: {
-        missingNodeTypes: props.missingNodeTypes,
-        onReplaceAll: handleReplaceAll
+        onReplaceSelected: handleReplaceSelected
       }
     })
   }

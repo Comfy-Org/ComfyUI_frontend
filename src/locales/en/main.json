@@ -2807,12 +2807,21 @@
     }
   },
   "nodeReplacement": {
+    "quickFixAvailable": "Quick Fix Available",
+    "installationRequired": "Installation Required",
+    "compatibleAlternatives": "Compatible Alternatives",
     "replaceable": "Replaceable",
-    "replace": "Replace",
-    "replaceAll": "Replace All",
+    "notReplaceable": "Install Required",
+    "selectAll": "Select All",
+    "replaceSelected": "Replace Selected ({count})",
     "replacedNode": "Replaced node: {nodeType}",
     "replacedAllNodes": "Replaced {count} node type(s)",
-    "replaceFailed": "Failed to replace nodes"
+    "replaceFailed": "Failed to replace nodes",
+    "instructionMessage": "You must install these nodes or replace them with installed alternatives to run the workflow. Missing nodes are highlighted in {red} on the canvas. Some nodes cannot be swapped and must be installed via Node Manager.",
+    "redHighlight": "red",
+    "openNodeManager": "Open Node Manager",
+    "skipForNow": "Skip for Now",
+    "installMissingNodes": "Install Missing Nodes"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
