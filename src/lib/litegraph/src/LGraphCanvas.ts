@@ -176,6 +176,12 @@ interface IDialogExtensions extends ICloseable {
 interface IDialog extends HTMLDivElement, IDialogExtensions {}
 type PromptDialog = Omit<IDialog, 'modified'>
 
+interface CompatibleNodeResult {
+  node: LGraphNode
+  slotIndex: number
+  slotInfo: INodeInputSlot | INodeOutputSlot
+}
+
 interface IDialogOptions {
   position?: Point
   event?: MouseEvent
@@ -315,6 +321,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     shouldSetCursor: true,
     selectionChanged: false
   }
+
+  static readonly AUTOPAN_EDGE_PX = 48
+  static readonly AUTOPAN_MAX_SPEED = 900
+
+  private _autopanRAF: number | null = null
+  private _autopanLastTime: number = 0
+  private _autopanVelocity: [number, number] = [0, 0]
 
   private _subgraph?: Subgraph
   get subgraph(): Subgraph | undefined {
@@ -821,6 +834,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.linkConnector.events.addEventListener('reset', () => {
       this.connecting_links = null
       this.dirty_bgcanvas = true
+      this._stopAutopan()
     })
 
     // Dropped a link on the canvas
@@ -3233,7 +3247,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       (this.allow_interaction || node?.flags.allow_interaction) &&
       !this.read_only
     ) {
-      if (linkConnector.isConnecting) this.dirty_canvas = true
+      if (linkConnector.isConnecting) {
+        this.dirty_canvas = true
+        this._updateAutopanVelocity(e)
+      }
 
       // remove mouseover flag
       this.updateMouseOverNodes(node, e)
@@ -3552,6 +3569,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (!graph) return
 
     this._finishDragZoom()
+    this._stopAutopan()
 
     LGraphCanvas.active_canvas = this
 
@@ -8299,6 +8317,104 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return group.getMenuOptions()
   }
 
+  private _updateAutopanVelocity(e: PointerEvent): void {
+    const rect = this.canvas.getBoundingClientRect()
+    const edge = LGraphCanvas.AUTOPAN_EDGE_PX
+    const maxSpeed = LGraphCanvas.AUTOPAN_MAX_SPEED
+
+    let vx = 0
+    let vy = 0
+
+    const distLeft = e.clientX - rect.left
+    const distRight = rect.right - e.clientX
+    const distTop = e.clientY - rect.top
+    const distBottom = rect.bottom - e.clientY
+
+    if (distLeft < edge) vx = ((edge - distLeft) / edge) * maxSpeed
+    else if (distRight < edge) vx = -(((edge - distRight) / edge) * maxSpeed)
+
+    if (distTop < edge) vy = ((edge - distTop) / edge) * maxSpeed
+    else if (distBottom < edge) vy = -(((edge - distBottom) / edge) * maxSpeed)
+
+    this._autopanVelocity[0] = vx
+    this._autopanVelocity[1] = vy
+
+    if ((vx !== 0 || vy !== 0) && this._autopanRAF === null) {
+      this._autopanLastTime = performance.now()
+      this._autopanRAF = requestAnimationFrame((t) => this._autopanTick(t))
+    }
+  }
+
+  private _autopanTick(timestamp: number): void {
+    const [vx, vy] = this._autopanVelocity
+    if (!this.linkConnector.isConnecting || (vx === 0 && vy === 0)) {
+      this._stopAutopan()
+      return
+    }
+
+    const dt = Math.min((timestamp - this._autopanLastTime) / 1000, 0.1)
+    this._autopanLastTime = timestamp
+
+    this.ds.offset[0] += (vx * dt) / this.ds.scale
+    this.ds.offset[1] += (vy * dt) / this.ds.scale
+
+    this.setDirty(true, true)
+    this._autopanRAF = requestAnimationFrame((t) => this._autopanTick(t))
+  }
+
+  private _stopAutopan(): void {
+    if (this._autopanRAF !== null) {
+      cancelAnimationFrame(this._autopanRAF)
+      this._autopanRAF = null
+    }
+    this._autopanVelocity[0] = 0
+    this._autopanVelocity[1] = 0
+  }
+
+  private findCompatibleNodes(
+    sourceNode: LGraphNode,
+    sourceSlot: INodeInputSlot | INodeOutputSlot,
+    sourceIsInput: boolean,
+    maxResults: number = 15
+  ): CompatibleNodeResult[] {
+    if (!this.graph) return []
+
+    const slotType = sourceSlot.type
+    if (slotType === '*' || slotType === '' || slotType === 0) return []
+
+    const results: CompatibleNodeResult[] = []
+
+    for (const candidate of this.graph._nodes) {
+      if (candidate.id === sourceNode.id) continue
+      if (candidate.mode === LGraphEventMode.NEVER) continue
+      if (candidate instanceof SubgraphIONodeBase) continue
+
+      if (sourceIsInput) {
+        if (!candidate.outputs) continue
+        for (let i = 0; i < candidate.outputs.length; i++) {
+          const output = candidate.outputs[i]
+          if (output.type === '*' || output.type === '' || output.type === 0)
+            continue
+          if (LiteGraph.isValidConnection(output.type, sourceSlot.type))
+            results.push({ node: candidate, slotIndex: i, slotInfo: output })
+        }
+      } else {
+        if (!candidate.inputs) continue
+        for (let i = 0; i < candidate.inputs.length; i++) {
+          const input = candidate.inputs[i]
+          if (input.link != null) continue
+          if (input.type === '*' || input.type === '' || input.type === 0)
+            continue
+          if (LiteGraph.isValidConnection(sourceSlot.type, input.type))
+            results.push({ node: candidate, slotIndex: i, slotInfo: input })
+        }
+      }
+    }
+
+    results.sort((a, b) => a.node.pos[1] - b.node.pos[1])
+    return results.slice(0, maxResults)
+  }
+
   processContextMenu(
     node: LGraphNode | undefined,
     event: CanvasPointerEvent
@@ -8348,6 +8464,46 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           if (node.getExtraSlotMenuOptions) {
             menu_info.push(...node.getExtraSlotMenuOptions(slot))
+          }
+        }
+
+        const isInput = !!slot.input
+        const slotInfo = slot.input || slot.output
+        if (slotInfo) {
+          const compatibleNodes = this.findCompatibleNodes(
+            node,
+            slotInfo,
+            isInput
+          )
+
+          if (compatibleNodes.length > 0) {
+            menu_info.push(null)
+            menu_info.push({
+              content: 'Connect to...',
+              has_submenu: true,
+              submenu: {
+                title: slotInfo.type?.toString() || '*',
+                options: compatibleNodes.map((candidate) => ({
+                  content: `${candidate.slotInfo.name} @ ${candidate.node.title || candidate.node.type}`,
+                  callback: () => {
+                    if (!node.graph) return
+                    if (isInput) {
+                      candidate.node.connect(
+                        candidate.slotIndex,
+                        node,
+                        slot.slot
+                      )
+                    } else {
+                      node.connect(
+                        slot.slot,
+                        candidate.node,
+                        candidate.slotIndex
+                      )
+                    }
+                  }
+                }))
+              }
+            })
           }
         }
         // @ts-expect-error Slot type can be number and has number checks
