@@ -108,6 +108,7 @@
     "prefer-template": "error",
     "promise/no-nesting": "warn",
     "promise/param-names": "error",
+    "promise/prefer-await-to-callbacks": "warn",
     "promise/prefer-await-to-then": [
       "warn",
       {
