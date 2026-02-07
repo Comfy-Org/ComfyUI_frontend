@@ -277,7 +277,7 @@ export const useFirebaseAuthStore = defineStore('firebaseAuth', () => {
   }
 
   const createCustomer = async (): Promise<CreateCustomerResponse> => {
-    const authHeader = await getAuthHeader()
+    const authHeader = await getFirebaseAuthHeader()
     if (!authHeader) {
       throw new FirebaseAuthStoreError(t('toastMessages.userNotAuthenticated'))
     }

@@ -9,8 +9,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -29,7 +29,7 @@ import { cn } from '@/utils/tailwindUtil'
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
-const { isActiveSubscription } = useSubscription()
+const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
 
 const props = defineProps<{
