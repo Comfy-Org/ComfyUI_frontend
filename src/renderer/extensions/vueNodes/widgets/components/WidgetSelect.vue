@@ -47,12 +47,9 @@ const { widget, nodeType } = defineProps<{
 
 const modelValue = defineModel<string | undefined>()
 
-const comboSpec = computed<ComboInputSpec | undefined>(() => {
-  if (widget.spec && isComboInputSpec(widget.spec)) {
-    return widget.spec
-  }
-  return undefined
-})
+const comboSpec = computed<ComboInputSpec | undefined>(() =>
+  widget.spec && isComboInputSpec(widget.spec) ? widget.spec : undefined
+)
 
 const specDescriptor = computed<{
   kind: AssetKind

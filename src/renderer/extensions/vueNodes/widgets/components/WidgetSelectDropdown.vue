@@ -189,14 +189,14 @@ const outputItems = computed<FormDropdownItem[]>(() => {
  */
 const missingValueItem = computed<FormDropdownItem | undefined>(() => {
   const currentValue = modelValue.value
-  if (!currentValue) return undefined
+  if (!currentValue) return
 
   // Check in cloud mode assets
   if (isAssetMode && assetData) {
     const existsInAssets = assetData.assets.value.some(
       (asset) => getAssetFilename(asset) === currentValue
     )
-    if (existsInAssets) return undefined
+    if (existsInAssets) return
 
     return {
       id: `missing-${currentValue}`,
@@ -214,7 +214,7 @@ const missingValueItem = computed<FormDropdownItem | undefined>(() => {
     (item) => item.name === currentValue
   )
 
-  if (existsInInputs || existsInOutputs) return undefined
+  if (existsInInputs || existsInOutputs) return
 
   const isOutput = currentValue.endsWith(' [output]')
   const strippedValue = isOutput
@@ -314,20 +314,15 @@ const uploadable = computed(() => {
   return allowUpload === true
 })
 
-const acceptTypes = computed(() => {
-  // Be permissive with accept types because backend uses libraries
-  // that can handle a wide range of formats
-  switch (assetKind) {
-    case 'image':
-      return 'image/*'
-    case 'video':
-      return 'video/*'
-    case 'audio':
-      return 'audio/*'
-    default:
-      return undefined // model or unknown
-  }
-})
+const assetKindAcceptTypes: Record<string, string> = {
+  image: 'image/*',
+  video: 'video/*',
+  audio: 'audio/*'
+}
+
+const acceptTypes = computed(() =>
+  assetKind ? assetKindAcceptTypes[assetKind] : undefined
+)
 
 const layoutMode = ref<LayoutMode>(defaultLayoutMode ?? 'grid')
 
@@ -349,7 +344,7 @@ watch(
 )
 
 function updateSelectedItems(selectedItems: Set<string>) {
-  let id: string | undefined = undefined
+  let id: string | undefined
   if (selectedItems.size > 0) {
     id = selectedItems.values().next().value!
   }

@@ -50,8 +50,8 @@ describe('useNewUserService', () => {
     it('should identify new user when all conditions are met', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -64,8 +64,8 @@ describe('useNewUserService', () => {
       mockSettingStore.settingValues = { 'some.setting': 'value' }
 
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
 
       mockLocalStorage.getItem.mockReturnValue(null)
@@ -79,7 +79,7 @@ describe('useNewUserService', () => {
       mockSettingStore.settingValues = { 'Comfy.TutorialCompleted': true }
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.TutorialCompleted') return true
-        return undefined
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -91,8 +91,8 @@ describe('useNewUserService', () => {
     it('should identify existing user when workflow exists', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'workflow') return 'some-workflow'
@@ -107,8 +107,8 @@ describe('useNewUserService', () => {
     it('should identify existing user when previous workflow exists', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'Comfy.PreviousWorkflow') return 'some-previous-workflow'
@@ -124,7 +124,7 @@ describe('useNewUserService', () => {
       mockSettingStore.settingValues = { 'Comfy.TutorialCompleted': false }
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.TutorialCompleted') return false
-        return undefined
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -140,7 +140,7 @@ describe('useNewUserService', () => {
       }
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.TutorialCompleted') return true
-        return undefined
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -152,8 +152,8 @@ describe('useNewUserService', () => {
     it('should identify existing user when only one condition fails', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockImplementation((key: string) => {
         if (key === 'workflow') return 'some-workflow'
@@ -173,8 +173,8 @@ describe('useNewUserService', () => {
 
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -203,8 +203,8 @@ describe('useNewUserService', () => {
 
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -224,8 +224,8 @@ describe('useNewUserService', () => {
     it('should set installed version for new users', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -241,7 +241,7 @@ describe('useNewUserService', () => {
       mockSettingStore.settingValues = { 'some.setting': 'value' }
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.TutorialCompleted') return true
-        return undefined
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -259,8 +259,8 @@ describe('useNewUserService', () => {
 
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -278,7 +278,7 @@ describe('useNewUserService', () => {
       mockSettingStore.settingValues = { 'some.setting': 'value' }
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.TutorialCompleted') return true
-        return undefined
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -295,8 +295,8 @@ describe('useNewUserService', () => {
 
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -312,8 +312,8 @@ describe('useNewUserService', () => {
     it('should not reinitialize if already determined', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -327,8 +327,8 @@ describe('useNewUserService', () => {
     it('should correctly determine new user status', async () => {
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -366,7 +366,7 @@ describe('useNewUserService', () => {
       mockSettingStore.settingValues = { 'Comfy.TutorialCompleted': false }
       mockSettingStore.get.mockImplementation((key: string) => {
         if (key === 'Comfy.TutorialCompleted') return false
-        return undefined
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -381,8 +381,8 @@ describe('useNewUserService', () => {
 
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -403,8 +403,8 @@ describe('useNewUserService', () => {
 
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -426,8 +426,8 @@ describe('useNewUserService', () => {
 
       mockSettingStore.settingValues = {}
       mockSettingStore.get.mockImplementation((key: string) => {
-        if (key === 'Comfy.TutorialCompleted') return undefined
-        return undefined
+        if (key === 'Comfy.TutorialCompleted') return
+        return
       })
       mockLocalStorage.getItem.mockReturnValue(null)
 

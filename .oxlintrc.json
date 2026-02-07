@@ -96,6 +96,13 @@
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/no-empty-file": "off",
     "unicorn/no-new-array": "off",
+    "unicorn/no-useless-undefined": [
+      "error",
+      {
+        "checkArguments": false,
+        "checkArrowFunctionBody": true
+      }
+    ],
     "unicorn/no-single-promise-in-promise-methods": "off",
     "unicorn/no-useless-fallback-in-spread": "off",
     "unicorn/no-useless-spread": "off",

@@ -19,7 +19,7 @@ export const useNodePreviewState = (
 
   const previewUrls = computed(() => {
     const key = locatorId.value
-    if (!key) return undefined
+    if (!key) return
     const urls = nodePreviewImages.value[key]
     return urls?.length ? urls : undefined
   })

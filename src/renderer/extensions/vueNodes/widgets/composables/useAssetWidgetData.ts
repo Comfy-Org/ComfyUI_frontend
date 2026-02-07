@@ -72,6 +72,7 @@ export function useAssetWidgetData(
   }
 
   return {
+    // oxlint-disable-next-line unicorn/no-useless-undefined -- matches cloud path return type
     category: computed(() => undefined),
     assets: computed<AssetItem[]>(() => []),
     isLoading: computed(() => false),

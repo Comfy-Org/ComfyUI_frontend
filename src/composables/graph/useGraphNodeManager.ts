@@ -124,7 +124,7 @@ function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
 }
 
 function getNodeType(node: LGraphNode, widget: IBaseWidget) {
-  if (!node.isSubgraphNode() || !isProxyWidget(widget)) return undefined
+  if (!node.isSubgraphNode() || !isProxyWidget(widget)) return
   const subNode = node.subgraph.getNodeById(widget._overlay.nodeId)
   return subNode?.type
 }

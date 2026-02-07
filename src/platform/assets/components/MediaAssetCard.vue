@@ -216,7 +216,7 @@ const fileName = computed(() => {
 
 // Adapt AssetItem to legacy AssetMeta format for existing components
 const adaptedAsset = computed(() => {
-  if (!asset) return undefined
+  if (!asset) return
   return {
     id: asset.id,
     name: asset.name,

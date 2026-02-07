@@ -181,19 +181,14 @@ const textClasses = computed(() => {
 
 const iconColorClass = computed(() => textClasses.value)
 
+const variantIcons: Record<string, string | undefined> = {
+  error: 'pi pi-exclamation-circle',
+  warning: 'icon-[lucide--triangle-alert]'
+}
+
 const iconClass = computed(() => {
-  if (badge.icon) {
-    return badge.icon
-  }
-  switch (variant.value) {
-    case 'error':
-      return 'pi pi-exclamation-circle'
-    case 'warning':
-      return 'icon-[lucide--triangle-alert]'
-    case 'info':
-    default:
-      return undefined
-  }
+  if (badge.icon) return badge.icon
+  return variantIcons[variant.value]
 })
 
 const clickableClasses = 'cursor-pointer transition-opacity hover:opacity-80'

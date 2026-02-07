@@ -53,7 +53,7 @@ useEventListener(
 )
 
 function getDropIndicator(node: LGraphNode) {
-  if (node.type !== 'LoadImage') return undefined
+  if (node.type !== 'LoadImage') return
 
   const filename = node.widgets?.[0]?.value
   const resultItem = { type: 'input', filename: `${filename}` }

@@ -235,7 +235,7 @@ describe('TopMenuSection', () => {
       vi.mocked(settingStore.get).mockImplementation((key) => {
         if (key === 'Comfy.Queue.QPOV2') return qpoV2Enabled
         if (key === 'Comfy.UseNewMenu') return 'Top'
-        return undefined
+        return
       })
     }
 

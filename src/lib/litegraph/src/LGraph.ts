@@ -2078,7 +2078,7 @@ export class LGraph
         continue
       }
       let instance: Reroute | LLink | undefined = linkInstance
-      let parentId: RerouteId | undefined = undefined
+      let parentId: RerouteId | undefined
       if (newLink.externalFirst) {
         parentId = newLink.eparent
         //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation

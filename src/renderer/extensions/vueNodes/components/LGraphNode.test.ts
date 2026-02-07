@@ -64,9 +64,9 @@ vi.mock(
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => undefined),
-      progressPercentage: computed(() => undefined),
-      progressState: computed(() => undefined),
+      progress: computed(() => null),
+      progressPercentage: computed(() => null),
+      progressState: computed(() => null),
       executionState: computed(() => 'idle' as const)
     }))
   })

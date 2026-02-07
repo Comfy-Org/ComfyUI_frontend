@@ -627,7 +627,7 @@ export const useAssetsStore = defineStore('assets', () => {
     return {
       getAssets: () => emptyAssets,
       isLoading: () => false,
-      getError: () => undefined,
+      getError: () => {},
       hasMore: () => false,
       hasAssetKey: () => false,
       updateModelsForNodeType: async () => {},

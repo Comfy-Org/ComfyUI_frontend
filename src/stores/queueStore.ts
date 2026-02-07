@@ -378,7 +378,7 @@ export class TaskItemImpl {
 
   get executionTime() {
     if (!this.executionStartTimestamp || !this.executionEndTimestamp) {
-      return undefined
+      return
     }
     return this.executionEndTimestamp - this.executionStartTimestamp
   }

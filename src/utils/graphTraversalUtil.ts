@@ -183,7 +183,7 @@ export function collectAllNodes(
     if (!filter || filter(node)) {
       return node
     }
-    return undefined
+    return
   })
 }
 
@@ -393,7 +393,7 @@ export function mapSubgraphNodes<T>(
     if (node.type === subgraphId) {
       return mapFn(node)
     }
-    return undefined
+    return
   })
 }
 

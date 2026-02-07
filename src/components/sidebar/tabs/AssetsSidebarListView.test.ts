@@ -56,7 +56,7 @@ vi.mock('@/utils/queueDisplay', () => ({
 }))
 
 vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
-  getOutputAssetMetadata: () => undefined
+  getOutputAssetMetadata: () => {}
 }))
 
 vi.mock('@/platform/assets/utils/mediaIconUtil', () => ({

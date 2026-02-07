@@ -61,8 +61,7 @@ const proxyWidgets = customRef<ProxyWidgetsProperty>((track, trigger) => ({
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
-  if (node instanceof SubgraphNode) return node
-  return undefined
+  return node instanceof SubgraphNode ? node : undefined
 })
 
 const activeWidgets = computed<WidgetItem[]>({

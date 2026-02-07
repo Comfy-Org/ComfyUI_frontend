@@ -10,7 +10,7 @@ vi.mock('../providers', () => ({
     if (provider === 'civitai') return 'Civitai'
     return ''
   },
-  getProviderLogo: () => undefined
+  getProviderLogo: () => {}
 }))
 
 function createMockSecret(

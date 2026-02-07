@@ -43,8 +43,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   const linearMode = ref(false)
 
   // Set up scale synchronization when canvas is available
-  let originalOnChanged: ((scale: number, offset: Point) => void) | undefined =
-    undefined
+  let originalOnChanged: ((scale: number, offset: Point) => void) | undefined
   const initScaleSync = () => {
     if (app.canvas?.ds) {
       // Initial sync

@@ -13,7 +13,7 @@ function createTestGraph() {
   const graph = new LGraph()
   const node = new LGraphNode('test')
   node.addInput('input', 'INT')
-  node.addWidget('number', 'testnum', 2, () => undefined, {})
+  node.addWidget('number', 'testnum', 2, () => {}, {})
   graph.add(node)
 
   const { vueNodeData } = useGraphNodeManager(graph)

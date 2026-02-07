@@ -18,16 +18,14 @@ const {
   multi?: boolean
 }>()
 
-const clipPath = computed(() => {
-  switch (slotData?.shape) {
-    case 6:
-      return 'url(#square)'
-    case 7:
-      return 'url(#hollow)'
-    default:
-      return undefined
-  }
-})
+const shapeClipPaths: Record<number, string> = {
+  6: 'url(#square)',
+  7: 'url(#hollow)'
+}
+
+const clipPath = computed(() =>
+  slotData?.shape !== undefined ? shapeClipPaths[slotData.shape] : undefined
+)
 
 const slotElRef = useTemplateRef('slot-el')
 

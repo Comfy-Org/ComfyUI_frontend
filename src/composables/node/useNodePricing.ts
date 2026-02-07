@@ -540,7 +540,7 @@ export const useNodePricing = () => {
    */
   const getNodePricingConfig = (node: LGraphNode) => {
     const rule = getRuleForNode(node)
-    if (!rule) return undefined
+    if (!rule) return
     const { _compiled, ...config } = rule
     return config
   }
