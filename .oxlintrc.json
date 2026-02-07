@@ -110,6 +110,7 @@
     "operator-assignment": ["error", "always"],
     "import/default": "error",
     "import/export": "error",
+    "import/first": ["error", "absolute-first"],
     "import/namespace": "error",
     "import/no-duplicates": "error",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],

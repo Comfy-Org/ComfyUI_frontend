@@ -12,8 +12,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
-// Lazy-loaded to avoid pulling THREE.js into the main bundle
-const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
 import {
   getMediaType,
@@ -25,6 +23,9 @@ import type { ResultItemImpl } from '@/stores/queueStore'
 import { formatDuration } from '@/utils/dateTimeUtil'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
+
+// Lazy-loaded to avoid pulling THREE.js into the main bundle
+const Preview3d = () => import('@/renderer/extensions/linearMode/Preview3d.vue')
 
 const { t, d } = useI18n()
 const mediaActions = useMediaAssetActions()

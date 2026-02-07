@@ -2,6 +2,8 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 
+import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
+import { api } from '@/scripts/api'
 import {
   createMockCanvas2DContext,
   createMockMinimapCanvas
@@ -199,9 +201,6 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
     activeSubgraph: null
   }))
 }))
-
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { api } from '@/scripts/api'
 
 describe('useMinimap', () => {
   let moduleMockCanvasElement: HTMLCanvasElement

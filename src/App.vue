@@ -16,11 +16,11 @@ import { computed, onMounted } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import config from '@/config'
+import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 import { electronAPI, isElectron } from './utils/envUtil'
-import { app } from '@/scripts/app'
 
 const workspaceStore = useWorkspaceStore()
 app.extensionManager = useWorkspaceStore()

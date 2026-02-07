@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useExternalLink } from '@/composables/useExternalLink'
+import { electronAPI, isElectron } from '@/utils/envUtil'
 
 // Mock the environment utilities
 vi.mock('@/utils/envUtil', () => ({
@@ -17,10 +19,6 @@ const i18n = vi.hoisted(() => ({
 vi.mock('@/i18n', () => ({
   i18n
 }))
-
-// Import after mocking to get the mocked versions
-import { useExternalLink } from '@/composables/useExternalLink'
-import { electronAPI, isElectron } from '@/utils/envUtil'
 
 describe('useExternalLink', () => {
   beforeEach(() => {

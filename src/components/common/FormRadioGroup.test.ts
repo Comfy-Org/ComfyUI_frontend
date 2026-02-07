@@ -5,9 +5,9 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from 'vue'
 
 import type { SettingOption } from '@/platform/settings/types'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import FormRadioGroup from './FormRadioGroup.vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
 
 describe('FormRadioGroup', () => {
   beforeAll(() => {

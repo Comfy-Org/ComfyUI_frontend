@@ -37,10 +37,6 @@
   <ContextMenu ref="menu" :model="menuItems" />
 </template>
 <script setup lang="ts">
-defineOptions({
-  inheritAttrs: false
-})
-
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem, MenuItemCommandEvent } from 'primevue/menuitem'
 import Tree from 'primevue/tree'
@@ -59,6 +55,10 @@ import type {
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
 import { combineTrees, findNodeByKey } from '@/utils/treeUtil'
+
+defineOptions({
+  inheritAttrs: false
+})
 
 const expandedKeys = defineModel<Record<string, boolean>>('expandedKeys', {
   required: true

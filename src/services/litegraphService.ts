@@ -62,8 +62,9 @@ import {
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
-import { useExtensionService } from './extensionService'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+
+import { useExtensionService } from './extensionService'
 
 export interface HasInitialMinSize {
   _initialMinSize: { width: number; height: number }

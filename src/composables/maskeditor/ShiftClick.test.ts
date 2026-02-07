@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { resampleSegment } from './splineUtils'
 import type { Point } from '@/extensions/core/maskeditor/types'
+
+import { resampleSegment } from './splineUtils'
 
 describe('Shift+Click Drawing Logic', () => {
   it('should generate equidistant points across connected segments', () => {

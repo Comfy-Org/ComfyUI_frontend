@@ -6,17 +6,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SelectPlus from '@/components/primevueOverride/SelectPlus.vue'
+import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
+import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
+import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: { en: {} }
 })
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
-import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
-import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 
 // Mock state for distribution and settings
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))

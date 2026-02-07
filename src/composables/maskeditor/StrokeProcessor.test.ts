@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { StrokeProcessor } from './StrokeProcessor'
 import type { Point } from '@/extensions/core/maskeditor/types'
+
+import { StrokeProcessor } from './StrokeProcessor'
 
 describe('StrokeProcessor', () => {
   it('should generate equidistant points from irregular input', () => {

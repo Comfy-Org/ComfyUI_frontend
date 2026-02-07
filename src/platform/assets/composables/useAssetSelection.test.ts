@@ -4,7 +4,9 @@ import { ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-// Mock useKeyModifier before importing the composable
+import { useAssetSelection } from './useAssetSelection'
+import { useAssetSelectionStore } from './useAssetSelectionStore'
+
 const mockShiftKey = ref(false)
 const mockCtrlKey = ref(false)
 const mockMetaKey = ref(false)
@@ -21,9 +23,6 @@ vi.mock('@vueuse/core', async (importOriginal) => {
     }
   }
 })
-
-import { useAssetSelection } from './useAssetSelection'
-import { useAssetSelectionStore } from './useAssetSelectionStore'
 
 function createMockAssets(count: number): AssetItem[] {
   return Array.from({ length: count }, (_, i) => ({

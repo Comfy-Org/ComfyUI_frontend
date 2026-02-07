@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useNewUserService } from '@/services/useNewUserService'
+
 const mockLocalStorage = vi.hoisted(() => ({
   getItem: vi.fn(),
   setItem: vi.fn(),
@@ -28,8 +30,6 @@ vi.mock('@/platform/settings/settingStore', () => ({
 
 //@ts-expect-error Define global for the test
 global.__COMFYUI_FRONTEND_VERSION__ = '1.24.0'
-
-import { useNewUserService } from '@/services/useNewUserService'
 
 describe('useNewUserService', () => {
   let service: ReturnType<typeof useNewUserService>

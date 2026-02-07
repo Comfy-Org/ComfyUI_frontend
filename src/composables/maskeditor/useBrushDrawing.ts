@@ -2,6 +2,7 @@
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
 import { debounce } from 'es-toolkit/compat'
+import { tgpu } from 'typegpu'
 import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
 import {
@@ -11,12 +12,12 @@ import {
 } from '@/extensions/core/maskeditor/types'
 import type { Brush, Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useCoordinateTransform } from './useCoordinateTransform'
-import { resampleSegment } from './splineUtils'
-import { tgpu } from 'typegpu'
-import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
-import { StrokeProcessor } from './StrokeProcessor'
+
 import { getEffectiveBrushSize, getEffectiveHardness } from './brushUtils'
+import { GPUBrushRenderer } from './gpu/GPUBrushRenderer'
+import { resampleSegment } from './splineUtils'
+import { StrokeProcessor } from './StrokeProcessor'
+import { useCoordinateTransform } from './useCoordinateTransform'
 
 /**
  * Saves the brush settings to local storage with a debounce.

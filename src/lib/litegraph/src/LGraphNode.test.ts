@@ -13,8 +13,9 @@ import {
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 
-import { test } from './__fixtures__/testExtensions'
 import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+
+import { test } from './__fixtures__/testExtensions'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number
