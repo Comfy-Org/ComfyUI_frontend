@@ -106,7 +106,7 @@
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "prefer-template": "error",
-    "promise/no-nesting": "warn",
+    "promise/no-nesting": "error",
     "promise/param-names": "error",
     "promise/prefer-await-to-callbacks": "warn",
     "promise/prefer-await-to-then": [
@@ -152,7 +152,7 @@
     "vitest/warn-todo": "warn",
     "vitest/hoisted-apis-on-top": "error",
     "vitest/no-conditional-tests": "error",
-    "vitest/prefer-describe-function-title": "warn",
+    "vitest/prefer-describe-function-title": "error",
     "jest/expect-expect": "off",
     "jest/no-conditional-expect": "off",
     "jest/no-disabled-tests": "off",
@@ -177,7 +177,7 @@
     "unicorn/error-message": "error",
     "unicorn/no-abusive-eslint-disable": "error",
     "unicorn/no-array-for-each": "warn",
-    "unicorn/no-immediate-mutation": "warn",
+    "unicorn/no-immediate-mutation": "error",
     "unicorn/no-instanceof-array": "error",
     "unicorn/no-length-as-slice-end": "error",
     "unicorn/no-lonely-if": "error",
@@ -229,7 +229,7 @@
         "ignoreConditionalTests": true
       }
     ],
-    "typescript/prefer-optional-chain": "warn",
+    "typescript/prefer-optional-chain": "error",
     "typescript/prefer-ts-expect-error": "error",
     "vue/define-props-destructuring": "error",
     "vue/no-import-compiler-macros": "error",
