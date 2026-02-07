@@ -47,7 +47,12 @@
       <video
         v-if="!videoError"
         :src="currentVideoUrl"
-        :class="cn('block size-full object-contain', showLoader && 'invisible')"
+        :class="
+          cn('block size-full object-contain', {
+            invisible: showLoader,
+            'opacity-50 grayscale': props.inactive
+          })
+        "
         controls
         loop
         playsinline
@@ -131,6 +136,8 @@ interface VideoPreviewProps {
   readonly imageUrls: readonly string[] // Named imageUrls for consistency with parent components
   /** Optional node ID for context-aware actions */
   readonly nodeId?: string
+  /** Whether the node is bypassed or muted */
+  readonly inactive?: boolean
 }
 
 const props = defineProps<VideoPreviewProps>()

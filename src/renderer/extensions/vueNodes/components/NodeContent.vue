@@ -9,12 +9,14 @@
         v-if="hasMedia && media?.type === 'video'"
         :image-urls="media.urls"
         :node-id="nodeId"
+        :inactive="props.inactive"
         class="mt-2"
       />
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
+        :inactive="props.inactive"
         class="mt-2"
       />
     </slot>
@@ -37,6 +39,8 @@ interface NodeContentProps {
     type: 'image' | 'video'
     urls: string[]
   }
+  /** Whether the node is bypassed or muted */
+  inactive?: boolean
 }
 
 const props = defineProps<NodeContentProps>()
