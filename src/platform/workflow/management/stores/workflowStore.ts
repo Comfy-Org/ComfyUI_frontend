@@ -789,7 +789,7 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     const resp = await api.getUserData('workflows/.index.json')
     if (resp.status === 200) {
       const info = await resp.json()
-      bookmarks.value = new Set(info?.favorites ?? [])
+      bookmarks.value = new Set(info?.favorites)
     }
   }
 

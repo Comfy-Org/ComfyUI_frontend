@@ -14,7 +14,7 @@ export function useLazyPagination<T>(
 
   const currentPage = ref(initialPage)
   const isLoading = ref(false)
-  const loadedPages = shallowRef(new Set<number>([]))
+  const loadedPages = shallowRef(new Set<number>())
 
   // Get reactive items array
   const itemsArray = computed(() => {
@@ -84,7 +84,7 @@ export function useLazyPagination<T>(
 
   const reset = () => {
     currentPage.value = initialPage
-    loadedPages.value = new Set([])
+    loadedPages.value = new Set()
     isLoading.value = false
 
     // Immediately load first page if we have items

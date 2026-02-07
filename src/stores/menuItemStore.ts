@@ -89,7 +89,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
     }
 
     const extensionCommandIds = new Set(
-      extension.commands?.map((command) => command.id) ?? []
+      extension.commands?.map((command) => command.id)
     )
     extension.menuCommands.forEach((menuCommand) => {
       const commands = menuCommand.commands.filter((command) =>

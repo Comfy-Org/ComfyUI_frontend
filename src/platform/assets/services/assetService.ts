@@ -237,7 +237,7 @@ function createAssetService() {
         ?.flatMap((asset) => asset.tags)
         ?.filter(
           (tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag)
-        ) ?? []
+        )
     )
 
     // Return only discovered folders in alphabetical order
