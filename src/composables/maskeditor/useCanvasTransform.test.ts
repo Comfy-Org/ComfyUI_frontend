@@ -62,7 +62,7 @@ vi.mock('@/stores/maskEditorStore', () => ({
 }))
 
 // Mock ImageData with improved type safety
-if (typeof globalThis.ImageData === 'undefined') {
+if (globalThis.ImageData === undefined) {
   globalThis.ImageData = class ImageData {
     data: Uint8ClampedArray
     width: number
@@ -99,7 +99,7 @@ if (typeof globalThis.ImageData === 'undefined') {
 }
 
 // Mock ImageBitmap for test environment using safe type casting
-if (typeof globalThis.ImageBitmap === 'undefined') {
+if (globalThis.ImageBitmap === undefined) {
   globalThis.ImageBitmap = class ImageBitmap {
     width: number
     height: number

@@ -145,6 +145,7 @@
     "unicorn/no-instanceof-array": "error",
     "unicorn/no-length-as-slice-end": "error",
     "unicorn/no-negation-in-equality-check": "error",
+    "unicorn/no-typeof-undefined": "error",
     "unicorn/prefer-math-min-max": "error",
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/no-empty-file": "off",

@@ -556,7 +556,7 @@ export const useLitegraphService = () => {
    */
   function addNodeContextMenuHandler(node: typeof LGraphNode) {
     function getCopyImageOption(img: HTMLImageElement): IContextMenuValue[] {
-      if (typeof window.ClipboardItem === 'undefined') return []
+      if (window.ClipboardItem === undefined) return []
       return [
         {
           content: 'Copy Image',
@@ -588,7 +588,7 @@ export const useLitegraphService = () => {
                   const ctx = canvas.getContext('2d')
                   // @ts-expect-error fixme ts strict error
                   let image
-                  if (typeof window.createImageBitmap === 'undefined') {
+                  if (window.createImageBitmap === undefined) {
                     image = new Image()
                     const p = new Promise((resolve, reject) => {
                       // @ts-expect-error fixme ts strict error
