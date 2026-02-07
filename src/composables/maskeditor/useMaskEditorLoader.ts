@@ -153,7 +153,7 @@ export function useMaskEditorLoader() {
           if (response.ok) {
             maskLayersFromApi = await response.json()
           }
-        } catch (error) {
+        } catch {
           // Fallback to pattern matching if API call fails
         }
       }
@@ -280,7 +280,7 @@ export function useMaskEditorLoader() {
         subfolder: urlObj.searchParams.get('subfolder') || undefined,
         type: urlObj.searchParams.get('type') || undefined
       }
-    } catch (error) {
+    } catch {
       try {
         const urlObj = new URL(url, window.location.origin)
         const filename = urlObj.searchParams.get('filename')
@@ -294,7 +294,7 @@ export function useMaskEditorLoader() {
           subfolder: urlObj.searchParams.get('subfolder') || undefined,
           type: urlObj.searchParams.get('type') || undefined
         }
-      } catch (e) {
+      } catch {
         throw new Error(`Invalid image URL: ${url}`)
       }
     }

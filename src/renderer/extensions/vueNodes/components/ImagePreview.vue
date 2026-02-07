@@ -236,7 +236,7 @@ const handleEditMask = () => {
 const handleDownload = () => {
   try {
     downloadFile(currentImageUrl.value)
-  } catch (error) {
+  } catch {
     useToast().add({
       severity: 'error',
       summary: 'Error',

@@ -143,7 +143,7 @@ const formatLicense = (
       return null
     }
     return parseLicenseObject(licenseObj)
-  } catch (e) {
+  } catch {
     if (isLicenseFile(license) && nodePack.repository) {
       const url = createLicenseUrl(license, nodePack.repository)
       return {

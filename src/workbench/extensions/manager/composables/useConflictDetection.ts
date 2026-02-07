@@ -106,7 +106,7 @@ export function useConflictDetection() {
 
       systemEnvironment.value = environment
       return environment
-    } catch (error) {
+    } catch {
       const fallbackEnvironment: SystemEnvironment = {
         comfyui_version: undefined,
         frontend_version: undefined,

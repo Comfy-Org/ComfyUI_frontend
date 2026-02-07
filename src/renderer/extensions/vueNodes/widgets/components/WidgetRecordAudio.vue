@@ -166,7 +166,7 @@ async function handleRecordingComplete(blob: Blob) {
     const path = await useAudioService().convertBlobToFileAndSubmit(blob)
     modelValue.value = path
     lastUploadedPath = path
-  } catch (e) {
+  } catch {
     useToastStore().addAlert('Failed to upload recorded audio')
   }
 }

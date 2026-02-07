@@ -237,7 +237,7 @@ function safeWidgetMapper(
         isDOMWidget: isDOMWidget(widget),
         slotMetadata: slotInfo
       }
-    } catch (error) {
+    } catch {
       return {
         name: widget.name || 'unknown',
         type: widget.type || 'text',

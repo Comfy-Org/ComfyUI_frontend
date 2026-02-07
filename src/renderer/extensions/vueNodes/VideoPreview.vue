@@ -200,7 +200,7 @@ const handleVideoError = () => {
 const handleDownload = () => {
   try {
     downloadFile(currentVideoUrl.value)
-  } catch (error) {
+  } catch {
     useToast().add({
       severity: 'error',
       summary: 'Error',

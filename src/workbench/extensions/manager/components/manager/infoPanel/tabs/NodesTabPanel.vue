@@ -79,7 +79,7 @@ whenever(() => nodePack, fetchNodeDefs, { immediate: true, deep: true })
 const toFrontendNodeDef = (nodeDef: components['schemas']['ComfyNode']) => {
   try {
     return registryToFrontendV2NodeDef(nodeDef, nodePack)
-  } catch (error) {
+  } catch {
     return null
   }
 }

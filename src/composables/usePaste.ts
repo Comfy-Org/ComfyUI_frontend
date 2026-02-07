@@ -146,12 +146,12 @@ export const usePaste = () => {
     try {
       data = data.slice(data.indexOf('{'))
       workflow = JSON.parse(data)
-    } catch (err) {
+    } catch {
       try {
         data = data.slice(data.indexOf('workflow\n'))
         data = data.slice(data.indexOf('{'))
         workflow = JSON.parse(data)
-      } catch (error) {
+      } catch {
         workflow = null
       }
     }
