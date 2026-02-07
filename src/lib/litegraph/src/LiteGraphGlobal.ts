@@ -408,7 +408,7 @@ export class LiteGraphGlobal {
     const classname = base_class.name
 
     const pos = type.lastIndexOf('/')
-    base_class.category = type.substring(0, pos)
+    base_class.category = type.slice(0, pos)
 
     base_class.title ||= classname
 
@@ -638,7 +638,7 @@ export class LiteGraphGlobal {
 
     for (const script_file of script_files) {
       const src = script_file.src
-      if (!src || src.substr(0, folder_wildcard.length) != folder_wildcard)
+      if (!src || src.slice(0, folder_wildcard.length) != folder_wildcard)
         continue
 
       try {

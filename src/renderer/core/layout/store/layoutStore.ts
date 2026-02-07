@@ -115,7 +115,7 @@ class LayoutStoreImpl implements LayoutStore {
     ACTOR_CONFIG.DEFAULT_SOURCE as LayoutSource
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
-    .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
+    .slice(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
 
   // Change listeners
   private changeListeners = new Set<(change: LayoutChange) => void>()

@@ -25,7 +25,7 @@ export function isTransparent(color: string) {
   if (color === 'transparent') return true
   if (color[0] === '#') {
     if (color.length === 5) return color[4] === '0'
-    if (color.length === 9) return color.substring(7) === '00'
+    if (color.length === 9) return color.slice(7) === '00'
   }
   return false
 }

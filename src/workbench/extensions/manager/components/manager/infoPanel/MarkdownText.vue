@@ -61,7 +61,7 @@ const parsedSegments = computed(() => {
     if (linkMatch.index > lastIndex) {
       segments.push({
         type: 'text',
-        text: remainingText.substring(lastIndex, linkMatch.index)
+        text: remainingText.slice(lastIndex, linkMatch.index)
       })
     }
 
@@ -77,7 +77,7 @@ const parsedSegments = computed(() => {
 
   // Add remaining text after all links
   if (lastIndex < remainingText.length) {
-    let rest = remainingText.substring(lastIndex)
+    let rest = remainingText.slice(lastIndex)
 
     // Process bold text
     rest = rest.replaceAll(/(\*\*|__)(.*?)(\*\*|__)/g, (_, __, p2) => {

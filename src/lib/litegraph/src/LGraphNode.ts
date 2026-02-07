@@ -3767,7 +3767,7 @@ export class LGraphNode
 
       if (this.collapsed) {
         // For collapsed nodes, limit to 20 chars as before
-        displayTitle = title.substr(0, 20)
+        displayTitle = title.slice(0, 20)
       } else if (availableWidth > 0) {
         // For regular nodes, truncate based on available width
         displayTitle = truncateText(ctx, title, availableWidth)

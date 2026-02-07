@@ -18,7 +18,7 @@ export function useLoad3dDrag(options: UseLoad3dDragOptions) {
 
   function isValidModelFile(file: File): boolean {
     const fileName = file.name.toLowerCase()
-    const extension = fileName.substring(fileName.lastIndexOf('.'))
+    const extension = fileName.slice(fileName.lastIndexOf('.'))
     return SUPPORTED_EXTENSIONS.has(extension)
   }
 

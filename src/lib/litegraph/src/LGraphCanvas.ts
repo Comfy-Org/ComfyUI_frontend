@@ -5564,7 +5564,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (text == null) return
 
     // Hard-coded tooltip limit
-    text = text.substring(0, 30)
+    text = text.slice(0, 30)
 
     ctx.font = '14px Courier New'
     const info = ctx.measureText(text)

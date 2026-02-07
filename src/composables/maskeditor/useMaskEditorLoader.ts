@@ -116,17 +116,14 @@ export function useMaskEditorLoader() {
           const typeMatch = filename.match(/ \[([^\]]+)\]$/)
           if (typeMatch) {
             type = typeMatch[1]
-            filename = filename.substring(
-              0,
-              filename.length - typeMatch[0].length
-            )
+            filename = filename.slice(0, filename.length - typeMatch[0].length)
           }
 
           // Check for subfolder (forward slash separator)
           const lastSlashIndex = filename.lastIndexOf('/')
           if (lastSlashIndex !== -1) {
-            subfolder = filename.substring(0, lastSlashIndex)
-            filename = filename.substring(lastSlashIndex + 1)
+            subfolder = filename.slice(0, lastSlashIndex)
+            filename = filename.slice(lastSlashIndex + 1)
           }
 
           nodeImageRef = {

@@ -91,7 +91,7 @@ export function useAssetBrowser(
     if (typeTag) {
       // Remove category prefix from badge label (e.g. "checkpoint/model" → "model")
       const badgeLabel = typeTag.includes('/')
-        ? typeTag.substring(typeTag.indexOf('/') + 1)
+        ? typeTag.slice(typeTag.indexOf('/') + 1)
         : typeTag
 
       badges.push({ label: badgeLabel, type: 'type' })

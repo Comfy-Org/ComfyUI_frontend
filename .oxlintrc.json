@@ -101,6 +101,7 @@
     "unicorn/prefer-optional-catch-binding": "error",
     "unicorn/prefer-regexp-test": "error",
     "unicorn/prefer-string-replace-all": "error",
+    "unicorn/prefer-string-slice": "error",
     "unicorn/prefer-string-trim-start-end": "error",
     "unicorn/throw-new-error": "error",
     "typescript/await-thenable": "off",
