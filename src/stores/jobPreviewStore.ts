@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
-  createSharedObjectUrl,
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
@@ -31,13 +30,6 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
     }
   }
 
-  function setPreviewFromBlob(promptId: string | undefined, blob: Blob) {
-    if (!promptId || !isPreviewEnabled.value) return
-    const url = createSharedObjectUrl(blob)
-    setPreviewUrl(promptId, url)
-    releaseSharedObjectUrl(url)
-  }
-
   function clearPreview(promptId: string | undefined) {
     if (!promptId) return
     const current = previewsByPromptId.value[promptId]
@@ -49,9 +41,9 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
   }
 
   function clearAllPreviews() {
-    Object.values(previewsByPromptId.value).forEach((url) =>
+    Object.values(previewsByPromptId.value).forEach((url) => {
       releaseSharedObjectUrl(url)
-    )
+    })
     previewsByPromptId.value = {}
   }
 
@@ -63,7 +55,6 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
     previewsByPromptId,
     isPreviewEnabled,
     setPreviewUrl,
-    setPreviewFromBlob,
     clearPreview,
     clearAllPreviews
   }

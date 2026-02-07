@@ -13,7 +13,7 @@
             'cursor-default'
           )
         "
-        :preview-url="job.livePreviewUrl ?? job.iconImageUrl"
+        :preview-url="job.iconImageUrl"
         :preview-alt="job.title"
         :icon-name="job.iconName"
         :icon-class="getJobIconClass(job)"

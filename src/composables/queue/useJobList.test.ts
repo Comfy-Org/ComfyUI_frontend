@@ -460,7 +460,7 @@ describe('useJobList', () => {
     expect(otherJob.computeHours).toBeCloseTo(1)
   })
 
-  it('assigns live preview urls for running jobs when previews enabled', async () => {
+  it('assigns preview urls for running jobs when previews enabled', async () => {
     queueStoreMock.runningTasks = [
       createTask({
         promptId: 'live-preview',
@@ -476,10 +476,10 @@ describe('useJobList', () => {
     const { jobItems } = initComposable()
     await flush()
 
-    expect(jobItems.value[0].livePreviewUrl).toBe('blob:preview-url')
+    expect(jobItems.value[0].iconImageUrl).toBe('blob:preview-url')
   })
 
-  it('omits live previews when previews are disabled', async () => {
+  it('omits preview urls when previews are disabled', async () => {
     queueStoreMock.runningTasks = [
       createTask({
         promptId: 'disabled-preview',
@@ -495,7 +495,7 @@ describe('useJobList', () => {
     const { jobItems } = initComposable()
     await flush()
 
-    expect(jobItems.value[0].livePreviewUrl).toBeUndefined()
+    expect(jobItems.value[0].iconImageUrl).toBeUndefined()
   })
 
   it('derives current node name from execution store fallbacks', async () => {

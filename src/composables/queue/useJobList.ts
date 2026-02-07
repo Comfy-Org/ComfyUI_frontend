@@ -39,7 +39,6 @@ export type JobListItem = {
   state: JobState
   iconName?: string
   iconImageUrl?: string
-  livePreviewUrl?: string
   showClear?: boolean
   taskRef?: TaskItemImpl
   progressTotalPercent?: number
@@ -260,7 +259,7 @@ export function useJobList() {
         String(executionStore.activePromptId ?? '')
       const showAddedHint = shouldShowAddedHint(task, state)
       const promptKey = taskIdToKey(task.promptId)
-      const livePreviewUrl =
+      const promptPreviewUrl =
         state === 'running' && jobPreviewStore.isPreviewEnabled && promptKey
           ? jobPreviewStore.previewsByPromptId[promptKey]
           : undefined
@@ -283,8 +282,7 @@ export function useJobList() {
         meta: display.secondary,
         state,
         iconName: display.iconName,
-        iconImageUrl: display.iconImageUrl,
-        livePreviewUrl,
+        iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,
         showClear: display.showClear,
         taskRef: task,
         progressTotalPercent:
