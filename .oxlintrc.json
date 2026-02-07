@@ -98,6 +98,7 @@
     "prefer-spread": "error",
     "prefer-template": "error",
     "promise/no-nesting": "warn",
+    "promise/prefer-catch": "error",
     "preserve-caught-error": "error",
     "yoda": [
       "error",
