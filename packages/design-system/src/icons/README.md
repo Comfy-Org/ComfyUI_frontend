@@ -251,26 +251,25 @@ Icons are automatically imported using `unplugin-icons` - no manual imports need
 
 The icon system has two layers:
 
-1. **Build-time Processing** (`packages/design-system/src/iconCollection.ts`):
-   - Scans `packages/design-system/src/icons/` for SVG files
-   - Validates SVG content and structure
-   - Creates Iconify collection for Tailwind CSS
-   - Provides error handling for malformed files
+1. **Tailwind CSS Plugin** (`@iconify/tailwind4`):
+   - Configured via `@plugin` directive in `packages/design-system/src/css/style.css`
+   - Uses `from-folder(comfy, ...)` to load SVGs from `packages/design-system/src/icons/`
+   - Auto-cleans and optimizes SVGs at build time
 
 2. **Vite Runtime** (`vite.config.mts`):
    - Enables direct SVG import as Vue components
    - Supports dynamic icon loading
 
-```typescript
-// Build script creates Iconify collection
-export const iconCollection: IconifyCollection = {
-  prefix: 'comfy',
-  icons: {
-    workflow: { body: '<svg>...</svg>' },
-    node: { body: '<svg>...</svg>' }
-  }
+```css
+/* CSS configuration for Tailwind icon classes */
+@plugin "@iconify/tailwind4" {
+  prefix: "icon";
+  scale: 1.2;
+  icon-sets: from-folder(comfy, "./packages/design-system/src/icons");
 }
+```
 
+```typescript
 // Vite configuration for component-based usage
 Icons({
   compiler: 'vue3',
