@@ -31,6 +31,16 @@ interface AssetRequestOptions extends PaginationOptions {
   includePublic?: boolean
 }
 
+interface AssetExportOptions {
+  job_ids?: string[]
+  asset_ids?: string[]
+  naming_strategy?:
+    | 'group_by_job_id'
+    | 'prepend_job_id'
+    | 'preserve'
+    | 'asset_id'
+}
+
 /**
  * Maps CivitAI validation error codes to localized error messages
  */
@@ -690,15 +700,9 @@ function createAssetService() {
     return result.data
   }
 
-  async function createAssetExport(params: {
-    job_ids?: string[]
-    asset_ids?: string[]
-    naming_strategy?:
-      | 'group_by_job_id'
-      | 'prepend_job_id'
-      | 'preserve'
-      | 'asset_id'
-  }): Promise<{ task_id: string; status: string; message?: string }> {
+  async function createAssetExport(
+    params: AssetExportOptions
+  ): Promise<{ task_id: string; status: string; message?: string }> {
     const res = await api.fetchApi(ASSETS_EXPORT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
