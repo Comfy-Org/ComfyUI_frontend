@@ -275,6 +275,7 @@ export class ContextMenu<TValue = unknown> {
 
     // menu option clicked
 
+    // oxlint-disable-next-line unicorn/no-this-assignment -- inner_onclick uses both its own `this` (DOM element) and the outer ContextMenu `this`
     const that = this
     function inner_onclick(this: ContextMenuDivElement<TValue>, e: MouseEvent) {
       const value = this.value
