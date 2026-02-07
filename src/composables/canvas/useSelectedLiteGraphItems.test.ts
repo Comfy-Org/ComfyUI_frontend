@@ -21,9 +21,7 @@ vi.mock('@/scripts/app', () => ({
 
 // Mock the litegraph module
 vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  Reroute: class Reroute {
-    constructor() {}
-  },
+  Reroute: class Reroute {},
   LGraphEventMode: {
     ALWAYS: 0,
     NEVER: 2,

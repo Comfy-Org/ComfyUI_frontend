@@ -44,6 +44,7 @@
     ],
     "no-eval": "off",
     "no-redeclare": "error",
+    "no-useless-constructor": "error",
     "no-restricted-imports": [
       "error",
       {
