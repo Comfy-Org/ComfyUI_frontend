@@ -91,6 +91,7 @@
       }
     ],
     "unicorn/no-instanceof-array": "error",
+    "unicorn/no-length-as-slice-end": "error",
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/no-empty-file": "off",
     "unicorn/no-new-array": "off",
