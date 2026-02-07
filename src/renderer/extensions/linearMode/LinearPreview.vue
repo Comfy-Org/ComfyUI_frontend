@@ -93,7 +93,7 @@ async function rerun(e: Event) {
   await loadWorkflow(selectedItem)
   //FIXME don't use timeouts here
   //Currently seeds fail to properly update even with timeouts?
-  await new Promise((r) => setTimeout(r, 500))
+  await new Promise((resolve) => setTimeout(resolve, 500))
   executeWidgetsCallback(collectAllNodes(app.rootGraph), 'afterQueued')
 
   runButtonClick(e)
