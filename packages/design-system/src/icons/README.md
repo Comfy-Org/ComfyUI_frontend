@@ -263,9 +263,9 @@ The icon system has two layers:
 ```css
 /* CSS configuration for Tailwind icon classes */
 @plugin "@iconify/tailwind4" {
-  prefix: "icon";
+  prefix: 'icon';
   scale: 1.2;
-  icon-sets: from-folder(comfy, "./packages/design-system/src/icons");
+  icon-sets: from-folder(comfy, './packages/design-system/src/icons');
 }
 ```
 

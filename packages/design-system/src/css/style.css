@@ -8,9 +8,9 @@
 @plugin 'tailwindcss-primeui';
 
 @plugin "@iconify/tailwind4" {
-  prefix: "icon";
+  prefix: 'icon';
   scale: 1.2;
-  icon-sets: from-folder(comfy, "./packages/design-system/src/icons");
+  icon-sets: from-folder(comfy, './packages/design-system/src/icons');
 }
 
 @custom-variant touch (@media (hover: none));
