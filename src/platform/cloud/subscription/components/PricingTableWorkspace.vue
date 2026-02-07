@@ -285,7 +285,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { t } from '@/i18n'
 import {
   TIER_PRICING,
   TIER_TO_KEY
@@ -315,6 +314,7 @@ const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
   resubscribe: []
 }>()
+const { t, n } = useI18n()
 
 interface BillingCycleOption {
   label: string
@@ -369,8 +369,6 @@ const tiers: PricingTierConfig[] = [
     isPopular: false
   }
 ]
-
-const { n } = useI18n()
 const {
   plans: apiPlans,
   currentPlanSlug,
