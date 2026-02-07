@@ -152,6 +152,12 @@
         "ignore": ["^error\\w+$"]
       }
     ],
+    "unicorn/consistent-function-scoping": [
+      "warn",
+      {
+        "checkArrowFunctions": true
+      }
+    ],
     "unicorn/error-message": "error",
     "unicorn/no-abusive-eslint-disable": "error",
     "unicorn/no-immediate-mutation": "warn",
