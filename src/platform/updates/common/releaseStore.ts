@@ -9,6 +9,7 @@ import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { isElectron } from '@/utils/envUtil'
 import { stringToLocale } from '@/utils/formatUtil'
 
+import { useReleaseFeatureFlagFilter } from '../composables/useReleaseFeatureFlagFilter'
 import { useReleaseService } from './releaseService'
 import type { ReleaseNote } from './releaseService'
 
@@ -18,6 +19,9 @@ export const useReleaseStore = defineStore('release', () => {
   const releases = ref<ReleaseNote[]>([])
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+
+  // Feature flag filtering for "What's New" popup
+  const { filteredReleases } = useReleaseFeatureFlagFilter({ releases })
 
   // Services
   const releaseService = useReleaseService()
@@ -44,14 +48,14 @@ export const useReleaseStore = defineStore('release', () => {
     settingStore.get('Comfy.Notification.ShowVersionUpdates')
   )
 
-  // Most recent release
+  // Most recent release (filtered by feature flags)
   const recentRelease = computed(() => {
-    return releases.value[0] ?? null
+    return filteredReleases.value[0] ?? null
   })
 
-  // 3 most recent releases
+  // 3 most recent releases (filtered by feature flags)
   const recentReleases = computed(() => {
-    return releases.value.slice(0, 3)
+    return filteredReleases.value.slice(0, 3)
   })
 
   // Helper constants
