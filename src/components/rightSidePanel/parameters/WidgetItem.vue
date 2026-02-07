@@ -88,7 +88,7 @@ const widgetValue = computed({
     widget.vueTrack?.()
     return widget.value
   },
-  set: (newValue: string | number | boolean | object) => {
+  set: (newValue: WidgetValue) => {
     emit('update:widgetValue', newValue)
   }
 })

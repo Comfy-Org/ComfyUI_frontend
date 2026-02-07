@@ -63,18 +63,21 @@ const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
 
+function writeWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+  widget.value = value
+  widget.callback?.(value)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
 function handleResetAllWidgets() {
   for (const { widget, node: widgetNode } of widgetsProp) {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
     if (defaultValue !== undefined) {
-      // Ensure Vue reactivity is set up for this widget before updating
       getSharedWidgetEnhancements(widgetNode, widget)
-      widget.value = defaultValue
-      widget.callback?.(defaultValue)
+      writeWidgetValue(widget, defaultValue)
     }
   }
-  canvasStore.canvas?.setDirty(true, true)
 }
 
 function isWidgetShownOnParents(
@@ -136,9 +139,7 @@ function handleLocateNode() {
 
 function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
   if (newValue === undefined) return
-  widget.value = newValue
-  widget.callback?.(newValue)
-  canvasStore.canvas?.setDirty(true, true)
+  writeWidgetValue(widget, newValue)
 }
 
 function handleWidgetReset(
@@ -147,9 +148,7 @@ function handleWidgetReset(
   newValue: WidgetValue
 ) {
   getSharedWidgetEnhancements(widgetNode, widget)
-  widget.value = newValue
-  widget.callback?.(newValue)
-  canvasStore.canvas?.setDirty(true, true)
+  writeWidgetValue(widget, newValue)
 }
 
 defineExpose({
@@ -183,7 +182,7 @@ defineExpose({
             </span>
           </span>
           <Button
-            v-if="canShowLocateButton"
+            v-if="!isEmpty"
             variant="textonly"
             size="icon-sm"
             class="subbutton shrink-0 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
