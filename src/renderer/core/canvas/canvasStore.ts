@@ -33,7 +33,7 @@ export const useCanvasStore = defineStore('canvas', () => {
    */
   const selectedItems = ref<Raw<Positionable>[]>([])
   const updateSelectedItems = () => {
-    const items = Array.from(canvas.value?.selectedItems ?? [])
+    const items = [...(canvas.value?.selectedItems ?? [])]
     selectedItems.value = items.map((item) => markRaw(item))
   }
 

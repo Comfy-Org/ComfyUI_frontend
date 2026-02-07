@@ -47,7 +47,7 @@ export function useLoad3dDrag(options: UseLoad3dDragOptions) {
 
     if (!event.dataTransfer) return
 
-    const files = Array.from(event.dataTransfer.files)
+    const files = [...event.dataTransfer.files]
 
     if (files.length === 0) return
 

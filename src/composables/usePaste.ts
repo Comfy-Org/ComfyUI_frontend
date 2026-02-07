@@ -33,7 +33,7 @@ function pasteItemsOnNode(
 ): void {
   if (!node) return
 
-  const filteredItems = Array.from(items).filter((item) =>
+  const filteredItems = [...items].filter((item) =>
     item.type.startsWith(contentType)
   )
 
@@ -42,9 +42,7 @@ function pasteItemsOnNode(
 
   node.pasteFile?.(blob)
   node.pasteFiles?.(
-    Array.from(filteredItems)
-      .map((i) => i.getAsFile())
-      .filter((f) => f !== null)
+    [...filteredItems].map((i) => i.getAsFile()).filter((f) => f !== null)
   )
 }
 

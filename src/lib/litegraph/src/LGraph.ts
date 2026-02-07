@@ -1464,7 +1464,7 @@ export class LGraph
       rerouteId,
       { x: pos[0], y: pos[1] },
       before.parentId,
-      Array.from(linkIds)
+      [...linkIds]
     )
 
     for (const linkId of linkIds) {

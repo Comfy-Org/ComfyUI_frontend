@@ -295,7 +295,7 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   }
   // Build ordered core items based on MENU_ORDER
   const orderedCoreItems: MenuOption[] = []
-  const coreLabels = Array.from(coreItemsMap.keys())
+  const coreLabels = [...coreItemsMap.keys()]
   coreLabels.sort((a, b) => getMenuItemOrder(a) - getMenuItemOrder(b))
 
   // Section boundaries based on MENU_ORDER indices

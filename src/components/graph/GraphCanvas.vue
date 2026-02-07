@@ -246,9 +246,9 @@ watch(
   }
 )
 
-const allNodes = computed((): VueNodeData[] =>
-  Array.from(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
-)
+const allNodes = computed((): VueNodeData[] => [
+  ...(vueNodeLifecycle.nodeManager.value?.vueNodeData?.values() ?? [])
+])
 
 function onLinkOverlayReady(el: HTMLCanvasElement) {
   if (!canvasStore.canvas) return

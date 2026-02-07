@@ -127,13 +127,11 @@ export function useAssetBrowser(
       .filter((tag): tag is string => typeof tag === 'string' && tag.length > 0)
       .map((tag) => tag.split('/')[0])
 
-    return Array.from(new Set(categories))
-      .sort()
-      .map((category) => ({
-        id: category,
-        label: category.charAt(0).toUpperCase() + category.slice(1),
-        icon: 'icon-[lucide--folder]'
-      }))
+    return [...new Set(categories)].sort().map((category) => ({
+      id: category,
+      label: category.charAt(0).toUpperCase() + category.slice(1),
+      icon: 'icon-[lucide--folder]'
+    }))
   })
 
   const navItems = computed<(NavItemData | NavGroupData)[]>(() => {

@@ -601,7 +601,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Useful for global passes without relying on spatial queries.
    */
   getAllSlotKeys(): string[] {
-    return Array.from(this.slotLayouts.keys())
+    return [...this.slotLayouts.keys()]
   }
 
   /**
@@ -833,7 +833,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     return {
       nodes: this.queryNodesInBounds(bounds),
-      links: Array.from(linkIds),
+      links: [...linkIds],
       slots: this.slotSpatialIndex.query(bounds),
       reroutes: this.rerouteSpatialIndex
         .query(bounds)

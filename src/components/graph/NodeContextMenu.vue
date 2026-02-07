@@ -248,8 +248,8 @@ defineExpose({ toggle, hide, isOpen, show })
 function showColorPopover(event: MouseEvent) {
   event.stopPropagation()
   event.preventDefault()
-  const target = Array.from((event.currentTarget as HTMLElement).children).find(
-    (el) => el.classList.contains('icon-[lucide--chevron-right]')
+  const target = [...(event.currentTarget as HTMLElement).children].find((el) =>
+    el.classList.contains('icon-[lucide--chevron-right]')
   ) as HTMLElement
   colorPickerMenu.value?.toggle(event, target)
 }

@@ -443,13 +443,13 @@ export const useWorkflowTemplatesStore = defineStore(
 
       if (extensionCounts > 0) {
         // Get unique extension modules
-        const extensionModules = Array.from(
-          new Set(
+        const extensionModules = [
+          ...new Set(
             enhancedTemplates.value
               .filter((t) => t.sourceModule !== 'default')
               .map((t) => t.sourceModule)
           )
-        ).sort()
+        ].sort()
 
         const extensionItems: NavItemData[] = extensionModules.map(
           (moduleName) => ({

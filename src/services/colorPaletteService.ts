@@ -79,7 +79,7 @@ export const useColorPaletteService = () => {
    */
   const loadLinkColorPalette = (linkColorPalette: Colors['node_slot']) => {
     const types = Object.fromEntries(
-      Array.from(nodeDefStore.nodeDataTypes).map((type) => [type, ''])
+      [...nodeDefStore.nodeDataTypes].map((type) => [type, ''])
     )
     Object.assign(
       app.canvas.default_connection_color_byType,

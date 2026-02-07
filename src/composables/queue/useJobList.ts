@@ -140,7 +140,7 @@ export function useJobList() {
         }
       })
 
-      for (const id of Array.from(nextSeen)) {
+      for (const id of [...nextSeen]) {
         if (!pendingSet.has(id)) {
           nextSeen.delete(id)
           nextAdded.delete(id)

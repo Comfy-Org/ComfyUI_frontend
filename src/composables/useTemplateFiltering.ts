@@ -68,7 +68,7 @@ export function useTemplateFiltering(
         template.models.forEach((model) => modelSet.add(model))
       }
     })
-    return Array.from(modelSet).sort()
+    return [...modelSet].sort()
   })
 
   const availableUseCases = computed(() => {
@@ -78,7 +78,7 @@ export function useTemplateFiltering(
         template.tags.forEach((tag) => tagSet.add(tag))
       }
     })
-    return Array.from(tagSet).sort()
+    return [...tagSet].sort()
   })
 
   const availableRunsOn = computed(() => {

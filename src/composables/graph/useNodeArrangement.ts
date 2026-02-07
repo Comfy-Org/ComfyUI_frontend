@@ -71,7 +71,7 @@ export function useNodeArrangement() {
   ]
 
   const applyAlign = (alignOption: AlignOption) => {
-    const selectedNodes = Array.from(canvasStore.selectedItems).filter((item) =>
+    const selectedNodes = [...canvasStore.selectedItems].filter((item) =>
       isLGraphNode(item)
     )
 
@@ -86,7 +86,7 @@ export function useNodeArrangement() {
   }
 
   const applyDistribute = (distributeOption: DistributeOption) => {
-    const selectedNodes = Array.from(canvasStore.selectedItems).filter((item) =>
+    const selectedNodes = [...canvasStore.selectedItems].filter((item) =>
       isLGraphNode(item)
     )
 

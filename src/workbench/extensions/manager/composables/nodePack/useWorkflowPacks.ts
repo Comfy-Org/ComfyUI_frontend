@@ -125,9 +125,9 @@ const _useWorkflowPacks = () => {
       return acc
     }, new Set<string>())
 
-  const workflowPacksIds = computed(() =>
-    Array.from(packsToUniqueIds(workflowPacks.value))
-  )
+  const workflowPacksIds = computed(() => [
+    ...packsToUniqueIds(workflowPacks.value)
+  ])
 
   const { startFetch, cleanup, error, isLoading, nodePacks, isReady } =
     useNodePacks(workflowPacksIds)

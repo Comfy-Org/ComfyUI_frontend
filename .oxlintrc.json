@@ -109,6 +109,7 @@
     "unicorn/prefer-optional-catch-binding": "error",
     "unicorn/prefer-prototype-methods": "error",
     "unicorn/prefer-query-selector": "error",
+    "unicorn/prefer-spread": "error",
     "unicorn/prefer-regexp-test": "error",
     "unicorn/prefer-string-replace-all": "error",
     "unicorn/prefer-string-slice": "error",

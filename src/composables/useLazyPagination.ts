@@ -29,9 +29,7 @@ export function useLazyPagination<T>(
       return []
     }
 
-    const loadedPageNumbers = Array.from(loadedPages.value).sort(
-      (a, b) => a - b
-    )
+    const loadedPageNumbers = [...loadedPages.value].sort((a, b) => a - b)
     const maxLoadedPage = Math.max(...loadedPageNumbers, 0)
     const endIndex = maxLoadedPage * itemsPerPage
     return itemData.slice(0, endIndex)
@@ -43,7 +41,7 @@ export function useLazyPagination<T>(
       return false
     }
 
-    const loadedPagesArray = Array.from(loadedPages.value)
+    const loadedPagesArray = [...loadedPages.value]
     const maxLoadedPage = Math.max(...loadedPagesArray, 0)
     return maxLoadedPage * itemsPerPage < itemData.length
   })
@@ -60,7 +58,7 @@ export function useLazyPagination<T>(
     if (isLoading.value || !hasMoreItems.value) return
 
     isLoading.value = true
-    const loadedPagesArray = Array.from(loadedPages.value)
+    const loadedPagesArray = [...loadedPages.value]
     const nextPage = Math.max(...loadedPagesArray, 0) + 1
 
     // Simulate network delay

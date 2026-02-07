@@ -54,6 +54,7 @@ function handleChanged() {
    * There is a bug with triggerRef here, so we can't use triggerRef.
    * We'll work around it for now and later submit a Vue issue and pull request to fix it.
    */
+  // oxlint-disable-next-line unicorn/prefer-spread -- spread widens union type
   targetNodes.value = targetNodes.value.slice()
 
   canvasStore.canvas?.setDirty(true, true)

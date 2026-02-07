@@ -365,7 +365,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const currentNodes = new Set(graph._nodes.map((n) => String(n.id)))
 
     // Remove deleted nodes
-    for (const id of Array.from(vueNodeData.keys())) {
+    for (const id of [...vueNodeData.keys()]) {
       if (!currentNodes.has(id)) {
         nodeRefs.delete(id)
         vueNodeData.delete(id)

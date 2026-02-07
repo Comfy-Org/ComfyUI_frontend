@@ -10,7 +10,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
   // Getters
   const selectedCount = computed(() => selectedAssetIds.value.size)
   const hasSelection = computed(() => selectedAssetIds.value.size > 0)
-  const selectedIdsArray = computed(() => Array.from(selectedAssetIds.value))
+  const selectedIdsArray = computed(() => [...selectedAssetIds.value])
 
   // Actions
   function addToSelection(assetId: string) {

@@ -241,7 +241,7 @@ function createAssetService() {
     )
 
     // Return only discovered folders in alphabetical order
-    const sortedFolders = Array.from(discoveredFolders).toSorted()
+    const sortedFolders = [...discoveredFolders].toSorted()
     return sortedFolders.map((name) => ({ name, folders: [] }))
   }
 

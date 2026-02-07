@@ -59,7 +59,7 @@ describe('useAssetSelection', () => {
 
       selection.reconcileSelection([assets[1]])
 
-      expect(Array.from(store.selectedAssetIds)).toEqual(['b'])
+      expect([...store.selectedAssetIds]).toEqual(['b'])
       expect(store.lastSelectedIndex).toBe(0)
       expect(store.lastSelectedAssetId).toBe('b')
     })
@@ -111,7 +111,7 @@ describe('useAssetSelection', () => {
 
       selection.reconcileSelection([assets[1]])
 
-      expect(Array.from(store.selectedAssetIds)).toEqual(['b'])
+      expect([...store.selectedAssetIds]).toEqual(['b'])
       expect(store.lastSelectedIndex).toBe(-1)
       expect(store.lastSelectedAssetId).toBeNull()
     })

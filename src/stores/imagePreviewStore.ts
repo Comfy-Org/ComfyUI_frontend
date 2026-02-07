@@ -143,7 +143,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
           const newValue = (outputs as Record<NodeLocatorId, any>)[k]
 
           if (Array.isArray(existingValue) && Array.isArray(newValue)) {
-            existingOutput[k] = existingValue.concat(newValue)
+            existingOutput[k] = [...existingValue, ...newValue]
           } else {
             existingOutput[k] = newValue
           }

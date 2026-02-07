@@ -374,7 +374,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ..._.pick(input, [...RESERVED_KEYS, 'widget'])
               }
             : input
         })
@@ -482,7 +482,7 @@ export const useLitegraphService = () => {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
-                ..._.pick(input, RESERVED_KEYS.concat('widget'))
+                ..._.pick(input, [...RESERVED_KEYS, 'widget'])
               }
             : input
         })

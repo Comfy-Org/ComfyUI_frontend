@@ -96,7 +96,7 @@ export function useSelectionOperations() {
   }
 
   const renameSelection = async () => {
-    const selectedItems = Array.from(canvasStore.selectedItems)
+    const selectedItems = [...canvasStore.selectedItems]
 
     // Handle single node selection
     if (selectedItems.length === 1) {

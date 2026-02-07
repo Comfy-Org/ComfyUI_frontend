@@ -91,7 +91,7 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
           .flat() as string[]
     )
   )
-  return Array.from(commandIds)
+  return [...commandIds]
     .map((commandId) => commandStore.getCommand(commandId))
     .filter((command): command is ComfyCommandImpl => command !== undefined)
 })

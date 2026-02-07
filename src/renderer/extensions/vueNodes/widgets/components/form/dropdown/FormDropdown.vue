@@ -105,7 +105,7 @@ const filteredItems = ref<FormDropdownItem[]>([])
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
-  return sorter || (({ items: i }) => i.slice())
+  return sorter || (({ items: i }) => [...i])
 })
 const selectedSorter = computed<SortOption['sorter']>(() => {
   if (sortSelected.value === 'default') return defaultSorter.value
@@ -142,7 +142,7 @@ function handleFileChange(event: Event) {
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
   if (target.files) {
-    files.value = Array.from(target.files)
+    files.value = [...target.files]
   }
   target.value = ''
 }

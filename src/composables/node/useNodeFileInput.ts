@@ -26,7 +26,7 @@ export function useNodeFileInput(node: LGraphNode, options: FileInputOptions) {
 
   fileInput.onchange = () => {
     if (fileInput?.files?.length) {
-      const files = Array.from(fileInput.files).filter(fileFilter)
+      const files = [...fileInput.files].filter(fileFilter)
       if (files.length) onSelect(files)
     }
   }

@@ -19,9 +19,9 @@ export const useNodeDragAndDrop = <T>(
   const { onDragOver, onDrop, fileFilter = () => true } = options
 
   const hasFiles = (items: DataTransferItemList) =>
-    !!Array.from(items).find((f) => f.kind === 'file')
+    !![...items].find((f) => f.kind === 'file')
 
-  const filterFiles = (files: FileList) => Array.from(files).filter(fileFilter)
+  const filterFiles = (files: FileList) => [...files].filter(fileFilter)
 
   const hasValidFiles = (files: FileList) => filterFiles(files).length > 0
 

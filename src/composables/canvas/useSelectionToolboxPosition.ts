@@ -33,7 +33,7 @@ function buildSelectionSignature(
 ): string | null {
   const c = store.canvas
   if (!c) return null
-  const items = Array.from(c.selectedItems)
+  const items = [...c.selectedItems]
   if (items.length !== 1) return null
   const item = items[0]
   if (isLGraphNode(item)) return `N:${item.id}`

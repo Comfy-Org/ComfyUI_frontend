@@ -384,7 +384,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const persistedWorkflows = computed(() =>
-    Array.from(workflows.value).filter(
+    [...workflows.value].filter(
       (workflow) =>
         workflow.isPersisted && !workflow.path.startsWith('subgraphs/')
     )
@@ -795,7 +795,7 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
 
   const saveBookmarks = async () => {
     await api.storeUserData('workflows/.index.json', {
-      favorites: Array.from(bookmarks.value)
+      favorites: [...bookmarks.value]
     })
   }
 

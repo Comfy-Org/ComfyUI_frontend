@@ -99,8 +99,7 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     }
 
     const newNodePath =
-      folderNode.category.split('/').slice(0, -1).concat(newName).join('/') +
-      '/'
+      [...folderNode.category.split('/').slice(0, -1), newName].join('/') + '/'
 
     if (newNodePath === folderNode.nodePath) {
       return

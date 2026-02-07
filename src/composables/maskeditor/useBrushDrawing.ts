@@ -1285,9 +1285,11 @@ export function useBrushDrawing(initialSettings?: {
     // 5. Read Data & Update Canvas
     // We use slice(0) to copy data because unmap() invalidates the array
     const maskDataArr = new Uint8ClampedArray(
+      // oxlint-disable-next-line unicorn/prefer-spread -- ArrayBuffer is not iterable
       readbackStagingMask.getMappedRange().slice(0)
     )
     const rgbDataArr = new Uint8ClampedArray(
+      // oxlint-disable-next-line unicorn/prefer-spread -- ArrayBuffer is not iterable
       readbackStagingRgb.getMappedRange().slice(0)
     )
 

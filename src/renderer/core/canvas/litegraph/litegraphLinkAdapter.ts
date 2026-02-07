@@ -119,7 +119,7 @@ export class LitegraphLinkAdapter {
         time: LiteGraph.getTime() * 0.001
       },
       scale: context.scale,
-      highlightedIds: new Set(Array.from(context.highlightedLinks).map(String))
+      highlightedIds: new Set([...context.highlightedLinks].map(String))
     }
   }
 

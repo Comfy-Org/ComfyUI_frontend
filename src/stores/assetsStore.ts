@@ -346,7 +346,7 @@ export const useAssetsStore = defineStore('assets', () => {
           return cached.array
         }
 
-        const array = Array.from(assetsMap.values())
+        const array = [...assetsMap.values()]
         assetsArrayCache.set(category, { source: assetsMap, array })
         return array
       }
@@ -524,7 +524,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
         const categoriesToCheck = category
           ? [category]
-          : Array.from(modelStateByCategory.value.keys())
+          : [...modelStateByCategory.value.keys()]
 
         for (const cat of categoriesToCheck) {
           const state = modelStateByCategory.value.get(cat)

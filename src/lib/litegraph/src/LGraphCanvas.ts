@@ -8253,7 +8253,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     const extra = this.getExtraMenuOptions?.(this, options)
-    return Array.isArray(extra) ? options.concat(extra) : options
+    return Array.isArray(extra) ? [...options, ...extra] : options
   }
 
   // called by processContextMenu to extract the menu list
@@ -8381,7 +8381,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const extra = node.getExtraMenuOptions?.(this, options)
     if (Array.isArray(extra) && extra.length > 0) {
       extra.push(null)
-      options = extra.concat(options)
+      options = [...extra, ...options]
     }
 
     if (node.clonable !== false) {
@@ -8665,7 +8665,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   fitViewToSelectionAnimated(options: AnimationOptions = {}) {
     const items = this.selectedItems.size
-      ? Array.from(this.selectedItems)
+      ? [...this.selectedItems]
       : this.positionableItems
     const bounds = createBounds(items)
     if (!bounds)

@@ -173,7 +173,7 @@ const outputItems = computed<FormDropdownItem[]>(() => {
     })
   })
 
-  return Array.from(outputs).map((output) => ({
+  return [...outputs].map((output) => ({
     id: `output-${output}`,
     preview_url: getMediaUrl(output.replace(' [output]', ''), 'output'),
     name: output,

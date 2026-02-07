@@ -46,7 +46,7 @@ export class FuseFilter<T, O = string> {
         options.add(option)
       }
     }
-    return Array.from(options)
+    return [...options]
   }
 
   public matches(

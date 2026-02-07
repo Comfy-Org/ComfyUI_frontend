@@ -45,7 +45,7 @@ class MediaCacheService {
     const keysToDelete: string[] = []
 
     // Find expired entries
-    for (const [key, entry] of Array.from(this.cache.entries())) {
+    for (const [key, entry] of [...this.cache.entries()]) {
       if (now - entry.lastAccessed > this.maxAge) {
         // Only revoke object URL if no components are using it
         if (entry.objectUrl) {
@@ -67,7 +67,7 @@ class MediaCacheService {
 
     // If still over size limit, remove oldest entries that aren't in use
     if (this.cache.size > this.maxSize) {
-      const entries = Array.from(this.cache.entries())
+      const entries = [...this.cache.entries()]
       entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed)
 
       let removedCount = 0
@@ -175,7 +175,7 @@ class MediaCacheService {
 
   clearCache() {
     // Revoke all object URLs
-    for (const entry of Array.from(this.cache.values())) {
+    for (const entry of [...this.cache.values()]) {
       if (entry.objectUrl) {
         URL.revokeObjectURL(entry.objectUrl)
       }
