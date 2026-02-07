@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
@@ -15,6 +15,7 @@ const mockIsYearlySubscription = ref(false)
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
+const mockUserId = ref<string | undefined>('user-123')
 const mockGetFirebaseAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
 )
@@ -55,10 +56,11 @@ vi.mock('@/composables/useErrorHandling', () => ({
 }))
 
 vi.mock('@/stores/firebaseAuthStore', () => ({
-  useFirebaseAuthStore: () => ({
-    getFirebaseAuthHeader: mockGetFirebaseAuthHeader,
-    userId: 'user-123'
-  }),
+  useFirebaseAuthStore: () =>
+    reactive({
+      getFirebaseAuthHeader: mockGetFirebaseAuthHeader,
+      userId: computed(() => mockUserId.value)
+    }),
   FirebaseAuthStoreError: class extends Error {}
 }))
 
@@ -151,6 +153,7 @@ describe('PricingTable', () => {
     mockIsActiveSubscription.value = false
     mockSubscriptionTier.value = null
     mockIsYearlySubscription.value = false
+    mockUserId.value = 'user-123'
     mockTrackBeginCheckout.mockReset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -199,6 +202,32 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('pro-yearly')
+    })
+
+    it('should use the latest userId value when it changes after mount', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+      mockUserId.value = undefined
+
+      const wrapper = createWrapper()
+      await flushPromises()
+
+      mockUserId.value = 'user-late'
+
+      const creatorButton = wrapper
+        .findAll('button')
+        .find((btn) => btn.text().includes('Creator'))
+
+      await creatorButton?.trigger('click')
+      await flushPromises()
+
+      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+        user_id: 'user-late',
+        tier: 'creator',
+        cycle: 'yearly',
+        checkout_type: 'change',
+        previous_tier: 'standard'
+      })
     })
 
     it('should not call accessBillingPortal when clicking current plan', async () => {
