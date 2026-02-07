@@ -4953,6 +4953,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
         this._drawConnectingLinks(ctx)
+      } else {
+        this._drawOverlayLinks()
       }
 
       this._drawLinkTooltip(ctx)
@@ -4960,10 +4962,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.onDrawForeground?.(ctx, this.visible_area)
 
       ctx.restore()
-    }
-
-    if (LiteGraph.vueNodesMode && this.overlayCtx && graph) {
-      this._drawOverlayLinks()
     }
 
     this.onDrawOverlay?.(ctx)
@@ -5052,8 +5050,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private _drawOverlayLinks(): void {
-    const octx = this.overlayCtx!
-    const overlayCanvas = this.overlayCanvas!
+    const octx = this.overlayCtx
+    const overlayCanvas = this.overlayCanvas
+    if (!octx || !overlayCanvas) return
 
     octx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height)
 
