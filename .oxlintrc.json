@@ -205,6 +205,7 @@
         "ignoreConditionalTests": true
       }
     ],
+    "typescript/prefer-optional-chain": "warn",
     "typescript/prefer-ts-expect-error": "error",
     "vue/define-props-destructuring": "error",
     "vue/no-import-compiler-macros": "error",
