@@ -20,7 +20,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
     type: 'hidden',
-    defaultValue: isCloud ? false : true,
+    defaultValue: !isCloud,
     versionAdded: '1.18.0'
   },
   {
@@ -284,7 +284,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.ShowMissingModelsWarning',
     name: 'Show missing models warning',
     type: isCloud ? 'hidden' : 'boolean',
-    defaultValue: isCloud ? false : true,
+    defaultValue: !isCloud,
     experimental: true
   },
   {
@@ -1156,7 +1156,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Use Asset API for model library',
     type: 'hidden',
     tooltip: 'Use new Asset API for model browsing',
-    defaultValue: isCloud ? true : false,
+    defaultValue: isCloud,
     experimental: true
   },
   {

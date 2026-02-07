@@ -5609,10 +5609,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const { title_mode } = node
 
     const render_title =
-      title_mode === TitleMode.TRANSPARENT_TITLE ||
-      title_mode === TitleMode.NO_TITLE
-        ? false
-        : true
+      title_mode !== TitleMode.TRANSPARENT_TITLE &&
+      title_mode !== TitleMode.NO_TITLE
 
     // Normalised node dimensions
     const area = tmp_area

@@ -73,6 +73,12 @@
         ]
       }
     ],
+    "no-unneeded-ternary": [
+      "error",
+      {
+        "defaultAssignment": false
+      }
+    ],
     "prefer-const": "error",
     "prefer-object-has-own": "error",
     "prefer-object-spread": "error",
