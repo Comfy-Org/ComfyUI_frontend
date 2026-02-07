@@ -81,6 +81,7 @@
       }
     ],
     "no-useless-call": "error",
+    "no-useless-concat": "error",
     "prefer-const": "error",
     "prefer-object-has-own": "error",
     "prefer-object-spread": "error",
