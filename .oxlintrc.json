@@ -152,6 +152,7 @@
     "unicorn/prefer-array-flat-map": "error",
     "unicorn/no-empty-file": "off",
     "unicorn/no-new-array": "off",
+    "unicorn/prefer-add-event-listener": "error",
     "unicorn/no-useless-undefined": [
       "error",
       {

@@ -586,20 +586,17 @@ export const useLitegraphService = () => {
                     height: img.naturalHeight
                   }) as HTMLCanvasElement
                   const ctx = canvas.getContext('2d')
-                  // @ts-expect-error fixme ts strict error
-                  let image
+                  let image: HTMLImageElement | ImageBitmap
                   if (window.createImageBitmap === undefined) {
-                    image = new Image()
+                    const img = new Image()
+                    image = img
                     const p = new Promise((resolve, reject) => {
-                      // @ts-expect-error fixme ts strict error
-                      image.onload = resolve
-                      // @ts-expect-error fixme ts strict error
-                      image.onerror = reject
+                      img.addEventListener('load', resolve)
+                      img.addEventListener('error', reject)
                     }).finally(() => {
-                      // @ts-expect-error fixme ts strict error
-                      URL.revokeObjectURL(image.src)
+                      URL.revokeObjectURL(img.src)
                     })
-                    image.src = URL.createObjectURL(blob)
+                    img.src = URL.createObjectURL(blob)
                     await p
                   } else {
                     image = await createImageBitmap(blob)

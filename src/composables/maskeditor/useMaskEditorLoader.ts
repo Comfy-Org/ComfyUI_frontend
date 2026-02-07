@@ -324,8 +324,10 @@ export function useMaskEditorLoader() {
       const img = new Image()
       img.crossOrigin = 'anonymous'
 
-      img.onload = () => resolve(img)
-      img.onerror = () => reject(new Error(`Failed to load image: ${url}`))
+      img.addEventListener('load', () => resolve(img))
+      img.addEventListener('error', () =>
+        reject(new Error(`Failed to load image: ${url}`))
+      )
 
       img.src = url
     })

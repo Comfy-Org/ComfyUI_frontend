@@ -359,11 +359,11 @@ export function useMaskEditorSaver() {
       const img = new Image()
       img.crossOrigin = 'anonymous'
 
-      img.onload = () => resolve(img)
-      img.onerror = (error) => {
+      img.addEventListener('load', () => resolve(img))
+      img.addEventListener('error', (error) => {
         console.error('[MaskEditorSaver] Failed to load image:', url, error)
         reject(new Error(`Failed to load image: ${url}`))
-      }
+      })
 
       img.src = url
     })

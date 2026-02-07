@@ -104,8 +104,8 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
   const loadElement = (url: string): Promise<HTMLImageElement | null> =>
     new Promise((resolve) => {
       const img = new Image()
-      img.onload = () => resolve(img)
-      img.onerror = () => resolve(null)
+      img.addEventListener('load', () => resolve(img))
+      img.addEventListener('error', () => resolve(null))
       img.src = url
     })
 
@@ -156,11 +156,11 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       video.addEventListener('pointermove', handlePointer)
       video.addEventListener('pointerdown', handlePointer)
 
-      video.onloadeddata = () => {
+      video.addEventListener('loadeddata', () => {
         setMinDimensions(video)
         resolve(video)
-      }
-      video.onerror = () => resolve(null)
+      })
+      video.addEventListener('error', () => resolve(null))
       video.src = url
     })
 

@@ -64,9 +64,9 @@ const handleFileUpload = (event: Event) => {
   if (target.files && target.files[0]) {
     const file = target.files[0]
     const reader = new FileReader()
-    reader.onload = (e) => {
+    reader.addEventListener('load', (e) => {
       emit('update:modelValue', e.target?.result as string)
-    }
+    })
     reader.readAsDataURL(file)
   }
 }

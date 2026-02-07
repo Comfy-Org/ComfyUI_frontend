@@ -298,14 +298,14 @@ const onGraphReady = () => {
       const currentTabId = crypto.randomUUID()
 
       // Listen for heartbeats from other tabs
-      tabCountChannel.onmessage = (event) => {
+      tabCountChannel.addEventListener('message', (event) => {
         if (
           event.data.type === 'heartbeat' &&
           event.data.tabId !== currentTabId
         ) {
           activeTabs.set(event.data.tabId, Date.now())
         }
-      }
+      })
 
       // 5-minute heartbeat interval
       useIntervalFn(() => {
