@@ -43,6 +43,7 @@
       }
     ],
     "no-eval": "off",
+    "no-new-func": "error",
     "no-redeclare": "error",
     "no-throw-literal": "error",
     "no-useless-constructor": "error",
