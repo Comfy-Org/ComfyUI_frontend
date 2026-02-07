@@ -156,14 +156,6 @@ interface ICreateDefaultNodeOptions extends ICreateNodeOptions {
   posSizeFix?: Point
 }
 
-interface HasShowSearchCallback {
-  /** See {@link LGraphCanvas.showSearchBox} */
-  showSearchBox: (
-    event: MouseEvent | null,
-    options?: IShowSearchOptions
-  ) => HTMLDivElement | void
-}
-
 interface ICloseable {
   close(): void
 }
@@ -6446,24 +6438,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   createDefaultNodeForSlot(optPass: ICreateDefaultNodeOptions): boolean {
-    type DefaultOptions = ICreateDefaultNodeOptions & {
-      posAdd: Point
-      posSizeFix: Point
+    const opts = {
+      nodeFrom: null,
+      slotFrom: null,
+      nodeTo: null,
+      slotTo: null,
+      nodeType: undefined,
+      posAdd: [0, 0] as Point,
+      posSizeFix: [0, 0] as Point,
+      ...optPass
     }
-
-    const opts = Object.assign<DefaultOptions, ICreateDefaultNodeOptions>(
-      {
-        nodeFrom: null,
-        slotFrom: null,
-        nodeTo: null,
-        slotTo: null,
-        position: [0, 0],
-        nodeType: undefined,
-        posAdd: [0, 0],
-        posSizeFix: [0, 0]
-      },
-      optPass
-    )
     const { afterRerouteId } = opts
 
     const isFrom = opts.nodeFrom && opts.slotFrom !== null
@@ -6649,21 +6633,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   showConnectionMenu(
     optPass: Partial<ICreateNodeOptions & { e: MouseEvent }>
   ): ContextMenu<string> | undefined {
-    const opts = Object.assign<
-      ICreateNodeOptions & HasShowSearchCallback,
-      ICreateNodeOptions
-    >(
-      {
-        nodeFrom: null,
-        slotFrom: null,
-        nodeTo: null,
-        slotTo: null,
-        e: undefined,
-        allow_searchbox: this.allow_searchbox,
-        showSearchBox: this.showSearchBox
-      },
-      optPass || {}
-    )
+    const opts = {
+      nodeFrom: null,
+      slotFrom: null,
+      nodeTo: null,
+      slotTo: null,
+      e: undefined,
+      allow_searchbox: this.allow_searchbox,
+      showSearchBox: this.showSearchBox,
+      ...(optPass || {})
+    }
     const dirty = () => this._dirty()
 
     const that = this

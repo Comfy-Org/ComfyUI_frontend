@@ -23,18 +23,16 @@ interface NodeConstructorWithSlotOffset {
 function getMockISerialisedNode(
   data: Partial<ISerialisedNode>
 ): ISerialisedNode {
-  return Object.assign(
-    {
-      id: 0,
-      flags: {},
-      type: 'TestNode',
-      pos: [100, 100],
-      size: [100, 100],
-      order: 0,
-      mode: 0
-    },
-    data
-  )
+  return {
+    id: 0,
+    flags: {},
+    type: 'TestNode',
+    pos: [100, 100],
+    size: [100, 100],
+    order: 0,
+    mode: 0,
+    ...data
+  }
 }
 
 describe('LGraphNode', () => {
@@ -42,6 +40,7 @@ describe('LGraphNode', () => {
   let origLiteGraph: typeof LiteGraph
 
   beforeEach(() => {
+    // oxlint-disable-next-line prefer-object-spread -- LiteGraph is a class instance; spread loses methods
     origLiteGraph = Object.assign({}, LiteGraph)
     // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
     delete origLiteGraph.Classes
