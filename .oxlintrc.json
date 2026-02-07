@@ -79,6 +79,7 @@
         "defaultAssignment": false
       }
     ],
+    "no-useless-call": "error",
     "prefer-const": "error",
     "prefer-object-has-own": "error",
     "prefer-object-spread": "error",
