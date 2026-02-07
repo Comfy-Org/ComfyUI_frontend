@@ -7,6 +7,7 @@ declare const __USE_PROD_CONFIG__: boolean
 
 interface Window {
   __CONFIG__: {
+    gtm_container_id?: string
     mixpanel_token?: string
     require_whitelist?: boolean
     subscription_required?: boolean
@@ -30,6 +31,12 @@ interface Window {
       badge?: string
     }
   }
+  __ga_identity__?: {
+    client_id?: string
+    session_id?: string
+    session_number?: string
+  }
+  dataLayer?: Array<Record<string, unknown>>
 }
 
 interface Navigator {
