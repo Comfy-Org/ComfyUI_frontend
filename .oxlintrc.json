@@ -107,6 +107,13 @@
     "import/namespace": "error",
     "import/no-duplicates": "error",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
+    "vitest/consistent-each-for": [
+      "error",
+      {
+        "test": "for",
+        "describe": "for"
+      }
+    ],
     "vitest/consistent-vitest-vi": "error",
     "vitest/hoisted-apis-on-top": "error",
     "vitest/no-conditional-tests": "error",
