@@ -933,7 +933,7 @@ export class LGraph
     }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
-      throw 'LiteGraph: max number of nodes in a graph reached'
+      throw new Error('LiteGraph: max number of nodes in a graph reached')
     }
 
     // give him an id

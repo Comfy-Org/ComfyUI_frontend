@@ -1643,7 +1643,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     menu: ContextMenu<string | null>,
     node: LGraphNode
   ): boolean {
-    if (!node) throw 'no node for color'
+    if (!node) throw new Error('no node for color')
 
     const values: IContextMenuValue<
       string | null,
@@ -1705,7 +1705,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     menu?: ContextMenu<(typeof LiteGraph.VALID_SHAPES)[number]>,
     node?: LGraphNode
   ): boolean {
-    if (!node) throw 'no node passed'
+    if (!node) throw new Error('no node passed')
 
     new LiteGraph.ContextMenu<(typeof LiteGraph.VALID_SHAPES)[number]>(
       LiteGraph.VALID_SHAPES,
@@ -1881,7 +1881,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (typeof canvas === 'string') {
       const el = document.querySelector(`#${canvas}`)
       if (!(el instanceof HTMLCanvasElement))
-        throw 'Error validating LiteGraph canvas: Canvas element not found'
+        throw new Error(
+          'Error validating LiteGraph canvas: Canvas element not found'
+        )
       return el
     }
     return canvas
@@ -1922,9 +1924,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const ctx = element.getContext?.('2d')
     if (ctx == null) {
       if (element.localName !== 'canvas') {
-        throw `Element supplied for LGraphCanvas must be a <canvas> element, you passed a ${element.localName}`
+        throw new Error(
+          `Element supplied for LGraphCanvas must be a <canvas> element, you passed a ${element.localName}`
+        )
       }
-      throw "This browser doesn't support Canvas"
+      throw new Error("This browser doesn't support Canvas")
     }
     this.ctx = ctx
 

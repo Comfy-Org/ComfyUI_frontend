@@ -402,7 +402,9 @@ export class LiteGraphGlobal {
    */
   registerNodeType(type: string, base_class: typeof LGraphNode): void {
     if (!base_class.prototype)
-      throw 'Cannot register a simple object, it must be a class with a prototype'
+      throw new Error(
+        'Cannot register a simple object, it must be a class with a prototype'
+      )
     base_class.type = type
 
     const classname = base_class.name
@@ -446,7 +448,7 @@ export class LiteGraphGlobal {
   unregisterNodeType(type: string | typeof LGraphNode): void {
     const base_class =
       typeof type === 'string' ? this.registered_node_types[type] : type
-    if (!base_class) throw `node type not found: ${String(type)}`
+    if (!base_class) throw new Error(`node type not found: ${String(type)}`)
 
     delete this.registered_node_types[String(base_class.type)]
 

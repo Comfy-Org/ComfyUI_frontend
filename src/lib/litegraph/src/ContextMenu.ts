@@ -321,7 +321,8 @@ export class ContextMenu<TValue = unknown> {
           if (r === true) close_parent = false
         }
         if (value.submenu) {
-          if (!value.submenu.options) throw 'ContextMenu submenu needs options'
+          if (!value.submenu.options)
+            throw new Error('ContextMenu submenu needs options')
 
           new that.constructor(value.submenu.options, {
             callback: value.submenu.callback,
