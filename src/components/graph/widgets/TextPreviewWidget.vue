@@ -30,7 +30,7 @@ const formattedText = computed(() => {
   const src = modelValue.value
   // Turn [[label|url]] into placeholders to avoid interfering with linkifyHtml
   const tokens: { label: string; url: string }[] = []
-  const holed = src.replace(
+  const holed = src.replaceAll(
     /\[\[([^|\]]+)\|([^\]]+)\]\]/g,
     (_m, label, url) => {
       tokens.push({ label: String(label), url: String(url) })
@@ -42,10 +42,10 @@ const formattedText = computed(() => {
   let html = nl2br(linkifyHtml(holed))
 
   // Restore placeholders as <a>...</a> (minimal escaping + http default)
-  html = html.replace(/__LNK(\d+)__/g, (_m, i) => {
+  html = html.replaceAll(/__LNK(\d+)__/g, (_m, i) => {
     const { label, url } = tokens[+i]
-    const safeHref = url.replace(/"/g, '&quot;')
-    const safeLabel = label.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const safeHref = url.replaceAll('"', '&quot;')
+    const safeLabel = label.replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     return /^https?:\/\//i.test(url)
       ? `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeLabel}</a>`
       : safeLabel

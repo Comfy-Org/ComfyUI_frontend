@@ -116,14 +116,14 @@ const formattedContent = computed(() => {
     const markdown = latestRelease.value.content
     // Remove the h1 title line and images for toast mode
     const contentWithoutTitle = markdown.replace(/^# .+$/m, '')
-    const contentWithoutImages = contentWithoutTitle.replace(
+    const contentWithoutImages = contentWithoutTitle.replaceAll(
       /!\[.*?\]\(.*?\)/g,
       ''
     )
 
     // Check if there's meaningful content left after cleanup
     const trimmedContent = contentWithoutImages.trim()
-    if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
+    if (!trimmedContent || trimmedContent.replaceAll(/\s+/g, '') === '') {
       return DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
     }
 
@@ -132,7 +132,7 @@ const formattedContent = computed(() => {
   } catch (error) {
     console.error('Error parsing markdown:', error)
     // Fallback to plain text with line breaks - sanitize the HTML we create
-    const fallbackContent = latestRelease.value.content.replace(/\n/g, '<br>')
+    const fallbackContent = latestRelease.value.content.replaceAll('\n', '<br>')
     return fallbackContent.trim()
       ? DOMPurify.sanitize(fallbackContent)
       : DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)

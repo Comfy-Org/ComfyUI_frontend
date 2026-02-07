@@ -73,7 +73,7 @@ describe('CompletionSummaryBanner', () => {
       failedCount: 1
     })
 
-    const summaryText = wrapper.text().replace(/\s+/g, ' ').trim()
+    const summaryText = wrapper.text().replaceAll(/\s+/g, ' ').trim()
     expect(summaryText).toContain('2 jobs completed, 1 job failed')
   })
 

@@ -72,7 +72,7 @@ describe('QueueOverlayActive', () => {
     expect(progressBars[0].attributes('style')).toContain('width: 65%')
     expect(progressBars[1].attributes('style')).toContain('width: 40%')
 
-    const content = wrapper.text().replace(/\s+/g, ' ')
+    const content = wrapper.text().replaceAll(/\s+/g, ' ')
     expect(content).toContain('Total: 65%')
 
     const [runningSection, queuedSection] = wrapper.findAll(

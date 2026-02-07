@@ -80,19 +80,19 @@ const parsedSegments = computed(() => {
     let rest = remainingText.substring(lastIndex)
 
     // Process bold text
-    rest = rest.replace(/(\*\*|__)(.*?)(\*\*|__)/g, (_, __, p2) => {
+    rest = rest.replaceAll(/(\*\*|__)(.*?)(\*\*|__)/g, (_, __, p2) => {
       segments.push({ type: 'bold', text: p2 })
       return ''
     })
 
     // Process italic text
-    rest = rest.replace(/(\*|_)(.*?)(\*|_)/g, (_, __, p2) => {
+    rest = rest.replaceAll(/(\*|_)(.*?)(\*|_)/g, (_, __, p2) => {
       segments.push({ type: 'italic', text: p2 })
       return ''
     })
 
     // Process code
-    rest = rest.replace(/`(.*?)`/g, (_, p1) => {
+    rest = rest.replaceAll(/`(.*?)`/g, (_, p1) => {
       segments.push({ type: 'code', text: p1 })
       return ''
     })

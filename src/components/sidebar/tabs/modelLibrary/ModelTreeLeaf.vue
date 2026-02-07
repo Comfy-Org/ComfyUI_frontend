@@ -45,7 +45,7 @@ const modelPreviewUrl = computed(() => {
   const path_index = modelDef.value.path_index
   const extension = modelDef.value.file_name.split('.').pop()
   const filename = modelDef.value.file_name.replace(`.${extension}`, '.webp')
-  const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
+  const encodedFilename = encodeURIComponent(filename).replaceAll('%2F', '/')
   return `/api/experiment/models/preview/${folder}/${path_index}/${encodedFilename}`
 })
 

@@ -15,11 +15,11 @@ vi.mock('@/utils/markdownRendererUtil', () => ({
   renderMarkdownToHtml: vi.fn((markdown: string) => {
     // Simple mock that converts some markdown to HTML
     return markdown
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
-      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
-      .replace(/\n/g, '<br>')
+      .replaceAll(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replaceAll(/\*(.*?)\*/g, '<em>$1</em>')
+      .replaceAll(/^# (.*?)$/gm, '<h1>$1</h1>')
+      .replaceAll(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replaceAll('\n', '<br>')
   })
 }))
 

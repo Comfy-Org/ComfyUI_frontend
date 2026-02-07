@@ -8,7 +8,7 @@ export function applyTextReplacements(
 ): string {
   const allNodes = collectAllNodes(graph)
 
-  return value.replace(/%([^%]+)%/g, function (match, text) {
+  return value.replaceAll(/%([^%]+)%/g, function (match, text) {
     const split = text.split('.')
     if (split.length !== 2) {
       // Special handling for dates

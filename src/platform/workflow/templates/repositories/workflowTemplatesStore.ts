@@ -265,7 +265,7 @@ export const useWorkflowTemplatesStore = defineStore(
         return enhancedTemplates.value.filter(
           (t) =>
             t.isEssential &&
-            t.category?.toLowerCase().replace(/\s+/g, '-') ===
+            t.category?.toLowerCase().replaceAll(/\s+/g, '-') ===
               categoryId.replace('basics-', '')
         )
       }

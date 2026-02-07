@@ -619,5 +619,5 @@ function stripHtmlTags(html: string): string {
   // Use DOMPurify to sanitize and strip all HTML tags
   const sanitized = DOMPurify.sanitize(html, { ALLOWED_TAGS: [] })
   const result = sanitized.trim()
-  return result || html.replace(/<[^>]*>/g, '').trim() || html
+  return result || html.replaceAll(/<[^>]*>/g, '').trim() || html
 }

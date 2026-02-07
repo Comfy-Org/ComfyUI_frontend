@@ -31,7 +31,7 @@ export function normalizeHost(input: string): string {
   }
 
   // Strip any remaining brackets (e.g., '[::1]' -> '::1')
-  h = h.replace(/^\[|\]$/g, '')
+  h = h.replaceAll(/^\[|\]$/g, '')
 
   return h
 }

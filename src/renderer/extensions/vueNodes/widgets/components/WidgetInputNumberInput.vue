@@ -35,10 +35,10 @@ function formatNumber(value: number, options?: Intl.NumberFormatOptions) {
 }
 
 const decimalSeparator = computed(() =>
-  formatNumber(1.1).replace(/\p{Number}/gu, '')
+  formatNumber(1.1).replaceAll(/\p{Number}/gu, '')
 )
 const groupSeparator = computed(() =>
-  formatNumber(11111).replace(/\p{Number}/gu, '')
+  formatNumber(11111).replaceAll(/\p{Number}/gu, '')
 )
 function unformatValue(value: string) {
   return value
