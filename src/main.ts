@@ -16,8 +16,6 @@ import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
-import { isCloud } from '@/platform/distribution/types'
-
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'

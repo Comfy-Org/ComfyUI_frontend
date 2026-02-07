@@ -330,8 +330,6 @@ interface PricingTierConfig {
   isPopular?: boolean
 }
 
-const { t, n } = useI18n()
-
 const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
   { label: t('subscription.monthly'), value: 'monthly' }
