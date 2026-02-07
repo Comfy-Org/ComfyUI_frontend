@@ -985,9 +985,11 @@ export class ComfyApp {
     await useExtensionService().invokeExtensionsAsync('addCustomNodeDefs', defs)
 
     // Register a node for each definition
-    for (const nodeId in defs) {
-      this.registerNodeDef(nodeId, defs[nodeId])
-    }
+    await Promise.all(
+      Object.keys(defs).map((nodeId) =>
+        this.registerNodeDef(nodeId, defs[nodeId])
+      )
+    )
   }
 
   loadTemplateData(templateData: {
