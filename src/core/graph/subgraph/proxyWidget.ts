@@ -205,7 +205,7 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
       let redirectedReceiver = receiver
       if (property === '_overlay') return overlay
       else if (property === 'value') redirectedReceiver = backingWidget
-      if (Object.prototype.hasOwnProperty.call(overlay, property)) {
+      if (Object.hasOwn(overlay, property)) {
         redirectedTarget = overlay
         redirectedReceiver = overlay
       }
@@ -224,7 +224,7 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
         ;[linkedNode, linkedWidget] = resolveLinkedWidget(overlay)
         backingWidget = linkedWidget ?? disconnectedWidget
       }
-      if (Object.prototype.hasOwnProperty.call(overlay, property)) {
+      if (Object.hasOwn(overlay, property)) {
         redirectedTarget = overlay
       }
       return Reflect.set(redirectedTarget, property, value, redirectedTarget)
@@ -237,7 +237,7 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
     },
     has(_t: IBaseWidget, property: string) {
       let redirectedTarget: object = backingWidget
-      if (Object.prototype.hasOwnProperty.call(overlay, property)) {
+      if (Object.hasOwn(overlay, property)) {
         redirectedTarget = overlay
       }
       return Reflect.has(redirectedTarget, property)
