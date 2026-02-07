@@ -153,6 +153,7 @@
     "unicorn/no-empty-file": "off",
     "unicorn/no-new-array": "off",
     "unicorn/prefer-add-event-listener": "error",
+    "unicorn/prefer-array-find": "error",
     "unicorn/no-useless-undefined": [
       "error",
       {
