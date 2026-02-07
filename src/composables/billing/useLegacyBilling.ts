@@ -86,10 +86,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
     try {
       await Promise.all([fetchStatus(), fetchBalance()])
       isInitialized.value = true
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to initialize billing'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to initialize billing'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }
@@ -100,10 +102,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await legacyFetchStatus()
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to fetch subscription'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to fetch subscription'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }
@@ -114,10 +118,12 @@ export function useLegacyBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await firebaseAuthStore.fetchBalance()
-    } catch (err) {
+    } catch (errorCaught) {
       error.value =
-        err instanceof Error ? err.message : 'Failed to fetch balance'
-      throw err
+        errorCaught instanceof Error
+          ? errorCaught.message
+          : 'Failed to fetch balance'
+      throw errorCaught
     } finally {
       isLoading.value = false
     }

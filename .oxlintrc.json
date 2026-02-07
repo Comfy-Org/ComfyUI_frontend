@@ -84,6 +84,12 @@
     "typescript/no-unnecessary-parameter-property-assignment": "off",
     "typescript/no-unsafe-declaration-merging": "off",
     "typescript/no-unused-vars": "off",
+    "unicorn/catch-error-name": [
+      "error",
+      {
+        "ignore": ["^error\\w+$"]
+      }
+    ],
     "unicorn/no-empty-file": "off",
     "unicorn/no-new-array": "off",
     "unicorn/no-single-promise-in-promise-methods": "off",

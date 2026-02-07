@@ -137,8 +137,8 @@ export function useMaskEditorLoader() {
 
           // We also need to update nodeImageUrl to match this new ref so subsequent logic works
           nodeImageUrl = mkFileUrl({ ref: nodeImageRef })
-        } catch (e) {
-          console.warn('Failed to parse widget filename as ref', e)
+        } catch (error) {
+          console.warn('Failed to parse widget filename as ref', error)
         }
       }
 

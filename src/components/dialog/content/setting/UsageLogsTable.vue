@@ -169,9 +169,10 @@ const loadEvents = async () => {
     } else {
       error.value = customerEventService.error.value || 'Failed to load events'
     }
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Unknown error'
-    console.error('Error loading events:', err)
+  } catch (errorCaught) {
+    error.value =
+      errorCaught instanceof Error ? errorCaught.message : 'Unknown error'
+    console.error('Error loading events:', errorCaught)
   } finally {
     loading.value = false
   }

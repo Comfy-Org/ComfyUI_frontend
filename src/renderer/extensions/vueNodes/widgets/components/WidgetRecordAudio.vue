@@ -191,8 +191,8 @@ async function handleStartRecording() {
     resumeTimer()
     waveform.initWaveform()
     waveform.updateWaveform(isWaveformActive)
-  } catch (err) {
-    console.error('Failed to start recording:', err)
+  } catch (error) {
+    console.error('Failed to start recording:', error)
   }
 }
 

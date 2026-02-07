@@ -111,8 +111,8 @@ export const useComfyManagerService = () => {
       const response = await requestCall()
       if (isQueueOperation) await startQueue()
       return response.data
-    } catch (err) {
-      handleRequestError(err, errorContext, routeSpecificErrors)
+    } catch (error) {
+      handleRequestError(error, errorContext, routeSpecificErrors)
       return null
     } finally {
       isLoading.value = false

@@ -150,10 +150,10 @@ export function useSecretForm(options: UseSecretFormOptions) {
       }
       onSaved()
       visible.value = false
-    } catch (err) {
-      if (err instanceof SecretsApiError) {
-        apiErrorCode.value = err.code ?? null
-        apiErrorMessage.value = err.message
+    } catch (error) {
+      if (error instanceof SecretsApiError) {
+        apiErrorCode.value = error.code ?? null
+        apiErrorMessage.value = error.message
       }
     } finally {
       loading.value = false

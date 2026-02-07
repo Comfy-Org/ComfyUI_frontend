@@ -229,8 +229,8 @@ function confirmDeletion() {
           // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
           emit('deleted', asset)
-        } catch (err: unknown) {
-          console.error(err)
+        } catch (error) {
+          console.error(error)
           promptText.value = t('assetBrowser.deletion.failed', {
             assetName
           })

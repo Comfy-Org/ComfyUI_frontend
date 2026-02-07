@@ -27,8 +27,8 @@ export function useGroupMenuOptions() {
     action: () => {
       try {
         groupContext.recomputeInsideNodes()
-      } catch (e) {
-        console.warn('Failed to recompute group nodes:', e)
+      } catch (error) {
+        console.warn('Failed to recompute group nodes:', error)
         return
       }
 
@@ -88,8 +88,8 @@ export function useGroupMenuOptions() {
 
     try {
       groupContext.recomputeInsideNodes()
-    } catch (e) {
-      console.warn('Failed to recompute group nodes for mode options:', e)
+    } catch (error) {
+      console.warn('Failed to recompute group nodes for mode options:', error)
       return options
     }
 

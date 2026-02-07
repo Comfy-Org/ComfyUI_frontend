@@ -256,8 +256,8 @@ onMounted(() => {
   try {
     // Relocate the legacy menu container to the graph canvas container so it is below other elements
     graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
-  } catch (e) {
-    console.error('Failed to init ComfyUI frontend', e)
+  } catch (error) {
+    console.error('Failed to init ComfyUI frontend', error)
   }
 })
 

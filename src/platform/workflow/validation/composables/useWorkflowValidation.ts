@@ -80,9 +80,9 @@ export function useWorkflowValidation() {
         validatedData = tryFixLinks(validatedGraphData, {
           silent
         }) as ComfyWorkflowJSON
-      } catch (err) {
+      } catch (error) {
         // Link fixer itself is throwing an error
-        console.error(err)
+        console.error(error)
       }
     }
 

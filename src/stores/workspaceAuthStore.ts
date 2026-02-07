@@ -262,8 +262,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
       persistToSession(workspaceWithRole, data.token, expiresAt)
       scheduleTokenRefresh(expiresAt)
-    } catch (err) {
-      error.value = err instanceof Error ? err : new Error(String(err))
+    } catch (errorCaught) {
+      error.value =
+        errorCaught instanceof Error
+          ? errorCaught
+          : new Error(String(errorCaught))
       throw error.value
     } finally {
       isLoading.value = false
@@ -293,33 +296,33 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       try {
         await switchWorkspace(workspaceId)
         return
-      } catch (err) {
-        const isAuthError = err instanceof WorkspaceAuthError
+      } catch (error) {
+        const isAuthError = error instanceof WorkspaceAuthError
 
         const isPermanentError =
           isAuthError &&
-          (err.code === 'ACCESS_DENIED' ||
-            err.code === 'WORKSPACE_NOT_FOUND' ||
-            err.code === 'INVALID_FIREBASE_TOKEN' ||
-            err.code === 'NOT_AUTHENTICATED')
+          (error.code === 'ACCESS_DENIED' ||
+            error.code === 'WORKSPACE_NOT_FOUND' ||
+            error.code === 'INVALID_FIREBASE_TOKEN' ||
+            error.code === 'NOT_AUTHENTICATED')
 
         if (isPermanentError) {
           // Only clear context if this refresh is still for the current workspace
           if (capturedRequestId === refreshRequestId) {
-            console.error('Workspace access revoked or auth invalid:', err)
+            console.error('Workspace access revoked or auth invalid:', error)
             clearWorkspaceContext()
           }
           return
         }
 
         const isTransientError =
-          isAuthError && err.code === 'TOKEN_EXCHANGE_FAILED'
+          isAuthError && error.code === 'TOKEN_EXCHANGE_FAILED'
 
         if (isTransientError && attempt < maxRetries) {
           const delay = baseDelayMs * Math.pow(2, attempt)
           console.warn(
             `Token refresh failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`,
-            err
+            error
           )
           await new Promise((resolve) => setTimeout(resolve, delay))
           continue
@@ -327,7 +330,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
         // Only clear context if this refresh is still for the current workspace
         if (capturedRequestId === refreshRequestId) {
-          console.error('Failed to refresh workspace token after retries:', err)
+          console.error(
+            'Failed to refresh workspace token after retries:',
+            error
+          )
           clearWorkspaceContext()
         }
       }

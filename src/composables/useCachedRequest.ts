@@ -62,8 +62,8 @@ export function useCachedRequest<TParams, TResult>(
   ): Promise<TResult | null> => {
     try {
       return await pendingRequest
-    } catch (err) {
-      console.error('Error in pending request:', err)
+    } catch (error) {
+      console.error('Error in pending request:', error)
       return null
     }
   }

@@ -96,8 +96,8 @@ export const useWorkflowDraftStore = defineStore('workflowDraft', () => {
         workflowName
       )
       return true
-    } catch (err) {
-      console.error('Failed to load persisted workflow', err)
+    } catch (error) {
+      console.error('Failed to load persisted workflow', error)
       onFailure?.()
       return false
     }

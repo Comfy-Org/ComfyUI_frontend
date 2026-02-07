@@ -130,8 +130,8 @@ function getDisplayLabel(value: string): string {
 
   try {
     return getOptionLabel(value) || value
-  } catch (e) {
-    console.error('Failed to map value:', e)
+  } catch (error) {
+    console.error('Failed to map value:', error)
     return value
   }
 }

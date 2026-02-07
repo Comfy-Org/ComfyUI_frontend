@@ -20,8 +20,8 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     const decodedData = new TextDecoder().decode(bytes)
     useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
     return true
-  } catch (err) {
-    console.error(err)
+  } catch (error) {
+    console.error(error)
   }
   return false
 }
