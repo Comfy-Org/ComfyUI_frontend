@@ -100,6 +100,7 @@
     "import/no-duplicates": "error",
     "import/consistent-type-specifier-style": ["error", "prefer-top-level"],
     "vitest/consistent-vitest-vi": "error",
+    "vitest/hoisted-apis-on-top": "error",
     "vitest/prefer-describe-function-title": "warn",
     "jest/expect-expect": "off",
     "jest/no-conditional-expect": "off",
