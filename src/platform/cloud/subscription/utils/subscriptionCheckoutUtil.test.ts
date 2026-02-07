@@ -121,7 +121,7 @@ describe('performSubscriptionCheckout', () => {
     const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
     const authHeader = createDeferred<{ Authorization: string }>()
 
-    mockUserId.value = undefined
+    mockUserId.value = 'user-early'
     mockGetAuthHeader.mockImplementationOnce(() => authHeader.promise)
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -135,6 +135,7 @@ describe('performSubscriptionCheckout', () => {
 
     await checkoutPromise
 
+    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledTimes(1)
     expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-late',

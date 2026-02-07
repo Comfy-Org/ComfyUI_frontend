@@ -207,7 +207,7 @@ describe('PricingTable', () => {
     it('should use the latest userId value when it changes after mount', async () => {
       mockIsActiveSubscription.value = true
       mockSubscriptionTier.value = 'STANDARD'
-      mockUserId.value = undefined
+      mockUserId.value = 'user-early'
 
       const wrapper = createWrapper()
       await flushPromises()
@@ -221,6 +221,7 @@ describe('PricingTable', () => {
       await creatorButton?.trigger('click')
       await flushPromises()
 
+      expect(mockTrackBeginCheckout).toHaveBeenCalledTimes(1)
       expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
         user_id: 'user-late',
         tier: 'creator',
