@@ -93,7 +93,9 @@ defineExpose({
 })
 
 const isLarge = computed(() => size === 'lg')
-const placeholderText = computed(() => placeholder ?? t('g.searchPlaceholder'))
+const placeholderText = computed(
+  () => placeholder ?? t('g.searchPlaceholder', { subject: '' })
+)
 
 const sizeClasses = computed(() => {
   if (showBorder) {
