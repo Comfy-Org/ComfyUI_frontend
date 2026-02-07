@@ -129,21 +129,19 @@ import { computed, ref } from 'vue'
 import type { TopbarBadge } from '@/types/comfy'
 import { cn } from '@/utils/tailwindUtil'
 
-const props = withDefaults(
-  defineProps<{
-    badge: TopbarBadge
-    displayMode?: 'full' | 'compact' | 'icon-only'
-    reverseOrder?: boolean
-    noPadding?: boolean
-    backgroundColor?: string
-  }>(),
-  {
-    displayMode: 'full',
-    reverseOrder: false,
-    noPadding: false,
-    backgroundColor: 'var(--comfy-menu-bg)'
-  }
-)
+const {
+  badge,
+  displayMode = 'full',
+  reverseOrder = false,
+  noPadding = false,
+  backgroundColor = 'var(--comfy-menu-bg)'
+} = defineProps<{
+  badge: TopbarBadge
+  displayMode?: 'full' | 'compact' | 'icon-only'
+  reverseOrder?: boolean
+  noPadding?: boolean
+  backgroundColor?: string
+}>()
 
 const popover = ref<InstanceType<typeof Popover>>()
 
@@ -151,10 +149,10 @@ const togglePopover = (event: Event) => {
   popover.value?.toggle(event)
 }
 
-const variant = computed(() => props.badge.variant ?? 'info')
+const variant = computed(() => badge.variant ?? 'info')
 
 const menuBackgroundStyle = computed(() => ({
-  backgroundColor: props.backgroundColor
+  backgroundColor
 }))
 
 const labelClasses = computed(() => {
@@ -184,8 +182,8 @@ const textClasses = computed(() => {
 const iconColorClass = computed(() => textClasses.value)
 
 const iconClass = computed(() => {
-  if (props.badge.icon) {
-    return props.badge.icon
+  if (badge.icon) {
+    return badge.icon
   }
   switch (variant.value) {
     case 'error':

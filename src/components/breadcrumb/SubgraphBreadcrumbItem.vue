@@ -78,9 +78,7 @@ interface Props {
   isActive?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  isActive: false
-})
+const { item, isActive = false } = defineProps<Props>()
 
 const nodeDefStore = useNodeDefStore()
 const hasMissingNodes = computed(() =>
@@ -103,7 +101,7 @@ const rename = async (
 ) => {
   if (newName && newName !== initialName) {
     // Synchronize the node titles with the new name
-    props.item.updateTitle?.(newName)
+    item.updateTitle?.(newName)
 
     if (workflowStore.activeSubgraph) {
       workflowStore.activeSubgraph.name = newName
@@ -127,13 +125,13 @@ const rename = async (
   }
 }
 
-const isRoot = props.item.key === 'root'
+const isRoot = item.key === 'root'
 
 const tooltipText = computed(() => {
   if (hasMissingNodes.value && isRoot) {
     return t('breadcrumbsMenu.missingNodesWarning')
   }
-  return props.item.label
+  return item.label
 })
 
 const startRename = async () => {
@@ -145,7 +143,7 @@ const startRename = async () => {
   }
 
   isEditing.value = true
-  itemLabel.value = props.item.label as string
+  itemLabel.value = item.label as string
   void nextTick(() => {
     if (itemInputRef.value?.$el) {
       itemInputRef.value.$el.focus()
@@ -165,12 +163,12 @@ const handleClick = (event: MouseEvent) => {
   }
 
   if (event.detail === 1) {
-    if (props.isActive) {
+    if (isActive) {
       menu.value?.toggle(event)
     } else {
-      props.item.command?.({ item: props.item, originalEvent: event })
+      item.command?.({ item, originalEvent: event })
     }
-  } else if (props.isActive && event.detail === 2) {
+  } else if (isActive && event.detail === 2) {
     menu.value?.hide()
     event.stopPropagation()
     event.preventDefault()
@@ -180,7 +178,7 @@ const handleClick = (event: MouseEvent) => {
 
 const inputBlur = async (doRename: boolean) => {
   if (doRename) {
-    await rename(itemLabel.value, props.item.label as string)
+    await rename(itemLabel.value, item.label as string)
   }
 
   isEditing.value = false

@@ -11,21 +11,22 @@ interface Props {
   disable?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  duration: 150,
-  easingEnter: 'ease-in-out',
-  easingLeave: 'ease-in-out',
-  opacityClosed: 0,
-  opacityOpened: 1
-})
+const {
+  duration = 150,
+  easingEnter = 'ease-in-out',
+  easingLeave = 'ease-in-out',
+  opacityClosed = 0,
+  opacityOpened = 1,
+  disable
+} = defineProps<Props>()
 
 const closed = '0px'
 
 const isMounted = ref(false)
 onMounted(() => (isMounted.value = true))
 
-const duration = computed(() =>
-  isMounted.value && !props.disable ? props.duration : 0
+const effectiveDuration = computed(() =>
+  isMounted.value && !disable ? duration : 0
 )
 
 interface initialStyle {
@@ -95,7 +96,7 @@ function getEnterKeyframes(height: string, initialStyle: initialStyle) {
   return [
     {
       height: closed,
-      opacity: props.opacityClosed,
+      opacity: opacityClosed,
       paddingTop: closed,
       paddingBottom: closed,
       borderTopWidth: closed,
@@ -105,7 +106,7 @@ function getEnterKeyframes(height: string, initialStyle: initialStyle) {
     },
     {
       height,
-      opacity: props.opacityOpened,
+      opacity: opacityOpened,
       paddingTop: initialStyle.paddingTop,
       paddingBottom: initialStyle.paddingBottom,
       borderTopWidth: initialStyle.borderTopWidth,
@@ -121,7 +122,7 @@ function enterTransition(element: Element, done: () => void) {
   const initialStyle = getElementStyle(HTMLElement)
   const height = prepareElement(HTMLElement, initialStyle)
   const keyframes = getEnterKeyframes(height, initialStyle)
-  const options = { duration: duration.value, easing: props.easingEnter }
+  const options = { duration: effectiveDuration.value, easing: easingEnter }
   animateTransition(HTMLElement, initialStyle, done, keyframes, options)
 }
 
@@ -132,7 +133,7 @@ function leaveTransition(element: Element, done: () => void) {
   HTMLElement.style.height = height
   HTMLElement.style.overflow = 'hidden'
   const keyframes = getEnterKeyframes(height, initialStyle).reverse()
-  const options = { duration: duration.value, easing: props.easingLeave }
+  const options = { duration: effectiveDuration.value, easing: easingLeave }
   animateTransition(HTMLElement, initialStyle, done, keyframes, options)
 }
 </script>
