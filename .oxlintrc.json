@@ -76,6 +76,13 @@
     "prefer-const": "error",
     "prefer-object-has-own": "error",
     "prefer-object-spread": "error",
+    "yoda": [
+      "error",
+      "never",
+      {
+        "exceptRange": true
+      }
+    ],
     "no-self-assign": "allow",
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
