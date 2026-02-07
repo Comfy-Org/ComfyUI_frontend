@@ -103,6 +103,7 @@
         "checkArrowFunctionBody": true
       }
     ],
+    "unicorn/prefer-classlist-toggle": "error",
     "unicorn/no-single-promise-in-promise-methods": "off",
     "unicorn/no-useless-fallback-in-spread": "off",
     "unicorn/no-useless-spread": "off",

@@ -104,12 +104,7 @@ let hasTrackedLogin = false
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
-    const DARK_THEME_CLASS = 'dark-theme'
-    if (newTheme.light_theme) {
-      document.body.classList.remove(DARK_THEME_CLASS)
-    } else {
-      document.body.classList.add(DARK_THEME_CLASS)
-    }
+    document.body.classList.toggle('dark-theme', !newTheme.light_theme)
 
     if (isElectron()) {
       electronAPI().changeTheme({
