@@ -1,8 +1,10 @@
 import { mount } from '@vue/test-utils'
 import type { FlattenedItem } from 'reka-ui'
+import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 
 import TreeExplorerV2Node from './TreeExplorerV2Node.vue'
 
@@ -39,41 +41,56 @@ describe('TreeExplorerV2Node', () => {
     }
   }
 
+  function createTreeItemStub() {
+    const handleToggle = vi.fn()
+    const handleSelect = vi.fn()
+    return {
+      handleToggle,
+      handleSelect,
+      stub: {
+        template: `<div data-testid="tree-item"><slot :isExpanded="false" :isSelected="false" :handleToggle="handleToggle" :handleSelect="handleSelect" /></div>`,
+        setup() {
+          return { handleToggle, handleSelect }
+        }
+      }
+    }
+  }
+
   function mountComponent(
     props: Record<string, unknown> = {},
-    options: Record<string, unknown> = {}
+    options: {
+      provide?: Record<string, unknown>
+      treeItemStub?: ReturnType<typeof createTreeItemStub>
+    } = {}
   ) {
-    return mount(TreeExplorerV2Node, {
-      global: {
-        stubs: {
-          TreeItem: {
-            template: `<div><slot :isExpanded="false" :isSelected="false" :handleToggle="handleToggle" :handleSelect="handleSelect" /></div>`,
-            setup() {
-              return {
-                handleToggle: vi.fn(),
-                handleSelect: vi.fn()
-              }
-            }
+    const treeItemStub = options.treeItemStub ?? createTreeItemStub()
+    return {
+      wrapper: mount(TreeExplorerV2Node, {
+        global: {
+          stubs: {
+            TreeItem: treeItemStub.stub,
+            ContextMenuTrigger: {
+              name: 'ContextMenuTrigger',
+              template: '<div data-testid="context-menu-trigger"><slot /></div>'
+            },
+            Teleport: { template: '<div />' }
           },
-          ContextMenuTrigger: {
-            template: '<div><slot /></div>'
-          },
-          Teleport: { template: '<div />' }
+          provide: {
+            ...options.provide
+          }
         },
-        provide: {
-          ...(options.provide as Record<string, unknown>)
+        props: {
+          item: createMockItem('node'),
+          ...props
         }
-      },
-      props: {
-        item: createMockItem('node'),
-        ...props
-      }
-    })
+      }),
+      treeItemStub
+    }
   }
 
   describe('handleClick', () => {
     it('emits nodeClick event when clicked', async () => {
-      const wrapper = mountComponent({
+      const { wrapper } = mountComponent({
         item: createMockItem('node')
       })
 
@@ -88,52 +105,83 @@ describe('TreeExplorerV2Node', () => {
     })
 
     it('calls handleToggle for folder items', async () => {
-      const wrapper = mountComponent({
-        item: createMockItem('folder')
-      })
+      const treeItemStub = createTreeItemStub()
+      const { wrapper } = mountComponent(
+        { item: createMockItem('folder') },
+        { treeItemStub }
+      )
 
       const folderDiv = wrapper.find('div.group\\/tree-node')
       await folderDiv.trigger('click')
 
       expect(wrapper.emitted('nodeClick')).toBeTruthy()
+      expect(treeItemStub.handleToggle).toHaveBeenCalled()
     })
 
     it('does not call handleToggle for node items', async () => {
-      const wrapper = mountComponent({
-        item: createMockItem('node')
-      })
+      const treeItemStub = createTreeItemStub()
+      const { wrapper } = mountComponent(
+        { item: createMockItem('node') },
+        { treeItemStub }
+      )
 
       const nodeDiv = wrapper.find('div.group\\/tree-node')
       await nodeDiv.trigger('click')
 
       expect(wrapper.emitted('nodeClick')).toBeTruthy()
+      expect(treeItemStub.handleToggle).not.toHaveBeenCalled()
     })
   })
 
   describe('context menu', () => {
     it('renders ContextMenuTrigger when showContextMenu is true for nodes', () => {
-      const wrapper = mountComponent({
+      const { wrapper } = mountComponent({
         item: createMockItem('node'),
         showContextMenu: true
       })
 
-      expect(wrapper.html()).toContain('div')
+      expect(
+        wrapper.find('[data-testid="context-menu-trigger"]').exists()
+      ).toBe(true)
     })
 
-    it('triggers contextmenu event when showContextMenu is true', async () => {
-      const wrapper = mountComponent({
+    it('does not render ContextMenuTrigger when showContextMenu is false', () => {
+      const { wrapper } = mountComponent({
         item: createMockItem('node'),
-        showContextMenu: true
+        showContextMenu: false
       })
+
+      expect(
+        wrapper.find('[data-testid="context-menu-trigger"]').exists()
+      ).toBe(false)
+    })
+
+    it('sets contextMenuNode when contextmenu event is triggered', async () => {
+      const contextMenuNode = ref<RenderedTreeExplorerNode | null>(null)
+      const nodeItem = createMockItem('node')
+
+      const { wrapper } = mountComponent(
+        {
+          item: nodeItem,
+          showContextMenu: true
+        },
+        {
+          provide: {
+            [InjectKeyContextMenuNode as symbol]: contextMenuNode
+          }
+        }
+      )
 
       const nodeDiv = wrapper.find('div.group\\/tree-node')
       await nodeDiv.trigger('contextmenu')
+
+      expect(contextMenuNode.value).toEqual(nodeItem.value)
     })
   })
 
   describe('rendering', () => {
     it('renders node icon for node type', () => {
-      const wrapper = mountComponent({
+      const { wrapper } = mountComponent({
         item: createMockItem('node')
       })
 
@@ -141,7 +189,7 @@ describe('TreeExplorerV2Node', () => {
     })
 
     it('renders folder icon for folder type', () => {
-      const wrapper = mountComponent({
+      const { wrapper } = mountComponent({
         item: createMockItem('folder')
       })
 
@@ -149,7 +197,7 @@ describe('TreeExplorerV2Node', () => {
     })
 
     it('renders label text', () => {
-      const wrapper = mountComponent({
+      const { wrapper } = mountComponent({
         item: createMockItem('node', { label: 'My Node' })
       })
 
@@ -157,7 +205,7 @@ describe('TreeExplorerV2Node', () => {
     })
 
     it('renders chevron for folder with children', () => {
-      const wrapper = mountComponent({
+      const { wrapper } = mountComponent({
         item: {
           ...createMockItem('folder'),
           hasChildren: true
