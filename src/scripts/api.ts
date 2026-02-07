@@ -22,6 +22,7 @@ import type {
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type {
   AssetDownloadWsMessage,
+  AssetExportWsMessage,
   CustomNodesI18n,
   EmbeddingsResponse,
   ExecutedWsMessage,
@@ -169,6 +170,7 @@ interface BackendApiCalls {
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
   asset_download: AssetDownloadWsMessage
+  asset_export: AssetExportWsMessage
 }
 
 /** Dictionary of all api calls */

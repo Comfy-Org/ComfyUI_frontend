@@ -2816,6 +2816,7 @@
       "exportWorkflowAll": "Export all workflows",
       "downloadStarted": "Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file(s)",
+      "exportStarted": "Preparing ZIP export for {count} file(s)",
       "assetsDeletedSuccessfully": "{count} asset(s) deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets",
       "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",
@@ -2977,6 +2978,17 @@
       "completed": "Completed",
       "failed": "Failed"
     }
+  },
+  "exportToast": {
+    "exportingAssets": "Exporting Assets",
+    "preparingExport": "Preparing export...",
+    "exportFailed": "{count} export failed | {count} export failed | {count} exports failed",
+    "allExportsCompleted": "All exports completed",
+    "noExportsInQueue": "No {filter} exports in queue",
+    "exportStarted": "Preparing ZIP download...",
+    "exportCompleted": "ZIP download ready",
+    "exportFailedSingle": "Failed to create ZIP export",
+    "downloadExport": "Download export"
   },
   "workspace": {
     "unsavedChanges": {

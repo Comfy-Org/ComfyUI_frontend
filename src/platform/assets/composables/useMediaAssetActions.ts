@@ -20,6 +20,8 @@ import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
+import { useAssetExportStore } from '@/stores/assetExportStore'
+
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
@@ -87,16 +89,21 @@ export function useMediaAssetActions() {
   }
 
   /**
-   * Download multiple assets at once
-   * @param assets Array of assets to download
+   * Download multiple assets at once.
+   * In cloud mode with 2+ assets, creates a ZIP export via the backend.
+   * Falls back to individual downloads in OSS mode or for single assets.
    */
   const downloadMultipleAssets = (assets: AssetItem[]) => {
     if (!assets || assets.length === 0) return
 
+    if (isCloud && assets.length > 1) {
+      void downloadMultipleAssetsAsZip(assets)
+      return
+    }
+
     try {
       assets.forEach((asset) => {
         const filename = asset.name
-        // Prefer preview_url (already includes subfolder) with getAssetUrl as fallback
         const downloadUrl = asset.preview_url || getAssetUrl(asset)
         downloadFile(downloadUrl, filename)
       })
@@ -115,6 +122,52 @@ export function useMediaAssetActions() {
         severity: 'error',
         summary: t('g.error'),
         detail: t('g.failedToDownloadImage'),
+        life: 3000
+      })
+    }
+  }
+
+  async function downloadMultipleAssetsAsZip(assets: AssetItem[]) {
+    const assetExportStore = useAssetExportStore()
+
+    try {
+      const jobIds: string[] = []
+      const assetIds: string[] = []
+
+      for (const asset of assets) {
+        if (getAssetType(asset) === 'output') {
+          const metadata = getOutputAssetMetadata(asset.user_metadata)
+          const promptId = metadata?.promptId || asset.id
+          if (!jobIds.includes(promptId)) {
+            jobIds.push(promptId)
+          }
+        } else {
+          assetIds.push(asset.id)
+        }
+      }
+
+      const result = await assetService.createAssetExport({
+        ...(jobIds.length > 0 ? { job_ids: jobIds } : {}),
+        ...(assetIds.length > 0 ? { asset_ids: assetIds } : {}),
+        naming_strategy: 'preserve'
+      })
+
+      assetExportStore.trackExport(result.task_id)
+
+      toast.add({
+        severity: 'info',
+        summary: t('exportToast.exportStarted'),
+        detail: t('mediaAsset.selection.exportStarted', {
+          count: assets.length
+        }),
+        life: 3000
+      })
+    } catch (error) {
+      console.error('Failed to create asset export:', error)
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('exportToast.exportFailedSingle'),
         life: 3000
       })
     }

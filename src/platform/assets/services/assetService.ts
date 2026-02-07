@@ -153,6 +153,7 @@ function getLocalizedErrorMessage(errorCode: string): string {
 
 const ASSETS_ENDPOINT = '/assets'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
+const ASSETS_EXPORT_ENDPOINT = '/assets/export'
 const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
 
@@ -689,6 +690,40 @@ function createAssetService() {
     return result.data
   }
 
+  async function createAssetExport(params: {
+    job_ids?: string[]
+    asset_ids?: string[]
+    naming_strategy?:
+      | 'group_by_job_id'
+      | 'prepend_job_id'
+      | 'preserve'
+      | 'asset_id'
+  }): Promise<{ task_id: string; status: string; message?: string }> {
+    const res = await api.fetchApi(ASSETS_EXPORT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to create asset export: ${res.status}`)
+    }
+
+    return await res.json()
+  }
+
+  async function getExportDownloadUrl(
+    exportName: string
+  ): Promise<{ url: string; expires_at?: string }> {
+    const res = await api.fetchApi(`/assets/exports/${exportName}`)
+
+    if (!res.ok) {
+      throw new Error(`Failed to get export download URL: ${res.status}`)
+    }
+
+    return await res.json()
+  }
+
   return {
     getAssetModelFolders,
     getAssetModels,
@@ -703,7 +738,9 @@ function createAssetService() {
     getAssetMetadata,
     uploadAssetFromUrl,
     uploadAssetFromBase64,
-    uploadAssetAsync
+    uploadAssetAsync,
+    createAssetExport,
+    getExportDownloadUrl
   }
 }
 
