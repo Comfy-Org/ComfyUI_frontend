@@ -161,7 +161,7 @@ const onAddNode = (nodeDef: ComfyNodeDefImpl) => {
 
 let inputElement: HTMLInputElement | null = null
 const reFocusInput = async () => {
-  inputElement ??= document.getElementById(inputId) as HTMLInputElement
+  inputElement ??= document.querySelector(`#${inputId}`) as HTMLInputElement
   if (inputElement) {
     inputElement.blur()
     await nextTick(() => inputElement?.focus())
@@ -169,7 +169,7 @@ const reFocusInput = async () => {
 }
 
 onMounted(() => {
-  inputElement ??= document.getElementById(inputId) as HTMLInputElement
+  inputElement ??= document.querySelector(`#${inputId}`) as HTMLInputElement
   if (inputElement) inputElement.focus()
   autoCompletePlus.value.hide = () => search('')
   search('')

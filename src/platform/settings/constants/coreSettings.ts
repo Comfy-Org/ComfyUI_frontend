@@ -543,7 +543,9 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     defaultValue: false,
     onChange: (value) => {
-      const element = document.getElementById('comfy-dev-save-api-button')
+      const element = document.querySelector<HTMLElement>(
+        '#comfy-dev-save-api-button'
+      )
       if (element) {
         element.style.display = value ? 'flex' : 'none'
       }

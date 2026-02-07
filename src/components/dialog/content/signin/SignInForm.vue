@@ -120,7 +120,7 @@ const handleForgotPassword = async (
       life: 5_000
     })
     // Focus the email input
-    document.getElementById(emailInputId)?.focus?.()
+    document.querySelector<HTMLElement>(`#${emailInputId}`)?.focus?.()
     return
   }
   await firebaseAuthActions.sendPasswordReset(email)

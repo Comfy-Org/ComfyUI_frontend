@@ -626,14 +626,14 @@ export class LiteGraphGlobal {
 
   // debug purposes: reloads all the js scripts that matches a wildcard
   reloadNodes(folder_wildcard: string): void {
-    const tmp = document.getElementsByTagName('script')
+    const tmp = document.querySelectorAll('script')
     // weird, this array changes by its own, so we use a copy
     const script_files = []
     for (const element of tmp) {
       script_files.push(element)
     }
 
-    const docHeadObj = document.getElementsByTagName('head')[0]
+    const docHeadObj = document.querySelector('head')
     folder_wildcard = document.location.href + folder_wildcard
 
     for (const script_file of script_files) {
@@ -645,7 +645,7 @@ export class LiteGraphGlobal {
         const dynamicScript = document.createElement('script')
         dynamicScript.type = 'text/javascript'
         dynamicScript.src = src
-        docHeadObj.append(dynamicScript)
+        docHeadObj?.append(dynamicScript)
         script_file.remove()
       } catch (error) {
         if (this.throw_errors) throw error
