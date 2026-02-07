@@ -89,6 +89,7 @@
     "unicorn/no-single-promise-in-promise-methods": "off",
     "unicorn/no-useless-fallback-in-spread": "off",
     "unicorn/no-useless-spread": "off",
+    "unicorn/throw-new-error": "error",
     "typescript/await-thenable": "off",
     "typescript/no-base-to-string": "off",
     "typescript/no-duplicate-type-constituents": "off",

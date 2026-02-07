@@ -210,7 +210,7 @@ export function fixBadLinks(
           patchedNodeSlots[node.id]!['inputs']![slot] === linkId
         // If we're fixing, double check that node matches.
         if (fix && nodeHasIt !== patchedHasIt) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new Error('Error. Expected node to match patched data.')
         }
         has = patchedHasIt
       } else {
@@ -223,7 +223,7 @@ export function fixBadLinks(
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.includes(linkId)
         // If we're fixing, double check that node matches.
         if (fix && nodeHasIt !== patchedHasIt) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new Error('Error. Expected node to match patched data.')
         }
         has = !!patchedHasIt
       } else {
@@ -250,7 +250,7 @@ export function fixBadLinks(
           patchedNodeSlots[node.id]!['inputs']![slot] != null
         // If we're fixing, double check that node matches.
         if (fix && nodeHasAny !== patchedHasAny) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new Error('Error. Expected node to match patched data.')
         }
         hasAny = patchedHasAny
       } else {
@@ -263,7 +263,7 @@ export function fixBadLinks(
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.length
         // If we're fixing, double check that node matches.
         if (fix && nodeHasAny !== patchedHasAny) {
-          throw Error('Error. Expected node to match patched data.')
+          throw new Error('Error. Expected node to match patched data.')
         }
         hasAny = !!patchedHasAny
       } else {
