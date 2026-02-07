@@ -215,7 +215,7 @@ export class ResultItemImpl {
   static findByUrl(items: readonly ResultItemImpl[], url?: string): number {
     if (!url) return 0
     const idx = items.findIndex((o) => o.url === url)
-    return idx >= 0 ? idx : 0
+    return Math.max(idx, 0)
   }
 }
 
