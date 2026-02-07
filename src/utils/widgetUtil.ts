@@ -2,6 +2,37 @@ import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+
+export type WidgetValue = boolean | number | string | object | undefined
+
+/**
+ * Gets the default value for a widget based on its input spec.
+ * Returns the explicit default if defined, otherwise returns a sensible
+ * default based on the input type.
+ */
+export function getWidgetDefaultValue(
+  spec: InputSpec | undefined
+): WidgetValue {
+  if (!spec) return undefined
+
+  if (spec.default !== undefined) return spec.default as WidgetValue
+
+  switch (spec.type) {
+    case 'INT':
+    case 'FLOAT':
+      return 0
+    case 'BOOLEAN':
+      return false
+    case 'STRING':
+      return ''
+    default:
+      if (Array.isArray(spec.options) && spec.options.length > 0) {
+        return spec.options[0] as WidgetValue
+      }
+      return undefined
+  }
+}
 
 /**
  * Renames a widget and its corresponding input.

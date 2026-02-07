@@ -2894,6 +2894,8 @@
     "removeFavorite": "Unfavorite",
     "hideInput": "Hide input",
     "showInput": "Show input",
+    "resetToDefault": "Reset to default",
+    "resetAllParameters": "Reset all parameters",
     "locateNode": "Locate node on canvas",
     "favorites": "FAVORITED INPUTS",
     "favoritesNone": "NO FAVORITED INPUTS",

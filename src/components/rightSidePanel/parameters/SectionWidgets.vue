@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
+import { computed, inject, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { getSharedWidgetEnhancements } from '@/composables/graph/useGraphNodeManager'
 import { isProxyWidget } from '@/core/graph/subgraph/proxyWidget'
 import { parseProxyWidgets } from '@/core/schemas/proxyWidget'
 import type {
@@ -12,6 +13,9 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { getWidgetDefaultValue } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
@@ -51,15 +55,30 @@ const collapse = defineModel<boolean>('collapse', { default: false })
 const widgetsContainer = ref<HTMLElement>()
 const rootElement = ref<HTMLElement>()
 
-const widgets = shallowRef(widgetsProp)
-watchEffect(() => (widgets.value = widgetsProp))
-
 provide(HideLayoutFieldKey, true)
 
 const canvasStore = useCanvasStore()
+const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
+
+function writeWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+  widget.value = value
+  widget.callback?.(value)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
+function handleResetAllWidgets() {
+  for (const { widget, node: widgetNode } of widgetsProp) {
+    const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
+    const defaultValue = getWidgetDefaultValue(spec)
+    if (defaultValue !== undefined) {
+      getSharedWidgetEnhancements(widgetNode, widget)
+      writeWidgetValue(widget, defaultValue)
+    }
+  }
+}
 
 function isWidgetShownOnParents(
   widgetNode: LGraphNode,
@@ -84,7 +103,7 @@ function isWidgetShownOnParents(
   )
 }
 
-const isEmpty = computed(() => widgets.value.length === 0)
+const isEmpty = computed(() => widgetsProp.length === 0)
 
 const displayLabel = computed(
   () => label ?? (node ? node.title : t('rightSidePanel.inputs'))
@@ -94,10 +113,10 @@ const targetNode = computed<LGraphNode | null>(() => {
   if (node) return node
   if (isEmpty.value) return null
 
-  const firstNodeId = widgets.value[0].node.id
-  const allSameNode = widgets.value.every(({ node }) => node.id === firstNodeId)
+  const firstNodeId = widgetsProp[0].node.id
+  const allSameNode = widgetsProp.every(({ node }) => node.id === firstNodeId)
 
-  return allSameNode ? widgets.value[0].node : null
+  return allSameNode ? widgetsProp[0].node : null
 })
 
 const parentGroup = computed<LGraphGroup | null>(() => {
@@ -118,13 +137,18 @@ function handleLocateNode() {
   }
 }
 
-function handleWidgetValueUpdate(
+function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
+  if (newValue === undefined) return
+  writeWidgetValue(widget, newValue)
+}
+
+function handleWidgetReset(
+  widgetNode: LGraphNode,
   widget: IBaseWidget,
-  newValue: string | number | boolean | object
+  newValue: WidgetValue
 ) {
-  widget.value = newValue
-  widget.callback?.(newValue)
-  canvasStore.canvas?.setDirty(true, true)
+  getSharedWidgetEnhancements(widgetNode, widget)
+  writeWidgetValue(widget, newValue)
 }
 
 defineExpose({
@@ -158,6 +182,17 @@ defineExpose({
             </span>
           </span>
           <Button
+            v-if="!isEmpty"
+            variant="textonly"
+            size="icon-sm"
+            class="subbutton shrink-0 size-8 cursor-pointer text-muted-foreground hover:text-base-foreground"
+            :title="t('rightSidePanel.resetAllParameters')"
+            :aria-label="t('rightSidePanel.resetAllParameters')"
+            @click.stop="handleResetAllWidgets"
+          >
+            <i class="icon-[lucide--rotate-ccw] size-4" />
+          </Button>
+          <Button
             v-if="canShowLocateButton"
             variant="textonly"
             size="icon-sm"
@@ -179,7 +214,7 @@ defineExpose({
       >
         <TransitionGroup name="list-scale">
           <WidgetItem
-            v-for="{ widget, node } in widgets"
+            v-for="{ widget, node } in widgetsProp"
             :key="`${node.id}-${widget.name}-${widget.type}`"
             :widget="widget"
             :node="node"
@@ -189,6 +224,7 @@ defineExpose({
             :parents="parents"
             :is-shown-on-parents="isWidgetShownOnParents(node, widget)"
             @update:widget-value="handleWidgetValueUpdate(widget, $event)"
+            @reset-to-default="handleWidgetReset(node, widget, $event)"
           />
         </TransitionGroup>
       </div>
