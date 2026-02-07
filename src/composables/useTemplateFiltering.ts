@@ -270,7 +270,6 @@ export function useTemplateFiltering(
           if (sizeA === sizeB) return 0
           return sizeA - sizeB
         })
-      case 'default':
       default:
         return templates
     }

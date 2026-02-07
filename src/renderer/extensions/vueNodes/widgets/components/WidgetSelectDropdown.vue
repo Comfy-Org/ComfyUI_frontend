@@ -280,7 +280,6 @@ const dropdownItems = computed<FormDropdownItem[]>(() => {
       return inputItems.value
     case 'outputs':
       return outputItems.value
-    case 'all':
     default:
       return allItems.value
   }

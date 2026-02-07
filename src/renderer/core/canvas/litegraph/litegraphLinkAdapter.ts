@@ -132,7 +132,6 @@ export class LitegraphLinkAdapter {
         return 'linear'
       case LinkRenderType.STRAIGHT_LINK:
         return 'straight'
-      case LinkRenderType.SPLINE_LINK:
       default:
         return 'spline'
     }
@@ -145,7 +144,6 @@ export class LitegraphLinkAdapter {
     switch (shape) {
       case LinkMarkerShape.Circle:
         return 'circle'
-      case LinkMarkerShape.Arrow:
       default:
         return 'triangle'
     }

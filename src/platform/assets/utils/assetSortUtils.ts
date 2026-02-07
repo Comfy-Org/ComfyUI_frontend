@@ -49,7 +49,6 @@ export function sortAssets<T extends SortableItem>(
           new Date(b.created_at ?? 0).getTime() -
           new Date(a.created_at ?? 0).getTime()
       )
-    case 'name-asc':
     default:
       return sorted.sort((a, b) =>
         getDisplayName(a).localeCompare(getDisplayName(b), undefined, {

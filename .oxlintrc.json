@@ -137,6 +137,7 @@
     "unicorn/prefer-classlist-toggle": "error",
     "unicorn/no-single-promise-in-promise-methods": "off",
     "unicorn/no-this-assignment": "error",
+    "unicorn/no-useless-switch-case": "error",
     "unicorn/no-useless-fallback-in-spread": "off",
     "unicorn/no-useless-spread": "off",
     "unicorn/prefer-optional-catch-binding": "error",

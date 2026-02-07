@@ -443,7 +443,6 @@ const distributions = computed(() => {
       return [TemplateIncludeOnDistributionEnum.Cloud]
     case 'localhost':
       return [TemplateIncludeOnDistributionEnum.Local]
-    case 'desktop':
     default:
       if (systemStatsStore.systemStats?.system.os === 'darwin') {
         return [

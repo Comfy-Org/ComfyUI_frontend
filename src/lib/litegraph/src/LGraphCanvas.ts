@@ -6508,7 +6508,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           iSlotConn = slotX
           slotX = isFrom ? nodeX.outputs[slotX] : nodeX.inputs[slotX]
           break
-        case 'undefined':
         default:
           console.warn('Cant get slot information', slotX)
           return false
