@@ -5,9 +5,7 @@ import NodeLibrarySidebarTabV2 from '@/components/sidebar/tabs/NodeLibrarySideba
 import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 export function useNodeLibrarySidebarTab(): SidebarTabExtension {
-  const urlParams = new URLSearchParams(
-    typeof globalThis === 'undefined' ? '' : globalThis.location.search
-  )
+  const urlParams = new URLSearchParams(globalThis.location?.search ?? '')
   const component =
     urlParams.get('nodeRedesign') === 'true'
       ? NodeLibrarySidebarTabV2
