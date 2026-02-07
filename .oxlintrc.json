@@ -199,6 +199,12 @@
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
     "typescript/no-floating-promises": "error",
+    "typescript/prefer-nullish-coalescing": [
+      "warn",
+      {
+        "ignoreConditionalTests": true
+      }
+    ],
     "typescript/prefer-ts-expect-error": "error",
     "vue/define-props-destructuring": "error",
     "vue/no-import-compiler-macros": "error",
