@@ -17,7 +17,7 @@
         'pi pi-times cursor-pointer text-red-500':
           validationState === ValidationState.INVALID
       }"
-      @click="validateUrl(props.modelValue)"
+      @click="validateUrl(modelValue)"
     />
   </IconField>
 </template>
@@ -32,7 +32,7 @@ import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
 
-const props = defineProps<{
+const { modelValue, validateUrlFn } = defineProps<{
   modelValue: string
   validateUrlFn?: (url: string) => Promise<boolean>
 }>()
@@ -47,12 +47,10 @@ const validationState = ref<ValidationState>(ValidationState.IDLE)
 const cleanInput = (value: string): string =>
   value ? value.replace(/\s+/g, '') : ''
 
-// Add internal value state
-const internalValue = ref(cleanInput(props.modelValue))
+const internalValue = ref(cleanInput(modelValue))
 
-// Watch for external modelValue changes
 watch(
-  () => props.modelValue,
+  () => modelValue,
   async (newValue: string) => {
     internalValue.value = cleanInput(newValue)
     await validateUrl(newValue)
@@ -63,9 +61,8 @@ watch(validationState, (newState) => {
   emit('state-change', newState)
 })
 
-// Validate on mount
 onMounted(async () => {
-  await validateUrl(props.modelValue)
+  await validateUrl(modelValue)
 })
 
 const handleInput = (value: string | undefined) => {
@@ -113,7 +110,7 @@ const validateUrl = async (value: string) => {
 
   validationState.value = ValidationState.LOADING
   try {
-    const isValid = await (props.validateUrlFn ?? defaultValidateUrl)(url)
+    const isValid = await (validateUrlFn ?? defaultValidateUrl)(url)
     validationState.value = isValid
       ? ValidationState.VALID
       : ValidationState.INVALID

@@ -48,7 +48,7 @@ const workflowTab = useWorkspaceStore()
 
 void outputs.fetchMediaList()
 
-defineProps<{
+const { scrollResetButtonTo, mobile } = defineProps<{
   scrollResetButtonTo?: string | HTMLElement
   mobile?: boolean
 }>()

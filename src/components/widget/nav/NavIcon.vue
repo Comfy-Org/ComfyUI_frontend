@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import type { NavItemData } from '@/types/navTypes'
 
-defineProps<{
+const { icon } = defineProps<{
   icon: NavItemData['icon']
 }>()
 </script>

@@ -115,7 +115,14 @@ import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 const showCivitaiHelp = ref(false)
 const showHuggingFaceHelp = ref(false)
 
-defineProps<{
+const {
+  currentStep,
+  isFetchingMetadata,
+  isUploading,
+  canFetchMetadata,
+  canUploadModel,
+  uploadStatus
+} = defineProps<{
   currentStep: number
   isFetchingMetadata: boolean
   isUploading: boolean

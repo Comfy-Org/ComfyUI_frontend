@@ -33,7 +33,7 @@ const { batchCount } = storeToRefs(useQueueSettingsStore())
 const { isActiveSubscription } = useBillingContext()
 const workflowStore = useWorkflowStore()
 
-const props = defineProps<{
+const { toastTo, notesTo, mobile } = defineProps<{
   toastTo?: string | HTMLElement
   notesTo?: string | HTMLElement
   mobile?: boolean

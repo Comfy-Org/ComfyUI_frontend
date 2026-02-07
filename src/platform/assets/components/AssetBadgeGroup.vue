@@ -24,7 +24,7 @@ type AssetBadge = {
   type: 'type' | 'base' | 'size'
 }
 
-defineProps<{
+const { badges } = defineProps<{
   badges: AssetBadge[]
 }>()
 </script>

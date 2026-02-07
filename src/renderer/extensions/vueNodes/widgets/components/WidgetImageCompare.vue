@@ -46,7 +46,7 @@ export interface ImageCompareValue {
 }
 
 // Image compare widgets typically don't have v-model, they display comparison
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<ImageCompareValue | string>
 }>()
 
@@ -62,24 +62,24 @@ watch([elementX, elementWidth, isOutside], ([x, width, outside]) => {
 })
 
 const beforeImage = computed(() => {
-  const value = props.widget.value
+  const value = widget.value
   return typeof value === 'string' ? value : value?.before || ''
 })
 
 const afterImage = computed(() => {
-  const value = props.widget.value
+  const value = widget.value
   return typeof value === 'string' ? '' : value?.after || ''
 })
 
 const beforeAlt = computed(() => {
-  const value = props.widget.value
+  const value = widget.value
   return typeof value === 'object' && value?.beforeAlt
     ? value.beforeAlt
     : 'Before image'
 })
 
 const afterAlt = computed(() => {
-  const value = props.widget.value
+  const value = widget.value
   return typeof value === 'object' && value?.afterAlt
     ? value.afterAlt
     : 'After image'

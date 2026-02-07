@@ -21,9 +21,9 @@
         <h2 class="mb-4 text-2xl font-semibold">
           {{ $t('g.devices') }}
         </h2>
-        <TabView v-if="props.stats.devices.length > 1">
+        <TabView v-if="stats.devices.length > 1">
           <TabPanel
-            v-for="device in props.stats.devices"
+            v-for="device in stats.devices"
             :key="device.index"
             :header="device.name"
             :value="device.index"
@@ -31,7 +31,7 @@
             <DeviceInfo :device="device" />
           </TabPanel>
         </TabView>
-        <DeviceInfo v-else :device="props.stats.devices[0]" />
+        <DeviceInfo v-else :device="stats.devices[0]" />
       </div>
     </template>
   </div>
@@ -48,16 +48,16 @@ import { isCloud } from '@/platform/distribution/types'
 import type { SystemStats } from '@/schemas/apiSchema'
 import { formatCommitHash, formatSize } from '@/utils/formatUtil'
 
-const props = defineProps<{
+const { stats } = defineProps<{
   stats: SystemStats
 }>()
 
 const systemInfo = computed(() => ({
-  ...props.stats.system,
-  argv: props.stats.system.argv.join(' ')
+  ...stats.system,
+  argv: stats.system.argv.join(' ')
 }))
 
-const hasDevices = computed(() => props.stats.devices.length > 0)
+const hasDevices = computed(() => stats.devices.length > 0)
 
 type SystemInfoKey = keyof SystemStats['system']
 

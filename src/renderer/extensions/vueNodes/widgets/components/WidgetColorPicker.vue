@@ -45,7 +45,7 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 type WidgetOptions = IWidgetOptions & { format?: ColorFormat }
 
-const props = defineProps<{
+const { widget, modelValue } = defineProps<{
   widget: SimplifiedWidget<string, WidgetOptions>
   modelValue: string
 }>()
@@ -55,22 +55,20 @@ const emit = defineEmits<{
 }>()
 
 const format = computed<ColorFormat>(() => {
-  const optionFormat = props.widget.options?.format
+  const optionFormat = widget.options?.format
   return isColorFormat(optionFormat) ? optionFormat : 'hex'
 })
 
 type PickerValue = string | HSB
 const localValue = ref<PickerValue>(
   toHexFromFormat(
-    props.modelValue || '#000000',
-    isColorFormat(props.widget.options?.format)
-      ? props.widget.options.format
-      : 'hex'
+    modelValue || '#000000',
+    isColorFormat(widget.options?.format) ? widget.options.format : 'hex'
   )
 )
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   (newVal) => {
     localValue.value = toHexFromFormat(newVal || '#000000', format.value)
   }
@@ -85,6 +83,6 @@ function onPickerUpdate(val: unknown) {
 const COLOR_PICKER_EXCLUDED_PROPS = [...PANEL_EXCLUDED_PROPS] as const
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, COLOR_PICKER_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, COLOR_PICKER_EXCLUDED_PROPS)
 )
 </script>

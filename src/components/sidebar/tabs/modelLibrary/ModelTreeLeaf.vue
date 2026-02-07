@@ -30,12 +30,12 @@ import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 
 import ModelPreview from './ModelPreview.vue'
 
-const props = defineProps<{
+const { node } = defineProps<{
   node: RenderedTreeExplorerNode<ComfyModelDef>
 }>()
 
 // Note: The leaf node should always have a model definition on node.data.
-const modelDef = computed<ComfyModelDef>(() => props.node.data!)
+const modelDef = computed<ComfyModelDef>(() => node.data!)
 
 const modelPreviewUrl = computed(() => {
   if (modelDef.value.image) {

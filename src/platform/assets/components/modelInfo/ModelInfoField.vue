@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const { label } = defineProps<{
   label: string
 }>()
 </script>

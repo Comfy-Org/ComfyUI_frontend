@@ -25,7 +25,7 @@
     >
       <SelectButton
         class="workflow-tabs bg-transparent"
-        :class="props.class"
+        :class="className"
         :model-value="selectedWorkflow"
         :options="options"
         option-label="label"
@@ -125,7 +125,7 @@ interface WorkflowOption {
   workflow: ComfyWorkflow
 }
 
-const props = defineProps<{
+const { class: className } = defineProps<{
   class?: string
 }>()
 

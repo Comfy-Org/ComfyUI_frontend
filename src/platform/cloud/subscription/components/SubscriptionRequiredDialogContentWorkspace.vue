@@ -83,7 +83,7 @@ import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPrev
 type CheckoutStep = 'pricing' | 'preview'
 type CheckoutTierKey = Exclude<TierKey, 'founder'>
 
-const props = defineProps<{
+const { onClose } = defineProps<{
   onClose: () => void
 }>()
 
@@ -314,7 +314,7 @@ async function handleResubscribe() {
 }
 
 function handleClose() {
-  props.onClose()
+  onClose()
 }
 </script>
 

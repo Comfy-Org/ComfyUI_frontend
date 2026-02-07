@@ -14,7 +14,7 @@ defineOptions({
   inheritAttrs: false
 })
 
-defineProps<{
+const { entries, icon, to } = defineProps<{
   entries?: { label: string; action?: () => void; icon?: string }[][]
   icon?: string
   to?: string | HTMLElement

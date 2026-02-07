@@ -1,5 +1,5 @@
 <template>
-  <TabPanel :value="props.value" class="h-full w-full" :class="props.class">
+  <TabPanel :value class="h-full w-full" :class="panelClass">
     <div class="flex h-full w-full flex-col gap-2">
       <slot name="header" />
       <ScrollPanel class="h-0 grow pr-2">
@@ -14,7 +14,7 @@
 import ScrollPanel from 'primevue/scrollpanel'
 import TabPanel from 'primevue/tabpanel'
 
-const props = defineProps<{
+const { value, class: panelClass } = defineProps<{
   value: string
   class?: string
 }>()

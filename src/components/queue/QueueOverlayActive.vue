@@ -97,7 +97,16 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
-defineProps<{
+const {
+  totalProgressStyle,
+  currentNodeProgressStyle,
+  totalPercentFormatted,
+  currentNodePercentFormatted,
+  currentNodeName,
+  runningCount,
+  queuedCount,
+  bottomRowClass
+} = defineProps<{
   totalProgressStyle: Record<string, string>
   currentNodeProgressStyle: Record<string, string>
   totalPercentFormatted: string

@@ -139,7 +139,7 @@ interface ImagePreviewProps {
   readonly nodeId?: string
 }
 
-const props = defineProps<ImagePreviewProps>()
+const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
@@ -169,13 +169,13 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 )
 
 // Computed values
-const currentImageUrl = computed(() => props.imageUrls[currentIndex.value])
-const hasMultipleImages = computed(() => props.imageUrls.length > 1)
+const currentImageUrl = computed(() => imageUrls[currentIndex.value])
+const hasMultipleImages = computed(() => imageUrls.length > 1)
 const imageAltText = computed(() => `Node output ${currentIndex.value + 1}`)
 
 // Watch for URL changes and reset state
 watch(
-  () => props.imageUrls,
+  () => imageUrls,
   (newUrls, oldUrls) => {
     // Only reset state if URLs actually changed (not just array reference)
     const urlsChanged =
@@ -220,8 +220,8 @@ const handleImageError = () => {
 
 // In vueNodes mode, we need to set them manually before opening the mask editor.
 const setupNodeForMaskEditor = () => {
-  if (!props.nodeId || !currentImageEl.value) return
-  const node = app.rootGraph?.getNodeById(props.nodeId)
+  if (!nodeId || !currentImageEl.value) return
+  const node = app.rootGraph?.getNodeById(nodeId)
   if (!node) return
   node.imageIndex = currentIndex.value
   node.imgs = [currentImageEl.value]
@@ -248,13 +248,13 @@ const handleDownload = () => {
 }
 
 const handleRemove = () => {
-  if (!props.nodeId) return
-  nodeOutputStore.removeNodeOutputs(props.nodeId)
+  if (!nodeId) return
+  nodeOutputStore.removeNodeOutputs(nodeId)
 }
 
 const setCurrentIndex = (index: number) => {
   if (currentIndex.value === index) return
-  if (index >= 0 && index < props.imageUrls.length) {
+  if (index >= 0 && index < imageUrls.length) {
     currentIndex.value = index
     startDelayedLoader()
     imageError.value = false
@@ -290,23 +290,19 @@ const getNavigationDotClass = (index: number) => {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (props.imageUrls.length <= 1) return
+  if (imageUrls.length <= 1) return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0
-          ? currentIndex.value - 1
-          : props.imageUrls.length - 1
+        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < props.imageUrls.length - 1
-          ? currentIndex.value + 1
-          : 0
+        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
       )
       break
     case 'Home':
@@ -315,7 +311,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(props.imageUrls.length - 1)
+      setCurrentIndex(imageUrls.length - 1)
       break
   }
 }

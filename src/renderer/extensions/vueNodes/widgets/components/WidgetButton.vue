@@ -25,20 +25,19 @@ import {
 } from '@/utils/widgetPropFilter'
 
 // Button widgets don't have a v-model value, they trigger actions
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<void>
 }>()
 
-// Button specific excluded props
 const BUTTON_EXCLUDED_PROPS = [...BADGE_EXCLUDED_PROPS, 'iconClass'] as const
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, BUTTON_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, BUTTON_EXCLUDED_PROPS)
 )
 
 const handleClick = () => {
-  if (props.widget.callback) {
-    props.widget.callback()
+  if (widget.callback) {
+    widget.callback()
   }
 }
 </script>

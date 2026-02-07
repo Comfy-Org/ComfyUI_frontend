@@ -133,7 +133,7 @@ interface VideoPreviewProps {
   readonly nodeId?: string
 }
 
-const props = defineProps<VideoPreviewProps>()
+const { imageUrls, nodeId } = defineProps<VideoPreviewProps>()
 
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
@@ -152,12 +152,12 @@ const showLoader = ref(false)
 const videoWrapperEl = ref<HTMLDivElement>()
 
 // Computed values
-const currentVideoUrl = computed(() => props.imageUrls[currentIndex.value])
-const hasMultipleVideos = computed(() => props.imageUrls.length > 1)
+const currentVideoUrl = computed(() => imageUrls[currentIndex.value])
+const hasMultipleVideos = computed(() => imageUrls.length > 1)
 
 // Watch for URL changes and reset state
 watch(
-  () => props.imageUrls,
+  () => imageUrls,
   (newUrls, oldUrls) => {
     // Only reset state if URLs actually changed (not just array reference)
     const urlsChanged =
@@ -212,12 +212,12 @@ const handleDownload = () => {
 }
 
 const handleRemove = () => {
-  if (!props.nodeId) return
-  nodeOutputStore.removeNodeOutputs(props.nodeId)
+  if (!nodeId) return
+  nodeOutputStore.removeNodeOutputs(nodeId)
 }
 
 const setCurrentIndex = (index: number) => {
-  if (index >= 0 && index < props.imageUrls.length) {
+  if (index >= 0 && index < imageUrls.length) {
     currentIndex.value = index
     actualDimensions.value = null
     showLoader.value = true
@@ -251,23 +251,19 @@ const getNavigationDotClass = (index: number) => {
 }
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (props.imageUrls.length <= 1) return
+  if (imageUrls.length <= 1) return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0
-          ? currentIndex.value - 1
-          : props.imageUrls.length - 1
+        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < props.imageUrls.length - 1
-          ? currentIndex.value + 1
-          : 0
+        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
       )
       break
     case 'Home':
@@ -276,7 +272,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(props.imageUrls.length - 1)
+      setCurrentIndex(imageUrls.length - 1)
       break
   }
 }

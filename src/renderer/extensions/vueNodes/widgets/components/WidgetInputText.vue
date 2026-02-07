@@ -25,13 +25,13 @@ import {
 import { WidgetInputBaseClass } from './layout'
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<string>
 }>()
 
 const modelValue = defineModel<string>({ default: '' })
 
 const filteredProps = computed(() =>
-  filterWidgetProps(props.widget.options, INPUT_EXCLUDED_PROPS)
+  filterWidgetProps(widget.options, INPUT_EXCLUDED_PROPS)
 )
 </script>

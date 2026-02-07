@@ -12,7 +12,7 @@ import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/util
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedWidget<void>
 }>()
 
@@ -31,7 +31,7 @@ onMounted(() => {
       canvasEl.value.parentElement.attributes['node-id'].value
     ) ?? undefined
   if (!node) return
-  widgetInstance = node.widgets?.find((w) => w.name === props.widget.name)
+  widgetInstance = node.widgets?.find((w) => w.name === widget.name)
   if (!widgetInstance) return
   canvasEl.value.width *= scaleFactor
   if (!widgetInstance.triggerDraw)

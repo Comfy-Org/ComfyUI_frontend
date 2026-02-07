@@ -66,7 +66,7 @@ interface Props {
   buttonStyles?: Record<string, string>
 }
 
-defineProps<Props>()
+const { buttonStyles } = defineProps<Props>()
 const buttonRef = ref<ComponentPublicInstance | null>(null)
 const popover = ref<InstanceType<typeof Popover>>()
 const commandStore = useCommandStore()

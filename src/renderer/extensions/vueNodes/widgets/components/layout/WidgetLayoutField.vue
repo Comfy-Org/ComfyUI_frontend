@@ -3,7 +3,7 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@/utils/tailwindUtil'
 
-defineProps<{
+const { widget } = defineProps<{
   widget: Pick<
     SimplifiedWidget<string | number | undefined>,
     'name' | 'label' | 'borderStyle'

@@ -109,7 +109,7 @@ import { jobStateFromTask } from '@/utils/queueUtil'
 import { useJobErrorReporting } from './useJobErrorReporting'
 import { formatElapsedTime, useQueueEstimates } from './useQueueEstimates'
 
-const props = defineProps<{
+const { jobId, workflowId } = defineProps<{
   jobId: string
   workflowId?: string
 }>()
@@ -123,21 +123,20 @@ const dialog = useDialogService()
 const { locale, t } = useI18n()
 
 const workflowValue = computed(() => {
-  const wid = props.workflowId
-  if (!wid) return ''
+  if (!workflowId) return ''
   const activeId = workflowStore.activeWorkflow?.activeState?.id
-  if (activeId && activeId === wid) {
-    return workflowStore.activeWorkflow?.filename ?? wid
+  if (activeId && activeId === workflowId) {
+    return workflowStore.activeWorkflow?.filename ?? workflowId
   }
-  return wid
+  return workflowId
 })
-const jobIdValue = computed(() => props.jobId)
+const jobIdValue = computed(() => jobId)
 
 const { copyToClipboard } = useCopyToClipboard()
 const copyJobId = () => void copyToClipboard(jobIdValue.value)
 
 const taskForJob = computed(() => {
-  const pid = props.jobId
+  const pid = jobId
   const findIn = (arr: TaskItemImpl[]) =>
     arr.find((t) => String(t.promptId ?? '') === String(pid))
   return (

@@ -20,7 +20,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 
 const modelValue = defineModel<string>({ required: true })
-const props = defineProps<{
+const { nodeId } = defineProps<{
   nodeId: NodeId
 }>()
 
@@ -58,7 +58,7 @@ let parentNodeId: NodeId | null = null
 onMounted(() => {
   // Get the parent node ID from props if provided
   // For backward compatibility, fall back to the first executing node
-  parentNodeId = props.nodeId
+  parentNodeId = nodeId
 })
 
 // Watch for either a new node has starting execution or overall execution ending

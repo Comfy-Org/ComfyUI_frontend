@@ -3,35 +3,35 @@
   <div class="flex flex-row items-center gap-2">
     <div>
       <div>
-        <span :title="hint">{{ label }}</span>
+        <span :title="displayHint">{{ displayLabel }}</span>
       </div>
       <Message
-        v-if="props.error"
+        v-if="error"
         severity="error"
         icon="pi pi-exclamation-triangle"
         size="small"
         variant="outlined"
         class="my-2 h-min max-w-xs px-1"
-        :title="props.error"
+        :title="error"
         :pt="{
           text: { class: 'overflow-hidden text-ellipsis' }
         }"
       >
-        {{ props.error }}
+        {{ error }}
       </Message>
     </div>
     <div>
       <Button
         variant="secondary"
-        :disabled="!!props.error"
-        :title="props.url"
+        :disabled="!!error"
+        :title="url"
         @click="download.triggerBrowserDownload"
       >
         {{ $t('g.downloadWithSize', { size: fileSize }) }}
       </Button>
     </div>
     <div>
-      <Button variant="secondary" :disabled="!!props.error" @click="copyURL">
+      <Button variant="secondary" :disabled="!!error" @click="copyURL">
         {{ $t('g.copyURL') }}
       </Button>
     </div>
@@ -47,22 +47,22 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useDownload } from '@/composables/useDownload'
 import { formatSize } from '@/utils/formatUtil'
 
-const props = defineProps<{
+const { url, hint, label, error } = defineProps<{
   url: string
   hint?: string
   label?: string
   error?: string
 }>()
 
-const label = computed(() => props.label || props.url.split('/').pop())
+const displayLabel = computed(() => label || url.split('/').pop())
 
-const hint = computed(() => props.hint || props.url)
-const download = useDownload(props.url)
+const displayHint = computed(() => hint || url)
+const download = useDownload(url)
 const fileSize = computed(() =>
   download.fileSize.value ? formatSize(download.fileSize.value) : '?'
 )
 const copyURL = async () => {
-  await copyToClipboard(props.url)
+  await copyToClipboard(url)
 }
 
 const { copyToClipboard } = useCopyToClipboard()

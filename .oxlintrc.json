@@ -96,7 +96,7 @@
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
     "typescript/no-floating-promises": "error",
-    "vue/define-props-destructuring": "warn",
+    "vue/define-props-destructuring": "error",
     "vue/no-import-compiler-macros": "error",
     "vue/no-dupe-keys": "error"
   },

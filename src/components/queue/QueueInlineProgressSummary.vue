@@ -39,7 +39,7 @@ import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useExecutionStore } from '@/stores/executionStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
-const props = defineProps<{
+const { hidden } = defineProps<{
   hidden?: boolean
 }>()
 
@@ -63,7 +63,7 @@ const currentNodeName = computed(() => {
 
 const shouldShow = computed(
   () =>
-    !props.hidden &&
+    !hidden &&
     (!executionStore.isIdle ||
       totalPercent.value > 0 ||
       currentNodePercent.value > 0)

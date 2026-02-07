@@ -45,7 +45,7 @@ import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 
-defineProps<{
+const { modelValue } = defineProps<{
   modelValue: string
 }>()
 

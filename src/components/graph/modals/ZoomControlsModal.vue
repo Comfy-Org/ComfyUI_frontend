@@ -84,7 +84,7 @@ interface Props {
   visible: boolean
 }
 
-const props = defineProps<Props>()
+const { visible } = defineProps<Props>()
 
 const interval = ref<number | null>(null)
 
@@ -132,7 +132,7 @@ const zoomToFitCommandText = computed(() =>
 const zoomInputContainer = ref<HTMLDivElement | null>(null)
 
 watch(
-  () => props.visible,
+  () => visible,
   async (newVal) => {
     if (newVal) {
       await nextTick()

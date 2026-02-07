@@ -4,7 +4,7 @@
     v-model:expanded-keys="expandedKeys"
     v-model:selection-keys="selectionKeys"
     class="tree-explorer px-2 py-0 2xl:px-4 bg-transparent"
-    :class="props.class"
+    :class="className"
     :value="renderedRoot.children"
     selection-mode="single"
     :pt="{
@@ -68,7 +68,7 @@ const selectionKeys = defineModel<Record<string, boolean>>('selectionKeys')
 // Tracks whether the caller has set the selectionKeys model.
 const storeSelectionKeys = selectionKeys.value !== undefined
 
-const props = defineProps<{
+const { root, class: className } = defineProps<{
   root: TreeExplorerNode
   class?: string
 }>()
@@ -90,7 +90,7 @@ const {
 )
 
 const renderedRoot = computed<RenderedTreeExplorerNode>(() => {
-  const renderedRoot = fillNodeInfo(props.root)
+  const renderedRoot = fillNodeInfo(root)
   return newFolderNode.value
     ? combineTrees(renderedRoot, newFolderNode.value)
     : renderedRoot

@@ -15,7 +15,7 @@
 <script setup lang="ts">
 import BaseThumbnail from '@/components/templates/thumbnails/BaseThumbnail.vue'
 
-defineProps<{
+const { src } = defineProps<{
   src: string
 }>()
 </script>

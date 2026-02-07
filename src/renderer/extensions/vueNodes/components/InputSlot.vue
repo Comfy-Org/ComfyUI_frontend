@@ -7,13 +7,13 @@
       cn(
         'lg-slot lg-slot--input flex items-center group rounded-r-lg m-0',
         'cursor-crosshair',
-        props.dotOnly ? 'lg-slot--dot-only' : 'pr-6',
+        dotOnly ? 'lg-slot--dot-only' : 'pr-6',
         {
-          'lg-slot--connected': props.connected,
-          'lg-slot--compatible': props.compatible,
+          'lg-slot--connected': connected,
+          'lg-slot--compatible': compatible,
           'opacity-40': shouldDim
         },
-        props.socketless && 'pointer-events-none invisible'
+        socketless && 'pointer-events-none invisible'
       )
     "
   >
@@ -82,15 +82,24 @@ interface InputSlotProps {
   socketless?: boolean
 }
 
-const props = defineProps<InputSlotProps>()
+const {
+  nodeType,
+  nodeId,
+  slotData,
+  index,
+  connected,
+  compatible,
+  dotOnly,
+  socketless
+} = defineProps<InputSlotProps>()
 
 const executionStore = useExecutionStore()
 
 const hasSlotError = computed(() => {
-  const nodeErrors = executionStore.lastNodeErrors?.[props.nodeId ?? '']
+  const nodeErrors = executionStore.lastNodeErrors?.[nodeId ?? '']
   if (!nodeErrors) return false
 
-  const slotName = props.slotData.name
+  const slotName = slotData.name
   return nodeErrors.errors.some(
     (error) => error.extra_info?.input_name === slotName
   )
@@ -100,11 +109,11 @@ const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
 const { getInputSlotTooltip, createTooltipConfig } = useNodeTooltips(
-  props.nodeType || ''
+  nodeType || ''
 )
 
 const tooltipConfig = computed(() => {
-  const slotName = props.slotData.localized_name || props.slotData.name || ''
+  const slotName = slotData.localized_name || slotData.name || ''
   const tooltipText = getInputSlotTooltip(slotName)
   const fallbackText = tooltipText || `Input: ${slotName}`
   return createTooltipConfig(fallbackText)
@@ -117,9 +126,7 @@ onErrorCaptured((error) => {
 })
 
 const { state: dragState } = useSlotLinkDragUIState()
-const slotKey = computed(() =>
-  getSlotKey(props.nodeId ?? '', props.index, true)
-)
+const slotKey = computed(() => getSlotKey(nodeId ?? '', index, true))
 const shouldDim = computed(() => {
   if (!dragState.active) return false
   return !dragState.compatible.get(slotKey.value)
@@ -136,15 +143,15 @@ watchEffect(() => {
 })
 
 useSlotElementTracking({
-  nodeId: props.nodeId ?? '',
-  index: props.index,
+  nodeId: nodeId ?? '',
+  index,
   type: 'input',
   element: slotElRef
 })
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
-  nodeId: props.nodeId ?? '',
-  index: props.index,
+  nodeId: nodeId ?? '',
+  index,
   type: 'input'
 })
 </script>

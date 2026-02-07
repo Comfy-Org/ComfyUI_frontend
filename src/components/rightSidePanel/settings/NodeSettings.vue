@@ -21,7 +21,7 @@ import SetNodeColor from './SetNodeColor.vue'
 import SetNodeState from './SetNodeState.vue'
 import SetPinned from './SetPinned.vue'
 
-const props = defineProps<{
+const { nodes } = defineProps<{
   /**
    * - If the item is a Group, Node State cannot be set
    * as Groups do not have a 'mode' property.
@@ -34,8 +34,8 @@ const props = defineProps<{
 
 const targetNodes = shallowRef<LGraphNode[] | LGraphGroup[]>([])
 watchEffect(() => {
-  if (props.nodes) {
-    targetNodes.value = props.nodes
+  if (nodes) {
+    targetNodes.value = nodes
   } else {
     targetNodes.value = []
   }

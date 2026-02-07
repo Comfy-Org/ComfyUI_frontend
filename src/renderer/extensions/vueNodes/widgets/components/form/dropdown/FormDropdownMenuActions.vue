@@ -18,7 +18,15 @@ import type { LayoutMode, SortOption } from './types'
 
 const { t } = useI18n()
 
-defineProps<{
+const {
+  searcher,
+  sortOptions,
+  updateKey,
+  showOwnershipFilter,
+  ownershipOptions,
+  showBaseModelFilter,
+  baseModelOptions
+} = defineProps<{
   searcher?: (
     query: string,
     onCleanup: (cleanupFn: () => void) => void

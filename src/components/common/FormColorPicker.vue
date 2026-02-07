@@ -10,7 +10,7 @@ import ColorPicker from 'primevue/colorpicker'
 import InputText from 'primevue/inputtext'
 
 const modelValue = defineModel<string>('modelValue')
-defineProps<{
+const { label } = defineProps<{
   label?: string
 }>()
 

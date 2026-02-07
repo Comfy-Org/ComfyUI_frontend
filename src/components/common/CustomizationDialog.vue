@@ -52,7 +52,7 @@ import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 
 const { t } = useI18n()
 
-const props = defineProps<{
+const { modelValue, initialIcon, initialColor } = defineProps<{
   modelValue: boolean
   initialIcon?: string
   initialColor?: string
@@ -64,7 +64,7 @@ const emit = defineEmits<{
 }>()
 
 const visible = computed({
-  get: () => props.modelValue,
+  get: () => modelValue,
   set: (value) => emit('update:modelValue', value)
 })
 
@@ -96,17 +96,13 @@ const defaultIcon = iconOptions.find(
 
 // @ts-expect-error fixme ts strict error
 const selectedIcon = ref<{ name: string; value: string }>(defaultIcon)
-const finalColor = ref(
-  props.initialColor || nodeBookmarkStore.defaultBookmarkColor
-)
+const finalColor = ref(initialColor || nodeBookmarkStore.defaultBookmarkColor)
 
 const resetCustomization = () => {
   // @ts-expect-error fixme ts strict error
   selectedIcon.value =
-    iconOptions.find((option) => option.value === props.initialIcon) ||
-    defaultIcon
-  finalColor.value =
-    props.initialColor || nodeBookmarkStore.defaultBookmarkColor
+    iconOptions.find((option) => option.value === initialIcon) || defaultIcon
+  finalColor.value = initialColor || nodeBookmarkStore.defaultBookmarkColor
 }
 
 const confirmCustomization = () => {
@@ -119,7 +115,7 @@ const closeDialog = () => {
 }
 
 watch(
-  () => props.modelValue,
+  () => modelValue,
   (newValue: boolean) => {
     if (newValue) {
       resetCustomization()

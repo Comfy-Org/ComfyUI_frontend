@@ -18,7 +18,7 @@ export interface SearchFilter {
   id: string | number
 }
 
-defineProps<Omit<SearchFilter, 'id'>>()
+const { text, badge, badgeClass } = defineProps<Omit<SearchFilter, 'id'>>()
 defineEmits(['remove'])
 </script>
 
