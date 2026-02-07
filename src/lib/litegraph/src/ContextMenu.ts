@@ -109,7 +109,7 @@ export class ContextMenu<TValue = unknown> {
     root.addEventListener(
       'pointerdown',
       (e) => {
-        if (e.button == 2) {
+        if (e.button === 2) {
           this.close()
           e.preventDefault()
         }
@@ -168,7 +168,7 @@ export class ContextMenu<TValue = unknown> {
 
       const body_rect = document.body.getBoundingClientRect()
       const root_rect = root.getBoundingClientRect()
-      if (body_rect.height == 0)
+      if (body_rect.height === 0)
         console.error(
           'document.body height is 0. That is dangerous, set html,body { height: 100%; }'
         )

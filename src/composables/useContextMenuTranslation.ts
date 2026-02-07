@@ -131,11 +131,11 @@ export const useContextMenuTranslation = () => {
       if (matchInput) {
         let match = matchInput[1]
         extraInfo?.inputs?.find((i: INodeInputSlot) => {
-          if (i.name != match) return false
+          if (i.name !== match) return false
           match = i.label ? i.label : i.name
         })
         extraInfo?.widgets?.find((i: IWidget) => {
-          if (i.name != match) return false
+          if (i.name !== match) return false
           match = i.label ? i.label : i.name
         })
         value.content = cvt + match + tinp
@@ -145,11 +145,11 @@ export const useContextMenuTranslation = () => {
       if (matchWidget) {
         let match = matchWidget[1]
         extraInfo?.inputs?.find((i: INodeInputSlot) => {
-          if (i.name != match) return false
+          if (i.name !== match) return false
           match = i.label ? i.label : i.name
         })
         extraInfo?.widgets?.find((i: IWidget) => {
-          if (i.name != match) return false
+          if (i.name !== match) return false
           match = i.label ? i.label : i.name
         })
         value.content = cvt + match + twgt

@@ -122,7 +122,7 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   return allInteriorWidgets.filter(({ node: interiorNode, widget }) => {
     return !proxyWidgetsValue.some(
       ([nodeId, widgetName]) =>
-        interiorNode.id == nodeId && widget.name === widgetName
+        String(interiorNode.id) === nodeId && widget.name === widgetName
     )
   })
 })

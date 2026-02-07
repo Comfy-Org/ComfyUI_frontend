@@ -62,7 +62,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       function isSubgraphNode(node: ComfyNode) {
         return node && subgraphs.some((s) => s.id === node.type)
       }
-      if (nodes.length == 1 && isSubgraphNode(nodes[0])) return
+      if (nodes.length === 1 && isSubgraphNode(nodes[0])) return
       const errors: Record<NodeId, NodeError> = {}
       //mark errors for all but first subgraph node
       let firstSubgraphFound = false
@@ -144,7 +144,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const loaded = await super.load({ force })
       const st = loaded.activeState
       const sg = (st.definitions?.subgraphs ?? []).find(
-        (sg) => sg.id == st.nodes[0].type
+        (sg) => sg.id === st.nodes[0].type
       )
       if (!sg)
         throw new Error(
@@ -294,7 +294,7 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const { nodes = [], subgraphs = [] } = canvas._serializeItems([
       subgraphNode
     ])
-    if (nodes.length != 1) {
+    if (nodes.length !== 1) {
       throw new TypeError('Must have single SubgraphNode selected to publish')
     }
 

@@ -88,11 +88,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       (e) => {
         const subgraphInput = e.detail.input
         const { name, type } = subgraphInput
-        const existingInput = this.inputs.find((i) => i.name == name)
+        const existingInput = this.inputs.find((i) => i.name === name)
         if (existingInput) {
           const linkId = subgraphInput.linkIds[0]
           const { inputNode, input } = subgraph.links[linkId].resolve(subgraph)
-          const widget = inputNode?.widgets?.find?.((w) => w.name == name)
+          const widget = inputNode?.widgets?.find?.((w) => w.name === name)
           if (widget)
             this._setWidget(subgraphInput, existingInput, widget, input?.widget)
           return

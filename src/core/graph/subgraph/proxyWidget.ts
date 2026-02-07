@@ -63,7 +63,7 @@ export function registerProxyWidgets(canvas: LGraphCanvas) {
     for (const node of subgraph.nodes) {
       for (const widget of node.widgets ?? []) {
         widget.promoted = proxyWidgets.some(
-          ([n, w]) => node.id == n && widget.name == w
+          ([n, w]) => String(node.id) === n && widget.name === w
         )
       }
     }
@@ -130,7 +130,7 @@ const onConfigure = function (
     const parsed = parseProxyWidgets(serialisedNode.properties.proxyWidgets)
     serialisedNode.widgets_values?.forEach((v, index) => {
       if (parsed[index]?.[0] !== '-1') return
-      const widget = this.widgets.find((w) => w.name == parsed[index][1])
+      const widget = this.widgets.find((w) => w.name === parsed[index][1])
       if (v !== null && widget) widget.value = v
     })
   }
@@ -203,8 +203,8 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
     get(_t: IBaseWidget, property: string, receiver: object) {
       let redirectedTarget: object = backingWidget
       let redirectedReceiver = receiver
-      if (property == '_overlay') return overlay
-      else if (property == 'value') redirectedReceiver = backingWidget
+      if (property === '_overlay') return overlay
+      else if (property === 'value') redirectedReceiver = backingWidget
       if (Object.prototype.hasOwnProperty.call(overlay, property)) {
         redirectedTarget = overlay
         redirectedReceiver = overlay
@@ -213,7 +213,7 @@ function newProxyFromOverlay(subgraphNode: SubgraphNode, overlay: Overlay) {
     },
     set(_t: IBaseWidget, property: string, value: unknown) {
       let redirectedTarget: object = backingWidget
-      if (property == 'computedHeight') {
+      if (property === 'computedHeight') {
         if (overlay.widgetName.startsWith('$$') && linkedNode) {
           updatePreviews(linkedNode)
         }

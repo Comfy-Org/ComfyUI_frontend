@@ -268,7 +268,7 @@ async function saveKeybinding() {
   const commandId = currentEditingCommand.value?.id
   const combo = newBindingKeyCombo.value
   cancelEdit()
-  if (!combo || commandId == undefined) return
+  if (!combo || commandId == null) return
 
   const updated = keybindingStore.updateKeybindingOnCommand(
     new KeybindingImpl({ commandId, combo })

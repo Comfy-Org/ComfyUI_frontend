@@ -114,7 +114,7 @@ function useReactiveWidgetValue(widget: IBaseWidget) {
 
 function getControlWidget(widget: IBaseWidget): SafeControlWidget | undefined {
   const cagWidget = widget.linkedWidgets?.find(
-    (w) => w.name == 'control_after_generate'
+    (w) => w.name === 'control_after_generate'
   )
   if (!cagWidget) return
   return {

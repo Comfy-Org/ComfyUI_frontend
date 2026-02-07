@@ -51,7 +51,7 @@ function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
     return (graph as LGraph).getNodeById(id)
   }
   graph = graph as ISerialisedGraph
-  return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
+  return graph.nodes.find((node: ISerialisedNode) => node.id === id)!
 }
 
 function extendLink(link: SerialisedLLinkArray) {
@@ -124,7 +124,7 @@ export function fixBadLinks(
   ) {
     patchedNodeSlots[node.id] = patchedNodeSlots[node.id] || {}
     const patchedNode = patchedNodeSlots[node.id]!
-    if (ioDir == IoDirection.INPUT) {
+    if (ioDir === IoDirection.INPUT) {
       patchedNode['inputs'] = patchedNode['inputs'] || {}
       // We can set to null (delete), so undefined means we haven't set it at all.
       if (patchedNode['inputs']![slot] !== undefined) {

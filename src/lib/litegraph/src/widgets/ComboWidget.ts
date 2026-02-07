@@ -170,14 +170,14 @@ export class ComboWidget
     }
 
     // Show dropdown menu when user clicks on widget label
-    const text_values = values != values_list ? Object.values(values) : values
+    const text_values = values !== values_list ? Object.values(values) : values
     new LiteGraph.ContextMenu(text_values, {
       scale: Math.max(1, canvas.ds.scale),
       event: e,
       className: 'dark',
       callback: (value: string) => {
         this.setValue(
-          values != values_list ? text_values.indexOf(value) : value,
+          values !== values_list ? text_values.indexOf(value) : value,
           { e, node, canvas }
         )
       }

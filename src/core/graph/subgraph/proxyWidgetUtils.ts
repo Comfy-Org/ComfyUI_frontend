@@ -58,11 +58,12 @@ export function demoteWidget(
 }
 
 export function matchesWidgetItem([nodeId, widgetName]: [string, string]) {
-  return ([n, w]: WidgetItem) => n.id == nodeId && w.name === widgetName
+  return ([n, w]: WidgetItem) =>
+    String(n.id) === nodeId && w.name === widgetName
 }
 export function matchesPropertyItem([n, w]: WidgetItem) {
   return ([nodeId, widgetName]: [string, string]) =>
-    n.id == nodeId && w.name === widgetName
+    String(n.id) === nodeId && w.name === widgetName
 }
 export function widgetItemToProperty([n, w]: WidgetItem): [string, string] {
   return [`${n.id}`, w.name]

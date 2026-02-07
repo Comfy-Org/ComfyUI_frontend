@@ -43,9 +43,9 @@ export const useIntWidget = () => {
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')
     const display_type = inputSpec.display
     const widgetType =
-      sliderEnabled && display_type == 'slider'
+      sliderEnabled && display_type === 'slider'
         ? 'slider'
-        : display_type == 'knob'
+        : display_type === 'knob'
           ? 'knob'
           : 'number'
 

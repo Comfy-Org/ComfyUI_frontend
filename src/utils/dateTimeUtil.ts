@@ -77,7 +77,7 @@ export const formatClockTime = (ts: number, locale: string): string => {
 }
 
 export function formatDuration(durationSeconds?: number) {
-  if (durationSeconds == undefined) return ''
+  if (durationSeconds == null) return ''
   const hours = (durationSeconds / 60 ** 2) | 0
   const minutes = ((durationSeconds % 60 ** 2) / 60) | 0
   const seconds = (durationSeconds % 60) | 0

@@ -80,9 +80,9 @@ export const useComputedWithWidgetWatch = (
       //Inputs have been included
       const indexesToObserve = widgetNames
         .map((name) =>
-          widgetsToObserve.some((w) => w.name == name)
+          widgetsToObserve.some((w) => w.name === name)
             ? -1
-            : node.inputs.findIndex((i) => i.name == name)
+            : node.inputs.findIndex((i) => i.name === name)
         )
         .filter((i) => i >= 0)
       node.onConnectionsChange = useChainCallback(

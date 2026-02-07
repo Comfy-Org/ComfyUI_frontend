@@ -72,7 +72,7 @@ function isWidgetShownOnParents(
   if (isProxyWidget(widget)) {
     return proxyWidgets.some(
       ([nodeId, widgetName]) =>
-        widget._overlay.nodeId == nodeId &&
+        widget._overlay.nodeId === nodeId &&
         widget._overlay.widgetName === widgetName
     )
   }
@@ -80,7 +80,7 @@ function isWidgetShownOnParents(
   // For regular widgets (not yet promoted), check using node ID and widget name
   return proxyWidgets.some(
     ([nodeId, widgetName]) =>
-      widgetNode.id == nodeId && widget.name === widgetName
+      String(widgetNode.id) === nodeId && widget.name === widgetName
   )
 }
 

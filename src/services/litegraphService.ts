@@ -166,12 +166,12 @@ export const useLitegraphService = () => {
       }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
-      if (app.dragOverNode?.id == this.id) {
+      if (app.dragOverNode?.id === this.id) {
         return { color: 'dodgerblue' }
       }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      if (app.lastExecutionError?.node_id === this.id) {
         return { color: '#f0f', lineWidth: 3 }
       }
     }

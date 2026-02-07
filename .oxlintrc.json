@@ -35,6 +35,13 @@
       }
     ],
     "no-control-regex": "off",
+    "eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
     "no-eval": "off",
     "no-redeclare": "error",
     "no-restricted-imports": [
