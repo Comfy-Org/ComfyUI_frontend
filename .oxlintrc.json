@@ -58,7 +58,8 @@
     ],
     "no-eval": "off",
     "no-new-func": "error",
-    "no-param-reassign": "warn",
+    // TODO: Enable and fix 104 violations
+    "no-param-reassign": "off",
     "no-redeclare": "error",
     "no-return-assign": ["error", "always"],
     "no-throw-literal": "error",
@@ -100,7 +101,8 @@
     "no-useless-call": "error",
     "no-useless-concat": "error",
     "prefer-const": "error",
-    "prefer-destructuring": "warn",
+    // TODO: Enable and fix 581 violations
+    "prefer-destructuring": "off",
     "prefer-object-has-own": "error",
     "prefer-object-spread": "error",
     "prefer-rest-params": "error",
@@ -108,13 +110,10 @@
     "prefer-template": "error",
     "promise/no-nesting": "error",
     "promise/param-names": "error",
-    "promise/prefer-await-to-callbacks": "warn",
-    "promise/prefer-await-to-then": [
-      "warn",
-      {
-        "strict": false
-      }
-    ],
+    // TODO: Enable and fix 76 violations
+    "promise/prefer-await-to-callbacks": "off",
+    // TODO: Enable and fix 91 violations
+    "promise/prefer-await-to-then": "off",
     "promise/prefer-catch": "error",
     "preserve-caught-error": "error",
     "yoda": [
@@ -168,15 +167,12 @@
         "ignore": ["^error\\w+$"]
       }
     ],
-    "unicorn/consistent-function-scoping": [
-      "warn",
-      {
-        "checkArrowFunctions": true
-      }
-    ],
+    // TODO: Enable and fix 147 violations
+    "unicorn/consistent-function-scoping": "off",
     "unicorn/error-message": "error",
     "unicorn/no-abusive-eslint-disable": "error",
-    "unicorn/no-array-for-each": "warn",
+    // TODO: Enable and fix 165 violations
+    "unicorn/no-array-for-each": "off",
     "unicorn/no-immediate-mutation": "error",
     "unicorn/no-instanceof-array": "error",
     "unicorn/no-length-as-slice-end": "error",
@@ -223,12 +219,8 @@
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
     "typescript/no-floating-promises": "error",
-    "typescript/prefer-nullish-coalescing": [
-      "warn",
-      {
-        "ignoreConditionalTests": true
-      }
-    ],
+    // TODO: Enable and fix 372 violations (use { "ignoreConditionalTests": true })
+    "typescript/prefer-nullish-coalescing": "off",
     "typescript/prefer-optional-chain": "error",
     "typescript/prefer-ts-expect-error": "error",
     "vue/define-props-destructuring": "error",
