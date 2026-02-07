@@ -1,6 +1,7 @@
 <template>
   <div class="flex h-full flex-col overflow-hidden">
     <div id="node-library-node-preview-container-v2" />
+    <NodeDragPreview />
     <!-- Fixed header -->
     <div class="shrink-0 px-4 pt-2 pb-1">
       <h2 class="m-0 mb-1 text-sm font-bold leading-8">
@@ -70,7 +71,7 @@ import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import SearchBox from '@/components/common/SearchBoxV2.vue'
-import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import {
   DEFAULT_TAB_ID,
   nodeOrganizationService
@@ -86,6 +87,7 @@ import type {
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import CustomNodesPanel from './nodeLibrary/CustomNodesPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
+import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 
 const selectedTab = useLocalStorage<TabId>(
   'Comfy.NodeLibrary.Tab',
@@ -109,7 +111,7 @@ const expandedKeys = computed({
 })
 
 const nodeDefStore = useNodeDefStore()
-const litegraphService = useLitegraphService()
+const { startDrag } = useNodeDragToCanvas()
 
 const filteredNodeDefs = computed(() => {
   if (searchQuery.value.length === 0) {
@@ -222,7 +224,7 @@ function collectFolderKeys(node: TreeNode): string[] {
 
 function handleNodeClick(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
   if (node.type === 'node' && node.data) {
-    litegraphService.addNodeOnGraph(node.data)
+    startDrag(node.data)
   }
   if (node.type === 'folder') {
     const index = expandedKeys.value.indexOf(node.key)
