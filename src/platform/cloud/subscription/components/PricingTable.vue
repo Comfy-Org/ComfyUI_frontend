@@ -252,7 +252,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useFirebaseAuthActions } from '@/composables/auth/useFirebaseAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { t } from '@/i18n'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   TIER_PRICING,
@@ -292,6 +291,8 @@ interface PricingTierConfig {
   isPopular?: boolean
 }
 
+const { t, n } = useI18n()
+
 const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
   { label: t('subscription.monthly'), value: 'monthly' }
@@ -326,8 +327,6 @@ const tiers: PricingTierConfig[] = [
     isPopular: false
   }
 ]
-
-const { n } = useI18n()
 const { isActiveSubscription, subscriptionTier, isYearlySubscription } =
   useSubscription()
 const { accessBillingPortal, reportError } = useFirebaseAuthActions()

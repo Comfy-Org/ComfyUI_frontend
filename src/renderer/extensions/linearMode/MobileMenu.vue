@@ -4,13 +4,15 @@ import {
   CollapsibleTrigger,
   CollapsibleContent
 } from 'reka-ui'
+import { useI18n } from 'vue-i18n'
 
 import WorkflowsSidebarTab from '@/components/sidebar/tabs/WorkflowsSidebarTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/Popover.vue'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
-import { t } from '@/i18n'
 import { useCommandStore } from '@/stores/commandStore'
+
+const { t } = useI18n()
 </script>
 <template>
   <CollapsibleRoot class="flex flex-col">

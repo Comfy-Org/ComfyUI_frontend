@@ -111,6 +111,7 @@ import {
   watch,
   watchEffect
 } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
@@ -137,7 +138,6 @@ import { useCopy } from '@/composables/useCopy'
 import { useGlobalLitegraph } from '@/composables/useGlobalLitegraph'
 import { usePaste } from '@/composables/usePaste'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import { t } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
@@ -175,6 +175,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
+const { t } = useI18n()
 const emit = defineEmits<{
   ready: []
 }>()

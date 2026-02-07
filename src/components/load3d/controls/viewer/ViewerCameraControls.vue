@@ -30,10 +30,11 @@
 import Select from 'primevue/select'
 import Slider from 'primevue/slider'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
-import { t } from '@/i18n'
 
+const { t } = useI18n()
 const cameras = [
   { title: t('load3d.cameraType.perspective'), value: 'perspective' },
   { title: t('load3d.cameraType.orthographic'), value: 'orthographic' }
