@@ -119,6 +119,7 @@
       }
     ],
     "unicorn/error-message": "error",
+    "unicorn/no-abusive-eslint-disable": "error",
     "unicorn/no-instanceof-array": "error",
     "unicorn/no-length-as-slice-end": "error",
     "unicorn/no-negation-in-equality-check": "error",
