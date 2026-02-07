@@ -63,12 +63,12 @@ let rafCallbackId = 0
 
 vi.mock('@vueuse/core', () => {
   return {
-    useRafFn: vi.fn((callback, options) => {
+    useRafFn: vi.fn((rafCallback, options) => {
       const id = rafCallbackId++
-      rafCallbacks[id] = callback
+      rafCallbacks[id] = rafCallback
 
       if (options?.immediate !== false) {
-        void Promise.resolve().then(() => callback())
+        void Promise.resolve().then(() => rafCallback())
       }
 
       const resumeFn = vi.fn(() => {

@@ -21,6 +21,7 @@
     "eslint",
     "import",
     "oxc",
+    "promise",
     "typescript",
     "unicorn",
     "vitest",
@@ -96,6 +97,7 @@
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "prefer-template": "error",
+    "promise/no-nesting": "warn",
     "preserve-caught-error": "error",
     "yoda": [
       "error",
