@@ -285,7 +285,6 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { t } from '@/i18n'
 import {
   TIER_PRICING,
   TIER_TO_KEY
@@ -332,6 +331,8 @@ interface PricingTierConfig {
   isPopular?: boolean
 }
 
+const { t, n } = useI18n()
+
 const billingCycleOptions: BillingCycleOption[] = [
   { label: t('subscription.yearly'), value: 'yearly' },
   { label: t('subscription.monthly'), value: 'monthly' }
@@ -369,8 +370,6 @@ const tiers: PricingTierConfig[] = [
     isPopular: false
   }
 ]
-
-const { n } = useI18n()
 const {
   plans: apiPlans,
   currentPlanSlug,
