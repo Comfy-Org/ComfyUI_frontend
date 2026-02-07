@@ -114,6 +114,12 @@
         "describe": "for"
       }
     ],
+    "vitest/consistent-test-filename": [
+      "error",
+      {
+        "pattern": ".*\\.test\\.ts$"
+      }
+    ],
     "vitest/consistent-vitest-vi": "error",
     "vitest/hoisted-apis-on-top": "error",
     "vitest/no-conditional-tests": "error",
