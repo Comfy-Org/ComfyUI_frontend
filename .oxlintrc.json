@@ -88,6 +88,7 @@
     "prefer-object-has-own": "error",
     "prefer-object-spread": "error",
     "prefer-rest-params": "error",
+    "prefer-spread": "error",
     "preserve-caught-error": "error",
     "yoda": [
       "error",
