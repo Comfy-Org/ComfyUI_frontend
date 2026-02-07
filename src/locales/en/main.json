@@ -2034,7 +2034,7 @@
       "howManyCredits": "How many credits would you like to add?",
       "usdAmount": "${amount}",
       "videosEstimate": "~{count} videos*",
-      "templateNote": "*Generated with Wan Fun Control template",
+      "templateNote": "*Generated with Wan 2.2 Image-to-Video template",
       "buy": "Buy",
       "purchaseSuccess": "Credits added successfully!",
       "purchaseError": "Purchase Failed",
@@ -2139,7 +2139,7 @@
     "messageSupport": "Message support",
     "invoiceHistory": "Invoice history",
     "benefits": {
-      "benefit1": "$10 in monthly credits for Partner Nodes — top up when needed",
+      "benefit1": "Monthly credits for Partner Nodes — top up when needed",
       "benefit2": "Up to 30 min runtime per job"
     },
     "yearlyDiscount": "20% DISCOUNT",
@@ -2198,7 +2198,7 @@
     "customLoRAsLabel": "Import your own LoRAs",
     "videoEstimateLabel": "Approx. amount of 5s videos generated with Wan 2.2 Image-to-Video template",
     "videoEstimateHelp": "More details on this template",
-    "videoEstimateExplanation": "These estimates are based on the Wan 2.2 Image-to-Video template using default settings (5 seconds, 640x640, 16fps, 4-step sampling).",
+    "videoEstimateExplanation": "These estimates are based on the Wan 2.2 Image-to-Video template using default settings (5 sec, 16fps, 640x640, 4-step sampling).",
     "videoEstimateTryTemplate": "Try this template",
     "videoTemplateBasedCredits": "Videos generated with Wan 2.2 Image to Video",
     "upgradePlan": "Upgrade Plan",

@@ -235,7 +235,7 @@
           {{ t('subscription.videoEstimateExplanation') }}
         </p>
         <a
-          href="https://cloud.comfy.org/?template=video_wan2_2_14B_fun_camera"
+          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
           target="_blank"
           rel="noopener noreferrer"
           class="text-sm text-azure-600 hover:text-azure-400 no-underline flex gap-1"
