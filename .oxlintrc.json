@@ -87,6 +87,7 @@
     "no-unused-expressions": "off",
     "no-unused-private-class-members": "off",
     "no-useless-rename": "off",
+    "operator-assignment": ["error", "always"],
     "import/default": "error",
     "import/export": "error",
     "import/namespace": "error",
