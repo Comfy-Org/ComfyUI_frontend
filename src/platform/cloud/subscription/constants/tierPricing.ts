@@ -19,9 +19,9 @@ export interface TierPricing {
 }
 
 export const TIER_PRICING: Record<Exclude<TierKey, 'founder'>, TierPricing> = {
-  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 120 },
-  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 211 },
-  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 600 }
+  standard: { monthly: 20, yearly: 16, credits: 4200, videoEstimate: 213 },
+  creator: { monthly: 35, yearly: 28, credits: 7400, videoEstimate: 374 },
+  pro: { monthly: 100, yearly: 80, credits: 21100, videoEstimate: 1067 }
 }
 
 interface TierFeatures {
