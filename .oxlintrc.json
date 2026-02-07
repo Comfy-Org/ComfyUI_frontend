@@ -160,6 +160,7 @@
     ],
     "unicorn/error-message": "error",
     "unicorn/no-abusive-eslint-disable": "error",
+    "unicorn/no-array-for-each": "warn",
     "unicorn/no-immediate-mutation": "warn",
     "unicorn/no-instanceof-array": "error",
     "unicorn/no-length-as-slice-end": "error",
